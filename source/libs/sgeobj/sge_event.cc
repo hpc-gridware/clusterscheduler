@@ -53,6 +53,7 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
 
@@ -79,10 +80,8 @@ const char *event_text(const ocs::tom::ConstElement<ocs::tom::ET> event, dstring
    const char *strkey = ocs::tom::get<ET_strkey>(event);
    const char *strkey2 = ocs::tom::get<ET_strkey2>(event);
    // the objects of the event; their type depends on the event type, so the list is untyped
-   const lList *lp = ocs::tom::get<ET_new_version>(event);
-   if (lp != nullptr) {
-      n = lGetNumberOfElem(lp);
-   }
+   const ocs::tom::ConstRawList lp = ocs::tom::get<ET_new_version>(event);
+   n = static_cast<int>(lp.size());
 
    switch (type) {
 

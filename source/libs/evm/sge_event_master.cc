@@ -96,6 +96,7 @@
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_pack.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/ocs_Session.h"
@@ -104,6 +105,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
 #include "sgeobj/tom/ocs_tom_EVS.h"
@@ -168,16 +170,21 @@
  * Each client holds an array of these, sized #sgeE_EVENTSIZE and indexed by the
  * event value - so this is the one table that really is indexed by
  * @ref ev_event.
+ *
+ * The array is made with `new subscription_t[sgeE_EVENTSIZE]` in build_subscription() and given up with
+ * free_subscription_array() only; it is never copied (EV_sub_array holds the pointer, the element copies of
+ * the client list take the pointer, not the array). The where and what free themselves; the reduced
+ * descriptor is a shared, reference counted one and is given up by free_subscription_array().
  */
-typedef struct {
-      bool         subscription; ///< true -> the event is subscribed
-      bool         blocked;      ///< true -> no events will be accepted before the total update is issued
-      bool         flush;        ///< true -> flush is set
-      uint32_t     flush_time;   ///< seconds how much the event can be delayed
-      lCondition   *where;       ///< where filter
-      const lDescr       *descr;       ///< target list descriptor
-      lEnumeration *what;        ///< limits the target element
-} subscription_t;
+struct subscription_t {
+   bool subscription = false;          ///< true -> the event is subscribed
+   bool blocked = false;               ///< true -> no events will be accepted before the total update is issued
+   bool flush = false;                 ///< true -> flush is set
+   uint32_t flush_time = 0;            ///< seconds how much the event can be delayed
+   ocs::tom::RawWherePtr where;        ///< where filter, client supplied; frees itself
+   const lDescr *descr = nullptr;      ///< target list descriptor, a reference released by free_subscription_array()
+   ocs::tom::RawWhatPtr what;          ///< limits the target element, client supplied; frees itself
+};
 
 /**
  * @name Timing constants of the event master
@@ -421,6 +428,7 @@ static void       total_update(ocs::tom::Element<ocs::tom::EV> event_client, uin
 static ocs::DataStore::Id ev_total_update_enter_global();
 static void       ev_total_update_leave_global(ocs::DataStore::Id active_ds);
 static void       build_subscription(ocs::tom::Element<ocs::tom::EV> event_el);
+static void       free_subscription_array(subscription_t *sub_array);
 static void       remove_event_client(ocs::tom::Element<ocs::tom::EV> client, bool lock_event_master);
 static void       check_send_new_subscribed_list(const subscription_t *old_subscription,
                                                  const subscription_t *new_subscription,
@@ -430,18 +438,18 @@ static int        eventclient_subscribed(ocs::tom::ConstElement<ocs::tom::EV> ev
 static int        purge_event_list(ocs::tom::List<ocs::tom::ET> event_list, uint32_t event_number);
 
 static ocs::tom::ElementPtr<ocs::tom::ET> sge_create_event(uint32_t, uint64_t, ev_event, uint32_t, uint32_t,
-                                                          const char*, const char*, lList*);
+                                                          const char*, const char*, ocs::tom::RawListPtr);
 static bool       add_list_event_for_client(uint32_t, uint64_t, ev_event, uint32_t, uint32_t, const char*,
-                                            const char*, const char*, lList*, uint64_t);
+                                            const char*, const char*, ocs::tom::RawListPtr, uint64_t);
 static void       add_list_event_direct(ocs::tom::Element<ocs::tom::EV> event_client,
                                         ocs::tom::ElementPtr<ocs::tom::ET> &event, bool copy_event);
 static void       total_update_event(ocs::tom::Element<ocs::tom::EV> event_client, ev_event type,
                                      bool new_subscription, uint64_t gdi_session);
-static bool       list_select(subscription_t *subscription, int type, lList **reduced_lp, lList *lp,
-                              const lCondition *selection, const lEnumeration *fields, const lDescr *descr,
-                              bool do_hash);
+static bool       list_select(subscription_t *subscription, int type, ocs::tom::RawListPtr *reduced_lp,
+                              ocs::tom::RawList lp, const lCondition *selection, const lEnumeration *fields,
+                              const lDescr *descr, bool do_hash);
 static ocs::tom::Element<ocs::tom::EV> eventclient_list_locate_by_adress(const char*, const char*, uint32_t);
-static const lDescr* getDescriptorL(subscription_t*, const lList*, int);
+static const lDescr* getDescriptorL(subscription_t*, ocs::tom::ConstRawList, int);
 static ocs::tom::Element<ocs::tom::EV> get_event_client(uint32_t id);
 static uint32_t   allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static void       free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
@@ -584,7 +592,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
    }
 
    /* check event client object structure */
-   if (lCompListDescr(lGetElemDescr(clio), EV_Type) != 0) {
+   if (ocs::tom::layout_difference(ocs::tom::ConstRawElement(clio).descr(), EV_Type) != 0) {
       ERROR(SFNMAX, MSG_EVE_INCOMPLETEEVENTCLIENT);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_DENIED);
@@ -893,17 +901,7 @@ sge_event_master_process_mod_event_client(const ocs::tom::Element<ocs::tom::EVR>
 #endif
       ocs::tom::set<EV_sub_array>(event_client, new_sub);
       ocs::tom::set<EV_sub_array>(clio, nullptr);
-      if (old_sub) {
-         int i;
-         for (i=0; i<sgeE_EVENTSIZE; i++){
-            lFreeWhere(&(old_sub[i].where));
-            lFreeWhat(&(old_sub[i].what));
-            if (old_sub[i].descr){
-               ocs_cull_descr_release(&(old_sub[i].descr));
-            }
-         }
-         sge_free(&old_sub);
-      }
+      free_subscription_array(old_sub);
    }
 
    /* busy state changed */
@@ -1189,7 +1187,8 @@ sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t event_client_
          DRETURN(EPERM);
       }
 
-      add_list_event_for_client(event_client_id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr, packet->gdi_session);
+      add_list_event_for_client(event_client_id, 0, sgeE_SHUTDOWN, 0, 0, nullptr, nullptr, nullptr, nullptr,
+                                packet->gdi_session);
       /* Print out a message about the event. */
       if (event_client_id == EV_ID_SCHEDD) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_COM_KILLED_SCHEDULER);
@@ -1371,13 +1370,13 @@ bool sge_add_event_for_client(const uint32_t event_client_id, const uint64_t tim
    ocs::tom::ListPtr<T> objects;
    if (element) {
       // the list takes the descriptor of the object, which may be a reduced one
-      objects = ocs::tom::ListPtr<T>::create("Events", lGetElemDescr(element), ocs::tom::Hashing::Off);
+      objects = ocs::tom::ListPtr<T>::create("Events", element.descr(), ocs::tom::Hashing::Off);
       objects->push_back(ocs_event_payload_copy(type, element));
    }
 
    // the payload (ET_new_version) is typed by the event type only; the event takes it over
    const bool ret = add_list_event_for_client(event_client_id, timestamp, type, intkey, intkey2, strkey, strkey2,
-                                              session, objects.release(), gdi_session);
+                                              session, ocs::tom::RawListPtr(std::move(objects)), gdi_session);
 
    DRETURN(ret);
 }
@@ -1440,7 +1439,7 @@ bool sge_add_list_event(const uint64_t timestamp, const ev_event type, const uin
 
    if (list) {
       // the copy takes the descriptor of the list, which may be a reduced one
-      objects = ocs::tom::ListPtr<T>::create("Events", lGetListDescr(list), ocs::tom::Hashing::Off);
+      objects = ocs::tom::ListPtr<T>::create("Events", list.descr(), ocs::tom::Hashing::Off);
       for (const auto element : list) {
          objects->push_back(ocs_event_payload_copy(type, element));
       }
@@ -1448,7 +1447,7 @@ bool sge_add_list_event(const uint64_t timestamp, const ev_event type, const uin
 
    // the payload (ET_new_version) is typed by the event type only; the event takes it over
    return add_list_event_for_client(EV_ID_ANY, timestamp, type, intkey, intkey2, strkey, strkey2, session,
-                                    objects.release(), gdi_session);
+                                    ocs::tom::RawListPtr(std::move(objects)), gdi_session);
 }
 
 /*
@@ -1513,7 +1512,7 @@ template bool sge_add_list_event<ocs::tom::UA>(uint64_t, ev_event, uint32_t, uin
  */
 static ocs::tom::ElementPtr<ocs::tom::ET>
 sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type, const uint32_t int_key,
-                 const uint32_t int_key2, const char *str_key, const char *str_key2, lList *list) {
+                 const uint32_t int_key2, const char *str_key, const char *str_key2, ocs::tom::RawListPtr list) {
    DENTER(TOP_LAYER);
 
    /* an event needs a timestamp */
@@ -1529,7 +1528,8 @@ sge_create_event(const uint32_t number, uint64_t timestamp, const ev_event type,
    ocs::tom::set<ET_intkey2>(etp, int_key2);
    ocs::tom::set<ET_strkey>(etp, str_key);
    ocs::tom::set<ET_strkey2>(etp, str_key2);
-   ocs::tom::set<ET_new_version>(etp, list);
+   // ET_new_version names no sub-type, so its setter takes the raw list over
+   ocs::tom::set<ET_new_version>(etp, list.release());
 
    // A unique ID is needed later, when we are sure that the event will be delivered.
    // Here we do not know that because the event might be part of an action or transaction
@@ -1627,7 +1627,7 @@ add_list_event_for_client_after_commit(ocs::tom::ElementPtr<ocs::tom::EVR> &&evr
  * @param str_key2 additional data
  * @param session events session key
  * @param list the objects to deliver as event (ET_new_version), of the event type's object type, taken over;
- *        nullptr for an event without objects
+ *        an empty owner for an event without objects
  * @param gdi_session the session the change belongs to, for read-after-write
  *
  * @return Whether the event was added successfully.
@@ -1635,9 +1635,9 @@ add_list_event_for_client_after_commit(ocs::tom::ElementPtr<ocs::tom::EVR> &&evr
  * @note MT-NOTE: add_list_event_for_client() is MT safe.
  */
 static bool
-add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, const ev_event type, const uint32_t int_key,
-                          const uint32_t int_key2, const char *str_key, const char *str_key2, const char *session,
-                          lList *list, const uint64_t gdi_session) {
+add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, const ev_event type,
+                          const uint32_t int_key, const uint32_t int_key2, const char *str_key, const char *str_key2,
+                          const char *session, ocs::tom::RawListPtr list, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    /* an event needs a timestamp */
@@ -1657,7 +1657,7 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
     * Create a new event elem (The event number is added when
     * qmaster adds the event to the event client data structure)
     */
-   etlp->push_back(sge_create_event(0, timestamp, type, int_key, int_key2, str_key, str_key2, list));
+   etlp->push_back(sge_create_event(0, timestamp, type, int_key, int_key2, str_key, str_key2, std::move(list)));
    ocs::tom::set<EVR_event_list>(evr, std::move(etlp));
 
    /*
@@ -1665,7 +1665,8 @@ add_list_event_for_client(const uint32_t event_client_id, uint64_t timestamp, co
     * otherwise into the event master request list
     * need a new C block, as the GET_SPECIFIC macro declares new variables
     */
-   GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store, Event_Master_Control.transaction_key);
+   GET_SPECIFIC(event_master_transaction_t, t_store, sge_event_master_init_transaction_store,
+                Event_Master_Control.transaction_key);
    if (t_store->is_transaction) {
       // thread local storage of this thread's transaction
       ocs::tom::List<ocs::tom::EVR>(t_store->transaction_requests).push_back(std::move(evr));
@@ -2015,20 +2016,9 @@ remove_event_client(const ocs::tom::Element<ocs::tom::EV> client, const bool loc
    uint32_t event_client_id = ocs::tom::get<EV_id>(client);
    INFO(MSG_EVE_UNREG_SU, ocs::tom::get<EV_name>(client), event_client_id);
 
-   subscription_t *old_sub = nullptr;
-   old_sub = (subscription_t *)ocs::tom::get<EV_sub_array>(client);
-   if (old_sub) {
+   if (auto *old_sub = static_cast<subscription_t *>(ocs::tom::get<EV_sub_array>(client))) {
       /* now free event client subscription data */
-      for (int i = 0; i < sgeE_EVENTSIZE; i++) {
-         lFreeWhere(&old_sub[i].where);
-         lFreeWhat(&old_sub[i].what);
-
-         if (old_sub[i].descr) {
-            ocs_cull_descr_release(&(old_sub[i].descr));
-         }
-      }
-
-      sge_free(&old_sub);
+      free_subscription_array(old_sub);
       ocs::tom::set<EV_sub_array>(client, nullptr);
    }
 
@@ -2444,28 +2434,23 @@ static void build_subscription(const ocs::tom::Element<ocs::tom::EV> event_el) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ConstList<ocs::tom::EVS> subscription = ocs::tom::get<EV_subscribed>(event_el);
-   subscription_t *sub_array = nullptr;
-   subscription_t *old_sub_array = nullptr;
-   int i = 0;
 
    if (!ocs::tom::get<EV_changed>(event_el)) {
       DRETURN_VOID;
    }
 
-   DPRINTF("rebuild event mask for client(id): %s(" sge_u32 ")\n", ocs::tom::get<EV_name>(event_el), ocs::tom::get<EV_id>(event_el));
+   DPRINTF("rebuild event mask for client(id): %s(" sge_u32 ")\n", ocs::tom::get<EV_name>(event_el),
+           ocs::tom::get<EV_id>(event_el));
 
-   sub_array = (subscription_t *) sge_malloc(sizeof(subscription_t) * sgeE_EVENTSIZE);
-   SGE_ASSERT(sub_array != nullptr);
-   memset(sub_array, 0, sizeof(subscription_t) * sgeE_EVENTSIZE);
+   // every entry starts unsubscribed, unblocked, without where, what and descriptor (the member initializers)
+   auto *sub_array = new subscription_t[sgeE_EVENTSIZE];
 
-   for (i = 0; i < sgeE_EVENTSIZE; i++) {
+   for (int i = 0; i < sgeE_EVENTSIZE; i++) {
       sub_array[i].subscription = EV_NOT_SUBSCRIBED;
       sub_array[i].blocked = false;
    }
 
    for (ocs::tom::ConstElement<ocs::tom::EVS> sub_el : subscription) {
-      // the where and what of the subscription are cull's own condition and enumeration elements, untyped
-      const lListElem *temp = nullptr;
       uint32_t event = ocs::tom::get<EVS_id>(sub_el);
 
       // EVS_id is client-supplied; reject out-of-range ids so they cannot index
@@ -2480,33 +2465,45 @@ static void build_subscription(const ocs::tom::Element<ocs::tom::EV> event_el) {
       sub_array[event].flush = ocs::tom::get<EVS_flush>(sub_el) ? true : false;
       sub_array[event].flush_time = ocs::tom::get<EVS_interval>(sub_el);
 
-      if ((temp = ocs::tom::get<EVS_where>(sub_el))) {
-         sub_array[event].where = lWhereFromElem(temp);
+      // the where and what of the subscription arrive packed in a PACK element; a broken one gives no filter,
+      // with the error the unpacking logs, as before. An id given twice keeps the filters of its last entry;
+      // the owners free those of the earlier one.
+      if (const auto where_el = ocs::tom::get<EVS_where>(sub_el)) {
+         sub_array[event].where = ocs::tom::RawWherePtr(ocs_where_from_elem(where_el));
       }
 
-      if ((temp = ocs::tom::get<EVS_what>(sub_el))) {
-         sub_array[event].what = lWhatFromElem(temp);
+      if (const auto what_el = ocs::tom::get<EVS_what>(sub_el)) {
+         sub_array[event].what = ocs::tom::RawWhatPtr(ocs_what_from_elem(what_el));
       }
    }
 
-   old_sub_array = (subscription_t *)ocs::tom::get<EV_sub_array>(event_el);
-
-   if (old_sub_array != nullptr) {
-      for (int j = 0; j < sgeE_EVENTSIZE; j++) {
-         lFreeWhere(&(old_sub_array[j].where));
-         lFreeWhat(&(old_sub_array[j].what));
-         if (old_sub_array[j].descr){
-            ocs_cull_descr_release(&(old_sub_array[j].descr));
-         }
-      }
-      sge_free(&old_sub_array);
-   }
+   free_subscription_array(static_cast<subscription_t *>(ocs::tom::get<EV_sub_array>(event_el)));
 
    ocs::tom::set<EV_sub_array>(event_el, sub_array);
    ocs::tom::set<EV_changed>(event_el, false);
 
    DRETURN_VOID;
 } /* build_subscription() */
+
+/**
+ * @brief Give up a subscription array that build_subscription() made
+ *
+ * The where and what of every entry free themselves with the array; the reduced descriptors that
+ * getDescriptorL() cached are references and are released here.
+ *
+ * @param sub_array the array of #sgeE_EVENTSIZE entries, or nullptr for nothing to do; dangles afterwards
+ */
+static void free_subscription_array(subscription_t *sub_array) {
+   if (sub_array == nullptr) {
+      return;
+   }
+   for (int i = 0; i < sgeE_EVENTSIZE; i++) {
+      if (sub_array[i].descr != nullptr) {
+         ocs_cull_descr_release(&(sub_array[i].descr));
+      }
+   }
+   delete[] sub_array;
+}
 
 /**
  * @brief Check suscription for new list events
@@ -2638,6 +2635,35 @@ static int purge_event_list(const ocs::tom::List<ocs::tom::ET> event_list, const
 } /* remove_events_from_client() */
 
 /**
+ * @brief Take the payload (ET_new_version) out of an event
+ *
+ * The typed exchange with the field's position fixed at compile time: no lookup per event. Hot path: no DENTER.
+ *
+ * @param event the event (ET_Type)
+ * @return the owner of the payload, empty if the event held none; the event holds none afterwards
+ */
+static ocs::tom::RawListPtr take_event_payload(const ocs::tom::Element<ocs::tom::ET> event) {
+   lList *lp = nullptr;
+   ocs::tom::exchange<ET_new_version>(event, &lp);
+   return ocs::tom::RawListPtr(lp);
+}
+
+/**
+ * @brief Put a payload (ET_new_version) into an event that holds none
+ *
+ * The counterpart of take_event_payload(). Hot path: no DENTER.
+ *
+ * @param event the event (ET_Type), holding no payload
+ * @param payload the owner of the payload, maybe empty; empty afterwards
+ */
+static void put_event_payload(const ocs::tom::Element<ocs::tom::ET> event, ocs::tom::RawListPtr payload) {
+   lList *lp = payload.release();
+   ocs::tom::exchange<ET_new_version>(event, &lp);
+   // the event held no payload; should it have held one, it is freed here instead of leaking
+   static_cast<void>(ocs::tom::RawListPtr(lp));
+}
+
+/**
  * @brief Add one event to the event list of one client
  *
  * Reduces the payload to what the client subscribed and numbers the event. Hot path.
@@ -2656,8 +2682,8 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
    DENTER(TOP_LAYER);
 
    // the payload, runtime typed (see above)
-   lList *lp = nullptr;
-   lList *clp = nullptr;
+   ocs::tom::RawListPtr lp;
+   ocs::tom::RawListPtr clp;
    const auto type = static_cast<ev_event>(ocs::tom::get<ET_type>(event));
    subscription_t *subscription = nullptr;
    char buffer[1024];
@@ -2689,15 +2715,15 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
    sge_dstring_init(&buffer_wrapper, buffer, sizeof(buffer));
 
    /* Pull out payload for selecting */
-   ocs::tom::exchange<ET_new_version>(event, &lp);
+   lp = take_event_payload(event.get());
 
    /* If the list is nullptr, no need to bother with any of this.  Plus, if we
     * did do this part with a nullptr list, the check for a clp with no
     * elements would kick us out. */
-   if (lp != nullptr) {
-      subscription = (subscription_t *)ocs::tom::get<EV_sub_array>(event_client);
-      selection = subscription[type].where;
-      fields = subscription[type].what;
+   if (lp) {
+      subscription = static_cast<subscription_t *>(ocs::tom::get<EV_sub_array>(event_client));
+      selection = subscription[type].where.get();
+      fields = subscription[type].what.get();
 
 #if 0
       DPRINTF("deliver event: %d with where filter=%s and what filter=%s\n",
@@ -2705,25 +2731,26 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
 #endif
 
       if (fields) {
-         descr = getDescriptorL(subscription, lp, type);
+         descr = getDescriptorL(subscription, lp.get(), type);
 
 #if 0
          DPRINTF("Reducing event data\n");
 #endif
 
-         if (!list_select(subscription, type, &clp, lp, selection, fields,
+         if (!list_select(subscription, type, &clp, lp.get(), selection, fields,
                           descr, internal_client)) {
-            clp = lSelectDPack("updating list", lp, selection, descr, fields, internal_client, nullptr);
+            // the reduction with the cached descriptor, the list name sent to the client and no list for no
+            // match: the old form, as no front of ocs_Raw.h selects with a given descriptor
+            clp = ocs::tom::RawListPtr(lSelectDPack("updating list", lp.get(), selection, descr, fields,
+                                                    internal_client, nullptr));
          }
 
          /* no elements in the event list, no need for an event */
-         if (!SEND_EVENTS[type] && lGetNumberOfElem(clp) == 0) {
-            if (clp != nullptr) {
-               lFreeList(&clp);
-            }
+         if (!SEND_EVENTS[type] && ocs::tom::size(clp.get()) == 0) {
+            clp.reset();
 
             /* we are not making a copy, so we have to restore the old element */
-            ocs::tom::exchange<ET_new_version>(event, &lp);
+            put_event_payload(event.get(), std::move(lp));
 
             if (!copy_event) {
                event.reset();
@@ -2737,23 +2764,25 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
           * we are making a copy, freeing the list is the responsibility of the
           * calling function. */
          if (!copy_event) {
-            lFreeList(&lp);
+            lp.reset();
          }
       } else if (copy_event) {
          /* If there's no what clause, and we want a copy, we copy the list */
 #if 0
          DPRINTF("Copying event data\n");
 #endif
-         clp = lCopyListHash(lGetListName(lp), lp, internal_client);
+         try {
+            clp = ocs::tom::clone(lp.get(), internal_client ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off);
+         } catch (const ocs::tom::ListCoreError &) {
+            // out of memory: the event goes out without objects, as the old lCopyListHash() returned none
+         }
       } else {
          /* If there's no what clause, and we don't want to copy, we just reuse
           * the original list. */
-         clp = lp;
+         clp = std::move(lp);
          if (internal_client) {
-            cull_hash_create_hashtables(clp);
+            cull_hash_create_hashtables(clp.get());
          }
-         /* Make sure lp is clear for the next part. */
-         lp = nullptr;
       }
    } /* if */
 
@@ -2767,14 +2796,14 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
 #endif
       ep = event->clone();
 
-      ocs::tom::exchange<ET_new_version>(event, &lp);
+      put_event_payload(event.get(), std::move(lp));
    } else {
       /* If we're not making a copy, reuse the original event. */
       ep = std::move(event);
    }
 
    /* Swap the new list into the working event. */
-   ocs::tom::exchange<ET_new_version>(ep, &clp);
+   put_event_payload(ep.get(), std::move(clp));
 
    /* fill in event number and increment
       EV_next_number of event recipient */
@@ -2894,12 +2923,12 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
     * to be useless. */
    if (new_subscription || eventclient_subscribed(event_client, type, nullptr)) {
       // the payload (ET_new_version), typed by the event type only; the event takes it over
-      lList *payload = nullptr;
+      ocs::tom::RawListPtr payload;
 
       if (type == sgeE_SCHED_CONF) {
          /* the only payload not built by the copy below, so a
           * CULL_NO_TRANSFER field on SC_Type would need handling here */
-         payload = sconf_get_config_list().release();
+         payload = ocs::tom::RawListPtr(sconf_get_config_list());
       } else {
          const sge_object_type object_type = ocs_total_update_object_type(type);
          const bool dispatched = ocs_with_object_type(object_type, [&payload](const auto &entry) {
@@ -2908,7 +2937,7 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
             if (master_list) {
                // the typed handles have no clone() without the CULL_NO_TRANSFER fields, see
                // ocs_event_payload_clone(); the copy keeps the name of the master list
-               payload = ocs::tom::copy_list(nullptr, master_list, false, SKIP_NO_TRANSFER);
+               payload = ocs::tom::RawListPtr(ocs::tom::copy_list(nullptr, master_list, false, SKIP_NO_TRANSFER));
             }
          });
          if (!dispatched) {
@@ -2918,7 +2947,7 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
       }
 
       /* 'send_events()' will free the copy of the master list */
-      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, payload,
+      add_list_event_for_client(id, 0, type, 0, 0, nullptr, nullptr, nullptr, std::move(payload),
                                 ocs::SessionManager::GDI_SESSION_NONE);
    } /* if */
 
@@ -2988,8 +3017,8 @@ ocs_event_select_elem(subscription_t *subscription,
    }
 
    /* get the filters for the sub lists */
-   const lCondition *sub_selection = subscription[sub_type].where;
-   const lEnumeration *sub_fields = subscription[sub_type].what;
+   const lCondition *sub_selection = subscription[sub_type].where.get();
+   const lEnumeration *sub_fields = subscription[sub_type].what.get();
 
    if (!sub_fields) {
       DPRINTF("no sub filter specified\n");
@@ -3062,25 +3091,25 @@ ocs_event_select_elem(subscription_t *subscription,
  * @param descr reduced descriptor
  * @param do_hash create hash tables in the target list
  * @param sub_type the event type of the sub-list
- * @return the reduced list, owned by the caller; nullptr without a reduced descriptor
+ * @return the owner of the reduced list; empty without a reduced descriptor
  *
  * Part of list_select() on the delivery path: no DENTER of its own.
  */
 template <auto... F>
-static lList *
-ocs_event_select_list(subscription_t *subscription, lList *lp, const lCondition *selection,
+static ocs::tom::RawListPtr
+ocs_event_select_list(subscription_t *subscription, const ocs::tom::RawList lp, const lCondition *selection,
                       const lEnumeration *fields, const lDescr *descr, const bool do_hash, const int sub_type) {
    using T = typename OcsEventSubListFields<F...>::Type;
 
    if (descr == nullptr) {
       // a list without a descriptor cannot hold the reduced objects; the old code built none either
-      return nullptr;
+      return {};
    }
 
    auto reduced = ocs::tom::ListPtr<T>::create("update", descr,
                                                do_hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off);
    // the events of the row carry objects of the type of the fields (EVENT_LIST); no check per event
-   for (const auto element : ocs::tom::List<T>::from_typed(lp)) {
+   for (const auto element : ocs::tom::List<T>::from_typed(lp.raw())) {
       if (auto reduced_el = ocs_event_select_elem<F...>(subscription, element, selection, fields, descr,
                                                          sub_type)) {
          reduced->push_back(std::move(reduced_el));
@@ -3088,7 +3117,7 @@ ocs_event_select_list(subscription_t *subscription, lList *lp, const lCondition 
    }
 
    // the reduced list becomes the payload of the event (ET_new_version), typed by the event type only
-   return reduced.release();
+   return ocs::tom::RawListPtr(std::move(reduced));
 }
 
 /**
@@ -3105,7 +3134,7 @@ ocs_event_select_list(subscription_t *subscription, lList *lp, const lCondition 
  *
  * @param subscription subscription array
  * @param type event type
- * @param reduced_lp target list, set if the event was handled
+ * @param[out] reduced_lp owner of the target list, set if the event was handled
  * @param lp source list (will be modified and restored)
  * @param selection where filter
  * @param fields what filter
@@ -3115,7 +3144,7 @@ ocs_event_select_list(subscription_t *subscription, lList *lp, const lCondition 
  * @return true, if the event was one of #EVENT_LIST with a sub-list filter
  */
 static bool list_select(subscription_t *subscription, const int type,
-                        lList **reduced_lp, lList *lp,
+                        ocs::tom::RawListPtr *reduced_lp, const ocs::tom::RawList lp,
                         const lCondition *selection, const lEnumeration *fields,
                         const lDescr *descr, const bool do_hash) {
    DENTER(TOP_LAYER);
@@ -3198,8 +3227,11 @@ eventclient_list_locate_by_adress(const char *host, const char *commproc, const 
 /**
  * @brief Returns a reduced desciptor
  *
+ * The descriptor is made once per subscription entry and cached there; free_subscription_array() releases it.
+ * On the delivery path: no DENTER.
+ *
  * @param subscription subscription array
- * @param list source list
+ * @param list source list, of the type the event type names
  * @param type event type
  *
  * @return reduced descriptor or nullptr, if no what exists
@@ -3207,13 +3239,13 @@ eventclient_list_locate_by_adress(const char *host, const char *commproc, const 
  * @note MT-NOTE: thread save, works only on the submitted variables.
  */
 static const lDescr *getDescriptorL(subscription_t *subscription,
-                                    const lList *list, int type) {
+                                    const ocs::tom::ConstRawList list, const int type) {
    const lDescr *dp = nullptr;
 
    if (subscription[type].what) {
       if (!(dp = subscription[type].descr)) {
-         subscription[type].descr = lGetReducedDescr(lGetListDescr(list),
-                                                     subscription[type].what);
+         // core of the old lGetReducedDescr()
+         subscription[type].descr = ocs::tom::reduced_descr(list.descr(), subscription[type].what.get());
          dp = subscription[type].descr;
       }
    }

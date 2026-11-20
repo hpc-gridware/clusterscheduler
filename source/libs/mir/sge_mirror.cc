@@ -1884,7 +1884,7 @@ sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const
 
          /* if neccessary, create list; without objects the event has no descriptor and no list is created */
          if (*list == nullptr && objects) {
-            *list = ocs::tom::ListPtr<T>::create("", lGetListDescr(objects)).release();
+            *list = ocs::tom::ListPtr<T>::create("", objects.descr()).release();
          }
 
          /* insert element */
