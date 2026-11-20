@@ -45,6 +45,7 @@
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_resource_quota.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
 #include "gdi/ocs_gdi_Client.h"
@@ -113,28 +114,29 @@ FCLOSE_ERROR:
  * @brief Send the modify request of an attribute change for a target whose object type is known only at run time
  *
  * The attribute table names the target per object kind; the request list was created with the descriptor of the
- * target's type, so it is taken into a handle of that type unchecked. The selection of the fields to modify is
- * built here for that type, as lIntVector2What() built it from the same fields, and is owned by this function only.
+ * target's type, so it is handed over to the typed owner of that type with adopt(), which checks it. The selection
+ * of the fields to modify is built here for that type, as lIntVector2What() built it from the same fields, and is
+ * owned by this function only.
  *
  * @tparam T the object type of the target
  * @param target the target, of type @p T
  * @param sub_command the sub command of the modify request
- * @param qlp the request list, replaced by the answer data of the request (may be nullptr afterwards)
+ * @param qlp the request list, replaced by the answer data of the request (may be empty afterwards)
  * @param fields the fields to modify, fields of @p T, at least one
  * @return the answer list of the request
- * @throw ocs::tom::FieldException for a field that is not one of @p T (not reachable: the fields were read with
- *        the descriptor of @p T)
+ * @throw ocs::tom::FieldException for a field that is not one of @p T, or WrongType for a request list of another
+ *        type (not reachable: the list was created and the fields were read with the descriptor of @p T)
  */
 template <ocs::tom::ObjectType T>
 static ocs::tom::ListPtr<ocs::tom::AN>
-ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, lList *&qlp,
-                          const std::span<const int> fields) {
+ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command,
+                          ocs::tom::RawListPtr &qlp, const std::span<const int> fields) {
    DENTER(TOP_LAYER);
    const auto what = ocs::tom::what<T>(fields);
-   auto data = ocs::tom::ListPtr<T>::from_typed(std::exchange(qlp, nullptr));
+   auto data = ocs::tom::adopt<T>(std::move(qlp));
    auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::MOD, sub_command, data, ocs::tom::Where<T>(),
                                         what);
-   qlp = data.release();
+   qlp = ocs::tom::RawListPtr(std::move(data));
    DRETURN(alp);
 }
 
@@ -143,12 +145,12 @@ ocs_qconf_attr_send_typed(const ocs::gdi::Target target, const ocs::gdi::SubComm
  *
  * @param target the target of the attribute table entry
  * @param sub_command the sub command of the modify request
- * @param qlp the request list, replaced by the answer data of the request (may be nullptr afterwards)
+ * @param qlp the request list, replaced by the answer data of the request (may be empty afterwards)
  * @param fields the fields to modify, terminated by NoName, at least one
  * @return the answer list of the request; an error for a target the attribute table does not name
  */
 static ocs::tom::ListPtr<ocs::tom::AN>
-ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, lList *&qlp,
+ocs_qconf_attr_send(const ocs::gdi::Target target, const ocs::gdi::SubCommand sub_command, ocs::tom::RawListPtr &qlp,
                     const int fields[]) {
    DENTER(TOP_LAYER);
    std::size_t field_count = 0;
@@ -211,18 +213,18 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
 
    int fields[150];
    fields[0] = NoName;
-   lListElem *ep = nullptr;
+   ocs::tom::RawElementPtr ep;
    size_t first_name;
 
    if (from_file) {
       first_name = 2;
-      ep = spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr, info_entry->fields, fields, true,
-                                      info_entry->instr, qconf_opt_format, nullptr, op.args[1].c_str());
+      ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr,
+                                                              info_entry->fields, fields, true, info_entry->instr,
+                                                              qconf_opt_format, nullptr, op.args[1].c_str()));
       if (answer_list_has_error(alpp)) {
-         lFreeElem(&ep);
          DRETURN(1);
       }
-      if (ep == nullptr) {
+      if (!ep) {
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX, MSG_FILE_ERRORREADINGINFILE);
          DRETURN(1);
       }
@@ -244,8 +246,9 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
          answer_list_add_sprintf(alpp, STATUS_EDISK, ANSWER_QUALITY_ERROR, "%s",
                                  sge_dstring_get_string(&write_attr_tmp_file_error));
       } else if (filename != nullptr) {
-         ep = spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr, info_entry->fields, fields,
-                                         true, info_entry->instr, SP_FORM_ASCII, nullptr, filename);
+         ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr,
+                                                                 info_entry->fields, fields, true, info_entry->instr,
+                                                                 SP_FORM_ASCII, nullptr, filename));
          unlink(filename);
          sge_free(&filename);
       }
@@ -265,11 +268,10 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
             }
          }
          sge_dstring_free(&delim);
-         lFreeElem(&ep);
          DRETURN(1);
       }
       sge_dstring_free(&delim);
-      if (ep == nullptr) {
+      if (!ep) {
          DRETURN(1);
       }
    }
@@ -278,54 +280,44 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
    if (add_nm_to_set(fields, info_entry->nm_name) < 0) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_CANTCHANGEOBJECTNAME_SS, "qconf",
                               info_entry->attribute_name);
-      lFreeElem(&ep);
       DRETURN(1);
    }
 
    /* the selection of the fields to modify is built where the target's type is known, in
     * ocs_qconf_attr_send_typed(): it has a single owner there and nothing is borrowed */
 
-   /* one copy of the delta per named object */
-   lList *qlp = nullptr;
+   /* one copy of the delta per named object; the type of the name field decides how the name is stored, checked
+    * here before the set, so that a field of another type ends in the internal failure, not in an exception */
+   const lDescr *descr = ep.get().descr();
+   const int name_pos = ocs::tom::present_pos(descr, info_entry->nm_name);
+   ocs::tom::RawListPtr qlp;
    for (size_t i = first_name; i < op.args.size(); i++) {
       const char *object = op.args[i].c_str();
-      if (qlp == nullptr) {
-         qlp = lCreateList("list", info_entry->cull_descriptor);
+      if (!qlp) {
+         qlp = ocs::tom::create_raw_list(info_entry->cull_descriptor, ocs::tom::Hashing::On, "list");
       }
-      lListElem *add_qp = lCopyElem(ep);
-      switch (lGetType(add_qp->descr, info_entry->nm_name)) {
-         case lUlongT:
-            lSetUlong(add_qp, info_entry->nm_name, atol(object));
+      auto add_qp = ep.clone();
+      // every name field of the attribute table is a String or a Host; a field the element lacks ends in default
+      switch (name_pos < 0 ? ocs::tom::FieldType::Ref : ocs::tom::field_type_of(descr[name_pos].mt)) {
+         case ocs::tom::FieldType::Uint32:
+            add_qp->set(info_entry->nm_name, static_cast<std::uint32_t>(atol(object)));
             break;
-         case lLongT:
-            lSetLong(add_qp, info_entry->nm_name, atol(object));
+         case ocs::tom::FieldType::String:
+            add_qp->set(info_entry->nm_name, object);
             break;
-         case lIntT:
-            lSetInt(add_qp, info_entry->nm_name, atoi(object));
-            break;
-         case lDoubleT:
-            lSetDouble(add_qp, info_entry->nm_name, atof(object));
-            break;
-         case lStringT:
-            lSetString(add_qp, info_entry->nm_name, object);
-            break;
-         case lHostT:
-            lSetHost(add_qp, info_entry->nm_name, object);
+         case ocs::tom::FieldType::Host:
+            add_qp->set(info_entry->nm_name, ocs::tom::Host(object));
             break;
          default:
             answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_INTERNALFAILURE_S, "qconf");
-            lFreeElem(&add_qp);
-            lFreeList(&qlp);
-            lFreeElem(&ep);
-            DRETURN(1);
+            DRETURN(1);   // add_qp, qlp and ep free themselves
       }
-      lAppendElem(qlp, add_qp);
+      ocs::tom::append(qlp.get(), std::move(add_qp));
    }
 
-   if (qlp == nullptr) {
+   if (!qlp) {
       answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_QCONF_MQATTR_MISSINGOBJECTLIST_S,
                               "qconf");
-      lFreeElem(&ep);
       DRETURN(1);
    }
 
@@ -334,40 +326,37 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
     * the complaint about not including the object list on purpose.  That order
     * seems to make the most sense for error reporting, even though it means we
     * do some unnecessary work. */
-   if ((sub_command & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE &&
-       lGetType(ep->descr, fields[0]) == lListT) {
-      const lList *lp = lGetList(ep, fields[0]);
+   const int first_pos = ocs::tom::present_pos(descr, fields[0]);
+   if ((sub_command & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE && first_pos >= 0 &&
+       ocs::tom::field_type_of(descr[first_pos].mt) == ocs::tom::FieldType::List) {
+      const auto lp = ep->get<ocs::tom::ConstRawList>(fields[0]);
 
-      if (lp == nullptr || lGetNumberOfElem(lp) == 0) {
+      if (lp.empty()) {
          answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX, MSG_QCONF_CANT_MODIFY_NONE);
-         lFreeElem(&ep);
-         lFreeList(&qlp);
          DRETURN(1);
-      } else if (lGetNumberOfElem(lp) == 1) {
-         const lListElem *first = lFirst(lp);
+      } else if (lp.size() == 1) {
+         const ocs::tom::ConstRawElement first = lp.front();
 
          /* Look for the list and see if it's nullptr.  These should all be very
           * simple CULL structures which should only contain an lHostT and an
           * lListT. */
-         for (const auto f : ocs_cull_present_fields(first->descr)) {
-            const int nm = first->descr[f.pos].nm;
+         for (const auto f : ocs_cull_present_fields(first.descr())) {
+            const int nm = first.descr()[f.pos].nm;
             // for CE_Type objects which are no RSMAPs CE_resource_map_list will be nullptr - this is OK
-            if (lGetType(first->descr, nm) == lListT && lGetList(first, nm) == nullptr && nm != CE_resource_map_list) {
+            if (ocs::tom::field_type_of(first.descr()[f.pos].mt) == ocs::tom::FieldType::List &&
+                !first.get<ocs::tom::ConstRawList>(nm) && nm != CE_resource_map_list) {
                answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_QCONF_CANT_MODIFY_NONE);
-               lFreeElem(&ep);
-               lFreeList(&qlp);
                DRETURN(1);
             }
          }
       }
    }
 
-   if (info_entry->pre_gdi_function == nullptr || info_entry->pre_gdi_function(qlp, alpp)) {
+   // the validation functions of sgeobj still take the raw list
+   if (info_entry->pre_gdi_function == nullptr || info_entry->pre_gdi_function(qlp.get().raw(), alpp)) {
       *alpp = ocs_qconf_attr_send(info_entry->target, sub_command, qlp, fields);
    }
-   lFreeElem(&ep);
-   lFreeList(&qlp);
 
    DRETURN(0);
 }

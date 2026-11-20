@@ -70,6 +70,7 @@
 #include "sgeobj/ocs_CEntry.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_ACELIST.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
@@ -453,31 +454,35 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
    /* read stuff from queue and set to new elements */
    switch(type) {
    case ocs::CEntry::Type::RSMAP:
-   case ocs::CEntry::Type::INT:
-      dval = (double)lGetUlong(queue, field);
-      snprintf(as_str, 100, sge_u32, lGetUlong(queue, field));
+   case ocs::CEntry::Type::INT: {
+      const auto ulong_value = queue.get<std::uint32_t>(field);
+      dval = (double)ulong_value;
+      snprintf(as_str, 100, sge_u32, ulong_value);
       break;
+   }
 
    case ocs::CEntry::Type::TIME:
    case ocs::CEntry::Type::MEM:
    case ocs::CEntry::Type::DOUBLE:
-      if ((value = lGetString(queue, field))) {
+      if ((value = queue.get<const char *>(field))) {
          parse_ulong_val(&dval, nullptr, type, value, nullptr, 0);
       } 
       break;
 
-   case ocs::CEntry::Type::BOOL:
-      dval = (double)lGetBool(queue, field);
-      snprintf(as_str, 100, "%d", (int)lGetBool(queue, field));
+   case ocs::CEntry::Type::BOOL: {
+      const auto bool_value = queue.get<bool>(field);
+      dval = (double)bool_value;
+      snprintf(as_str, 100, "%d", (int)bool_value);
       break;
+   }
 
    case ocs::CEntry::Type::STR:
    case ocs::CEntry::Type::CSTR:
    case ocs::CEntry::Type::RESTR:
-      value = lGetString(queue, field);
+      value = queue.get<const char *>(field);
       break;
    case ocs::CEntry::Type::HOST:
-      value = lGetHost(queue, field);
+      value = queue.get<ocs::tom::Host>(field).c_str();
       break;
    case ocs::CEntry::Type::TYPE_ACC:
    case ocs::CEntry::Type::TYPE_LOG:
@@ -1368,12 +1373,12 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
 
       rejected = true;
       // the attribute list of the cluster queue is chosen at run time, so is its type (N-H-21)
-      for_each_ep_lv(alist, lGetList(cq, cqfld)) {
+      for (const auto alist : ocs::tom::ConstRawElement(cq).get<ocs::tom::ConstRawList>(cqfld)) {
          if (valfld == ACELIST_value) {
             /* complex_values upper limit */
             // the list is a CQ_consumable_config_list here; the checked constructor confirms it is an ACELIST
             const auto val_ce = ocs::tom::find_first_in<ACELIST_value, CE_name>(
-               ocs::tom::ConstElement<ocs::tom::ACELIST>(alist), name);
+               ocs::tom::ConstElement<ocs::tom::ACELIST>(alist.raw()), name);
             if (!val_ce) {
                rejected = false;
                break;
@@ -1381,7 +1386,7 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
             offer = ocs::tom::get<CE_stringval>(val_ce);
          } else {
             /* queue resource upper limit */ 
-            offer = lGetString(alist, valfld);
+            offer = alist.get<const char *>(valfld);
          }
 
          switch (type) {
