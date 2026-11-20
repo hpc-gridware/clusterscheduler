@@ -1,0 +1,563 @@
+/*___INFO__MARK_BEGIN_NEW__*/
+/***************************************************************************
+ *
+ *  Copyright 2026 HPC-Gridware GmbH
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ ***************************************************************************/
+/*___INFO__MARK_END_NEW__*/
+
+/** @file
+ * @brief Unit tests for the generic converters of `libs/sgeobj`: cull_parse_util.cc and the XML writer of
+ *        sge_cull_xml.cc
+ *
+ * The converters take their fields as an `int` table or walk the descriptor of
+ * an element of any type. The expected results are those of the former
+ * implementation on the raw CULL interface: the same lists, return codes and
+ * output bytes.
+ */
+
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <initializer_list>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "basis_types.h"
+#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_PN.h"
+#include "sgeobj/tom/ocs_tom_SPA.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_XMLA.h"
+#include "sgeobj/tom/ocs_tom_XMLE.h"
+#include "sgeobj/tom/ocs_tom_model.h"
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
+
+#include "ocs_module_test.h"
+
+/**
+ * @brief Are two strings set and equal?
+ * @param a the first string, or nullptr
+ * @param b the second string, or nullptr
+ * @return true if both are set and strcmp() finds them equal
+ */
+static bool same(const char *a, const char *b) {
+   return a != nullptr && b != nullptr && strcmp(a, b) == 0;
+}
+
+/**
+ * @brief Parse words with cull_parse_string_list()
+ * @param words the words, without the terminating nullptr
+ * @param descr the descriptor of the elements
+ * @param rule the interpretation rule, terminated by 0
+ * @param[out] lpp receives the list on success
+ * @return the result of cull_parse_string_list()
+ */
+static int parse_words(const std::initializer_list<const char *> words, const lDescr *descr, int *rule,
+                       lList **lpp) {
+   std::vector<std::string> storage(words.begin(), words.end());
+   std::vector<char *> argv;
+   for (auto &word : storage) {
+      argv.push_back(word.data());
+   }
+   argv.push_back(nullptr);
+   return cull_parse_string_list(argv.data(), "parsed", descr, rule, lpp);
+}
+
+/**
+ * @brief Append an ST element
+ * @param list the list
+ * @param name the name, or nullptr
+ * @param id the id
+ */
+static void add_st(const ocs::tom::List<ocs::tom::ST> list, const char *name, const std::uint32_t id) {
+   auto ep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
+   ocs::tom::set<ST_name>(ep, name);
+   ocs::tom::set<ST_id>(ep, id);
+   list.push_back(std::move(ep));
+}
+
+/**
+ * @brief Append an SPA element with a switch and its argument
+ * @param list the list
+ * @param switch_val the switch
+ * @param switch_arg the argument
+ */
+static void add_spa(const ocs::tom::List<ocs::tom::SPA> list, const char *switch_val, const char *switch_arg) {
+   auto ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
+   ocs::tom::set<SPA_switch_val>(ep, switch_val);
+   ocs::tom::set<SPA_switch_arg>(ep, switch_arg);
+   list.push_back(std::move(ep));
+}
+
+/**
+ * @brief Append a PN element
+ * @param list the list
+ * @param path the path
+ * @param host the host, or nullptr
+ * @param file_host the file host, or nullptr
+ */
+static void add_pn(const ocs::tom::List<ocs::tom::PN> list, const char *path, const char *host,
+                   const char *file_host) {
+   auto ep = ocs::tom::ElementPtr<ocs::tom::PN>::create();
+   ocs::tom::set<PN_path>(ep, path);
+   if (host != nullptr) {
+      ocs::tom::set<PN_host>(ep, host);
+   }
+   if (file_host != nullptr) {
+      ocs::tom::set<PN_file_host>(ep, file_host);
+   }
+   list.push_back(std::move(ep));
+}
+
+/**
+ * @brief Append a CE element
+ * @param list the list
+ * @param name the name
+ * @param stringval the string value, or nullptr
+ * @param valtype the value type
+ * @param doubleval the double value
+ */
+static void add_ce(const ocs::tom::List<ocs::tom::CE> list, const char *name, const char *stringval,
+                   const std::uint32_t valtype, const double doubleval) {
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ocs::tom::set<CE_name>(ep, name);
+   if (stringval != nullptr) {
+      ocs::tom::set<CE_stringval>(ep, stringval);
+   }
+   ocs::tom::set<CE_valtype>(ep, valtype);
+   ocs::tom::set<CE_doubleval>(ep, doubleval);
+   list.push_back(std::move(ep));
+}
+
+/**
+ * @brief The string field of every element of a list, joined by blanks
+ * @param list the list, of any type
+ * @param nm the string field
+ * @return the values, "-" for an unset one
+ */
+static std::string join_strings(const ocs::tom::ConstRawList list, const int nm) {
+   std::string out;
+   for (const auto ep : list) {
+      const char *value = ep.get<const char *>(nm);
+      out += (out.empty() ? "" : " ") + std::string(value != nullptr ? value : "-");
+   }
+   return out;
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief cull_parse_string_list() and cull_parse_definition_list() [T01-T12]
+ * @return nothing; CHECK records the results
+ */
+static void test_parse_string_list() {
+   int spa_rule[] = {SPA_switch_val, SPA_argval_lUlongT, SPA_argval_lDoubleT, SPA_argval_lLongT, SPA_argval_lIntT, 0};
+
+   {
+      lList *lp = nullptr;
+      const int ret = parse_words({"-x", "7", "1.5", "-3", "-4"}, SPA_Type, spa_rule, &lp);
+      const auto list = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(lp);
+      const auto ep = list ? list->front() : ocs::tom::Element<ocs::tom::SPA>();
+      CHECK(1, "one element of five typed words: string, ulong, double, long and int set",
+            ret == 0 && list->size() == 1 && same(ocs::tom::get<SPA_switch_val>(ep), "-x") &&
+               ocs::tom::get<SPA_argval_lUlongT>(ep) == 7 && ocs::tom::get<SPA_argval_lDoubleT>(ep) == 1.5 &&
+               ocs::tom::get<SPA_argval_lLongT>(ep) == -3 && ocs::tom::get<SPA_argval_lIntT>(ep) == -4);
+      CHECK(11, "the list carries the given name", list && same(ocs::tom::list_name(list->raw()), "parsed"));
+   }
+   {
+      lList *lp = nullptr;
+      const int ret = parse_words({"-x", "7", "1.5", "-3", "-4", "-y", "8", "2", "3", "4"}, SPA_Type, spa_rule, &lp);
+      const ocs::tom::RawListPtr list(lp);
+      CHECK(2, "a used up rule starts a new element", ret == 0 && list->size() == 2 &&
+                                                          join_strings(list.get(), SPA_switch_val) == "-x -y");
+   }
+   {
+      lList *lp = nullptr;
+      const int ret = parse_words({"none", "7", "1.5", "-3", "-4"}, SPA_Type, spa_rule, &lp);
+      const ocs::tom::RawListPtr list(lp);
+      CHECK(3, "a string word NONE in any case leaves the field unset",
+            ret == 0 && join_strings(list.get(), SPA_switch_val) == "-");
+   }
+   {
+      lList *lp = nullptr;
+      const bool ulong_bad = parse_words({"-x", "x", "1.5", "-3", "-4"}, SPA_Type, spa_rule, &lp) == -8;
+      const bool double_bad = parse_words({"-x", "7", "y", "-3", "-4"}, SPA_Type, spa_rule, &lp) == -7;
+      const bool long_bad = parse_words({"-x", "7", "1.5", "z", "-4"}, SPA_Type, spa_rule, &lp) == -9;
+      const bool int_bad = parse_words({"-x", "7", "1.5", "-3", "w"}, SPA_Type, spa_rule, &lp) == -11;
+      CHECK(4, "a word that is no ulong, double, long or int gives -8, -7, -9, -11 and no list",
+            ulong_bad && double_bad && long_bad && int_bad && lp == nullptr);
+   }
+   {
+      lList *lp = nullptr;
+      CHECK(5, "words that do not fill the last element give -13",
+            parse_words({"-x", "7"}, SPA_Type, spa_rule, &lp) == -13 && lp == nullptr);
+   }
+   {
+      lList *lp = nullptr;
+      int u64_rule[] = {SPA_argval_lUlong64T, 0};
+      int bool_rule[] = {SPA_argval_lBoolT, 0};
+      int foreign_rule[] = {ST_name, 0};
+      CHECK(6, "a 64 bit unsigned, a bool and a foreign field give -12",
+            parse_words({"1"}, SPA_Type, u64_rule, &lp) == -12 && parse_words({"1"}, SPA_Type, bool_rule, &lp) == -12 &&
+               parse_words({"1"}, SPA_Type, foreign_rule, &lp) == -12 && lp == nullptr);
+   }
+   {
+      lList *lp = nullptr;
+      int list_rule[] = {SPA_switch_val, SPA_argval_lListT, 0};
+      const int ret = parse_words({"-x", "ignored"}, SPA_Type, list_rule, &lp);
+      const ocs::tom::RawListPtr list(lp);
+      CHECK(7, "a list field of the rule is skipped",
+            ret == 0 && list->size() == 1 && !list->front().get<ocs::tom::ConstRawList>(SPA_argval_lListT));
+   }
+   {
+      lList *lp = nullptr;
+      int pn_rule[] = {PN_path, PN_host, 0};
+      const int ret = parse_words({"/p", "h1", "/q", "NONE"}, PN_Type, pn_rule, &lp);
+      const ocs::tom::RawListPtr list(lp);
+      const auto first = list->front();
+      const ocs::tom::ConstRawElement second(first.raw() != nullptr ? first.raw()->next : nullptr);
+      CHECK(8, "a host word is set, a host word NONE leaves the field unset",
+            ret == 0 && same(first.get<ocs::tom::Host>(PN_host).c_str(), "h1") &&
+               second.get<ocs::tom::Host>(PN_host).c_str() == nullptr);
+   }
+   {
+      lList *lp = nullptr;
+      int empty_rule[] = {0};
+      CHECK(9, "a nullptr descriptor gives -1, an empty rule -2",
+            parse_words({"a"}, nullptr, spa_rule, &lp) == -1 && parse_words({"a"}, SPA_Type, empty_rule, &lp) == -2);
+   }
+   {
+      lList *lp = nullptr;
+      CHECK(10, "no words give -13, the first element is never filled",
+            parse_words({}, SPA_Type, spa_rule, &lp) == -13 && lp == nullptr);
+   }
+   {
+      int ce_rule[] = {CE_name, CE_stringval, 0};
+      char text[] = "a=1,b=2";
+      char none[] = "NONE";
+      lList *lp = nullptr;
+      const int ret = cull_parse_definition_list(text, &lp, "defs", CE_Type, ce_rule);
+      const ocs::tom::RawListPtr list(lp);
+      lList *none_lp = reinterpret_cast<lList *>(1);
+      const int none_ret = cull_parse_definition_list(none, &none_lp, "defs", CE_Type, ce_rule);
+      CHECK(12, "a definition list gives name and value pairs, NONE gives no list",
+            ret == 0 && join_strings(list.get(), CE_name) == "a b" &&
+               join_strings(list.get(), CE_stringval) == "1 2" && none_ret == 0 && none_lp == nullptr);
+   }
+}
+
+/**
+ * @brief cull_compress_definition_list() [T13-T17]
+ * @return nothing; CHECK records the results
+ */
+static void test_compress() {
+   {
+      auto list = ocs::tom::ListPtr<ocs::tom::ST>::create("st");
+      add_st(*list, "a", 1);
+      add_st(*list, "b", 2);
+      add_st(*list, "a", 3);
+      const int ret = cull_compress_definition_list(*list, ST_name, ST_id, 0);
+      CHECK(13, "a string key held twice keeps the later element",
+            ret == 0 && join_strings(*list, ST_name) == "b a" && ocs::tom::get<ST_id>(list->front()) == 2);
+   }
+   {
+      auto list = ocs::tom::ListPtr<ocs::tom::ST>::create("st");
+      add_st(*list, "x", 5);
+      add_st(*list, "y", 6);
+      add_st(*list, "z", 5);
+      const int ret = cull_compress_definition_list(list->raw(), ST_id, ST_name, 0);
+      CHECK(14, "an unsigned key held twice keeps the later element",
+            ret == 0 && join_strings(*list, ST_name) == "y z");
+   }
+   {
+      auto list = ocs::tom::ListPtr<ocs::tom::SPA>::create("spa");
+      add_spa(*list, "a", "1");
+      add_spa(*list, "a", "2");
+      add_spa(*list, "a", "1");
+      const int ret = cull_compress_definition_list(*list, SPA_switch_val, SPA_switch_arg, 1);
+      CHECK(15, "double keys remove only an element with the same name and value",
+            ret == 0 && join_strings(*list, SPA_switch_arg) == "2 1");
+   }
+   {
+      auto list = ocs::tom::ListPtr<ocs::tom::PN>::create("pn");
+      add_pn(*list, "p0", nullptr, nullptr);
+      add_pn(*list, "p1", "h1", "f1");
+      add_pn(*list, "p2", "h2", "f2");
+      add_pn(*list, "p3", "h1", "f1");
+      add_pn(*list, "p4", nullptr, nullptr);
+      const int ret = cull_compress_definition_list(*list, PN_host, PN_file_host, 0);
+      auto double_list = ocs::tom::ListPtr<ocs::tom::PN>::create("pn");
+      add_pn(*double_list, "q1", "h1", "f1");
+      add_pn(*double_list, "q2", "h1", "f2");
+      add_pn(*double_list, "q3", "h1", "f1");
+      const int double_ret = cull_compress_definition_list(*double_list, PN_host, PN_file_host, 1);
+      CHECK(16, "host keys compare as strings, an unset host is no key; double keys compare both hosts",
+            ret == 0 && join_strings(*list, PN_path) == "p0 p2 p3 p4" && double_ret == 0 &&
+               join_strings(*double_list, PN_path) == "q2 q3");
+   }
+   {
+      auto list = ocs::tom::ListPtr<ocs::tom::SPA>::create("spa");
+      add_spa(*list, "a", "1");
+      auto single = ocs::tom::ListPtr<ocs::tom::SPA>::create("spa");
+      add_spa(*single, "a", "1");
+      add_spa(*list, "b", "2");
+      CHECK(17, "a list key gives -4, a 64 bit unsigned or foreign key -5, both only from two elements on",
+            cull_compress_definition_list(*list, SPA_argval_lListT, SPA_switch_arg, 0) == -4 &&
+               cull_compress_definition_list(*list, SPA_argval_lUlong64T, SPA_switch_arg, 0) == -5 &&
+               cull_compress_definition_list(*list, ST_name, SPA_switch_arg, 0) == -5 &&
+               cull_compress_definition_list(*single, ST_name, SPA_switch_arg, 0) == 0 &&
+               cull_compress_definition_list(nullptr, ST_name, ST_id, 0) == 0 && list->size() == 2);
+   }
+}
+
+/**
+ * @brief uni_print_list() into a stream and into a buffer [T18-T27]
+ * @return nothing; CHECK records the results
+ */
+static void test_uni_print_list() {
+   auto list = ocs::tom::ListPtr<ocs::tom::CE>::create("ce");
+   add_ce(*list, "a", "1", 0, 1.5);
+   add_ce(*list, "b", nullptr, 3, 0.0);
+   int fields[] = {CE_name, CE_stringval, 0};
+   const char *delis[] = {"=", ",", "\n"};
+
+   {
+      std::ostringstream os;
+      const int ret = uni_print_list(os, *list, fields, delis, 0);
+      CHECK(18, "a typed list: name=value pairs, an unset string as NONE", ret == 0 && os.str() == "a=1,b=NONE\n");
+   }
+   {
+      std::ostringstream os;
+      const int ret = uni_print_list(os, list->raw(), fields, delis, FLG_NO_VALUE_AS_EMPTY);
+      CHECK(19, "a raw list: an unset string as nothing with FLG_NO_VALUE_AS_EMPTY",
+            ret == 0 && os.str() == "a=1,b=\n");
+   }
+   {
+      std::ostringstream os;
+      const int ret = uni_print_list(os, nullptr, fields, delis, 0);
+      CHECK(20, "no list prints NONE and the final delimiter", ret == 0 && os.str() == "NONE\n");
+   }
+   {
+      auto empty_name = ocs::tom::ListPtr<ocs::tom::CE>::create("ce");
+      add_ce(*empty_name, "", "1", 0, 0.0);
+      std::ostringstream os;
+      const int ret = uni_print_list(os, *empty_name, fields, delis, FLG_NO_DELIS_STRINGS);
+      CHECK(21, "FLG_NO_DELIS_STRINGS leaves out the delimiter after an empty string", ret == 0 && os.str() == "1\n");
+   }
+   {
+      int num_fields[] = {CE_name, CE_valtype, 0};
+      std::ostringstream os;
+      const int ret = uni_print_list(os, *list, num_fields, delis, FLG_NO_DELIS_NUMBERS);
+      CHECK(22, "FLG_NO_DELIS_NUMBERS leaves out the delimiter before a zero", ret == 0 && os.str() == "a0,b=3\n");
+   }
+   {
+      int double_fields[] = {CE_name, CE_doubleval, 0};
+      std::ostringstream os;
+      const int ret = uni_print_list(os, *list, double_fields, delis, 0);
+      CHECK(23, "a double is printed with up to ten significant digits", ret == 0 && os.str() == "a=1.5,b=0\n");
+   }
+   {
+      int foreign_fields[] = {CE_name, ST_name, 0};
+      int empty_rule[] = {0};
+      std::ostringstream os;
+      CHECK(24, "a foreign field gives -19, an empty rule -2, no rule -1",
+            uni_print_list(os, *list, foreign_fields, delis, 0) == -19 &&
+               uni_print_list(os, *list, empty_rule, delis, 0) == -2 &&
+               uni_print_list(os, *list, nullptr, delis, 0) == -1);
+   }
+   {
+      char buffer[64];
+      char small[4];
+      const int ret = uni_print_list(nullptr, buffer, sizeof(buffer), *list, fields, delis, 0);
+      CHECK(25, "the buffer form gives the stream's text, -1 for a buffer too small",
+            ret == 0 && strcmp(buffer, "a=1,b=NONE\n") == 0 &&
+               uni_print_list(nullptr, small, sizeof(small), *list, fields, delis, 0) == -1);
+   }
+   {
+      auto pn = ocs::tom::ListPtr<ocs::tom::PN>::create("pn");
+      add_pn(*pn, "/p", "h1", nullptr);
+      add_pn(*pn, "/q", nullptr, nullptr);
+      int pn_fields[] = {PN_path, PN_host, 0};
+      std::ostringstream os;
+      const int ret = uni_print_list(os, *pn, pn_fields, delis, 0);
+      CHECK(26, "a host is printed, an unset host as NONE", ret == 0 && os.str() == "/p=h1,/q=NONE\n");
+   }
+   {
+      FILE *fp = tmpfile();
+      const int ret = fp != nullptr ? uni_print_list(fp, nullptr, 0, *list, fields, delis, 0) : -100;
+      std::string text;
+      if (fp != nullptr) {
+         rewind(fp);
+         char line[64];
+         while (fgets(line, sizeof(line), fp) != nullptr) {
+            text += line;
+         }
+         fclose(fp);
+      }
+      CHECK(27, "the file form writes the stream's text", ret == 0 && text == "a=1,b=NONE\n");
+   }
+}
+
+/**
+ * @brief lWriteElemXMLTo() on an element that is no XML element: the generic field walk [T28-T31]
+ * @return nothing; CHECK records the results
+ */
+static void test_xml_field_walk() {
+   auto spa = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
+   ocs::tom::set<SPA_number>(spa, 1U);
+   ocs::tom::set<SPA_argtype>(spa, 2U);
+   ocs::tom::set<SPA_switch_val>(spa, "-l");
+   ocs::tom::set<SPA_argval_lDoubleT>(spa, 1.5);
+   ocs::tom::set<SPA_argval_lUlongT>(spa, 7U);
+   ocs::tom::set<SPA_argval_lUlong64T>(spa, std::uint64_t{9});
+   ocs::tom::set<SPA_argval_lLongT>(spa, std::int64_t{-3});
+   ocs::tom::set<SPA_argval_lBoolT>(spa, true);
+   ocs::tom::set<SPA_argval_lIntT>(spa, std::int32_t{-4});
+   ocs::tom::set<SPA_argval_lStringT>(spa, "a<b");
+   auto st_list = ocs::tom::ListPtr<ocs::tom::ST>::create("st_list");
+   add_st(*st_list, "x", 5);
+   ocs::tom::set<SPA_argval_lListT>(spa, st_list.release());
+
+   const std::string spa_expected = "<SPA_number>1</SPA_number>\n"
+                                    "<SPA_argtype>2</SPA_argtype>\n"
+                                    "<SPA_switch_val>-l</SPA_switch_val>\n"
+                                    "<SPA_occurrence>0</SPA_occurrence>\n"
+                                    "<SPA_argval_lDoubleT>1.5</SPA_argval_lDoubleT>\n"
+                                    "<SPA_argval_lUlongT>7</SPA_argval_lUlongT>\n"
+                                    "<SPA_argval_lUlong64T>9</SPA_argval_lUlong64T>\n"
+                                    "<SPA_argval_lLongT>-3</SPA_argval_lLongT>\n"
+                                    "<SPA_argval_lBoolT>true</SPA_argval_lBoolT>\n"
+                                    "<SPA_argval_lIntT>-4</SPA_argval_lIntT>\n"
+                                    "<SPA_argval_lStringT>a&lt;b</SPA_argval_lStringT>\n"
+                                    "<SPA_argval_lListT>\n"
+                                    "  <st_list>\n"
+                                    "    <ST_name>x</ST_name>\n"
+                                    "    <ST_id>5</ST_id>\n"
+                                    "  </st_list>\n"
+                                    "</SPA_argval_lListT>\n";
+   {
+      std::ostringstream os;
+      lWriteElemXMLTo(*spa, os);
+      CHECK(28, "every field type in descriptor order, an unset string left out, a sub-list wrapped in its name",
+            os.str() == spa_expected);
+   }
+   {
+      auto pn = ocs::tom::ListPtr<ocs::tom::PN>::create("pn");
+      add_pn(*pn, "/p", "h1", nullptr);
+      std::ostringstream os;
+      lWriteElemXMLTo(pn->front().raw(), os);
+      CHECK(29, "a host is escaped like a string, an unset host is written as an empty tag",
+            os.str() == "<PN_path>/p</PN_path>\n"
+                        "<PN_host>h1</PN_host>\n"
+                        "<PN_file_host></PN_file_host>\n"
+                        "<PN_file_staging>false</PN_file_staging>\n");
+   }
+   {
+      FILE *fp = tmpfile();
+      std::string text;
+      if (fp != nullptr) {
+         lWriteElemXMLTo(*spa, fp);
+         rewind(fp);
+         char line[128];
+         while (fgets(line, sizeof(line), fp) != nullptr) {
+            text += line;
+         }
+         fclose(fp);
+      }
+      CHECK(30, "the file form writes the stream's text", text == spa_expected);
+   }
+   {
+      std::ostringstream os;
+      lWriteElemXMLTo(nullptr, os);
+      CHECK(31, "no element writes nothing", os.str().empty());
+   }
+}
+
+/**
+ * @brief lWriteElemXMLTo() on an XML document: head, attributes and printed elements [T32]
+ * @return nothing; CHECK records the results
+ */
+static void test_xml_document() {
+   auto elements = ocs::tom::ListPtr<ocs::tom::XMLE>::create("elements");
+   xml_append_Attr_S(*elements, "name", "a&b");
+   xml_append_Attr_I(*elements, "n", 5);
+   auto head = xml_getHead("root", std::move(elements), ocs::tom::ListPtr<ocs::tom::XMLA>());
+
+   std::ostringstream os;
+   lWriteElemXMLTo(*head, os);
+   CHECK(32, "the version, the root tag with the schema attribute, the escaped elements indented",
+         os.str() == "<?xml version='1.0'?>\n"
+                     "<root  xmlns:xsd=\"https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/"
+                     "util/resources/schemas/qstat/qstat.xsd\">\n"
+                     "  <name>a&amp;b</name>\n"
+                     "  <n>5</n>\n"
+                     "</root>\n");
+}
+
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Module-test entry point; runs the scenarios through the shared frame.
+ * @param argc argument count, see ocs_module_test.h for the frame's options
+ * @param argv argument vector
+ * @return 0 if all checks pass, 1 otherwise, 2 on a usage error
+ */
+int main(int argc, char *argv[]) {
+   lInit(nmv);
+   ocs::tom::install_model(ocs::tom::gcs_model());
+
+   return ocs::module_test::run(argc, argv, {
+      {"PARSE-01", "parsing words into a list by an interpretation rule",
+       "cull_parse_string_list() and cull_parse_definition_list() fill the fields of the rule by their type and "
+       "give the former return codes for every error",
+       {"parse typed words into one and into two elements", "parse NONE for a string and a host",
+        "parse words of a wrong form, too few words, no words",
+        "parse into fields of an unsupported type, of another type and into a list field",
+        "parse a definition list and NONE"},
+       "the lists hold the parsed values, the errors give -1, -2, -7, -8, -9, -11, -12 and -13 and no list",
+       {}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, test_parse_string_list},
+      {"PARSE-02", "collapsing repeated keys of a definition list",
+       "cull_compress_definition_list() keeps the last element of a key for string, unsigned and host keys, with "
+       "single and double keys",
+       {"compress string, unsigned and host keys", "compress with double keys",
+        "compress by a list, 64 bit unsigned and foreign key, and an empty handle"},
+       "the earlier elements of a repeated key are removed, the errors give -4 and -5 from two elements on",
+       {}, {13, 14, 15, 16, 17}, test_compress},
+      {"PARSE-03", "printing a list by a field table",
+       "uni_print_list() gives the former text for strings, hosts and numbers with every flag, into a stream, a "
+       "buffer and a file",
+       {"print a typed and a raw list", "print with every flag", "print fields of another type",
+        "print into a buffer and into a file"},
+       "the texts are the former ones, the errors give -1, -2 and -19",
+       {}, {18, 19, 20, 21, 22, 23, 24, 25, 26, 27}, test_uni_print_list},
+      {"PARSE-04", "writing an element of any type as XML",
+       "the generic field walk of lWriteElemXMLTo() writes every field type in descriptor order byte for byte as "
+       "before",
+       {"write an element with every field type and a sub-list", "write an element with hosts",
+        "write into a file", "write no element"},
+       "the output equals the former output", {}, {28, 29, 30, 31}, test_xml_field_walk},
+      {"PARSE-05", "writing an XML document",
+       "lWriteElemXMLTo() writes the head, its attributes and the printed elements of an XML document",
+       {"build a document with two elements and write it"}, "the output equals the former output", {}, {32},
+       test_xml_document},
+   });
+}

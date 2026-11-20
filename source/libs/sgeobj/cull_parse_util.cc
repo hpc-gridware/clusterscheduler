@@ -48,6 +48,7 @@
 #include <sstream>
 #include <ostream>
 #include <format>
+#include <optional>
 #include <string>
 
 #include "cull/cull.h"
@@ -73,57 +74,63 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 
-/*
-** NAME
-**   cull_parse_string_list
-** PARAMETER
-**   pstrlist             -  pointer to string list to be interpreted
-**   listname             -  listname to be given to the cull output list
-**   descr                -  cull list descriptor, i.e. list type
-**   interpretation_rule  -  array of integers terminated by 0, each int
-**                           represents one list field to be set, when thru,
-**                           a new list element is created and interpretation
-**                           starts anew with first entry
-**   pplist               -  list pointer-pointer to be set to output cull list
-** RETURN
-**
-** EXTERNAL
-**
-** DESCRIPTION
-**   parses a list of strings
-**   this list might have been created by string_list
-**
-** NOTES
-**   MT-NOTE: cull_parse_string_list() is MT safe
-*/
-/*
-** problem: if nullptr ends string list, then nullptr cannot be used
-** for fields that should not be set
-*/
+/**
+ * @brief The type of a field of an interpretation rule, as the descriptor holds it
+ *
+ * The converters of this file take their fields as an `int` table, so the type
+ * of each entry is looked up at run time.
+ *
+ * @param descr the descriptor of the list's elements, or nullptr
+ * @param nm the field number from the rule
+ * @return the field type, or std::nullopt if @p descr is nullptr or does not hold @p nm (another type's field,
+ *         or one a reduced descriptor leaves out)
+ */
+static std::optional<ocs::tom::FieldType> ocs_parse_field_type(const lDescr *descr, const int nm) {
+   const int pos = ocs::tom::present_pos(descr, nm);
+   if (pos < 0) {
+      return std::nullopt;
+   }
+   return ocs::tom::field_type_of(descr[pos].mt);
+}
+
+/**
+ * @brief Whether a field type is printed as a number
+ * @param type the field type, or std::nullopt for a field the descriptor does not hold
+ * @return true for a double and the 32 bit unsigned, 64 bit signed and 32 bit signed numbers, as
+ *         L_IS_NUM_TYPE() decides for the CULL types
+ */
+static bool ocs_parse_is_num_type(const std::optional<ocs::tom::FieldType> type) {
+   return type == ocs::tom::FieldType::Double || type == ocs::tom::FieldType::Uint32 ||
+          type == ocs::tom::FieldType::Int64 || type == ocs::tom::FieldType::Int32;
+}
+
 /**
  * @brief Parse an argv style array of strings into a CULL list
+ *
+ * Each word goes into the field the interpretation rule names at its place;
+ * when the rule is used up, a new element is started and the rule starts
+ * anew. A string or host word `NONE` (any case) leaves the field unset; a list
+ * field of the rule is skipped. The list this array may come from is the one
+ * string_list() makes. A nullptr ends the array, so a nullptr cannot stand for
+ * a field that stays unset.
  *
  * @param pstrlist the nullptr terminated strings to parse
  * @param listname the name the resulting list is created under
  * @param descr the descriptor of the elements to create
- * @param interpretation_rule the attribute order the words are parsed into
- * @param[out] pplist receives the list
- * @return 0 on success
+ * @param interpretation_rule the fields the words are parsed into, terminated by 0
+ * @param[out] pplist receives the list on success, is left as it is otherwise
+ * @return 0 on success; -1 for a nullptr argument, -2 for an empty rule, -3 if the list cannot be created,
+ *         -4 or -5 if an element cannot be created, -7, -8, -9 or -11 for a word that is no double, unsigned,
+ *         long or int, -12 for a field of another type than these, a string, a host or a list, or one
+ *         @p descr does not hold, -13 if the words do not fill the last element
+ *
+ * @note MT-NOTE: cull_parse_string_list() is MT safe
  */
-int cull_parse_string_list(
-char **pstrlist,
-const char *listname,
-const lDescr *descr,
-int *interpretation_rule,
-lList **pplist 
-) {
+int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
+                           lList **pplist) {
    DENTER(BASIS_LAYER);
-
-   lList *list;
-   lListElem *ep;
-   int *rule;
-   int type;
 
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
       DPRINTF("cull_parse_string_list: nullptr pointer received\n");
@@ -133,104 +140,110 @@ lList **pplist
       DPRINTF("cull_parse_string_list: zero interpretation rule\n");
       DRETURN(-2);
    }
-   list = lCreateList(listname, descr);
+   // the creations report a failure by an exception, the codes of the former nullptr results are kept
+   ocs::tom::RawListPtr list;
+   try {
+      list = ocs::tom::create_raw_list(descr, ocs::tom::Hashing::On, listname);
+   } catch (const ocs::tom::FieldException &) {
+      // list stays empty
+   } catch (const ocs::tom::ListCoreError &) {
+      // list stays empty
+   }
    if (!list) {
       DPRINTF("cull_parse_string_list: cannot create list\n");
-      DRETURN(-3);      
+      DRETURN(-3);
    }
-   ep = lCreateElem(descr);
+   ocs::tom::RawElement ep;
+   try {
+      ep = list->push_back(ocs::tom::create_raw_elem(descr));
+   } catch (const ocs::tom::FieldException &) {
+      ep = nullptr;
+   } catch (const ocs::tom::ListCoreError &) {
+      ep = nullptr;
+   }
    if (!ep) {
       DPRINTF("cull_parse_string_list: cannot create element\n");
-      lFreeList(&list);
-      DRETURN(-4);      
+      DRETURN(-4);
    }
-   lAppendElem(list, ep);
    /*
    ** process the string list till it ends
    */
-   for (rule = interpretation_rule; *pstrlist; pstrlist++) {
+   int *rule = interpretation_rule;
+   for (; *pstrlist; pstrlist++) {
       if (*rule == 0) {
          rule = interpretation_rule;
-         ep = lCreateElem(descr);
+         try {
+            ep = list->push_back(ocs::tom::create_raw_elem(descr));
+         } catch (const ocs::tom::FieldException &) {
+            ep = nullptr;
+         } catch (const ocs::tom::ListCoreError &) {
+            ep = nullptr;
+         }
          if (!ep) {
             DPRINTF("cull_parse_string_list: cannot create another element\n");
-            lFreeList(&list);
-            DRETURN(-5);      
+            DRETURN(-5);
          }
-         lAppendElem(list, ep);
       }
-      type = lGetType(descr, *rule);
-      switch (type) {
+      // the element holds every field of descr, and the case is the field's type: no access below throws
+      const std::optional<ocs::tom::FieldType> type = ocs_parse_field_type(descr, *rule);
+      switch (type.value_or(ocs::tom::FieldType::Ref)) {
          /*
          ** the format specifiers were copied from some cull routines
          ** where similar things happen
          */
-         case lDoubleT:
-            {
-               lDouble dd;
+         case ocs::tom::FieldType::Double: {
+            double dd;
 
-               if (sscanf(*pstrlist, "%99lg", &dd) != 1) {
-                  DPRINTF("cull_parse_string_list: error interpreting double: %s\n", *pstrlist);
-                  lFreeList(&list);
-                  DRETURN(-7);
-               }
-               lSetDouble(ep, *rule, dd);
+            if (sscanf(*pstrlist, "%99lg", &dd) != 1) {
+               DPRINTF("cull_parse_string_list: error interpreting double: %s\n", *pstrlist);
+               DRETURN(-7);
             }
-            break;
-       
-         case lUlongT:
-            {
-               lUlong ul;
+            ep.set(*rule, dd);
+         } break;
 
-               if (sscanf(*pstrlist, sge_u32, &ul) != 1) {
-                  DPRINTF("cull_parse_string_list: error interpreting ulong: %s\n", *pstrlist);
-                  lFreeList(&list);
-                  DRETURN(-8);
-               }
-               lSetUlong(ep, *rule, ul);
+         case ocs::tom::FieldType::Uint32: {
+            std::uint32_t ul;
+
+            if (sscanf(*pstrlist, sge_u32, &ul) != 1) {
+               DPRINTF("cull_parse_string_list: error interpreting ulong: %s\n", *pstrlist);
+               DRETURN(-8);
             }
-            break;
+            ep.set(*rule, ul);
+         } break;
 
+         case ocs::tom::FieldType::Int64: {
+            long l;
 
-         case lLongT:
-            {
-               lLong l;
-
-               if (sscanf(*pstrlist, "%ld", &l) != 1) {
-                  DPRINTF("cull_parse_string_list: error interpreting long: %s\n", *pstrlist);
-                  lFreeList(&list);
-                  DRETURN(-9);
-               }
-               lSetLong(ep, *rule, l);
+            if (sscanf(*pstrlist, "%ld", &l) != 1) {
+               DPRINTF("cull_parse_string_list: error interpreting long: %s\n", *pstrlist);
+               DRETURN(-9);
             }
-            break;
+            ep.set(*rule, static_cast<std::int64_t>(l));
+         } break;
 
-         case lIntT:
-            {
-               lInt i;
+         case ocs::tom::FieldType::Int32: {
+            std::int32_t i;
 
-               if (sscanf(*pstrlist, "%d", &i) != 1) {
-                  DPRINTF("cull_parse_string_list: error interpreting int: %s\n", *pstrlist);
-                  lFreeList(&list);
-                  DRETURN(-11);
-               }
-               lSetInt(ep, *rule, i);
+            if (sscanf(*pstrlist, "%d", &i) != 1) {
+               DPRINTF("cull_parse_string_list: error interpreting int: %s\n", *pstrlist);
+               DRETURN(-11);
+            }
+            ep.set(*rule, i);
+         } break;
+
+         case ocs::tom::FieldType::String:
+            if (strcasecmp("NONE", *pstrlist) != 0) {
+               ep.set<const char *>(*rule, *pstrlist);
             }
             break;
 
-         case lStringT:
-            if (strcasecmp("NONE", *pstrlist) != 0){
-               lSetString(ep, *rule, *pstrlist);
-            }
-            break;
-     
-         case lHostT:
-            if (strcasecmp("NONE", *pstrlist) != 0){
-               lSetHost(ep, *rule, *pstrlist);
+         case ocs::tom::FieldType::Host:
+            if (strcasecmp("NONE", *pstrlist) != 0) {
+               ep.set(*rule, ocs::tom::Host(*pstrlist));
             }
             break;
 
-         case lListT:
+         case ocs::tom::FieldType::List:
             /*
             ** list types are skipped at the moment
             */
@@ -238,8 +251,8 @@ lList **pplist
             break;
 
          default:
-            DPRINTF("encountered unknown list field type %d\n", type);
-            lFreeList(&list);
+            // a 64 bit unsigned, bool, object or reference field, or one descr does not hold (type lEndT)
+            DPRINTF("encountered unknown list field type %d\n", ocs::tom::field_type(descr, *rule));
             DRETURN(-12);
 
       } /* end switch */
@@ -248,10 +261,9 @@ lList **pplist
 
    if (*rule != 0) {
       DPRINTF("invalid number of entries specified\n");
-      lFreeList(&list);
       DRETURN(-13);
-   } 
-   *pplist = list;
+   }
+   *pplist = list.release();
    DPRINTF("list parsed: \n");
 
    DRETURN(0);
@@ -318,120 +330,86 @@ int *interpretation_rule
 }
 
 
-/*
-** NAME
-**   cull_compress_definition_list
-** PARAMETER
-**   lp            - list to compress
-**   nm_var        - field containing the variable, can
-**                   be any valid type except list
-**   nm_value      - field containing the value, can
-**                   be any valid type except list
-** RETURN
-**
-** EXTERNAL
-**
-** DESCRIPTION
-**   removes duplicate entries within a definition list
-**   e.g. a=1,a=2 -> a=2
-**   removes the unnecessary elements
-*/
 /**
  * @brief Collapse repeated entries of a definition list
  *
- * The last entry for a key wins, which is what a user writing the same option
- * twice expects.
+ * Removes duplicate entries within a definition list, e.g. `a=1,a=2` becomes
+ * `a=2`: the last entry for a key wins, which is what a user writing the same
+ * option twice expects. An element is compared with every element before it,
+ * and an earlier one with the same key is removed.
  *
- * @param[in,out] lp the list to compress
- * @param nm_var the attribute holding an entry's name
- * @param nm_value the attribute holding its value
+ * @param[in,out] lp the list to compress, or an empty handle
+ * @param nm_var the field holding an entry's name, of any type but a list
+ * @param nm_value the field holding its value, compared only with @p double_keys for a string or host name
  * @param double_keys non-zero when the key is the name and the value together
- * @return 0 on success
+ * @return 0 on success, -4 for a list field @p nm_var, -5 for a 64 bit unsigned, bool, object or reference field
+ *         or one the list does not hold; the errors are found only for a list of two elements or more
  */
-int cull_compress_definition_list(
-lList *lp,
-int nm_var,
-int nm_value,
-int double_keys 
-) {
+int cull_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, const int nm_value,
+                                  const int double_keys) {
    DENTER(BASIS_LAYER);
 
-   lListElem *ep_other;
-   int is_there;
-   int type;
+   // the elements of lp share its descriptor, which holds nm_var with this type: the reads of nm_var do not throw
+   const std::optional<ocs::tom::FieldType> type = ocs_parse_field_type(lp.descr(), nm_var);
 
-   for_each_ep_lv(ep_one, lp) {
-      for (ep_other = lFirstRW(lp); ep_other; ) {
-         if (ep_one == ep_other) {
+   for (const auto ep_one : lp) {
+      for (ocs::tom::RawElement ep_other = lp.front(); ep_other;) {
+         if (ep_one.raw() == ep_other.raw()) {
             break;
          }
-         is_there = 0;
-         type = lGetType(lGetListDescr(lp), nm_var);
-         switch (type) {
-         case lDoubleT:
-            if (lGetDouble(ep_one, nm_var) == lGetDouble(ep_other, nm_var)) {
-               is_there = 1;
-            }
-            break;
-         case lUlongT:
-            if (lGetUlong(ep_one, nm_var) == lGetUlong(ep_other, nm_var)) {
-               is_there = 1;
-            }
-            break;
-         case lLongT:
-            if (lGetLong(ep_one, nm_var) == lGetLong(ep_other, nm_var)) {
-               is_there = 1;
-            }
-            break;
-         case lIntT:
-            if (lGetInt(ep_one, nm_var) == lGetInt(ep_other, nm_var)) {
-               is_there = 1;
-            }
-            break;
-         case lStringT:
-            if (double_keys) {
-               if (!sge_strnullcmp(lGetString(ep_one, nm_var), lGetString(ep_other, nm_var)) 
-                && !sge_strnullcmp(lGetString(ep_one, nm_value), lGetString(ep_other, nm_value)))
-                  is_there = 1;
-            } else {
-               if (lGetString(ep_one, nm_var) && 
-                   !sge_strnullcmp(lGetString(ep_one, nm_var), 
-                      lGetString(ep_other, nm_var))) 
-                  is_there = 1;
-            }
-            break;
+         bool is_there = false;
+         switch (type.value_or(ocs::tom::FieldType::Ref)) {
+            case ocs::tom::FieldType::Double:
+               is_there = ep_one.get<double>(nm_var) == ep_other.get<double>(nm_var);
+               break;
+            case ocs::tom::FieldType::Uint32:
+               is_there = ep_one.get<std::uint32_t>(nm_var) == ep_other.get<std::uint32_t>(nm_var);
+               break;
+            case ocs::tom::FieldType::Int64:
+               is_there = ep_one.get<std::int64_t>(nm_var) == ep_other.get<std::int64_t>(nm_var);
+               break;
+            case ocs::tom::FieldType::Int32:
+               is_there = ep_one.get<std::int32_t>(nm_var) == ep_other.get<std::int32_t>(nm_var);
+               break;
+            case ocs::tom::FieldType::String:
+               if (double_keys) {
+                  // nm_value is read as a string as well; another type throws WrongType, where lGetString() aborted
+                  is_there = !sge_strnullcmp(ep_one.get<const char *>(nm_var), ep_other.get<const char *>(nm_var)) &&
+                             !sge_strnullcmp(ep_one.get<const char *>(nm_value),
+                                             ep_other.get<const char *>(nm_value));
+               } else {
+                  is_there = ep_one.get<const char *>(nm_var) != nullptr &&
+                             !sge_strnullcmp(ep_one.get<const char *>(nm_var), ep_other.get<const char *>(nm_var));
+               }
+               break;
+            case ocs::tom::FieldType::Host:
+               if (double_keys) {
+                  is_there = !sge_strnullcmp(ep_one.get<ocs::tom::Host>(nm_var).c_str(),
+                                             ep_other.get<ocs::tom::Host>(nm_var).c_str()) &&
+                             !sge_strnullcmp(ep_one.get<ocs::tom::Host>(nm_value).c_str(),
+                                             ep_other.get<ocs::tom::Host>(nm_value).c_str());
+               } else {
+                  is_there = ep_one.get<ocs::tom::Host>(nm_var).c_str() != nullptr &&
+                             !sge_strnullcmp(ep_one.get<ocs::tom::Host>(nm_var).c_str(),
+                                             ep_other.get<ocs::tom::Host>(nm_var).c_str());
+               }
+               break;
 
-         case lHostT:
-            if (double_keys) {
-               if (!sge_strnullcmp(lGetHost(ep_one, nm_var), lGetHost(ep_other, nm_var)) 
-                && !sge_strnullcmp(lGetHost(ep_one, nm_value), lGetHost(ep_other, nm_value)))
-                  is_there = 1;
-            } else {
-               if (lGetHost(ep_one, nm_var) && 
-                   !sge_strnullcmp(lGetHost(ep_one, nm_var), lGetHost(ep_other, nm_var))) 
-                  is_there = 1;
-            }
-            break;
-
-         case lListT:
-            DPRINTF(("cull_compress_definition_list: " \
-               "list type not implemented with this function\n"));
-            DRETURN(-4);
-         default:
-            DPRINTF("cull_compress_definition_list: invalid type\n");
-            DRETURN(-5);
+            case ocs::tom::FieldType::List:
+               DPRINTF(("cull_compress_definition_list: " \
+                  "list type not implemented with this function\n"));
+               DRETURN(-4);
+            default:
+               DPRINTF("cull_compress_definition_list: invalid type\n");
+               DRETURN(-5);
          } /* end switch */
-         
-         ep_other = lNextRW(ep_other);
+
+         // the element that comes later in the list is kept, because ep_other is always before ep_one
+         const ocs::tom::RawElement next(ep_other.raw()->next);
          if (is_there) {
-            lListElem *prev = lPrevRW(ep_other);
-            /*
-            ** ep_other must always point to a valid element, 
-            ** or next "increase" fails, the element that comes later on
-            ** in the list is kept, because ep_other < ep_one always
-            */
-            lRemoveElem(lp, &prev);
+            lp.erase(ep_other);
          }
+         ep_other = next;
       }
    }
    DRETURN(0);
@@ -452,7 +430,7 @@ int double_keys
  * @p pdelis.
  *
  * @param os Output stream where the formatted list is written.
- * @param lp Pointer to the list to be printed. If @c nullptr, the string "NONE" is written.
+ * @param lp The list to be printed, of any type. If an empty handle, the string "NONE" is written.
  * @param which_elements_rule Array of field identifiers (terminated by 0)
  *           that defines which elements of each list entry are printed
  *           and in which order.
@@ -479,11 +457,11 @@ int double_keys
  * @note Output is written directly to the stream without size limitations.
  *       Stream state should be checked by the caller if needed.
  */
-int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags) {
+int uni_print_list(std::ostream &os, const ocs::tom::ConstRawList lp, const int *which_elements_rule,
+                   const char *pdelis[], const unsigned long flags) {
    DENTER(BASIS_LAYER);
 
    const int* rule;
-   int type;
    const lDescr* descr;
    bool begin = true;
    std::string field;
@@ -517,13 +495,14 @@ int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_
       DRETURN(-2);
    }
 
-   descr = lGetListDescr(lp);
+   descr = lp.descr();
    if (!descr) {
       DPRINTF("uni_print_list: list has no descriptor\n");
       DRETURN(-3);
    }
 
-   for_each_rw_lv(ep, lp) {
+   // the elements of lp share its descriptor, and the case is the field's type there: no read below throws
+   for (const auto ep : lp) {
       if (!begin && pdelis[1] && *pdelis[1]) {
          os << pdelis[1];
          if (!os) {
@@ -537,57 +516,58 @@ int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_
       for (rule = which_elements_rule; *rule; ++rule) {
          field.clear();
          cp = nullptr;
-         type = lGetType(descr, *rule);
+         const std::optional<ocs::tom::FieldType> type = ocs_parse_field_type(descr, *rule);
 
-         switch (type) {
-            case lDoubleT:
-               field = std::format("{:.10g}", lGetDouble(ep, *rule));
+         switch (type.value_or(ocs::tom::FieldType::Ref)) {
+            case ocs::tom::FieldType::Double:
+               field = std::format("{:.10g}", ep.get<double>(*rule));
                cp = field.c_str();
                break;
 
-            case lUlongT:
-               field = std::format("{}", lGetUlong(ep, *rule));
+            case ocs::tom::FieldType::Uint32:
+               field = std::format("{}", ep.get<std::uint32_t>(*rule));
                cp = field.c_str();
                break;
 
-            case lLongT:
-               field = std::format("{}", lGetLong(ep, *rule));
+            case ocs::tom::FieldType::Int64:
+               field = std::format("{}", ep.get<std::int64_t>(*rule));
                cp = field.c_str();
                break;
 
-            case lIntT:
-               field = std::format("{}", lGetInt(ep, *rule));
+            case ocs::tom::FieldType::Int32:
+               field = std::format("{}", ep.get<std::int32_t>(*rule));
                cp = field.c_str();
                break;
 
-            case lStringT:
-               cp = lGetString(ep, *rule);
+            case ocs::tom::FieldType::String:
+               cp = ep.get<const char *>(*rule);
                if (!cp) {
                   cp = (flags & FLG_NO_VALUE_AS_EMPTY) ? "" : "NONE";
                }
                break;
 
-            case lHostT:
-               cp = lGetHost(ep, *rule);
+            case ocs::tom::FieldType::Host:
+               cp = ep.get<ocs::tom::Host>(*rule).c_str();
                if (!cp) {
                   cp = (flags & FLG_NO_VALUE_AS_EMPTY) ? "" : "NONE";
                }
                break;
 
-            case lListT:
+            case ocs::tom::FieldType::List:
                DPRINTF("skipped list type");
                cp = "";
                break;
 
             default:
-               DPRINTF("encountered unknown list field type %d\n", type);
+               // a 64 bit unsigned, bool, object or reference field, or one descr does not hold (type lEndT)
+               DPRINTF("encountered unknown list field type %d\n", ocs::tom::field_type(descr, *rule));
                DRETURN(-19);
          }
 
          if (pdelis[0] && *pdelis[0] &&
              (rule != which_elements_rule) &&
              (!(flags & FLG_NO_DELIS_STRINGS) || ((*cp && prev_len > 0) || (flags & FLG_NO_VALUE_AS_EMPTY))) &&
-             (!(flags & FLG_NO_DELIS_NUMBERS) || !L_IS_NUM_TYPE(type) || std::strcmp(cp, "0"))) {
+             (!(flags & FLG_NO_DELIS_NUMBERS) || !ocs_parse_is_num_type(type) || std::strcmp(cp, "0"))) {
             os << pdelis[0];
             if (!os) {
                DPRINTF("uni_print_list: error writing delimiter\n");
@@ -630,17 +610,18 @@ int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_
  * @param fp Output file pointer. If non-null, the result is written via @c fprintf.
  * @param buff Output buffer. Used if @p fp is null.
  * @param buff_size Size of @p buff in bytes.
- * @param lp Pointer to the list to be printed.
+ * @param lp The list to be printed, of any type.
  * @param which_elements_rule Field selection rule (see ostream overload).
  * @param pdelis Delimiters (see ostream overload).
  * @param flags Formatting flags (see ostream overload).
  * @return Same as uni_print_list(std::ostream&, ...).
  *
- * @see uni_print_list(std::ostream&, const lList*, const int*, const char*[], unsigned long)
+ * @see uni_print_list(std::ostream&, ocs::tom::ConstRawList, const int*, const char*[], unsigned long)
  *
  * @note If @p buff is used, the output must fit into @p buff_size, otherwise an error is returned.
  */
-int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags) {
+int uni_print_list(FILE *fp, char *buff, const uint32_t buff_size, const ocs::tom::ConstRawList lp,
+                   const int *which_elements_rule, const char *pdelis[], const unsigned long flags) {
    DENTER(BASIS_LAYER);
 
    std::ostringstream ss;

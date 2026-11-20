@@ -63,14 +63,16 @@
 #include "sgeobj/ocs_EscapedString.h"
 #include "sgeobj/sge_cull_xml.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Model.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_XMLA.h"
 #include "sgeobj/tom/ocs_tom_XMLE.h"
 #include "sgeobj/tom/ocs_tom_XMLS.h"
 #include "sgeobj/tom/ocs_tom_XMLH.h"
 
-static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os);
+static void lWriteElemXML_(ocs::tom::ConstRawElement ep, int nesting_level, std::ostream &os);
 
-static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os);
+static void lWriteListXML_(ocs::tom::ConstRawList lp, int nesting_level, std::ostream &os);
 
 static bool lAttributesToString_(ocs::tom::ConstList<ocs::tom::XMLA> attr_list, dstring *attr);
 
@@ -192,13 +194,13 @@ void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const ch
  * type; an XML element to be printed is written as its tag, any other element
  * field by field, wrapped into a tag named after the list.
  *
- * @param lp list
+ * @param lp the list, of any type; an empty handle writes nothing
  * @param nesting_level current nesting level
  * @param[out] os the stream to write to
  *
  * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
-static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os) {
+static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_level, std::ostream &os) {
    DENTER(CULL_LAYER);
    char indent[128];
    int i;
@@ -222,13 +224,13 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
    }
 
    // the list holds elements of any type; one holding the attribute list of an XML element is written as such
-   for_each_ep_lv(ep, lp) {
+   for (const auto ep : lp) {
       is_XML_elem = false;
       is_attr = false;
 
       ocs::tom::ConstElement<ocs::tom::XMLE> xml_elem;
-      if (ocs::tom::has<XMLE_Attribute>(ep)) {
-         xml_elem = ocs::tom::ConstElement<ocs::tom::XMLE>(ep);
+      if (ocs::tom::has<XMLE_Attribute>(ep.raw())) {
+         xml_elem = ocs::tom::ConstElement<ocs::tom::XMLE>(ep.raw());
          sge_dstring_clear(&attr);
          is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(xml_elem), &attr);
          is_XML_elem = true;
@@ -251,7 +253,8 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
          }
       }
       else {
-         const char* listName = lGetListName(lp);
+         // the name, or "No list name specified" for a list without one, as lGetListName() gave it
+         const char* listName = ocs::tom::list_name(lp);
          if (listName == nullptr || strcmp(listName, "No list name specified") == 0 || strcmp(listName, "") == 0){
             listName = "element";
          }
@@ -269,12 +272,12 @@ static void lWriteListXML_(const lList *lp, int nesting_level, std::ostream &os)
  *
  * Write a element to file stream in XML format
  *
- * @param ep element
+ * @param ep the element, of any type; an empty handle writes nothing
  * @param[out] os stream to write to
  *
  * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
-void lWriteElemXMLTo(const lListElem *ep, std::ostream &os) {
+void lWriteElemXMLTo(const ocs::tom::ConstRawElement ep, std::ostream &os) {
    DENTER(CULL_LAYER);
    lWriteElemXML_(ep, 0, os);
    DRETURN_VOID;
@@ -282,12 +285,12 @@ void lWriteElemXMLTo(const lListElem *ep, std::ostream &os) {
 /**
  * @brief Write an element to a file stream in XML format
  *
- * @param ep element
+ * @param ep the element, of any type; an empty handle writes nothing
  * @param[out] fp file stream to write to
  *
  * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
-void lWriteElemXMLTo(const lListElem *ep, FILE *fp) {
+void lWriteElemXMLTo(const ocs::tom::ConstRawElement ep, FILE *fp) {
    DENTER(CULL_LAYER);
    std::ostringstream os;
    lWriteElemXML_(ep, 0, os);
@@ -296,26 +299,111 @@ void lWriteElemXMLTo(const lListElem *ep, FILE *fp) {
 }
 
 /**
+ * @brief Write the value of one field of an element that is no XML head or XML element
+ *
+ * Switches on the field's type from the element's descriptor, so every read
+ * matches the field and none throws.
+ *
+ * @param ep the element, which holds @p nm
+ * @param nm the field
+ * @param type the field's type in the element's descriptor
+ * @param attr_name the field's name, the tag the value is written in
+ * @param nesting_level indentation depth of the element
+ * @param space the indentation of the element's fields, @p nesting_level times two blanks
+ * @param os the stream to write to
+ */
+static void ocs_xml_write_field_value(const ocs::tom::ConstRawElement ep, const int nm,
+                                      const ocs::tom::FieldType type, const char *attr_name,
+                                      const int nesting_level, const char *space, std::ostream &os) {
+   switch (type) {
+      case ocs::tom::FieldType::Int32:
+         os << ep.get<std::int32_t>(nm);
+         break;
+      case ocs::tom::FieldType::Uint32:
+         os << ep.get<std::uint32_t>(nm);
+         break;
+      case ocs::tom::FieldType::Uint64: {
+         const auto value = ep.get<std::uint64_t>(nm);
+
+         // hack: assume it is a timestamp when the attribute name contains "time"
+         if (strstr(attr_name, "time") != nullptr) {
+            static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
+            if (compat) {
+               os << (value / 1000000);
+            } else {
+               if (value == 0) {
+                  os << "0";
+               } else {
+                  DSTRING_STATIC(dstr, 128);
+                  os << sge_ctime64_xml(value, &dstr);
+               }
+            }
+         } else {
+            os << value;
+         }
+      } break;
+      case ocs::tom::FieldType::String: {
+         dstring string = DSTRING_INIT;
+         if (escape_string(ep.get<const char *>(nm), &string)) {
+            os << sge_dstring_get_string(&string);
+            sge_dstring_free(&string);
+         }
+      } break;
+      case ocs::tom::FieldType::Host: {
+         dstring string = DSTRING_INIT;
+         if (escape_string(ep.get<ocs::tom::Host>(nm).c_str(), &string)) {
+            os << sge_dstring_get_string(&string);
+            sge_dstring_free(&string);
+         }
+      } break;
+      case ocs::tom::FieldType::List:
+         if (const auto tlp = ep.get<ocs::tom::ConstRawList>(nm)) {
+            os << "\n";
+            lWriteListXML_(tlp, nesting_level + 1, os);
+            os << space;
+         }
+         break;
+      case ocs::tom::FieldType::Object:
+         if (const auto tep = ep.get<ocs::tom::ConstRawElement>(nm)) {
+            os << "\n";
+            lWriteElemXML_(tep, nesting_level, os);
+            os << space;
+         }
+         break;
+      case ocs::tom::FieldType::Double:
+         os << ep.get<double>(nm);
+         break;
+      case ocs::tom::FieldType::Int64:
+         os << ep.get<std::int64_t>(nm);
+         break;
+      case ocs::tom::FieldType::Bool:
+         os << (ep.get<bool>(nm) ? "true" : "false");
+         break;
+      case ocs::tom::FieldType::Ref:
+         /* cannot be printed */
+         break;
+   }
+}
+
+/**
  * @brief Write an element as XML
  *
  * An XML head element is written as the document head, an XML element through
  * its attributes, name and value, any other element field by field over the
  * fields that have a value. Empty lists, unset strings and references are left
- * out.
+ * out. The field walk is generic: it goes over the fields the element's
+ * descriptor holds, in their order, with each field's type from the
+ * descriptor and its name from the object model.
  *
- * @param ep the element
+ * @param ep the element, of any type; an empty handle writes nothing
  * @param nesting_level indentation depth
  * @param os the stream to write to
  */
-static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream &os) {
+static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting_level, std::ostream &os) {
    DENTER(CULL_LAYER);
 
    int i;
    char space[128];
-   lList *tlp;
-   lListElem *tep;
-   const char *str;
-   const char *attr_name;
    int max = nesting_level *2;
 
    if (!ep) {
@@ -333,10 +421,10 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
    space[i] = '\0';
 
    // ep is of any type; an element holding the fields of an XML head or element is written as such
-   if (ocs::tom::has<XMLH_Version>(ep)) {   
-      lWriteXMLHead_(ocs::tom::ConstElement<ocs::tom::XMLH>(ep), nesting_level, os);
-   } else if (ocs::tom::has<XMLE_Attribute>(ep) ) {
-      const ocs::tom::ConstElement<ocs::tom::XMLE> xml_elem(ep);
+   if (ocs::tom::has<XMLH_Version>(ep.raw())) {
+      lWriteXMLHead_(ocs::tom::ConstElement<ocs::tom::XMLH>(ep.raw()), nesting_level, os);
+   } else if (ocs::tom::has<XMLE_Attribute>(ep.raw())) {
+      const ocs::tom::ConstElement<ocs::tom::XMLE> xml_elem(ep.raw());
       if (ocs::tom::get<XMLE_Print>(xml_elem)) {
          dstring attr = DSTRING_INIT;
          // an element to be printed holds the name and the value of its tag
@@ -353,109 +441,23 @@ static void lWriteElemXML_(const lListElem *ep, int nesting_level, std::ostream 
          lWriteElemXML_(ocs::tom::get<XMLE_Element>(xml_elem), nesting_level, os);
          lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level, os);
       }
-   } else {  
-      for (const auto f : ocs_cull_present_fields(ep->descr)) {
-         /* ignore empty lists */
-         switch (mt_get_type(ep->descr[f.pos].mt)) {
-         case lListT :
-            tlp = lGetPosList(ep, f.pos);
-            if (lGetNumberOfElem(tlp) == 0)
-               continue;
-            break;
-         case lStringT:
-            if (lGetPosString(ep, f.pos) == nullptr)
-               continue;
-            break;
-         case lRefT:
-            /* connot print a ref */
+   } else {
+      const lDescr *descr = ep.descr();
+      for (const auto f : ocs_cull_present_fields(descr)) {
+         const int nm = descr[f.pos].nm;
+         const ocs::tom::FieldType type = ocs::tom::field_type_of(descr[f.pos].mt);
+
+         // empty lists, unset strings and references are left out
+         if ((type == ocs::tom::FieldType::List && ep.get<ocs::tom::ConstRawList>(nm).empty()) ||
+             (type == ocs::tom::FieldType::String && ep.get<const char *>(nm) == nullptr) ||
+             type == ocs::tom::FieldType::Ref) {
             continue;
          }
 
-         attr_name = lNm2Str(ep->descr[f.pos].nm);
+         // a name of the model is a constant, so it outlives the nested writes below
+         const char *attr_name = ocs::tom::field_name(nm);
          os << space << "<" << attr_name << ">";
-         switch (mt_get_type(ep->descr[f.pos].mt)) {
-         case lIntT:
-            os << lGetPosInt(ep, f.pos);
-            break;
-         case lUlongT:
-            os << lGetPosUlong(ep, f.pos);
-            break;
-         case lUlong64T:
-         {
-            uint64_t value = lGetPosUlong64(ep, f.pos);
-
-            // hack: assume it is a timestamp when the attribute name contains "time"
-            if (strstr(attr_name, "time") != nullptr) {
-               static bool compat = sge_getenv("SGE_QSTAT_SGE_COMPATIBILITY") != nullptr;
-               if (compat) {
-                  os << (value / 1000000);
-               } else {
-                  if (value == 0) {
-                     os << "0";
-                  } else {
-                     DSTRING_STATIC(dstr, 128);
-                     os << sge_ctime64_xml(value, &dstr);
-                  }
-               }
-            } else {
-               os << value;
-            }
-         }
-            break;
-         case lStringT:
-            {
-               dstring string = DSTRING_INIT;
-               str = lGetPosString(ep, f.pos);
-               if (escape_string(str, &string)) {
-                  os << sge_dstring_get_string(&string);
-                  sge_dstring_free(&string);
-               }
-            }
-            break;
-
-         case lHostT:
-            {
-               dstring string = DSTRING_INIT;
-               str = lGetPosHost(ep, f.pos);
-               if (escape_string(str, &string)) {
-                  os << sge_dstring_get_string(&string);
-                  sge_dstring_free(&string);
-               }
-            }
-            break;
-
-         case lListT:
-            tlp = lGetPosList(ep, f.pos);
-            if (tlp) {
-               os << "\n";
-               lWriteListXML_(tlp, nesting_level + 1, os);
-               os << space;
-            }
-            break;
-
-         case lObjectT:
-            tep = lGetPosObject(ep, f.pos);
-            if (tep) {
-               os << "\n";
-               lWriteElemXML_(tep, nesting_level, os);
-               os << space;
-            }
-            break;
-         case lDoubleT:
-            os << lGetPosDouble(ep, f.pos);
-            break;
-         case lLongT:
-            os << lGetPosLong(ep, f.pos);
-            break;
-         case lBoolT:
-            os << (lGetPosBool(ep, f.pos) ? "true": "false");
-            break;
-         case lRefT:
-            /* cannot be printed */
-            break;
-         default:
-            unknownType("lWriteElem");
-         }
+         ocs_xml_write_field_value(ep, nm, type, attr_name, nesting_level, space, os);
          os << "</" << attr_name << ">\n";
       }
    }

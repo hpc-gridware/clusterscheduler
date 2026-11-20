@@ -48,11 +48,12 @@
 #include "sgeobj/tom/ocs_tom_XMLE.h"
 #include "sgeobj/tom/ocs_tom_XMLH.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 
 #include <cinttypes>
 
-void lWriteElemXMLTo(const lListElem *ep, FILE *fp);
-void lWriteElemXMLTo(const lListElem *ep, std::ostream &os);
+void lWriteElemXMLTo(ocs::tom::ConstRawElement ep, FILE *fp);
+void lWriteElemXMLTo(ocs::tom::ConstRawElement ep, std::ostream &os);
 
 ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
                                                          ocs::tom::ListPtr<ocs::tom::XMLA> &&attributes);

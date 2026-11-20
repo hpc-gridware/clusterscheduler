@@ -49,6 +49,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_Transitional.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
@@ -76,12 +77,15 @@ void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opti
 int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 
 
-int cull_compress_definition_list(lList *lp_new, int nm_var, int nm_value, int double_keys);
+int cull_compress_definition_list(ocs::tom::RawList lp, int nm_var, int nm_value, int double_keys);
 
-int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule, lList **pplist);
+int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
+                           lList **pplist);
 
-int uni_print_list(std::ostream &os, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
-int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, const lList *lp, const int *which_elements_rule, const char *pdelis[], unsigned long flags);
+int uni_print_list(std::ostream &os, ocs::tom::ConstRawList lp, const int *which_elements_rule, const char *pdelis[],
+                   unsigned long flags);
+int uni_print_list(FILE *fp, char *buff, uint32_t buff_size, ocs::tom::ConstRawList lp, const int *which_elements_rule,
+                   const char *pdelis[], unsigned long flags);
 
 namespace ocs::detail {
    /**
