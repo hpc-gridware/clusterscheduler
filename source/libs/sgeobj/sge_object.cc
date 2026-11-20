@@ -1552,6 +1552,9 @@ object_has_differences(const lListElem *this_elem, ocs::tom::ListPtr<ocs::tom::A
             case lUlongT:
                equiv = (lGetPosUlong(this_elem, pos) == lGetPosUlong(old_elem, old_pos)) ? true : false;
                break;
+            case lUlong64T:
+               equiv = lGetPosUlong64(this_elem, pos) == lGetPosUlong64(old_elem, old_pos);
+               break;
             case lLongT:
                equiv = (lGetPosLong(this_elem, pos) == lGetPosLong(old_elem, old_pos)) ? true : false;
                break;

@@ -53,6 +53,7 @@
 #include "sgeobj/tom/ocs_tom_AUSRLIST.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_PRO.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_UE.h"
 #include "tom/ocs_Element.h"
@@ -465,7 +466,7 @@ static void test_object_name_get_type_extended() {
 }
 
 // ---------------------------------------------------------------------------
-// object_has_differences — field-by-field element comparison  [T44–T47]
+// object_has_differences — field-by-field element comparison  [T44–T47, T100–T101]
 //
 // Returns true when any attribute value differs between the two elements.
 // If one element is nullptr and the other is not, the result is true.
@@ -492,6 +493,15 @@ static void test_object_has_differences() {
 
    // T47: both nullptr → false (neither side has data; no difference)
    CHECK(47, "nullptr vs nullptr → false",            object_has_differences(nullptr, &alp, nullptr) == false);
+
+   // T100/T101: a Uint64 field (CS-3189: it fell into the default branch and always counted as different)
+   auto p = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
+   auto q = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
+   ocs::tom::set<PRO_vsize>(p, 4294967296ULL);
+   ocs::tom::set<PRO_vsize>(q, 4294967296ULL);
+   CHECK(100, "equal Uint64 field → false",            object_has_differences(*p, &alp, *q) == false);
+   ocs::tom::set<PRO_vsize>(q, 4294967297ULL);
+   CHECK(101, "differing Uint64 field → true",         object_has_differences(*p, &alp, *q) == true);
 
    a.reset();
    b.reset();
