@@ -83,7 +83,7 @@
 #include "msg_common.h"
 #include "msg_daemons_common.h"
 #include "ocs_Bootstrap.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 
 static void
@@ -158,7 +158,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       }
    }
 
-   while (pb_unused(&(message->buf)) > 0) {
+   while (ocs::tom::buffer_has_unread(&(message->buf))) {
       ocs::tom::ElementPtr<ocs::tom::ACK> ack;
 
       // get the ACK element; bytes that cannot be unpacked end the request, as cull_unpack_elem() failing did.
@@ -211,9 +211,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
  *
  * Get a pending message. Handle message based on message tag.
  *
- * @param monitor none
- *
- * @note void* - none
+ * @param monitor for monitoring qmaster threads
  *
  * @note MT-NOTE: thread safety needs to be verified!
  *       MT-NOTE:
@@ -267,7 +265,7 @@ sge_qmaster_process_message(monitoring_t *monitor) {
          default:
             DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
       }
-      clear_packbuffer(&(msg.buf));
+      ocs::tom::clear_buffer(&(msg.buf));
    }
 
    DRETURN_VOID;
@@ -613,7 +611,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    // handle errors that might have happened above and then exit
    if (!local_ret) {
       if (packet != nullptr) {
-         init_packbuffer(&packet->pb, 0);
+         ocs::tom::try_init_buffer(&packet->pb, 0);
 
          ocs::tom::ListPtr<ocs::tom::AN> tmp_answer_list;
          packet->pack_header(&tmp_answer_list, &packet->pb);
@@ -631,7 +629,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
          }
          ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                                           &packet->pb, ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
-         clear_packbuffer(&packet->pb);
+         ocs::tom::clear_buffer(&packet->pb);
          delete packet;
       }
 
@@ -652,7 +650,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    bool ds_enabled = !mconf_get_disable_secondary_ds();
    if (ds_enabled && ds_type == ocs::DataStore::LISTENER) {
       // prepare pack=buffer for the clients answer
-      init_packbuffer(&(packet->pb), 0);
+      ocs::tom::try_init_buffer(&(packet->pb), 0);
 
       ocs::tom::ListPtr<ocs::tom::AN> tmp_answer_list;
       packet->pack_header(&tmp_answer_list, &packet->pb);
@@ -670,7 +668,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       MONITOR_MESSAGES_OUT(monitor);
       ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                                        &(packet->pb), ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
-      clear_packbuffer(&(packet->pb));
+      ocs::tom::clear_buffer(&(packet->pb));
       delete packet;
    } else if (ds_enabled && ds_type == ocs::DataStore::READER) {
 
@@ -749,9 +747,8 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
  * Handle event client exit message. Extract event client id from pack
  * buffer. Remove event client.
  *
- * @param aHost sender
- * @param aSender communication endpoint
- * @param aBuffer buffer
+ * @param aMsg the message: the sender and the buffer holding the event client id
+ * @param monitor for monitoring qmaster threads
  *
  * @note MT-NOTE: do_event_client_exit() is NOT MT safe.
  */
@@ -771,7 +768,7 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
       }
    }
 
-   if (unpackint(&(aMsg->buf), &client_id) != PACK_SUCCESS) {
+   if (ocs::tom::try_get_uint32(&(aMsg->buf), &client_id) != PACK_SUCCESS) {
       ERROR(MSG_COM_UNPACKINT_I, 1);
       DPRINTF("%s: client id unpack failed - host %s - sender %s\n", __func__, aMsg->snd_host, aMsg->snd_name);
       DRETURN_VOID;

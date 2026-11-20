@@ -35,7 +35,7 @@
 #include "uti/sge_spool.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #include "execd_reconnect.h"
 
@@ -246,13 +246,13 @@ static int execd_write_reconnect_cert(uint32_t job_id, uint32_t ja_task_id,
  * @brief Dispatcher handler for TAG_RECONNECT_PREPARE messages from qmaster.
  *
  * Wire format unpacked from the message buffer (in this exact order):
- *   job_id        (uint32, packint)
- *   ja_task_id    (uint32, packint)
- *   host          (string, packstr)
- *   port          (uint32, packint)
- *   token         (string, packstr)
- *   owner_uid     (uint32, packint)
- *   owner_gid     (uint32, packint)
+ *   job_id        (uint32, put_uint32)
+ *   ja_task_id    (uint32, put_uint32)
+ *   host          (string, put_str)
+ *   port          (uint32, put_uint32)
+ *   token         (string, put_str)
+ *   owner_uid     (uint32, put_uint32)
+ *   owner_gid     (uint32, put_uint32)
  *
  * Calls execd_write_reconnect_info() with the unpacked fields.  No reply is
  * sent — the qmaster broker treats this as fire-and-forget; the shepherd's
@@ -267,21 +267,21 @@ int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    uint32_t job_id     = 0;
    uint32_t ja_task_id = 0;
-   char    *host       = nullptr;   // mallocs via unpackstr
+   char    *host       = nullptr;   // mallocs via ocs::tom::try_get_str()
    uint32_t port       = 0;
-   char    *token      = nullptr;   // mallocs via unpackstr
+   char    *token      = nullptr;   // mallocs via ocs::tom::try_get_str()
    uint32_t owner_uid  = 0;
    uint32_t owner_gid  = 0;
-   char    *cred       = nullptr;   // mallocs via unpackstr (CS-2206)
+   char    *cred       = nullptr;   // mallocs via ocs::tom::try_get_str() (CS-2206)
 
-   if (unpackint(&(aMsg->buf), &job_id) != 0 ||
-       unpackint(&(aMsg->buf), &ja_task_id) != 0 ||
-       unpackstr(&(aMsg->buf), &host) != 0 ||
-       unpackint(&(aMsg->buf), &port) != 0 ||
-       unpackstr(&(aMsg->buf), &token) != 0 ||
-       unpackint(&(aMsg->buf), &owner_uid) != 0 ||
-       unpackint(&(aMsg->buf), &owner_gid) != 0 ||
-       unpackstr(&(aMsg->buf), &cred) != 0) {
+   if (ocs::tom::try_get_uint32(&(aMsg->buf), &job_id) != 0 ||
+       ocs::tom::try_get_uint32(&(aMsg->buf), &ja_task_id) != 0 ||
+       ocs::tom::try_get_str(&(aMsg->buf), &host) != 0 ||
+       ocs::tom::try_get_uint32(&(aMsg->buf), &port) != 0 ||
+       ocs::tom::try_get_str(&(aMsg->buf), &token) != 0 ||
+       ocs::tom::try_get_uint32(&(aMsg->buf), &owner_uid) != 0 ||
+       ocs::tom::try_get_uint32(&(aMsg->buf), &owner_gid) != 0 ||
+       ocs::tom::try_get_str(&(aMsg->buf), &cred) != 0) {
       ERROR("do_reconnect_prepare: failed to unpack message");
       sge_free(&host);
       sge_free(&token);

@@ -230,7 +230,7 @@ namespace ocs {
 
       /** @brief The text of a bundle value, with the wire format's empty string rule applied
        *
-       * `unpackstr()` maps an empty string to `nullptr` on purpose
+       * `ocs::tom::get_str()` maps an empty string to `nullptr` on purpose
        * (`libs/cull/pack.cc`), so a value that was empty in the client arrives here
        * as a null pointer. Building a `std::string` from it throws
        * `std::logic_error`, which nothing catches and `TerminationManager` turns

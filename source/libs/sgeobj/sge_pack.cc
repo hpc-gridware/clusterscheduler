@@ -45,7 +45,6 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
 #include "tom/ocs_PackCore.h"
 
 #include "sgeobj/sge_pack.h"
@@ -82,7 +81,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
 
    ocs::tom::ElementPtr<ocs::tom::PACK> where_elem;
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (ocs_pack_soft(&pb, [where](sge_pack_buffer *buffer) { ocs::tom::pack_where(buffer, where); })) {
          where_elem = ocs::tom::ElementPtr<ocs::tom::PACK>::create();
          ocs::tom::set<PACK_id>(where_elem, SGE_WHERE);
@@ -90,7 +89,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
          ocs::tom::set<PACK_string>(where_elem, hex.c_str());
       }
    }
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
 
    DRETURN(where_elem);
 }
@@ -116,16 +115,16 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
          // the bytes of a bad digit belong to the caller as well
          sge_free(&buffer);
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
-      } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size, false)) == PACK_SUCCESS) {
+      } else if ((ret = ocs::tom::try_init_buffer_from(&pb, buffer, size, false)) == PACK_SUCCESS) {
          try {
             cond = ocs::tom::unpack_where(&pb);
          } catch (const ocs::tom::PackException &) {
             // bytes cut off, an unknown operator or no memory: no condition, as cull_unpack_cond() gave
          }
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
       } else {
          sge_free(&buffer);
-         ERROR(MSG_PACK_ERRORUNPACKING_S, cull_pack_strerror(ret));
+         ERROR(MSG_PACK_ERRORUNPACKING_S, ocs::tom::pack_error_text(ret));
       }
    } else {
       ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(where), SGE_WHERE);
@@ -155,7 +154,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
    ocs::tom::ElementPtr<ocs::tom::PACK> what_elem;
    sge_pack_buffer pb;
 
-   if (init_packbuffer(&pb, 1024, false, false) == PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (ocs_pack_soft(&pb, [what](sge_pack_buffer *buffer) { ocs::tom::pack_what(buffer, what); })) {
          what_elem = ocs::tom::ElementPtr<ocs::tom::PACK>::create();
          ocs::tom::set<PACK_id>(what_elem, SGE_WHAT);
@@ -163,7 +162,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
          ocs::tom::set<PACK_string>(what_elem, hex.c_str());
       }
    }
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
 
    DRETURN(what_elem);
 }
@@ -189,16 +188,16 @@ lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> wh
          // the bytes of a bad digit belong to the caller as well
          sge_free(&buffer);
          ERROR(SFNMAX, MSG_PACK_INVALIDPACKDATA);
-      } else if ((ret = init_packbuffer_from_buffer(&pb, buffer, size, false)) == PACK_SUCCESS) {
+      } else if ((ret = ocs::tom::try_init_buffer_from(&pb, buffer, size, false)) == PACK_SUCCESS) {
          try {
             cond = ocs::tom::unpack_what(&pb);
          } catch (const ocs::tom::PackException &) {
             // bytes cut off or no memory: no selection, as cull_unpack_enum() gave
          }
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
       } else {
          sge_free(&buffer);
-         ERROR(MSG_PACK_ERRORUNPACKING_S, cull_pack_strerror(ret));
+         ERROR(MSG_PACK_ERRORUNPACKING_S, ocs::tom::pack_error_text(ret));
       }
    } else {
       ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(what), SGE_WHAT);

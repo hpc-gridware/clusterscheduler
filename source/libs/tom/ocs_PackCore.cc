@@ -449,6 +449,83 @@ namespace ocs::tom {
       DRETURN(ret);
    }
 
+   // ================================================================ non-throwing fronts
+
+   namespace {
+
+      /**
+       * @brief Run a buffer operation and turn its PackException into the code
+       * @tparam Op the type of the operation
+       * @param op the operation
+       * @return PACK_SUCCESS, or the code of the PackException @p op threw
+       */
+      template <typename Op>
+      int pack_code_of(Op &&op) noexcept {
+         try {
+            op();
+         } catch (const PackException &e) {
+            return e.code();
+         }
+         return PACK_SUCCESS;
+      }
+
+   } // namespace
+
+   int try_init_buffer(sge_pack_buffer *pb, const std::size_t initial_size, const bool just_count,
+                       const bool with_auth_info) noexcept {
+      return pack_code_of([&] { init_buffer(pb, initial_size, just_count, with_auth_info); });
+   }
+
+   int try_init_buffer_from(sge_pack_buffer *pb, char *buf, const std::uint32_t buflen,
+                            const bool with_auth_info) noexcept {
+      return pack_code_of([&] { init_buffer_from(pb, buf, buflen, with_auth_info); });
+   }
+
+   int try_put_uint32(sge_pack_buffer *pb, const std::uint32_t value) noexcept {
+      return pack_code_of([&] { put_uint32(pb, value); });
+   }
+
+   int try_put_double(sge_pack_buffer *pb, const double value) noexcept {
+      return pack_code_of([&] { put_double(pb, value); });
+   }
+
+   int try_put_str(sge_pack_buffer *pb, const char *str) noexcept {
+      return pack_code_of([&] { put_str(pb, str); });
+   }
+
+   int try_get_uint32(sge_pack_buffer *pb, std::uint32_t *value) noexcept {
+      const int code = pack_code_of([&] { *value = get_uint32(pb); });
+      if (code != PACK_SUCCESS) {
+         *value = 0;
+      }
+      return code;
+   }
+
+   int try_get_double(sge_pack_buffer *pb, double *value) noexcept {
+      const int code = pack_code_of([&] { *value = get_double(pb); });
+      if (code != PACK_SUCCESS) {
+         *value = 0;
+      }
+      return code;
+   }
+
+   int try_get_str(sge_pack_buffer *pb, char **str) noexcept {
+      // *str is only assigned when get_str() returns, so it stays as it was on an error
+      return pack_code_of([&] { *str = get_str(pb); });
+   }
+
+   std::size_t buffer_used(const sge_pack_buffer *pb) noexcept {
+      return pb->bytes_used;
+   }
+
+   bool buffer_filled(const sge_pack_buffer *pb) noexcept {
+      return pb->bytes_used > 2 * INTSIZE;
+   }
+
+   bool buffer_has_unread(const sge_pack_buffer *pb) noexcept {
+      return pb->bytes_used < pb->mem_size;
+   }
+
    // ================================================================ objects
 
 } // namespace ocs::tom

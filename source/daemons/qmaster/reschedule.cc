@@ -256,7 +256,7 @@ reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *
        * Cache the next pointer before processing: with ENABLE_RESCHEDULE_KILL
        * reschedule_job() -> sge_commit_job(COMMIT_ST_FINISHED_FAILED_EE) now
        * buries the job synchronously (CS-1239 consolidation), which removes
-       * the current jep from this very list. A plain for_each_rw_lv would
+       * the current jep from this very list. A plain range-for would
        * dereference next through the freed element.
        */
       auto next_jep = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().front();

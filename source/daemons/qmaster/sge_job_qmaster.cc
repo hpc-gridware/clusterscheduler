@@ -106,7 +106,7 @@
 #include "sched/sge_complex_schedd.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_BN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -760,7 +760,7 @@ ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const ocs::tom:
          uint32_t dummymid = 0;
          sge_pack_buffer pb;
 
-         init_packbuffer(&pb, 256); /* this is more than sufficient */
+         ocs::tom::try_init_buffer(&pb, 256); /* this is more than sufficient */
          pack_ack(&pb, type, job_id, ja_task_id, nullptr);
          /*
           * Send the ack to slave exec host. No special error handling done.
@@ -770,7 +770,7 @@ ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const ocs::tom:
           */
          ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, host,
                                                          ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, &pb, &dummymid);
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
       }
    }
    DRETURN_VOID;

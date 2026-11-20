@@ -253,7 +253,7 @@ static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_le
          }
       }
       else {
-         // the name, or "No list name specified" for a list without one, as lGetListName() gave it
+         // the name, or "No list name specified" for a list without one
          const char* listName = ocs::tom::list_name(lp);
          if (listName == nullptr || strcmp(listName, "No list name specified") == 0 || strcmp(listName, "") == 0){
             listName = "element";

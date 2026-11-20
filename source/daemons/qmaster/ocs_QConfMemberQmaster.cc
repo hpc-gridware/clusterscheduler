@@ -43,7 +43,6 @@
 #include "msg_common.h"
 #include "ocs_QConfMemberQmaster.h"
 #include "sge_c_gdi.h"
-#include "cull/cull_transitional.h"
 
 namespace {
    /** @brief Write one access list through the object's own modifier
@@ -81,7 +80,7 @@ namespace {
                                                     ocs::gdi::SubCommand::NONE, nullptr, monitor);
       why.clear();
       if (ret != STATUS_OK) {
-         for_each_ep_lv(aep, alp) {
+         for (const auto aep : *alp) {
             if (ocs::tom::get<AN_status>(aep) != STATUS_OK && ocs::tom::get<AN_text>(aep) != nullptr) {
                why = ocs::tom::get<AN_text>(aep);
                break;

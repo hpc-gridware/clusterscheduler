@@ -391,4 +391,128 @@ namespace ocs::tom {
     */
    int hex_to_bytes(const char *hex, char **bytes);
 
+   /**
+    * @name Non-throwing fronts
+    * @brief The buffer functions for code that reacts to a PACK_* code instead of an exception
+    *
+    * Daemon code (execd, qmaster, GDI, spooling) checks or ignores the result
+    * of a pack operation and must not see an exception: one escaping there
+    * would end the daemon. These fronts call the functions above and turn a
+    * PackException back into its code, so that the caller keeps its branch on
+    * the code. They pack and unpack the same bytes.
+    * @{
+    */
+
+   /**
+    * @brief Prepare a buffer for packing, returning the code instead of throwing
+    * @param pb the buffer, overwritten
+    * @param initial_size the bytes to allocate first, 0 for the default chunk
+    * @param just_count true for a buffer that only counts
+    * @param with_auth_info true to write the sender information of this process
+    * @return PACK_SUCCESS, or the code init_buffer() throws with
+    * @see Old form: init_packbuffer()
+    */
+   int try_init_buffer(sge_pack_buffer *pb, std::size_t initial_size, bool just_count = false,
+                       bool with_auth_info = true) noexcept;
+
+   /**
+    * @brief Prepare a buffer for unpacking bytes received, returning the code instead of throwing
+    *
+    * The buffer takes the bytes over also on an error (not when @p pb is null); clear_buffer() frees them.
+    *
+    * @param pb the buffer, overwritten
+    * @param buf the bytes, freed with the buffer
+    * @param buflen how many there are
+    * @param with_auth_info true to check and read the sender information
+    * @return PACK_SUCCESS, or the code init_buffer_from() throws with
+    * @see Old form: init_packbuffer_from_buffer()
+    */
+   int try_init_buffer_from(sge_pack_buffer *pb, char *buf, std::uint32_t buflen, bool with_auth_info = true) noexcept;
+
+   /**
+    * @brief Write a 32 bit number, returning the code instead of throwing
+    * @param pb the buffer
+    * @param value the number
+    * @return PACK_SUCCESS, PACK_BADARG or PACK_ENOMEM
+    * @see Old form: packint()
+    */
+   int try_put_uint32(sge_pack_buffer *pb, std::uint32_t value) noexcept;
+
+   /**
+    * @brief Write a double, returning the code instead of throwing
+    * @param pb the buffer
+    * @param value the number
+    * @return PACK_SUCCESS, PACK_BADARG or PACK_ENOMEM
+    * @see Old form: packdouble()
+    */
+   int try_put_double(sge_pack_buffer *pb, double value) noexcept;
+
+   /**
+    * @brief Write a string, returning the code instead of throwing; a null string is written as an empty one
+    * @param pb the buffer
+    * @param str the string, or nullptr
+    * @return PACK_SUCCESS, PACK_BADARG or PACK_ENOMEM
+    * @see Old form: packstr()
+    */
+   int try_put_str(sge_pack_buffer *pb, const char *str) noexcept;
+
+   /**
+    * @brief Read a 32 bit number, returning the code instead of throwing
+    * @param pb the buffer
+    * @param[out] value receives the number, 0 on an error
+    * @return PACK_SUCCESS, PACK_BADARG or PACK_FORMAT
+    * @see Old form: unpackint()
+    */
+   int try_get_uint32(sge_pack_buffer *pb, std::uint32_t *value) noexcept;
+
+   /**
+    * @brief Read a double, returning the code instead of throwing
+    * @param pb the buffer
+    * @param[out] value receives the number, 0 on an error
+    * @return PACK_SUCCESS, PACK_BADARG or PACK_FORMAT
+    * @see Old form: unpackdouble()
+    */
+   int try_get_double(sge_pack_buffer *pb, double *value) noexcept;
+
+   /**
+    * @brief Read a string, returning the code instead of throwing; an empty one is read as nullptr
+    * @param pb the buffer
+    * @param[out] str receives the string, owned by the caller and freed with sge_free(); left as it was on an
+    *        error
+    * @return PACK_SUCCESS, PACK_BADARG, PACK_FORMAT or PACK_ENOMEM
+    * @see Old form: unpackstr()
+    */
+   int try_get_str(sge_pack_buffer *pb, char **str) noexcept;
+
+   /**
+    * @brief The bytes written to a buffer, or read from it so far, header included
+    * @param pb the buffer, not null
+    * @return the number of bytes
+    * @see Old form: pb_used()
+    */
+   [[nodiscard]] std::size_t buffer_used(const sge_pack_buffer *pb) noexcept;
+
+   /**
+    * @brief Whether a buffer holds more bytes than the padding and the version (2 * INTSIZE)
+    *
+    * The sender information follows them, at least as an empty string, so
+    * this is true for every prepared buffer to pack into; false for a
+    * counting buffer that nothing was counted into.
+    *
+    * @param pb the buffer, not null
+    * @return true if more than 2 * INTSIZE bytes were written
+    * @see Old form: pb_filled()
+    */
+   [[nodiscard]] bool buffer_filled(const sge_pack_buffer *pb) noexcept;
+
+   /**
+    * @brief Whether a buffer received holds bytes that were not read yet
+    * @param pb the buffer, not null
+    * @return true if fewer bytes were read than the buffer holds
+    * @see Old form: pb_unused() > 0
+    */
+   [[nodiscard]] bool buffer_has_unread(const sge_pack_buffer *pb) noexcept;
+
+   /** @} */
+
 } // namespace ocs::tom

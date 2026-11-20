@@ -108,7 +108,7 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /** @brief Whether the share tree should be spooled on this pass
  *
@@ -1418,17 +1418,17 @@ int distribute_ticket_orders(const ocs::tom::ConstList<ocs::tom::RTIC> ticket_or
       if (hep &&sge_gmt32_to_gmt64(last_heard_from + 10 * mconf_get_load_report_time()) > now) {
          sge_pack_buffer pb;
 
-         if (init_packbuffer(&pb, sizeof(uint32_t) * 3 * n) == PACK_SUCCESS) {
+         if (ocs::tom::try_init_buffer(&pb, sizeof(uint32_t) * 3 * n) == PACK_SUCCESS) {
             uint32_t dummyid = 0;
             for (const auto ep2 : to_send) {
-               packint(&pb, ocs::tom::get<OR_job_number>(ep2));
-               packint(&pb, ocs::tom::get<OR_ja_task_number>(ep2));
-               packdouble(&pb, ocs::tom::get<OR_ticket>(ep2));
+               ocs::tom::try_put_uint32(&pb, ocs::tom::get<OR_job_number>(ep2));
+               ocs::tom::try_put_uint32(&pb, ocs::tom::get<OR_ja_task_number>(ep2));
+               ocs::tom::try_put_double(&pb, ocs::tom::get<OR_ticket>(ep2));
             }
             cl_err = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, host_name,
                                                                  ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET, &pb, &dummyid);
             MONITOR_MESSAGES_OUT(monitor);
-            clear_packbuffer(&pb);
+            ocs::tom::clear_buffer(&pb);
             DPRINTF("%s %d ticket changings to execd@%s\n",
                     (cl_err == CL_RETVAL_OK) ? "failed sending" : "sent", n, host_name);
          }

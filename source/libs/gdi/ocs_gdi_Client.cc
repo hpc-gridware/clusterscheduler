@@ -49,7 +49,6 @@
 #include "sgeobj/cull/sge_permission_PERM_L.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
 #include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_ID.h"
@@ -351,9 +350,9 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
    auto alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, lp, where, what);
 
    /* in case the gdi request failed: error handling & return */
-   if (const uint32_t status = ocs::tom::get<AN_status>(lFirst(alp)); status != STATUS_OK) {
+   if (const uint32_t status = ocs::tom::get<AN_status>(alp->front()); status != STATUS_OK) {
       if (!already_logged) {
-         ERROR(SFN, ocs::tom::get<AN_text>(lFirst(alp)));
+         ERROR(SFN, ocs::tom::get<AN_text>(alp->front()));
          already_logged = 1;
       }
 

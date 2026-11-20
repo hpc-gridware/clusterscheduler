@@ -54,7 +54,6 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
-#include "cull/cull_transitional.h"
 
 #define CLIENT_WAIT_TIME_S 1 ///< how long a client waits for a packet to be handled before checking again
 #define GDI_PACKET_MUTEX "gdi_packet_mutex" ///< name of Packet::mutex, used in the lock trace
@@ -338,7 +337,7 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
     */
    if (ret) {
       if (size_t size = get_pb_size(); size > 0) {
-         int pack_ret = init_packbuffer(&pb, size);
+         int pack_ret = ocs::tom::try_init_buffer(&pb, size);
          if (pack_ret != PACK_SUCCESS) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, "unable to prepare packbuffer for sending request");
             answer_list_add(answer_list, SGE_EVENT, STATUS_NOQMASTER, ANSWER_QUALITY_ERROR);
@@ -391,7 +390,7 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 
    /* after this point we do no longer need pb - free its resources */
    if (pb_initialized) {
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
 
    /*
@@ -504,7 +503,7 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
          DTRACE;
          delete ret_packet;
       }
-      clear_packbuffer(&rpb);
+      ocs::tom::clear_buffer(&rpb);
    }
 
    /*
@@ -618,12 +617,12 @@ ocs::gdi::Packet::get_pb_size() {
    ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
    sge_pack_buffer tmppb;
 
-   init_packbuffer(&tmppb, 0, true, false);
+   ocs::tom::try_init_buffer(&tmppb, 0, true, false);
    local_ret = pack(&local_answer_list, &tmppb);
    if (local_ret) {
-      ret = pb_used(&tmppb);
+      ret = static_cast<uint32_t>(ocs::tom::buffer_used(&tmppb));
    }
-   clear_packbuffer(&tmppb);
+   ocs::tom::clear_buffer(&tmppb);
    DRETURN(ret);
 }
 
@@ -651,17 +650,17 @@ ocs::gdi::Packet::unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_
       uint32_t sub_command = 0;
       uint32_t has_next_int = 0;
 
-      if ((pack_ret = unpackint(pb, &command))) {
+      if ((pack_ret = ocs::tom::try_get_uint32(pb, &command))) {
          goto error_with_mapping;
       }
       task->command = static_cast<Command>(command);
 
-      if ((pack_ret = unpackint(pb, &sub_command))) {
+      if ((pack_ret = ocs::tom::try_get_uint32(pb, &sub_command))) {
          goto error_with_mapping;
       }
       task->sub_command = static_cast<SubCommand>(sub_command);
 
-      if ((pack_ret = unpackint(pb, &target_ulong32))) {
+      if ((pack_ret = ocs::tom::try_get_uint32(pb, &target_ulong32))) {
          goto error_with_mapping;
       }
       task->target = static_cast<Target>(target_ulong32);
@@ -681,7 +680,7 @@ ocs::gdi::Packet::unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_
          goto error_with_mapping;
       }
 
-      if ((pack_ret = unpackint(pb, &has_next_int))) {
+      if ((pack_ret = ocs::tom::try_get_uint32(pb, &has_next_int))) {
          goto error_with_mapping;
       }
       has_next = (has_next_int > 0);
@@ -712,7 +711,7 @@ ocs::gdi::Packet::unpack_header(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sg
    int pack_ret;
    uint32_t tmp_version = 0;
 
-   if ((pack_ret = unpackint(pb, &tmp_version))) {
+   if ((pack_ret = ocs::tom::try_get_uint32(pb, &tmp_version))) {
       goto error_with_mapping;
    }
    version = tmp_version;
@@ -771,7 +770,7 @@ ocs::gdi::Packet::pack_header(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_
    bool ret = true;
    int pack_ret;
 
-   pack_ret = packint(pb, version);
+   pack_ret = ocs::tom::try_put_uint32(pb, version);
    if (pack_ret != PACK_SUCCESS) {
       goto error_with_mapping;
    }
@@ -798,17 +797,17 @@ ocs::gdi::Packet::pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_
    int pack_ret;
 
    if (task != nullptr && !is_intern_request) {
-      pack_ret = packint(pb, static_cast<uint32_t>(task->command));
+      pack_ret = ocs::tom::try_put_uint32(pb, static_cast<uint32_t>(task->command));
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
 
-      pack_ret = packint(pb, static_cast<uint32_t>(task->sub_command));
+      pack_ret = ocs::tom::try_put_uint32(pb, static_cast<uint32_t>(task->sub_command));
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
 
-      pack_ret = packint(pb, static_cast<uint32_t>(task->target));
+      pack_ret = ocs::tom::try_put_uint32(pb, static_cast<uint32_t>(task->target));
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }
@@ -847,7 +846,7 @@ ocs::gdi::Packet::pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_
          goto error_with_mapping;
       }
 
-      pack_ret = packint(pb, has_next ? 1 : 0);
+      pack_ret = ocs::tom::try_put_uint32(pb, has_next ? 1 : 0);
       if (pack_ret != PACK_SUCCESS) {
          goto error_with_mapping;
       }

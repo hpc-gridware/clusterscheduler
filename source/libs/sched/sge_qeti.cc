@@ -56,7 +56,6 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
 
 #include "sgeobj/sge_pe.h"
 #include "sgeobj/sge_job.h"
@@ -360,9 +359,9 @@ static void sge_qeti_init_refs(const ocs::tom::List<ocs::tom::QETI> cref_lp) {
       auto rue_ep = sge_qeti_rue(cr_ep);
       auto utilization_diagram = ocs::tom::get<RUE_utilized>(rue_ep);
       DPRINTF("   QETI INIT: %s %p\n", ocs::tom::get<RUE_name>(rue_ep), utilization_diagram.raw());
-      /* lLast() correctly returns a nullptr reference
-         in case of an empty resource utilization diagram */
-      ocs::tom::set<QETI_queue_end_next>(cr_ep, lLastRW(utilization_diagram).raw());
+      /* back() correctly returns an empty handle (a nullptr reference)
+         in case of an empty resource utilization diagram; the reference is to a mutable element */
+      ocs::tom::set<QETI_queue_end_next>(cr_ep, const_cast<lListElem *>(utilization_diagram.back().raw()));
    }
 
    DRETURN_VOID;

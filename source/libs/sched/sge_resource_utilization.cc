@@ -57,7 +57,6 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
 
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_ulong.h"
@@ -835,8 +834,9 @@ utilization_find_time_or_prevstart_or_prev(const ocs::tom::ConstList<ocs::tom::R
 
    ocs::tom::Element<ocs::tom::RDE> prev;
 
-   // lFirstRW() of a handle gives the mutable element of a read-only list the caller may change
-   for (auto thiz = lFirstRW(diagram); thiz != nullptr; thiz = thiz.next()) {
+   // the caller may change the elements of the read-only list, so the walk hands out mutable elements
+   for (auto thiz = ocs::tom::Element<ocs::tom::RDE>::from_typed(const_cast<lListElem *>(diagram.front().raw()));
+        thiz != nullptr; thiz = thiz.next()) {
       uint64_t rde_time = ocs::tom::get<RDE_time>(thiz);
       if (time == rde_time) {
          DRETURN(std::make_pair(thiz, prev));

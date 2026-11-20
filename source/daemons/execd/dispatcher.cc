@@ -77,7 +77,7 @@
 #include "load_avg.h"
 #include "ocs_Bootstrap.h"
 #include "sig_handlers.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #if defined(SOLARIS)
 #   include "sge_smf.h"
@@ -223,7 +223,7 @@ int sge_execd_process_messages() {
       ret = ocs::gdi::ClientServerBase::gdi_receive_message(msg.snd_name, &msg.snd_id, msg.snd_host,
                                                         &msg.tag, &buffer, &buflen, 0);
       if (ret == CL_RETVAL_OK) {
-         int pack_ret = init_packbuffer_from_buffer(&msg.buf, buffer, buflen);
+         int pack_ret = ocs::tom::try_init_buffer_from(&msg.buf, buffer, buflen);
          if (pack_ret == PACK_SUCCESS) {
             bool from_qmaster = strcmp(msg.snd_name, to_cstr(QMASTER)) == 0;
             bool authentication_ok = true;
@@ -255,7 +255,7 @@ int sge_execd_process_messages() {
                   case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
                      // Here we just store the job in the master job list or add a pe task to the job->ja_task->task_list.
                      // It will be executed later in do_ck_to_do() -> sge_start_jobs().
-                     if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
+                     if (ocs::tom::try_init_buffer(&apb, 1024) == PACK_SUCCESS) {
                         do_job_exec(&msg, &apb, from_qmaster);
                         is_apb_used = true;
                         atag = msg.tag;
@@ -274,7 +274,7 @@ int sge_execd_process_messages() {
                   break;
                   case ocs::gdi::ClientServerBase::TAG_SIGQUEUE:
                   case ocs::gdi::ClientServerBase::TAG_SIGJOB:
-                     if (init_packbuffer(&apb, 1024) == PACK_SUCCESS) {
+                     if (ocs::tom::try_init_buffer(&apb, 1024) == PACK_SUCCESS) {
                         do_signal_queue(&msg, &apb);
                         is_apb_used = true;
                         atag = ocs::gdi::ClientServerBase::TAG_ACK_REQUEST;
@@ -314,12 +314,12 @@ int sge_execd_process_messages() {
                      DPRINTF("***** UNKNOWN TAG TYPE %d\n", msg.tag);
                }
                last_heard = now;
-               clear_packbuffer(&(msg.buf));
+               ocs::tom::clear_buffer(&(msg.buf));
                if (is_apb_used) {
-                  if (pb_filled(&apb)) {
+                  if (ocs::tom::buffer_filled(&apb)) {
                      ocs::gdi::ClientServerBase::gdi_send_message_pb(0, msg.snd_name, msg.snd_id, msg.snd_host, atag, &apb, nullptr);
                   }
-                  clear_packbuffer(&apb);
+                  ocs::tom::clear_buffer(&apb);
                }
             }
          }

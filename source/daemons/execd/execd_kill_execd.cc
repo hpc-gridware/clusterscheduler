@@ -57,7 +57,7 @@
 #include "execd_signal_queue.h"
 #include "symbols.h"
 #include "msg_execd.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 extern int shut_me_down;
 
@@ -69,7 +69,7 @@ int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
 
    uint32_t kill_jobs;
-   unpackint(&(aMsg->buf), &kill_jobs);
+   ocs::tom::try_get_uint32(&(aMsg->buf), &kill_jobs);
 
    DPRINTF("===>KILL EXECD%s\n", kill_jobs?" and jobs":"");
    if (kill_jobs) {

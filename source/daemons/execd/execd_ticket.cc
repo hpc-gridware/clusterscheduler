@@ -50,7 +50,7 @@
 #include "dispatcher.h"
 #include "execd_ticket.h"
 #include "msg_execd.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #ifdef COMPILE_DC
 #  include "ptf.h"
@@ -74,8 +74,9 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    ocs::tom::ListPtr<ocs::tom::JB> ticket_modifier;
 
 
-   while (pb_unused(&(aMsg->buf))>0) {
-      if (unpackint(&(aMsg->buf), &jobid) || unpackint(&(aMsg->buf), &jataskid) || unpackdouble(&(aMsg->buf), &ticket)) {
+   while (ocs::tom::buffer_has_unread(&(aMsg->buf))) {
+      if (ocs::tom::try_get_uint32(&(aMsg->buf), &jobid) || ocs::tom::try_get_uint32(&(aMsg->buf), &jataskid) ||
+          ocs::tom::try_get_double(&(aMsg->buf), &ticket)) {
          ERROR(SFNMAX, MSG_JOB_TICKETFORMAT);
          DRETURN(0);
       }

@@ -70,7 +70,7 @@
 #include <cinttypes>
 #include "msg_utilbin.h"
 #include "msg_clients_common.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /** @brief How many arguments the dump filter accepts */
 #define ARGUMENT_COUNT 15
@@ -536,7 +536,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                   // a certificate only once, and it needs to be decoded in the message receiver as well.
                   // we do not output the parsed auth_info anyway, so we skip decoding and just output the raw auth_info
                   // string.
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
                      ocs::gdi::Packet packet;
                
                      if (packet.unpack(nullptr, &buf)) {
@@ -594,7 +595,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                      }
 
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
    
@@ -604,7 +605,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
                      ocs::tom::RawListPtr rep;
                      bool unpacked = true;
                      try {
@@ -620,7 +622,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            printf("rep: nullptr\n");
                         }
                      }
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
             }
@@ -630,13 +632,14 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
                      uint32_t client_id = 0;
-                     if (unpackint(&buf, &client_id) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &client_id) == PACK_SUCCESS) {
                         printf("      unpacked event client exit (binary buffer length %lu):\n", buffer_length );
                         printf("event client " sge_u32 " exit\n", client_id);
                      }
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
             }
@@ -646,8 +649,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer, &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
-                     while (pb_unused(&buf) > 0) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
+                     while (ocs::tom::buffer_has_unread(&buf)) {
                         ocs::tom::RawElementPtr ack;
                         try {
                            ack = ocs::tom::unpack_raw_elem(&buf, nullptr);
@@ -659,7 +663,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                      }
 
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
             }
@@ -670,7 +674,8 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer, &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
                      if (strcmp(sender_comp_name, "qmaster") == 0) {
                         ocs::tom::RawElementPtr job;
                         try {
@@ -696,7 +701,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                            printf("could not unpack pe task request\n");
                         }
                      }
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
             }
@@ -706,19 +711,20 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                if (cl_util_get_binary_buffer(message_debug_data, &binary_buffer , &buffer_length) == CL_RETVAL_OK) {
                   sge_pack_buffer buf;
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
                      uint32_t jobid    = 0;
                      uint32_t job_signal   = 0;
                      uint32_t jataskid = 0;
                      char *qname       = nullptr;
    
-                     if (unpackint(&buf, &jobid) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &jobid) == PACK_SUCCESS) {
                         printf("jobid (JB_job_number):    " sge_u32 "\n", jobid);
                      }
-                     if (unpackint(&buf, &jataskid) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &jataskid) == PACK_SUCCESS) {
                         printf("jataskid (JAT_task_number): " sge_u32 "\n", jataskid);
                      }
-                     if (unpackstr(&buf, &qname) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_str(&buf, &qname) == PACK_SUCCESS) {
                         if (qname != nullptr) {
                            printf("qname(QU_full_name):    \"%s\"\n", qname);
                         } else {
@@ -726,14 +732,14 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         }
                      }
    
-                     if (unpackint(&buf, &job_signal) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &job_signal) == PACK_SUCCESS) {
                         printf("signal:   " sge_u32 " (%s)\n", job_signal, sge_sig2str(job_signal));
                      }
    
                      if (qname) {
                         sge_free(&qname);
                      }
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
             }
@@ -746,33 +752,34 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
    
                   printf("binary buffer length is %lu\n",buffer_length);  
    
-                  if (init_packbuffer_from_buffer(&buf, (char*)binary_buffer, buffer_length, false) == PACK_SUCCESS) {
+                  if (ocs::tom::try_init_buffer_from(&buf, (char*)binary_buffer, buffer_length, false) ==
+                      PACK_SUCCESS) {
                      uint32_t jobid    = 0;
                      uint32_t queue_signal   = 0;
                      uint32_t jataskid = 0;
                      char *qname       = nullptr;
    
-                     if (unpackint(&buf, &jobid) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &jobid) == PACK_SUCCESS) {
                         printf("jobid (0 - unused):    " sge_u32 "\n", jobid);
                      }
-                     if (unpackint(&buf, &jataskid) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &jataskid) == PACK_SUCCESS) {
                         printf("jataskid (0 - unused): " sge_u32 "\n", jataskid);
                      }
-                     if (unpackstr(&buf, &qname) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_str(&buf, &qname) == PACK_SUCCESS) {
                         if (qname != nullptr) {
                            printf("qname(QU_full_name):    \"%s\"\n", qname);
                         } else {
                            printf("qping: qname(QU_full_name) is nullptr !!!!\n");
                         }
                      }
-                     if (unpackint(&buf, &queue_signal) == PACK_SUCCESS) {
+                     if (ocs::tom::try_get_uint32(&buf, &queue_signal) == PACK_SUCCESS) {
                         printf("signal:   " sge_u32 " (%s)\n", queue_signal, sge_sig2str(queue_signal));
                      }
    
                      if (qname) {
                         sge_free(&qname);
                      }
-                     clear_packbuffer(&buf);
+                     ocs::tom::clear_buffer(&buf);
                   }
                }
             }

@@ -90,7 +90,7 @@
 #include "sge.h"
 #include "msg_execd.h"
 #include "msg_daemons_common.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 extern volatile int shut_me_down;
 
@@ -110,10 +110,10 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
    uint32_t jobid, signal, jataskid;
    char *qname = nullptr;
 
-   if (unpackint(&(aMsg->buf), &jobid) != 0 ||
-       unpackint(&(aMsg->buf), &jataskid) != 0 ||
-       unpackstr(&(aMsg->buf), &qname) != 0 || /* mallocs qname !! */
-       unpackint(&(aMsg->buf), &signal)) {     /* signal doesn't need to be packed */
+   if (ocs::tom::try_get_uint32(&(aMsg->buf), &jobid) != 0 ||
+       ocs::tom::try_get_uint32(&(aMsg->buf), &jataskid) != 0 ||
+       ocs::tom::try_get_str(&(aMsg->buf), &qname) != 0 || /* mallocs qname !! */
+       ocs::tom::try_get_uint32(&(aMsg->buf), &signal)) {     /* signal doesn't need to be packed */
       sge_free(&qname);
       DRETURN(1);
    }

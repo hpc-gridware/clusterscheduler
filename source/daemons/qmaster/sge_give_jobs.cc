@@ -128,7 +128,7 @@
 #include "msg_qmaster.h"
 
 #include <ocs_gdi_ClientServerBase.h>
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 static void
 sge_clear_granted_resources(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
@@ -459,7 +459,7 @@ send_slave_jobs_wc(const ocs::tom::Element<ocs::tom::JB> jep, monitoring_t *moni
          uint32_t dummymid = 0;
          sge_pack_buffer send_pb;
 
-         init_packbuffer(&send_pb, 0);
+         ocs::tom::try_init_buffer(&send_pb, 0);
 
          try {
             jep.pack(send_pb);
@@ -471,7 +471,7 @@ send_slave_jobs_wc(const ocs::tom::Element<ocs::tom::JB> jep, monitoring_t *moni
          } else {
             failed = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, hostname, ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &send_pb, &dummymid);
          }
-         clear_packbuffer(&send_pb);
+         ocs::tom::clear_buffer(&send_pb);
       }
       MONITOR_MESSAGES_OUT(monitor);
       if (failed != CL_RETVAL_OK) {
@@ -606,7 +606,7 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
    */
    ocs::tom::set<JB_ja_template>(tmpjep, nullptr);
 
-   if (init_packbuffer(&pb, 0) != PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 0) != PACK_SUCCESS) {
       DRETURN(-1);
    }
 
@@ -625,7 +625,7 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
                                                            master ? ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION : ocs::gdi::ClientServerBase::TAG_SLAVE_ALLOW, &pb, &dummymid);
    }
 
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
 
    /* We will get an acknowledge from execd. But we wait in the main loop so
       that we can handle some requests until the acknowledge arrives.

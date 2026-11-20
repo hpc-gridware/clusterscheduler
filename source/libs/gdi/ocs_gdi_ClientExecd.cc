@@ -55,7 +55,7 @@
 #include "msg_common.h"
 #include "msg_gdilib.h"
 #include "uti/ocs_Topo.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /* TODO: move this function to execd */
 /**
@@ -218,7 +218,7 @@ int ocs::gdi::ClientExecd::report_list_send(const ocs::tom::ConstList<ocs::tom::
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /* prepare packing buffer */
-   if ((ret = init_packbuffer(&pb, 1024)) == PACK_SUCCESS) {
+   if ((ret = ocs::tom::try_init_buffer(&pb, 1024)) == PACK_SUCCESS) {
       try {
          rlp.pack(pb);
       } catch (const ocs::tom::PackException &e) {
@@ -233,24 +233,24 @@ int ocs::gdi::ClientExecd::report_list_send(const ocs::tom::ConstList<ocs::tom::
 
       case PACK_ENOMEM:
          ERROR(MSG_GDI_REPORTNOMEMORY_I, 1024);
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
          DRETURN(-2);
 
       case PACK_FORMAT:
          ERROR(SFNMAX, MSG_GDI_REPORTFORMATERROR);
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
          DRETURN(-3);
 
       default:
          ERROR(SFNMAX, MSG_GDI_REPORTUNKNOWERROR);
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
          DRETURN(-1);
    }
 
    ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(synchron, nullptr, rhost, commproc, id, &pb,
                                                           ocs::gdi::ClientServerBase::TAG_REPORT_REQUEST, 0, &alp);
 
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
    answer_list_output(&alp);
 
    DRETURN(ret);

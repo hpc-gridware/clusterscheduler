@@ -52,7 +52,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "ocs_gdi_ClientServerBase.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /************************************************************
    TODO: rewrite this function
@@ -519,13 +519,14 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       }
 
       /* fill it in the packing buffer */
-      i = init_packbuffer_from_buffer(pb, (char *) message->message, message->message_length);
+      i = ocs::tom::try_init_buffer_from(pb, (char *) message->message, message->message_length);
 
       /* TODO: the packbuffer must be hold, not deleted !!! */
       message->message = nullptr;
 
       if (i != PACK_SUCCESS) {
-         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, sender->comp_host, sender->comp_name, static_cast<uint32_t>(sender->comp_id), cull_pack_strerror(i));
+         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, sender->comp_host, sender->comp_name,
+               static_cast<uint32_t>(sender->comp_id), ocs::tom::pack_error_text(i));
          PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
          DRETURN(CL_RETVAL_READ_ERROR);
       }
@@ -594,9 +595,9 @@ ocs::gdi::ClientServerBase::to_string(unsigned long tag_value) {
 /**
  * @brief re-resolve and check user information
  *
- * Calls cull_reresolve_check_user() and reacts to the result:
+ * Calls ocs::tom::check_sender() and reacts to the result:
  * If an error is reported this will be output as ERROR message.
- * If no error is reported but the dstring passed into cull_reresolve_check_user() contains a message
+ * If no error is reported but the dstring passed into ocs::tom::check_sender() contains a message
  * then it is output as INFO message.
  *
  * @param pb the pack buffer containing the request and usage data
@@ -612,7 +613,7 @@ ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bo
    bool ret;
    DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
 
-   ret = cull_reresolve_check_user(pb, &error_dstr, local_uid_gid, reresolve_user, reresolve_supp_grp);
+   ret = ocs::tom::check_sender(pb, &error_dstr, local_uid_gid, reresolve_user, reresolve_supp_grp);
    if (!ret) {
       ERROR(SFNMAX, sge_dstring_get_string(&error_dstr));
    } else if (sge_dstring_strlen(&error_dstr) > 0) {

@@ -72,7 +72,7 @@
 #include "job_report_qmaster.h"
 #include "sge_persistence_qmaster.h"
 #include "reschedule.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 static int
 update_license_data(ocs::tom::Element<ocs::tom::EH> hep, ocs::tom::ConstList<ocs::tom::LIC> lp_lic,
@@ -185,7 +185,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
             } else {
                if (!is_pb_used) {
                   is_pb_used = true;
-                  init_packbuffer(&pb, 1024);
+                  ocs::tom::try_init_buffer(&pb, 1024);
                }
                // REP_list names no sub-type in the model; a load report holds LR elements, unpacked with their
                // descriptor, from_typed keeps the old tolerance
@@ -251,7 +251,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
             MONITOR_EJOB(monitor);
             if (!is_pb_used) {
                is_pb_used = true;
-               init_packbuffer(&pb, 1024);
+               ocs::tom::try_init_buffer(&pb, 1024);
             }
             process_job_report(report, hep, rhost, commproc, &pb, monitor, packet->gdi_session);
             if (!old_execd && ocs::tom::get<REP_complete>(report)) {
@@ -269,14 +269,14 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
    delete_from_reschedule_unknown_list(hep, all_jobs_reported, packet->gdi_session);
 
    if (is_pb_used) {
-      if (pb_filled(&pb)) {
+      if (ocs::tom::buffer_filled(&pb)) {
          ocs::tom::ListPtr<ocs::tom::AN> alp;
          /* send all stuff packed during processing to execd */
          ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, 0, &alp);
          MONITOR_MESSAGES_OUT(monitor);
          answer_list_output(&alp);
       }
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
 
    if (send_tag_new_conf) {

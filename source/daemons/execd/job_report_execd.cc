@@ -48,7 +48,7 @@
 #include "uti/ocs_TerminationManager.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_ja_task.h"
@@ -122,18 +122,22 @@ void flush_job_report(const ocs::tom::Element<ocs::tom::JR> jr) {
 }
 
 #if 0
+/**
+ * @brief Trace every job report of #jr_list
+ * @return nothing
+ */
 void trace_jr()
 {
    DENTER(TOP_LAYER);
 
    DPRINTF("--- JOB REPORT LIST ----------------\n");
-   for_each_ep_lv(jr, jr_list) {
-      const char *s;
-
-      if ((s=lGetString(jr, JR_pe_task_id_str))) {
-         DPRINTF("Jobtask " sge_u32"." sge_u32" task %s\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number), s);
+   for (const auto jr : ocs::tom::ConstList<ocs::tom::JR>(jr_list)) {
+      const uint32_t job_number = ocs::tom::get<JR_job_number>(jr);
+      const uint32_t ja_task_number = ocs::tom::get<JR_ja_task_number>(jr);
+      if (const char *s = ocs::tom::get<JR_pe_task_id_str>(jr); s != nullptr) {
+         DPRINTF("Jobtask " sge_u32"." sge_u32" task %s\n", job_number, ja_task_number, s);
       } else {
-         DPRINTF("Jobtask " sge_u32"." sge_u32"\n", lGetUlong(jr, JR_job_number), lGetUlong(jr, JR_ja_task_number));
+         DPRINTF("Jobtask " sge_u32"." sge_u32"\n", job_number, ja_task_number);
       }
    }
    DRETURN_VOID;
@@ -385,7 +389,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DPRINTF("------- GOT ACK'S ---------\n");
 
    /* we get a bunch of ack's */
-   while (pb_unused(&(aMsg->buf)) > 0) {
+   while (ocs::tom::buffer_has_unread(&(aMsg->buf))) {
       ocs::tom::ElementPtr<ocs::tom::ACK> ack;
       try {
          ack = ocs::tom::ElementPtr<ocs::tom::ACK>::unpack(aMsg->buf);

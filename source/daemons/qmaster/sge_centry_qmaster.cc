@@ -81,7 +81,6 @@
 #include "sge_centry_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-#include "cull/cull_transitional.h"
 
 
 /** @brief Apply one attribute change to a complex entry
@@ -418,8 +417,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
                      ret = false;
                   }
                } else {
-                  // answer lists stay raw in this step
-                  const lListElem *answer = lFirst(local_answer_list);
+                  const auto answer = local_answer_list->front();
 
                   ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
                   answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

@@ -64,7 +64,6 @@
 
 #include "msg_common.h"
 #include "msg_qmaster.h"
-#include "cull/cull_transitional.h"
 
 /**
  * @brief Add/modify ckpt object in master ckpt list
@@ -311,7 +310,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
       if (ckpt_is_referenced(found, &local_answer_list,
                              ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                              ocs::DataStore::master_list<SGE_TYPE_CQUEUE>())) {
-         const lListElem *answer = lFirst(local_answer_list);
+         const auto answer = local_answer_list->front();
 
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,

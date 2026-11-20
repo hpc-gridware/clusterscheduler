@@ -55,7 +55,6 @@
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "uti/ocs_Systemd.h"
-#include "cull/cull_transitional.h"
 
 /**
  * @brief Reject an RSMAP resource that is not consumable
@@ -182,8 +181,7 @@ bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_
          ocs::tom::ListPtr<ocs::tom::AN> sub_answers;
          if (centry_fill_and_check(prop, &sub_answers, false, false) != 0) {
             const char *sub_msg = "";
-            const lListElem *first = lFirst(sub_answers);   // answer lists stay untyped
-            if (first != nullptr) {
+            if (const auto first = sub_answers->front()) {
                const char *txt = ocs::tom::get<AN_text>(first);
                if (txt != nullptr) {
                   sub_msg = txt;

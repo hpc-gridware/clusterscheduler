@@ -54,7 +54,7 @@ ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
 
 /** @brief Read one argument, see the header
  *
- * An empty value arrives as a null pointer, because unpackstr() maps an empty
+ * An empty value arrives as a null pointer, because ocs::tom::get_str() maps an empty
  * string to one, and is read back as an empty string.
  *
  * @param name the argument

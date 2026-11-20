@@ -62,7 +62,7 @@
 #include <reaper_execd.h>
 
 #include "ocs_Topo.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #ifdef COMPILE_DC
 #  include "ptf.h"
@@ -84,7 +84,7 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    bool use_qidle = mconf_get_use_qidle();
    uint32_t dummy; /* always 0 */
 
-   unpackint(&(aMsg->buf), &dummy);
+   ocs::tom::try_get_uint32(&(aMsg->buf), &dummy);
 
    const char *old_spool = mconf_get_execd_spool_dir();
    keep_active_t old_keep_active = mconf_get_keep_active();

@@ -47,7 +47,6 @@
 
 #include "ocs_client_parse.h"
 #include "uti/sge_bootstrap_files.h"
-#include "cull/cull_transitional.h"
 
 /****
  **** qstat_usage (static)
@@ -596,7 +595,7 @@ bool ocs::QStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN>
 
    // parsing error => show error and exit
    if (alp != nullptr) {
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();
@@ -610,7 +609,7 @@ bool ocs::QStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN>
       /*
       ** low level parsing error! show answer list
       */
-      for_each_ep_lv(aep, alp) {
+      for (const auto aep : *alp) {
          fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
       }
       alp.reset();

@@ -74,7 +74,6 @@
 #include "sge_persistence_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-#include "cull/cull_transitional.h"
 
 
 static char object_name[] = "parallel environment";
@@ -343,7 +342,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
       ocs::tom::ListPtr<ocs::tom::AN> local_answer_list;
 
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
-         const lListElem *answer = lFirst(local_answer_list);
+         const auto answer = local_answer_list->front();
 
          ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,

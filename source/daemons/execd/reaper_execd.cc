@@ -2040,18 +2040,14 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
 
 #if 0
    {
-      lListElem *ep;
-
-      if (lGetList(jr, JR_usage)) {
+      if (ocs::tom::get<JR_usage>(jr)) {
          DPRINTF("resulting usage attributes:\n");
       } else {
          DPRINTF("empty usage list\n");
       }   
 
-      for_each_ep(ep, lGetList(jr, JR_usage)) {
-         DPRINTF(("    \"%s\" = %f\n",
-            lGetString(ep, UA_name),
-            lGetDouble(ep, UA_value)));
+      for (const auto ep : ocs::tom::get<JR_usage>(jr)) {
+         DPRINTF("    \"%s\" = %f\n", ocs::tom::get<UA_name>(ep), ocs::tom::get<UA_value>(ep));
       }
    }
 #endif

@@ -100,7 +100,7 @@
 #include "sge_reporting_qmaster.h"
 #include "msg_common.h"
 #include "msg_qmaster.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 
 /*-------------------------------------------------------------------------*/
@@ -1276,7 +1276,7 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
       const char *hnm = ocs::tom::get<QU_qhostname>(qep);
       const char *pnm = to_cstr(EXECD);
 
-      if ((i = init_packbuffer(&pb, 256)) == PACK_SUCCESS) {
+      if ((i = ocs::tom::try_init_buffer(&pb, 256)) == PACK_SUCCESS) {
          /* identifier for acknowledgement */
          if (jep) {
             /*
@@ -1287,17 +1287,17 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
             if (!ocs::tom::get<JAT_master_queue>(jatep) ||
                 is_pe_master_task_send(jatep)) {
                /* TAG_SIGJOB */
-               packint(&pb, ocs::tom::get<JB_job_number>(jep));
-               packint(&pb, ocs::tom::get<JAT_task_number>(jatep));
-               packstr(&pb, nullptr);
-               packint(&pb, how);
+               ocs::tom::try_put_uint32(&pb, ocs::tom::get<JB_job_number>(jep));
+               ocs::tom::try_put_uint32(&pb, ocs::tom::get<JAT_task_number>(jatep));
+               ocs::tom::try_put_str(&pb, nullptr);
+               ocs::tom::try_put_uint32(&pb, how);
             }
          } else {
             /* TAG_SIGQUEUE */
-            packint(&pb, 0);
-            packint(&pb, 0);
-            packstr(&pb, ocs::tom::get<QU_full_name>(qep));
-            packint(&pb, how);
+            ocs::tom::try_put_uint32(&pb, 0);
+            ocs::tom::try_put_uint32(&pb, 0);
+            ocs::tom::try_put_str(&pb, ocs::tom::get<QU_full_name>(qep));
+            ocs::tom::try_put_uint32(&pb, how);
          }
 
          if (mconf_get_simulate_execds()) {
@@ -1307,7 +1307,7 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
             if (jep && how == SGE_SIGKILL)
                trigger_job_resend(sge_get_gmt64(), nullptr, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep), 1);
          } else {
-            if (pb_filled(&pb)) {
+            if (ocs::tom::buffer_filled(&pb)) {
                uint32_t dummy = 0;
                i = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, pnm, 1, hnm,
                                                                jep ? ocs::gdi::ClientServerBase::TAG_SIGJOB : ocs::gdi::ClientServerBase::TAG_SIGQUEUE, &pb, &dummy);
@@ -1315,7 +1315,7 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
          }
 
          MONITOR_MESSAGES_OUT(monitor);
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
       } else {
          i = CL_RETVAL_MALLOC;  /* an error */
       }

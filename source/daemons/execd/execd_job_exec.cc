@@ -96,7 +96,7 @@
 #include "get_path.h"
 #include "msg_common.h"
 #include "msg_execd.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 extern volatile int jobs_to_start;
 
@@ -780,7 +780,7 @@ static int handle_task(const ocs::tom::ConstElement<ocs::tom::PETR> petrep, char
    /* send ack to sender of task */
    if (tid) {
       DPRINTF("sending tid %s\n", new_task_id);
-      packstr(apb, new_task_id);
+      ocs::tom::try_put_str(apb, new_task_id);
    }
 
    DRETURN(0);
@@ -792,7 +792,7 @@ Error:
     */
    /* send nack to sender of task */
    DPRINTF("sending nack\n");
-   packstr(apb, "none");
+   ocs::tom::try_put_str(apb, "none");
 
    DRETURN(-1);
 }

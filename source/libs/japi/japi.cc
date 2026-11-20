@@ -111,7 +111,6 @@
 #include "sgeobj/sge_usage.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Raw.h"
@@ -407,7 +406,7 @@ int japi_init_mt(dstring *diag) {
    */
    gdi_errno = ocs::gdi::ClientBase::setup_and_enroll(prog_number, MAIN_THREAD, &alp);
    if ((gdi_errno != ocs::gdi::AE_OK) && (gdi_errno != ocs::gdi::AE_ALREADY_SETUP)) {
-      answer_to_dstring(lFirst(alp), diag);
+      answer_to_dstring(alp->front(), diag);
       alp.reset();
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
    }
@@ -718,7 +717,7 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
 
       /* return error context from event client thread if there is such */
       JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-      aep = lFirst(*japi_ec_alp());
+      aep = (*japi_ec_alp())->front();
       if (aep != nullptr) {
          answer_to_dstring(aep, diag);
       }
@@ -1161,7 +1160,7 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
    }
    response.reset();
 
-   if (!lFirst(alp)) {
+   if (alp->empty()) {
       alp.reset();
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
       DRETURN(DRMAA_ERRNO_INTERNAL_ERROR);
@@ -1190,7 +1189,7 @@ static int japi_send_job(ocs::tom::ElementPtr<ocs::tom::JB> &sge_job_template, u
       }
 
       answer_to_dstring(aep, diag);
-      if (lNext(aep)) {
+      if (aep.next()) {
          sge_dstring_append(diag, "\n");
       }
    }
@@ -2348,7 +2347,7 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
          JAPI_UNLOCK_SESSION();
 
          JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
-         aep = lFirst(*japi_ec_alp());
+         aep = (*japi_ec_alp())->front();
          /* return error context from event client thread if there is such */
          if (aep != nullptr) {
             sge_dstring_clear(diag);
@@ -3020,7 +3019,7 @@ static std::tuple<int, ocs::tom::ListPtr<ocs::tom::JB>> japi_get_job(const uint3
    ocs::tom::ListPtr<ocs::tom::JB> retrieved_job_list;
    gdi_multi.get_response(&alp, ocs::gdi::Command::GET, ocs::gdi::SubCommand::NONE,
                           ocs::gdi::Target::JB_LIST, jb_id, retrieved_job_list);
-   aep = lFirst(alp);
+   aep = alp->front();
    if (aep == nullptr) {
       sge_dstring_copy_string(diag, MSG_JAPI_BAD_GDI_ANSWER_LIST);
       alp.reset();
@@ -3203,15 +3202,16 @@ int japi_job_ps(const char *job_id_str, int *remote_ps, dstring *diag) {
    /* inactive code sample for retrieving master node information of a running job */
 #if 0
    if (node) {
-      const lListElem *ja_task, *master_node;
+      ocs::tom::ConstElement<ocs::tom::JAT> ja_task;
+      ocs::tom::ConstElement<ocs::tom::JG> master_node;
       switch (*remote_ps) {
       case DRMAA_PS_RUNNING:
       case DRMAA_PS_SYSTEM_SUSPENDED:
       case DRMAA_PS_USER_SUSPENDED:
       case DRMAA_PS_USER_SYSTEM_SUSPENDED:
-         if ((ja_task = job_search_task(lFirst(retrieved_job_list), nullptr, taskid)) &&
-            (master_node = lFirst(lGetList(ja_task, JAT_granted_destin_identifier_list))))
-            sge_dstring_copy_string(node, lGetHost(master_node, JG_qhostname));
+         if ((ja_task = job_search_task(retrieved_job_list->front(), nullptr, taskid)) &&
+            (master_node = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).front()))
+            sge_dstring_copy_string(node, ocs::tom::get<JG_qhostname>(master_node).c_str());
          else
             sge_dstring_copy_string(node, "<unknown>");
          break;

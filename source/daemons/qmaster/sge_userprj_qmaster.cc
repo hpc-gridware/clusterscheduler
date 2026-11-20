@@ -89,7 +89,6 @@
 #include "msg_common.h"
 #include "msg_qmaster.h"
 #include "ocs_Bootstrap.h"
-#include "cull/cull_transitional.h"
 
 
 namespace {
@@ -808,7 +807,7 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
                                        ocs::gdi::Command::NONE, ocs::gdi::SubCommand::NONE, nullptr, monitor);
 
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {
-      const lListElem *err = lFirst(tmpAnswer);
+      const auto err = tmpAnswer->front();
       const char *text = ocs::tom::get<AN_text>(err);
       uint32_t status = ocs::tom::get<AN_status>(err);
       answer_quality_t quality = (answer_quality_t) ocs::tom::get<AN_quality>(err);

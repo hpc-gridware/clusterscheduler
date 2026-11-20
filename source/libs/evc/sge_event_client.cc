@@ -72,7 +72,7 @@
 
 #include "msg_common.h"
 #include "uti/ocs_Bootstrap.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /** @brief Debug layer used by every `DENTER`/`DPRINTF` in this file */
 #define EVC_LAYER TOP_LAYER
@@ -1269,8 +1269,8 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
    if (sge_evc->ec != nullptr) {
       sge_pack_buffer pb;
 
-      if (init_packbuffer(&pb, sizeof(uint32_t)) == PACK_SUCCESS) {
-         /* error message is output from init_packbuffer */
+      if (ocs::tom::try_init_buffer(&pb, sizeof(uint32_t)) == PACK_SUCCESS) {
+         /* error message is output from ocs::tom::try_init_buffer() */
          int send_ret;
          ocs::tom::ListPtr<ocs::tom::AN> alp;
          /* TODO: to master only !!!!! */
@@ -1279,11 +1279,11 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
          const int commid   = 1;
 
 
-         packint(&pb, ocs::tom::get<EV_id>(sge_evc->ec));
+         ocs::tom::try_put_uint32(&pb, ocs::tom::get<EV_id>(sge_evc->ec));
 
          send_ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, ocs::gdi::ClientServerBase::TAG_EVENT_CLIENT_EXIT, 0, &alp);
 
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
          answer_list_output (&alp);
 
          if (send_ret == CL_RETVAL_OK) {
@@ -2098,7 +2098,7 @@ ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
       alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::EV_LIST, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE,
                                       request);
 
-      if (ocs::tom::get<AN_status>(lFirst(alp)) == STATUS_OK) {
+      if (ocs::tom::get<AN_status>(alp->front()) == STATUS_OK) {
          alp.reset();
          ret = true;
       } else {
@@ -2577,7 +2577,7 @@ get_event_list(sge_evc_class_t *thiz, const int sync, int *commlib_error) {
       } catch (const ocs::tom::FieldException &) {
          ERROR(SFNMAX, MSG_LIST_FAILEDINCULLUNPACKREPORT);
       }
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
    if (commlib_error != nullptr) {
       *commlib_error = help;

@@ -4718,9 +4718,10 @@ parallel_tag_queues_suitable4job(sge_assignment_t *a, category_use_t *use_catego
 #if 0
       if (best_result != DISPATCH_OK) {
          dstring sched_info = DSTRING_INIT;
-         for_each_ep(gdil_ep, *a->gdil) {
+         for (const auto gdil_ep : *a->gdil) {
             sge_dstring_sprintf(&sched_info, "   HOST: %s QUEUE: %s SLOTS %d",
-               lGetHost(gdil_ep, JG_qhostname), lGetString(gdil_ep, JG_qname), (int)lGetUlong(gdil_ep, JG_slots));
+               ocs::tom::get<JG_qhostname>(gdil_ep).c_str(), ocs::tom::get<JG_qname>(gdil_ep),
+               static_cast<int>(ocs::tom::get<JG_slots>(gdil_ep)));
             schedd_log(sge_dstring_get_string(&sched_info));
          }
          sge_dstring_free(&sched_info);
@@ -7694,18 +7695,17 @@ parallel_limit_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Co
 #if 0
 {
    const char *object_name = "bla";
-   const lListElem *rde;
    DPRINTF("resource utilization: %s \"%s\" %f utilized now\n",
-           object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
-           lGetDouble(tmp_rue_elem, RUE_utilized_now));
-   for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized)) {
-      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
+           object_name?object_name:"<unknown_object>", ocs::tom::get<RUE_name>(tmp_rue_elem),
+           ocs::tom::get<RUE_utilized_now>(tmp_rue_elem));
+   for (const auto rde : ocs::tom::get<RUE_utilized>(tmp_rue_elem)) {
+      DPRINTF("\t" sge_u64 "  %f\n", ocs::tom::get<RDE_time>(rde), ocs::tom::get<RDE_amount>(rde));
    }
    DPRINTF("resource utilization: %s \"%s\" %f utilized now non-exclusive\n",
-           object_name?object_name:"<unknown_object>", lGetString(tmp_rue_elem, RUE_name),
-           lGetDouble(tmp_rue_elem, RUE_utilized_now_nonexclusive));
-   for_each_ep(rde, lGetList(tmp_rue_elem, RUE_utilized_nonexclusive)) {
-      DPRINTF("\t" sge_u64 "  %f\n", lGetUlong64(rde, RDE_time), lGetDouble(rde, RDE_amount));
+           object_name?object_name:"<unknown_object>", ocs::tom::get<RUE_name>(tmp_rue_elem),
+           ocs::tom::get<RUE_utilized_now_nonexclusive>(tmp_rue_elem));
+   for (const auto rde : ocs::tom::get<RUE_utilized_nonexclusive>(tmp_rue_elem)) {
+      DPRINTF("\t" sge_u64 "  %f\n", ocs::tom::get<RDE_time>(rde), ocs::tom::get<RDE_amount>(rde));
    }
 }
 #endif

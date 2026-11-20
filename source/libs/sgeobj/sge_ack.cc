@@ -51,7 +51,7 @@
 
 #include "gdi/ocs_gdi_ClientBase.h"
 #include "gdi/ocs_gdi_ClientServerBase.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /**
  * @brief Pack an acknowledgement into a send buffer
@@ -106,14 +106,14 @@ int sge_send_ack_to_qmaster(uint32_t type, uint32_t ulong_val,
    int         id   = 1;
    
    /* send an ack to the qmaster for the events */
-   if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 1024) != PACK_SUCCESS) {
       DRETURN(CL_RETVAL_MALLOC);
    }
 
    pack_ack(&pb, type, ulong_val, ulong_val_2, str);
 
    ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, id, &pb, ocs::gdi::ClientServerBase::TAG_ACK_REQUEST, 0, alpp);
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
    answer_list_output (alpp);
 
    DRETURN(ret);

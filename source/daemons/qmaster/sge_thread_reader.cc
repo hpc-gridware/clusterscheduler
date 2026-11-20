@@ -64,7 +64,7 @@
 
 #include <ocs_gdi_ClientServerBase.h>
 #include "sgeobj/sge_answer.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /** @brief Release the monitoring state when the reader thread ends
  *
@@ -201,7 +201,7 @@ sge_reader_main(void *arg) {
           * prepare buffer for sending an answer 
           */
          if (!packet->is_intern_request && packet->request_type == PACKET_GDI_REQUEST) {
-            init_packbuffer(&(packet->pb), 0);
+            ocs::tom::try_init_buffer(&(packet->pb), 0);
          }
 
          MONITOR_MESSAGES(p_monitor);
@@ -313,7 +313,7 @@ sge_reader_main(void *arg) {
                MONITOR_MESSAGES_OUT(p_monitor);
                ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, packet->host, packet->commproc, packet->commproc_id,
                                                                 &(packet->pb), ocs::gdi::ClientServerBase::TAG_GDI_REQUEST, packet->response_id, nullptr);
-               clear_packbuffer(&(packet->pb));
+               ocs::tom::clear_buffer(&(packet->pb));
                delete packet;
                /*
                 * Code only for TS: 

@@ -2205,6 +2205,209 @@ namespace typed_ops {
 } // namespace typed_ops
 
 
+/**
+ * @brief A copy of the bytes of a buffer in memory of its own, as a buffer to read takes it over
+ * @param pb the buffer whose bytes are copied
+ * @return the copy, allocated with sge_malloc()
+ */
+static char *
+copy_bytes(const sge_pack_buffer &pb) {
+   char *copy = sge_malloc(pb.bytes_used > 0 ? pb.bytes_used : 1);
+   std::memcpy(copy, pb.head_ptr, pb.bytes_used);
+   return copy;
+}
+
+/**
+ * @brief try_init_buffer(), try_init_buffer_from(), buffer_used(), buffer_filled() and buffer_has_unread() give
+ *        what init_packbuffer(), init_packbuffer_from_buffer(), pb_used(), pb_filled() and pb_unused() give
+ * @return nothing; CHECK records the results
+ */
+static void
+test_try_init() {
+   struct Setup {
+      std::size_t initial_size;
+      bool just_count;
+      bool with_auth_info;
+   };
+   bool init = true;
+   for (const Setup &setup : {Setup{0, false, false}, Setup{1024, false, false}, Setup{0, true, false},
+                              Setup{16, false, false}}) {
+      sge_pack_buffer old_pb;
+      sge_pack_buffer new_pb;
+      const int old_code = init_packbuffer(&old_pb, setup.initial_size, setup.just_count, setup.with_auth_info);
+      const int new_code =
+         ocs::tom::try_init_buffer(&new_pb, setup.initial_size, setup.just_count, setup.with_auth_info);
+      const bool same = old_code == new_code && ocs::tom::buffers_equal(&old_pb, &new_pb) &&
+                        old_pb.mem_size == new_pb.mem_size &&
+                        static_cast<int>(ocs::tom::buffer_used(&new_pb)) == pb_used(&old_pb) &&
+                        ocs::tom::buffer_filled(&new_pb) == (pb_filled(&old_pb) != 0);
+      if (!same) {
+         std::printf("try_init_buffer(%zu, %d, %d): codes %d, %d\n", setup.initial_size, setup.just_count,
+                     setup.with_auth_info, old_code, new_code);
+      }
+      init = same && init;
+      clear_packbuffer(&old_pb);
+      ocs::tom::clear_buffer(&new_pb);
+   }
+   // a counting buffer that nothing was counted into is not filled; no buffer is a format error
+   sge_pack_buffer counting;
+   ocs::tom::try_init_buffer(&counting, 0, true, false);
+   init = init && !ocs::tom::buffer_filled(&counting) && pb_filled(&counting) == 0 &&
+          ocs::tom::try_init_buffer(nullptr, 0) == init_packbuffer(nullptr, 0) &&
+          ocs::tom::try_init_buffer(nullptr, 0) == PACK_FORMAT;
+   ocs::tom::clear_buffer(&counting);
+   CHECK(51, "try_init_buffer() prepares the bytes, the size and the code init_packbuffer() prepares, with the "
+             "default and a given size and counting; buffer_used() and buffer_filled() answer as pb_used() and "
+             "pb_filled()",
+         init);
+
+   sge_pack_buffer out;
+   init_packbuffer(&out, 0, false, false);
+   packint(&out, 7);
+   packstr(&out, "x");
+   sge_pack_buffer old_in;
+   sge_pack_buffer new_in;
+   const int old_code = init_packbuffer_from_buffer(&old_in, copy_bytes(out), out.bytes_used, false);
+   const int new_code = ocs::tom::try_init_buffer_from(&new_in, copy_bytes(out), out.bytes_used, false);
+   bool from = old_code == PACK_SUCCESS && new_code == PACK_SUCCESS && old_in.bytes_used == new_in.bytes_used &&
+               ocs::tom::buffer_has_unread(&new_in) && pb_unused(&old_in) > 0;
+   std::uint32_t number = 0;
+   char *str = nullptr;
+   ocs::tom::try_get_uint32(&new_in, &number);
+   ocs::tom::try_get_str(&new_in, &str);
+   from = from && number == 7 && str != nullptr && std::strcmp(str, "x") == 0 &&
+          !ocs::tom::buffer_has_unread(&new_in);
+   sge_free(&str);
+   clear_packbuffer(&old_in);
+   ocs::tom::clear_buffer(&new_in);
+
+   // another version: both refuse it with the same code, and the buffer frees the bytes it took over
+   char *old_bytes = copy_bytes(out);
+   char *new_bytes = copy_bytes(out);
+   old_bytes[INTSIZE] ^= 0x01;
+   new_bytes[INTSIZE] ^= 0x01;
+   const int old_version = init_packbuffer_from_buffer(&old_in, old_bytes, out.bytes_used, false);
+   const int new_version = ocs::tom::try_init_buffer_from(&new_in, new_bytes, out.bytes_used, false);
+   clear_packbuffer(&old_in);
+   ocs::tom::clear_buffer(&new_in);
+   from = from && old_version == PACK_VERSION && new_version == old_version &&
+          ocs::tom::try_init_buffer_from(nullptr, nullptr, 0) == init_packbuffer_from_buffer(nullptr, nullptr, 0);
+   clear_packbuffer(&out);
+   CHECK(52, "try_init_buffer_from() reads the header as init_packbuffer_from_buffer() does and returns its code "
+             "for another version and no buffer; buffer_has_unread() is true until everything is read",
+         from);
+}
+
+/**
+ * @brief try_put_uint32(), try_put_double() and try_put_str() write the bytes and return the codes of packint(),
+ *        packdouble() and packstr()
+ * @return nothing; CHECK records the results
+ */
+static void
+test_try_put() {
+   bool puts = true;
+   for (const bool just_count : {false, true}) {
+      sge_pack_buffer old_pb;
+      sge_pack_buffer new_pb;
+      init_packbuffer(&old_pb, 0, just_count, false);
+      ocs::tom::try_init_buffer(&new_pb, 0, just_count, false);
+      int old_codes = 0;
+      int new_codes = 0;
+      for (const std::uint32_t value : {0U, 1U, 0xffffffffU}) {
+         old_codes |= packint(&old_pb, value);
+         new_codes |= ocs::tom::try_put_uint32(&new_pb, value);
+      }
+      for (const double value : {0.0, -1.5, 1e300}) {
+         old_codes |= packdouble(&old_pb, value);
+         new_codes |= ocs::tom::try_put_double(&new_pb, value);
+      }
+      for (const char *value : {static_cast<const char *>(nullptr), "", "abc"}) {
+         old_codes |= packstr(&old_pb, value);
+         new_codes |= ocs::tom::try_put_str(&new_pb, value);
+      }
+      puts = puts && old_codes == PACK_SUCCESS && new_codes == PACK_SUCCESS &&
+             old_pb.bytes_used == new_pb.bytes_used &&
+             (just_count || ocs::tom::buffers_equal(&old_pb, &new_pb));   // a counting buffer holds no bytes
+      clear_packbuffer(&old_pb);
+      ocs::tom::clear_buffer(&new_pb);
+   }
+   puts = puts && ocs::tom::try_put_uint32(nullptr, 1) == packint(nullptr, 1) &&
+          ocs::tom::try_put_double(nullptr, 1.0) == packdouble(nullptr, 1.0) &&
+          ocs::tom::try_put_str(nullptr, "a") == packstr(nullptr, "a") &&
+          ocs::tom::try_put_uint32(nullptr, 1) == PACK_BADARG;
+   CHECK(53, "try_put_uint32(), try_put_double() and try_put_str() write the bytes packint(), packdouble() and "
+             "packstr() write, also counting, and return PACK_BADARG as they do for no buffer",
+         puts);
+}
+
+/**
+ * @brief try_get_uint32(), try_get_double() and try_get_str() read the values and return the codes of
+ *        unpackint(), unpackdouble() and unpackstr(), also on a buffer that is read to its end
+ * @return nothing; CHECK records the results
+ */
+static void
+test_try_get() {
+   sge_pack_buffer out;
+   init_packbuffer(&out, 0, false, false);
+   packint(&out, 42);
+   packdouble(&out, 2.5);
+   packstr(&out, "abc");
+   packstr(&out, nullptr);
+
+   sge_pack_buffer old_in;
+   sge_pack_buffer new_in;
+   init_packbuffer_from_buffer(&old_in, copy_bytes(out), out.bytes_used, false);
+   ocs::tom::try_init_buffer_from(&new_in, copy_bytes(out), out.bytes_used, false);
+   clear_packbuffer(&out);
+
+   std::uint32_t old_number = 1;
+   std::uint32_t new_number = 1;
+   double old_double = 1.0;
+   double new_double = 1.0;
+   char *old_str = nullptr;
+   char *new_str = nullptr;
+   char *old_null = old_str;
+   char *new_null = new_str;
+   const bool read = unpackint(&old_in, &old_number) == ocs::tom::try_get_uint32(&new_in, &new_number) &&
+                     unpackdouble(&old_in, &old_double) == ocs::tom::try_get_double(&new_in, &new_double) &&
+                     unpackstr(&old_in, &old_str) == ocs::tom::try_get_str(&new_in, &new_str) &&
+                     unpackstr(&old_in, &old_null) == ocs::tom::try_get_str(&new_in, &new_null) &&
+                     old_number == 42 && new_number == 42 && old_double == 2.5 && new_double == 2.5 &&
+                     old_str != nullptr && new_str != nullptr && std::strcmp(old_str, new_str) == 0 &&
+                     old_null == nullptr && new_null == nullptr;
+   sge_free(&old_str);
+   sge_free(&new_str);
+
+   // at the end of the buffer: the numbers are set to 0, the string stays as it was
+   old_number = new_number = 9;
+   old_double = new_double = 9.0;
+   char sentinel[] = "kept";
+   old_str = new_str = sentinel;
+   const int old_end_int = unpackint(&old_in, &old_number);
+   const int new_end_int = ocs::tom::try_get_uint32(&new_in, &new_number);
+   const int old_end_double = unpackdouble(&old_in, &old_double);
+   const int new_end_double = ocs::tom::try_get_double(&new_in, &new_double);
+   const int old_end_str = unpackstr(&old_in, &old_str);
+   const int new_end_str = ocs::tom::try_get_str(&new_in, &new_str);
+   const bool end = old_end_int == PACK_FORMAT && new_end_int == old_end_int && old_end_double == PACK_FORMAT &&
+                    new_end_double == old_end_double && old_end_str == PACK_FORMAT && new_end_str == old_end_str &&
+                    old_number == 0 && new_number == 0 && old_double == 0.0 && new_double == 0.0 &&
+                    old_str == sentinel && new_str == sentinel;
+   clear_packbuffer(&old_in);
+   ocs::tom::clear_buffer(&new_in);
+
+   std::uint32_t number = 5;
+   double value = 5.0;
+   char *str = sentinel;
+   const bool no_buffer = ocs::tom::try_get_uint32(nullptr, &number) == PACK_BADARG && number == 0 &&
+                          ocs::tom::try_get_double(nullptr, &value) == PACK_BADARG && value == 0.0 &&
+                          ocs::tom::try_get_str(nullptr, &str) == PACK_BADARG && str == sentinel;
+   CHECK(54, "try_get_uint32(), try_get_double() and try_get_str() read what unpackint(), unpackdouble() and "
+             "unpackstr() read; at the end of the buffer and without one they return the same codes, set the "
+             "numbers to 0 and leave the string as it was",
+         read && end && no_buffer);
+}
+
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -2375,5 +2578,17 @@ int main(int argc, char *argv[]) {
       {"RAW-OPS-38", "tree", "count_nodes<F>() and count_leaves<F>() count a tree",
        {"count a share tree of four nodes from the root and from the list"}, "4 nodes, 2 leaves",
        {{"OPS-01", "covers"}}, {50}, typed_ops::test_tree},
+      {"RAW-OPS-39", "try_init_buffer",
+       "try_init_buffer(), try_init_buffer_from() and the buffer state queries give what the old primitives give",
+       {"prepare buffers to pack into with every setup, a counting buffer and no buffer, through both",
+        "prepare buffers to read from bytes, from bytes of another version and from no buffer; read them out"},
+       "the same bytes, sizes, codes and answers; PACK_FORMAT, PACK_VERSION", {}, {51, 52}, test_try_init},
+      {"RAW-OPS-40", "try_put", "try_put_uint32(), try_put_double() and try_put_str() write what the old ones write",
+       {"pack numbers, doubles and strings, null and empty among them, into a buffer and a counting buffer; pack "
+        "into no buffer"},
+       "the same bytes and codes; PACK_BADARG", {}, {53}, test_try_put},
+      {"RAW-OPS-41", "try_get", "try_get_uint32(), try_get_double() and try_get_str() read what the old ones read",
+       {"read a number, a double, a string and a null string, then read past the end, then read from no buffer"},
+       "the same values and codes; 0 for the numbers and the string kept on an error", {}, {54}, test_try_get},
    });
 }

@@ -45,7 +45,7 @@
 #include "comm/commlib.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
@@ -201,7 +201,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
       cl_com_handle_t *execd_handle = nullptr;
 
       for (int attempt = 0; attempt < task_send_max_attempts; attempt++) {
-         if (init_packbuffer(&pb, 1024) != PACK_SUCCESS) {
+         if (ocs::tom::try_init_buffer(&pb, 1024) != PACK_SUCCESS) {
             petrep.reset();
             snprintf(lasterror, sizeof(lasterror), SFN, MSG_GDI_OUTOFMEMORY);
             DRETURN(nullptr);
@@ -218,7 +218,7 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
          ret = ocs::gdi::ClientServerBase::gdi_send_message_pb(1, to_cstr(EXECD), 1, hostname,
                                                            ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION, &pb, &dummymid);
 
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
 
          if (ret == CL_RETVAL_OK ||
              (ret != CL_RETVAL_SEND_ERROR && ret != CL_RETVAL_CONNECTION_NOT_FOUND)) {
@@ -310,15 +310,19 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    DRETURN(0);
 }
 
-/* return 
-   0  reaped a task cleanly  
-   1  no message (asynchronuous mode)
-   -1 got an error
- 
-    NOTES
-       MT-NOTE: rcv_from_execd() is not MT safe
-
-*/
+/**
+ * @brief Receive one message from an execd about a remote task and record it in the remote task list
+ *
+ * A task exit message marks the task as exited with its exit status; a job
+ * execution message gives the task that was started without an id its id.
+ *
+ * @note MT-NOTE: rcv_from_execd() is not MT safe
+ *
+ * @param options OPT_SYNCHRON to wait for a message
+ * @param tag the tag of the message to receive
+ * @return 0 if a task was reaped cleanly, 1 if there was no message (asynchronous mode), -1 on an error
+ *         (lasterror holds the reason)
+ */
 static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerBaseTag tag) {
    DENTER(TOP_LAYER);
 
@@ -352,25 +356,26 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
       DRETURN(1);
    }
 
-   ret = init_packbuffer_from_buffer(&pb, msg, msg_len);
+   ret = ocs::tom::try_init_buffer_from(&pb, msg, msg_len);
    if (ret != PACK_SUCCESS) {
-      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, host, to_cstr(EXECD), from_id, cull_pack_strerror(ret));
+      snprintf(lasterror, sizeof(lasterror), MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, host, to_cstr(EXECD), from_id,
+               ocs::tom::pack_error_text(ret));
       DRETURN(-1);
    }
 
    switch (tag) {
       case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
-         unpackstr(&pb, &tid);
-         unpackint(&pb, &exit_status);
+         ocs::tom::try_get_str(&pb, &tid);
+         ocs::tom::try_get_uint32(&pb, &exit_status);
          break;
       case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
-         unpackstr(&pb, &tid);
+         ocs::tom::try_get_str(&pb, &tid);
          break;
       default:
          break;
    }
 
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
 
    switch (tag) {
       case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:

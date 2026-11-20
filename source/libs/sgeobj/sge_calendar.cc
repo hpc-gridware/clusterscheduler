@@ -935,7 +935,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
 static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cmp_func_t cmp_func) {
    DENTER(TOP_LAYER);
 
-/*    lListElem *t1, *t2, *t3, *t4; */
+/*    ocs::tom::ConstElement<ocs::tom::TM> t1, t2, t3, t4; */
 /*    int i1, i2, i3, i4; */
 
 /*    i1 = i2 = i3 = i4 = -1; */
@@ -957,27 +957,27 @@ static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cm
              (q2 && in_range(q2, r, cmp_func)))   /* q2 in r */ {
 
 /*             DPRINTF("%d %d %d %d\n", i1,i2,i3,i4); */
-/*             t1=lFirst(lGetList(r, TMR_begin)); */
-/*             t2=lFirst(lGetList(r, TMR_end)); */
-/*             t3=lFirst(lGetList(q, TMR_begin)); */
-/*             t4=lFirst(lGetList(q, TMR_end)); */
+/*             t1=ocs::tom::get<TMR_begin>(r).front(); */
+/*             t2=ocs::tom::get<TMR_end>(r).front(); */
+/*             t3=ocs::tom::get<TMR_begin>(q).front(); */
+/*             t4=ocs::tom::get<TMR_end>(q).front(); */
 
 /*            DPRINTF(("overlapping ranges %d:%d:%d-%d:%d:%d and %d:%d:%d-%d:%d:%d\n",
-               lGetUlong(t1, TM_hour),
-               lGetUlong(t1, TM_min),
-               lGetUlong(t1, TM_sec),
+               ocs::tom::get<TM_hour>(t1),
+               ocs::tom::get<TM_min>(t1),
+               ocs::tom::get<TM_sec>(t1),
 
-               lGetUlong(t2, TM_hour),
-               lGetUlong(t2, TM_min),
-               lGetUlong(t2, TM_sec),
+               ocs::tom::get<TM_hour>(t2),
+               ocs::tom::get<TM_min>(t2),
+               ocs::tom::get<TM_sec>(t2),
 
-               lGetUlong(t3, TM_hour),
-               lGetUlong(t3, TM_min),
-               lGetUlong(t3, TM_sec),
+               ocs::tom::get<TM_hour>(t3),
+               ocs::tom::get<TM_min>(t3),
+               ocs::tom::get<TM_sec>(t3),
 
-               lGetUlong(t4, TM_hour),
-               lGetUlong(t4, TM_min),
-               lGetUlong(t4, TM_sec)));*/
+               ocs::tom::get<TM_hour>(t4),
+               ocs::tom::get<TM_min>(t4),
+               ocs::tom::get<TM_sec>(t4)));*/
 
             /* combine both overlapping ranges */
             /* r1 = min(r1, q1) */
@@ -990,17 +990,17 @@ static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cm
                ocs::tom::swap<TMR_end, TMR_end>(r, q);
             }
 
-/*             t1=lFirst(lGetList(r, TMR_begin)); */
-/*             t2=lFirst(lGetList(r, TMR_end)); */
+/*             t1=ocs::tom::get<TMR_begin>(r).front(); */
+/*             t2=ocs::tom::get<TMR_end>(r).front(); */
 
 /*            DPRINTF(("resulting range %d:%d:%d-%d:%d:%d\n",
-               lGetUlong(t1, TM_hour),
-               lGetUlong(t1, TM_min),
-               lGetUlong(t1, TM_sec),
+               ocs::tom::get<TM_hour>(t1),
+               ocs::tom::get<TM_min>(t1),
+               ocs::tom::get<TM_sec>(t1),
 
-               lGetUlong(t2, TM_hour),
-               lGetUlong(t2, TM_min),
-               lGetUlong(t2, TM_sec))); */
+               ocs::tom::get<TM_hour>(t2),
+               ocs::tom::get<TM_min>(t2),
+               ocs::tom::get<TM_sec>(t2))); */
 
             /* remove q */
             rl.erase(q);

@@ -824,7 +824,7 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
       const char *text = ocs::tom::get<VA_value>(item);
 
       if (text == nullptr) {
-         /* unpackstr() maps an empty string to a null pointer, so this is also
+         /* ocs::tom::get_str() maps an empty string to a null pointer, so this is also
           * what an item with no text at all arrives as */
          ocs_qconf_write_empty_text(label, answer_list);
          result->parse_failed++;

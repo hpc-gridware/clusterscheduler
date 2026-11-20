@@ -68,7 +68,7 @@
 #include "uti/sge_stdlib.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
@@ -806,13 +806,13 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
 
                DPRINTF(("read object with key " SFQ ", size %d\n",
                         key_dbt.data, data_dbt.size));
-               cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, data_dbt.size, false);
+               cull_ret = ocs::tom::try_init_buffer_from(&pb, (char *)data_dbt.data, data_dbt.size, false);
                if (cull_ret != PACK_SUCCESS) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 
                                           MSG_BERKELEY_UNPACKINITERROR_SS,
                                           key_dbt.data,
-                                          cull_pack_strerror(cull_ret));
+                                          ocs::tom::pack_error_text(cull_ret));
                   ret = false;
                   done = true;
                   break;
@@ -833,7 +833,7 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
                }
                /* we may not free the packbuffer: it references the buffer
                 * delivered from the database
-                * clear_packbuffer(&pb);
+                * ocs::tom::clear_buffer(&pb);
                 */
                if (object) {
                   if (!list) {
@@ -914,13 +914,13 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       sge_pack_buffer pb;
       int cull_ret;
 
-      cull_ret = init_packbuffer(&pb, 8192, false, false);
+      cull_ret = ocs::tom::try_init_buffer(&pb, 8192, false, false);
       if (cull_ret != PACK_SUCCESS) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_BERKELEY_PACKINITERROR_SS,
                                  key,
-                                 cull_pack_strerror(cull_ret));
+                                 ocs::tom::pack_error_text(cull_ret));
          ret = false;
       } else {
          try {
@@ -980,7 +980,7 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             }
          }
 
-         clear_packbuffer(&pb);
+         ocs::tom::clear_buffer(&pb);
       }
    }
 
@@ -1760,13 +1760,13 @@ spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
 
          DPRINTF(("read object with key " SFQ ", size %d\n",
                   key_dbt.data, data_dbt.size));
-         cull_ret = init_packbuffer_from_buffer(&pb, (char *)data_dbt.data, data_dbt.size, false);
+         cull_ret = ocs::tom::try_init_buffer_from(&pb, (char *)data_dbt.data, data_dbt.size, false);
          if (cull_ret != PACK_SUCCESS) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_BERKELEY_UNPACKINITERROR_SS,
                                     key_dbt.data,
-                                    cull_pack_strerror(cull_ret));
+                                    ocs::tom::pack_error_text(cull_ret));
             ret.reset();
          }
          DPRINTF("init_packbuffer succeeded\n");

@@ -134,7 +134,7 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
           * ends up limiting the very two names it was written to exempt, which
           * is the opposite of what it says. Up to 9.1 such a write was refused
           * by accident rather than by rule - the client parsed, packed the
-          * empty name, unpackstr() turned it into a null pointer in transit and
+          * empty name, ocs::tom::get_str() turned it into a null pointer in transit and
           * rqs_verify_filter() rejected the null pointer in qmaster. Parsing in
           * qmaster leaves no pack round trip to do that, so the syntax is
           * refused here, where the text that caused it is still at hand. */
@@ -274,7 +274,7 @@ ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(const ocs::tom::Element<ocs::t
  * An entry without a name is refused on both sides. A missing name is a null
  * pointer, an empty one is the empty string, and the two reach this check by
  * different routes: the first from a client that packed an empty name (see
- * unpackstr()), the second from a parse that produced one, for instance from
+ * ocs::tom::get_str()), the second from a parse that produced one, for instance from
  * the "!" of an exclusion that prefixes nothing. Either way the entry names no
  * object, and in an exclusion filter an entry that matches nothing widens the
  * limit instead of narrowing it.

@@ -73,7 +73,6 @@
 #include "uti/sge_unistd.h"
 
 #include "cull/cull.h"
-#include "cull/cull_transitional.h"
 
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_range.h"
@@ -148,9 +147,9 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(const ocs::tom
                                                                   const uint32_t ja_task_id) {
    DENTER(BASIS_LAYER);
 
-   // the template list of a read only job hands out a writable element, as lFirstRW() did
-   const auto template_task =
-      ocs::tom::Element<ocs::tom::JAT>::from_typed(lFirstRW(ocs::tom::get<JB_ja_template>(job)));
+   // the template list of a read only job hands out a writable element
+   const auto template_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(
+      const_cast<lListElem *>(ocs::tom::get<JB_ja_template>(job).front().raw()));
 
    if (!template_task) {
       ERROR("unable to retrieve template task");

@@ -50,7 +50,7 @@
 
 #include "qmaster_to_execd.h"
 #include "msg_qmaster.h"
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 /**
  * @brief Send X to comproc
@@ -96,15 +96,15 @@ host_notify_about_X(const ocs::tom::ConstElement<ocs::tom::EH> host, const uint3
    }
 
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 256) == PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 256) == PACK_SUCCESS) {
       uint32_t dummy = 0;
 
-      packint(&pb, x);
+      ocs::tom::try_put_uint32(&pb, x);
       if (ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(progname_id), 1, hostname,
                                                       tag, &pb, &dummy) == CL_RETVAL_OK) {
          ret = 0;
       }
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
    }
 
    DRETURN(ret);

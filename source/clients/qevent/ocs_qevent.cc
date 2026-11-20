@@ -287,10 +287,10 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] con
       }
 
       if (event_type == sgeE_JOB_ADD) {
-         /* lList *jat = lGetList(event,ET_new_version);
-         u_long job_id  = lGetUlong(event, ET_intkey);
-         u_long task_id = lGetUlong(event, ET_intkey2);
-         lListElem *ep = lFirst(jat); */
+         /* const auto jat = ocs::tom::get<ET_new_version>(event);
+         uint32_t job_id  = ocs::tom::get<ET_intkey>(event);
+         uint32_t task_id = ocs::tom::get<ET_intkey2>(event);
+         const auto ep = ocs::tom::ConstRawList(jat).front(); */
       }
 
       if (event_type == sgeE_JOB_DEL) {

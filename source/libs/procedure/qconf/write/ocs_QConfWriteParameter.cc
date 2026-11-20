@@ -94,7 +94,7 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfWriteParameter::get_bundle() {
  * The item list is taken over rather than copied: it is the request's payload
  * and the bundle is freed right after the parameters are built.
  *
- * An empty payload arrives as a null pointer, because `unpackstr()` maps an
+ * An empty payload arrives as a null pointer, because `ocs::tom::get_str()` maps an
  * empty string to one by design. That is read back as an empty text and the
  * provider refuses it per item - what must not happen is a crash on the null
  * pointer.

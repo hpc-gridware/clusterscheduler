@@ -405,7 +405,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
             break;
          }
          /*
-         ** lNext can never be nullptr here, because the -clear
+         ** next() can never be empty here, because the -clear
          ** element is the last one to delete
          ** in general, these two lines wont work!
          */

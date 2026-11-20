@@ -35,7 +35,7 @@
 #include "uti/sge_string.h"
 #include "uti/ocs_ProgName.h"
 
-#include "cull/cull_transitional.h"
+#include "tom/ocs_PackCore.h"
 
 #include "comm/lists/cl_errors.h"
 
@@ -256,14 +256,14 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
  * waiting shepherd's polling loop to find.
  *
  * Wire format packed into the message buffer (matches do_reconnect_prepare's unpacker):
- *   job_id        (uint32, packint)
- *   ja_task_id    (uint32, packint)
- *   client_host   (string, packstr)
- *   client_port   (uint32, packint)
- *   token         (string, packstr)
- *   owner_uid     (uint32, packint)
- *   owner_gid     (uint32, packint)
- *   client_cred   (string, packstr) - CS-2206: reconnect client's TLS cert (PEM),
+ *   job_id        (uint32, put_uint32)
+ *   ja_task_id    (uint32, put_uint32)
+ *   client_host   (string, put_str)
+ *   client_port   (uint32, put_uint32)
+ *   token         (string, put_str)
+ *   owner_uid     (uint32, put_uint32)
+ *   owner_gid     (uint32, put_uint32)
+ *   client_cred   (string, put_str) - CS-2206: reconnect client's TLS cert (PEM),
  *                 empty string in non-TLS mode
  *
  * The send is asynchronous (synchron=0); no reply is expected.  Errors at the commlib
@@ -297,7 +297,7 @@ int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
    // CS-2206: PEM certs are ~1-2 KB; start the buffer large enough (packbuffer
    // also grows on demand, but avoid needless reallocs).
    sge_pack_buffer pb;
-   if (init_packbuffer(&pb, 4096) != PACK_SUCCESS) {
+   if (ocs::tom::try_init_buffer(&pb, 4096) != PACK_SUCCESS) {
       ERROR("sge_qmaster_send_reconnect_prepare: init_packbuffer failed");
       DRETURN(-1);
    }
@@ -305,16 +305,16 @@ int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
    // Order must match do_reconnect_prepare()'s unpacker exactly.
    // client_cred is the CS-2206 reconnect TLS certificate; empty string when
    // running without TLS so the wire format stays fixed.
-   if (packint(&pb, job_id)                != PACK_SUCCESS ||
-       packint(&pb, ja_task_id)            != PACK_SUCCESS ||
-       packstr(&pb, client_host)           != PACK_SUCCESS ||
-       packint(&pb, (uint32_t)client_port) != PACK_SUCCESS ||
-       packstr(&pb, token)                 != PACK_SUCCESS ||
-       packint(&pb, (uint32_t)owner_uid)   != PACK_SUCCESS ||
-       packint(&pb, (uint32_t)owner_gid)   != PACK_SUCCESS ||
-       packstr(&pb, client_cred != nullptr ? client_cred : "") != PACK_SUCCESS) {
+   if (ocs::tom::try_put_uint32(&pb, job_id)                != PACK_SUCCESS ||
+       ocs::tom::try_put_uint32(&pb, ja_task_id)            != PACK_SUCCESS ||
+       ocs::tom::try_put_str(&pb, client_host)              != PACK_SUCCESS ||
+       ocs::tom::try_put_uint32(&pb, (uint32_t)client_port) != PACK_SUCCESS ||
+       ocs::tom::try_put_str(&pb, token)                    != PACK_SUCCESS ||
+       ocs::tom::try_put_uint32(&pb, (uint32_t)owner_uid)   != PACK_SUCCESS ||
+       ocs::tom::try_put_uint32(&pb, (uint32_t)owner_gid)   != PACK_SUCCESS ||
+       ocs::tom::try_put_str(&pb, client_cred != nullptr ? client_cred : "") != PACK_SUCCESS) {
       ERROR("sge_qmaster_send_reconnect_prepare: pack failed");
-      clear_packbuffer(&pb);
+      ocs::tom::clear_buffer(&pb);
       DRETURN(-1);
    }
 
@@ -325,7 +325,7 @@ int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,
                pnm, 1, exec_host,
                ocs::gdi::ClientServerBase::TAG_RECONNECT_PREPARE,
                &pb, &mid);
-   clear_packbuffer(&pb);
+   ocs::tom::clear_buffer(&pb);
 
    // gdi_send_message_pb returns CL_RETVAL_OK (== 1000) on success, not 0.
    if (rc != CL_RETVAL_OK) {
