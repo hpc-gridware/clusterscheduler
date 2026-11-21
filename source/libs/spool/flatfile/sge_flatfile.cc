@@ -2870,7 +2870,7 @@ FF_DEBUG("detected record_start");
 
       /* store object */
       if (object) {
-         ocs::tom::append(list.get(), std::move(object));
+         list->push_back(std::move(object));
       } else {
          /* if no object was read due to an error, a message has been
           * created in _spool_flatfile_read_object

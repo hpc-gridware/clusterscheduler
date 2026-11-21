@@ -156,6 +156,7 @@ spool_free_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Eleme
  */
 bool spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, const char *option) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::Element<ocs::tom::SPC>(context);
 
    bool ret = true;
 
@@ -166,7 +167,7 @@ bool spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *c
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S, 
                               __func__);
    } else {
-      for (ocs::tom::Element<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::Element<ocs::tom::SPR> rule : ctx.get<SPC_rules>()) {
          auto func = (spooling_option_func) rule.get<SPR_option_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, option)) {
@@ -174,7 +175,7 @@ bool spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *c
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_SETOPTIONOFRULEFAILED_SS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context));
+                                       ctx.get<SPC_name>());
                ret = false;
                break;
             }
@@ -211,6 +212,7 @@ bool spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *c
  */
 bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, bool check) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>(context);
 
    bool ret = true;
 
@@ -221,17 +223,17 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
       ret = false;
-   } else if (ocs::tom::get<SPC_types>(context).empty()) {
+   } else if (ctx.get<SPC_types>().empty()) {
       /* check consistency: the context has to contain types */
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, 
                               MSG_SPOOL_CONTEXTCONTAINSNOTYPES_S, 
-                              ocs::tom::get<SPC_name>(context));
+                              ctx.get<SPC_name>());
       ret = false;
    } else {
 
       /* each type needs at least one rule and exactly one default rule */
-      for (ocs::tom::ConstElement<ocs::tom::SPT> type : ocs::tom::get<SPC_types>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPT> type : ctx.get<SPC_types>()) {
          int default_rules = 0;
          
          if (type.get<SPT_rules>().empty()) {
@@ -239,7 +241,7 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPECONTAINSNORULES_SS, 
                                     type.get<SPT_name>(),
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
             ret = false;
             goto error;
          }
@@ -256,7 +258,7 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPEHASNODEFAULTRULE_SS,
                                     type.get<SPT_name>(),
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
             ret = false;
             goto error;
          }
@@ -266,23 +268,23 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPEHASMORETHANONEDEFAULTRULE_SS,
                                     type.get<SPT_name>(),
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
             ret = false;
             goto error;
          }
       }
     
       /* the context has to contain rules */
-      if (ocs::tom::get<SPC_rules>(context).empty()) {
+      if (ctx.get<SPC_rules>().empty()) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_CONTEXTCONTAINSNORULES_S, 
-                                 ocs::tom::get<SPC_name>(context));
+                                 ctx.get<SPC_name>());
          ret = false;
          goto error;
       }
       
-      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ctx.get<SPC_rules>()) {
          auto func = (spooling_startup_func)rule.get<SPR_startup_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, check)) {
@@ -290,7 +292,7 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_STARTUPOFRULEFAILED_SS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context));
+                                       ctx.get<SPC_name>());
                ret = false;
                goto error;
             }
@@ -327,6 +329,7 @@ bool spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListE
                             const spooling_maintenance_command cmd,
                             const char *args) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>(context);
 
    bool ret = true;
 
@@ -338,7 +341,7 @@ bool spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListE
                               __func__);
       ret = false;
    } else {
-      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ctx.get<SPC_rules>()) {
          auto func = (spooling_maintenance_func) rule.get<SPR_maintenance_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd, args)) {
@@ -346,7 +349,7 @@ bool spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListE
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_MAINTENANCEOFRULEFAILED_SS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context));
+                                       ctx.get<SPC_name>());
                ret = false;
                break;
             }
@@ -378,6 +381,7 @@ bool spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListE
  */
 bool spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>(context);
 
    bool ret = true;
 
@@ -389,7 +393,7 @@ bool spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
                               __func__);
       ret = false;
    } else {
-      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ctx.get<SPC_rules>()) {
          auto func = (spooling_shutdown_func)rule.get<SPR_shutdown_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule)) {
@@ -397,7 +401,7 @@ bool spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_SHUTDOWNOFRULEFAILED_SS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context));
+                                       ctx.get<SPC_name>());
                ret = false;
                break;
             }
@@ -427,6 +431,7 @@ bool spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
 bool spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                            uint64_t trigger, uint64_t *next_trigger) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>(context);
 
    bool ret = true;
 
@@ -438,7 +443,7 @@ bool spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
                               __func__);
       ret = false;
    } else {
-      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ctx.get<SPC_rules>()) {
          auto func = (spooling_trigger_func)rule.get<SPR_trigger_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, trigger, next_trigger)) {
@@ -446,7 +451,7 @@ bool spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_TRIGGEROFRULEFAILED_SS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context));
+                                       ctx.get<SPC_name>());
                ret = false;
                break;
             }
@@ -475,6 +480,7 @@ bool spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
 bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                        spooling_transaction_command cmd) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>(context);
 
    bool ret = true;
 
@@ -486,7 +492,7 @@ bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList
                               __func__);
       ret = false;
    } else {
-      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
+      for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ctx.get<SPC_rules>()) {
          auto func = (spooling_transaction_func)rule.get<SPR_transaction_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd)) {
@@ -494,7 +500,7 @@ bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_TRANSACTIONOFRULEFAILED_SS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context));
+                                       ctx.get<SPC_name>());
                ret = false;
                break;
             }
@@ -844,6 +850,8 @@ spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom
 bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                      lList **list, const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+   // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context);
 
    bool ret = false;
 
@@ -854,15 +862,13 @@ bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListEl
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
-      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
-                                                  object_type);
+      const auto type = spool_context_search_type(ctx, object_type);
       if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS, 
                                  object_type_get_name(object_type), 
-                                 ocs::tom::get<SPC_name>(context));
+                                 ctx.get<SPC_name>());
       } else {
          /* use the default rule to read list */
          const auto rule = spool_type_search_default_rule(type);
@@ -871,7 +877,7 @@ bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListEl
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NODEFAULTRULEFORTYPEINCONTEXT_SS,
                                     object_type_get_name(object_type), 
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
          } else {
             spooling_list_func func;
 
@@ -882,7 +888,7 @@ bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListEl
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context),
+                                       ctx.get<SPC_name>(),
                                        __func__);
             } else {
                const ocs::tom::UniqueCheckSuspension suspension;
@@ -915,6 +921,8 @@ lListElem *
 spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                   const sge_object_type object_type, const char *key) {
    DENTER(TOP_LAYER);
+   // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context);
 
    lListElem *result = nullptr;
 
@@ -925,15 +933,13 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
-      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
-                                                  object_type);
+      const auto type = spool_context_search_type(ctx, object_type);
       if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS,
                                  object_type_get_name(object_type), 
-                                 ocs::tom::get<SPC_name>(context));
+                                 ctx.get<SPC_name>());
       } else {
          /* use the default rule to read object */
          const auto rule = spool_type_search_default_rule(type);
@@ -942,7 +948,7 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NODEFAULTRULEFORTYPEINCONTEXT_SS,
                                     object_type_get_name(object_type), 
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
          } else {
             spooling_read_func func;
 
@@ -953,7 +959,7 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
                                        rule.get<SPR_name>(), 
-                                       ocs::tom::get<SPC_name>(context),
+                                       ctx.get<SPC_name>(),
                                        __func__);
             } else {
                result = func(answer_list, type, rule, key, object_type);
@@ -987,6 +993,7 @@ bool
 spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                 lList **list, const char *key) {
    DENTER(TOP_LAYER);
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>(context);
 
    bool result = true;
 
@@ -997,7 +1004,11 @@ spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *c
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      ocs::tom::ConstList<ocs::tom::SPR> rules = ocs::tom::get<SPC_rules>(context);
+      ocs::tom::ConstList<ocs::tom::SPR> rules = ctx.get<SPC_rules>();
+
+      // the callbacks fill a typed owner; a list the caller passes in is taken over (with a type check) and
+      // handed back below, the caller's slot is cleared meanwhile, so an exception cannot leave it dangling
+      ocs::tom::ListPtr<ocs::tom::STU> keys(list != nullptr ? std::exchange(*list, nullptr) : nullptr);
 
       /* use the default rule to read object */
       for (const ocs::tom::ConstElement<ocs::tom::SPR> rule : rules) {
@@ -1009,11 +1020,16 @@ spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *c
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
                                     rule.get<SPR_name>(), 
-                                    ocs::tom::get<SPC_name>(context),
+                                    ctx.get<SPC_name>(),
                                     __func__);
          } else {
-            result = func(answer_list, rule, list, key);
+            result = func(answer_list, rule, &keys, key);
          }
+      }
+
+      // without a target the keys are dropped, as the old free emplace_back dropped them
+      if (list != nullptr) {
+         *list = keys.release();
       }
    }
 
@@ -1041,6 +1057,8 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                         const lListElem *object, const char *key,
                         const sge_object_type object_type) {
    DENTER(TOP_LAYER);
+   // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context);
 
    bool ret = false;
 
@@ -1051,15 +1069,13 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
-      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
-                                                  object_type);
+      const auto type = spool_context_search_type(ctx, object_type);
       if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS,
                                  object_type_get_name(object_type), 
-                                 ocs::tom::get<SPC_name>(context));
+                                 ctx.get<SPC_name>());
       } else {
          /* loop over all rules and call the writing callbacks */
          const auto type_rules = type.get<SPT_rules>();
@@ -1068,7 +1084,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NORULESFORTYPEINCONTEXT_SS,
                                     object_type_get_name(object_type), 
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
          } else {
             ret = true;
 
@@ -1083,7 +1099,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                                           ANSWER_QUALITY_ERROR, 
                                           MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
                                           rule.get<SPR_name>(), 
-                                          ocs::tom::get<SPC_name>(context),
+                                          ctx.get<SPC_name>(),
                                           __func__);
                    ret = false;
                } else {
@@ -1092,7 +1108,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                                              ANSWER_QUALITY_WARNING, 
                                              MSG_SPOOL_RULEINCONTEXTFAILEDWRITING_SS,
                                              rule.get<SPR_name>(), 
-                                             ocs::tom::get<SPC_name>(context));
+                                             ctx.get<SPC_name>());
                      ret = false;
                   }
                }
@@ -1123,6 +1139,8 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
 bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
                          const sge_object_type object_type, const char *key) {
    DENTER(TOP_LAYER);
+   // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
+   const auto ctx = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context);
 
    bool ret = false;
 
@@ -1133,15 +1151,13 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                               ANSWER_QUALITY_ERROR, MSG_SPOOL_NOVALIDCONTEXT_S,
                               __func__);
    } else {
-      // the context comes from ocs_spool_create_context() (SPC); no check on the spooling hot path
-      const auto type = spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(context),
-                                                  object_type);
+      const auto type = spool_context_search_type(ctx, object_type);
       if (!type) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                  ANSWER_QUALITY_ERROR, 
                                  MSG_SPOOL_UNKNOWNOBJECTTYPEINCONTEXT_SS,
                                  object_type_get_name(object_type), 
-                                 ocs::tom::get<SPC_name>(context));
+                                 ctx.get<SPC_name>());
       } else {
          /* loop over all rules and call the deleting callbacks */
          const auto type_rules = type.get<SPT_rules>();
@@ -1150,7 +1166,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_NORULESFORTYPEINCONTEXT_SS,
                                     object_type_get_name(object_type), 
-                                    ocs::tom::get<SPC_name>(context));
+                                    ctx.get<SPC_name>());
          } else {
             ret = true;
 
@@ -1165,7 +1181,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                                           ANSWER_QUALITY_ERROR, 
                                           MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
                                           rule.get<SPR_name>(), 
-                                          ocs::tom::get<SPC_name>(context),
+                                          ctx.get<SPC_name>(),
                                           __func__);
                   ret = false;
                } else {
@@ -1174,7 +1190,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                                              ANSWER_QUALITY_WARNING, 
                                              MSG_SPOOL_RULEINCONTEXTFAILEDWRITING_SS,
                                              rule.get<SPR_name>(), 
-                                             ocs::tom::get<SPC_name>(context));
+                                             ctx.get<SPC_name>());
                      ret = false;
                   }
                }

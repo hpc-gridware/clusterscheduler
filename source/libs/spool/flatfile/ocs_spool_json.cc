@@ -1654,7 +1654,7 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
           * here; the bool is discarded (read_sublist returns the list, not a status) */
          (void) spool_json_populate_members(sub, fields, nullptr, answer_list, el);
       }
-      ocs::tom::append(list.get(), std::move(sub_owner));
+      list->push_back(std::move(sub_owner));
    }
    return list;
 }
@@ -1750,7 +1750,7 @@ spool_json_read_flatten(const ocs::tom::RawElement ep, const spooling_field *fie
          spool_json_set_text(cf, sf[1], vstr);
       }
       sge_dstring_free(&vb);
-      ocs::tom::append(cf_list.get(), std::move(cf_owner));
+      cf_list->push_back(std::move(cf_owner));
       if (!accepted) {
          return false;   // cf_list frees the entries read so far
       }
@@ -1940,7 +1940,7 @@ spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr 
       if (!spool_json_populate_members(ep.get(), fields, k == 0 ? fields_out : nullptr, answer_list, (*arr)[k])) {
          DRETURN(ocs::tom::RawListPtr());   // ep and list free the elements read so far
       }
-      ocs::tom::append(list.get(), std::move(ep));
+      list->push_back(std::move(ep));
    }
    DRETURN(list);
 }

@@ -45,10 +45,12 @@
 
 
 #include "tom/ocs_Element.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_SPC.h"
 #include "sgeobj/tom/ocs_tom_SPR.h"
 #include "sgeobj/tom/ocs_tom_SPT.h"
 #include "sgeobj/tom/ocs_tom_SPTR.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_framework Spooling framework
@@ -145,7 +147,7 @@ typedef lListElem *
 
 /** @brief Apply one backend specific option to a rule */
 typedef bool
-(*spooling_option_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *rule, 
+(*spooling_option_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPR> rule,
                         const char *option); 
 /** @brief Open the storage
  *
@@ -155,18 +157,18 @@ typedef bool
  * which every operation wants except the one that creates the database.
  */
 typedef bool
-(*spooling_startup_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
+(*spooling_startup_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                          bool check); 
 /** @brief Flush unwritten data and close the storage again */
 typedef bool
-(*spooling_shutdown_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule); 
+(*spooling_shutdown_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::SPR> rule); 
 
 /** @brief Carry out a #spooling_maintenance_command on the storage
  *
  * @warning Every backend in this tree implements #SPM_init and nothing else.
  */
 typedef bool 
-(*spooling_maintenance_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
+(*spooling_maintenance_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                              const spooling_maintenance_command cmd, 
                              const char *args);
 
@@ -177,12 +179,12 @@ typedef bool
  * it for checkpointing and for trimming the transaction log.
  */
 typedef bool
-(*spooling_trigger_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
+(*spooling_trigger_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                          uint64_t trigger, uint64_t *next_trigger);
                                   
 /** @brief Begin, commit or roll back a transaction on the storage */
 typedef bool
-(*spooling_transaction_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
+(*spooling_transaction_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                              spooling_transaction_command cmd);
                                   
 /** @brief Read every object of one type into a list
@@ -192,21 +194,21 @@ typedef bool
  */
 typedef bool
 (*spooling_list_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                      const lListElem *type, const lListElem *rule, 
+                      ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                       lList **list, 
                       const sge_object_type object_type);
                                   
 /** @brief Write one object to the storage under `key` */
 typedef bool
 (*spooling_write_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                       const lListElem *type, const lListElem *rule, 
-                       const lListElem *object, const char *key, 
+                       ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
+                       ocs::tom::ConstRawElement object, const char *key, 
                        const sge_object_type object_type);
 
 /** @brief Read one object back from the storage by `key` */
 typedef lListElem *
 (*spooling_read_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                      const lListElem *type, const lListElem *rule,
+                      ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule,
                       const char *key,
                       const sge_object_type object_type);
 
@@ -217,22 +219,22 @@ typedef lListElem *
  */
 typedef bool
 (*spooling_read_keys_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                      const lListElem *rule, 
-                      lList **list,
+                      ocs::tom::ConstElement<ocs::tom::SPR> rule,
+                      ocs::tom::ListPtr<ocs::tom::STU> *list,
                       const char *key);
 
 /** @brief Remove the object stored under `key` */
 typedef bool
 (*spooling_delete_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                        const lListElem *type, const lListElem *rule, 
+                        ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                         const char *key, 
                         const sge_object_type object_type);
 
 /** @brief Check and complete a single object that was just read */
 typedef bool
 (*spooling_validate_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                        const lListElem *type, const lListElem *rule, 
-                        lListElem *object, 
+                        ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
+                        ocs::tom::RawElement object, 
                         const sge_object_type object_type);
 
 /** @brief Fix up a freshly read list as a whole
@@ -243,7 +245,7 @@ typedef bool
  */
 typedef bool
 (*spooling_validate_list_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                        const lListElem *type, const lListElem *rule, 
+                        ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                         const sge_object_type object_type);
 /** @} */
 

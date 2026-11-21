@@ -50,6 +50,8 @@
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
+#include "sgeobj/tom/ocs_tom_SPR.h"
+#include "sgeobj/tom/ocs_tom_SPT.h"
 #include "sgeobj/sge_answer.h"
 
 /** @defgroup spool_utilities Spooling utilities
@@ -208,14 +210,14 @@ spool_free_spooling_fields(spooling_field *fields);
 
 bool
 spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const lListElem *type,
-                          const lListElem *rule,
-                          lListElem *object,
+                          ocs::tom::ConstElement<ocs::tom::SPT> type,
+                          ocs::tom::ConstElement<ocs::tom::SPR> rule,
+                          ocs::tom::RawElement object,
                           const sge_object_type object_type);
 
 bool
 spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const lListElem *type, const lListElem *rule,
+                          ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule,
                           const sge_object_type object_type);
 
 ocs::tom::ElementPtr<ocs::tom::EH> ocs_spool_exechost_static_copy(ocs::tom::ConstElement<ocs::tom::EH> object);

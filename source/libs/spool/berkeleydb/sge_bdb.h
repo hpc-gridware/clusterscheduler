@@ -47,6 +47,7 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 #include "spool/berkeleydb/sge_bdb_types.h"
 #include <cinttypes>
 #include "sgeobj/sge_answer.h"
@@ -157,7 +158,7 @@ spool_berkeleydb_delete_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb
 bool
 spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                            const bdb_database database,
-                           lList **list, const char *key);
+                           ocs::tom::ListPtr<ocs::tom::STU> *list, const char *key);
 
 ocs::tom::RawElementPtr
 spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,

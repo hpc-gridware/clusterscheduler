@@ -80,6 +80,7 @@
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PET.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 
 #include "spool/ocs_spool_duplicates.h"
 #include "spool/berkeleydb/msg_spoollib_berkeleydb.h"
@@ -841,7 +842,7 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
                   }
                   // a refused object is freed with its owner
                   if (filter.admit(*object, static_cast<const char *>(key_dbt.data))) {
-                     ocs::tom::append(list.get(), std::move(object));
+                     list->push_back(std::move(object));
                   }
                }
 
@@ -901,7 +902,7 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       // borrowed: the caller keeps the element, the guard takes it out of the list again and never frees it
       ocs::tom::RawElementPtr borrowed(borrow.object);
       try {
-         ocs::tom::append(borrow.list.get(), std::move(borrowed));
+         borrow.list->push_back(std::move(borrowed));
       } catch (const ocs::tom::FieldException &) {
          // cannot happen for a free element in a new list of its own descriptor (the old lAppendElem() aborted
          // there); the element stays with the owner on the throw, goes back to the caller and is written free
@@ -1621,7 +1622,7 @@ bool spool_berkeleydb_check_reopen_database(ocs::tom::ListPtr<ocs::tom::AN> *ans
  */
 bool spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                                 const bdb_database database,
-                                lList **list, const char *key) {
+                                ocs::tom::ListPtr<ocs::tom::STU> *list, const char *key) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -1690,7 +1691,11 @@ bool spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
             } else {
                DPRINTF(("read object with key " SFQ ", size %d\n",
                         key_dbt.data, data_dbt.size));
-               ocs::tom::emplace_back<STU_name>(list, (const char *)key_dbt.data);
+               // the list is created with the first key, as the old free emplace_back did it
+               if (!*list) {
+                  *list = ocs::tom::ListPtr<ocs::tom::STU>::create("");
+               }
+               (*list)->emplace_back<STU_name>(static_cast<const char *>(key_dbt.data));
 
                PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
                dbret = dbc->c_get(dbc, &key_dbt, &data_dbt, DB_NEXT);

@@ -155,8 +155,10 @@ bool same(const tom::ConstRawElement a, const tom::ConstRawElement b) {
  * @param object_type unused
  * @return true
  */
-bool count_validate([[maybe_unused]] tom::ListPtr<tom::AN> *answer_list, [[maybe_unused]] const lListElem *type,
-                    [[maybe_unused]] const lListElem *rule, [[maybe_unused]] lListElem *object,
+bool count_validate([[maybe_unused]] tom::ListPtr<tom::AN> *answer_list,
+                    [[maybe_unused]] const tom::ConstElement<tom::SPT> type,
+                    [[maybe_unused]] const tom::ConstElement<tom::SPR> rule,
+                    [[maybe_unused]] const tom::RawElement object,
                     [[maybe_unused]] const sge_object_type object_type) {
    ++g_validated;
    return true;
@@ -170,8 +172,10 @@ bool count_validate([[maybe_unused]] tom::ListPtr<tom::AN> *answer_list, [[maybe
  * @param object_type unused
  * @return true
  */
-bool count_validate_list([[maybe_unused]] tom::ListPtr<tom::AN> *answer_list, [[maybe_unused]] const lListElem *type,
-                         [[maybe_unused]] const lListElem *rule, [[maybe_unused]] const sge_object_type object_type) {
+bool count_validate_list([[maybe_unused]] tom::ListPtr<tom::AN> *answer_list,
+                         [[maybe_unused]] const tom::ConstElement<tom::SPT> type,
+                         [[maybe_unused]] const tom::ConstElement<tom::SPR> rule,
+                         [[maybe_unused]] const sge_object_type object_type) {
    ++g_validated_lists;
    return true;
 }
@@ -800,8 +804,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
    const auto info = static_cast<bdb_info>(rule.get<SPR_clientdata>());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-   rule.set<SPR_validate_func>(reinterpret_cast<void *>(count_validate));
-   rule.set<SPR_validate_list_func>(reinterpret_cast<void *>(count_validate_list));
+   // the typed pointers fail to compile if a callback no longer matches its typedef
+   const spooling_validate_func validate = count_validate;
+   const spooling_validate_list_func validate_list = count_validate_list;
+   rule.set<SPR_validate_func>(reinterpret_cast<void *>(validate));
+   rule.set<SPR_validate_list_func>(reinterpret_cast<void *>(validate_list));
 #pragma GCC diagnostic pop
 
    const bool started = spool_startup_context(&alp, ctx, false);

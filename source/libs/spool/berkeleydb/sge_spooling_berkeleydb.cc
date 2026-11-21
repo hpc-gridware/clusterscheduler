@@ -107,7 +107,7 @@ const char *get_berkeleydb_spooling_method()
 }
 
 static bool
-spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *rule,
+spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPR> rule,
                              const char *option);
 
 /**
@@ -188,13 +188,13 @@ spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
  * @see `spool_startup_context()`
  */
 bool spool_berkeleydb_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           const lListElem *rule, bool check) {
+                                           const ocs::tom::ConstElement<ocs::tom::SPR> rule, bool check) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
 
    ret = spool_berkeleydb_check_version(answer_list);
 
@@ -228,14 +228,14 @@ bool spool_berkeleydb_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answ
  * @see `spool_shutdown_context()`
  */
 bool spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                            const lListElem *rule) {
+                                            const ocs::tom::ConstElement<ocs::tom::SPR> rule) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
 
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
 
    if (info == nullptr) {
       /* Already shut down (e.g., spool_free_context after an explicit
@@ -246,7 +246,8 @@ bool spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *ans
 
    ret = spool_berkeleydb_close_database(answer_list, info);
    bdb_destroy(&info);
-   ocs::tom::set<SPR_clientdata>((lListElem *)rule, nullptr);
+   // the framework hands the rule over read-only, but the shutdown resets its client data, as it did before
+   ocs::tom::Element<ocs::tom::SPR>::from_typed(const_cast<lListElem *>(rule.raw())).set<SPR_clientdata>(nullptr);
 
    DRETURN(ret);
 }
@@ -273,7 +274,7 @@ bool spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *ans
  * @see `spool_maintain_context()`
  */
 bool spool_berkeleydb_default_maintenance_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                               const lListElem *rule,
+                                               const ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                                const spooling_maintenance_command cmd,
                                                const char *args) {
    DENTER(BDB_LAYER);
@@ -282,7 +283,7 @@ bool spool_berkeleydb_default_maintenance_func(ocs::tom::ListPtr<ocs::tom::AN> *
 
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
 
    switch (cmd) {
       case SPM_init:
@@ -317,19 +318,20 @@ bool spool_berkeleydb_default_maintenance_func(ocs::tom::ListPtr<ocs::tom::AN> *
  *
  * @note MT-NOTE: spool_berkeleydb_trigger_func() is MT safe
  */
-bool spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule,
+bool spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                   const ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                    uint64_t trigger, uint64_t *next_trigger) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
 
       /* nothing can be done - but set new trigger!! */
@@ -361,7 +363,8 @@ bool spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  *
  * @note MT-NOTE: spool_berkeleydb_transaction_func() is MT safe
  */
-bool spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule,
+bool spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                       const ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                        spooling_transaction_command cmd) {
    DENTER(BDB_LAYER);
 
@@ -369,12 +372,12 @@ bool spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
 
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_ERROR,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -427,8 +430,8 @@ bool spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
  * @see `spool_read_list()`
  */
 bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                        const lListElem *type,
-                                        const lListElem *rule, lList **list,
+                                        const ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                        const ocs::tom::ConstElement<ocs::tom::SPR> rule, lList **list,
                                         const sge_object_type object_type) {
    DENTER(BDB_LAYER);
 
@@ -439,7 +442,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    bdb_info info;
    const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
    descr = object_type_get_descr(object_type);
    table_name = object_type_get_name(object_type);
 
@@ -447,7 +450,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -581,9 +584,9 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
       spooling_validate_func validate =
-         (spooling_validate_func)ocs::tom::get<SPR_validate_func>(rule);
+         (spooling_validate_func)rule.get<SPR_validate_func>();
       spooling_validate_list_func validate_list =
-         (spooling_validate_list_func)ocs::tom::get<SPR_validate_list_func>(rule);
+         (spooling_validate_list_func)rule.get<SPR_validate_list_func>();
 #pragma GCC diagnostic pop
 
       /* validate each individual object */
@@ -627,8 +630,8 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
  */
 lListElem *
 spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                   const lListElem *type,
-                                   const lListElem *rule, const char *key,
+                                   const ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                   const ocs::tom::ConstElement<ocs::tom::SPR> rule, const char *key,
                                    const sge_object_type object_type) {
    DENTER(BDB_LAYER);
 
@@ -637,12 +640,12 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -705,8 +708,8 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  *       spooling framework.
  */
 bool spool_berkeleydb_default_read_keys_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                             const lListElem *rule,
-                                             lList **list,
+                                             const ocs::tom::ConstElement<ocs::tom::SPR> rule,
+                                             ocs::tom::ListPtr<ocs::tom::STU> *list,
                                              const char *key) {
    DENTER(BDB_LAYER);
 
@@ -714,13 +717,13 @@ bool spool_berkeleydb_default_read_keys_func(ocs::tom::ListPtr<ocs::tom::AN> *an
 
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
 
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -782,9 +785,9 @@ bool spool_berkeleydb_default_read_keys_func(ocs::tom::ListPtr<ocs::tom::AN> *an
  * @see `spool_delete_object()`
  */
 bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                         const lListElem *type,
-                                         const lListElem *rule,
-                                         const lListElem *object,
+                                         const ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                         const ocs::tom::ConstElement<ocs::tom::SPR> rule,
+                                         ocs::tom::ConstRawElement object,
                                          const char *key,
                                          const sge_object_type object_type) {
    DENTER(BDB_LAYER);
@@ -796,12 +799,12 @@ bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
    DPRINTF("spool_berkeleydb_default_write_func called for %s with key %s\n",
            object_type_get_name(object_type), key != nullptr ? key : "<null>");
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -809,7 +812,7 @@ bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NULLVALUEASKEY,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -870,7 +873,7 @@ bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
                   const char *exec_file;
                   char *dup = strdup(key);
                   const char *db_key = jobscript_parse_key(dup, &exec_file);
-                  const char *script = ocs::tom::get<JB_script_ptr>(object);
+                  const char *script = ocs::tom::ConstElement<ocs::tom::JB>(object).get<JB_script_ptr>();
                   /* switch script */
                   ret = spool_berkeleydb_write_string(answer_list, info,
                                                       BDB_JOB_DB,
@@ -935,8 +938,8 @@ bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
  * @see `spool_delete_object()`
  */
 bool spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                          const lListElem *type,
-                                          const lListElem *rule,
+                                          const ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                          const ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                           const char *key,
                                           const sge_object_type object_type) {
    DENTER(BDB_LAYER);
@@ -951,12 +954,12 @@ bool spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answe
    const char *dbkey;
 
    sge_dstring_init(&dbkey_dstring, dbkey_buffer, sizeof(dbkey_buffer));
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
    if (info == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                               ANSWER_QUALITY_WARNING,
                               MSG_BERKELEY_NOCONNECTIONOPEN_S,
-                              ocs::tom::get<SPR_url>(rule));
+                              rule.get<SPR_url>());
       ret = false;
    }
 
@@ -1043,8 +1046,20 @@ bool spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answe
    DRETURN(ret);
 }
 
+/**
+ * @brief Apply a berkeleydb specific option to a rule
+ *
+ * The #spooling_option_func of this backend. It knows the option `RECOVER`
+ * (a boolean, e.g. `recover=true`); other tokens are ignored.
+ *
+ * @param answer_list to return error and info messages
+ * @param rule the rule whose database gets the option
+ * @param option the option string, tokens separated by `,`, `;` or blanks
+ *
+ * @return always true
+ */
 static bool
-spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *rule,
+spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::Element<ocs::tom::SPR> rule,
                              const char *option) {
    DENTER(BDB_LAYER);
 
@@ -1052,7 +1067,7 @@ spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList
    const char *delimiter = ",; ";
    bdb_info info;
 
-   info = (bdb_info)ocs::tom::get<SPR_clientdata>(rule);
+   info = (bdb_info)rule.get<SPR_clientdata>();
 
    if (info != nullptr && option != nullptr && strlen(option) != 0) {
       struct saved_vars_s *context = nullptr;

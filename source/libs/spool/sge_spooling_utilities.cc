@@ -369,8 +369,8 @@ spool_free_spooling_fields(spooling_field *fields) {
  *
  * The object comes from the reader of the backend, which created it with the
  * descriptor of @p object_type, so each case takes it with a checked handle of
- * that type. The signature is fixed by #spooling_validate_func and stays
- * untyped.
+ * that type. The object stays a raw handle: #spooling_validate_func serves
+ * every object type.
  *
  * @param answer_list to return error messages
  * @param type object type description
@@ -384,9 +384,9 @@ spool_free_spooling_fields(spooling_field *fields) {
  *       spooling framework.
  */
 bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                 const lListElem *type,
-                                 const lListElem *rule,
-                                 lListElem *object,
+                                 const ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                 const ocs::tom::ConstElement<ocs::tom::SPR> rule,
+                                 const ocs::tom::RawElement object,
                                  const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 
@@ -399,8 +399,6 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-   // the rule (SPR) of the context the framework passes in; no check, the signature is the table's
-   const auto spool_rule = ocs::tom::ConstElement<ocs::tom::SPR>::from_typed(rule);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -428,8 +426,8 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                /* if hostname resolving changed hostname: spool */
                const char *new_name = ehost.get<EH_name>().c_str();
                if (strcmp(old_name, new_name) != 0) {
-                  auto write_func = (spooling_write_func)spool_rule.get<SPR_write_func>();
-                  auto delete_func = (spooling_delete_func)spool_rule.get<SPR_delete_func>();
+                  auto write_func = (spooling_write_func)rule.get<SPR_write_func>();
+                  auto delete_func = (spooling_delete_func)rule.get<SPR_delete_func>();
                   write_func(answer_list, type, rule, ehost, new_name, object_type);
                   delete_func(answer_list, type, rule, old_name, object_type);
                }
@@ -498,8 +496,8 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                /* if hostname resolving changed hostname: spool */
                const char *new_name = config.get<CONF_name>();
                if (strcmp(old_name, new_name) != 0) {
-                  auto write_func = (spooling_write_func)spool_rule.get<SPR_write_func>();
-                  auto delete_func = (spooling_delete_func)spool_rule.get<SPR_delete_func>();
+                  auto write_func = (spooling_write_func)rule.get<SPR_write_func>();
+                  auto delete_func = (spooling_delete_func)rule.get<SPR_delete_func>();
                   write_func(answer_list, type, rule, config, new_name, object_type);
                   delete_func(answer_list, type, rule, old_name, object_type);
                }
@@ -603,7 +601,8 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  */
 bool
 spool_default_validate_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                 const lListElem *type, const lListElem *rule,
+                                 [[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                 [[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                  const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 

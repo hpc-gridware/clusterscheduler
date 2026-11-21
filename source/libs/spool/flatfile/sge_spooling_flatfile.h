@@ -78,35 +78,35 @@ spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
 
 bool 
 spool_classic_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                    const lListElem *rule, bool check);
+                                    ocs::tom::ConstElement<ocs::tom::SPR> rule, bool check);
 
 bool
 spool_classic_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                    const lListElem *rule);
+                                    ocs::tom::ConstElement<ocs::tom::SPR> rule);
 
 bool
 spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                 const lListElem *type, 
-                                 const lListElem *rule,
+                                 ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                 ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                  lList **list, 
                                  const sge_object_type object_type);
 lListElem *
 spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule,
+                                 ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                 ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                  const char *key, 
                                  const sge_object_type object_type);
 bool 
 spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                  const lListElem *type, 
-                                  const lListElem *rule, 
-                                  const lListElem *object, 
+                                  ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                  ocs::tom::ConstElement<ocs::tom::SPR> rule, 
+                                  ocs::tom::ConstRawElement object,
                                   const char *key, 
                                   const sge_object_type object_type);
 bool
 spool_classic_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                   const lListElem *type,
-                                   const lListElem *rule,
+                                   ocs::tom::ConstElement<ocs::tom::SPT> type,
+                                   ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                    const char *key,
                                    const sge_object_type object_type);
 

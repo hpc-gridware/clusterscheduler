@@ -75,7 +75,7 @@ spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
 
 bool 
 spool_berkeleydb_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                    const lListElem *rule, bool check);
+                                    ocs::tom::ConstElement<ocs::tom::SPR> rule, bool check);
 
 /** @brief The part of the startup that master and clients share
  *
@@ -86,49 +86,50 @@ spool_berkeleydb_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
  */
 bool 
 spool_berkeleydb_common_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                   const lListElem *rule);
+                                   ocs::tom::ConstElement<ocs::tom::SPR> rule);
 
 bool 
 spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                     const lListElem *rule);
+                                     ocs::tom::ConstElement<ocs::tom::SPR> rule);
 bool 
 spool_berkeleydb_default_maintenance_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                        const lListElem *rule,
+                                        ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                         const spooling_maintenance_command cmd,
                                         const char *args);
 
 bool
-spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule,
+spool_berkeleydb_trigger_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstElement<ocs::tom::SPR> rule,
                               uint64_t trigger, uint64_t *next_trigger);
 
 bool
-spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *rule, 
+spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                  ocs::tom::ConstElement<ocs::tom::SPR> rule,
                                   spooling_transaction_command cmd);
 bool 
 spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule, lList **list, 
+                                 ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                 ocs::tom::ConstElement<ocs::tom::SPR> rule, lList **list, 
                                  const sge_object_type object_type);
 lListElem *
 spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                 const lListElem *type, 
-                                 const lListElem *rule, const char *key, 
+                                 ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                 ocs::tom::ConstElement<ocs::tom::SPR> rule, const char *key, 
                                  const sge_object_type object_type);
 bool
 spool_berkeleydb_default_read_keys_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                        const lListElem *rule,
-                                        lList **list,
+                                        ocs::tom::ConstElement<ocs::tom::SPR> rule,
+                                        ocs::tom::ListPtr<ocs::tom::STU> *list,
                                         const char *key);
 bool 
 spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                  const lListElem *type, 
-                                  const lListElem *rule, 
-                                  const lListElem *object, const char *key, 
+                                  ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                  ocs::tom::ConstElement<ocs::tom::SPR> rule, 
+                                  ocs::tom::ConstRawElement object, const char *key, 
                                   const sge_object_type object_type);
 bool 
 spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                                   const lListElem *type, 
-                                   const lListElem *rule, 
+                                   ocs::tom::ConstElement<ocs::tom::SPT> type, 
+                                   ocs::tom::ConstElement<ocs::tom::SPR> rule, 
                                    const char *key, 
                                    const sge_object_type object_type);
 
