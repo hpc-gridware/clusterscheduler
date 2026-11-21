@@ -71,8 +71,7 @@
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param ep the share tree
- * @param lpp the master share tree list
+ * @param ep the share tree; it goes into the master share tree list of the data store
  * @param alpp receives messages for the caller
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -80,10 +79,10 @@
  */
 int
 sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::STN> ep,
-                  lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
-   const int ret = sge_mod_sharetree(packet, task, ep, lpp, alpp, ruser, rhost);
+   const int ret = sge_mod_sharetree(packet, task, ep, alpp, ruser, rhost);
    DRETURN(ret);
 }
 
@@ -91,13 +90,12 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
 /** @brief Replace the share tree as a whole
  *
  * We simply replace the old root element with a copy of the new one. If
- * there is no old one we simply add the new. The master share tree list is
- * created if it does not exist yet.
+ * there is no old one we simply add the new. The master share tree list of
+ * the data store is changed; it is created if it does not exist yet.
  *
  * @param packet the client request
  * @param task the GDI task being answered
  * @param ep the new share tree; its version and node ids are set
- * @param lpp the master share tree list, the list to change
  * @param alpp receives messages for the caller
  * @param ruser the requesting user
  * @param rhost the requesting host
@@ -105,7 +103,7 @@ sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
  */
 int
 sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::STN> ep,
-                  lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
+                  ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost) {
    DENTER(TOP_LAYER);
 
    int prev_version;
@@ -131,16 +129,15 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
    }
 
    /* check for presence of sharetree list and create if neccesary */
-   if (!*lpp) {
+   auto tree = ocs::DataStore::master_list_rw<SGE_TYPE_SHARETREE>();
+   if (!tree) {
       prev_version = 0;
-      // the master list slot of the data store is raw
-      *lpp = ocs::tom::ListPtr<ocs::tom::STN>::create("sharetree list").release();
+      tree = ocs::DataStore::master_list_create<SGE_TYPE_SHARETREE>("sharetree list");
       adding = 1;
-   } else if (ocs::tom::ConstList<ocs::tom::STN>(*lpp).empty()) {
+   } else if (tree.empty()) {
       prev_version = 0;
       adding = 1;
    } else {
-      const ocs::tom::List<ocs::tom::STN> tree(*lpp);
       const auto first = tree.front();
       /* real action: change user or project
          We simply replace the old element with the new one. If there is no
@@ -156,7 +153,7 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
    id_sharetree(alpp, ep, 0);
 
    /* now insert new element */
-   ocs::tom::List<ocs::tom::STN>(*lpp).push_back(ep.clone());
+   tree.push_back(ep.clone());
 
    /* write sharetree to file */
    if (!sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr, ep, nullptr, nullptr, true, true,
@@ -180,22 +177,22 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
 
 /** @brief Remove the share tree
  *
- * Delete the sharetree
+ * Delete the sharetree: the master share tree list of the data store is freed,
+ * its slot holds nullptr afterwards.
  *
  * @param packet the client request
  * @param task the GDI task being answered
- * @param lpp the master share tree list
  * @param alpp receives messages for the caller
  * @param ruser the requesting user
  * @param rhost the requesting host
  * @return STATUS_OK on success
  */
 int
-sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                   char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   if (ocs::tom::ConstList<ocs::tom::STN>(*lpp).empty()) {
+   if (ocs::DataStore::master_list_rw<SGE_TYPE_SHARETREE>().empty()) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_S, MSG_OBJ_SHARETREE);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -204,9 +201,8 @@ sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, o
    sge_event_spool(alpp, 0, sgeE_NEW_SHARETREE, 0, 0, nullptr, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true, packet->gdi_session);
 
-   // the master list slot of the data store is raw: take the list over and free it
-   ocs::tom::ListPtr<ocs::tom::STN>::from_typed(*lpp).reset();
-   *lpp = nullptr;
+   // take the list out of the data store and free it; the slot holds nullptr afterwards
+   ocs::DataStore::replace_master_list<SGE_TYPE_SHARETREE>(ocs::tom::ListPtr<ocs::tom::STN>()).reset();
 
    INFO(MSG_SGETEXT_REMOVEDLIST_SSS, ruser, rhost, MSG_OBJ_SHARETREE);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);

@@ -170,9 +170,9 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(const ocs::tom::Lis
 /** @brief Build the categories for every job at startup
  *
  * Projects and user sets have to be prepared first, because a category is
- * partly defined by the access rights a job has.
+ * partly defined by the access rights a job has. The categories (`CT`) go into
+ * the master category list of the data store, which is created with the first one.
  *
- * @param master_category_list location of the categories (`CT`), created if it is still nullptr
  * @param master_job_list the jobs (`JB`)
  * @param master_project_list the projects (`PR`)
  * @param master_userset_list the user sets (`US`)
@@ -183,8 +183,8 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(const ocs::tom::Lis
  */
 void
 ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
-        lList **master_category_list, const ocs::tom::List<ocs::tom::JB> master_job_list,
-        const ocs::tom::List<ocs::tom::PR> master_project_list, const ocs::tom::List<ocs::tom::US> master_userset_list,
+        const ocs::tom::List<ocs::tom::JB> master_job_list, const ocs::tom::List<ocs::tom::PR> master_project_list,
+        const ocs::tom::List<ocs::tom::US> master_userset_list,
         const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
         const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
         const ocs::tom::ConstList<ocs::tom::PE> master_pe_list,
@@ -197,8 +197,8 @@ ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
                                           master_cqueue_list, master_pe_list, master_host_list);
 
    // Create all categories
-   attach_all_jobs(master_job_list, master_category_list, master_userset_list, master_project_list,
-                   master_rqs_list, false, SessionManager::GDI_SESSION_NONE);
+   attach_all_jobs(master_job_list, master_userset_list, master_project_list, master_rqs_list, false,
+                   SessionManager::GDI_SESSION_NONE);
 
    DRETURN_VOID;
 }
@@ -206,7 +206,9 @@ ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
 
 /** @brief Work out a job's category and attach it
  *
- * @param master_category_list location of the categories (`CT`), created if it is still nullptr
+ * The category (`CT`) is looked up in or added to the master category list of the data store, which is
+ * created if the slot still holds nullptr.
+ *
  * @param job the job (`JB`)
  * @param master_userset_list the user sets (`US`)
  * @param master_project_list the projects (`PR`)
@@ -216,7 +218,7 @@ ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(
  * @return true when the job was attached
  */
 bool
-ocs::CategoryQmaster::attach_job(lList **master_category_list, const ocs::tom::Element<ocs::tom::JB> job,
+ocs::CategoryQmaster::attach_job(const ocs::tom::Element<ocs::tom::JB> job,
                                  const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                                  const ocs::tom::ConstList<ocs::tom::PR> master_project_list,
                                  const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
@@ -224,16 +226,12 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, const ocs::tom::E
    DENTER(TOP_LAYER);
 
    // check if the input parameters are valid
-   if (master_category_list == nullptr || !job) {
+   if (!job) {
       DRETURN(false);
    }
 
-   // check if the category list is already created
-   if (*master_category_list == nullptr) {
-      // the master list slot of the data store is untyped
-      *master_category_list = ocs::tom::ListPtr<ocs::tom::CT>::create("master category list").release();
-   }
-   const auto category_list = ocs::tom::List<ocs::tom::CT>::from_typed(*master_category_list);
+   // the category list is created with the first category
+   const auto category_list = DataStore::master_list_create<SGE_TYPE_CATEGORY>("master category list");
 
    // build the category string
    dstring category_str = DSTRING_INIT;
@@ -270,22 +268,20 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, const ocs::tom::E
 
 /** @brief Detach a job from its category, dropping the category when it empties
  *
- * @param master_category_list location of the categories (`CT`)
- * @param job the job (`JB`)
+ * The category (`CT`) is looked up in the master category list of the data store.
+ *
+ * @param job the job (`JB`), must not be an empty handle
  * @param send_events whether to announce the category change to the event clients
  * @param gdi_session the session the change belongs to
  * @return true when the job was detached
  */
 bool
-ocs::CategoryQmaster::detach_job(lList **master_category_list, const ocs::tom::Element<ocs::tom::JB> job,
-                                 const bool send_events, const uint32_t gdi_session) {
+ocs::CategoryQmaster::detach_job(const ocs::tom::Element<ocs::tom::JB> job, const bool send_events,
+                                 const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   // check if the input parameters are valid
-   if (master_category_list == nullptr && !job) {
-      DRETURN(false);
-   }
-   const auto category_list = ocs::tom::List<ocs::tom::CT>::from_typed(*master_category_list);
+   // an empty slot gives an empty handle, which finds no category
+   const auto category_list = DataStore::master_list_rw<SGE_TYPE_CATEGORY>();
    auto category = category_list.find_first<CT_id>(job.get<JB_category_id>());
 
    // each category that is referenced in a job should also exist
@@ -318,7 +314,8 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, const ocs::tom::E
 
 /** @brief Recompute a job's category and move it if it changed
  *
- * @param master_category_list location of the categories (`CT`)
+ * The categories (`CT`) are those of the master category list of the data store.
+ *
  * @param job the job (`JB`)
  * @param master_userset_list the user sets (`US`)
  * @param master_project_list the projects (`PR`)
@@ -328,7 +325,7 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, const ocs::tom::E
  * @param gdi_session the session the change belongs to
  */
 void
-ocs::CategoryQmaster::reattach_job(lList **master_category_list, const ocs::tom::Element<ocs::tom::JB> job,
+ocs::CategoryQmaster::reattach_job(const ocs::tom::Element<ocs::tom::JB> job,
                                    const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                                    const ocs::tom::ConstList<ocs::tom::PR> master_project_list,
                                    const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
@@ -336,11 +333,10 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, const ocs::tom:
    DENTER(TOP_LAYER);
 
    // remove the job from current category
-   detach_job(master_category_list, job, send_events, gdi_session);
+   detach_job(job, send_events, gdi_session);
 
    // add the job to the new category
-   attach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events,
-              gdi_session);
+   attach_job(job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
 
    const uint32_t job_number = job.get<JB_job_number>();
    sge_add_event(now, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, job, gdi_session);
@@ -349,8 +345,10 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, const ocs::tom:
 
 /** @brief Attach every job to a category
  *
+ * The categories (`CT`) go into the master category list of the data store, which is created with the
+ * first one.
+ *
  * @param master_job_list the jobs (`JB`)
- * @param master_category_list location of the categories (`CT`), created if it is still nullptr
  * @param master_userset_list the user sets (`US`)
  * @param master_project_list the projects (`PR`)
  * @param master_rqs_list the resource quota sets (`RQS`)
@@ -358,7 +356,7 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, const ocs::tom:
  * @param gdi_session the session the change belongs to
  */
 void
-ocs::CategoryQmaster::attach_all_jobs(const ocs::tom::List<ocs::tom::JB> master_job_list, lList **master_category_list,
+ocs::CategoryQmaster::attach_all_jobs(const ocs::tom::List<ocs::tom::JB> master_job_list,
                                       const ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                                       const ocs::tom::ConstList<ocs::tom::PR> master_project_list,
                                       const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
@@ -367,8 +365,7 @@ ocs::CategoryQmaster::attach_all_jobs(const ocs::tom::List<ocs::tom::JB> master_
 
    // add all jobs to the category list, create categories if they do not exist
    for (const auto job : master_job_list) {
-      attach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events,
-                 gdi_session);
+      attach_job(job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
    }
    DRETURN_VOID;
 }
@@ -392,12 +389,10 @@ ocs::CategoryQmaster::reattach_all_jobs(const ocs::tom::List<ocs::tom::JB> maste
                                         const ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
                                         const bool send_events, const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
-   lList **master_category_list = DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
    const uint64_t now = sge_get_gmt64();
 
    for (const auto job : master_job_list) {
-      reattach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events,
-                   now, gdi_session);
+      reattach_job(job, master_userset_list, master_project_list, master_rqs_list, send_events, now, gdi_session);
    }
    DRETURN_VOID;
 }

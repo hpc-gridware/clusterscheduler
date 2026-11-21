@@ -27,6 +27,7 @@
  */
 
 #include <cstdio>
+#include <utility>
 
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_DataStore.h"
@@ -111,13 +112,13 @@ static void
 test_free_master_lists() {
    static_cast<void>(ocs::DataStore::replace_master_list<SGE_TYPE_USERSET>(
       ocs::tom::ListPtr<ocs::tom::US>::create("usersets")));
-   CHECK(8, "slot holds the list", *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET) != nullptr);
+   CHECK(8, "slot holds the list", ocs::DataStore::master_list_raw(SGE_TYPE_USERSET));
    ocs::DataStore::free_master_list(SGE_TYPE_USERSET);
-   CHECK(9, "free_master_list(): slot is nullptr", *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET) == nullptr);
+   CHECK(9, "free_master_list(): slot is nullptr", !ocs::DataStore::master_list_raw(SGE_TYPE_USERSET));
    // freeing an empty slot again is harmless
    ocs::DataStore::free_master_list(SGE_TYPE_USERSET);
    CHECK(10, "free_master_list() twice: slot is nullptr",
-         *ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET) == nullptr);
+         !ocs::DataStore::master_list_raw(SGE_TYPE_USERSET));
 
    static_cast<void>(ocs::DataStore::replace_master_list<SGE_TYPE_USERSET>(
       ocs::tom::ListPtr<ocs::tom::US>::create("usersets")));
@@ -126,11 +127,46 @@ test_free_master_lists() {
    ocs::DataStore::free_all_master_lists();
    bool all_null = true;
    for (int type = SGE_TYPE_FIRST; type < SGE_TYPE_ALL; type++) {
-      if (*ocs::DataStore::get_master_list_rw(static_cast<sge_object_type>(type)) != nullptr) {
+      if (ocs::DataStore::master_list_raw(static_cast<sge_object_type>(type))) {
          all_null = false;
       }
    }
    CHECK(11, "free_all_master_lists(): every slot is nullptr", all_null);
+}
+
+// ---------------------------------------------------------------------------
+// DataStore::master_list_raw() / master_list_raw_rw() / replace_master_list_raw()
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief The raw accessors of the master lists of a type given at run time
+ *
+ * An empty slot gives empty handles; replace_master_list_raw() hands the previous list back as an owner and
+ * leaves the new one in the slot, which the typed and the raw accessors then see alike.
+ */
+static void
+test_raw_master_list_access() {
+   ocs::DataStore::free_master_list(SGE_TYPE_USERSET);
+   CHECK(12, "master_list_raw(): empty slot gives an empty handle", !ocs::DataStore::master_list_raw(SGE_TYPE_USERSET));
+   CHECK(13, "master_list_raw_rw(): empty slot gives an empty handle",
+         !ocs::DataStore::master_list_raw_rw(SGE_TYPE_USERSET));
+
+   auto users = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
+   const lList *users_raw = users.get().raw();
+   auto previous = ocs::DataStore::replace_master_list_raw(SGE_TYPE_USERSET, ocs::tom::RawListPtr(std::move(users)));
+   CHECK(14, "replace_master_list_raw(): an empty slot gives an empty owner back", !previous);
+   CHECK(15, "replace_master_list_raw(): the slot holds the new list",
+         ocs::DataStore::master_list_raw(SGE_TYPE_USERSET).raw() == users_raw
+         && ocs::DataStore::master_list<SGE_TYPE_USERSET>().raw() == users_raw);
+
+   ocs::DataStore::master_list_raw_rw(SGE_TYPE_USERSET).push_back(ocs::tom::ElementPtr<ocs::tom::US>::create());
+   CHECK(16, "master_list_raw_rw(): changes the list in the slot",
+         ocs::DataStore::master_list<SGE_TYPE_USERSET>().size() == 1);
+
+   previous = ocs::DataStore::replace_master_list_raw(SGE_TYPE_USERSET, ocs::tom::RawListPtr());
+   CHECK(17, "replace_master_list_raw(): the previous list comes back as the owner", previous.get().raw() == users_raw);
+   CHECK(18, "replace_master_list_raw(): an empty owner leaves the slot empty",
+         !ocs::DataStore::master_list_raw(SGE_TYPE_USERSET));
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +180,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    test_host_list_locate();
    test_free_master_lists();
+   test_raw_master_list_access();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

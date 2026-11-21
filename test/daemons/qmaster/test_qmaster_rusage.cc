@@ -62,9 +62,9 @@ static bool
 write_acct_record(bool accounting_summary, bool intermediate, double *wallclock, double *cpu) {
    // the parallel environment - accounting_summary is only honoured for a
    // tightly integrated one, so control_slaves has to be set as well
-   lList **master_pe_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PE);
-   ocs::tom::free_raw_list(*master_pe_list);
-   ocs::tom::Element<ocs::tom::PE> pe = ocs::tom::emplace_back<PE_name>(master_pe_list, "testpe");
+   // a fresh pe list, created with the pe as the free emplace_back() on the emptied slot did
+   ocs::DataStore::replace_master_list<SGE_TYPE_PE>(ocs::tom::ListPtr<ocs::tom::PE>()).reset();
+   const auto pe = ocs::DataStore::master_list_create<SGE_TYPE_PE>("").emplace_back<PE_name>("testpe");
    pe.set<PE_control_slaves>(true);
    pe.set<PE_accounting_summary>(accounting_summary);
 
@@ -124,7 +124,8 @@ write_acct_record(bool accounting_summary, bool intermediate, double *wallclock,
    jr.reset();
    ja_task.reset();
    job.reset();
-   ocs::tom::free_raw_list(*master_pe_list);
+   // the pe list is freed again, the slot holds nullptr afterwards
+   ocs::DataStore::replace_master_list<SGE_TYPE_PE>(ocs::tom::ListPtr<ocs::tom::PE>()).reset();
 
    return ret;
 }

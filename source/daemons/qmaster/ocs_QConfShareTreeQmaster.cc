@@ -296,9 +296,8 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       }
    }
 
-   // the master list slot stays untyped: sge_mod_sharetree() replaces the tree through it
-   lList **tree_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE);
-   const auto stored = ocs::tom::ConstList<ocs::tom::STN>(*tree_list).front();
+   // sge_mod_sharetree() replaces the tree in the data store below
+   const auto stored = ocs::DataStore::master_list_rw<SGE_TYPE_SHARETREE>().front();
    ocs::tom::ElementPtr<ocs::tom::STN> root;
    if (stored) {
       root = stored.clone();
@@ -329,7 +328,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       /* the reason of a refused write is what the client printed; the generic
        * confirmation is replaced by its own line, as before */
       ocs::tom::ListPtr<ocs::tom::AN> alp;
-      const int ret = sge_mod_sharetree(packet, task, *root, tree_list, &alp, packet->user, packet->host);
+      const int ret = sge_mod_sharetree(packet, task, *root, &alp, packet->user, packet->host);
       if (ret == STATUS_OK) {
          answer_list_add(answer_list, MSG_TREE_MODIFIEDSHARETREE, STATUS_OK, ANSWER_QUALITY_INFO);
          ok = true;

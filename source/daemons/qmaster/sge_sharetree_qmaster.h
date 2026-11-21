@@ -47,15 +47,15 @@
 #include "sgeobj/sge_answer.h"
 
 int
-sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep, lList **lpp,
+sge_add_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep,
                   ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost);
 
 int
-sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep, lList **lpp,
+sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::STN> ep,
                   ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *ruser, const char *rhost);
 
 int
-sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lList **lpp, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+sge_del_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                   char *ruser, char *rhost);
 
 ocs::tom::ConstElement<ocs::tom::STN>

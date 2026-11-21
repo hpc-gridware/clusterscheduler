@@ -106,7 +106,7 @@ namespace {
          using E = ocs_qconf_object_entry_t<decltype(entry)>;
          // the entry names the master list holding objects of its type
          const auto list =
-            ocs::tom::ConstList<typename E::type>::from_typed(*ocs::DataStore::get_master_list(entry.master_list));
+            ocs::tom::ConstList<typename E::type>::from_typed(ocs::DataStore::master_list_raw(entry.master_list));
          if constexpr (E::has_key) {
             return ocs_qconf_name_in_list<E>(list, name);
          } else {

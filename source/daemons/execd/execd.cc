@@ -183,7 +183,6 @@ int main(int argc, char **argv) {
    int max_enroll_tries;
    static char tmp_err_file_name[SGE_PATH_MAX];
    int execd_exit_state = 0;
-   lList **master_job_list = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    ocs::tom::install_model(ocs::tom::gcs_model());
@@ -397,10 +396,14 @@ int main(int argc, char **argv) {
    INFO(SFNMAX, MSG_EXECD_STARTPDCANDPTF);
 #endif
 
-   master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    // the data store holds the job list until the daemon goes down
    ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(ocs::tom::ListPtr<ocs::tom::JB>::create("master job list"));
-   job_list_read_from_disk(master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
+   {
+      // job_list_read_from_disk() takes a list reference, which it sets only when it holds nullptr; the list
+      // exists, so the jobs go into the master job list itself
+      lList *master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().raw();
+      job_list_read_from_disk(&master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
+   }
 
    /* clean up jobs hanging around (look in active_dir) */
    clean_up_old_jobs(true);

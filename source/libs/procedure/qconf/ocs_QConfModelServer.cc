@@ -107,7 +107,7 @@ ocs::QConfModelServer::fetch(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
       // them over unchecked, as before
       const auto typed_where = ocs::tom::Where<T>::from_typed(where.release());
       const auto typed_what = ocs::tom::What<T>::from_typed(what.release());
-      const auto master_list = ocs::tom::ConstList<T>::from_typed(*DataStore::get_master_list(type));
+      const auto master_list = ocs::tom::ConstList<T>::from_typed(DataStore::master_list_raw(type));
       auto selected = master_list.select(typed_where, typed_what, "");
       // lSelect() gave no list where nothing matched, and the callers tell no list from an empty one
       if (selected && selected->empty()) {

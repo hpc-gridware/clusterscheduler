@@ -287,7 +287,6 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    //cl_thread_settings_t *tc = cl_thread_get_thread_config();
    std::string jsv_thread_name = "jsv_" + std::string(component_get_thread_name())
                                + "_" + std::to_string(component_get_thread_id());
-   lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
 
    // JSV verification if enabled
    if (jsv_is_enabled(jsv_thread_name.c_str())) {
@@ -351,12 +350,10 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    job.set<JB_script_size>(0);
 
    // create or assign a category
-   lList** master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
    const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
-   lret = ocs::CategoryQmaster::attach_job(master_category_list, job,
-                                           master_userset_list, master_project_list, master_rqs_list,
+   lret = ocs::CategoryQmaster::attach_job(job, master_userset_list, master_project_list, master_rqs_list,
                                            true, packet->gdi_session);
 
    // Handle job spooling and event
@@ -390,12 +387,8 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    }
 
    /* add into job list */
-   // job_list_add_job() takes the copy over through a non-owning handle
-   if (job_list_add_job(master_job_list, "master job list",
-                        ocs::tom::Element<ocs::tom::JB>::from_typed(job.clone().release()), 0)) {
-      answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      DRETURN(STATUS_EUNKNOWN);
-   }
+   // the master job list is created with its first job, as job_list_add_job() did; the list takes the copy over
+   ocs::DataStore::master_list_create<SGE_TYPE_JOB>("master job list").push_back(job.clone());
 
    /** increase user counter */
    // the submit user list is created with its first user, as the free emplace_back() did
@@ -1438,7 +1431,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             const char *cat_str = sge_dstring_get_string(&category_str);
 
             // check if the category string changed
-            lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
             uint32_t old_category_id = new_job.get<JB_category_id>();
             const auto old_category =
                ocs::DataStore::master_list_rw<SGE_TYPE_CATEGORY>().find_first<CT_id>(old_category_id);
@@ -1447,11 +1439,10 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             // check if the category string changed and trigger corresponding events
             if (strcmp(old_cat_str, cat_str) != 0) {
                // remove the job from the category
-               ocs::CategoryQmaster::detach_job(master_category_list, new_job, true, packet->gdi_session);
+               ocs::CategoryQmaster::detach_job(new_job, true, packet->gdi_session);
 
                // add the job to the new category
-               ocs::CategoryQmaster::attach_job(master_category_list, new_job,
-                                                master_userset_list, master_project_list, master_rqs_list,
+               ocs::CategoryQmaster::attach_job(new_job, master_userset_list, master_project_list, master_rqs_list,
                                                 true, packet->gdi_session);
                trigger |= MOD_EVENT;
             }

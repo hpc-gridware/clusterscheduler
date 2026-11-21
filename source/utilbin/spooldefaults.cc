@@ -250,24 +250,42 @@ static int spool_ckpts(int argc, char *argv[]) {
    return spool_object_list(argv[2], CK_fields, &qconf_sfi, ocs::tom::CK::descriptor.e, SGE_TYPE_CKPT);
 }
 
+/**
+ * @brief Spool the cluster queues of a directory, after reading the complexes and hosts they refer to
+ *
+ * The complex entries and the execution hosts are read into their master lists first.
+ *
+ * @param argc the number of command line arguments
+ * @param argv the command line arguments; argv[2] is the directory holding the cluster queues
+ * @return EXIT_SUCCESS or EXIT_FAILURE, as spool_object_list() returns
+ */
 static int spool_cqueues(int argc, char *argv[]) {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    spool_read_list(&answer_list, spool_get_default_context(), 
-                   ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
+                   ocs::DataStore::master_list_slot(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    spool_read_list(&answer_list, spool_get_default_context(), 
-                   ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST), SGE_TYPE_EXECHOST);
+                   ocs::DataStore::master_list_slot(SGE_TYPE_EXECHOST), SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
 
    return spool_object_list(argv[2], CQ_fields, &qconf_sfi, ocs::tom::CQ::descriptor.e, SGE_TYPE_CQUEUE);
 }
 
+/**
+ * @brief Spool the execution hosts of a directory, after reading the complexes they refer to
+ *
+ * The complex entries are read into their master list first.
+ *
+ * @param argc the number of command line arguments
+ * @param argv the command line arguments; argv[2] is the directory holding the execution hosts
+ * @return EXIT_SUCCESS or EXIT_FAILURE, as spool_object_list() returns
+ */
 static int spool_exechosts(int argc, char *argv[]) {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const spooling_field *fields = sge_build_EH_field_list(true, false, false, false);
    int ret; 
 
    spool_read_list(&answer_list, spool_get_default_context(), 
-                   ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY),
+                   ocs::DataStore::master_list_slot(SGE_TYPE_CENTRY),
                    SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 

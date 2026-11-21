@@ -431,29 +431,27 @@ bool sconf_set_config(ocs::tom::ListPtr<ocs::tom::SC> &config, ocs::tom::ListPtr
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   // the master list is a process-lifetime global, so it stays a raw pointer here
-   lList **master_sconf_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SCHEDD_CONF);
-   lList *store = *master_sconf_list;
-
-   *master_sconf_list = config.get();
+   // the new configuration goes into the master list for the validation; the previous one is kept aside
+   auto store = ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(std::move(config));
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    const bool ret = sconf_validate_config_(answer_list);
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
    if (ret) {
-      // the configuration now belongs to the master list
-      static_cast<void>(config.release());
-      ocs::tom::ListPtr<ocs::tom::SC>::from_typed(store).reset();
+      // the configuration now belongs to the master list, the previous one is freed
+      store.reset();
    } else {
-      *master_sconf_list = store;
-      if (*master_sconf_list == nullptr) {
+      // the previous configuration goes back into the master list, the rejected one back to the caller
+      config = ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(std::move(store));
+      if (!ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>()) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_USE_DEFAULT_CONFIG);
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING);
 
          auto default_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd config list");
          default_list->push_back(sconf_create_default());
-         *master_sconf_list = default_list.release();
+         // the slot held nullptr: nothing comes back
+         ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(std::move(default_list)).reset();
       }
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       sconf_validate_config_(nullptr);
@@ -2295,15 +2293,18 @@ bool sconf_validate_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
 
    if (config) {
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      // the master list is a process-lifetime global; it is swapped for the time of the check
-      const lList *store = *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF);
-      *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = config;
+      // the master list is swapped for the time of the check: the slot borrows the caller's list, and the stored
+      // list is kept aside unowned, so neither list is freed here, also not when the check throws
+      lList *store = ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(
+         ocs::tom::ListPtr<ocs::tom::SC>::from_typed(config.raw())).release();
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
       ret = sconf_validate_config_(answer_list);
 
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
-      *ocs::DataStore::get_master_list(SGE_TYPE_SCHEDD_CONF) = store;
+      // the caller's list comes back out of the slot and stays with the caller
+      static_cast<void>(ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(
+         ocs::tom::ListPtr<ocs::tom::SC>::from_typed(store)).release());
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
       sconf_validate_config_(nullptr);

@@ -26,6 +26,7 @@
 #include <utility>
 
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 
 #include "sge_object.h"
 #include "sge_event.h"
@@ -38,13 +39,31 @@ namespace ocs {
     * qmaster keeps several copies of the object model: one read-write store the
     * worker threads modify, and snapshots the scheduler, the listeners and the
     * readers work on without blocking writers. Each thread selects the store it
-    * belongs to once via #select_active_ds; every later `get_master_list*` call
+    * belongs to once via #select_active_ds; every later master list access
     * on that thread then resolves against it, so callers never pass a store
     * around.
     */
    class DataStore {
    private:
       // no private attributes because data is store thread local
+
+      static lList **
+      get_master_list_rw(sge_object_type type, bool for_read = false);
+
+      /**
+       * @brief The slot of a master list (read access) in the active data store of the calling thread
+       *
+       * Private: callers use the typed accessors (master_list() & co.) for a type known at compile time and
+       * master_list_raw() & co. for a type given at run time; master_list_slot() remains for the readers that
+       * fill a slot in place.
+       *
+       * @param type the type of the master list
+       * @return the location of the list, never nullptr
+       */
+      static const lList **
+      get_master_list(const sge_object_type type) {
+         return const_cast<const lList **>(ocs::DataStore::get_master_list_rw(type, true));
+      }
 
    public:
       /// The data stores a thread can be attached to
@@ -62,18 +81,17 @@ namespace ocs {
       static ocs::DataStore::Id
       get_active_ds();
 
-      static lList **
-      get_master_list_rw(sge_object_type type, bool for_read = false);
+      static ocs::tom::ConstRawList
+      master_list_raw(sge_object_type type);
 
-      /**
-       * Returns a master list (RO-access) from the currently active data store of the active threads
-       * @param type Type of the master list
-       * @return Pointer of the list location. Will never be nullptr.
-       */
-      static inline const lList **
-      get_master_list(sge_object_type type) {
-         return const_cast<const lList **>(ocs::DataStore::get_master_list_rw(type, true));
-      }
+      static ocs::tom::RawList
+      master_list_raw_rw(sge_object_type type, bool for_read = false);
+
+      static ocs::tom::RawListPtr
+      replace_master_list_raw(sge_object_type type, ocs::tom::RawListPtr &&list);
+
+      static lList **
+      master_list_slot(sge_object_type type);
 
       /// The object type of the elements of the master list of #sge_object_type value V, e.g. ocs::tom::JB
       template <sge_object_type V>

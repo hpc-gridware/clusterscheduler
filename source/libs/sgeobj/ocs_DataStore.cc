@@ -251,6 +251,71 @@ namespace ocs {
    }
 
    /**
+    * @brief The master list of a type given at run time (read access), from the active data store
+    *
+    * For code that is generic over object types; a type known at compile time takes master_list(). Calls
+    * get_master_list(), so the lock checks of debug builds stay in place. The handle is only valid inside the
+    * lock scope of the data store it was obtained in; it must not be stored beyond it.
+    *
+    * @param type the type of the master list
+    * @return the read-only handle on the list held in the slot, empty if the slot holds nullptr
+    */
+   ocs::tom::ConstRawList
+   DataStore::master_list_raw(const sge_object_type type) {
+      return *get_master_list(type);
+   }
+
+   /**
+    * @brief The master list of a type given at run time (write access), from the active data store
+    *
+    * For code that is generic over object types; a type known at compile time takes master_list_rw(). Calls
+    * get_master_list_rw(), so the lock checks of debug builds stay in place. The handle allows to change the
+    * list held in the slot, not to put another list into the slot: use replace_master_list_raw() for that.
+    *
+    * @param type the type of the master list
+    * @param for_read true when the caller only reads, as for get_master_list_rw()
+    * @return the handle on the list held in the slot, empty if the slot holds nullptr
+    */
+   ocs::tom::RawList
+   DataStore::master_list_raw_rw(const sge_object_type type, const bool for_read) {
+      return *get_master_list_rw(type, for_read);
+   }
+
+   /**
+    * @brief Put a list into the slot of a master list of a type given at run time
+    *
+    * For code that is generic over object types; a type known at compile time takes replace_master_list().
+    * Calls get_master_list_rw(), so the lock checks of debug builds stay in place. The caller must hold the
+    * lock of the data store for writing and must pass a list of the objects of @p type.
+    *
+    * @param type the type of the master list
+    * @param list the list to put into the slot, may be empty; it is consumed
+    * @return the list the slot held before, owned by the caller; empty if the slot held nullptr
+    */
+   ocs::tom::RawListPtr
+   DataStore::replace_master_list_raw(const sge_object_type type, ocs::tom::RawListPtr &&list) {
+      ocs::tom::RawListPtr new_list(std::move(list));
+      return ocs::tom::RawListPtr(std::exchange(*get_master_list_rw(type), new_list.release()));
+   }
+
+   /**
+    * @brief The slot of a master list, for the readers that fill a slot in place
+    *
+    * Only for spool_read_list(), whose spooling callbacks are generic over the object type and create the
+    * list through the slot when it holds nullptr, or append to the list it holds, and for the functions that
+    * hand the slot on to it (sge_read_configuration()). Everything else uses the typed accessors or the raw
+    * handles, which cannot put another list into the slot behind the data store's back. Calls
+    * get_master_list_rw(), so the lock checks of debug builds stay in place.
+    *
+    * @param type the type of the master list
+    * @return the location of the list, never nullptr
+    */
+   lList **
+   DataStore::master_list_slot(const sge_object_type type) {
+      return get_master_list_rw(type);
+   }
+
+   /**
     * @brief Free the master list which has the given type
     *
     * The slot is indexed by the object type at run time, so the list is freed through a raw owner; the slot

@@ -191,9 +191,9 @@ qmaster_lock_and_shutdown(int anExitValue);
 static int
 setup_qmaster();
 
-template <typename T, auto NameF, auto DebitedF>
+template <sge_object_type V, auto NameF, auto DebitedF>
 static void
-remove_invalid_job_references(sge_object_type object_type, const char *object_name);
+remove_invalid_job_references(const char *object_name);
 
 static void
 remove_irrelevant_userprj_usage(bool user, ocs::tom::ConstList<ocs::tom::UA> usage_weight_list);
@@ -806,7 +806,8 @@ setup_qmaster() {
       spooling_context = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(spool_get_default_context());
    }
 
-   if (sge_read_configuration(spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG), &answer_list) != 0) {
+   if (sge_read_configuration(spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_CONFIG),
+                              &answer_list) != 0) {
       DRETURN(-1);
    }
 
@@ -821,7 +822,7 @@ setup_qmaster() {
    ** read in all objects and check for correctness
    */
    DPRINTF("Complex Attributes----------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_CENTRY), SGE_TYPE_CENTRY);
    answer_list_output(&answer_list);
 
    /*
@@ -882,7 +883,7 @@ setup_qmaster() {
    }
 
    DPRINTF("host_list----------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST),
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_EXECHOST),
                    SGE_TYPE_EXECHOST);
    answer_list_output(&answer_list);
 
@@ -919,7 +920,7 @@ setup_qmaster() {
    }
 
    DPRINTF("host group definitions-----------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_HGROUP), SGE_TYPE_HGROUP);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_HGROUP), SGE_TYPE_HGROUP);
    answer_list_output(&answer_list);
 
    /*
@@ -1017,7 +1018,8 @@ setup_qmaster() {
    answer_list_output(&answer_list);
 
    DPRINTF("userset_list------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USERSET), SGE_TYPE_USERSET);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_USERSET),
+                   SGE_TYPE_USERSET);
    answer_list_output(&answer_list);
 
    /*
@@ -1059,16 +1061,16 @@ setup_qmaster() {
    }
 
    DPRINTF("calendar list ------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CALENDAR),
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_CALENDAR),
                    SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
 
    DPRINTF("resource quota list -----------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_RQS), SGE_TYPE_RQS);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_RQS), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
    DPRINTF("cluster_queue_list---------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_CQUEUE), SGE_TYPE_CQUEUE);
    answer_list_output(&answer_list);
    cqueue_list_set_unknown_state(ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>(),
                                  nullptr, false, true, ocs::SessionManager::GDI_SESSION_NONE);
@@ -1177,19 +1179,19 @@ setup_qmaster() {
    }
 
    DPRINTF("pe_list---------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_PE), SGE_TYPE_PE);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_PE), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
    DPRINTF("role_list---------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_RL), SGE_TYPE_RL);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_RL), SGE_TYPE_RL);
    answer_list_output(&answer_list);
 
    DPRINTF("ckpt_list---------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_CKPT), SGE_TYPE_CKPT);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_CKPT), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
 
    DPRINTF("advance reservation list -----------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_AR), SGE_TYPE_AR);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_AR), SGE_TYPE_AR);
    answer_list_output(&answer_list);
 
    /* initialize cached advance reservations structures */
@@ -1202,7 +1204,7 @@ setup_qmaster() {
    DPRINTF("job_list-----------------------------------\n");
    /* measure time needed to read job database */
    time_start = time(nullptr);
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_JOB), SGE_TYPE_JOB);
    time_end = time(nullptr);
    answer_list_output(&answer_list);
 
@@ -1281,16 +1283,17 @@ setup_qmaster() {
 
 
    DPRINTF("user list-----------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_USER), SGE_TYPE_USER);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_USER), SGE_TYPE_USER);
    answer_list_output(&answer_list);
 
-   remove_invalid_job_references<ocs::tom::UU, UU_name, UU_debited_job_usage>(SGE_TYPE_USER, MSG_OBJ_USER);
+   remove_invalid_job_references<SGE_TYPE_USER, UU_name, UU_debited_job_usage>(MSG_OBJ_USER);
 
    DPRINTF("project list-----------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT), SGE_TYPE_PROJECT);
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_PROJECT),
+                   SGE_TYPE_PROJECT);
    answer_list_output(&answer_list);
 
-   remove_invalid_job_references<ocs::tom::PR, PR_name, PR_debited_job_usage>(SGE_TYPE_PROJECT, MSG_OBJ_PRJ);
+   remove_invalid_job_references<SGE_TYPE_PROJECT, PR_name, PR_debited_job_usage>(MSG_OBJ_PRJ);
 
    DPRINTF("scheduler config -----------------------------------\n");
 
@@ -1310,7 +1313,7 @@ setup_qmaster() {
    }
 
    DPRINTF("share tree list-----------------------------------\n");
-   spool_read_list(&answer_list, spooling_context, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
+   spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_SHARETREE),
                    SGE_TYPE_SHARETREE);
    answer_list_output(&answer_list);
    const auto ep = ocs::DataStore::master_list_rw<SGE_TYPE_SHARETREE>().front();
@@ -1324,7 +1327,6 @@ setup_qmaster() {
    }
 
    DPRINTF("post init of prj/uset and create of categories--------------------\n");
-   lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    const auto master_userset_list = ocs::DataStore::master_list_rw<SGE_TYPE_USERSET>();
    const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>();
@@ -1332,9 +1334,10 @@ setup_qmaster() {
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    const auto master_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
-   ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(master_category_list, master_job_list,
-                                                                   master_project_list, master_userset_list, master_rqs_list,
-                                                                   master_cqueue_list, master_pe_list, master_host_list);
+   ocs::CategoryQmaster::initialize_prj_uset_and_create_categories(master_job_list, master_project_list,
+                                                                   master_userset_list, master_rqs_list,
+                                                                   master_cqueue_list, master_pe_list,
+                                                                   master_host_list);
 
    // duplicate keys in unique attributes, written by earlier versions: repair what the input paths repair, stop on
    // the rest (N-H-18)
@@ -1546,21 +1549,20 @@ ocs_qmaster_check_unique_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
  * get rid of still debited per job usage contained
  * in user or project object if the job is no longer existing
  *
- * @tparam T the object type, UU or PR
- * @tparam NameF the name field of the type
- * @tparam DebitedF the debited job usage field of the type (UPU list)
- * @param object_type the master list to work on, SGE_TYPE_USER or SGE_TYPE_PROJECT
+ * @tparam V the master list to work on, SGE_TYPE_USER or SGE_TYPE_PROJECT
+ * @tparam NameF the name field of its object type
+ * @tparam DebitedF the debited job usage field of its object type (UPU list)
  * @param object_name the type's name for the warning
  *
  * @note MT-NOTE: remove_invalid_job_references() is not MT safe
  */
-template <typename T, auto NameF, auto DebitedF>
+template <sge_object_type V, auto NameF, auto DebitedF>
 static void
-remove_invalid_job_references(const sge_object_type object_type, const char *object_name) {
+remove_invalid_job_references(const char *object_name) {
    DENTER(TOP_LAYER);
 
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
-   for (const auto up : ocs::tom::List<T>(*ocs::DataStore::get_master_list_rw(object_type))) {
+   for (const auto up : ocs::DataStore::master_list_rw<V>()) {
       bool spool_me = false;
       const auto debited_job_usage = up.template get<DebitedF>();
       auto next = debited_job_usage.front();
@@ -1578,7 +1580,7 @@ remove_invalid_job_references(const sge_object_type object_type, const char *obj
 
       if (spool_me) {
          ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-         spool_write_object(&answer_list, spool_get_default_context(), up, up.template get<NameF>(), object_type);
+         spool_write_object(&answer_list, spool_get_default_context(), up, up.template get<NameF>(), V);
          answer_list_output(&answer_list);
       }
    }

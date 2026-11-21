@@ -125,7 +125,7 @@ template <typename E>
 static ocs::tom::ConstList<typename E::type>
 qconf_master_list_of(const sge_object_type list_type) {
    // the entry names the master list holding objects of its type
-   return ocs::tom::ConstList<typename E::type>::from_typed(*ocs::DataStore::get_master_list(list_type));
+   return ocs::tom::ConstList<typename E::type>::from_typed(ocs::DataStore::master_list_raw(list_type));
 }
 
 /** @brief Whether storing this object would change nothing (CS-2823)
@@ -240,8 +240,7 @@ qconf_apply_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *mo
    } else if constexpr (std::is_same_v<T, ocs::tom::SC>) {
       DRETURN(sge_mod_sched_configuration(packet, task, ep, answer_list, packet->user, packet->host));
    } else if constexpr (std::is_same_v<T, ocs::tom::STN>) {
-      DRETURN(sge_mod_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
-                                answer_list, packet->user, packet->host));
+      DRETURN(sge_mod_sharetree(packet, task, ep, answer_list, packet->user, packet->host));
    } else if constexpr (OcsGdiGenericType<T>) {
       /* add == 0 modifies and fails when the object is gone, add == 1 adds
        * and fails when it is already there - ocs_gdi_add_mod()

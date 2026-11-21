@@ -65,8 +65,7 @@ namespace ocs {
 
    public:
       static void
-      initialize_prj_uset_and_create_categories(lList **master_category_list,
-                                                ocs::tom::List<ocs::tom::JB> master_job_list,
+      initialize_prj_uset_and_create_categories(ocs::tom::List<ocs::tom::JB> master_job_list,
                                                 ocs::tom::List<ocs::tom::PR> master_project_list,
                                                 ocs::tom::List<ocs::tom::US> master_userset_list,
                                                 ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list,
@@ -75,17 +74,16 @@ namespace ocs {
                                                 ocs::tom::ConstList<ocs::tom::EH> master_host_list);
 
       static bool
-      attach_job(lList **master_category_list, ocs::tom::Element<ocs::tom::JB> job,
+      attach_job(ocs::tom::Element<ocs::tom::JB> job,
                  ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                  ocs::tom::ConstList<ocs::tom::PR> master_project_list,
                  ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint32_t gdi_session);
 
       static bool
-      detach_job(lList **master_category_list, ocs::tom::Element<ocs::tom::JB> job, bool send_events,
-                 uint32_t gdi_session);
+      detach_job(ocs::tom::Element<ocs::tom::JB> job, bool send_events, uint32_t gdi_session);
 
       static void
-      reattach_job(lList **master_category_list, ocs::tom::Element<ocs::tom::JB> job,
+      reattach_job(ocs::tom::Element<ocs::tom::JB> job,
                    ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                    ocs::tom::ConstList<ocs::tom::PR> master_project_list,
                    ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint64_t now,
@@ -95,7 +93,7 @@ namespace ocs {
       refresh_cat_data_in_job(ocs::tom::List<ocs::tom::CT> master_category_list, ocs::tom::Element<ocs::tom::JB> job);
 
       static void
-      attach_all_jobs(ocs::tom::List<ocs::tom::JB> master_job_list, lList **master_category_list,
+      attach_all_jobs(ocs::tom::List<ocs::tom::JB> master_job_list,
                       ocs::tom::ConstList<ocs::tom::US> master_userset_list,
                       ocs::tom::ConstList<ocs::tom::PR> master_project_list,
                       ocs::tom::ConstList<ocs::tom::RQS> master_rqs_list, bool send_events, uint32_t gdi_session);

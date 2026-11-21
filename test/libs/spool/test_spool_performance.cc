@@ -176,6 +176,10 @@ static bool spool_data() {
    return true;
 }
 #endif
+/**
+ * @brief Read the spooled jobs into the master job list
+ * @return true
+ */
 static bool read_spooled_data() {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
@@ -183,7 +187,7 @@ static bool read_spooled_data() {
    context = spool_get_default_context();
 
    /* jobs */
-   spool_read_list(&answer_list, context, ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), SGE_TYPE_JOB);
+   spool_read_list(&answer_list, context, ocs::DataStore::master_list_slot(SGE_TYPE_JOB), SGE_TYPE_JOB);
    answer_list_output(&answer_list);
 
    return true;

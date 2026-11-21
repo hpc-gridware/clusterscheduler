@@ -49,24 +49,23 @@ namespace {
     * The names are collected before the first write, because a write replaces
     * the element in the very list this walks.
     *
-    * @tparam T the object type, UU or PR
+    * @tparam V the master list, SGE_TYPE_USER or SGE_TYPE_PROJECT; its object type is UU or PR
     * @tparam KeyF the field holding the object's name
     * @tparam UsageF the usage list field
     * @tparam ProjectF the per project usage field
     * @param packet the client request
     * @param task the GDI task being answered
     * @param monitor for monitoring qmaster threads
-    * @param target the object list, `UU_LIST` or `PR_LIST`
-    * @param type the master list type that goes with it
+    * @param target the object list, `UU_LIST` or `PR_LIST`, the one that goes with @p V
     * @param answer_list receives the reason of every write that failed
     * @return true when every write succeeded
     */
-   template <ocs::tom::ObjectType T, auto KeyF, auto UsageF, auto ProjectF>
+   template <sge_object_type V, auto KeyF, auto UsageF, auto ProjectF>
    bool
    clear_usage_of(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor,
-                  const ocs::gdi::Target target, const sge_object_type type,
-                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+                  const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       DENTER(TOP_LAYER);
+      using T = ocs::DataStore::master_type_t<V>;
 
       gdi_object_t *object = get_gdi_object(target);
       if (object == nullptr) {
@@ -75,7 +74,7 @@ namespace {
       }
 
       std::vector<std::string> names;
-      for (const auto ep : ocs::tom::ConstList<T>(*ocs::DataStore::get_master_list(type))) {
+      for (const auto ep : ocs::DataStore::master_list<V>()) {
          if (!ep.template get<UsageF>().empty() || !ep.template get<ProjectF>().empty()) {
             names.emplace_back(ep.template get<KeyF>());
          }
@@ -134,10 +133,10 @@ qconf_usage_clear_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   const bool users_ok = clear_usage_of<ocs::tom::UU, UU_name, UU_usage, UU_project>(
-           packet, task, monitor, ocs::gdi::Target::UU_LIST, SGE_TYPE_USER, answer_list);
-   const bool projects_ok = clear_usage_of<ocs::tom::PR, PR_name, PR_usage, PR_project>(
-           packet, task, monitor, ocs::gdi::Target::PR_LIST, SGE_TYPE_PROJECT, answer_list);
+   const bool users_ok = clear_usage_of<SGE_TYPE_USER, UU_name, UU_usage, UU_project>(
+           packet, task, monitor, ocs::gdi::Target::UU_LIST, answer_list);
+   const bool projects_ok = clear_usage_of<SGE_TYPE_PROJECT, PR_name, PR_usage, PR_project>(
+           packet, task, monitor, ocs::gdi::Target::PR_LIST, answer_list);
 
    DRETURN(users_ok && projects_ok);
 }

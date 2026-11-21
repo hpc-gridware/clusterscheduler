@@ -933,8 +933,8 @@ int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
                   ERROR(MSG_CONFIG_CANTFINDSCRIPTFILE_U, job->get<JB_job_number>());
                   // job_remove_spool_file() looks the job up in the master job list, so it is put there for the call
                   const auto added_job = job.get();
-                  job_list_add_job(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), "job list",
-                                   ocs::tom::Element<ocs::tom::JB>::from_typed(job.release()), 0);
+                  // created with this job if the slot holds none, as job_list_add_job() did
+                  ocs::DataStore::master_list_create<SGE_TYPE_JOB>("job list").push_back(std::move(job));
                   job_remove_spool_file(job_id, 0, nullptr, SPOOL_DEFAULT);
                   ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().erase(added_job);
                   continue;

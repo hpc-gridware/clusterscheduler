@@ -293,6 +293,12 @@ void *thread1(void *data) {
    DRETURN(nullptr);
 }
 
+/**
+ * @brief Fill the master lists, run the simulation threads and check the fine grained locking
+ * @param argc the number of command line arguments, unused
+ * @param argv the command line arguments, unused
+ * @return EXIT_SUCCESS if every thread succeeded, EXIT_FAILURE otherwise
+ */
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_fgl");
    bool ret = true;
@@ -308,35 +314,36 @@ int main(int argc, char *argv[]) {
    request = 0;
 
    // create some CULL objects that simulation functions can access
-   lList **job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   // the lists get the names the free emplace_back() gave a list it created
+   const auto job_list = ocs::DataStore::master_list_create<SGE_TYPE_JOB>("ulong_sublist");
    for (int j = 0; j < JOBS; j++) {
-      ocs::tom::emplace_back<JB_job_number>(job_list, j);
+      job_list.emplace_back<JB_job_number>(j);
    }
 
-   lList **host_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_EXECHOST);
+   const auto host_list = ocs::DataStore::master_list_create<SGE_TYPE_EXECHOST>("");
    for (int h = 0; h < HOSTS; h++) {
       dstring host_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&host_name, "host%d", h);
-      ocs::tom::emplace_back<EH_name>(host_list, sge_dstring_get_string(&host_name));
+      host_list.emplace_back<EH_name>(ocs::tom::Host(sge_dstring_get_string(&host_name)));
       sge_dstring_free(&host_name);
    }
 
-   lList **cqueue_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
+   const auto cqueue_list = ocs::DataStore::master_list_create<SGE_TYPE_CQUEUE>("");
    for (int q = 0; q < CQUEUES; q++) {
       dstring cqueue_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&cqueue_name, "cqueue%d", q);
-      ocs::tom::emplace_back<CQ_name>(cqueue_list, sge_dstring_get_string(&cqueue_name));
+      cqueue_list.emplace_back<CQ_name>(sge_dstring_get_string(&cqueue_name));
       sge_dstring_free(&cqueue_name);
    }
 
-   lList **project_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_PROJECT);
+   const auto project_list = ocs::DataStore::master_list_create<SGE_TYPE_PROJECT>("");
    for (int p = 0; p < PROJECTS; p++) {
       dstring project_name = DSTRING_INIT;
 
       sge_dstring_sprintf(&project_name, "prj%d", p);
-      ocs::tom::emplace_back<PR_name>(project_list, sge_dstring_get_string(&project_name));
+      project_list.emplace_back<PR_name>(sge_dstring_get_string(&project_name));
       sge_dstring_free(&project_name);
    }
 

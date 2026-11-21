@@ -287,9 +287,9 @@ void sge_clean_lists() {
 
    for (; gdi_object[i].target != ocs::gdi::Target::NO_TARGET; i++) {
       if (gdi_object[i].list_type != SGE_TYPE_NONE) {
-         lList **master_list = ocs::DataStore::get_master_list_rw(gdi_object[i].list_type);
-         // the slot holds a list of the type of the table entry, known only at run time; freed with its owner
-         const ocs::tom::RawListPtr list(std::exchange(*master_list, nullptr));
+         // the slot holds a list of the type of the table entry, known only at run time; freed, the slot holds
+         // nullptr afterwards
+         ocs::DataStore::free_master_list(gdi_object[i].list_type);
       }
    }
 
@@ -637,7 +637,7 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          } else {
             // the type of the master list is given at run time by the target
-            const ocs::tom::RawList data_source = *ocs::DataStore::get_master_list_rw(ao->list_type);
+            const ocs::tom::RawList data_source = ocs::DataStore::master_list_raw_rw(ao->list_type);
 
             DPRINTF("Got list with %zu elements\n", data_source.size());
 
@@ -840,8 +840,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          auto ep = ocs::tom::List<ocs::tom::STN>::from_typed(requests).front();
          while (ep) {
             const auto next = ep.next();
-            sge_add_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
-                              &(task->answer_list), packet->user, packet->host);
+            sge_add_sharetree(packet, task, ep, &(task->answer_list), packet->user, packet->host);
             ep = next;
          }
       } else if (ao == nullptr) {
@@ -905,8 +904,7 @@ ocs_gdi_del_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
                  ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(GDI_LAYER);
    if (target == ocs::gdi::Target::STN_LIST) {
-      sge_del_sharetree(packet, task, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE), alpp,
-                        packet->user, packet->host);
+      sge_del_sharetree(packet, task, alpp, packet->user, packet->host);
    } else {
       ocs_gdi_del_unsupported(alpp);
    }
@@ -1525,8 +1523,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
             break;
          case ocs::gdi::Target::STN_LIST:
             for (const auto ep : ocs::tom::List<ocs::tom::STN>(task->data_list)) {
-               sge_mod_sharetree(packet, task, ep, ocs::DataStore::get_master_list_rw(SGE_TYPE_SHARETREE),
-                                 &(task->answer_list), packet->user, packet->host);
+               sge_mod_sharetree(packet, task, ep, &(task->answer_list), packet->user, packet->host);
             }
             break;
          default:

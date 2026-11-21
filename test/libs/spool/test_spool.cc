@@ -113,7 +113,7 @@ static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::List
    const char *qualified_hostname = component_get_qualified_hostname();
    uint32_t progid = component_get_component_id();
    // read into the data store slot itself: a list created for an empty slot belongs to the data store
-   spool_read_list(anAnswer, aSpoolContext, ocs::DataStore::get_master_list_rw(SGE_TYPE_CONFIG), SGE_TYPE_CONFIG);
+   spool_read_list(anAnswer, aSpoolContext, ocs::DataStore::master_list_slot(SGE_TYPE_CONFIG), SGE_TYPE_CONFIG);
 
    answer_list_output(anAnswer);
 
@@ -155,7 +155,7 @@ template <sge_object_type V>
 static void
 read_master_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, const char *name) {
    DENTER(TOP_LAYER);
-   spool_read_list(answer_list, context, ocs::DataStore::get_master_list_rw(V), V);
+   spool_read_list(answer_list, context, ocs::DataStore::master_list_slot(V), V);
    answer_list_output(answer_list);
    DPRINTF("read %d entries to master %s list\n", static_cast<int>(ocs::DataStore::master_list<V>().size()), name);
    DRETURN_VOID;
@@ -265,7 +265,7 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
 
    context = spool_get_default_context();
 
-   const ocs::tom::ConstRawList master_list = *ocs::DataStore::get_master_list(type);
+   const ocs::tom::ConstRawList master_list = ocs::DataStore::master_list_raw(type);
    const int key_nm = object_type_get_key_nm(type);
    const ocs::tom::ConstRawList new_list = event.get<ET_new_version>();
 
@@ -443,7 +443,7 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
 
    context = spool_get_default_context();
 
-   const ocs::tom::ConstRawList master_list = *ocs::DataStore::get_master_list(type);
+   const ocs::tom::ConstRawList master_list = ocs::DataStore::master_list_raw(type);
    const int key_nm = object_type_get_key_nm(type);
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 

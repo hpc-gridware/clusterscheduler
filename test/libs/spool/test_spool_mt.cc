@@ -111,6 +111,11 @@ static bool add_job(int job_id) {
    return write_ok;
 }
 
+/**
+ * @brief Delete the spooled object of a job and remove the job from the master job list
+ * @param job_id the number of the job, added by add_job() before
+ * @return true if the spooled object was deleted
+ */
 static bool del_job(int job_id) {
    bool del_ok;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -131,8 +136,9 @@ static bool del_job(int job_id) {
                                SGE_TYPE_JOB, key);
    answer_list_output(&answer_list);
 
-   // the data store slot itself, not a copy of its pointer
-   ocs::tom::erase<JB_job_number>(ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB), job_id);
+   // add_job() has created the list; unlike the free erase() on the slot, the list stays when it becomes empty,
+   // and add_job() adds to it again
+   ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().erase<JB_job_number>(job_id);
 
    if (delay > 0) {
       usleep(delay * 1000);
