@@ -576,21 +576,25 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
    const char *commproc;
    uint32_t commproc_id;
 
-   id = ocs::tom::get<EV_id>(clio);
-   name = ocs::tom::get<EV_name>(clio);
-   ed_time = ocs::tom::get<EV_d_time>(clio);
-   host = ocs::tom::get<EV_host>(clio);
-   commproc = ocs::tom::get<EV_commproc>(clio);
-   commproc_id = ocs::tom::get<EV_commid>(clio);
+   // the registration may come from the network: the checked handle throws for an element of another type,
+   // as the first field read did before; a reduced element is rejected by the structure check below
+   const ocs::tom::Element<ocs::tom::EV> client(clio);
+
+   id = client.get<EV_id>();
+   name = client.get<EV_name>();
+   ed_time = client.get<EV_d_time>();
+   host = client.get<EV_host>();
+   commproc = client.get<EV_commproc>();
+   commproc_id = client.get<EV_commid>();
 
    /* an event client must have a name */
    if (name == nullptr) {
       name = "unnamed";
-      ocs::tom::set<EV_name>(clio, name);
+      client.set<EV_name>(name);
    }
 
    /* check event client object structure */
-   if (ocs::tom::layout_difference(ocs::tom::ConstRawElement(clio).descr(), ocs::tom::EV::descriptor.e) != 0) {
+   if (ocs::tom::layout_difference(client.descr(), ocs::tom::EV::descriptor.e) != 0) {
       ERROR(SFNMAX, MSG_EVE_INCOMPLETEEVENTCLIENT);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_DENIED);
@@ -603,7 +607,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
       DRETURN(STATUS_ESEMANTIC);
    }
 
-   if (ocs::tom::get<EV_changed>(clio) && static_cast<const lList *>(ocs::tom::get<EV_subscribed>(clio)) == nullptr) {
+   if (client.get<EV_changed>() && !client.get<EV_subscribed>()) {
       ERROR(SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION);
       answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESEMANTIC);
@@ -651,7 +655,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
       INFO(MSG_EVE_REG_SUU, name, id, ed_time);
 
       /* Set the new id for this client. */
-      ocs::tom::set<EV_id>(clio, id);
+      client.set<EV_id>(id);
    }
 
    /* special event clients: we allow only one instance */
@@ -681,14 +685,14 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
       }
    }
 
-   // the registration passed the structure check above, so it is of EV; it may come from the network
-   auto new_client = ocs::tom::ConstElement<ocs::tom::EV>::from_typed(clio).clone();
+   // the registration passed the structure check above
+   auto new_client = client.clone();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
    new_client->set<EV_update_function>((void*) update_func);
    new_client->set<EV_update_function_arg>(update_func_arg);
 #pragma GCC diagnostic pop
-   ocs::tom::set<EV_changed>(clio, false);
+   client.set<EV_changed>(false);
 
    // the client list is owned by the event master; the handle lives only while the mutex is held
    ep = ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients).push_back(std::move(new_client));
@@ -760,18 +764,21 @@ int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
       DRETURN(STATUS_ESEMANTIC);
    }
 
+   // the event client may come from the network: the checked handle throws for an element of another type, as
+   // reading its name below did before
+   const ocs::tom::ConstElement<ocs::tom::EV> client(clio);
+
    auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
    evr->set<EVR_operation>(EVR_MOD_EVC);
    evr->set<EVR_timestamp>(sge_get_gmt64());
-   // the event client may come from the network, so it is not checked against EV here
-   evr->set<EVR_event_client>(ocs::tom::ConstElement<ocs::tom::EV>::from_typed(clio).clone());
+   evr->set<EVR_event_client>(client.clone());
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
    // the request list is owned by the event master; the handle lives only while the mutex is held
    ocs::tom::List<ocs::tom::EVR>(Event_Master_Control.requests).push_back(std::move(evr));
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
-   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, ocs::tom::get<EV_name>(clio), MSG_EVE_EVENTCLIENT);
+   DEBUG(MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost, client.get<EV_name>(), MSG_EVE_EVENTCLIENT);
 
    // Build the answer for the requester itself instead of passing SGE_EVENT.
    // DEBUG() fills that buffer only when the log level is at least LOG_DEBUG,
@@ -780,7 +787,7 @@ int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    // thread had logged before - the buffer is thread local, not per request.
    answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO,
                            MSG_SGETEXT_MODIFIEDINLIST_SSSS, ruser, rhost,
-                           ocs::tom::get<EV_name>(clio), MSG_EVE_EVENTCLIENT);
+                           client.get<EV_name>(), MSG_EVE_EVENTCLIENT);
 
    sge_event_master_flush_requests();
 

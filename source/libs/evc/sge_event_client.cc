@@ -34,6 +34,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <new>
 #include <optional>
 #include <utility>
 
@@ -372,14 +373,14 @@
  * signals #cond_var; the client thread wakes up in `ec2_get_local()`, takes the
  * list over and clears #triggered. All fields are protected by #mutex.
  */
-typedef struct {
+struct ec_control_t {
    pthread_mutex_t mutex;       ///< protects every other field of this struct
    pthread_cond_t  cond_var;    ///< signalled when events arrive or the client must exit
    bool            exit;        ///< true once event delivery shall stop
    bool            triggered;   ///< true while #new_events holds events not yet taken over
-   lList           *new_events; ///< events handed over by the event master, owned by this struct
+   ocs::tom::ListPtr<ocs::tom::ET> new_events; ///< events handed over by the event master, owned by this struct
    bool            new_global_conf; ///< set when the global configuration changed
-} ec_control_t;
+};
 
 /** @brief Private state of one event client
  *
@@ -387,13 +388,13 @@ typedef struct {
  * file scope globals, which limited a process to a single event client; they
  * now live per client so one process can connect to several event servers.
  */
-typedef struct {
+struct sge_evc_t {
    bool need_register;          ///< true while the client is not registered at the server
-   lListElem *ec;               ///< `EV` object holding the configuration, see @ref evc_ev_type
+   ocs::tom::ElementPtr<ocs::tom::EV> ec; ///< `EV` object holding the configuration, see @ref evc_ev_type
    uint32_t ec_reg_id;          ///< id used to register at qmaster, see @ref evc_ids
    uint32_t next_event;         ///< sequence number of the next event expected
    ec_control_t event_control;  ///< handover point, internal clients only
-} sge_evc_t;
+};
 
 
 static bool ck_event_number(ocs::tom::List<ocs::tom::ET> lp, uint32_t *waiting_for, uint32_t *wrong_number);
@@ -426,7 +427,8 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz);
 static bool ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down,
                                ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event);
-static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where);
+static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what,
+                                       const lListElem *where);
 static bool ec2_subscribe_all(sge_evc_class_t *thiz);
 static bool ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event);
 static bool ec2_unsubscribe_all(sge_evc_class_t *thiz);
@@ -544,14 +546,14 @@ sge_evc_class_create(ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> 
 
    ret->sge_evc_handle = nullptr;
 
-   auto *sge_evc = (sge_evc_t*)sge_malloc(sizeof(sge_evc_t));
+   // value-initialised: the owners of the struct are empty, the plain fields zero
+   auto *sge_evc = new (std::nothrow) sge_evc_t{};
    if (!sge_evc) {
       answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
       sge_evc_class_destroy(&ret);
       DRETURN(nullptr);
    }
    sge_evc->need_register = true;
-   sge_evc->ec = nullptr;
    sge_evc->ec_reg_id = 0;
    sge_evc->next_event = 1;
 
@@ -613,10 +615,11 @@ static void sge_evc_destroy(sge_evc_t **sge_evc) {
 
    pthread_cond_destroy(&((*sge_evc)->event_control.cond_var));
    pthread_mutex_destroy(&((*sge_evc)->event_control.mutex));
-   ocs::tom::free_raw_list((*sge_evc)->event_control.new_events);
+   (*sge_evc)->event_control.new_events.reset();
 
-   ocs::tom::free_raw_elem((*sge_evc)->ec);
-   sge_free(sge_evc);
+   (*sge_evc)->ec.reset();
+   delete *sge_evc;
+   *sge_evc = nullptr;
 
    DRETURN_VOID;
 }
@@ -658,7 +661,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
    ocs::uti::condition_initialize(&(sge_evc->event_control.cond_var));
    sge_evc->event_control.exit = false;
    sge_evc->event_control.triggered = false;
-   sge_evc->event_control.new_events = nullptr;
+   sge_evc->event_control.new_events.reset();
    sge_evc->event_control.new_global_conf = false;
 
    const char *name;
@@ -672,7 +675,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
       WARNING(MSG_EVENT_ILLEGAL_ID_OR_NAME_US, static_cast<uint32_t>(id), name != nullptr ? name : "nullptr" );
    } else {
       // the client keeps the configuration object in its private state and frees it in sge_evc_destroy()
-      sge_evc->ec = ocs::tom::ElementPtr<ocs::tom::EV>::create().release();
+      sge_evc->ec = ocs::tom::ElementPtr<ocs::tom::EV>::create();
 
       if (sge_evc->ec != nullptr) {
          char tmp_string[CL_MAXHOSTNAMELEN + 1];
@@ -681,16 +684,16 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
          sge_evc->ec_reg_id = id;
 
          /* initialize event client object */
-         ocs::tom::set<EV_name>(sge_evc->ec, name);
+         sge_evc->ec->set<EV_name>(name);
          if (gethostname(tmp_string, CL_MAXHOSTNAMELEN) == 0) {
-            ocs::tom::set<EV_host>(sge_evc->ec, tmp_string);
+            sge_evc->ec->set<EV_host>(ocs::tom::Host(tmp_string));
          }
          /*
          ** for internal clients we reuse the data of the gdi context
          */
-         ocs::tom::set<EV_commproc>(sge_evc->ec, component_get_component_name());
-         ocs::tom::set<EV_commid>(sge_evc->ec, 0);
-         ocs::tom::set<EV_d_time>(sge_evc->ec, DEFAULT_EVENT_DELIVERY_INTERVAL);
+         sge_evc->ec->set<EV_commproc>(component_get_component_name());
+         sge_evc->ec->set<EV_commid>(0);
+         sge_evc->ec->set<EV_d_time>(DEFAULT_EVENT_DELIVERY_INTERVAL);
 
          /* always subscribe this three events */
          ec2_subscribe_flush(thiz, sgeE_QMASTER_GOES_DOWN, 0);
@@ -698,7 +701,7 @@ sge_evc_setup(sge_evc_class_t *thiz, ev_registration_id id, const char *ec_name)
          ec2_subscribe_flush(thiz, sgeE_ACK_TIMEOUT, 0);
 
          ec2_set_busy_handling(thiz, EV_BUSY_UNTIL_ACK);
-         ocs::tom::set<EV_busy>(sge_evc->ec, 0);
+         sge_evc->ec->set<EV_busy>(0);
          ec2_config_changed(thiz);
          ret = true;
       }
@@ -742,8 +745,8 @@ static ocs::tom::Element<ocs::tom::EV> ec2_get_event_client(sge_evc_class_t *thi
    DENTER(EVC_LAYER);
    const auto *sge_evc = static_cast<sge_evc_t *>(thiz->sge_evc_handle);
 
-   // created by sge_evc_class_create() as EV and owned by the client
-   DRETURN(ocs::tom::Element<ocs::tom::EV>::from_typed(sge_evc->ec));
+   // created by sge_evc_class_create() and owned by the client
+   DRETURN(sge_evc->ec.get());
 }
 
 /**
@@ -775,7 +778,10 @@ ec2_mark4registration(sge_evc_class_t *thiz) {
 
    sge_evc->need_register = true;
    DPRINTF("*** Need new registration at qmaster ***\n");
-   ocs::tom::set<EV_changed>(sge_evc->ec, true);
+   // after a deregistration the client holds no configuration object any more; nothing to mark then
+   if (sge_evc->ec) {
+      sge_evc->ec->set<EV_changed>(true);
+   }
    DRETURN_VOID;
 }
 
@@ -824,9 +830,9 @@ ec2_set_edtime(sge_evc_class_t *thiz, uint32_t interval) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      ret = (ocs::tom::get<EV_d_time>(sge_evc->ec) != interval);
+      ret = (sge_evc->ec->get<EV_d_time>() != interval);
       if (ret) {
-         ocs::tom::set<EV_d_time>(sge_evc->ec, std::min(interval, static_cast<uint32_t>(CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5)));
+         sge_evc->ec->set<EV_d_time>(std::min(interval, static_cast<uint32_t>(CL_DEFINE_CLIENT_CONNECTION_LIFETIME-5)));
          ec2_config_changed(thiz);
       }
    }
@@ -853,7 +859,7 @@ ec2_get_edtime(sge_evc_class_t *thiz) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      interval = ocs::tom::get<EV_d_time>(sge_evc->ec);
+      interval = sge_evc->ec->get<EV_d_time>();
    }
 
    DRETURN(interval);
@@ -887,10 +893,10 @@ ec2_set_busy_handling(sge_evc_class_t *thiz, ev_busy_handling handling) {
    } else {
       DPRINTF("EVC: change event client to " sge_u32 "\n", static_cast<uint32_t>(handling));
 
-      ret = (ocs::tom::get<EV_busy_handling>(sge_evc->ec) != handling) ? true : false;
+      ret = (sge_evc->ec->get<EV_busy_handling>() != handling) ? true : false;
 
       if (ret) {
-         ocs::tom::set<EV_busy_handling>(sge_evc->ec, handling);
+         sge_evc->ec->set<EV_busy_handling>(handling);
          ec2_config_changed(thiz);
       }
    }
@@ -917,7 +923,7 @@ ec2_get_busy_handling(sge_evc_class_t *thiz) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      handling = (ev_busy_handling)ocs::tom::get<EV_busy_handling>(sge_evc->ec);
+      handling = (ev_busy_handling)sge_evc->ec->get<EV_busy_handling>();
    }
 
    DRETURN(handling);
@@ -980,7 +986,7 @@ ec2_deregister_local(sge_evc_class_t *thiz) {
       }
 
       /* clear state of this event client instance */
-      ocs::tom::free_raw_elem(sge_evc->ec);
+      sge_evc->ec.reset();
       sge_evc->need_register = true;
       sge_evc->ec_reg_id = 0;
       sge_evc->next_event = 1;
@@ -1032,13 +1038,13 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       local_t *evc_local = &(thiz->ec_local);
 
-      ocs::tom::set<EV_id>(sge_evc->ec, sge_evc->ec_reg_id);
+      sge_evc->ec->set<EV_id>(sge_evc->ec_reg_id);
 
       /* initialize, we could do a re-registration */
-      ocs::tom::set<EV_last_heard_from>(sge_evc->ec, 0);
-      ocs::tom::set<EV_last_send_time>(sge_evc->ec, 0);
-      ocs::tom::set<EV_next_send_time>(sge_evc->ec, 0);
-      ocs::tom::set<EV_next_number>(sge_evc->ec, 0);
+      sge_evc->ec->set<EV_last_heard_from>(0);
+      sge_evc->ec->set<EV_last_send_time>(0);
+      sge_evc->ec->set<EV_next_send_time>(0);
+      sge_evc->ec->set<EV_next_number>(0);
 
       /*
        *  to add may also mean to modify
@@ -1059,7 +1065,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
          ** set busy handling, sets EV_changed to true if it is really changed
          */
          thiz->ec_set_busy_handling(thiz, EV_BUSY_UNTIL_RELEASED);
-         evc_local->add_func(&pseudo_packet, sge_evc->ec, &alp, &eclp_raw, evc_local->update_func,
+         evc_local->add_func(&pseudo_packet, sge_evc->ec->raw(), &alp, &eclp_raw, evc_local->update_func,
                              evc_local->update_func_arg);
          // the registered client (EV) as the event master returns it
          if (const auto eclp = ocs::tom::ListPtr<ocs::tom::EV>::from_typed(eclp_raw)) {
@@ -1082,7 +1088,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
             ret = false;
          }
       } else {
-         ocs::tom::set<EV_changed>(sge_evc->ec, false);
+         sge_evc->ec->set<EV_changed>(false);
          sge_evc->need_register = false;
          DPRINTF("registered local event client with id " sge_u32 "\n", sge_evc->ec_reg_id);
       }
@@ -1134,17 +1140,17 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr
        *  informations
        */
 
-      ocs::tom::set<EV_id>(sge_evc->ec, sge_evc->ec_reg_id);
+      sge_evc->ec->set<EV_id>(sge_evc->ec_reg_id);
 
       /* initialize, we could do a re-registration */
-      ocs::tom::set<EV_last_heard_from>(sge_evc->ec, 0);
-      ocs::tom::set<EV_last_send_time>(sge_evc->ec, 0);
-      ocs::tom::set<EV_next_send_time>(sge_evc->ec, 0);
-      ocs::tom::set<EV_next_number>(sge_evc->ec, 0);
+      sge_evc->ec->set<EV_last_heard_from>(0);
+      sge_evc->ec->set<EV_last_send_time>(0);
+      sge_evc->ec->set<EV_next_send_time>(0);
+      sge_evc->ec->set<EV_next_number>(0);
 
       auto registration = ocs::tom::ListPtr<ocs::tom::EV>::create("registration");
-      // the configuration object is owned by this client and always of EV
-      registration->push_back(ocs::tom::ConstElement<ocs::tom::EV>(sge_evc->ec).clone());
+      // the configuration object is owned by this client
+      registration->push_back(sge_evc->ec->clone());
 
 
 #if 0
@@ -1198,9 +1204,9 @@ ec2_register(sge_evc_class_t *thiz, bool exit_on_qmaster_down, ocs::tom::ListPtr
          }
 
          if (new_id != 0) {
-            ocs::tom::set<EV_id>(sge_evc->ec, new_id);
+            sge_evc->ec->set<EV_id>(new_id);
             DPRINTF("REGISTERED with id " sge_u32 "\n", new_id);
-            ocs::tom::set<EV_changed>(sge_evc->ec, false);
+            sge_evc->ec->set<EV_changed>(false);
             sge_evc->need_register = false;
 
          }
@@ -1279,7 +1285,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
          const int commid   = 1;
 
 
-         ocs::tom::try_put_uint32(&pb, ocs::tom::get<EV_id>(sge_evc->ec));
+         ocs::tom::try_put_uint32(&pb, sge_evc->ec->get<EV_id>());
 
          send_ret = ocs::gdi::ClientServerBase::sge_gdi_send_any_request(0, nullptr, rhost, commproc, commid, &pb, ocs::gdi::ClientServerBase::TAG_EVENT_CLIENT_EXIT, 0, &alp);
 
@@ -1289,7 +1295,7 @@ static bool ec2_deregister(sge_evc_class_t *thiz) {
          if (send_ret == CL_RETVAL_OK) {
             /* error message is output from sge_send_any_request */
             /* clear state of this event client instance */
-            ocs::tom::free_raw_elem(sge_evc->ec);
+            sge_evc->ec.reset();
             sge_evc->need_register = true;
             sge_evc->ec_reg_id = 0;
             sge_evc->next_event = 1;
@@ -1342,7 +1348,7 @@ ec2_subscribe(sge_evc_class_t *thiz, ev_event event) {
          ec2_add_subscriptionElement(thiz, event, EV_NOT_FLUSHED, -1);
       }
 
-      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
+      if (sge_evc->ec->get<EV_changed>()) {
          ret = true;
       }
    }
@@ -1376,12 +1382,12 @@ ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, i
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
       ocs::tom::Element<ocs::tom::EVS> sub_el;
-      ocs::tom::List<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
+      ocs::tom::List<ocs::tom::EVS> subscribed = sge_evc->ec->get<EV_subscribed>();
       if (event != sgeE_ALL_EVENTS){
          if (!subscribed) {
-            subscribed = ocs::tom::get_or_create<EV_subscribed>(sge_evc->ec, "subscription list");
+            subscribed = sge_evc->ec->get_or_create<EV_subscribed>("subscription list");
          } else {
-            sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
+            sub_el = subscribed.find_first<EVS_id>(event);
          }
 
          if (!sub_el) {
@@ -1391,7 +1397,7 @@ ec2_add_subscriptionElement(sge_evc_class_t *thiz, ev_event event, bool flush, i
             new_sub_el->set<EVS_interval>(interval);
             subscribed.push_back(std::move(new_sub_el));
 
-            ocs::tom::set<EV_changed>(sge_evc->ec, true);
+            sge_evc->ec->set<EV_changed>(true);
          }
       }
    }
@@ -1421,20 +1427,20 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      if (ocs::tom::ConstList<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec)) {
+      if (const ocs::tom::List<ocs::tom::EVS> subscribed = sge_evc->ec->get<EV_subscribed>()) {
          if (event == sgeE_ALL_EVENTS) {
             for (int e = sgeE_ALL_EVENTS + 1; e < static_cast<int>(sgeE_EVENTSIZE); e++) {
-               if (ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, e)) {
+               if (ocs::tom::Element<ocs::tom::EVS> sub_el = subscribed.find_first<EVS_id>(e)) {
                   sub_el.set<EVS_flush>(flush);
                   sub_el.set<EVS_interval>(intervall);
-                  ocs::tom::set<EV_changed>(sge_evc->ec, true);
+                  sge_evc->ec->set<EV_changed>(true);
                }
             }
          } else {
-            if (ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event)) {
+            if (ocs::tom::Element<ocs::tom::EVS> sub_el = subscribed.find_first<EVS_id>(event)) {
                sub_el.set<EVS_flush>(flush);
                sub_el.set<EVS_interval>(intervall);
-               ocs::tom::set<EV_changed>(sge_evc->ec, true);
+               sge_evc->ec->set<EV_changed>(true);
             }
          }
       }
@@ -1458,7 +1464,8 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
  *
  * @see `ocs_what_to_elem()`, `ocs_what_from_elem()`, `ocs_where_to_elem()`, `ocs_where_from_elem()`
  */
-static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where) {
+static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what,
+                                       const lListElem *where) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -1468,10 +1475,10 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
    } else if (event <= sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      ocs::tom::ConstList<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
+      const ocs::tom::List<ocs::tom::EVS> subscribed = sge_evc->ec->get<EV_subscribed>();
       if (event != sgeE_ALL_EVENTS){
          if (subscribed) {
-            ocs::tom::Element<ocs::tom::EVS> sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event);
+            ocs::tom::Element<ocs::tom::EVS> sub_el = subscribed.find_first<EVS_id>(event);
             if (sub_el) {
                // the packed selection and condition of ocs_what_to_elem() and ocs_where_to_elem(), so their type
                // is known; a copy that cannot be made (no memory) leaves the field empty, as lCopyElem() gave nullptr
@@ -1487,7 +1494,7 @@ static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, co
                }
                sub_el.set<EVS_what>(std::move(what_copy));
                sub_el.set<EVS_where>(std::move(where_copy));
-               ocs::tom::set<EV_changed>(sge_evc->ec, true);
+               sge_evc->ec->set<EV_changed>(true);
                ret = true;
             }
          }
@@ -1515,13 +1522,13 @@ ec2_remove_subscriptionElement(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      ocs::tom::List<ocs::tom::EVS> subscribed = ocs::tom::get<EV_subscribed>(sge_evc->ec);
+      ocs::tom::List<ocs::tom::EVS> subscribed = sge_evc->ec->get<EV_subscribed>();
       if (event != sgeE_ALL_EVENTS) {
          if (subscribed) {
-            if (const auto sub_el = ocs::tom::find_first_rw<EVS_id>(subscribed, event)) {
+            if (const auto sub_el = subscribed.find_first<EVS_id>(event)) {
                // the element was found in this very list, so the removal cannot fail
                subscribed.erase(sub_el);
-               ocs::tom::set<EV_changed>(sge_evc->ec, true);
+               sge_evc->ec->set<EV_changed>(true);
             }
          }
       }
@@ -1596,7 +1603,7 @@ ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event) {
          }
       }
 
-      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
+      if (sge_evc->ec->get<EV_changed>()) {
          ret = true;
       }
    }
@@ -1652,7 +1659,7 @@ ec2_get_flush(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event );
    } else {
-      ocs::tom::ConstElement<ocs::tom::EVS> sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
+      ocs::tom::ConstElement<ocs::tom::EVS> sub_event = sge_evc->ec->get<EV_subscribed>().find_first<EVS_id>(event);
 
       if (sub_event == nullptr) {
          WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
@@ -1713,18 +1720,18 @@ ec2_set_flush(sge_evc_class_t *thiz, ev_event event, bool flush, int interval) {
             // logged an error for each id the client had not subscribed, which is
             // the normal case for a client that does not subscribe everything.
             ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
-            if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
+            if (sge_evc->ec->get<EV_changed>()) {
                ret = true;
             }
          } else {
-            const auto sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
+            const auto sub_event = sge_evc->ec->get<EV_subscribed>().find_first<EVS_id>(event);
 
             if (sub_event == nullptr) {
                WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
             } else {
                ec2_mod_subscription_flush(thiz, event, EV_FLUSHED, interval);
             }
-            if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
+            if (sge_evc->ec->get<EV_changed>()) {
                ret = true;
             }
          }
@@ -1762,7 +1769,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
    } else if (event < sgeE_ALL_EVENTS || event >= sgeE_EVENTSIZE) {
       WARNING(MSG_EVENT_ILLEGALEVENTID_I, event);
    } else {
-      const auto sub_event = ocs::tom::find_first<EVS_id>(ocs::tom::get<EV_subscribed>(sge_evc->ec), event);
+      const auto sub_event = sge_evc->ec->get<EV_subscribed>().find_first<EVS_id>(event);
 
       if (sub_event == nullptr) {
          WARNING(MSG_EVENT_NOTSUBSCRIBED_I, event);
@@ -1770,7 +1777,7 @@ ec2_unset_flush(sge_evc_class_t *thiz, ev_event event) {
          ec2_mod_subscription_flush(thiz, event, EV_NOT_FLUSHED, EV_NO_FLUSH);
       }
 
-      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
+      if (sge_evc->ec->get<EV_changed>()) {
          ret = true;
       }
    }
@@ -1834,7 +1841,7 @@ ec2_set_busy(sge_evc_class_t *thiz, int busy) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      ocs::tom::set<EV_busy>(sge_evc->ec, busy);
+      sge_evc->ec->set<EV_busy>(busy);
       ret = true;
    }
 
@@ -1865,7 +1872,7 @@ static bool ec2_get_busy(sge_evc_class_t *thiz) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
       /* JG: TODO: EV_busy should be boolean datatype */
-      ret = (ocs::tom::get<EV_busy>(sge_evc->ec) > 0) ? true : false;
+      ret = (sge_evc->ec->get<EV_busy>() > 0) ? true : false;
    }
 
    DRETURN(ret);
@@ -1892,7 +1899,7 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      ocs::tom::set<EV_session>(sge_evc->ec, session);
+      sge_evc->ec->set<EV_session>(session);
 
       /* force communication to qmaster - we may be out of sync */
       ec2_config_changed(thiz);
@@ -1921,7 +1928,7 @@ static const char *ec2_get_session(sge_evc_class_t *thiz) {
    if (sge_evc->ec == nullptr) {
       ERROR(SFNMAX, MSG_EVENT_UNINITIALIZED_EC);
    } else {
-      ret = ocs::tom::get<EV_session>(sge_evc->ec);
+      ret = sge_evc->ec->get<EV_session>();
    }
 
    DRETURN(ret);
@@ -1946,7 +1953,7 @@ ec2_get_id(sge_evc_class_t *thiz) {
       DRETURN(EV_ID_INVALID);
    }
 
-   DRETURN((ev_registration_id)ocs::tom::get<EV_id>(sge_evc->ec));
+   DRETURN((ev_registration_id)sge_evc->ec->get<EV_id>());
 }
 
 /**
@@ -1964,7 +1971,7 @@ ec2_config_changed(sge_evc_class_t *thiz) {
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
 
    if (sge_evc != nullptr && sge_evc->ec != nullptr) {
-      ocs::tom::set<EV_changed>(sge_evc->ec, true);
+      sge_evc->ec->set<EV_changed>(true);
    }
 }
 
@@ -1998,17 +2005,17 @@ ec2_commit_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
       local_t *evc_local = &(thiz->ec_local);
       const char *ruser = ocs::Bootstrap::get_admin_user();
       const char *rhost = ocs::gdi::ClientBase::gdi_get_act_master_host(false);
-      ocs::tom::set<EV_update_function>(sge_evc->ec, (void *)evc_local->update_func);
-      ocs::tom::set<EV_update_function_arg>(sge_evc->ec, (void *)evc_local->update_func_arg);
+      sge_evc->ec->set<EV_update_function>((void *)evc_local->update_func);
+      sge_evc->ec->set<EV_update_function_arg>((void *)evc_local->update_func_arg);
 
       /*
        *  to add may also means to modify
        *  - if this event client is already enrolled at qmaster
        */
-      ret = ((evc_local->mod_func(sge_evc->ec, alpp, (char*)ruser, (char*)rhost) == STATUS_OK) ? true : false);
+      ret = ((evc_local->mod_func(sge_evc->ec->raw(), alpp, (char*)ruser, (char*)rhost) == STATUS_OK) ? true : false);
 
       if (ret) {
-         ocs::tom::set<EV_changed>(sge_evc->ec, false);
+         sge_evc->ec->set<EV_changed>(false);
       }
    }
 
@@ -2084,9 +2091,9 @@ ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
       ocs::tom::ListPtr<ocs::tom::AN> alp;
 
       auto request = ocs::tom::ListPtr<ocs::tom::EV>::create("change configuration");
-      // the configuration object is owned by this client and always of EV
-      const auto ec = request->push_back(ocs::tom::ConstElement<ocs::tom::EV>(sge_evc->ec).clone());
-      if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
+      // the configuration object is owned by this client
+      const auto ec = request->push_back(sge_evc->ec->clone());
+      if (!sge_evc->ec->get<EV_changed>()) {
          ec.set<EV_subscribed>(nullptr);
       }
 
@@ -2111,7 +2118,7 @@ ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
       }
 
       if (ret) {
-         ocs::tom::set<EV_changed>(sge_evc->ec, false);
+         sge_evc->ec->set<EV_changed>(false);
       }
    }
 
@@ -2161,9 +2168,9 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
        * gdi multi request
        */
       auto request = ocs::tom::ListPtr<ocs::tom::EV>::create("change configuration");
-      // the configuration object is owned by this client and always of EV
-      const auto ec = request->push_back(ocs::tom::ConstElement<ocs::tom::EV>(sge_evc->ec).clone());
-      if (!ocs::tom::get<EV_changed>(sge_evc->ec)) {
+      // the configuration object is owned by this client
+      const auto ec = request->push_back(sge_evc->ec->clone());
+      if (!sge_evc->ec->get<EV_changed>()) {
          ec.set<EV_subscribed>(nullptr);
       }
 
@@ -2188,7 +2195,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
 
          if (gdi_ret == STATUS_OK) {
-            ocs::tom::set<EV_changed>(sge_evc->ec, false);  /* TODO: call changed method */
+            sge_evc->ec->set<EV_changed>(false);  /* TODO: call changed method */
             ret = true;
          }
       }
@@ -2241,7 +2248,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
    }
 
    if (ret) {
-      if (ocs::tom::get<EV_changed>(sge_evc->ec)) {
+      if (sge_evc->ec->get<EV_changed>()) {
          ret = thiz->ec_commit(thiz, nullptr);
       }
    }
@@ -2385,7 +2392,7 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
 
          /* send an ack to the qmaster for all received events */
          if (sge_send_ack_to_qmaster(ACK_EVENT_DELIVERY, sge_evc->next_event - 1,
-                                     ocs::tom::get<EV_id>(sge_evc->ec), nullptr, &alp)
+                                     sge_evc->ec->get<EV_id>(), nullptr, &alp)
                                     != CL_RETVAL_OK) {
             answer_list_output(&alp);
             WARNING(SFNMAX, MSG_COMMD_FAILEDTOSENDACKEVENTDELIVERY);
@@ -2692,7 +2699,7 @@ printf("EVENT_CLIENT %d ends to wait at %s\n", thiz->ec_get_id(thiz), sge_ctime6
 
    /* taking out the new events */
    // the events (ET) the event master queued; taken over from the event control block
-   auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(std::exchange(evco->new_events, nullptr));
+   auto event_list = std::move(evco->new_events);
    evco->triggered = false;
 
    DPRINTF("EVENT_CLIENT id=%d TAKES FROM EVENT QUEUE at %s\n", thiz->ec_get_id(thiz),
@@ -2772,14 +2779,14 @@ ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    int num_events = static_cast<int>(report_events.size());
    if (num_events > 0) {
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
-      if (evco->new_events != nullptr) {
-         lList *events = nullptr;
-         ocs::tom::exchange<REP_list>(report, &events);
-         // the queue is owned by the event control block; the handle lives only while the mutex is held
-         ocs::tom::List<ocs::tom::ET>::from_typed(evco->new_events)
-            .splice(ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events));
+      lList *events = nullptr;
+      ocs::tom::exchange<REP_list>(report, &events);
+      // the event list of an event report holds events (ET)
+      auto report_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events);
+      if (evco->new_events) {
+         evco->new_events->splice(std::move(report_list));
       } else {
-         ocs::tom::exchange<REP_list>(report, &(evco->new_events));
+         evco->new_events = std::move(report_list);
       }
 
       evco->triggered = true;
