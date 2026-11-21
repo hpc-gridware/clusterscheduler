@@ -196,7 +196,7 @@ test_client_shapes() {
    {
       auto lp = ocs::tom::ListPtr<ocs::tom::SPP>::create("parameters");
       const auto spp = lp->emplace_back<SPP_name>("parameter");
-      ocs::tom::set(spp, SPP_value_list, ocs::tom::RawListPtr(string_list("values", "value")));
+      spp.set<SPP_value_list>(string_list("values", "value"));
       CHECK(12, "a parameter bundle with an untyped value list passes",
             ocs_object_list_verify_type(*lp, ocs::tom::SPP::descriptor.e));
       lp.reset();

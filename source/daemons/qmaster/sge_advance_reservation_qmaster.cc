@@ -1572,7 +1572,7 @@ ar_add_consumable(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Typ
    if (source.template find_first_in<F, CE_name>(name)) {
       // make sure that the ??_consumable_config_list exists in target (host or queue);
       // we might already have the consumable in the list (for hosts having multiple qinstances / the global host)
-      const auto cclist = ocs::tom::get_or_create<F>(target, "");
+      const auto cclist = target.template get_or_create<F>("");
       const auto ccobj = cclist.template find_first<CE_name>(name);
       if (!ccobj) {
          // if it did not exist, create it
@@ -1761,7 +1761,7 @@ ar_add_non_consumable(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>:
    if (cr) {
       // make sure that the ??_consumable_config_list exists in target (host or queue);
       // we might already have the complex entry in the list (for hosts having multiple qinstances / the global host)
-      const auto cclist = ocs::tom::get_or_create<F>(target, "");
+      const auto cclist = target.template get_or_create<F>("");
       if (!cclist.template find_first<CE_name>(name)) {
          // if it does not yet exist, add it
          cclist.push_back(cr.clone());

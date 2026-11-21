@@ -92,7 +92,10 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                raw_set_typed_owner member_bits_on_64_bit_field member_or_bits_on_const
                free_get_on_handle free_has_on_handle free_set_on_handle free_get_on_const_handle
                foreign_list_into_typed_field foreign_element_into_typed_field get_as_on_typed_field
-               free_find_first_rw_on_const_list free_find_next_on_typed_list)
+               free_find_first_rw_on_const_list free_find_next_on_typed_list
+               free_exchange_on_handle free_exchange_on_owner free_get_or_create_on_handle
+               free_runtime_get_on_handle free_runtime_set_on_handle free_runtime_has_on_handle
+               free_has_typed_flag_on_handle)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}

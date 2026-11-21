@@ -213,9 +213,8 @@ ocs::gdi::Request::get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Com
 
    // get the response data for commands where we expect a response
    if (list != nullptr && get_response_from_master(cmd, sub_cmd)) {
-      lList *tmp_list = nullptr;
-      ocs::tom::exchange<MA_objects>(map, &tmp_list);
-      *list = tmp_list;
+      // MA_objects holds lists of any type; the caller takes the list over as a raw pointer
+      *list = map.exchange<MA_objects>(ocs::tom::RawListPtr()).release();
    }
 
    // get the answer list for the given id. Use answer_list_replace so that any

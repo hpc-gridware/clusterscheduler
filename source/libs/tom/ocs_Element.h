@@ -1569,6 +1569,45 @@ namespace ocs::tom {
       RawListPtr exchange(ListPtr<U> &&list) const;
 
       /**
+       * @brief Put a list of a type known only at run time into a list field without a sub-type in the model and
+       *        take out the one held, as std::exchange() and lXchgList() do
+       *
+       * Defined in ocs_Raw.h, where the raw owner is complete. The form for a list that comes out of such a
+       * field and goes back into it, and for taking the list out with an empty owner (`exchange<F>({})`).
+       *
+       * @tparam F a list field of this object type for which the model names no sub-type
+       * @param list the new list, which the element takes over; may be empty
+       * @return the list held before, of a type known only at run time, now owned by the caller; empty if the
+       *         field held none
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field; nothing is changed then and @p list keeps its list
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
+      RawListPtr exchange(RawListPtr &&list) const;
+
+      /**
+       * @brief Put a string into a string field without copying it and take out the one held, as std::exchange()
+       *        and lXchgString() do
+       *
+       * Neither string is copied and the hash table of a list holding the element is not touched, as before.
+       *
+       * @tparam F a string field of this object type
+       * @param str the new string, allocated with malloc(), which the element takes over; may be nullptr
+       * @return the string held before, now owned by the caller (free it with sge_free()); nullptr if the field
+       *         held none. Passing the string the field holds gives it back and leaves the field unchanged.
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field; nothing is changed then and @p str stays with the caller
+       */
+      template <auto F>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
+      [[nodiscard]] char *exchange(char *str) const {
+         // the slot first: it checks the handle, and E1[E2] evaluates E1 (which reads through ep_) before E2
+         const int slot = this->template present_slot<F>();
+         return std::exchange(this->ep_->cont[slot].str, str);
+      }
+
+      /**
        * @brief Put an element of any object type into an object field without a sub-type in the model and take
        *        out the one held, as lDechainObject() followed by lSetObject() does
        *

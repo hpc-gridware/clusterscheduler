@@ -729,7 +729,7 @@ hgroup_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
                    */
                   if (ret) {
                      const ocs::tom::List<ocs::tom::CQ> cqueue_list =
-                             ocs::tom::get_or_create<HGRP_cqueue_list>(hgroup, "");
+                             hgroup.get_or_create<HGRP_cqueue_list>("");
 
                      new_cqueue = cqueue_list.push_back(cqueue.clone());
                   }

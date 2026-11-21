@@ -1251,30 +1251,23 @@ void ocs::QStatDefaultController::process_jobs_not_enrolled(std::ostream &os, co
             if (answer_list_has_error(&answer_list) != 1) {
                const auto ja_task = ocs::tom::ConstElement<ocs::tom::JAT>::from_typed(
                   job_get_ja_task_template_hold(job, first_id, hold_state));
-               // the id lists are taken out while the line is reported and put back after; raw, since the
-               // exchange swaps the lists of the job with these
-               lList *n_h_ids = nullptr;
-               lList *u_h_ids = nullptr;
-               lList *o_h_ids = nullptr;
-               lList *s_h_ids = nullptr;
-               lList *a_h_ids = nullptr;
-
-               ocs::tom::exchange<JB_ja_n_h_ids>(job, &n_h_ids);
-               ocs::tom::exchange<JB_ja_u_h_ids>(job, &u_h_ids);
-               ocs::tom::exchange<JB_ja_o_h_ids>(job, &o_h_ids);
-               ocs::tom::exchange<JB_ja_s_h_ids>(job, &s_h_ids);
-               ocs::tom::exchange<JB_ja_a_h_ids>(job, &a_h_ids);
+               // the id lists are taken out while the line is reported and put back after
+               auto n_h_ids = job.exchange<JB_ja_n_h_ids>({});
+               auto u_h_ids = job.exchange<JB_ja_u_h_ids>({});
+               auto o_h_ids = job.exchange<JB_ja_o_h_ids>({});
+               auto s_h_ids = job.exchange<JB_ja_s_h_ids>({});
+               auto a_h_ids = job.exchange<JB_ja_a_h_ids>({});
 
                if (*count == 0) {
                   view.report_pending_jobs_started(os, parameter);
                }
                process_job(os, job, ja_task, nullptr, nullptr, print_jobid, master, &ja_task_id_string, slots, slot,
                            0, parameter, model, view);
-               ocs::tom::exchange<JB_ja_n_h_ids>(job, &n_h_ids);
-               ocs::tom::exchange<JB_ja_u_h_ids>(job, &u_h_ids);
-               ocs::tom::exchange<JB_ja_o_h_ids>(job, &o_h_ids);
-               ocs::tom::exchange<JB_ja_s_h_ids>(job, &s_h_ids);
-               ocs::tom::exchange<JB_ja_a_h_ids>(job, &a_h_ids);
+               job.exchange<JB_ja_n_h_ids>(std::move(n_h_ids));
+               job.exchange<JB_ja_u_h_ids>(std::move(u_h_ids));
+               job.exchange<JB_ja_o_h_ids>(std::move(o_h_ids));
+               job.exchange<JB_ja_s_h_ids>(std::move(s_h_ids));
+               job.exchange<JB_ja_a_h_ids>(std::move(a_h_ids));
                (*count)++;
             }
          } else {

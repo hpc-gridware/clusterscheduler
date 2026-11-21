@@ -1693,6 +1693,76 @@ namespace ocs::tom {
       return detail::raw_get<V>(element.raw(), nm);
    }
 
+   // A typed handle converts to the element pointer and to the raw handles, so without the deleted overloads
+   // below get<V>(h, nm), set(h, nm, v) and has(h, nm) would bind silently to the raw forms. On a typed handle
+   // the member is the one way (CS-3103): h.get<V>(nm), h.set(nm, v); where the code is generic over object
+   // types and the field number is a run-time value, the raw form is written explicitly on h.raw(). A
+   // deleted overload taking ConstElement<T> also catches an Element<T>, which derives from it.
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.get<V>(nm)) or the raw form on h.raw() (CS-3103)
+    * @tparam V the value type
+    * @tparam T the object type of the handle
+    * @param element the handle
+    * @param nm the field number
+    * @return nothing, the call does not compile
+    */
+   template <typename V, ObjectType T>
+   V get(const ConstElement<T> &element, int nm) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->get<V>(nm)) or the raw form on ep->raw() (CS-3103)
+    * @tparam V the value type
+    * @tparam T the object type of the handle
+    * @param element the owning handle
+    * @param nm the field number
+    * @return nothing, the call does not compile
+    */
+   template <typename V, ObjectType T>
+   V get(const ElementPtr<T> &element, int nm) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.set(nm, v)) or the raw form on h.raw() (CS-3103)
+    * @tparam V the value type
+    * @tparam T the object type of the handle
+    * @param element the handle
+    * @param nm the field number
+    * @param value the value
+    */
+   template <typename V, ObjectType T>
+   void set(const ConstElement<T> &element, int nm, V value) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->set(nm, v)) or the raw form on ep->raw() (CS-3103)
+    * @tparam V the value type
+    * @tparam T the object type of the handle
+    * @param element the owning handle
+    * @param nm the field number
+    * @param value the value
+    */
+   template <typename V, ObjectType T>
+   void set(const ElementPtr<T> &element, int nm, V value) = delete;
+
+   /**
+    * @brief Deleted: a typed handle has no run-time has(); use has(h.raw(), nm) (CS-3103)
+    * @tparam T the object type of the handle
+    * @param element the handle
+    * @param nm the field number
+    * @return nothing, the call does not compile
+    */
+   template <ObjectType T>
+   bool has(const ConstElement<T> &element, int nm) = delete;
+
+   /**
+    * @brief Deleted: an owning handle has no run-time has(); use has(ep->raw(), nm) (CS-3103)
+    * @tparam T the object type of the handle
+    * @param element the owning handle
+    * @param nm the field number
+    * @return nothing, the call does not compile
+    */
+   template <ObjectType T>
+   bool has(const ElementPtr<T> &element, int nm) = delete;
+
    /**
     * @brief The first element of a list whose key field holds a key, through a read-only handle; forwards to
     *        find_first<V>(const lList *, int, V)
@@ -2487,6 +2557,26 @@ namespace ocs::tom {
    template <auto F, ObjectType U>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
    RawListPtr Element<T>::exchange(ListPtr<U> &&list) const {
+      static_cast<void>(this->template present_slot<F>());
+      lList *lp = list.release();
+      exchange_list(this->ep_, FieldTraits<F>::pos, lp);
+      return RawListPtr(lp);
+   }
+
+   /**
+    * @brief Element::exchange() of a list field without a sub-type with a raw owner: puts in a list of any type,
+    *        gives back the list held before as a raw owner
+    * @tparam T the object type of the handle
+    * @tparam F a list field of T for which the model names no sub-type
+    * @param list the new list, which the element takes over; may be empty
+    * @return the list held before, now owned by the caller; empty if the field held none
+    * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element does
+    *        not hold the field; nothing is changed then
+    */
+   template <ObjectType T>
+   template <auto F>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
+   RawListPtr Element<T>::exchange(RawListPtr &&list) const {
       static_cast<void>(this->template present_slot<F>());
       lList *lp = list.release();
       exchange_list(this->ep_, FieldTraits<F>::pos, lp);

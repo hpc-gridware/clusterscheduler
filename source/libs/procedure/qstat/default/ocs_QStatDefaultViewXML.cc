@@ -78,7 +78,7 @@ void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char *state,
    DENTER(TOP_LAYER);
 
    for (const auto l_job_elem : *job_list) {
-      const auto attributes = ocs::tom::get_or_create<XMLE_Attribute>(l_job_elem, "attributes");
+      const auto attributes = l_job_elem.get_or_create<XMLE_Attribute>("attributes");
       auto state_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
       state_elem->set<XMLA_Name>("state");
       state_elem->set<XMLA_Value>(state);

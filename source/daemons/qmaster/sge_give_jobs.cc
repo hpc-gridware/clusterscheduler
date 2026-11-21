@@ -696,7 +696,7 @@ sge_job_resend_event_handler_sim_job_end(const uint32_t jobid, const uint32_t ja
       ocs::tom::Element<ocs::tom::UA> ue_ua_4 = jr->emplace_back_in<JR_usage, UA_name>("wallclock");
       ue_ua_4.set<UA_value>(sge_gmt64_to_gmt32_double(now - start_time));
 
-      ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_scaled_usage_list>());
+      jr->swap<JR_usage, JAT_scaled_usage_list>(jatep);
       ocs::ReportingFileWriter::create_acct_records(nullptr, *jr, jep, jatep, false);
       sge_commit_job(jep, jatep, *jr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT, monitor, gdi_session);
    }
@@ -1506,7 +1506,7 @@ sge_job_finish_event(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::
        * to go picking through the master job list to find the accounting data.
        * So instead we pick through it here and stick it back in JR_usage. */
 
-      ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_usage_list>());
+      jr.swap<JR_usage, JAT_usage_list>(jatep);
 
       if (commit_flags & COMMIT_NEVER_RAN) {
          jr.set<JR_wait_status>(SGE_NEVERRAN_BIT);
@@ -1530,7 +1530,7 @@ sge_job_finish_event(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::
    if (own_jr) {
       own_jr.reset();
    } else {
-      ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_usage_list>());
+      jr.swap<JR_usage, JAT_usage_list>(jatep);
    }
 
    DRETURN_VOID;

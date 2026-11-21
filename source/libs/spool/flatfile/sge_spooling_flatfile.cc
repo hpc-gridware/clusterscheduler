@@ -884,7 +884,7 @@ spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                char *str = sge_file2string(exec_file, &len);
                if (str != nullptr) {
                   auto script = ocs::tom::ElementPtr<ocs::tom::STU>::create();
-                  ocs::tom::exchange<STU_name>(script.get(), &str);
+                  str = script->exchange<STU_name>(str);
                   ep = script.release();
                }
             }

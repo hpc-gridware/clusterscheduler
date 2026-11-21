@@ -1118,12 +1118,11 @@ bool spool_berkeleydb_write_ja_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list
                                object_type_get_name(SGE_TYPE_JATASK),
                                job_id, ja_task_id);
 
-   // the free form keeps the soft path of before for an empty handle; the slot holds the list while it is out
-   lList *tmp_list = nullptr;
-   ocs::tom::exchange<JAT_task_list>(ja_task, &tmp_list);
+   // the slot holds no list while it is out; the object is never an empty handle here
+   auto tmp_list = ja_task.exchange<JAT_task_list>({});
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_JOB_DB,
                                        object, dbkey);
-   ocs::tom::exchange<JAT_task_list>(ja_task, &tmp_list);
+   ja_task.exchange<JAT_task_list>(std::move(tmp_list));
 
    return ret;
 }
@@ -1162,14 +1161,13 @@ bool spool_berkeleydb_write_job(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
                                object_type_get_name(SGE_TYPE_JOB), 
                                job_id);
 
-   // the free form keeps the soft path of before for an empty handle; the slot holds the list while it is out
-   lList *tmp_list = nullptr;
-   ocs::tom::exchange<JB_ja_tasks>(job, &tmp_list);
+   // the slot holds no list while it is out; the object is never an empty handle here
+   auto tmp_list = job.exchange<JB_ja_tasks>({});
 
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_JOB_DB,
                                        object, dbkey);
 
-   ocs::tom::exchange<JB_ja_tasks>(job, &tmp_list);
+   job.exchange<JB_ja_tasks>(std::move(tmp_list));
 
    if (ret && !only_job) {
       const auto ja_task = object.get<JB_ja_tasks>().find_first<JAT_task_number>(ja_task_id);
@@ -1208,14 +1206,13 @@ bool spool_berkeleydb_write_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                object_type_get_name(SGE_TYPE_CQUEUE), 
                                key);
 
-   // the free form keeps the soft path of before for an empty handle; the slot holds the list while it is out
-   lList *tmp_list = nullptr;
-   ocs::tom::exchange<CQ_qinstances>(cqueue, &tmp_list);
+   // the slot holds no list while it is out; the object is never an empty handle here
+   auto tmp_list = cqueue.exchange<CQ_qinstances>({});
 
    ret = spool_berkeleydb_write_object(answer_list, info, BDB_CONFIG_DB,
                                        object, dbkey);
 
-   ocs::tom::exchange<CQ_qinstances>(cqueue, &tmp_list);
+   cqueue.exchange<CQ_qinstances>(std::move(tmp_list));
 
    return ret;
 }

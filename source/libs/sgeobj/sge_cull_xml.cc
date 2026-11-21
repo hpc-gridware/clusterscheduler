@@ -151,7 +151,7 @@ static void ocs_xml_add_attribute(const ocs::tom::Element<T> xml_elem, const cha
    auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    attr_elem->set<XMLA_Name>(name);
    attr_elem->set<XMLA_Value>((is_mod_value ? sge_dstring_get_string(&mod_value) : ""));
-   ocs::tom::get_or_create<F>(xml_elem, "Attributes").push_back(std::move(attr_elem));
+   xml_elem.template get_or_create<F>("Attributes").push_back(std::move(attr_elem));
 
    sge_dstring_free(&mod_value);
    DRETURN_VOID;

@@ -910,20 +910,38 @@ namespace ocs::tom {
     * False for a null element, an element of another type and a reduced
     * element without the field, as the old function gave -1 for each.
     *
+    * There is no second template parameter: a `has<F, true>(handle)` would bind to this form through the
+    * implicit conversion of the handle and pass by the deleted overloads below (CS-3103). The free forms of
+    * this header that know the element's type use detail::has_unchecked().
+    *
     * @tparam F the field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @return true if the element holds the field
     * @see Typed form: ocs::tom::ConstElement<T>::has<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)>
    [[nodiscard]] bool has(const lListElem *ep) noexcept {
-      if constexpr (Typed) {
-         return ep != nullptr && ep->descr[FieldTraits<F>::pos].off != OCS_CULL_ABSENT;
-      }
       return ep != nullptr && detail::typed_pos<F>(ep->descr) >= 0;
    }
+
+   namespace detail {
+      /**
+       * @brief Whether an element known to be of the field's object type holds a field; the type is not checked
+       *
+       * For the free forms of this header that take a typed handle and may meet an empty one; outside code uses
+       * the member has<F>() of the handle.
+       *
+       * @tparam F the field
+       * @param ep the element of the field's object type, or nullptr
+       * @return true if @p ep is not nullptr and holds the field (a reduced element may leave it out)
+       */
+      template <auto F>
+         requires TypedField<decltype(F)>
+      [[nodiscard]] bool has_unchecked(const lListElem *ep) noexcept {
+         return ep != nullptr && ep->descr[FieldTraits<F>::pos].off != OCS_CULL_ABSENT;
+      }
+   } // namespace detail
 
    /**
     * @brief Deleted: on a typed handle use the member (h.has<F>()), there is one way per operation (CS-3103)
@@ -957,14 +975,13 @@ namespace ocs::tom {
     * element without the field throws, where the old function aborts.
     *
     * @tparam F the list field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param lpp the list to put in; the list held before afterwards
     * @return 0, or -1 as described
     * @throw FieldException with reason ForeignField or AbsentField
     * @see Typed form: ocs::tom::Element<T>::exchange<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
    int exchange(lListElem *ep, lList **lpp) {
       if (lpp == nullptr) {
@@ -972,7 +989,7 @@ namespace ocs::tom {
          set_lerrno(LEELEMNULL);
          return -1;
       }
-      const int pos = detail::setter_pos<F, Typed>(ep, "ocs::tom::exchange");
+      const int pos = detail::setter_pos<F>(ep, "ocs::tom::exchange");
       if (pos < 0) {
          return -1;
       }
@@ -986,13 +1003,12 @@ namespace ocs::tom {
     * Neither string is copied. Error behaviour as the list form.
     *
     * @tparam F the string field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param str the string to put in; the string held before afterwards
     * @return 0, or -1 with LEELEMNULL for a null element or a null @p str
     * @throw FieldException with reason ForeignField or AbsentField
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
    int exchange(lListElem *ep, char **str) {
       if (str == nullptr) {
@@ -1000,7 +1016,7 @@ namespace ocs::tom {
          set_lerrno(LEELEMNULL);
          return -1;
       }
-      const int pos = detail::setter_pos<F, Typed>(ep, "ocs::tom::exchange");
+      const int pos = detail::setter_pos<F>(ep, "ocs::tom::exchange");
       if (pos < 0) {
          return -1;
       }
@@ -1061,7 +1077,6 @@ namespace ocs::tom {
     * aborts.
     *
     * @tparam F the list field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param list_name the name of a list created here, nullptr for the old default
     * @return the list held in the field as a handle of the field's sub-type, empty on an error; it converts to the
@@ -1069,7 +1084,7 @@ namespace ocs::tom {
     * @throw FieldException with reason ForeignField or AbsentField
     * @see Typed form: ocs::tom::Element<T>::get_or_create<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires detail::TypedListField<F>
    List<typename FieldTraits<F>::Sub> get_or_create(lListElem *ep, const char *list_name) {
       using Result = List<typename FieldTraits<F>::Sub>;
@@ -1077,7 +1092,7 @@ namespace ocs::tom {
          report_soft_path("ocs::tom::get_or_create", F, SoftPathReason::NullElement);
          return Result();
       }
-      const int pos = detail::getter_pos<F, Typed>(ep);
+      const int pos = detail::getter_pos<F>(ep);
       try {
          return Result::from_typed(get_or_create_list(ep, pos, list_name != nullptr ? list_name : "No list name specified",
                                                       FieldTraits<F>::Sub::descriptor.e));
@@ -1273,36 +1288,20 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief exchange() of a list field on an element handle
-    * @tparam F the list field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param lpp the list to put in; the list held before afterwards
-    * @return 0, or -1 as #exchange
-    * @throw FieldException with reason AbsentField
+    * @brief Deleted: on a typed handle use the member (h.exchange<F>(std::move(list)) for a list field,
+    *        h.exchange<F>(str) for a string field), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @tparam A the type of the value to put in
+    * @param ep the handle
+    * @param value the value to put in
+    * @return nothing, the call does not compile
     */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
-   int exchange(const Element<T> &ep, lList **lpp) {
-      detail::assert_field_of<F, T>();
-      return exchange<F, true>(ep.raw(), lpp);
-   }
-
-   /**
-    * @brief exchange() of a string field on an element handle
-    * @tparam F the string field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param str the string to put in; the string held before afterwards
-    * @return 0, or -1 as #exchange
-    * @throw FieldException with reason AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   int exchange(const Element<T> &ep, char **str) {
-      detail::assert_field_of<F, T>();
-      return exchange<F, true>(ep.raw(), str);
-   }
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *;
+   // it also catches an Element<T>, which derives from ConstElement<T>
+   template <auto F, ObjectType T, typename A>
+      requires TypedField<decltype(F)>
+   int exchange(const ConstElement<T> &ep, A value) = delete;
 
    /**
     * @brief swap() on two element handles
@@ -1325,20 +1324,19 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief get_or_create() on an element handle
-    * @tparam F the list field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param list_name the name of a list created here, nullptr for the old default
-    * @return the list held in the field as a handle of the field's sub-type, empty on an error
-    * @throw FieldException with reason AbsentField
+    * @brief Deleted: on a typed handle use the member (h.get_or_create<F>(name)), there is one way per
+    *        operation (CS-3103)
+    * @tparam F the list field
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @param list_name the name of a list created here
+    * @return nothing, the call does not compile
     */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *;
+   // it also catches an Element<T>, which derives from ConstElement<T>
    template <auto F, ObjectType T>
       requires detail::TypedListField<F>
-   List<typename FieldTraits<F>::Sub> get_or_create(const Element<T> &ep, const char *list_name) {
-      detail::assert_field_of<F, T>();
-      return get_or_create<F, true>(ep.raw(), list_name);
-   }
+   auto get_or_create(const ConstElement<T> &ep, const char *list_name) = delete;
 
    /**
     * @brief list_ref() on an element handle
@@ -1499,46 +1497,33 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief exchange() of a list field on an owning element handle, as on the handle it owns
-    * @tparam F the list field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param lpp the list to put in; the list held before afterwards
-    * @return 0, or -1 as #exchange
+    * @brief Deleted: on an owning handle use the member (ep->exchange<F>(...)), there is one way per operation
+    *        (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @tparam A the type of the value to put in
+    * @param ep the owning handle
+    * @param value the value to put in
+    * @return nothing, the call does not compile
     */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
-   int exchange(const ElementPtr<T> &ep, lList **lpp) {
-      return exchange<F>(ep.get(), lpp);
-   }
+   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
+   template <auto F, ObjectType T, typename A>
+      requires TypedField<decltype(F)>
+   int exchange(const ElementPtr<T> &ep, A value) = delete;
 
    /**
-    * @brief exchange() of a string field on an owning element handle, as on the handle it owns
-    * @tparam F the string field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param str the string to put in; the string held before afterwards
-    * @return 0, or -1 as #exchange
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   int exchange(const ElementPtr<T> &ep, char **str) {
-      return exchange<F>(ep.get(), str);
-   }
-
-   /**
-    * @brief get_or_create() on an owning element handle, as on the handle it owns
-    * @tparam F the list field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
+    * @brief Deleted: on an owning handle use the member (ep->get_or_create<F>(name)), there is one way per
+    *        operation (CS-3103)
+    * @tparam F the list field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
     * @param list_name the name of a list created here
-    * @return the list held in the field as a handle of the field's sub-type, empty on an error
+    * @return nothing, the call does not compile
     */
+   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
    template <auto F, ObjectType T>
       requires detail::TypedListField<F>
-   List<typename FieldTraits<F>::Sub> get_or_create(const ElementPtr<T> &ep, const char *list_name) {
-      return get_or_create<F>(ep.get(), list_name);
-   }
+   auto get_or_create(const ElementPtr<T> &ep, const char *list_name) = delete;
 
    /**
     * @brief list_ref() on an owning element handle, as on the handle it owns
@@ -1648,7 +1633,7 @@ namespace ocs::tom {
       requires TypedField<decltype(F)> && (FieldTraits<F>::type != FieldType::Ref)
    bool copy_if_present(const Element<T> &dst, const ConstElement<T> &src) {
       detail::assert_field_of<F, T>();
-      if (!dst || !has<F, true>(src.raw())) {
+      if (!dst || !detail::has_unchecked<F>(src.raw())) {
          return false;
       }
       // the core of the free setter: a value the setter refuses gives false, not an exception
@@ -1807,7 +1792,7 @@ namespace ocs::tom {
        */
       template <auto Key, ObjectType S>
       const char *sublist_key(const ConstElement<S> &ep) {
-         if (!has<Key, true>(ep.raw())) {
+         if (!has_unchecked<Key>(ep.raw())) {
             return nullptr;
          }
          if constexpr (FieldTraits<Key>::type == FieldType::Host) {
@@ -1884,7 +1869,7 @@ namespace ocs::tom {
       bool ok = true;
       bool changed = false;
 
-      if (!has<ListF, true>(request.raw())) {
+      if (!detail::has_unchecked<ListF>(request.raw())) {
          return {false, false};
       }
 

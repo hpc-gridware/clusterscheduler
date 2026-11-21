@@ -837,7 +837,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
       }
 
       if (ret) {
-         const ocs::tom::List<ocs::tom::CQ> pending = ocs::tom::get_or_create<HGRP_cqueue_list>(hgrp, "");
+         const ocs::tom::List<ocs::tom::CQ> pending = hgrp.get_or_create<HGRP_cqueue_list>("");
          const ocs::tom::Element<ocs::tom::CQ> new_cqueue = pending.push_back(cqueue.clone());
 
          {

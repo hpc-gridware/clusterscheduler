@@ -379,7 +379,7 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
       if (project) {
          const char *project_name = project.get<PR_name>();
-         const auto upp_list = ocs::tom::get_or_create<UU_project>(user, "");
+         const auto upp_list = user.get_or_create<UU_project>("");
          auto upp = upp_list.find_first<UPP_name>(project_name);
          if (!upp) {
             upp = upp_list.emplace_back<UPP_name>(project_name);
@@ -481,8 +481,8 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
    if (job_usage_list) {
       const uint32_t jobnum = job.get<JB_job_number>();
-      const auto debited = user ? ocs::tom::get_or_create<UU_debited_job_usage>(user, "")
-                                : ocs::tom::get_or_create<PR_debited_job_usage>(project, "");
+      const auto debited = user ? user.get_or_create<UU_debited_job_usage>("")
+                                : project.get_or_create<PR_debited_job_usage>("");
       if (const auto upu = debited.find_first<UPU_job_number>(jobnum); upu) {
          upu.set<UPU_old_usage_list>(job_usage_list->clone());
       } else {

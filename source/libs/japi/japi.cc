@@ -1827,7 +1827,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
                   /* Look for jobs from any user */
                   for (const auto idp : *id_list) {
-                     ocs::tom::get_or_create<ID_user_list>(idp, "User List").emplace_back<ST_name>("*");
+                     idp.get_or_create<ID_user_list>("User List").emplace_back<ST_name>("*");
                   }
 
                   /* This function frees id_list */
@@ -1868,7 +1868,7 @@ int japi_control(const char *jobid_str, int drmaa_action, dstring *diag) {
 
             /* Look for jobs from any user */
             for (const auto idp : *id_list) {
-               ocs::tom::get_or_create<ID_user_list>(idp, "User List").emplace_back<ST_name>("*");
+               idp.get_or_create<ID_user_list>("User List").emplace_back<ST_name>("*");
             }
 
             /* This function frees id_list */

@@ -94,7 +94,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<
    }
 
    /* we sum up the scaled_usage */
-   const auto container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
+   const auto container_usage = container.get_or_create<PET_scaled_usage>("reported_usage");
    if (const auto pe_task_usage = pe_task.get<PET_scaled_usage>(); pe_task_usage) {
       usage_list_sum(container_usage, pe_task_usage);
    }
@@ -103,7 +103,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<
     * and we sum up the already reported usage
     * (for long running jobs having intermediate usage records)
     */
-   const auto container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
+   const auto container_reported_usage = container.get_or_create<PET_reported_usage>("reported_usage");
    if (const auto pe_task_reported_usage = pe_task.get<PET_reported_usage>(); pe_task_reported_usage) {
       usage_list_sum(container_reported_usage, pe_task_reported_usage);
    }

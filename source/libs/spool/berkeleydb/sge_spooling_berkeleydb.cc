@@ -668,7 +668,7 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
                if (str != nullptr) {
                   auto script = ocs::tom::ElementPtr<ocs::tom::STU>::create();
-                  ocs::tom::exchange<STU_name>(script.get(), &str);
+                  str = script->exchange<STU_name>(str);
                   ep = script.release();
                } else {
                   ret = false;

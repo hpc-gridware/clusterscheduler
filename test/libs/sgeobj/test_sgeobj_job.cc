@@ -79,7 +79,7 @@ set_ranges(const ocs::tom::Element<ocs::tom::JB> job, const int field, const cha
    range_list_parse_from_string(list, &alp, ranges, false, false, INF_NOT_ALLOWED);
    alp.reset();
    // the field is a run-time number, so the list is handed over raw
-   ocs::tom::set(job, field, ocs::tom::RawListPtr(std::move(list)));
+   ocs::tom::set(job.raw(), field, ocs::tom::RawListPtr(std::move(list)));
 }
 
 // ---------------------------------------------------------------------------

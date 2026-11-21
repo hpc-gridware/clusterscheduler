@@ -65,7 +65,7 @@ static ocs::tom::ElementPtr<ocs::tom::AR>
 make_ar(const std::initializer_list<const char *> names, const bool with_list = true) {
    auto ar = ocs::tom::ElementPtr<ocs::tom::AR>::create();
    if (with_list) {
-      const auto acl = ocs::tom::get_or_create<AR_acl_list>(ar.get(), "acl");
+      const auto acl = ar->get_or_create<AR_acl_list>("acl");
       for (const char *name : names) {
          acl.emplace_back<ARA_name>(name);
       }
@@ -102,7 +102,7 @@ acl_of(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
 static ocs::tom::ElementPtr<ocs::tom::RQS>
 make_rqs(const std::initializer_list<const char *> names) {
    auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
-   const auto rules = ocs::tom::get_or_create<RQS_rule>(rqs.get(), "rules");
+   const auto rules = rqs->get_or_create<RQS_rule>("rules");
    for (const char *name : names) {
       rules.emplace_back<RQR_name>(name);
    }

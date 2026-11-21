@@ -2181,12 +2181,10 @@ void sge_event_master_send_events(const ocs::tom::Element<ocs::tom::REP> report,
       /* do we have to deliver events ? */
       if (now >= event_client.get<EV_next_send_time>()) {
          if (!event_client.get<EV_busy>() || do_remove) {
-            // REP_list carries lists of any type, so the events (ET) move through a raw list
-            lList *lp = nullptr;
-
+            // REP_list carries lists of any type: the events (ET) go in as a typed list, what the report held
+            // comes out raw
             /* put only pointer in report - dont copy */
-            ocs::tom::exchange<EV_events>(event_client, &lp);
-            ocs::tom::exchange<REP_list>(report, &lp);
+            ocs::tom::RawListPtr report_held = report.exchange<REP_list>(event_client.exchange<EV_events>({}));
 
             if (update_func != nullptr) {
                update_func(ec_id, nullptr, report_list, update_func_arg);
@@ -2218,8 +2216,8 @@ void sge_event_master_send_events(const ocs::tom::Element<ocs::tom::REP> report,
             event_client.set<EV_next_send_time>(now + sge_gmt32_to_gmt64(deliver_interval));
 
             /* don't delete sent events - deletion is triggerd by ack's */
-            ocs::tom::exchange<REP_list>(report, &lp);
-            ocs::tom::exchange<EV_events>(event_client, &lp);
+            event_client.exchange<EV_events>(
+               ocs::tom::adopt<ocs::tom::ET>(report.exchange<REP_list>(std::move(report_held))));
          } else {
             MONITOR_EDT_BUSY(monitor);
          }
@@ -2642,9 +2640,7 @@ static int purge_event_list(const ocs::tom::List<ocs::tom::ET> event_list, const
  * @return the owner of the payload, empty if the event held none; the event holds none afterwards
  */
 static ocs::tom::RawListPtr take_event_payload(const ocs::tom::Element<ocs::tom::ET> event) {
-   lList *lp = nullptr;
-   ocs::tom::exchange<ET_new_version>(event, &lp);
-   return ocs::tom::RawListPtr(lp);
+   return event.exchange<ET_new_version>({});
 }
 
 /**
@@ -2656,10 +2652,8 @@ static ocs::tom::RawListPtr take_event_payload(const ocs::tom::Element<ocs::tom:
  * @param payload the owner of the payload, maybe empty; empty afterwards
  */
 static void put_event_payload(const ocs::tom::Element<ocs::tom::ET> event, ocs::tom::RawListPtr payload) {
-   lList *lp = payload.release();
-   ocs::tom::exchange<ET_new_version>(event, &lp);
-   // the event held no payload; should it have held one, it is freed here instead of leaking
-   static_cast<void>(ocs::tom::RawListPtr(lp));
+   // the event held no payload; should it have held one, the returned owner frees it instead of leaking
+   event.exchange<ET_new_version>(std::move(payload));
 }
 
 /**

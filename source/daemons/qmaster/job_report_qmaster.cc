@@ -388,7 +388,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                      if (pe_task_id_str == nullptr) {
 
                         /* store unscaled usage directly in job */
-                        ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_usage_list>());
+                        jr.swap<JR_usage, JAT_usage_list>(jatep);
 
                         /* update jobs scaled usage list */
                         jatep.set<JAT_scaled_usage_list>(
@@ -435,7 +435,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                            }
 
                            /* store unscaled usage directly in sub-task */
-                           ocs::tom::exchange<JR_usage>(jr, petask.list_ref<PET_usage>());
+                           jr.swap<JR_usage, PET_usage>(petask);
 
                            /* update task's scaled usage list */
                            petask.set<PET_scaled_usage>(petask.get<PET_usage>().clone("scaled"));
@@ -663,7 +663,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                /* job exited */
                if (pe_task_id_str == nullptr) {
                   /* store unscaled usage directly in job */
-                  ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_usage_list>());
+                  jr.swap<JR_usage, JAT_usage_list>(jatep);
 
                   /* update jobs scaled usage list */
                   jatep.set<JAT_scaled_usage_list>(jatep.get<JAT_usage_list>().clone("scaled"));

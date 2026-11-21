@@ -27,6 +27,7 @@
  */
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <type_traits>
@@ -719,6 +720,67 @@ test_no_sub_type_edges() {
 }
 
 /**
+ * @brief The exchange members that replace the free exchange on a typed handle (CS-3103): a string field, and a
+ *        list field without a sub-type with a raw owner
+ * @return nothing; CHECK records the results
+ */
+static void
+test_exchange_members() {
+   // a string field: the string moves in without a copy, the one held comes back to the caller
+   const ElementPtr<TEST> test = ElementPtr<TEST>::create();
+   test->set<TEST_string>("held");
+   char *const fresh = strdup("new");
+   char *old = test->exchange<TEST_string>(fresh);
+   const bool moved = std::strcmp(old, "held") == 0 && test->get<TEST_string>() == fresh;
+   std::free(old);
+   char *taken = test->exchange<TEST_string>(nullptr);
+   const bool emptied = taken == fresh && test->get<TEST_string>() == nullptr;
+   char *none = test->exchange<TEST_string>(taken);
+   const bool back = none == nullptr && test->get<TEST_string>() == fresh;
+   // the string the field holds comes back and the field keeps it
+   const bool same = test->exchange<TEST_string>(fresh) == fresh && test->get<TEST_string>() == fresh;
+   // an empty handle and a reduced element without the field throw, the string stays with the caller
+   const Element<TEST> no_test;
+   const ElementPtr<TEST> reduced = ElementPtr<TEST>::create(layout<TEST_uint32>());
+   char *const kept = strdup("kept");
+   const bool refused =
+           throws_field_exception([&] { static_cast<void>(no_test.exchange<TEST_string>(kept)); },
+                                  FieldException::Reason::EmptyHandle, "TEST_string") &&
+           throws_field_exception([&] { static_cast<void>(reduced->exchange<TEST_string>(kept)); },
+                                  FieldException::Reason::AbsentField, "TEST_string") &&
+           std::strcmp(kept, "kept") == 0;
+   std::free(kept);
+   CHECK(48, "exchange of a string field puts the string in without a copy and gives back the one held, nullptr "
+             "for none; an empty handle throws EmptyHandle, a reduced element AbsentField, the string stays with "
+             "the caller",
+         moved && emptied && back && same && refused);
+
+   // a list field without a sub-type with a raw owner: the list taken out goes back in the same way
+   const ElementPtr<SPA> opt = ElementPtr<SPA>::create();
+   opt->set<SPA_argval_lListT>(ListPtr<ST>::create("names"));
+   lList *const names = opt->get<SPA_argval_lListT>().raw();
+   RawListPtr out = opt->exchange<SPA_argval_lListT>({});
+   const bool out_taken = out.get().raw() == names && !opt->get<SPA_argval_lListT>();
+   const RawListPtr previous = opt->exchange<SPA_argval_lListT>(std::move(out));
+   const bool put_back = !previous && !out && opt->get<SPA_argval_lListT>().raw() == names;
+   // an empty handle and a reduced element without the field throw, the list stays with the caller
+   const Element<SPA> no_opt;
+   const ElementPtr<SPA> reduced_opt = ElementPtr<SPA>::create(layout<SPA_switch_val>());
+   RawListPtr kept_list(ListPtr<PN>::create("kept"));
+   const bool list_refused =
+           throws_field_exception([&] { static_cast<void>(no_opt.exchange<SPA_argval_lListT>(std::move(kept_list))); },
+                                  FieldException::Reason::EmptyHandle, "SPA_argval_lListT") &&
+           throws_field_exception(
+                   [&] { static_cast<void>(reduced_opt->exchange<SPA_argval_lListT>(std::move(kept_list))); },
+                   FieldException::Reason::AbsentField, "SPA_argval_lListT") &&
+           kept_list;
+   CHECK(49, "exchange of a list field without a sub-type with a raw owner takes the list out with an empty owner "
+             "and puts it back; an empty handle throws EmptyHandle, a reduced element AbsentField, the list stays "
+             "with the caller",
+         out_taken && put_back && list_refused);
+}
+
+/**
  * @brief Run the scenarios
  * @param argc argument count
  * @param argv arguments
@@ -813,5 +875,15 @@ int main(int argc, char *argv[]) {
        "the field unchanged; get_as accepts the reduced layouts; the raw setter takes the pointers over and nullptr "
        "empties the field (checked at compile time as well)",
        {{"OPS-01", "covers"}}, {44, 45, 46, 47}, test_no_sub_type_edges},
+      {"HANDLE-13", "exchange members",
+       "the members that replace the free exchange on a typed handle: a string field and a list field without a "
+       "sub-type with a raw owner (CS-3103)",
+       {"exchange a string field with a new string, with nullptr, with the string taken out and with the string "
+        "it holds",
+        "take a list out of a field without a sub-type with an empty raw owner and put it back",
+        "call both on an empty handle and on a reduced element without the field"},
+       "the strings and the list move without a copy and the one held comes back; EmptyHandle and AbsentField "
+       "with the value left to the caller",
+       {{"OPS-01", "covers"}}, {48, 49}, test_exchange_members},
    });
 }

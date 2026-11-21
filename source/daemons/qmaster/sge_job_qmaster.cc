@@ -3825,9 +3825,9 @@ bool spool_write_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint
  *
  * The function reads the script of a '-b n' job from file.
  *
+ * @param answer_list receives messages for the caller
  * @param jobid job id (needed for Dtrace only)
  * @param jep the job
- * @param answer_list receives messages for the caller
  *
  * @return true on success
  *
@@ -3849,11 +3849,14 @@ bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint3
    PROF_STOP_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    /* The spooled out structure must be restored */
    if (script_el) {
-      char *script = (char *) script_el->get<STU_name>();
-      char *dummy = nullptr;
+      // the string moves from the script element into the job without a copy
+      char *script = const_cast<char *>(script_el->get<STU_name>());
       int len = strlen(script);
-      ocs::tom::exchange<JB_script_ptr>(jep, &script);
-      ocs::tom::exchange<STU_name>(script_el, &dummy);
+      char *previous = jep.exchange<JB_script_ptr>(script);
+      // the job owns the string now; what the script element gives back is that string
+      static_cast<void>(script_el->exchange<STU_name>(nullptr));
+      // the job held no script before; should it have held one, it is freed here instead of leaking
+      sge_free(&previous);
       script_el.reset();
       jep.set<JB_script_size>(len);
    } else {

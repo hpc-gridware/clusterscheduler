@@ -271,7 +271,7 @@ cqueue_add_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          } else {
             bool is_ambiguous = false;
 
-            const ocs::tom::List<ocs::tom::QU> list = ocs::tom::get_or_create<CQ_qinstances>(cqueue, "");
+            const ocs::tom::List<ocs::tom::QU> list = cqueue.get_or_create<CQ_qinstances>("");
             auto new_qinstance = qinstance_create(packet, task, cqueue, answer_list,
                                                   hostname, &is_ambiguous, monitor, master_hgroup_list,
                                                   master_cqueue_list);

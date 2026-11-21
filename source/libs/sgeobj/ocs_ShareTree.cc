@@ -403,7 +403,7 @@ ocs::ShareTree::add_auto_user(const ocs::tom::Element<ocs::tom::STN> node, const
       tmp_node->set<STN_temp>(1);
 
       // Add the new node as a child of the parent
-      ocs::tom::get_or_create<STN_children>(default_node, "display").push_back(std::move(tmp_node));
+      default_node.get_or_create<STN_children>("display").push_back(std::move(tmp_node));
    }
 
    DRETURN_VOID;

@@ -697,8 +697,7 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
 
       if (int(ep.get<SPA_argval_lLongT>()) == int(scope)) {
          // the argument list is of the type of the request field, so it stays untyped
-         lList *lp = nullptr;
-         ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
+         lList *lp = ep.exchange<SPA_argval_lListT>(ocs::tom::RawListPtr()).release();
          if (lp != nullptr) {
             // merged without ever holding a key twice (N-H-18)
             if (!has_soft || ep.get<SPA_argval_lIntT>() < 2) {

@@ -942,9 +942,7 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
       // cluster queues are not required. We need to reconstruct the queue list with the queue instances only.
       auto qinstance_list = ocs::tom::ListPtr<ocs::tom::QU>::create("");
       for (const auto cqueue : *cqueue_list_) {
-         lList *qinstances = nullptr;
-         ocs::tom::exchange<CQ_qinstances>(cqueue, &qinstances);
-         qinstance_list->splice(ocs::tom::ListPtr<ocs::tom::QU>::from_typed(qinstances));
+         qinstance_list->splice(cqueue.exchange<CQ_qinstances>({}));
       }
       cqueue_list_.reset();
       qinstance_list_ = std::move(qinstance_list);

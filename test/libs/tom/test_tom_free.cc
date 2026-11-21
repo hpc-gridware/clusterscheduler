@@ -526,11 +526,12 @@ void test_owning() {
                ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 2) != nullptr &&
                ocs::tom::emplace_back_in<JB_env_list, VA_variable>(job, "C") != nullptr &&
                ocs::tom::erase_in<JB_env_list, VA_variable>(job, "C") == 1 &&
-               ocs::tom::get_or_create<JB_env_list>(job, nullptr) == job->get<JB_env_list>().raw() &&
+               job->get_or_create<JB_env_list>().raw() == job->get<JB_env_list>().raw() &&
                *ocs::tom::list_ref<JB_env_list>(job) == job->get<JB_env_list>().raw() &&
                std::string(ocs::tom::get_or_empty<JB_owner>(job)).empty();
    char *owner = strdup("me");
-   same = same && ocs::tom::exchange<JB_owner>(job, &owner) == 0 && owner == nullptr &&
+   owner = job->exchange<JB_owner>(owner);
+   same = same && owner == nullptr &&
           std::string(ocs::tom::get_or_empty<JB_owner>(job)) == "me";
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    task->set<JAT_status>(0x5);
