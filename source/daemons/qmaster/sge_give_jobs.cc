@@ -704,6 +704,15 @@ sge_job_resend_event_handler_sim_job_runtime(u_long64 now, const lListElem *job,
    return runtime;
 }
 
+/**
+ * @brief Resend a job or a task whose delivery to the execd has not been acknowledged
+ *
+ * Called by the timed event of a job in transfer. A task whose queue instance or host is gone is deleted from
+ * the job (CS-3193: through the job, so that an emptied task list does not stay referenced).
+ *
+ * @param anEvent the timed event, naming the job and the task
+ * @param monitor the monitoring data of the calling thread
+ */
 void
 sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    lListElem *jep, *jatep;
@@ -757,8 +766,6 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    /* check whether a slave execd allowance has to be retransmitted */
-   lList *jatasks = lGetListRW(jep, JB_ja_tasks);
-
    if (lGetUlong(jatep, JAT_status) == JTRANSFERING) {
 
       ep = lFirst(lGetList(jatep, JAT_granted_destin_identifier_list));
@@ -774,14 +781,16 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       if (mqep == nullptr) {
          ERROR(MSG_JOB_NOQUEUE4TJ_SUU, qnm, jobid, jataskid);
-         lDelElemUlong(&jatasks, JAT_task_number, jataskid);
+         // through the job: an emptied task list is freed and JB_ja_tasks cleared with it (CS-3193)
+         lDelSubUlong(jep, JAT_task_number, jataskid, JB_ja_tasks);
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          DRETURN_VOID;
       }
 
       if (!(hnm = lGetHost(mqep, QU_qhostname)) || !(hep = host_list_locate(master_ehost_list, hnm))) {
          ERROR(MSG_JOB_NOHOST4TJ_SUU, hnm, jobid, jataskid);
-         lDelElemUlong(&jatasks, JAT_task_number, jataskid);
+         // through the job: an emptied task list is freed and JB_ja_tasks cleared with it (CS-3193)
+         lDelSubUlong(jep, JAT_task_number, jataskid, JB_ja_tasks);
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          DRETURN_VOID;
       }
