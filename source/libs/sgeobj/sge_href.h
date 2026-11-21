@@ -103,7 +103,9 @@ bool href_list_find_all_referencees(ocs::tom::ConstList<ocs::tom::HR> this_list,
                                     ocs::tom::ConstList<ocs::tom::HGRP> master_list,
                                     ocs::tom::ListPtr<ocs::tom::HR> *occupant_groups);
 
-ocs::tom::Element<ocs::tom::HR> href_list_locate(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *name);
+ocs::tom::ConstElement<ocs::tom::HR> href_list_locate(ocs::tom::ConstList<ocs::tom::HR> this_list, const char *name);
+
+ocs::tom::Element<ocs::tom::HR> href_list_locate(ocs::tom::List<ocs::tom::HR> this_list, const char *name);
 
 bool href_list_resolve_hostnames(ocs::tom::List<ocs::tom::HR> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  bool ignore_error,

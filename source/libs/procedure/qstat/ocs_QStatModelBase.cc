@@ -1080,7 +1080,7 @@ bool ocs::QStatModelBase::is_cqueue_selected(const ocs::tom::List<ocs::tom::CQ> 
 int ocs::QStatModelBase::select_by_resource_list(const ocs::tom::List<ocs::tom::CE> resource_list,
                                                  const ocs::tom::List<ocs::tom::EH> exechost_list,
                                                  const ocs::tom::List<ocs::tom::CQ> queue_list,
-                                                 const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                                                 const ocs::tom::List<ocs::tom::CE> centry_list,
                                                  const uint32_t empty_qs) {
    DENTER(TOP_LAYER);
 

@@ -387,15 +387,31 @@ bool href_list_find_effective_diff(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  *
  * @return the host or hostgroup element, or an empty handle
  */
-ocs::tom::Element<ocs::tom::HR> href_list_locate(const ocs::tom::ConstList<ocs::tom::HR> this_list, const char *name) {
+ocs::tom::ConstElement<ocs::tom::HR> href_list_locate(const ocs::tom::ConstList<ocs::tom::HR> this_list,
+                                                     const char *name) {
    DENTER(HOSTREF_LAYER);
 
-   ocs::tom::Element<ocs::tom::HR> ret = nullptr;
+   ocs::tom::ConstElement<ocs::tom::HR> ret = nullptr;
 
    if (this_list && name != nullptr) {
-      ret = ocs::tom::find_first_rw<HR_name>(this_list, name);
+      ret = this_list.find_first<HR_name>(ocs::tom::Host(name));
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief Find an entry in a writable reference list
+ *
+ * As the read-only form.
+ *
+ * @param this_list HR list, may be an empty handle
+ * @param name host or groupname
+ *
+ * @return the host or hostgroup element, writable as the list is, or an empty handle
+ */
+ocs::tom::Element<ocs::tom::HR> href_list_locate(const ocs::tom::List<ocs::tom::HR> this_list, const char *name) {
+   const auto ret = href_list_locate(ocs::tom::ConstList<ocs::tom::HR>(this_list), name);
+   return ocs::tom::Element<ocs::tom::HR>::from_typed(const_cast<lListElem *>(ret.raw()));
 }
 
 
@@ -438,7 +454,7 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
        * capture nothing; a matcher inside that group is refused when written
        * (N-B-2), so expanding it can never lead back here.
        */
-      const auto exec_hgroup = hgroup_list_locate(master_list, EXEC_HOSTGROUP);
+      const auto exec_hgroup = master_list.find_first<HGRP_name>(ocs::tom::Host(EXEC_HOSTGROUP));
       ocs::tom::ConstList<ocs::tom::HR> candidates = nullptr;
 
       if (exec_hgroup) {
@@ -460,7 +476,7 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
           */
          switch (ocs::classify_member(name)) {
             case ocs::MemberClass::GROUP_REFERENCE:
-               hgroup = hgroup_list_locate(master_list, name);
+               hgroup = master_list.find_first<HGRP_name>(ocs::tom::Host(name));
                break;
             case ocs::MemberClass::MATCHER:
                if (used_matchers != nullptr) {

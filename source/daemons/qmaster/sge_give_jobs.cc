@@ -1003,7 +1003,7 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
    uint64_t now = sge_get_gmt64();
    const char *session;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
@@ -1689,14 +1689,14 @@ sge_clear_granted_resources(const ocs::tom::Element<ocs::tom::JB> job, const ocs
    uint32_t ja_task_id = ja_task.get<JAT_task_number>();
    ocs::tom::ConstList<ocs::tom::JG> gdi_list = ja_task.get<JAT_granted_destin_identifier_list>();
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>(true);
    const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>(true);
-   const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+   const auto master_pe_list = ocs::DataStore::master_list_rw<SGE_TYPE_PE>();
    bool master_task = true;
 
    if (!job_is_ja_task_defined(job, ja_task_id) ||
@@ -1809,7 +1809,7 @@ sge_clear_granted_resources(const ocs::tom::Element<ocs::tom::JB> job, const ocs
 
    /* free granted resources of the parallel environment */
    if (pe_name != nullptr) {
-      const auto master_pe = pe_list_locate(master_pe_list, pe_name);
+      const auto master_pe = master_pe_list.find_first<PE_name>(pe_name);
       if (!master_pe) {
          ERROR(MSG_OBJ_UNABLE2FINDPE_S, pe_name);
       } else {
@@ -2108,7 +2108,7 @@ sge_finish_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::Element<ocs:
       release_successor_jobs(job, gdi_session);
 
       // release the SUSER slot the JB held
-      const auto master_suser_list = ocs::DataStore::master_list<SGE_TYPE_SUSER>();
+      const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
       suser_unregister_job(job, master_suser_list);
 
       /* CS-1908: category detach is deferred to sge_bury_ja_task's remove_job
@@ -2316,7 +2316,7 @@ setCheckpointObj(const ocs::tom::Element<ocs::tom::JB> job) {
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
 
    if (const char *ckpt_name = job.get<JB_checkpoint_name>(); ckpt_name != nullptr) {
-      const auto ckpt = ckpt_list_locate(master_ckpt_list, ckpt_name);
+      const auto ckpt = master_ckpt_list.find_first<CK_name>(ckpt_name);
       if (!ckpt) {
          ERROR(MSG_OBJ_UNABLE2FINDCKPT_S, ckpt_name);
          ret = -1;

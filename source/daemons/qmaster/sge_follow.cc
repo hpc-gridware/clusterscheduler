@@ -359,9 +359,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          ocs::tom::Element<ocs::tom::EH> master_host;
          ocs::tom::Element<ocs::tom::PE> pe;
          const auto exec_host_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
-         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
          const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
-         const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
+         const auto master_pe_list = ocs::DataStore::master_list_rw<SGE_TYPE_PE>();
          const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();
          const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
          const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
@@ -423,7 +423,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
          /* pe job - find the pe object */
          if (or_pe) {
-            pe = pe_list_locate(master_pe_list, or_pe);
+            pe = master_pe_list.find_first<PE_name>(or_pe);
             if (!pe) {
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
@@ -437,7 +437,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          /* job is running in an advance reservation - find it */
          uint32_t ar_id = jep.get<JB_ar>();
          if (ar_id != 0) {
-            const auto ar = ar_list_locate(master_ar_list, jep.get<JB_ar>());
+            const auto ar = master_ar_list.find_first<AR_id>(jep.get<JB_ar>());
             if (!ar) {
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
@@ -1250,7 +1250,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          uint32_t jobid;
          ocs::tom::Element<ocs::tom::JB> jep;
          const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
-         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
          DPRINTF("ORDER: ORT_suspend_on_threshold\n");
 
@@ -1301,7 +1301,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          uint32_t jobid;
          ocs::tom::Element<ocs::tom::JB> jep;
          const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
-         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
          DPRINTF("ORDER: ORT_unsuspend_on_threshold\n");
 

@@ -107,8 +107,7 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    const char *domain = domain_arg.c_str();
 
    const auto stored =
-           cqueue_list_locate(ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(),
-                              queue_name);
+           ocs::DataStore::master_list<SGE_TYPE_CQUEUE>().find_first<CQ_name>(queue_name);
    if (!stored) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_CQUEUE_DOESNOTEXIST_S,
                               queue_name);
@@ -138,9 +137,9 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    uint32_t hostlist_before = 0;
    if (hostlist_wanted) {
       dstring group_name = DSTRING_INIT;
-      const auto group =
-              hgroup_list_locate(ocs::DataStore::master_list<SGE_TYPE_HGROUP>(),
-                                 hgroup_queue_group_name(queue_name, &group_name));
+      const char *group_key = hgroup_queue_group_name(queue_name, &group_name);
+      const auto hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+      const auto group = hgroup_list.find_first<HGRP_name>(ocs::tom::Host(group_key));
       sge_dstring_free(&group_name);
       if (group) {
          copy->set<CQ_hostlist>(group.get<HGRP_host_list>().clone(""));

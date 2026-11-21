@@ -1174,7 +1174,7 @@ qinstance_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::QU> th
             const char *pe_name = ep.get<AR_granted_pe>();
             ocs::tom::ConstElement<ocs::tom::PE> pe = nullptr;
             if (pe_name != nullptr) {
-               pe = pe_list_locate(master_pe_list, pe_name);
+               pe = master_pe_list.find_first<PE_name>(pe_name);
             }
 
             job_set_hard_resource_list(*dummy_job, ep.get<AR_resource_list>().clone());

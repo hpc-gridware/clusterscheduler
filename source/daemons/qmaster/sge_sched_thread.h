@@ -76,7 +76,7 @@ struct scheduler_all_data_t {
    ocs::tom::ListPtr<ocs::tom::QU> dis_queue_list;     ///< Queue instances only for the reservation, reduced
    ocs::tom::ListPtr<ocs::tom::QU> all_queue_list;     ///< Every queue instance, with full name and state only
    ocs::tom::ListPtr<ocs::tom::JB> job_list;           ///< Jobs
-   ocs::tom::ConstList<ocs::tom::CE> centry_list;      ///< Complex entries, the mirror's list
+   ocs::tom::List<ocs::tom::CE> centry_list;           ///< Complex entries, the mirror's list; takes default requests
    ocs::tom::ListPtr<ocs::tom::US> acl_list;           ///< Access control lists
    ocs::tom::ListPtr<ocs::tom::PE> pe_list;            ///< Parallel environments
    ocs::tom::ListPtr<ocs::tom::UU> user_list;          ///< Users

@@ -47,7 +47,7 @@ ocs::QStatParameter::~QStatParameter() {
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QStatParameter::QStatParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+ocs::QStatParameter::QStatParameter(const ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
@@ -67,7 +67,7 @@ ocs::QStatParameter::QStatParameter(const ocs::tom::ConstList<ocs::tom::SPP> bun
  * @param bundle the marshalled parameters; the switch lists are moved out of it
  * @return none
  */
-void ocs::QStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+void ocs::QStatParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // initialize parents member variables
@@ -145,31 +145,31 @@ void ocs::QStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
    DPRINTF("load_avg_variable_: %s\n", load_avg_variable_.c_str());
 
    // -l
-   resource_list_ = take_value_list<ocs::tom::CE>(ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_LIST));
+   resource_list_ = take_value_list<ocs::tom::CE>(bundle.find_first<SPP_name>(RESOURCE_LIST));
    DPRINTF("resource_list_: " sge_u32 " elements\n", static_cast<uint32_t>(resource_list_->size()));
 
    // -F
-   q_resource_list_ = take_value_list<ocs::tom::CE>(ocs::tom::find_first_rw<SPP_name>(bundle, Q_RESOURCE_LIST));
+   q_resource_list_ = take_value_list<ocs::tom::CE>(bundle.find_first<SPP_name>(Q_RESOURCE_LIST));
    DPRINTF("q_resource_list_: " sge_u32 " elements\n", static_cast<uint32_t>(q_resource_list_->size()));
 
    // -u
-   queue_ref_list_ = take_value_list<ocs::tom::QR>(ocs::tom::find_first_rw<SPP_name>(bundle, QUEUE_REF_LIST));
+   queue_ref_list_ = take_value_list<ocs::tom::QR>(bundle.find_first<SPP_name>(QUEUE_REF_LIST));
    DPRINTF("queue_ref_list_: " sge_u32 " elements\n", static_cast<uint32_t>(queue_ref_list_->size()));
 
    // -pe
-   pe_ref_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, PE_REF_LIST));
+   pe_ref_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(PE_REF_LIST));
    DPRINTF("pe_ref_list_: " sge_u32 " elements\n", static_cast<uint32_t>(pe_ref_list_->size()));
 
    // -u
-   user_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, USER_LIST));
+   user_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(USER_LIST));
    DPRINTF("user_list_: " sge_u32 " elements\n", static_cast<uint32_t>(user_list_->size()));
 
    // -U
-   queue_user_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, QUEUE_USER_LIST));
+   queue_user_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(QUEUE_USER_LIST));
    DPRINTF("queue_user_list_: " sge_u32 " elements\n", static_cast<uint32_t>(queue_user_list_->size()));
 
    // -j
-   jid_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, JID_LIST));
+   jid_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(JID_LIST));
    DPRINTF("jid_list_: " sge_u32 " elements\n", static_cast<uint32_t>(jid_list_->size()));
 
    DRETURN_VOID;

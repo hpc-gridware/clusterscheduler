@@ -37,7 +37,7 @@
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QQuotaParameter::QQuotaParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+ocs::QQuotaParameter::QQuotaParameter(const ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
@@ -54,30 +54,30 @@ ocs::QQuotaParameter::QQuotaParameter(const ocs::tom::ConstList<ocs::tom::SPP> b
  * @param bundle the marshalled parameters; the switch lists are moved out of it
  * @return none
  */
-void ocs::QQuotaParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+void ocs::QQuotaParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // procedure name, output format, ...
    ProcedureParameter::set_bundle(bundle);
 
    // -q
-   queue_name_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, QUEUE_NAME_LIST));
+   queue_name_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(QUEUE_NAME_LIST));
 
    // -h
-   host_name_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, HOSTNAME_LIST));
+   host_name_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(HOSTNAME_LIST));
 
    // -pe
-   pe_name_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, PE_NAME_LIST));
+   pe_name_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(PE_NAME_LIST));
 
    // -P
-   project_name_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, PROJECT_NAME_LIST));
+   project_name_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(PROJECT_NAME_LIST));
 
    // -l
    resource_match_list_ =
-           take_value_list<ocs::tom::CE>(ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_MATCH_LIST));
+           take_value_list<ocs::tom::CE>(bundle.find_first<SPP_name>(RESOURCE_MATCH_LIST));
 
    // -u
-   user_name_list = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, USER_NAME_LIST));
+   user_name_list = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(USER_NAME_LIST));
 
    DRETURN_VOID;
 }

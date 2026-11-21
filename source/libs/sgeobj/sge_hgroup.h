@@ -224,9 +224,6 @@ bool hgroup_find_referencees(ocs::tom::ConstElement<ocs::tom::HGRP> this_elem,
 
 /* --- */
 
-ocs::tom::Element<ocs::tom::HGRP> hgroup_list_locate(ocs::tom::ConstList<ocs::tom::HGRP> this_list,
-                                                     const char *group);
-
 bool hgroup_list_exists(ocs::tom::ConstList<ocs::tom::HGRP> this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         ocs::tom::ConstList<ocs::tom::HR> href_list);
 

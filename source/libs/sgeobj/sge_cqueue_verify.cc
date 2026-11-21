@@ -475,7 +475,7 @@ bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> c
             /*
              * Check if cqueue exists
              */
-            const auto lcqueue = cqueue_list_locate(master_cqueue_list, so_name);
+            const auto lcqueue = master_cqueue_list.find_first<CQ_name>(so_name);
             if (lcqueue) {
                /*
                 * Success

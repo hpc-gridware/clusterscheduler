@@ -97,17 +97,33 @@
  *
  * @return the PET element, an empty handle if there is none
  */
-ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
-                                                        const char *pe_task_id) {
+ocs::tom::ConstElement<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                                             const char *pe_task_id) {
    if (ja_task) {
       const auto pe_tasks = ja_task.get<JAT_task_list>();
 
       if (pe_tasks) {
-         return ocs::tom::find_first_rw<PET_id>(pe_tasks, pe_task_id);
+         return pe_tasks.find_first<PET_id>(pe_task_id);
       }
    }
 
    return nullptr;
+}
+
+/**
+ * @brief Find a certain PE Task of a writable array task
+ *
+ * As the read-only form.
+ *
+ * @param ja_task JAT element, may be an empty handle
+ * @param pe_task_id PE task id string (e.g. "1.speedy")
+ *
+ * @return the PET element, writable as the array task is, an empty handle if there is none
+ */
+ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::Element<ocs::tom::JAT> ja_task,
+                                                        const char *pe_task_id) {
+   const auto ret = ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), pe_task_id);
+   return ocs::tom::Element<ocs::tom::PET>::from_typed(const_cast<lListElem *>(ret.raw()));
 }
 
 /**
@@ -582,7 +598,7 @@ bool ja_task_is_tightly_integrated(const ocs::tom::ConstElement<ocs::tom::JAT> j
    if (ja_task) {
       const char *pe_name = ja_task.get<JAT_granted_pe>();
       if (pe_name != nullptr) {
-         const auto pe = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_locate(master_pe_list, pe_name));
+         const auto pe = master_pe_list.find_first<PE_name>(pe_name);
          if (pe) {
             if (pe.get<PE_control_slaves>()) {
                ret = true;
@@ -633,11 +649,8 @@ int ja_task_debit_host_rsmaps(const ocs::tom::ConstList<ocs::tom::GRU> granted_r
                               const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = host.get<EH_name>();
-   const void *iterator = nullptr;
 
-   for (auto granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
-        granted_resource;
-        granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
+   for (auto granted_resource : granted_resources_list.find_all<GRU_host>(ocs::tom::Host(host_name))) {
 
       // only debit RSMAPs here
       if (static_cast<ocs::GrantedResources::Type>(granted_resource.get<GRU_type>()) !=
@@ -694,10 +707,7 @@ int ja_task_debit_host_bindings(const ocs::tom::ConstList<ocs::tom::GRU> granted
                                 const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
    const char *host_name = host.get<EH_name>();
-   const void *iterator = nullptr;
-   for (auto granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
-        granted_resource;
-        granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
+   for (auto granted_resource : granted_resources_list.find_all<GRU_host>(ocs::tom::Host(host_name))) {
 
       // only debit binding information here
       if (static_cast<ocs::GrantedResources::Type>(granted_resource.get<GRU_type>()) !=

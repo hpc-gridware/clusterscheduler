@@ -222,10 +222,10 @@ namespace ocs {
    protected:
 
       /** @brief Populate this object from a received parameter bundle
-       * @param bundle the received bundle
+       * @param bundle the received bundle; value lists the object keeps are moved out of it
        * @return none
        */
-      virtual void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle);
+      virtual void set_bundle(ocs::tom::List<ocs::tom::SPP> bundle);
 
       /** @brief The text of a bundle value, with the wire format's empty string rule applied
        *

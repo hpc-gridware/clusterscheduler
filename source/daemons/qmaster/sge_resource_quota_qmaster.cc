@@ -308,7 +308,7 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstEle
    }
 
    /* search for rqs with this name and remove it from the list */
-   const auto found = rqs_list_locate(rqs_list, rqs_name);
+   const auto found = rqs_list.find_first<RQS_name>(rqs_name);
    if (!found) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_RQS, rqs_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -374,7 +374,7 @@ rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs,
             const char *pe_name = ja_task.get<JAT_granted_pe>();
             ocs::tom::ConstElement<ocs::tom::PE> pe;
             if (pe_name != nullptr) {
-               pe = pe_list_locate(master_pe_list, pe_name);
+               pe = master_pe_list.find_first<PE_name>(pe_name);
             }
 
             const char *last_hostname = nullptr;

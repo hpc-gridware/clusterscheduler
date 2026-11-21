@@ -764,7 +764,7 @@ namespace {
 
       // Create parameter object containing the parsed switch information from the client
       // the request data is structure-checked in qmaster's listener (CS-3125): a procedure carries SPP
-      Parameter parameter(ocs::tom::ConstList<ocs::tom::SPP>(task->data_list), packet);
+      Parameter parameter(ocs::tom::List<ocs::tom::SPP>(task->data_list), packet);
       task->reset_data_list();
 
       if constexpr (std::is_same_v<Parameter, ocs::QConfParameter>) {

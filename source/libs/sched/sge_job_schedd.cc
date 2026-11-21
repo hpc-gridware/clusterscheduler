@@ -405,14 +405,12 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
             next_user = nullptr;
          }
          if (jobs_for_user >= max_jobs_per_user) {
-            const void *user_iterator = nullptr;
-            ocs::tom::Element<ocs::tom::JB> user_job;
-
             DPRINTF("USER %s reached limit of %d jobs\n", jc_user_name, max_jobs_per_user);
-            // the next match is looked up before the current job leaves the list
-            auto next_user_job = ocs::tom::find_first_rw<JB_owner>(pending_list, jc_user_name, &user_iterator);
-            while ((user_job = next_user_job)) {
-               next_user_job = ocs::tom::find_next_rw<JB_owner>(pending_list, jc_user_name, &user_iterator);
+            const auto user_jobs = pending_list.find_all<JB_owner>(jc_user_name);
+            for (auto next_user_job = user_jobs.begin(); next_user_job != user_jobs.end();) {
+               const auto user_job = *next_user_job;
+               // the next match is looked up before the current job leaves the list
+               ++next_user_job;
                schedd_mes_add(nullptr, monitor_next_run,
                               user_job.get<JB_job_number>(),
                               SCHEDD_INFO_USRGRPLIMIT_);
@@ -997,12 +995,8 @@ int nslots_granted(const ocs::tom::ConstList<ocs::tom::JG> granted, const char *
          nslots += gdil_ep.get<JG_slots>();
       }
    } else {
-      const void *iterator = nullptr;
-
-      auto gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
-      while (gdil_ep != nullptr) {
+      for (const auto gdil_ep : granted.find_all<JG_qhostname>(ocs::tom::Host(qhostname))) {
          nslots += gdil_ep.get<JG_slots>();
-         gdil_ep = ocs::tom::find_next<JG_qhostname>(granted , qhostname, &iterator);
       }
    }
 
@@ -1061,7 +1055,8 @@ int active_subtasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *
  * @return the number of granted slots that are still in use
  */
 int
-active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::ConstList<ocs::tom::JG> granted, const char *qhostname) {
+active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom::ConstList<ocs::tom::JG> granted,
+                      const char *qhostname) {
    int nslots = 0;
 
    if (qhostname == nullptr) {
@@ -1073,17 +1068,13 @@ active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs:
          }
       }
    } else {
-      const void *iterator = nullptr;
-
       /* only for qhostname */
-      auto gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
-      while (gdil_ep != nullptr) {
+      for (const auto gdil_ep : granted.find_all<JG_qhostname>(ocs::tom::Host(qhostname))) {
          for (const auto jatask : job.get<JB_ja_tasks>()) {
             const auto task_list = jatask.get<JAT_task_list>();
             if (task_list == nullptr || active_subtasks(job, gdil_ep.get<JG_qname>()))
                nslots += gdil_ep.get<JG_slots>();
          }
-         gdil_ep = ocs::tom::find_next<JG_qhostname>(granted, qhostname, &iterator);
       }
    }
 

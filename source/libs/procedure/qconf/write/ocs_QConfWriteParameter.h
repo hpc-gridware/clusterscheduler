@@ -144,7 +144,7 @@ namespace ocs {
        * @param bundle the request bundle received over GDI
        * @param packet the client request
        */
-      explicit QConfWriteParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+      explicit QConfWriteParameter(const ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet)
          : ProcedureParameter("", packet) {
          QConfWriteParameter::set_bundle(bundle);
       }
@@ -235,6 +235,6 @@ namespace ocs {
 
       ocs::tom::ListPtr<ocs::tom::SPP> get_bundle() override;
 
-      void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
+      void set_bundle(ocs::tom::List<ocs::tom::SPP> bundle) override;
    };
 }

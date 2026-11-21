@@ -613,14 +613,13 @@ bool jsv_list_remove(const char *name, const char *context) {
    bool ret = true;
 
    if (name != nullptr && context != nullptr) {
-      const void *iterator = nullptr;
-
       sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
       const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
-      auto jsv_next = ocs::tom::find_first_rw<JSV_context>(list, context, &iterator);
-      while (jsv_next) {
-         const auto jsv = jsv_next;
-         jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
+      const auto jsvs = list.find_all<JSV_context>(context);
+      for (auto jsv_next = jsvs.begin(); jsv_next != jsvs.end();) {
+         const auto jsv = *jsv_next;
+         // the next element is looked up before the current one is erased
+         ++jsv_next;
 
          if ((strcmp(jsv.get<JSV_name>(), name) == 0) &&
              (strcmp(jsv.get<JSV_context>(), context) == 0)) {
@@ -730,7 +729,6 @@ bool jsv_list_update(const char *name, const char *context,
        * is changed to none then stop the process and remove data structures.
        */
       {
-         const void *iterator = nullptr;
          bool not_parsed = true;
          bool use_old_url = (jsv_url == nullptr) ? true : false;
 
@@ -738,9 +736,9 @@ bool jsv_list_update(const char *name, const char *context,
 
          ret = true;
          const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
-         auto jsv_next = ocs::tom::find_first_rw<JSV_context>(list, context, &iterator);
-         while (ret && jsv_next) {
-            const auto jsv = jsv_next;
+         const auto jsvs = list.find_all<JSV_context>(context);
+         for (auto jsv_next = jsvs.begin(); ret && jsv_next != jsvs.end();) {
+            const auto jsv = *jsv_next;
             dstring input = DSTRING_INIT;
             dstring type = DSTRING_INIT;
             dstring user = DSTRING_INIT;
@@ -749,7 +747,7 @@ bool jsv_list_update(const char *name, const char *context,
             bool in_client = false;
 
             /* position pointer to the next element */
-            jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
+            ++jsv_next;
 
             old_jsv_url = jsv.get<JSV_url>();
             if (use_old_url) {
@@ -872,7 +870,6 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const void *iterator = nullptr;
 
    if (context != nullptr) {
       const char *jsv_url = nullptr;
@@ -907,10 +904,11 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
        * execute JSV scripts for this thread
        */
       const ocs::tom::List<ocs::tom::JSV> list(jsv_list);
-      auto jsv_next = ocs::tom::find_first_rw<JSV_context>(list, context, &iterator);
-      while (ret && jsv_next) {
-         const auto jsv = jsv_next;
-         jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
+      const auto jsvs = list.find_all<JSV_context>(context);
+      for (auto jsv_next = jsvs.begin(); ret && jsv_next != jsvs.end();) {
+         const auto jsv = *jsv_next;
+         // the next element is looked up before the lock is released in the body
+         ++jsv_next;
 
          if (!jsv_is_started(jsv)) {
             DPRINTF("JSV is not started\n");

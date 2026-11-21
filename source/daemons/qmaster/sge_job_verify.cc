@@ -852,7 +852,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
       /* request for non-existing ckpt object will be refused */
       if ((ckpt_name != nullptr)) {
-         const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
+         const auto ckpt_ep = master_ckpt_list.find_first<CK_name>(ckpt_name);
          if (!ckpt_ep) {
             ckpt_err = 1;
          } else if (!ckpt_attr) {
@@ -933,7 +933,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
       /* ensure user exists if enforce_user flag is set */
       if (enforce_user && !strcasecmp(enforce_user, "true") &&
-          !user_list_locate(master_user_list, packet->user)) {
+          !master_user_list.find_first<UU_name>(packet->user)) {
          ERROR(MSG_JOB_USRUNKNOWN_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          sge_free(&enforce_user);
@@ -944,7 +944,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* set default project */
    if (!jep.get<JB_project>() && master_user_list) {
-      if (const auto uep = user_list_locate(master_user_list, packet->user)) {
+      if (const auto uep = master_user_list.find_first<UU_name>(packet->user)) {
          jep.set<JB_project>(uep.get<UU_default_project>());
       }
    }
@@ -989,7 +989,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
          DPRINTF("job -ar " sge_u32"\n", ar_id);
 
-         const auto ar = ar_list_locate(master_ar_list, ar_id);
+         const auto ar = master_ar_list.find_first<AR_id>(ar_id);
          if (!ar) {
             ERROR(MSG_JOB_NOAREXISTS_U, ar_id);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

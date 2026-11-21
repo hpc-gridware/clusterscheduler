@@ -118,24 +118,6 @@ bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::to
    DRETURN(ret);
 }
 
-
-/**
- * @brief Find a ckpt object in a list
- *
- * This function will return a ckpt object by name if it exists.
- *
- * @param ckpt_list CK list
- * @param ckpt_name name of the ckpt object.
- *
- * @return the ckpt object (CK) named "ckpt_name", or an empty handle if it does not exist
- */
-ocs::tom::Element<ocs::tom::CK> ckpt_list_locate(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
-                                                 const char *ckpt_name) {
-   DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::find_first_rw<CK_name>(ckpt_list, ckpt_name));
-}
-
-
 /**
  * @brief Make "when" bitmask from string
  *
@@ -300,7 +282,7 @@ bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
    for (const auto ckpt_ref_elem : ckpt_ref_list) {
       const char *ckpt_ref_string = ckpt_ref_elem.get<ST_name>();
 
-      if (!ckpt_list_locate(ckpt_list, ckpt_ref_string)) {
+      if (!ckpt_list.find_first<CK_name>(ckpt_ref_string)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CKPTREFDOESNOTEXIST_S, ckpt_ref_string);

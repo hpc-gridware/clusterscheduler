@@ -72,16 +72,16 @@ namespace ocs {
       zero_node_fields(lListElem *node, void *ptr);
 
       static double
-      calc_node_usage(ocs::tom::Element<ocs::tom::STN> node, ocs::tom::ConstList<ocs::tom::UU> user_list,
-                      ocs::tom::ConstList<ocs::tom::PR> project_list, ocs::tom::ConstList<ocs::tom::UA> decay_list,
+      calc_node_usage(ocs::tom::Element<ocs::tom::STN> node, ocs::tom::List<ocs::tom::UU> user_list,
+                      ocs::tom::List<ocs::tom::PR> project_list, ocs::tom::ConstList<ocs::tom::UA> decay_list,
                       uint64_t now, const char *project_name, u_long seqno);
 
       static void
       calc_node_proportion(ocs::tom::Element<ocs::tom::STN> node, double total_usage);
 
       static void
-      calc_proportions(ocs::tom::List<ocs::tom::STN> share_tree, ocs::tom::ConstList<ocs::tom::UU> user_list,
-                       ocs::tom::ConstList<ocs::tom::PR> project_list, ocs::tom::ConstList<ocs::tom::UA> decay_list,
+      calc_proportions(ocs::tom::List<ocs::tom::STN> share_tree, ocs::tom::List<ocs::tom::UU> user_list,
+                       ocs::tom::List<ocs::tom::PR> project_list, ocs::tom::ConstList<ocs::tom::UA> decay_list,
                        uint64_t now);
 
       static void

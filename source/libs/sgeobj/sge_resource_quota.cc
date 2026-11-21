@@ -544,29 +544,6 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
    DRETURN(ret);
 }
 
-
-/**
- * @brief Locate a specific resource quota set by name
- *
- * This function searches the rule set list for a specific resource quota
- * set. The search criteria is the name of the resource quota set.
- *
- * @param lp rule set list to be searched in (RQS), may be an empty handle
- * @param name rule set name of interest
- *
- * @return if found the reference to the resource quota set, else an empty handle
- *
- * @note MT-NOTE: rqs_list_locate() is MT safe
- */
-ocs::tom::Element<ocs::tom::RQS> rqs_list_locate(const ocs::tom::ConstList<ocs::tom::RQS> lp, const char *name) {
-   DENTER(TOP_LAYER);
-
-   const auto ep = ocs::tom::find_first_rw<RQS_name>(lp, name);
-
-   DRETURN(ep);
-}
-
-
 /**
  * @brief Locate a specific rule by name
  *
@@ -1077,7 +1054,7 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                   }
                } else { /* FILTER_HOSTS */
                   if (!ocs::is_pattern(group_name)) {
-                     if (const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name)) {
+                     if (const auto hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(group_name))) {
                         ocs::tom::ListPtr<ocs::tom::HR> host_list;
                         hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
                         if (host_list && host_list->find_first<HR_name>(ocs::tom::Host(query))) {

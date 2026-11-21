@@ -96,12 +96,12 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfActionParameter::get_bundle() {
  * @return none
  */
 void
-ocs::QConfActionParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+ocs::QConfActionParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    ProcedureParameter::set_bundle(bundle);
 
-   const auto args_param = ocs::tom::find_first_rw<SPP_name>(bundle, ACTION_ARGS);
+   const auto args_param = bundle.find_first<SPP_name>(ACTION_ARGS);
    if (args_param != nullptr) {
       args_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(
          args_param.exchange<SPP_value_list>(ocs::tom::ListPtr<ocs::tom::VA>{}).release());

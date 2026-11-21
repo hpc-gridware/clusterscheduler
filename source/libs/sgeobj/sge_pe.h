@@ -59,9 +59,6 @@ pe_is_matching(ocs::tom::ConstElement<ocs::tom::PE> pe, const char *wildcard);
 ocs::tom::ConstElement<ocs::tom::PE>
 pe_list_find_matching(ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *wildcard);
 
-ocs::tom::Element<ocs::tom::PE>
-pe_list_locate(ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *pe_name);
-
 bool
 pe_is_referenced(ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                  ocs::tom::ConstList<ocs::tom::JB> master_job_list,

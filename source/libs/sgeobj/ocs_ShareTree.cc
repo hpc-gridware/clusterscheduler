@@ -164,8 +164,8 @@ ocs_sharetree_node_add_usage(const ocs::tom::Element<ocs::tom::STN> node,
  * usage values.
  *
  * @param node The node to calculate usage for, not empty.
- * @param user_list The list of users (UU), may be an empty handle.
- * @param project_list The list of projects (PR), may be an empty handle.
+ * @param user_list The list of users (UU), may be an empty handle; with @p now their usage is decayed.
+ * @param project_list The list of projects (PR), may be an empty handle; with @p now their usage is decayed.
  * @param decay_list The list of decay factors (UA), may be an empty handle.
  * @param now The current time.
  * @param project_name The name of the project to filter by (optional).
@@ -174,8 +174,8 @@ ocs_sharetree_node_add_usage(const ocs::tom::Element<ocs::tom::STN> node,
  */
 double
 ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
-                                const ocs::tom::ConstList<ocs::tom::UU> user_list,
-                                const ocs::tom::ConstList<ocs::tom::PR> project_list,
+                                const ocs::tom::List<ocs::tom::UU> user_list,
+                                const ocs::tom::List<ocs::tom::PR> project_list,
                                 const ocs::tom::ConstList<ocs::tom::UA> decay_list, const uint64_t now,
                                 const char *project_name, const u_long seqno) {
    DENTER(TOP_LAYER);
@@ -190,23 +190,23 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
    if (!children) {
       if (project_name) {
          // Get usage from project usage sub-list in user object
-         if ((user = user_list_locate(user_list, node_name))) {
+         if ((user = user_list.find_first<UU_name>(node_name))) {
             if (const auto upp = user.get<UU_project>().find_first<UPP_name>(project_name); upp) {
                usage_list = upp.get<UPP_usage>();
             }
          }
       } else {
          // Get usage directly from corresponding user or project object
-         if ((user = user_list_locate(user_list, node_name))) {
+         if ((user = user_list.find_first<UU_name>(node_name))) {
             usage_list = user.get<UU_usage>();
-         } else if ((project = prj_list_locate(project_list, node_name))) {
+         } else if ((project = project_list.find_first<PR_name>(node_name))) {
             usage_list = project.get<PR_usage>();
          }
       }
    } else {
       // If this is a project node, then return the project usage rather than the children's usage
       if (!project_name) {
-         if ((project = prj_list_locate(project_list, node_name))) {
+         if ((project = project_list.find_first<PR_name>(node_name))) {
             is_project = true;
             usage_list = project.get<PR_usage>();
             project_name = project.get<PR_name>();
@@ -326,15 +326,15 @@ ocs::ShareTree::calc_node_proportion(const ocs::tom::Element<ocs::tom::STN> node
  * proportions (STN_actual_proportion) for each node in the share tree.
  *
  * @param share_tree The share tree to calculate proportions for (STN), may be an empty handle.
- * @param user_list The list of users to consider (UU).
- * @param project_list The list of projects to consider (PR).
+ * @param user_list The list of users to consider (UU); with @p curr_time their usage is decayed.
+ * @param project_list The list of projects to consider (PR); with @p curr_time their usage is decayed.
  * @param decay_list The list of decay values to apply (UA), may be an empty handle.
  * @param curr_time The current time for decay calculations.
  */
 void
 ocs::ShareTree::calc_proportions(const ocs::tom::List<ocs::tom::STN> share_tree,
-                                 const ocs::tom::ConstList<ocs::tom::UU> user_list,
-                                 const ocs::tom::ConstList<ocs::tom::PR> project_list,
+                                 const ocs::tom::List<ocs::tom::UU> user_list,
+                                 const ocs::tom::List<ocs::tom::PR> project_list,
                                  const ocs::tom::ConstList<ocs::tom::UA> decay_list, const uint64_t curr_time) {
    DENTER(TOP_LAYER);
 
@@ -370,7 +370,7 @@ ocs::ShareTree::set_node_project_flag(const ocs::tom::Element<ocs::tom::STN> nod
       DRETURN_VOID;
    }
 
-   if (prj_list_locate(project_list, node.get<STN_name>())) {
+   if (project_list.find_first<PR_name>(node.get<STN_name>())) {
       node.set<STN_project>(1);
    } else {
       node.set<STN_project>(0);

@@ -183,7 +183,7 @@ ocs_attr_list_ops<A>::find(const ocs::tom::ConstList<A> this_list, ocs::tom::Lis
 
                href_list_add(tmp_href_list, nullptr, href_name);
                href_list_find_all_references(tmp_href_list, nullptr, master_hgroup_list, &host_list, nullptr);
-               if (href_list_locate(host_list, hostname) != nullptr) {
+               if (href_list_locate(*host_list, hostname) != nullptr) {
                   if (!already_found) {
                      already_found = true;
                      ret = {entry, true};

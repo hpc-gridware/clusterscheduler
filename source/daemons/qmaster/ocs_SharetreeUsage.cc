@@ -71,8 +71,8 @@ namespace {
     */
    void spool_one_user(const std::string &name, uint64_t gdi_session) {
       DENTER(TOP_LAYER);
-      const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
-      const auto u = user_list_locate(master_user_list, name.c_str());
+      const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>();
+      const auto u = master_user_list.find_first<UU_name>(name.c_str());
       if (!u) {
          DRETURN_VOID;
       }
@@ -93,8 +93,8 @@ namespace {
     */
    void spool_one_project(const std::string &name, uint64_t gdi_session) {
       DENTER(TOP_LAYER);
-      const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
-      const auto p = prj_list_locate(master_project_list, name.c_str());
+      const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>();
+      const auto p = master_project_list.find_first<PR_name>(name.c_str());
       if (!p) {
          DRETURN_VOID;
       }
@@ -116,8 +116,8 @@ namespace {
     */
    void emit_one_user_event(const std::string &name, uint64_t gdi_session) {
       DENTER(TOP_LAYER);
-      const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
-      const auto u = user_list_locate(master_user_list, name.c_str());
+      const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>();
+      const auto u = master_user_list.find_first<UU_name>(name.c_str());
       if (!u) {
          DRETURN_VOID;
       }
@@ -135,8 +135,8 @@ namespace {
     */
    void emit_one_project_event(const std::string &name, uint64_t gdi_session) {
       DENTER(TOP_LAYER);
-      const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
-      const auto p = prj_list_locate(master_project_list, name.c_str());
+      const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>();
+      const auto p = master_project_list.find_first<PR_name>(name.c_str());
       if (!p) {
          DRETURN_VOID;
       }

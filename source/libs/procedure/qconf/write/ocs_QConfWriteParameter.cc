@@ -107,12 +107,12 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfWriteParameter::get_bundle() {
  * @return none
  */
 void
-ocs::QConfWriteParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+ocs::QConfWriteParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    ProcedureParameter::set_bundle(bundle);
 
-   const auto set_param = ocs::tom::find_first_rw<SPP_name>(bundle, OBJECT_SET);
+   const auto set_param = bundle.find_first<SPP_name>(OBJECT_SET);
    if (set_param != nullptr) {
       // taken over unchecked, as the other value lists of the bundle are read (no new throw in qmaster)
       items_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(

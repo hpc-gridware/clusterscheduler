@@ -3133,7 +3133,6 @@ o   -V                                     export all environment variables
 +   -@ file                                read commandline input from file
    */
    ocs::tom::Element<ocs::tom::SPA> element;
-   const void *i = nullptr;
 
    /* skip arguments that aren't supported */
    while ((element = args.find_first<SPA_switch_val>("-help"))) {
@@ -3150,13 +3149,9 @@ o   -V                                     export all environment variables
       args.erase(element);
    }
 
-   while ((element = ocs::tom::find_next_rw<SPA_switch_val>(args, "-w", &i))) {
-      int argval = element.get<SPA_argval_lIntT>();
-
-      if ((argval == JUST_VERIFY) || (argval == POKE_VERIFY) || (argval == WARNING_VERIFY)) {
-         args.erase(element);
-      }
-   }
+   // @todo "-w w|v" is listed above as removed, but it never was: the former loop here asked for the next "-w"
+   //       with an iterator no lookup had started, which finds nothing, so it never ran (as lGetElemStrNextRW()
+   //       before it); it is left out instead of starting to remove the switch now
 
    if (sge_getenv(ENABLE_CWD_ENV) == nullptr) {
       while ((element = args.find_first<SPA_switch_val>("-cwd"))) {

@@ -591,26 +591,40 @@ bool centry_print_resource_to_dstring(const ocs::tom::ConstElement<ocs::tom::CE>
  * @brief Find Centry element
  *
  * Find the CEntry element with "name" in "this_list", by its name first and then by its shortcut.
- * The list is only searched; the element is handed out writable, as before.
  *
  * @param this_list CE list, may be an empty handle
  * @param name name or shortcut of a CE entry, may be nullptr
  *
  * @return CE element, or an empty handle
  */
-ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs::tom::CE> this_list,
-                                                   const char *name) {
+ocs::tom::ConstElement<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstList<ocs::tom::CE> this_list,
+                                                        const char *name) {
    DENTER(CENTRY_LAYER);
 
-   ocs::tom::Element<ocs::tom::CE> ret = nullptr;
+   ocs::tom::ConstElement<ocs::tom::CE> ret = nullptr;
 
    if (this_list && name != nullptr) {
-      ret = ocs::tom::find_first_rw<CE_name>(this_list, name);
+      ret = this_list.find_first<CE_name>(name);
       if (!ret) {
-         ret = ocs::tom::find_first_rw<CE_shortcut>(this_list, name);
+         ret = this_list.find_first<CE_shortcut>(name);
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief Find Centry element in a writable list
+ *
+ * As the read-only form: by its name first and then by its shortcut.
+ *
+ * @param this_list CE list, may be an empty handle
+ * @param name name or shortcut of a CE entry, may be nullptr
+ *
+ * @return CE element, writable as the list is, or an empty handle
+ */
+ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::List<ocs::tom::CE> this_list, const char *name) {
+   const auto ret = centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(this_list), name);
+   return ocs::tom::Element<ocs::tom::CE>::from_typed(const_cast<lListElem *>(ret.raw()));
 }
 
 

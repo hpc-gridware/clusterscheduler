@@ -85,7 +85,7 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
 
    const char *name = event.get<ET_strkey>();
    // a cluster queue of the master list (CQ)
-   const auto cqueue = cqueue_list_locate(ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
+   const auto cqueue = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>().find_first<CQ_name>(name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && cqueue) {
       /*
@@ -102,7 +102,7 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
    }
 
    // the element the event brought in, or the old one if the merge failed
-   const auto new_cqueue = cqueue_list_locate(ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
+   const auto new_cqueue = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>().find_first<CQ_name>(name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && new_cqueue) {
       /*
@@ -143,8 +143,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
    const char *hostname = event.get<ET_strkey2>();
 
    // a cluster queue of the master list (CQ)
-   const auto cqueue = cqueue_list_locate(
-           ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
+   const auto cqueue = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>().find_first<CQ_name>(name);
 
    if (cqueue) {
       dstring key_buffer = DSTRING_INIT;

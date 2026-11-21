@@ -101,9 +101,6 @@ typedef enum {
 
 } ar_state_event_t;
 
-ocs::tom::Element<ocs::tom::AR>
-ar_list_locate(ocs::tom::ConstList<ocs::tom::AR> ar_list, uint32_t ar_id);
-
 bool
 ar_validate(ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool in_master, bool is_spool,
             ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,

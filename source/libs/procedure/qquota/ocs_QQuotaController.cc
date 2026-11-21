@@ -245,8 +245,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                               const char *limit_name = limit.get<RQRL_name>();
                               const auto rue_list = limit.get<RQRL_usage>();
                               // the centry is changed below: CE_pj_doubleval carries each value to render
-                              const auto raw_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(
-                                 centry_list_locate(model.get_centry_list(), limit_name));
+                              const auto raw_centry = centry_list_locate(model.get_centry_list(), limit_name);
 
                               if (raw_centry == nullptr) {
                                  /* undefined centries can be ignored */
@@ -330,7 +329,8 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                     cp = qquota_get_next_filter(host, cp);
                                     if (is_hgroup_name(qquota_filter.host)) {
                                        const auto hgroup_list = model.get_hgroup_list();
-                                       if (const auto hgroup = hgroup_list_locate(hgroup_list, qquota_filter.host);
+                                       const ocs::tom::Host host_key(qquota_filter.host);
+                                       if (const auto hgroup = hgroup_list.find_first<HGRP_name>(host_key);
                                            hgroup != nullptr) {
                                           ocs::tom::ListPtr<ocs::tom::HR> host_list;
                                           hgroup_find_all_references(hgroup, nullptr, hgroup_list, &host_list,

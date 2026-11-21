@@ -253,7 +253,7 @@ namespace ocs {
       static int select_by_resource_list(ocs::tom::List<ocs::tom::CE> resource_list,
                                          ocs::tom::List<ocs::tom::EH> exechost_list,
                                          ocs::tom::List<ocs::tom::CQ> queue_list,
-                                         ocs::tom::ConstList<ocs::tom::CE> centry_list, uint32_t empty_qs);
+                                         ocs::tom::List<ocs::tom::CE> centry_list, uint32_t empty_qs);
 
       static int select_by_qref_list(ocs::tom::List<ocs::tom::CQ> cqueue_list,
                                      ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list,

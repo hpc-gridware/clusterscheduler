@@ -505,7 +505,6 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
    ocs::tom::ListPtr<ocs::tom::LR> lp;
    int nprocs = 1;
    double load;
-   const void *iterator = nullptr;
 
    /* 
       adding load values to the load report 
@@ -533,8 +532,7 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
 
    /* make derived load values */
    /* retrieve num procs first - we need it for all other derived load values */
-   ocs::tom::ConstElement<ocs::tom::LR> ep = ocs::tom::find_first<LR_name>(*lp, LOAD_ATTR_NUM_PROC, &iterator);
-   while (ep != nullptr) {
+   for (const auto ep : lp->find_all<LR_name>(LOAD_ATTR_NUM_PROC)) {
       const char *value = ep.get<LR_value>();
 
       if (sge_hostcmp(ep.get<LR_host>(), qualified_hostname) == 0) {
@@ -542,13 +540,12 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
             nprocs = std::max(1, atoi(value));
          }
          break;
-      }   
-      ep = ocs::tom::find_next<LR_name>(*lp, LOAD_ATTR_NUM_PROC, &iterator);
+      }
    }
 
    /* now make the derived load values */
-   ocs::tom::ConstElement<ocs::tom::LR> ep_lr = ocs::tom::find_first<LR_host>(*lp, qualified_hostname, &iterator);
-   while (ep_lr != nullptr) {
+   // the derived values are appended to the list while it is walked, as before
+   for (const auto ep_lr : lp->find_all<LR_host>(ocs::tom::Host(qualified_hostname))) {
       const char *name = ep_lr.get<LR_name>();
       const char *value = ep_lr.get<LR_value>();
 
@@ -576,8 +573,6 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
                                           qualified_hostname, nullptr);
          }
       }
-
-      ep_lr = ocs::tom::find_next<LR_host>(*lp, qualified_hostname, &iterator);
    }
 
    /* qmaster expects a list sorted by host */

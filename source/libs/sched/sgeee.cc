@@ -814,7 +814,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     * locate user object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->user = ocs::tom::Element<ocs::tom::UU>(user_list_locate(*lists->user_list, job.get<JB_owner>()));
+   ref->user = ocs::tom::Element<ocs::tom::UU>(lists->user_list->find_first<UU_name>(job.get<JB_owner>()));
    if (ref->user) {
       ref->user.set<UU_job_cnt>(0);
       ref->user.set<UU_pending_job_cnt>(0);
@@ -824,8 +824,7 @@ sge_set_job_refs(const ocs::tom::Element<ocs::tom::JB> job,
     * locate project object and save off reference
     *-------------------------------------------------------------*/
 
-   ref->project = ocs::tom::Element<ocs::tom::PR>(prj_list_locate(*lists->project_list,
-                                                                   job.get<JB_project>()));
+   ref->project = ocs::tom::Element<ocs::tom::PR>(lists->project_list->find_first<PR_name>(job.get<JB_project>()));
    if (ref->project) {
       ref->project.set<PR_job_cnt>(0);
       ref->project.set<PR_pending_job_cnt>(0);
@@ -1889,7 +1888,7 @@ calc_job_tickets(sge_ref_t *ref) {
    /* for PE slave-controlled jobs, set tickets for each granted queue */
 
    if (ja_task && (pe_str=ja_task.get<JAT_granted_pe>())
-         && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(*all_lists->pe_list, pe_str)))
+         && (pe = all_lists->pe_list->find_first<PE_name>(pe_str))
          && pe.get<PE_control_slaves>()
          && (granted=ja_task.get<JAT_granted_destin_identifier_list>())) {
 
@@ -3301,7 +3300,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
 
          for (ocs::tom::Element<ocs::tom::JAT> ja_task : job.get<JB_ja_tasks>()) {
             if ((pe_str=ja_task.get<JAT_granted_pe>())
-                  && (pe = ocs::tom::ConstElement<ocs::tom::PE>(pe_list_locate(*all_lists->pe_list, pe_str)))
+                  && (pe = all_lists->pe_list->find_first<PE_name>(pe_str))
                   && pe.get<PE_control_slaves>()) {
 
                granted=ja_task.get<JAT_granted_destin_identifier_list>();

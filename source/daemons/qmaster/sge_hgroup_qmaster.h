@@ -56,12 +56,12 @@ hgroup_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element
  * hgroup_success() and by the @exec_hosts sync in sge_host_qmaster.cc (CS-2438
  * chunk 7), which changes a host group without going through the GDI path. */
 void
-hgroup_refresh_caches(ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+hgroup_refresh_caches(ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,
                       ocs::tom::ListPtr<ocs::tom::HR> &referencees);
 
 void
 hgroup_send_referencee_events(ocs::tom::ConstList<ocs::tom::HR> referencees,
-                              ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list, uint64_t gdi_session);
+                              ocs::tom::List<ocs::tom::HGRP> master_hgroup_list, uint64_t gdi_session);
 
 void
 hgroup_refresh_matcher_caches(ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,

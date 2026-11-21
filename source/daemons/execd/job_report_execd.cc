@@ -224,14 +224,13 @@ void cleanup_job_report(const uint32_t jobid, const uint32_t jataskid) {
    DENTER(TOP_LAYER);
 
    const ocs::tom::List<ocs::tom::JR> job_reports(jr_list);
-   const void *iterator = nullptr;
 
    /* get rid of job reports for all slave tasks */
-   // the next report is fetched before the current one is removed
-   auto jr_next = ocs::tom::find_first_rw<JR_job_number>(job_reports, jobid, &iterator);
-   while (jr_next) {
-      const auto jr = jr_next;
-      jr_next = ocs::tom::find_next_rw<JR_job_number>(job_reports, jobid, &iterator);
+   const auto reports_of_job = job_reports.find_all<JR_job_number>(jobid);
+   for (auto jr_next = reports_of_job.begin(); jr_next != reports_of_job.end();) {
+      const auto jr = *jr_next;
+      // the next report is fetched before the current one is removed
+      ++jr_next;
       if (jr.get<JR_ja_task_number>() == jataskid) {
          const char *s = jr.get<JR_pe_task_id_str>();
 

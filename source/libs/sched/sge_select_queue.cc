@@ -1331,7 +1331,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
 bool
 sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::tom::ConstElement<ocs::tom::QU> queue,
                  ocs::tom::ConstElement<ocs::tom::EH> host, const ocs::tom::List<ocs::tom::EH> exechost_list,
-                 const ocs::tom::ConstList<ocs::tom::CE> centry_list, const bool allow_non_requestable,
+                 const ocs::tom::List<ocs::tom::CE> centry_list, const bool allow_non_requestable,
                  const int slots, const ocs::tom::ConstList<ocs::tom::ST> queue_user_list,
                  const ocs::tom::ConstList<ocs::tom::US> acl_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
@@ -1384,7 +1384,7 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
             assignment_release(&a);
             DRETURN(false);
          }
-         if ((!prj_list_locate(projects, project))) {
+         if ((!projects.find_first<PR_name>(project))) {
             DPRINTF("no access because project not contained in queues project list\n");
             assignment_release(&a);
             DRETURN(false);
@@ -1395,7 +1395,7 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
          DPRINTF("testing job xprojects lists\n");
          if ((projects = queue.get<QU_xprojects>())) {
             if (((project = job.get<JB_project>()) &&
-                 prj_list_locate(projects, project))) {
+                 projects.find_first<PR_name>(project))) {
                DPRINTF("no access\n");
                assignment_release(&a);
                DRETURN(false);
@@ -1881,7 +1881,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, const ocs::tom::Ele
                         "queue", qinstance_name);
          DRETURN(DISPATCH_NEVER_CAT);
       }
-      if ((!prj_list_locate(projects, a->project))) {
+      if ((!projects.find_first<PR_name>(a->project))) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_HASINCORRECTPRJ_SSS,
                         a->project, "queue", qinstance_name);
@@ -1892,7 +1892,7 @@ dispatch_t sge_queue_match_static(const sge_assignment_t *a, const ocs::tom::Ele
    /* check if job can run in queue based on excluded projects */
    auto xprojects = queue.get<QU_xprojects>();
    if (xprojects) {
-      if (a->project && prj_list_locate(xprojects, a->project)) {
+      if (a->project && xprojects.find_first<PR_name>(a->project)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_EXCLPRJ_SSS,
                         a->project, "queue", qinstance_name);
@@ -2070,9 +2070,7 @@ job_is_forced_centry_missing(const sge_assignment_t *a, const ocs::tom::ConstEle
    bool ret = false;
 
    if (a->job && a->centry_list && queue_or_host != nullptr) {
-      const void *iterator = nullptr;
-      for (auto centry = ocs::tom::find_first<CE_requestable>(a->centry_list, REQU_FORCED, &iterator); centry;
-           centry = ocs::tom::find_next<CE_requestable>(a->centry_list, REQU_FORCED, &iterator)) {
+      for (const auto centry : a->centry_list.find_all<CE_requestable>(REQU_FORCED)) {
          // check if the forced centry was requested; if so, we can continue with the next centry
          auto name = centry.get<CE_name>();
          bool skip_further_checks = false;
@@ -2261,7 +2259,7 @@ sge_host_match_static(const sge_assignment_t *a, const ocs::tom::ConstElement<oc
          DRETURN(DISPATCH_NEVER_CAT);
       }
 
-      if ((!prj_list_locate(projects, a->project))) {
+      if ((!projects.find_first<PR_name>(a->project))) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_HASINCORRECTPRJ_SSS, a->project, "host", eh_name);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -2271,7 +2269,7 @@ sge_host_match_static(const sge_assignment_t *a, const ocs::tom::ConstElement<oc
    /* check if job can run on host based on excluded projects */
    auto xprojects = host.get<EH_xprj>();
    if (xprojects) {
-      if (a->project && prj_list_locate(xprojects, a->project)) {
+      if (a->project && xprojects.find_first<PR_name>(a->project)) {
          schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
                         SCHEDD_INFO_EXCLPRJ_SSS, a->project, "host", eh_name);
          DRETURN(DISPATCH_NEVER_CAT);
@@ -3190,7 +3188,7 @@ static bool project_cq_rejected(const char *project, const ocs::tom::ConstElemen
    bool rejected = true;
    for (auto alist : cq.get<CQ_xprojects>()) {
       auto projects = alist.get<APRJLIST_value>();
-      if (!projects || !prj_list_locate(projects, project)) {
+      if (!projects || !projects.find_first<PR_name>(project)) {
          rejected = false;
          break;
       }
@@ -3203,7 +3201,7 @@ static bool project_cq_rejected(const char *project, const ocs::tom::ConstElemen
    rejected = true;
    for (auto alist : cq.get<CQ_projects>()) {
       auto projects = alist.get<APRJLIST_value>();
-      if (!projects || prj_list_locate(projects, project)) {
+      if (!projects || projects.find_first<PR_name>(project)) {
          rejected = false;
          break;
       }
@@ -3955,12 +3953,9 @@ parallel_add_queue_to_gdil(sge_assignment_t *a, const char *qname, const char *e
       // if we already have a gdil element for this host,
       // make sure all gdil elements for a host are grouped together
       ocs::tom::Element<ocs::tom::JG> insert_host;
-      const void *iterator = nullptr;
-      auto next_host = ocs::tom::find_first_rw<JG_qhostname>(gdil, eh_name, &iterator);
       // find the last host with the same name
-      while (next_host) {
+      for (const auto next_host : gdil.find_all<JG_qhostname>(ocs::tom::Host(eh_name))) {
          insert_host = next_host;
-         next_host = ocs::tom::find_next_rw<JG_qhostname>(gdil, eh_name, &iterator);
       }
 
       // insert the new host after the last host with the same name
@@ -4160,9 +4155,7 @@ parallel_allocate_queue_slots(sge_assignment_t *a, const char *eh_name, const bo
    DENTER(TOP_LAYER);
 
    int rqs_hslots = 0;
-   const void *iter = nullptr;
-   for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &iter); qep;
-        qep = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &iter)) {
+   for (auto qep : a->queue_list.find_all<QU_qhostname>(ocs::tom::Host(eh_name))) {
       auto qname = qep.get<QU_full_name>();
 
       DPRINTF("%s: tagged: " sge_u32 " accu_host_slots: %d, maxslots: %d, rqs_hslots: %d\n", qname,
@@ -4725,9 +4718,7 @@ static int already_booked_on_host(const ocs::tom::ConstList<ocs::tom::JG> gdil, 
    DENTER(TOP_LAYER);
    int ret = 0;
 
-   const void *iterator = nullptr;
-   for (auto gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host_name, &iterator); gdil_ep;
-        gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host_name, &iterator)) {
+   for (auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(host_name))) {
       ret += gdil_ep.get<JG_slots>();
    }
 
@@ -4743,9 +4734,7 @@ static int already_booked_on_host(const ocs::tom::ConstList<ocs::tom::JG> gdil, 
 static void host_clear_qinstance_tags(const ocs::tom::List<ocs::tom::QU> queue_list, const char *host_name,
                                       const uint32_t bitmask) {
    DENTER(TOP_LAYER);
-   const void *queue_iterator = nullptr;
-   for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(queue_list, host_name, &queue_iterator); qep;
-        qep = ocs::tom::find_next_rw<QU_qhostname>(queue_list, host_name, &queue_iterator)) {
+   for (auto qep : queue_list.find_all<QU_qhostname>(ocs::tom::Host(host_name))) {
       qep.clear_bits<QU_tagged4schedule>(bitmask);
       print_tagged4schedule(qep);
    }
@@ -4928,7 +4917,6 @@ parallel_tag_hosts_queues(sge_assignment_t *a, const ocs::tom::Element<ocs::tom:
    // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
    const char *eh_name = hep.get<EH_name>();
    dispatch_t result = DISPATCH_OK;
-   const void *queue_iterator = nullptr;
 
    parallel_host_slots(a, &hslots, hep, need_master, is_master_host, found_master_host, false);
 
@@ -4945,8 +4933,7 @@ parallel_tag_hosts_queues(sge_assignment_t *a, const ocs::tom::Element<ocs::tom:
       accu_queue_slots = 0;
 
       // check and tag all qinstances on this host
-      for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator); qep;
-           qep = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
+      for (auto qep : a->queue_list.find_all<QU_qhostname>(ocs::tom::Host(eh_name))) {
 
          auto qname = qep.get<QU_full_name>();
          auto cqname = qep.get<QU_qname>();
@@ -5029,9 +5016,7 @@ parallel_max_host_slots(sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
 
    int avail_h = 0;
    const char *eh_name = host.get<EH_name>();
-   const void *queue_iterator = nullptr;
-   for (auto qep = ocs::tom::find_first<QU_qhostname>(a->queue_list, eh_name, &queue_iterator); qep;
-        qep = ocs::tom::find_next<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
+   for (auto qep : a->queue_list.find_all<QU_qhostname>(ocs::tom::Host(eh_name))) {
       int avail_q = INT_MAX;
 
       for (auto tr : qep.get<QU_load_thresholds>()) {
@@ -5356,7 +5341,6 @@ static int sequential_update_host_order(const ocs::tom::List<ocs::tom::EH> host_
    double previous_load = 0;
    int previous_load_inited = 0;
    uint32_t host_seqno = 0;
-   const void *iterator = nullptr;
    bool host_order_changed = false;
 
    if (!sconf_get_host_order_changed()) {
@@ -5383,10 +5367,8 @@ static int sequential_update_host_order(const ocs::tom::List<ocs::tom::EH> host_
       // a host field reads as ocs::tom::Host, which must not go into the varargs of the messages
       const char *eh_name = hep.get<EH_name>();
 
-      auto qep = ocs::tom::find_first_rw<QU_qhostname>(queues, eh_name, &iterator);
-      while (qep) {
-          qep.set<QU_host_seq_no>(host_seqno);
-          qep = ocs::tom::find_next_rw<QU_qhostname>(queues, eh_name, &iterator);
+      for (auto qep : queues.find_all<QU_qhostname>(ocs::tom::Host(eh_name))) {
+         qep.set<QU_host_seq_no>(host_seqno);
       }
 
       /* detect whether host_seqno has changed since last dispatch operation */
@@ -6900,7 +6882,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
          continue;
       }
       // the default request is written into the complex definition of a->centry_list itself
-      auto cep = ocs::tom::Element<ocs::tom::CE>(centry_list_locate(a->centry_list, name));
+      const auto cep = centry_list_locate(a->centry_list, name);
 
       // we need to check how much would give us a default request if the attribute is not requested
       // if there are any tasks (master or slave) which have no request

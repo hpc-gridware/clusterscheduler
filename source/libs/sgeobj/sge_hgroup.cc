@@ -313,7 +313,7 @@ hgroup_why_named(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char
       const char *name = member.get<HR_name>();
 
       if (ocs::classify_member(name) == ocs::MemberClass::GROUP_REFERENCE &&
-          hgroup_why_named(hgroup_list_locate(master_hgroup_list, name), hostname,
+          hgroup_why_named(master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name)), hostname,
                            master_hgroup_list, depth + 1, group)) {
          return true;
       }
@@ -584,26 +584,6 @@ bool hgroup_check_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char 
 }
 
 /**
- * @brief Find a group by name
- *
- * Find a 'group' in 'this_list'.
- *
- * @param this_list HGRP list, may be an empty handle
- * @param group group name
- *
- * @return found element or an empty handle
- */
-ocs::tom::Element<ocs::tom::HGRP>
-hgroup_list_locate(const ocs::tom::ConstList<ocs::tom::HGRP> this_list, const char *group) {
-   DENTER(HGROUP_LAYER);
-
-   const auto ret = ocs::tom::find_first_rw<HGRP_name>(this_list, group);
-   DRETURN(ret);
-}
-
-
-
-/**
  * @brief Create a new hgroup
  *
  * Create a new hostgroup.
@@ -848,7 +828,7 @@ bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
          const char *name = href.get<HR_name>();
 
          if (ocs::is_hgroup_name(name)) {
-            if (!hgroup_list_locate(this_list, name)) {
+            if (!this_list.find_first<HGRP_name>(ocs::tom::Host(name))) {
                ret = false;
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);

@@ -73,13 +73,8 @@ ocs::GrantedResources::to_string(const ocs::tom::ConstList<ocs::tom::GRU> grante
 
    // <hostname>=<topo>, ...
    std::stringstream ss;
-   const void *iterator = nullptr;
-   auto next = ocs::tom::find_first<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
    bool add_separator = false;
-   while (next) {
-      const auto curr = next;
-      next = ocs::tom::find_next<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
-
+   for (const auto curr : granted_resources.find_all<GRU_name>(SGE_ATTR_SLOTS)) {
       const char *hostname = curr.get<GRU_host>();
       for (const auto binding_in_use : curr.get<GRU_binding_inuse>()) {
          TopologyString topo_in_use(binding_in_use.get<ST_name>());
@@ -136,12 +131,7 @@ void
 ocs::GrantedResources::get_combined_binding_for_host(const ocs::tom::ConstList<ocs::tom::GRU> gr_list,
                                                      const char *hostname, TopologyString &binding_to_use) {
    DENTER(TOP_LAYER);
-   const void *iterator = nullptr;
-   auto next_gr = ocs::tom::find_first<GRU_host>(gr_list, hostname, &iterator);
-   while (next_gr) {
-      const auto gr = next_gr;
-      next_gr = ocs::tom::find_next<GRU_host>(gr_list, hostname, &iterator);
-
+   for (const auto gr : gr_list.find_all<GRU_host>(ocs::tom::Host(hostname))) {
       if (const uint32_t type = gr.get<GRU_type>(); static_cast<Type>(type) != Type::GRU_BINDING_TYPE) {
          continue; // we are only interested in binding resources
       }

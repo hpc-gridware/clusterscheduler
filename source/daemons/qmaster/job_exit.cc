@@ -187,7 +187,7 @@ sge_job_exit(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom::Element<o
 
       if (job_ar_id != 0 && job_was_deleted) {
          /* get AR and remove it if no other jobs are debited */
-         const auto ar = ar_list_locate(master_ar_list, job_ar_id);
+         const auto ar = master_ar_list.find_first<AR_id>(job_ar_id);
 
          if (ar && ar.get<AR_state>() == AR_DELETED) {
             bool slots_used = false;

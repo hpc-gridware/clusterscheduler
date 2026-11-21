@@ -181,7 +181,9 @@ bool centry_is_referenced(ocs::tom::ConstElement<ocs::tom::CE> centry, ocs::tom:
 
 bool centry_print_resource_to_dstring(ocs::tom::ConstElement<ocs::tom::CE> this_elem, dstring *string);
 
-ocs::tom::Element<ocs::tom::CE> centry_list_locate(ocs::tom::ConstList<ocs::tom::CE> this_list, const char *name);
+ocs::tom::ConstElement<ocs::tom::CE> centry_list_locate(ocs::tom::ConstList<ocs::tom::CE> this_list, const char *name);
+
+ocs::tom::Element<ocs::tom::CE> centry_list_locate(ocs::tom::List<ocs::tom::CE> this_list, const char *name);
 
 bool centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE> centry, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool from_spool_read);

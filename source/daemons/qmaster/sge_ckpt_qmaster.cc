@@ -293,7 +293,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   const auto found = ckpt_list_locate(ckpt_list, ckpt_name);
+   const auto found = ckpt_list.find_first<CK_name>(ckpt_name);
 
    if (!found) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name);

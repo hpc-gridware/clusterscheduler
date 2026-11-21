@@ -108,7 +108,7 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::ProcedureParameter::get_bundle() {
  * @param bundle the received bundle
  * @return none
  */
-void ocs::ProcedureParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+void ocs::ProcedureParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // procedure name
@@ -132,7 +132,7 @@ void ocs::ProcedureParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP
    // environment
    // the received bundle is taken over in part: the environment list is moved out of it, so its entry is
    // looked up writable; the list taken out of it is not checked, as before
-   env_variable_list_ = take_value_list<ocs::tom::VA>(ocs::tom::find_first_rw<SPP_name>(bundle, ENVIRONMENT));
+   env_variable_list_ = take_value_list<ocs::tom::VA>(bundle.find_first<SPP_name>(ENVIRONMENT));
    DPRINTF("env_variable_list: " sge_u32 "\n", static_cast<uint32_t>(env_variable_list_->size()));
 
    DRETURN_VOID;

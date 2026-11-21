@@ -848,11 +848,11 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
 
    switch (ack_tag) {
       case ACK_SIGJOB: {
-         const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+         const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
          DPRINTF("TAG_SIGJOB\n");
          /* ack_ulong is the jobid */
-         ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, ack_ulong);
+         const ocs::tom::Element<ocs::tom::JB> jep = master_job_list.find_first<JB_job_number>(ack_ulong);
          if (jep == nullptr) {
             ERROR(MSG_COM_ACKEVENTFORUNKNOWNJOB_SU, host, ack_ulong);
             DRETURN_VOID;
@@ -877,20 +877,20 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
       }
 
       case ACK_SIGQUEUE: {
-         const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+         const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
          dstring host_domain = DSTRING_INIT;
          dstring cqueue_name = DSTRING_INIT;
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);
 
-         ocs::tom::ConstElement<ocs::tom::CQ> cqueue =
+         const ocs::tom::Element<ocs::tom::CQ> cqueue =
                  master_cqueue_list.find_first<CQ_name>(sge_dstring_get_string(&cqueue_name));
          sge_dstring_free(&cqueue_name);
 
          ocs::tom::Element<ocs::tom::QU> qinstance = nullptr;
          if (cqueue != nullptr) {
-            ocs::tom::ConstList<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
+            const ocs::tom::List<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
 
-            qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, sge_dstring_get_string(&host_domain));
+            qinstance = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(sge_dstring_get_string(&host_domain)));
          }
          sge_dstring_free(&host_domain);
 

@@ -117,7 +117,7 @@ static dispatch_t
 select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListPtr<ocs::tom::QU> &dis_queue_list,
                     ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
                     ocs::tom::List<ocs::tom::PE> pe_list, ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
-                    ocs::tom::ConstList<ocs::tom::CE> centry_list, ocs::tom::List<ocs::tom::EH> host_list,
+                    ocs::tom::List<ocs::tom::CE> centry_list, ocs::tom::List<ocs::tom::EH> host_list,
                     ocs::tom::ConstList<ocs::tom::US> acl_list, ocs::tom::List<ocs::tom::CE> load_adjustments,
                     ocs::tom::ListPtr<ocs::tom::JC> &user_list, ocs::tom::ListPtr<ocs::tom::JC> &group_list,
                     order_t *orders,
@@ -1103,7 +1103,7 @@ static dispatch_t
 select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListPtr<ocs::tom::QU> &dis_queue_list,
                     const ocs::tom::Element<ocs::tom::JB> job, const ocs::tom::Element<ocs::tom::JAT> ja_task,
                     const ocs::tom::List<ocs::tom::PE> pe_list, const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
-                    const ocs::tom::ConstList<ocs::tom::CE> centry_list, const ocs::tom::List<ocs::tom::EH> host_list,
+                    const ocs::tom::List<ocs::tom::CE> centry_list, const ocs::tom::List<ocs::tom::EH> host_list,
                     const ocs::tom::ConstList<ocs::tom::US> acl_list,
                     const ocs::tom::List<ocs::tom::CE> load_adjustments, ocs::tom::ListPtr<ocs::tom::JC> &user_list,
                     ocs::tom::ListPtr<ocs::tom::JC> &group_list, order_t *orders, double *total_running_job_tickets,
@@ -1152,7 +1152,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
     * in case of ckpt jobs 
     *------------------------------------------------------------------*/
    if ((ckpt_name = job.get<JB_checkpoint_name>())) {
-      a.ckpt = ocs::tom::ConstElement<ocs::tom::CK>(ckpt_list_locate(ckpt_list, ckpt_name));
+      a.ckpt = ckpt_list.find_first<CK_name>(ckpt_name);
       if (a.ckpt == nullptr) {
          schedd_mes_add(a.monitor_alpp, a.monitor_next_run, a.job_id, SCHEDD_INFO_CKPTNOTFOUND_);
          assignment_release(&a);

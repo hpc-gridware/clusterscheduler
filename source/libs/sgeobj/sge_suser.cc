@@ -97,16 +97,32 @@ ocs::tom::Element<ocs::tom::SU> suser_list_add(const ocs::tom::List<ocs::tom::SU
  *
  * @return SU element or an empty handle
  */
-ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<ocs::tom::SU> suser_list,
-                                                const char *suser_name) {
+ocs::tom::ConstElement<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<ocs::tom::SU> suser_list,
+                                                     const char *suser_name) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::Element<ocs::tom::SU> ret;
+   ocs::tom::ConstElement<ocs::tom::SU> ret;
 
    if (suser_list && suser_name != nullptr) {
-      ret = ocs::tom::find_first_rw<SU_name>(suser_list, suser_name);
+      ret = suser_list.find_first<SU_name>(suser_name);
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief Find a user entry in a writable list
+ *
+ * As the read-only form.
+ *
+ * @param suser_list SU list, may be an empty handle
+ * @param suser_name username
+ *
+ * @return SU element, writable as the list is, or an empty handle
+ */
+ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::List<ocs::tom::SU> suser_list,
+                                                const char *suser_name) {
+   const auto ret = suser_list_find(ocs::tom::ConstList<ocs::tom::SU>(suser_list), suser_name);
+   return ocs::tom::Element<ocs::tom::SU>::from_typed(const_cast<lListElem *>(ret.raw()));
 }
 
 
@@ -299,7 +315,7 @@ uint32_t suser_job_count(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * @param master_suser_list the submit users to unregister from (SU), may be an empty handle
  */
 void suser_unregister_job(const ocs::tom::ConstElement<ocs::tom::JB> job,
-                          const ocs::tom::ConstList<ocs::tom::SU> master_suser_list) {
+                          const ocs::tom::List<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
    const char *submit_user = job.get<JB_owner>();

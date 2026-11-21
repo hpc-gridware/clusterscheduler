@@ -505,7 +505,7 @@ cqueue_hgroup_create(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *
    const char *name = hgroup_queue_group_name(cqueue_name, &name_buffer);
    bool ret = true;
 
-   if (hgroup_list_locate(ocs::DataStore::master_list<SGE_TYPE_HGROUP>(), name) != nullptr) {
+   if (ocs::DataStore::master_list<SGE_TYPE_HGROUP>().find_first<HGRP_name>(ocs::tom::Host(name)) != nullptr) {
       /* the queue is new, so its group cannot be -- unless one was left behind */
       ERROR(MSG_SGETEXT_ALREADYEXISTS_SS, "host group", name);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -567,7 +567,7 @@ cqueue_hgroup_delete(ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *
    dstring name_buffer = DSTRING_INIT;
    const char *name = hgroup_queue_group_name(cqueue_name, &name_buffer);
    const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
-   const ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list_locate(master_hgroup_list, name);
+   const ocs::tom::Element<ocs::tom::HGRP> hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name));
    bool ret = true;
 
    if (hgroup != nullptr) {
@@ -628,7 +628,7 @@ cqueue_verify_hostlist(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
          ret = false;
          break;
       }
-      if (!is_remove && hgroup_list_locate(master_hgroup_list, name) == nullptr) {
+      if (!is_remove && master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name)) == nullptr) {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, "host group", name);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          ret = false;
@@ -1298,7 +1298,7 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
       const char *name = this_elem.get<CQ_name>();
 
       if (name != nullptr) {
-         const ocs::tom::Element<ocs::tom::CQ> cqueue = cqueue_list_locate(master_cqueue_list, name);
+         const ocs::tom::Element<ocs::tom::CQ> cqueue = master_cqueue_list.find_first<CQ_name>(name);
 
          if (cqueue != nullptr) {
             ocs::tom::ConstList<ocs::tom::QU> qinstances = cqueue.get<CQ_qinstances>();
@@ -1522,9 +1522,8 @@ cqueue_list_set_unknown_state(const ocs::tom::List<ocs::tom::CQ> this_list, cons
 
    for (const auto cqueue : this_list) {
       if (hostname != nullptr) {
-         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
-         ocs::tom::Element<ocs::tom::QU> qinstance =
-                 ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
+         const ocs::tom::List<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
+         const auto qinstance = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(hostname));
 
          if (qinstance != nullptr && qinstance_state_is_unknown(qinstance) != is_unknown) {
             sge_qmaster_qinstance_state_set_unknown(qinstance, is_unknown, gdi_session);

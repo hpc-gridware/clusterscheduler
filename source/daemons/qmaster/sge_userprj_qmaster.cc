@@ -213,7 +213,7 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
          const char *dproj = ep.template get<UU_default_project>();
          if (dproj) {
             const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
-            if (!master_project_list || !prj_list_locate(master_project_list, dproj)) {
+            if (!master_project_list || !master_project_list.find_first<PR_name>(dproj)) {
                ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PRJ, dproj);
                answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
                DRETURN(STATUS_EUNKNOWN);
@@ -455,13 +455,13 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
 
    /* check hosts */
    for (const auto host : ocs::DataStore::master_list<SGE_TYPE_EXECHOST>()) {
-      if (prj_list_locate(host.get<EH_prj>(), name)) {
+      if (host.get<EH_prj>().find_first<PR_name>(name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH,
                host.get<EH_name>().c_str());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
-      if (prj_list_locate(host.get<EH_xprj>(), name)) {
+      if (host.get<EH_xprj>().find_first<PR_name>(name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_EH,
                host.get<EH_name>().c_str());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -470,12 +470,12 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
    }
 
    /* check global configuration */
-   if (prj_list_locate(*mconf_get_projects(), name)) {
+   if (mconf_get_projects()->find_first<PR_name>(name)) {
       ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
-   if (prj_list_locate(*mconf_get_xprojects(), name)) {
+   if (mconf_get_xprojects()->find_first<PR_name>(name)) {
       ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_CONF, MSG_OBJ_GLOBAL);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
@@ -526,9 +526,9 @@ ocs_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
    const char *name = up_ep.template get<F::name>();
    ocs::tom::Element<typename F::Type> ep;
    if constexpr (user) {
-      ep = user_list_locate(upl, name);
+      ep = upl.template find_first<UU_name>(name);
    } else {
-      ep = prj_list_locate(upl, name);
+      ep = upl.template find_first<PR_name>(name);
    }
    if (!ep) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, user ? MSG_OBJ_USER : MSG_OBJ_PRJ, name);
@@ -725,8 +725,7 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    int status = STATUS_OK;
    uint64_t auto_user_delete_time = sge_gmt32_to_gmt64(mconf_get_auto_user_delete_time());
 
-   const auto uep = user_list_locate(ocs::DataStore::master_list<SGE_TYPE_USER>(),
-                                     user);
+   const auto uep = ocs::DataStore::master_list_rw<SGE_TYPE_USER>().find_first<UU_name>(user);
 
    /* if the user already exists */
    if (uep) {

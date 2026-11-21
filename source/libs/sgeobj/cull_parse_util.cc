@@ -689,11 +689,11 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
       }
    }
 
-   ocs::tom::Element<ocs::tom::SPA> ep;
-   const void *iterator = nullptr;
-   ocs::tom::Element<ocs::tom::SPA> next_ep = ocs::tom::find_first_rw<SPA_switch_val>(cmdline, option, &iterator);
-   while ((ep = next_ep) != nullptr) {
-      next_ep = ocs::tom::find_next_rw<SPA_switch_val>(cmdline, option, &iterator);
+   const auto options = cmdline.find_all<SPA_switch_val>(option);
+   for (auto next_ep = options.begin(); next_ep != options.end();) {
+      const auto ep = *next_ep;
+      // the next match is looked up before the current one is erased
+      ++next_ep;
 
       if (int(ep.get<SPA_argval_lLongT>()) == int(scope)) {
          // the argument list is of the type of the request field, so it stays untyped

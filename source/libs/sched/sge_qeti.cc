@@ -169,7 +169,7 @@ static int sge_qeti_list_add(ocs::tom::ListPtr<ocs::tom::QETI> &lp, const char *
                              const bool must_exist) {
    DENTER(TOP_LAYER);
 
-   auto tmp_cr_ref = ocs::tom::find_first_rw<RUE_name>(rue_lp, name);
+   const auto tmp_cr_ref = rue_lp.find_first<RUE_name>(name);
    if (!tmp_cr_ref) {
       DRETURN(must_exist ? -1 : 0);
    }
@@ -179,7 +179,8 @@ static int sge_qeti_list_add(ocs::tom::ListPtr<ocs::tom::QETI> &lp, const char *
    }
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::QETI>::create();
-   ep->set<QETI_resource_instance>(tmp_cr_ref.raw());
+   // a Ref field holds a void *; the entry is only read through sge_qeti_rue()
+   ep->set<QETI_resource_instance>(const_cast<lListElem *>(tmp_cr_ref.raw()));
    ep->set<QETI_total>(total);
    lp->push_back(std::move(ep));
 
@@ -310,9 +311,7 @@ sge_qeti_t *sge_qeti_allocate(sge_assignment_t *a) {
       // environment that resides at this host. And secondly we only
       // consider those hosts that match this job (statically)
       int is_relevant = false;
-      const void *queue_iterator = nullptr;
-      for (auto qep = ocs::tom::find_first_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator); qep;
-           qep = ocs::tom::find_next_rw<QU_qhostname>(a->queue_list, eh_name, &queue_iterator)) {
+      for (auto qep : a->queue_list.find_all<QU_qhostname>(ocs::tom::Host(eh_name))) {
 
          if (!qinstance_is_pe_referenced(qep, a->pe)) {
             continue;

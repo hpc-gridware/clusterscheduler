@@ -171,14 +171,14 @@ sge_book_finished_job_usage(const ocs::tom::Element<ocs::tom::JB> jep, const ocs
       DRETURN(0);
    }
 
-   const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
-   const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+   const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>();
+   const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>();
 
-   const auto user = user_list_locate(master_user_list, jep.get<JB_owner>());
+   const auto user = master_user_list.find_first<UU_name>(jep.get<JB_owner>());
    ocs::tom::Element<ocs::tom::PR> project;
    const char *project_name = jep.get<JB_project>();
    if (project_name != nullptr && *project_name != '\0') {
-      project = prj_list_locate(master_project_list, project_name);
+      project = master_project_list.find_first<PR_name>(project_name);
    }
 
    /* 1. catch up decay since last tick, then sum the finished job's usage

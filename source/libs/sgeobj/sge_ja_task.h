@@ -56,7 +56,10 @@
 
 #include "sgeobj/sge_answer.h"
 
-ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+ocs::tom::ConstElement<ocs::tom::PET> ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
+                                                             const char *pe_task_id);
+
+ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(ocs::tom::Element<ocs::tom::JAT> ja_task,
                                                         const char *pe_task_id);
 
 void ja_task_set_deleted_by(ocs::tom::Element<ocs::tom::JAT> ja_task, const char *deleted_by);

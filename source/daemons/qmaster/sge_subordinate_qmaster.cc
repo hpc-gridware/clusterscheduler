@@ -126,9 +126,9 @@ slotwise_x_on_subordinate(const ocs::tom::Element<ocs::tom::QU> qinstance_where_
 
    bool ret = false;
    uint32_t state = 0;
-   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
-   ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+   const ocs::tom::Element<ocs::tom::JB> jep = master_job_list.find_first<JB_job_number>(job_id);
    if (jep != nullptr) {
       ocs::tom::Element<ocs::tom::JAT> jatep = jep.find_first_in_rw<JB_ja_tasks, JAT_task_number>(task_id);
       if (jatep != nullptr) {
@@ -179,7 +179,7 @@ get_slotwise_sos_tree_root(const ocs::tom::Element<ocs::tom::QU> node_queue_inst
    const char *node_queue_name = nullptr;
    const char *node_host_name = nullptr;
    ocs::tom::Element<ocs::tom::QU> root_qinstance = nullptr;
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    if (node_queue_instance) {
       if (get_slotwise_sos_threshold(node_queue_instance) > 0) {
@@ -240,7 +240,7 @@ get_slotwise_suspend_superordinate(const char *queue_name, const char *hostname)
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::QU> super_qinstance = nullptr;
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    for (const auto cqueue : master_cqueue_list) {
       ocs::tom::Element<ocs::tom::QU> qinstance = cqueue_locate_qinstance(cqueue, hostname);
@@ -654,7 +654,7 @@ get_slotwise_sos_sub_tree_qinstances(const ocs::tom::Element<ocs::tom::QU> qinst
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::QU> sub_qinstance = nullptr;
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    /* get all qinstances in the slotwise sos tree excluding the super qinstance
     * (i.e. the root node of the tree), it was already added in the iteration before.
@@ -757,14 +757,12 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
       for (const auto job : master_job_list) {
          for (const auto task : job.get<JB_ja_tasks>()) {
             uint32_t state = 0;
-            const void *iterator = nullptr;
 
             ocs::tom::ConstList<ocs::tom::JG> task_gdi_list = task.get<JAT_granted_destin_identifier_list>();
             /* Get all destination identifiers of the current task that are on the
-             * current host using lGetElemHostFirst()/lGetElemHostNext().
+             * current host.
              */
-            ocs::tom::ConstElement<ocs::tom::JG> task_gdi = ocs::tom::find_first<JG_qhostname>(task_gdi_list, host_name, &iterator);
-            while (task_gdi != nullptr) {
+            for (const auto task_gdi : task_gdi_list.find_all<JG_qhostname>(ocs::tom::Host(host_name))) {
                const char *qinstance_name = nullptr;
                const char *task_gdi_qname = nullptr;
                uint32_t status = 0;
@@ -851,7 +849,6 @@ count_running_jobs_in_slotwise_sos_tree(sge_sl_list_t *qinstances_in_slotwise_so
                      }
                   }
                }
-               task_gdi = ocs::tom::find_next<JG_qhostname>(task_gdi_list, host_name, &iterator);
             }
          }
       }
@@ -1138,7 +1135,7 @@ do_slotwise_subordinate_lists_differ(const ocs::tom::ConstList<ocs::tom::SO> old
  * @return true if every affected queue instance could be signalled
  */
 bool
-cqueue_list_x_on_subordinate_gdil(const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list, const bool suspend,
+cqueue_list_x_on_subordinate_gdil(const ocs::tom::List<ocs::tom::CQ> master_cqueue_list, const bool suspend,
                                   const ocs::tom::ConstList<ocs::tom::JG> gdil, monitoring_t *monitor,
                                   const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -1316,7 +1313,7 @@ qinstance_x_on_subordinate(const ocs::tom::Element<ocs::tom::QU> this_elem, cons
  * @return true if every affected queue instance could be signalled
  */
 bool
-cqueue_list_x_on_subordinate_so(const ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+cqueue_list_x_on_subordinate_so(const ocs::tom::List<ocs::tom::CQ> master_cqueue_list,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const bool suspend, const ocs::tom::ConstList<ocs::tom::SO> resolved_so_list,
                                 monitoring_t *monitor, const uint64_t gdi_session) {

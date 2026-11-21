@@ -120,25 +120,6 @@ ocs::tom::ConstElement<ocs::tom::PE> pe_list_find_matching(const ocs::tom::Const
    DRETURN(nullptr);
 }
 
-
-/**
- * @brief Locate a certain PE
- *
- * Locate the PE with the name "pe_name".
- *
- * @param pe_list PE list
- * @param pe_name PE name
- *
- * @return PE object or an empty handle
- *
- * @note MT-NOTE: pe_list_locate() is MT safe
- */
-ocs::tom::Element<ocs::tom::PE> pe_list_locate(const ocs::tom::ConstList<ocs::tom::PE> pe_list, const char *pe_name) {
-   // no DENTER: called per job/queue in the scheduler
-   return ocs::tom::find_first_rw<PE_name>(pe_list, pe_name);
-}
-
-
 /**
  * @brief Is a given PE referenced in other objects?
  *
@@ -453,7 +434,7 @@ bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::
       if (ignore_make_pe && !strcmp(pe_ref_string, "make")) {
          continue;
       }
-      if (!pe_list_locate(pe_list, pe_ref_string)) {
+      if (!pe_list.find_first<PE_name>(pe_ref_string)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_PEREFDOESNOTEXIST_S, pe_ref_string);

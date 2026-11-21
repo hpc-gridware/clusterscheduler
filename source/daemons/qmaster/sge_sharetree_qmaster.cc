@@ -255,7 +255,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
       /* not a leaf node */
 
       /* check if this is a project node */
-      if (const auto pep = prj_list_locate(project_list, name); pep) {
+      if (const auto pep = project_list.find_first<PR_name>(name); pep) {
 
          /* check for sub-projects (not allowed) */
          if (project) {
@@ -282,7 +282,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
          save_found = std::move(found);
 
          /* check for user appearing as non-leaf node */
-      } else if (user_list_locate(user_list, name)) {
+      } else if (user_list.find_first<UU_name>(name)) {
          ERROR(MSG_STREE_USERNONLEAF_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
@@ -330,7 +330,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
       /* a leaf node */
 
       /* check if this is a project node */
-      if (prj_list_locate(project_list, name)) {
+      if (project_list.find_first<PR_name>(name)) {
          node.set<STN_type>(STT_PROJECT);
       }
 
@@ -339,14 +339,14 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
          /* project set means this is a project sub-tree */
 
          /* check for sub-projects */
-         if (prj_list_locate(project_list, name)) {
+         if (project_list.find_first<PR_name>(name)) {
             ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, project.get<PR_name>());
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* leaf nodes of project sub-trees must be users */
-         if (!user_list_locate(user_list, name) &&
+         if (!user_list.find_first<UU_name>(name) &&
              strcmp(name, "default")) {
             ERROR(MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USER, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -363,12 +363,12 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
          const char *objname = MSG_OBJ_USER;
 
          /* non project sub-tree leaf nodes must be a user or a project */
-         if (!user_list_locate(user_list, name) &&
+         if (!user_list.find_first<UU_name>(name) &&
              strcmp(name, "default") != 0) {
 
             objname = MSG_JOB_PROJECT;
 
-            if (!prj_list_locate(project_list, name)) {
+            if (!project_list.find_first<PR_name>(name)) {
                ERROR(MSG_SGETEXT_UNKNOWN_SHARE_TREE_REF_TO_SS, MSG_OBJ_USERPRJ, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                DRETURN(-1);

@@ -674,13 +674,13 @@ test_member_classes() {
       CHECK(78, "the difference of two member lists succeeds",
             href_list_compare(after, &answer_list, before, &add_hosts, &add_groups, nullptr, nullptr));
       CHECK(79, "the added host is found",
-            href_list_locate(add_hosts, "node002") != nullptr);
+            href_list_locate(*add_hosts, "node002") != nullptr);
       CHECK(80, "the added group is found",
-            href_list_locate(add_groups, "@other") != nullptr);
+            href_list_locate(*add_groups, "@other") != nullptr);
       CHECK(81, "the matcher is not among the hosts -- no execution host is made of it",
-            href_list_locate(add_hosts, "host:gpu*") == nullptr);
+            href_list_locate(*add_hosts, "host:gpu*") == nullptr);
       CHECK(82, "and not among the groups either",
-            href_list_locate(add_groups, "host:gpu*") == nullptr);
+            href_list_locate(*add_groups, "host:gpu*") == nullptr);
 
       answer_list.reset();
    }
@@ -725,8 +725,8 @@ test_member_classes() {
       CHECK(86, "two different matchers stay two members",
             members->size() == 2);
       CHECK(87, "and each is found under its own name",
-            href_list_locate(members, "host:gpu*.a.example.com") != nullptr &&
-            href_list_locate(members, "host:gpu*.b.example.com") != nullptr);
+            href_list_locate(*members, "host:gpu*.a.example.com") != nullptr &&
+            href_list_locate(*members, "host:gpu*.b.example.com") != nullptr);
 
       answer_list.reset();
    }
@@ -812,25 +812,25 @@ test_walk_three_classes() {
    // T91-T92: the classes stay apart -- this is what keeps an execution host
    // from ever being created out of a pattern
    CHECK(91, "the matcher comes back separately",
-         matchers->size() == 1 && href_list_locate(matchers, "host:gpu*") != nullptr);
+         matchers->size() == 1 && href_list_locate(*matchers, "host:gpu*") != nullptr);
    CHECK(92, "and never as a host or a group",
-         href_list_locate(hosts, "host:gpu*") == nullptr &&
-         href_list_locate(groups, "host:gpu*") == nullptr);
+         href_list_locate(*hosts, "host:gpu*") == nullptr &&
+         href_list_locate(*groups, "host:gpu*") == nullptr);
 
    // T93: the literal member and the one reached through the reference
    CHECK(93, "the literal members are found, directly and through the reference",
-         href_list_locate(hosts, "node001") != nullptr &&
-         href_list_locate(hosts, "login01") != nullptr);
+         href_list_locate(*hosts, "node001") != nullptr &&
+         href_list_locate(*hosts, "login01") != nullptr);
 
    // T94: the expansion, and the edition boundary
 #ifdef WITH_EXTENSIONS
    CHECK(94, "the matcher captures the hosts of the candidate set that fit it",
-         href_list_locate(hosts, "gpu001") != nullptr &&
-         href_list_locate(hosts, "gpu002") != nullptr);
+         href_list_locate(*hosts, "gpu001") != nullptr &&
+         href_list_locate(*hosts, "gpu002") != nullptr);
 #else
    CHECK(94, "without the extensions the matcher captures nothing",
-         href_list_locate(hosts, "gpu001") == nullptr &&
-         href_list_locate(hosts, "gpu002") == nullptr);
+         href_list_locate(*hosts, "gpu001") == nullptr &&
+         href_list_locate(*hosts, "gpu002") == nullptr);
 #endif
 
    // T95: the walk can be asked for the hosts a configuration *names*, without
@@ -842,10 +842,10 @@ test_walk_three_classes() {
 
       hgroup_find_all_references(top, &answer_list, hgroup_list, &named, nullptr, nullptr, false);
       CHECK(95, "without expansion only the named hosts come back",
-            href_list_locate(named, "node001") != nullptr &&
-            href_list_locate(named, "login01") != nullptr &&
-            href_list_locate(named, "gpu001") == nullptr &&
-            href_list_locate(named, "gpu002") == nullptr);
+            href_list_locate(*named, "node001") != nullptr &&
+            href_list_locate(*named, "login01") != nullptr &&
+            href_list_locate(*named, "gpu001") == nullptr &&
+            href_list_locate(*named, "gpu002") == nullptr);
    }
 
    answer_list.reset();
@@ -1104,7 +1104,7 @@ test_generated_trees() {
             const char *host = candidate.get<HR_name>();
             const bool admitted = ocs::Matcher::admits(hgroup, host, groups);
             const bool resolved = href_list_locate(hgroup.get<HGRP_cached_hosts>(), host) != nullptr;
-            const bool is_named = href_list_locate(named, host) != nullptr;
+            const bool is_named = href_list_locate(*named, host) != nullptr;
 
             if (admitted && !resolved) {
                invariant_breaks++;
@@ -1549,8 +1549,8 @@ test_find_all_referencees() {
    // code path from walking the list -- href_list_locate() goes through the
    // hash. This is the half that a linear comparison cannot see.
    CHECK(131, "every referencee is findable by name",
-         href_list_locate(referencees, "@a") != nullptr &&
-         href_list_locate(referencees, "@top") != nullptr);
+         href_list_locate(*referencees, "@a") != nullptr &&
+         href_list_locate(*referencees, "@top") != nullptr);
 
    // T132: the whole chain, as hgroup_refresh_caches() runs it. With a duplicate
    // present the key still resolves -- to the second entry -- so T131 alone does
@@ -1560,8 +1560,8 @@ test_find_all_referencees() {
    referencees->unique<HR_name>();
    CHECK(132, "after deduplication every referencee is still findable",
          referencees->size() == 2 &&
-         href_list_locate(referencees, "@a") != nullptr &&
-         href_list_locate(referencees, "@top") != nullptr);
+         href_list_locate(*referencees, "@a") != nullptr &&
+         href_list_locate(*referencees, "@top") != nullptr);
 
    referencees.reset();
    answer_list.reset();

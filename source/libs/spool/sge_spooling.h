@@ -282,7 +282,7 @@ spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom
                           spooling_validate_func validate_func,
                           spooling_validate_list_func validate_list_func);
 
-ocs::tom::Element<ocs::tom::SPT>
+ocs::tom::ConstElement<ocs::tom::SPT>
 spool_context_search_type(ocs::tom::ConstElement<ocs::tom::SPC> context, sge_object_type object_type);
 
 ocs::tom::Element<ocs::tom::SPT>

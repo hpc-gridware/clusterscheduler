@@ -1675,7 +1675,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
       const char *name = cr_config.template get<CE_name>();
 
       /* search default request */  
-      const auto dcep = ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
+      const auto dcep = centry_list_locate(centry_list, name);
       if (dcep == nullptr) {
          ERROR(MSG_ATTRIB_MISSINGATTRIBUTEXINCOMPLEXES_S , name);
          DRETURN(-1);
@@ -1903,8 +1903,7 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
 
          const char *centry_name = limit.get<RQRL_name>();
          
-         const auto raw_centry =
-            ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, centry_name));
+         const auto raw_centry = centry_list_locate(centry_list, centry_name);
          if (raw_centry == nullptr) {
             /* ignoring not defined centry */
             continue;
@@ -2024,7 +2023,7 @@ static int
 add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool suspended,
                          const ocs::tom::List<ocs::tom::PE> pe_list, const ocs::tom::List<ocs::tom::EH> host_list,
                          const ocs::tom::List<ocs::tom::QU> queue_list, const ocs::tom::List<ocs::tom::RQS> rqs_list,
-                         const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                         const ocs::tom::List<ocs::tom::CE> centry_list,
                          const ocs::tom::ConstList<ocs::tom::US> acl_list,
                          const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
                          const ocs::tom::List<ocs::tom::AR> ar_list, const bool for_job_scheduling,
@@ -2095,7 +2094,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
 
          // Step 1/3 We need the current PE for the resource utilization calculation
          const char *pe_name = ja_task.get<JAT_granted_pe>();
-         a.pe = ocs::tom::Element<ocs::tom::PE>(pe_list_locate(pe_list, pe_name));
+         a.pe = ocs::tom::Element<ocs::tom::PE>(pe_list.find_first<PE_name>(pe_name));
          if (pe_name != nullptr && a.pe == nullptr) {
             CRITICAL("===> granted_pe is %s but pe_object is nullptr", pe_name);
          }
@@ -2164,7 +2163,7 @@ prepare_resource_schedules(const ocs::tom::List<ocs::tom::JB> running_jobs,
                            const ocs::tom::List<ocs::tom::PE> pe_list,
                            const ocs::tom::List<ocs::tom::EH> host_list, const ocs::tom::List<ocs::tom::QU> queue_list,
                            const ocs::tom::List<ocs::tom::RQS> rqs_list,
-                           const ocs::tom::ConstList<ocs::tom::CE> centry_list,
+                           const ocs::tom::List<ocs::tom::CE> centry_list,
                            const ocs::tom::ConstList<ocs::tom::US> acl_list,
                            const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
                            const ocs::tom::List<ocs::tom::AR> ar_list, const bool for_job_scheduling,

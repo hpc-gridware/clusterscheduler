@@ -288,7 +288,7 @@ bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, ocs::tom::
          const char *qinstance_name = nullptr;
          const char *cq_name_str = so.get<SO_name>();
 
-         const auto cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
+         const auto cqueue = master_cqueue_list.find_first<CQ_name>(cq_name_str);
 
          if (cqueue) {
             const auto qinstance = cqueue_locate_qinstance(cqueue, hostname);

@@ -687,18 +687,17 @@ spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
  *
  * @return an object type description or an empty handle, if none was found.
  */
-ocs::tom::Element<ocs::tom::SPT>
+ocs::tom::ConstElement<ocs::tom::SPT>
 spool_context_search_type(const ocs::tom::ConstElement<ocs::tom::SPC> context,
                           const sge_object_type object_type) {
-   // the types are searched read-write, as the caller gets a mutable type description from a read-only context
    const auto types = context.get<SPC_types>();
 
    /* search fitting rule */
-   auto ep = ocs::tom::find_first_rw<SPT_type>(types, object_type);
+   auto ep = types.find_first<SPT_type>(object_type);
 
    /* if no specific rule is found, return default rule */
    if (!ep) {
-      ep = ocs::tom::find_first_rw<SPT_type>(types, SGE_TYPE_ALL);
+      ep = types.find_first<SPT_type>(SGE_TYPE_ALL);
    }
    
    return ep;

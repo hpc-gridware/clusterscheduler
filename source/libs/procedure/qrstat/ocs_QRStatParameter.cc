@@ -38,7 +38,7 @@
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QRStatParameter::QRStatParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+ocs::QRStatParameter::QRStatParameter(const ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
@@ -70,7 +70,7 @@ void ocs::QRStatParameter::transform_user_list() {
  * @param bundle the marshalled parameters; the switch lists are moved out of it
  * @return none
  */
-void ocs::QRStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+void ocs::QRStatParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // initialize parents member variables
@@ -93,10 +93,10 @@ void ocs::QRStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> b
 
    // -u
    user_list_ =
-           take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, QRStatParameter::USER_NAME_LIST));
+           take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(QRStatParameter::USER_NAME_LIST));
 
    // -ar
-   ar_id_list_ = take_value_list<ocs::tom::ULNG>(ocs::tom::find_first_rw<SPP_name>(bundle, AR_ID_LIST));
+   ar_id_list_ = take_value_list<ocs::tom::ULNG>(bundle.find_first<SPP_name>(AR_ID_LIST));
 
    DRETURN_VOID;
 }

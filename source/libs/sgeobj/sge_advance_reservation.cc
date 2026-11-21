@@ -71,25 +71,6 @@
 #include "uti/sge.h"
 
 /**
- * @brief Locate a advance reservation by id
- *
- * This function returns a ar object with the selected id from the
- * given list.
- *
- * @param ar_list list to be searched in
- * @param ar_id id of interest
- *
- * @return if found the reference to the ar object, else an empty handle
- *
- * @note MT-NOTE: ar_list_locate() is MT safe
- */
-ocs::tom::Element<ocs::tom::AR> ar_list_locate(const ocs::tom::ConstList<ocs::tom::AR> ar_list, const uint32_t ar_id) {
-   DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::find_first_rw<AR_id>(ar_list, ar_id));
-}
-
-
-/**
  * @brief Validate a advance reservation
  *
  * Ensures a new ar has valid start and end times
@@ -196,7 +177,7 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
 
          ckpt_name = ar.get<AR_checkpoint_name>();
          if (ckpt_name != nullptr) {
-            const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
+            const auto ckpt_ep = master_ckpt_list.find_first<CK_name>(ckpt_name);
             if (!ckpt_ep) {
                ERROR(MSG_JOB_CKPTUNKNOWN_S, ckpt_name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

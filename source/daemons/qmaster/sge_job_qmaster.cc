@@ -1077,7 +1077,7 @@ void get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j,
    uint32_t task_number = t.get<JAT_task_number>();
    bool is_array = job_is_array(j);
 
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto qep = cqueue_list_locate_qinstance(master_cqueue_list, t.get<JAT_master_queue>());
    if (!qep) {
       ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, t.get<JAT_master_queue>());
@@ -2302,7 +2302,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
       DPRINTF("got new JB_checkpoint_name\n");
       ckpt_name = jep.get<JB_checkpoint_name>();
-      if (ckpt_name && !ckpt_list_locate(master_ckpt_list, ckpt_name)) {
+      if (ckpt_name && !master_ckpt_list.find_first<CK_name>(ckpt_name)) {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
@@ -3471,7 +3471,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
    int verify_mode = jep.get<JB_verify_suitable_queues>();
    bool verify_only = (verify_mode == JUST_VERIFY || verify_mode == POKE_VERIFY) ? true : false;
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
-   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
@@ -3513,7 +3513,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
 
       /* checkpointing */
       if ((ckpt_name = jep.get<JB_checkpoint_name>())) {
-         if (!(a.ckpt = ckpt_list_locate(master_ckpt_list, ckpt_name))) {
+         if (!(a.ckpt = master_ckpt_list.find_first<CK_name>(ckpt_name))) {
             try_it = 0;
          }
       }
@@ -4329,7 +4329,7 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
    /* job requests a project, verify existance, access rights, ... */
    if (project != nullptr) {
       /* make sure the requested project exists at all */
-      const auto pep = prj_list_locate(master_project_list, project);
+      const auto pep = master_project_list.find_first<PR_name>(project);
       if (!pep) {
          ERROR(MSG_JOB_PRJUNKNOWN_S, project);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -4350,8 +4350,8 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
          /* verify project can use SGE cluster according to global config projects/xprojects */
          const auto xprojects = mconf_get_xprojects();
 
-         if ((xprojects && prj_list_locate(*xprojects, project)) ||
-             (projects && !prj_list_locate(*projects, project))) {
+         if ((xprojects && xprojects->find_first<PR_name>(project)) ||
+             (projects && !projects->find_first<PR_name>(project))) {
             ERROR(MSG_JOB_PRJNOSUBMITPERMS_S, project);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
@@ -4492,7 +4492,7 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
    // the hosts, queues, resource quotas and advance reservations are debited, so their lists are taken writable
    const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();

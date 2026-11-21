@@ -1093,7 +1093,7 @@ setup_qmaster() {
       for (const auto cqueue : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
          const char *group_name = hgroup_queue_group_name(cqueue.get<CQ_name>(), &name_buffer);
 
-         if (hgroup_list_locate(master_hgroup_list, group_name)) {
+         if (master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(group_name))) {
             continue;
          }
 
@@ -1657,7 +1657,7 @@ debit_all_jobs_from_qs() {
    DENTER(TOP_LAYER);
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
    const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();

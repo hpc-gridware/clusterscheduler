@@ -48,11 +48,11 @@
 #include "sgeobj/sge_answer.h"
 
 bool
-cqueue_list_x_on_subordinate_gdil(ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list, bool suspend,
+cqueue_list_x_on_subordinate_gdil(ocs::tom::List<ocs::tom::CQ> master_cqueue_list, bool suspend,
                                   ocs::tom::ConstList<ocs::tom::JG> gdil, monitoring_t *monitor, uint64_t gdi_session);
 
 bool
-cqueue_list_x_on_subordinate_so(ocs::tom::ConstList<ocs::tom::CQ> master_cqueue_list,
+cqueue_list_x_on_subordinate_so(ocs::tom::List<ocs::tom::CQ> master_cqueue_list,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool suspend,
                                 ocs::tom::ConstList<ocs::tom::SO> resolved_so_list, monitoring_t *monitor,
                                 uint64_t gdi_session);

@@ -803,9 +803,11 @@ namespace ocs {
          } else {
             rapidjson::StringBuffer stringBuffer;
 
-            const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+            // read lock: sge_sharetree_print() takes the lists writable for the usage decay, which it does not
+            // do here (decay_usage false)
+            const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>(true);
             const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-            const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+            const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>(true);
 
             /* define output format */
             format_t format;

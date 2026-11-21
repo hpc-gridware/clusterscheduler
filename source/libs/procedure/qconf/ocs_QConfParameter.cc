@@ -67,7 +67,7 @@ qconf_op::as_argv() {
  * @param bundle the marshalled parameters, as `get_bundle()` produced them
  * @param packet the originating client packet, for user, host and permissions
  */
-ocs::QConfParameter::QConfParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+ocs::QConfParameter::QConfParameter(const ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
@@ -141,7 +141,7 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::QConfParameter::get_bundle() {
  * @return none
  */
 void
-ocs::QConfParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+ocs::QConfParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // procedure name, output format, environment

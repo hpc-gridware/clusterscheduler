@@ -282,7 +282,7 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
    /* parallel job with slot range request */
    if (!ocs::is_pattern(pe_name))
-      pep = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_locate(pe_list, pe_name));
+      pep = pe_list.find_first<PE_name>(pe_name);
    else {
       /* use the first matching pe */
       pep = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_find_matching(pe_list, pe_name));

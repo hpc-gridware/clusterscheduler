@@ -2435,12 +2435,12 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
             // Remove the allowed switches from the list of switches which were applied to the job we got.
             for (const auto allowed : *allowed_switches) {
                const char *name = allowed.get<ST_name>();
-               const void *iterator = nullptr;
+               const auto got_matches = got_switches->find_all<ST_name>(name);
 
-               auto got_next = ocs::tom::find_first_rw<ST_name>(*got_switches, name, &iterator);
-               while (got_next) {
-                  const auto got = got_next;
-                  got_next = ocs::tom::find_next_rw<ST_name>(*got_switches, name, &iterator);
+               for (auto got_next = got_matches.begin(); got_next != got_matches.end();) {
+                  const auto got = *got_next;
+                  // the next match is looked up before the current one is erased
+                  ++got_next;
 
                   got_switches->erase(got);
                }

@@ -593,7 +593,7 @@ qref_hgroup_rejected(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const 
 
       if (ocs::is_hgroup_name(member)) {
          /* nested hostgroup - look it up by name, do not match it as a pattern */
-         const auto sub_hgroup = hgroup_list_locate(hgroup_list, member);
+         const auto sub_hgroup = hgroup_list.find_first<HGRP_name>(ocs::tom::Host(member));
 
          if (sub_hgroup && !qref_hgroup_rejected(sub_hgroup, hostname, hgroup_list)) {
             DRETURN(false);
@@ -620,7 +620,7 @@ qref_hgroup_rejected(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const 
  * The members of a matched hostgroup are resolved exactly by
  * qref_hgroup_rejected() (CS-2450).
  * A reference without pattern characters is looked up via
- * hgroup_list_locate(), i.e. a hash lookup on HGRP_name instead of a scan
+ * its name (HGRP_name), i.e. a hash lookup instead of a scan
  * of the whole master hostgroup list. That is the common case and this
  * function runs per RQS rule, per queue instance, per job.
  *
@@ -654,7 +654,7 @@ bool qref_list_host_rejected(const char *href, const char *hostname,
          }
       } else {
          /* plain hostgroup name - hash lookup instead of scanning the list */
-         const auto hgroup = hgroup_list_locate(hgroup_list, href);
+         const auto hgroup = hgroup_list.find_first<HGRP_name>(ocs::tom::Host(href));
 
          if (hgroup && !qref_hgroup_rejected(hgroup, hostname, hgroup_list)) {
             DRETURN(false);

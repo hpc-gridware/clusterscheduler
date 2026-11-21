@@ -561,6 +561,149 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief Deleted: on a typed list use the member lp.find_first<F>(key) on a List<T> (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // it also catches a List<T>, which derives from ConstList<T>
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_first_rw(const ConstList<T> &lp, const detail::RawKey<F> key) = delete;
+
+   /**
+    * @brief Deleted: on a typed list use a range-for over lp.find_all<F>(key) on a List<T> (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // it also catches a List<T>, which derives from ConstList<T>
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_first_rw(const ConstList<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on a typed list use a range-for over lp.find_all<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // it also catches a List<T>, which derives from ConstList<T>
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_first(const ConstList<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on a typed list use a range-for over lp.find_all<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // it also catches a List<T>, which derives from ConstList<T>
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_next(const ConstList<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on a typed list use a range-for over lp.find_all<F>(key) on a List<T> (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // it also catches a List<T>, which derives from ConstList<T>
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_next_rw(const ConstList<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on an owner use the member lp->find_first<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_first_rw(const ListPtr<T> &lp, const detail::RawKey<F> key) = delete;
+
+   /**
+    * @brief Deleted: on an owner use a range-for over lp->find_all<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_first_rw(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on an owner use a range-for over lp->find_all<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_first(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on an owner use a range-for over lp->find_all<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_next(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
+    * @brief Deleted: on an owner use a range-for over lp->find_all<F>(key) (CS-3103)
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @param lp the handle
+    * @param key the key
+    * @param iterator the lookup's state
+    * @return nothing, the call does not compile
+    */
+   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   template <auto F, ObjectType T>
+      requires detail::FreeKeyField<F>
+   auto find_next_rw(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
+
+   /**
     * @brief The first element of a list whose string field equals a value without regard to case, read only; replaces lGetElemCaseStr()
     * @tparam F the string field
     * @param lp the list, or nullptr

@@ -170,7 +170,8 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
       DRETURN(false);
    }
 
-   const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
+   // read access as before (callers hold a read or a write lock); the matcher's cache write is atomic, see below
+   const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>(true);
    /*
     * CS-2680. Not const, and that is the signature saying what happens here: a
     * hit in the matching cache advances the time of its last use, so asking
@@ -178,7 +179,7 @@ host_is_in_reserved_hostgroup(const char *hostname, const char *group_name) {
     * lock of its own; only a structural change of the cache takes one, and that
     * one is neither of the data store's.
     */
-   const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name);
+   const auto hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(group_name));
 
    /*
     * CS-2680. Two layers, and the order is the rule rather than an optimisation.

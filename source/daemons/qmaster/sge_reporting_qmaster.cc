@@ -871,9 +871,11 @@ ocs::ClassicReportingFileWriter::create_sharelog_record(monitoring_t *monitor) {
       const auto master_stree_list = ocs::DataStore::master_list<SGE_TYPE_SHARETREE>();
       const bool has_sharetree = !master_stree_list.empty();
       if (has_sharetree) {
-         const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
+         // read lock: sge_sharetree_print() takes the lists writable for the usage decay, which it does not
+         // do here (decay_usage false)
+         const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>(true);
          const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-         const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+         const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>(true);
 
          sge_sharetree_print(&data_dstring, nullptr, master_stree_list, master_user_list, master_project_list,
                              master_userset_list,

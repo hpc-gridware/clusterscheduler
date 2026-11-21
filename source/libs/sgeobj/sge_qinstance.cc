@@ -117,12 +117,12 @@
  *
  * @note MT-NOTE: qinstance_list_locate() is MT safe
  */
-ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<ocs::tom::QU> this_list,
-                                                      const char *hostname, const char *cqueue_name) {
-   ocs::tom::Element<ocs::tom::QU> ret = nullptr;
+ocs::tom::ConstElement<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<ocs::tom::QU> this_list,
+                                                           const char *hostname, const char *cqueue_name) {
+   ocs::tom::ConstElement<ocs::tom::QU> ret = nullptr;
 
    if (cqueue_name == nullptr) {
-      ret = ocs::tom::find_first_rw<QU_qhostname>(this_list, hostname);
+      ret = this_list.find_first<QU_qhostname>(ocs::tom::Host(hostname));
    } else {
       for (const auto qinstance : this_list) {
          const char *qname = qinstance.get<QU_qname>();
@@ -131,8 +131,7 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::CSTR, cqueue_name, qname, nullptr)) {
             if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname, hname, nullptr)) {
-               // the list is read-only for the search only; the caller gets the element writable, as before
-               ret = ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<lListElem *>(qinstance.raw()));
+               ret = qinstance;
                break;
             }
          }
@@ -142,20 +141,20 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<
 }
 
 /**
- * @brief Find a qinstance using the fullname
+ * @brief Find a qinstance in a writable list
  *
- * find a qinstance using the fullname
+ * As the read-only form.
  *
- * @param queue_list QU list, may be an empty handle
- * @param full_name fullname of the qinstance (`cqueue@hostname`)
+ * @param this_list QU list, may be an empty handle
+ * @param hostname hostname
+ * @param cqueue_name cluster queue name; nullptr looks up the host alone
  *
- * @return QU_type element, or an empty handle
- *
- * @note MT-NOTE: qinstance_list_locate2() is MT safe
+ * @return QU element, writable as the list is, or an empty handle
  */
-ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(const ocs::tom::ConstList<ocs::tom::QU> queue_list,
-                                                       const char *full_name) {
-   return ocs::tom::find_first_rw<QU_full_name>(queue_list, full_name);
+ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::List<ocs::tom::QU> this_list,
+                                                      const char *hostname, const char *cqueue_name) {
+   const auto ret = qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU>(this_list), hostname, cqueue_name);
+   return ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<lListElem *>(ret.raw()));
 }
 
 /**

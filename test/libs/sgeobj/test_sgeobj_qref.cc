@@ -284,7 +284,7 @@ static void test_qref_list_host_rejected() {
 // The pairs are those of T01-T14 above, so the CS-2450 trap is included: the
 // fixture contains a group literally named "@gpustar*", and the cache must
 // resolve the member entry "@gpustar*" to that group alone and never as a
-// pattern. hgroup_find_all_references() uses hgroup_list_locate() for exactly
+// pattern. hgroup_find_all_references() looks the member up by HGRP_name for exactly
 // that reason, but this is where it gets proven for the cached path.
 // ---------------------------------------------------------------------------
 

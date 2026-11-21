@@ -126,7 +126,7 @@ int correct_load(const ocs::tom::ConstList<ocs::tom::JB> running_jobs,
             uint32_t slots;
             
             const char *qnm = granted_queue.get<JG_qname>();
-            if (qinstance_list_locate2(queue_list, qnm) == nullptr) {
+            if (queue_list.find_first<QU_full_name>(qnm) == nullptr) {
                DPRINTF("Unable to find queue \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", qnm, job_id, ja_task_id);
                continue;
             }

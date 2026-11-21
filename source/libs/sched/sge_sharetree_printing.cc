@@ -436,11 +436,11 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::C
    dstring node_name_dstring = DSTRING_INIT;
 
    if (!project) {
-      project = ocs::tom::ConstElement<ocs::tom::PR>(prj_list_locate(projects, node.get<STN_name>()));
+      project = projects.find_first<PR_name>(node.get<STN_name>());
    }
 
    if (!children) {
-      user = ocs::tom::ConstElement<ocs::tom::UU>(user_list_locate(users, node.get<STN_name>()));
+      user = users.find_first<UU_name>(node.get<STN_name>());
    }
 
    if (group_nodes || !children) {
@@ -544,8 +544,8 @@ void print_hdr(dstring *out, const format_t *format) {
  */
 void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer,
                          const ocs::tom::ConstList<ocs::tom::STN> sharetree_in,
-                         const ocs::tom::ConstList<ocs::tom::UU> users,
-                         const ocs::tom::ConstList<ocs::tom::PR> projects,
+                         const ocs::tom::List<ocs::tom::UU> users,
+                         const ocs::tom::List<ocs::tom::PR> projects,
                          const ocs::tom::ConstList<ocs::tom::US> usersets, const bool group_nodes,
                          const bool decay_usage, const char **names, const format_t *format) {
    DENTER(TOP_LAYER);

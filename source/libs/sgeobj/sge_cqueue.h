@@ -107,12 +107,16 @@ bool cqueue_is_a_href_referenced(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
 bool cqueue_set_template_attributes(ocs::tom::Element<ocs::tom::CQ> this_elem,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
-ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ> this_list, const char *name);
+ocs::tom::ConstElement<ocs::tom::QU> cqueue_locate_qinstance(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                                             const char *hostname);
 
-ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(ocs::tom::Element<ocs::tom::CQ> this_elem,
                                                         const char *hostname);
 
-ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+ocs::tom::ConstElement<ocs::tom::QU> cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                                      const char *full_name, bool raise_error);
+
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(ocs::tom::List<ocs::tom::CQ> cqueue_list,
                                                                  const char *full_name, bool raise_error);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::QR>
@@ -142,7 +146,10 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, ocs::tom::ConstEleme
 
 void cqueue_list_set_tag(ocs::tom::List<ocs::tom::CQ> this_list, uint32_t tag_value, bool tag_qinstances);
 
-ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+ocs::tom::ConstElement<ocs::tom::QU> cqueue_list_locate_qinstance(ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                                  const char *full_name);
+
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(ocs::tom::List<ocs::tom::CQ> cqueue_list,
                                                              const char *full_name);
 
 bool cqueue_purge_host(ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

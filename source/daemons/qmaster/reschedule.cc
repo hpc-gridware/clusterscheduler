@@ -464,7 +464,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        */
       if (!force && jep.get<JB_checkpoint_name>()) {
          const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
-         const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, jep.get<JB_checkpoint_name>());
+         const auto ckpt_ep = master_ckpt_list.find_first<CK_name>(jep.get<JB_checkpoint_name>());
          if (ckpt_ep) {
             uint32_t flags;
 

@@ -75,9 +75,12 @@ namespace ocs {
       [[nodiscard]] ocs::tom::List<ocs::tom::RQS> get_rqs_list() const { return *rqs_list_; }
 
       /** @brief The complex entries
+       *
+       * Not a const handle: the controller carries each value to render in CE_pj_doubleval of the model's copy.
+       *
        * @return the centry list
        */
-      [[nodiscard]] ocs::tom::ConstList<ocs::tom::CE> get_centry_list() const { return *centry_list_; }
+      [[nodiscard]] ocs::tom::List<ocs::tom::CE> get_centry_list() const { return *centry_list_; }
 
       /** @brief The user sets
        * @return the user set list

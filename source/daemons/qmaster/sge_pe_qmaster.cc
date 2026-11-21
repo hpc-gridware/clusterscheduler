@@ -328,7 +328,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const auto ep = pe_list_locate(master_pe_list, pe);
+   const auto ep = master_pe_list.find_first<PE_name>(pe);
    if (!ep) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, object_name, pe);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);

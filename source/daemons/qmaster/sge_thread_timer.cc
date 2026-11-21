@@ -275,8 +275,8 @@ sge_sharetree_tick_handler(te_event_t /* anEvent */, monitoring_t *monitor) {
       ocs::SharetreeUsage::emit_dirty_project_events(ocs::SessionManager::GDI_SESSION_NONE);
 
       if (root) {
-         const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
-         const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
+         const auto master_user_list = ocs::DataStore::master_list_rw<SGE_TYPE_USER>();
+         const auto master_project_list = ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>();
          const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
          sge_init_share_tree_nodes(root);

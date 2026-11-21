@@ -115,7 +115,7 @@ hgroup_nesting_that_contains(const ocs::tom::ConstList<ocs::tom::HR> current, co
       if (entry == nullptr || !ocs::is_hgroup_name(entry)) {
          continue;
       }
-      const ocs::tom::ConstElement<ocs::tom::HGRP> nested = hgroup_list_locate(master_hgroup_list, entry);
+      const auto nested = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(entry));
 
       if (hgroup_contains_host(nested, hostname, master_hgroup_list)) {
          if (found) {
@@ -950,7 +950,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
          /*
           * Does this hostgroup exist?
           */
-         const ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list_locate(master_hgroup_list, name);
+         const auto hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name));
          if (hgroup != nullptr) {
             ocs::tom::ListPtr<ocs::tom::HR> href_list;
             ocs::tom::ListPtr<ocs::tom::ST> qref_list;
@@ -987,7 +987,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
              * Try to unlink the concerned spoolfile
              *
              * CS-2763: with the STORED name, not the one the request carried.
-             * HGRP_name is an SGE_HOST field, so hgroup_list_locate() above
+             * HGRP_name is an SGE_HOST field, so the lookup by HGRP_name above
              * finds the group under any spelling -- but the spool file and the
              * event key are the stored spelling, and handing this call
              * "@MixedCase" as "@mixedcase" made the unlink miss a file that was
@@ -1065,7 +1065,7 @@ hgroup_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
  * @note MT-NOTE: call under the write lock, like every other writer of the list
  */
 void hgroup_refresh_caches(const ocs::tom::Element<ocs::tom::HGRP> hgroup,
-                           const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                           const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,
                            ocs::tom::ListPtr<ocs::tom::HR> &referencees) {
    DENTER(TOP_LAYER);
 
@@ -1081,7 +1081,7 @@ void hgroup_refresh_caches(const ocs::tom::Element<ocs::tom::HGRP> hgroup,
 
       for (const auto href : referencees.get()) {
          const ocs::tom::Element<ocs::tom::HGRP> referencee =
-                 hgroup_list_locate(master_hgroup_list, href.get<HR_name>());
+                 master_hgroup_list.find_first<HGRP_name>(href.get<HR_name>());
 
          if (referencee != nullptr) {
             hgroup_update_cache(referencee, &cache_answer_list, master_hgroup_list);
@@ -1170,13 +1170,13 @@ void hgroup_refresh_matcher_caches(const ocs::tom::List<ocs::tom::HGRP> master_h
  * @param gdi_session the session the change belongs to
  */
 void hgroup_send_referencee_events(const ocs::tom::ConstList<ocs::tom::HR> referencees,
-                                   const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                                   const ocs::tom::List<ocs::tom::HGRP> master_hgroup_list,
                                    const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    for (const auto href : referencees) {
       const char *ref_name = href.get<HR_name>();
-      const ocs::tom::Element<ocs::tom::HGRP> referencee = hgroup_list_locate(master_hgroup_list, ref_name);
+      const auto referencee = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(ref_name));
 
       if (referencee != nullptr) {
          sge_add_event(0, sgeE_HGROUP_MOD, 0, 0, ref_name, nullptr, nullptr, referencee, gdi_session);

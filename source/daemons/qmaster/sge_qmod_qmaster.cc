@@ -163,7 +163,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
    dstring cqueue_buffer = DSTRING_INIT;
    dstring hostname_buffer = DSTRING_INIT;
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    // the request data is structure checked in the listener (CS-3125)
    const ocs::tom::List<ocs::tom::ID> data_list(task->data_list);
@@ -257,10 +257,9 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                }
                cqueue_name = sge_dstring_get_string(&cqueue_buffer);
                hostname = sge_dstring_get_string(&hostname_buffer);
-               ocs::tom::ConstElement<ocs::tom::CQ> cqueue = master_cqueue_list.find_first<CQ_name>(cqueue_name);
-               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
-               ocs::tom::Element<ocs::tom::QU> qinstance =
-                  ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
+               const ocs::tom::Element<ocs::tom::CQ> cqueue = master_cqueue_list.find_first<CQ_name>(cqueue_name);
+               const ocs::tom::List<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
+               const auto qinstance = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(hostname));
 
                sge_change_queue_state(packet, task, qinstance, id_action, dep.get<ID_force>(), &alp, monitor);
                found = true;
@@ -647,7 +646,7 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
 
    ocs::tom::Element<ocs::tom::QU> queueep = nullptr;
    if (jatep.get<JAT_master_queue>()) {
-      const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+      const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
       queueep = cqueue_list_locate_qinstance(master_cqueue_list, jatep.get<JAT_master_queue>());
    }
 
@@ -1175,7 +1174,7 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    if (queue == nullptr) {
       // read access as master_list() gives it; the job found is changed
@@ -1400,7 +1399,7 @@ signal_slave_jobs_in_queue(const int how, const ocs::tom::ConstElement<ocs::tom:
    ocs::tom::ConstList<ocs::tom::JG> gdil_lp;
    const char *qname, *mqname, *pe_name;
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
    qname = qep.get<QU_full_name>();
@@ -1417,7 +1416,7 @@ signal_slave_jobs_in_queue(const int how, const ocs::tom::ConstElement<ocs::tom:
          /* signalling of not "slave controlled" parallel jobs will not work
             since they are not known to the appropriate execd - we should
             omit signalling in this case to prevent waste of communication bandwidth */
-         if (!(pe_name = jatep.get<JAT_granted_pe>()) || !pe_list_locate(master_pe_list, pe_name))
+         if (!(pe_name = jatep.get<JAT_granted_pe>()) || !master_pe_list.find_first<PE_name>(pe_name))
             continue;
 
          if (gdil_lp.find_first<JG_qname>(qname) != nullptr) {
@@ -1455,7 +1454,7 @@ signal_slave_tasks_of_job(const int how, const ocs::tom::Element<ocs::tom::JB> j
    ocs::tom::ConstElement<ocs::tom::PE> pe;
    const char *qname, *pe_name;
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
    /* do not signal slave tasks in case of checkpointing jobs with
       STOP/CONT when suspending means migration */
@@ -1468,7 +1467,7 @@ signal_slave_tasks_of_job(const int how, const ocs::tom::Element<ocs::tom::JB> j
    /* forward signal to slave exec hosts
       in case of slave controlled jobs */
    if (!((gdil_lp = jatep.get<JAT_granted_destin_identifier_list>()).size() <= 1 ||
-         !(pe_name = jatep.get<JAT_granted_pe>()) || !(pe = pe_list_locate(master_pe_list, pe_name)) ||
+         !(pe_name = jatep.get<JAT_granted_pe>()) || !(pe = master_pe_list.find_first<PE_name>(pe_name)) ||
          !pe.get<PE_control_slaves>())) {
       for (auto gdil_ep = gdil_lp.front().next(); gdil_ep; gdil_ep = gdil_ep.next()) {
          qname = gdil_ep.get<JG_qname>();

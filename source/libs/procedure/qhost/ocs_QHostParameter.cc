@@ -43,7 +43,7 @@ extern char **environ;
  * @param bundle the marshalled parameters
  * @param packet the originating client packet
  */
-ocs::QHostParameter::QHostParameter(const ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet)
+ocs::QHostParameter::QHostParameter(const ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet)
    : ProcedureParameter("", packet) {
    DENTER(TOP_LAYER);
 
@@ -61,7 +61,7 @@ ocs::QHostParameter::QHostParameter(const ocs::tom::ConstList<ocs::tom::SPP> bun
  * @param bundle the marshalled parameters; the switch lists are moved out of it
  * @return none
  */
-void ocs::QHostParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle) {
+void ocs::QHostParameter::set_bundle(const ocs::tom::List<ocs::tom::SPP> bundle) {
    DENTER(TOP_LAYER);
 
    // initialize parents member variables
@@ -74,16 +74,16 @@ void ocs::QHostParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
 
    // -F
    resource_visible_list_ =
-           take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_VISIBLE_LIST));
+           take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(RESOURCE_VISIBLE_LIST));
 
    // -l
-   resource_match_list_ = take_value_list<ocs::tom::CE>(ocs::tom::find_first_rw<SPP_name>(bundle, RESOURCE_LIST));
+   resource_match_list_ = take_value_list<ocs::tom::CE>(bundle.find_first<SPP_name>(RESOURCE_LIST));
 
    // -u
-   user_name_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, USER_NAME_LIST));
+   user_name_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(USER_NAME_LIST));
 
    // -h
-   hostname_list_ = take_value_list<ocs::tom::ST>(ocs::tom::find_first_rw<SPP_name>(bundle, HOSTNAME_LIST));
+   hostname_list_ = take_value_list<ocs::tom::ST>(bundle.find_first<SPP_name>(HOSTNAME_LIST));
 
    DRETURN_VOID;
 }

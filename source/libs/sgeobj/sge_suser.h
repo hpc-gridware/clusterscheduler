@@ -50,7 +50,10 @@
 ocs::tom::Element<ocs::tom::SU> suser_list_add(ocs::tom::List<ocs::tom::SU> suser_list,
                                                ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *suser_name);
 
-ocs::tom::Element<ocs::tom::SU> suser_list_find(ocs::tom::ConstList<ocs::tom::SU> suser_list, const char *suser_name);
+ocs::tom::ConstElement<ocs::tom::SU> suser_list_find(ocs::tom::ConstList<ocs::tom::SU> suser_list,
+                                                    const char *suser_name);
+
+ocs::tom::Element<ocs::tom::SU> suser_list_find(ocs::tom::List<ocs::tom::SU> suser_list, const char *suser_name);
 
 void suser_increase_job_counter(ocs::tom::Element<ocs::tom::SU> suser);
 
@@ -67,4 +70,4 @@ int suser_register_new_job(ocs::tom::ConstElement<ocs::tom::JB> job, uint32_t ma
                            ocs::tom::List<ocs::tom::SU> master_suser_list);
 
 void suser_unregister_job(ocs::tom::ConstElement<ocs::tom::JB> job,
-                          ocs::tom::ConstList<ocs::tom::SU> master_suser_list);
+                          ocs::tom::List<ocs::tom::SU> master_suser_list);

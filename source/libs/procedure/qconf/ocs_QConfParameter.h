@@ -305,7 +305,7 @@ namespace ocs {
 #pragma region Marshaling
 
    protected:
-      void set_bundle(ocs::tom::ConstList<ocs::tom::SPP> bundle) override;
+      void set_bundle(ocs::tom::List<ocs::tom::SPP> bundle) override;
 
    public:
       [[nodiscard]] ocs::tom::ListPtr<ocs::tom::SPP> get_bundle() override;
@@ -314,7 +314,7 @@ namespace ocs {
 #pragma region Constructor/Destructor
 
    public:
-      QConfParameter(ocs::tom::ConstList<ocs::tom::SPP> bundle, gdi::Packet *packet);
+      QConfParameter(ocs::tom::List<ocs::tom::SPP> bundle, gdi::Packet *packet);
 
       /** @brief Build empty parameters, to be filled in by the client
        * @param procedure_name the command being run, `"qconf"`

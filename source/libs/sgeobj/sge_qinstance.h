@@ -85,11 +85,11 @@ bool qinstance_list_validate(ocs::tom::List<ocs::tom::QU> this_list, ocs::tom::L
 
 void qinstance_set_full_name(ocs::tom::Element<ocs::tom::QU> this_elem);
 
-ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU> this_list, const char *hostname,
-                                                      const char *cqueue_name);
+ocs::tom::ConstElement<ocs::tom::QU> qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU> this_list,
+                                                           const char *hostname, const char *cqueue_name);
 
-ocs::tom::Element<ocs::tom::QU> qinstance_list_locate2(ocs::tom::ConstList<ocs::tom::QU> qinstance_list,
-                                                       const char *full_name);
+ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(ocs::tom::List<ocs::tom::QU> this_list, const char *hostname,
+                                                      const char *cqueue_name);
 
 const char *qinstance_get_name(ocs::tom::ConstElement<ocs::tom::QU> this_elem, dstring *string_buffer);
 

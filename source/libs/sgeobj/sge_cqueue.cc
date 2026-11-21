@@ -268,7 +268,7 @@ ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(const ocs::tom::ConstEleme
    }
    dstring name_buffer = DSTRING_INIT;
    const char *group_name = hgroup_queue_group_name(cqueue.get<CQ_name>(), &name_buffer);
-   const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name);
+   const auto hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(group_name));
 
    sge_dstring_free(&name_buffer);
 
@@ -624,27 +624,10 @@ bool cqueue_set_template_attributes(const ocs::tom::Element<ocs::tom::CQ> this_e
    DRETURN(ret);
 }
 
-
-/**
- * @brief Find a cluster queue in list
- *
- * Find the cluster queue with name "name" in the list "this_list".
- *
- * @param this_list CQ list, may be an empty handle
- * @param name cluster queue name
- *
- * @return cluster queue object, or an empty handle
- */
-ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(const ocs::tom::ConstList<ocs::tom::CQ> this_list,
-                                                   const char *name) {
-   return ocs::tom::find_first_rw<CQ_name>(this_list, name);
-}
-
-
 /**
  * @brief Returns one qinstance from a cqueue
  *
- * Finds the queue instance locateted on the host "hostname" of a
+ * Finds the queue instance located on the host "hostname" of a
  * given cluster queue "this_elem".
  *
  * @param this_elem CQ object
@@ -652,7 +635,24 @@ ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(const ocs::tom::ConstList<ocs
  *
  * @return qinstance object, or an empty handle
  */
-ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+ocs::tom::ConstElement<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
+                                                             const char *hostname) {
+   const auto qinstance_list = this_elem.get<CQ_qinstances>();
+
+   return qinstance_list_locate(qinstance_list, hostname, nullptr);
+}
+
+/**
+ * @brief Returns one qinstance from a writable cqueue
+ *
+ * As the read-only form.
+ *
+ * @param this_elem CQ object
+ * @param hostname resolved hostname
+ *
+ * @return qinstance object, writable as the cluster queue is, or an empty handle
+ */
+ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::Element<ocs::tom::CQ> this_elem,
                                                         const char *hostname) {
    const auto qinstance_list = this_elem.get<CQ_qinstances>();
 
@@ -725,7 +725,7 @@ ocs_cqueue_verify_hrefs(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::tom
                break;
             }
             if (in_master && strcmp(hostname, HOSTREF_DEFAULT)) {
-               const auto hgroup = hgroup_list_locate(master_hgroup_list, hostname);
+               const auto hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(hostname));
 
                if (!hgroup) {
                   ERROR(MSG_CQUEUE_INVALIDDOMSETTING_SS, attr_name, hostname);
@@ -1157,7 +1157,24 @@ void cqueue_list_set_tag(const ocs::tom::List<ocs::tom::CQ> this_list, const uin
  *
  * @note MT-NOTE: cqueue_list_locate_qinstance() is MT safe
  */
-ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+ocs::tom::ConstElement<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
+                                                                  const char *full_name) {
+   return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
+}
+
+/**
+ * @brief Finds a certain qinstance in a writable cluster queue list
+ *
+ * As the read-only form.
+ *
+ * @param cqueue_list CQ, may be an empty handle
+ * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
+ *
+ * @return QU element, writable as the list is, or an empty handle
+ *
+ * @note MT-NOTE: cqueue_list_locate_qinstance() is MT safe
+ */
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::List<ocs::tom::CQ> cqueue_list,
                                                              const char *full_name) {
    return cqueue_list_locate_qinstance_msg(cqueue_list, full_name, true);
 }
@@ -1177,11 +1194,12 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance(const ocs::tom::Con
  *
  * @note MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe
  */
-ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
-                                                                 const char *full_name, const bool raise_error) {
+ocs::tom::ConstElement<ocs::tom::QU>
+cqueue_list_locate_qinstance_msg(const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list, const char *full_name,
+                                 const bool raise_error) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::Element<ocs::tom::QU> ret = nullptr;
+   ocs::tom::ConstElement<ocs::tom::QU> ret = nullptr;
 
    if (full_name != nullptr) {
       dstring cqueue_name_buffer = DSTRING_INIT;
@@ -1196,7 +1214,7 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
       if (cqueue) {
          const auto qinstance_list = cqueue.get<CQ_qinstances>();
 
-         ret = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
+         ret = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(hostname));
       } else {
          if (raise_error) {
             ERROR(MSG_CQUEUE_CQUEUEISNULL_SSSII, full_name, cqueue_name != nullptr ? cqueue_name : "<null>",
@@ -1211,6 +1229,26 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
       }
    }
    DRETURN(ret);
+}
+
+/**
+ * @brief Finds a certain qinstance in a writable cluster queue list
+ *
+ * As the read-only form, with the same messages.
+ *
+ * @param cqueue_list CQ, may be an empty handle
+ * @param full_name qinstance name of the form `CQNAME@HOSTNAME`
+ * @param raise_error true - show error messages - false - suppress error messages
+ *
+ * @return QU element, writable as the list is, or an empty handle
+ *
+ * @note MT-NOTE: cqueue_list_locate_qinstance_msg() is MT safe
+ */
+ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom::List<ocs::tom::CQ> cqueue_list,
+                                                                 const char *full_name, const bool raise_error) {
+   const auto ret = cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name,
+                                                     raise_error);
+   return ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<lListElem *>(ret.raw()));
 }
 
 
@@ -1323,7 +1361,7 @@ ocs_cqueue_sick_attr(const ocs::tom::ConstList<A> attr_list, const char *attr_na
             ocs::tom::ListPtr<ocs::tom::HR> add_hosts;
             ocs::tom::ListPtr<ocs::tom::HR> equity_hosts;
 
-            const auto hgroup = hgroup_list_locate(master_hgroup_list, name);
+            const auto hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name));
 
             /*
              * hgroup specific setting:

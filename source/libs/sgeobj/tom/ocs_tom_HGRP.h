@@ -184,7 +184,6 @@ namespace ocs::tom {
     * hgroup_find_all_referencees("E", &answer, master_list, &groups)
     *    groups -> A, B, C, D
     *  
-    * @see hgroup_list_locate()
     * @see hgroup_create()
     * @see hgroup_add_references()
     * @see hgroup_find_all_references()

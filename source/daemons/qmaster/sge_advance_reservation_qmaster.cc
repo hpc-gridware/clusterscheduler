@@ -258,7 +258,7 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
 
    // the project has to exist
    const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
-   const auto pep = prj_list_locate(master_project_list, project);
+   const auto pep = master_project_list.find_first<PR_name>(project);
    if (!pep) {
       ERROR(MSG_AR_PRJUNKNOWN_S, project);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -279,8 +279,8 @@ ar_verify_project(const ocs::tom::ConstElement<ocs::tom::AR> ar, const ocs::gdi:
    // the projects and xprojects of the global configuration have to allow the project
    const auto projects = mconf_get_projects();
    const auto xprojects = mconf_get_xprojects();
-   bool allowed = (!xprojects || prj_list_locate(*xprojects, project) == nullptr) &&
-                  (!projects || prj_list_locate(*projects, project) != nullptr);
+   bool allowed = (!xprojects || xprojects->find_first<PR_name>(project) == nullptr) &&
+                  (!projects || projects->find_first<PR_name>(project) != nullptr);
    if (!allowed) {
       ERROR(MSG_AR_PRJNOTALLOWED_S, project);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -346,7 +346,7 @@ int ar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
       /* get new ar ids until we find one that is not yet used */
       do {
          ar_id = sge_get_ar_id(monitor);
-      } while (ar_list_locate(master_ar_list, ar_id));
+      } while (master_ar_list.find_first<AR_id>(ar_id));
       new_ar.set<AR_id>(ar_id);
       /*
       ** set the owner of new_ar, don't overwrite it with
@@ -955,7 +955,7 @@ sge_ar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    const auto master_ar_list = ocs::DataStore::master_list_rw<SGE_TYPE_AR>();
 
-   const auto ar = ar_list_locate(master_ar_list, ar_id);
+   const auto ar = master_ar_list.find_first<AR_id>(ar_id);
    if (!ar) {
       ERROR(MSG_EVE_TE4AR_U, ar_id);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
@@ -1051,7 +1051,7 @@ ar_reserve_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
-   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+   const auto master_centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_cal_list = ocs::DataStore::master_list<SGE_TYPE_CALENDAR>();
 
@@ -1304,7 +1304,7 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
 
    uint64_t start_time = ar.get<AR_start_time>();
    uint64_t duration = ar.get<AR_duration>();
-   const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
+   const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
@@ -1394,8 +1394,8 @@ ar_do_reservation(const ocs::tom::Element<ocs::tom::AR> ar, const bool incslots,
 
    if (granted_pe != nullptr) {
       // The booking of slots into the PE's resource diagram needs to be done on the actual PE from the master pe list.
-      const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
-      const auto master_pe = pe_list_locate(master_pe_list, granted_pe);
+      const auto master_pe_list = ocs::DataStore::master_list_rw<SGE_TYPE_PE>();
+      const auto master_pe = master_pe_list.find_first<PE_name>(granted_pe);
       if (!master_pe) {
          CRITICAL(MSG_OBJ_UNABLE2FINDPE_S, granted_pe);
 #if defined(ENABLE_DEBUG_CHECKS)
@@ -1866,7 +1866,7 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
       uint32_t slots = gep.get<JG_slots>();
       queue.set<QU_job_slots>(slots);
 
-      const auto master_cqueue = cqueue_list_locate(master_cqueue_list, cqueue_name);
+      const auto master_cqueue = master_cqueue_list.find_first<CQ_name>(cqueue_name);
       const auto master_queue = cqueue_locate_qinstance(master_cqueue, host_name);
 
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);

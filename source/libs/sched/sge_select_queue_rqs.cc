@@ -130,8 +130,8 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
    for (const auto limit : rule.get<RQR_limit>()) {
       bool       is_forced = false;
       const char *limit_name = limit.get<RQRL_name>();
-      const auto raw_centry =
-         ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(a->centry_list, limit_name));
+      // the default request is written into the complex definition of a->centry_list itself
+      const auto raw_centry = centry_list_locate(a->centry_list, limit_name);
 
       if (raw_centry == nullptr) {
          DPRINTF("ignoring limit %s because not defined", limit_name);
@@ -420,8 +420,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
                for (const auto limit : rule.get<RQR_limit>()) {
                   const char *limit_name = limit.get<RQRL_name>();
 
-                  const auto raw_centry =
-         ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(a->centry_list, limit_name));
+                  const auto raw_centry = centry_list_locate(a->centry_list, limit_name);
                   if (raw_centry == nullptr) {
                      DPRINTF("ignoring limit %s because not defined", limit_name);
                      continue;

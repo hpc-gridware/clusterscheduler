@@ -399,7 +399,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
     */
    const char *granted_pe = ja_task.get<JAT_granted_pe>();
    if (granted_pe != nullptr) {
-      const auto pe = pe_list_locate(master_pe_list, granted_pe);
+      const auto pe = master_pe_list.find_first<PE_name>(granted_pe);
       do_accounting_summary = pe_do_accounting_summary(pe);
    }
 
@@ -518,7 +518,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
    ar_id = job.get<JB_ar>();
    if (ar_id != 0) {
-      ar = ar_list_locate(master_ar_list, ar_id);
+      ar = master_ar_list.find_first<AR_id>(ar_id);
    }
 
    /*

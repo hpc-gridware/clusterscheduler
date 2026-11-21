@@ -233,21 +233,17 @@ int sge_add_str2load_report(const ocs::tom::List<ocs::tom::LR> lp, const char *n
    DENTER(BASIS_LAYER);
 
    ocs::tom::Element<ocs::tom::LR> ep = nullptr;
-   const void *iterator = nullptr;
 
    if (!lp || name == nullptr || value == nullptr || host == nullptr) {
       DRETURN(-1);
    }
 
-   ocs::tom::Element<ocs::tom::LR> search_ep = ocs::tom::find_first_rw<LR_host>(lp, host, &iterator);
-
-   while (search_ep != nullptr) {
+   for (const auto search_ep : lp.find_all<LR_host>(ocs::tom::Host(host))) {
       DPRINTF("---> %s\n", search_ep.get<LR_name>());
       if (strcmp(search_ep.get<LR_name>(), name) == 0) {
          ep = search_ep;
          break;
       }
-      search_ep = ocs::tom::find_next_rw<LR_host>(lp, host, &iterator);
    }
    
    if (ep == nullptr) {

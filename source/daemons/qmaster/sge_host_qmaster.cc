@@ -724,7 +724,7 @@ host_sync_exec_hostgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitor
                                                     : ocs::SessionManager::GDI_SESSION_NONE;
 
    const auto master_hgroup_list = ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>();
-   const ocs::tom::Element<ocs::tom::HGRP> hgrp = hgroup_list_locate(master_hgroup_list, EXEC_HOSTGROUP);
+   const auto hgrp = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(EXEC_HOSTGROUP));
 
    if (hgrp == nullptr) {
       /* not seeded yet -- setup_qmaster.cc creates it and calls us afterwards */
@@ -1077,14 +1077,14 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
    bool statics_changed = false;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
-   const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_ehost_list = ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>();
 
    /* JG: TODO: this time should better come with the report.
     *           it is the time when the reported values were valid.
     */
    uint64_t now = sge_get_gmt64();
 
-   ocs::tom::Element<ocs::tom::EH> host_ep_eh = ocs::tom::find_first_rw<EH_name>(master_ehost_list, rhost);
+   ocs::tom::Element<ocs::tom::EH> host_ep_eh = master_ehost_list.find_first<EH_name>(ocs::tom::Host(rhost));
    if (host_ep_eh == nullptr) {
       /* report from unknown host arrived, ignore it */
       DRETURN_VOID;
@@ -1092,7 +1092,7 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
 
    // get real host element if we handle a simulated host
    if (real_host != nullptr) {
-      real_ep = ocs::tom::find_first_rw<EH_name>(master_ehost_list, real_host);
+      real_ep = master_ehost_list.find_first<EH_name>(ocs::tom::Host(real_host));
    }
 
    /* 
@@ -1161,7 +1161,7 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
          }
 
          /* get the new host */
-         *hepp = ocs::tom::find_first_rw<EH_name>(master_ehost_list, host);
+         *hepp = master_ehost_list.find_first<EH_name>(ocs::tom::Host(host));
          if (*hepp == nullptr) {
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
@@ -1394,35 +1394,30 @@ exec_host_change_queue_version(const char *exechost_name, const uint64_t gdi_ses
    bool change_all = (strcasecmp(exechost_name, SGE_GLOBAL_NAME) == 0) ? true : false;
    const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
 
+   // increase the version of one queue instance and announce it
+   auto change_qinstance = [gdi_session](const ocs::tom::Element<ocs::tom::QU> qinstance, const char *name) {
+      ocs::tom::ListPtr<ocs::tom::AN> answer_list;
+
+      DPRINTF(SFQ " has changed. Increasing qversion of" SFQ "\n", name, qinstance.get<QU_full_name>());
+      qinstance_increase_qversion(qinstance);
+      sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
+                      0, 0, qinstance.get<QU_qname>(),
+                      qinstance.get<QU_qhostname>(), nullptr,
+                      qinstance, nullptr, nullptr, true, false, gdi_session);
+      answer_list_output(&answer_list);
+   };
+
    for (const auto cqueue : master_cqueue_list) {
-      ocs::tom::List<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
-      ocs::tom::Element<ocs::tom::QU> qinstance = nullptr;
-      ocs::tom::Element<ocs::tom::QU> next_qinstance = nullptr;
-      const void *iterator = nullptr;
+      const ocs::tom::List<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
 
       if (change_all) {
-         next_qinstance = qinstance_list.front();
-      } else {
-         next_qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, exechost_name, &iterator);
-      }
-      while ((qinstance = next_qinstance)) {
-         const char *name;
-         ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-
-         if (change_all) {
-            next_qinstance = qinstance.next();
-            name = SGE_GLOBAL_NAME;
-         } else {
-            next_qinstance = ocs::tom::find_next_rw<QU_qhostname>(qinstance_list, exechost_name, &iterator);
-            name = exechost_name;
+         for (const auto qinstance : qinstance_list) {
+            change_qinstance(qinstance, SGE_GLOBAL_NAME);
          }
-         DPRINTF(SFQ " has changed. Increasing qversion of" SFQ "\n", name, qinstance.get<QU_full_name>());
-         qinstance_increase_qversion(qinstance);
-         sge_event_spool(&answer_list, 0, sgeE_QINSTANCE_MOD,
-                         0, 0, qinstance.get<QU_qname>(),
-                         qinstance.get<QU_qhostname>(), nullptr,
-                         qinstance, nullptr, nullptr, true, false, gdi_session);
-         answer_list_output(&answer_list);
+      } else {
+         for (const auto qinstance : qinstance_list.find_all<QU_qhostname>(ocs::tom::Host(exechost_name))) {
+            change_qinstance(qinstance, exechost_name);
+         }
       }
    }
 
@@ -1659,7 +1654,7 @@ host_add_to_hgroup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *h
    DENTER(TOP_LAYER);
 
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
-   const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup = hgroup_list_locate(master_hgroup_list, hgroup_name);
+   const auto old_hgroup = master_hgroup_list.find_first<HGRP_name>(ocs::tom::Host(hgroup_name));
    int add = old_hgroup == nullptr ? 1 : 0;
    ocs::tom::ListPtr<ocs::tom::HR> href_list;
 
@@ -1731,7 +1726,7 @@ host_remove_from_hgroups(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const c
 
    for (const std::string &hgroup_name : hgroup_names) {
       const ocs::tom::ConstElement<ocs::tom::HGRP> old_hgroup =
-              hgroup_list_locate(ocs::DataStore::master_list<SGE_TYPE_HGROUP>(), hgroup_name.c_str());
+              ocs::DataStore::master_list<SGE_TYPE_HGROUP>().find_first<HGRP_name>(ocs::tom::Host(hgroup_name.c_str()));
       if (old_hgroup == nullptr) {
          continue;
       }
@@ -1991,8 +1986,8 @@ sge_execd_startedup(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::t
     */
    if (!is_restart) {
       for (const auto cqueue : master_cqueue_list) {
-         ocs::tom::ConstList<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
-         ocs::tom::Element<ocs::tom::QU> qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, rhost);
+         const ocs::tom::List<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
+         const auto qinstance = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(rhost));
 
          if (qinstance != nullptr) {
             if (sge_qmaster_qinstance_set_initial_state(qinstance, packet->gdi_session)) {
@@ -2296,11 +2291,10 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elemen
                ocs::tom::ConstList<ocs::tom::JG> gdil = jatep.get<JAT_granted_destin_identifier_list>();
                int slots;
                bool is_master_task = false;
-               const void *iterator = nullptr;
                const ocs::tom::ConstElement<ocs::tom::PE> pe = jatep.get<JAT_pe_object>();
                ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = jatep.get<JAT_granted_resources_list>();
 
-               if (global_host || (gdil.front() == ocs::tom::find_first<JG_qhostname>(gdil, host, &iterator))) {
+               if (global_host || (gdil.front() == gdil.find_first<JG_qhostname>(ocs::tom::Host(host)))) {
                   is_master_task = true;
                }
 
@@ -2316,8 +2310,7 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elemen
 
          for (const auto ar_ep : master_ar_list) {
             ocs::tom::ConstList<ocs::tom::JG> gdil = ar_ep.get<AR_granted_slots>();
-            const void *iterator = nullptr;
-            ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = ocs::tom::find_first<JG_qhostname>(gdil, host, &iterator);
+            const ocs::tom::ConstElement<ocs::tom::JG> gdil_ep = gdil.find_first<JG_qhostname>(ocs::tom::Host(host));
 
             // in case the master task is running on this host, need to book per JOB consumables
             bool is_master_task = false;
@@ -2331,23 +2324,22 @@ attr_mod_threshold(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elemen
             const char *pe_name = ar_ep.get<AR_granted_pe>();
             ocs::tom::ConstElement<ocs::tom::PE> pe = nullptr;
             if (pe_name != nullptr) {
-               pe = pe_list_locate(master_pe_list, pe_name);
+               pe = master_pe_list.find_first<PE_name>(pe_name);
             }
 
             if (gdil_ep != nullptr) {
                auto dummy_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
                job_set_hard_resource_list(*dummy_job, ar_ep.get<AR_resource_list>().clone());
 
-               while (gdil_ep != nullptr) {
-                  rc_add_job_utilization(gdil_ep, *dummy_job, pe, 0,
+               for (const auto host_gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(host))) {
+                  rc_add_job_utilization(host_gdil_ep, *dummy_job, pe, 0,
                                          SCHEDULING_RECORD_ENTRY_TYPE_RESERVING,
                                          *tmp_elem, master_centry_list,
-                                         gdil_ep.get<JG_slots>(), host, ar_ep.get<AR_start_time>(),
+                                         host_gdil_ep.get<JG_slots>(), host, ar_ep.get<AR_start_time>(),
                                          ar_ep.get<AR_duration>(), HOST_TAG, false, is_master_task,
                                          do_per_host_booking, ar_ep.get<AR_granted_resources_list>());
                   is_master_task = false;
                   do_per_host_booking = false;
-                  gdil_ep = ocs::tom::find_next<JG_qhostname>(gdil, host, &iterator);
                }
             }
          }

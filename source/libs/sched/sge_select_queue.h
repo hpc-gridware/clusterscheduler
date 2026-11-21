@@ -101,7 +101,7 @@
 bool
 sge_select_queue(ocs::tom::List<ocs::tom::CE> requested_attr, ocs::tom::ConstElement<ocs::tom::QU> queue,
                  ocs::tom::ConstElement<ocs::tom::EH> host, ocs::tom::List<ocs::tom::EH> exechost_list,
-                 ocs::tom::ConstList<ocs::tom::CE> centry_list, bool allow_non_requestable, int slots,
+                 ocs::tom::List<ocs::tom::CE> centry_list, bool allow_non_requestable, int slots,
                  ocs::tom::ConstList<ocs::tom::ST> queue_user_list, ocs::tom::ConstList<ocs::tom::US> acl_list,
                  ocs::tom::ConstElement<ocs::tom::JB> job);
 
@@ -210,7 +210,7 @@ struct sge_assignment_base_t {
    ocs::tom::List<ocs::tom::CE> load_adjustments;  ///< job load adjustments
    ocs::tom::List<ocs::tom::EH> host_list;         ///< the hosts
    ocs::tom::List<ocs::tom::QU> queue_list;        ///< the queues
-   ocs::tom::ConstList<ocs::tom::CE> centry_list;  ///< the complex entries
+   ocs::tom::List<ocs::tom::CE> centry_list;       ///< the complex entries; default requests are written into them
    ocs::tom::ConstList<ocs::tom::US> acl_list;     ///< the user sets
    ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list;  ///< the host group list
    ocs::tom::List<ocs::tom::RQS> rqs_list;         ///< the resource quota set list

@@ -56,36 +56,6 @@
 #include "tom/ocs_List.h"
 
 /**
- * @brief Find project in list
- *
- * @param lp PR list, may be an empty handle
- * @param name project name
- *
- * @return the project, or an empty handle
- */
-ocs::tom::Element<ocs::tom::PR> prj_list_locate(const ocs::tom::ConstList<ocs::tom::PR> lp, const char *name) {
-   DENTER(BASIS_LAYER);
-   const auto ep = ocs::tom::find_first_rw<PR_name>(lp, name);
-   DRETURN(ep);
-}
-
-
-/**
- * @brief Find user in list
- *
- * @param lp UU list, may be an empty handle
- * @param name user name
- *
- * @return the user, or an empty handle
- */
-ocs::tom::Element<ocs::tom::UU> user_list_locate(const ocs::tom::ConstList<ocs::tom::UU> lp, const char *name) {
-   DENTER(BASIS_LAYER);
-   const auto ep = ocs::tom::find_first_rw<UU_name>(lp, name);
-   DRETURN(ep);
-}
-
-
-/**
  * @brief Append prj from list to dstring
  *
  * Append all projects in list lp to dstring string.
@@ -135,7 +105,7 @@ bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list,
    for (const auto prj : prj_list) {
       const char *name = prj.get<PR_name>();
 
-      if (!prj_list_locate(this_list, name)) {
+      if (!this_list.find_first<PR_name>(name)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_CQUEUE_UNKNOWNPROJECT_S, name);
