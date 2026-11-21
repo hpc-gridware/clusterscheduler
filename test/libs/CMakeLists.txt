@@ -21,7 +21,6 @@
 # test/libs
 
 add_subdirectory(comm)
-add_subdirectory(cull)
 add_subdirectory(drmaa)
 add_subdirectory(gdi)
 add_subdirectory(mir)

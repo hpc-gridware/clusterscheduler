@@ -21,9 +21,9 @@
 #pragma once
 
 /** @file
- * @brief Pack buffers recorded by the base revision for test_cull_pack_format
+ * @brief Pack buffers recorded by the base revision for test_tom_core_pack_format
  *
- * Written by `test_cull_pack_format --dump`. Do not edit. Regenerate only with
+ * Written by `test_tom_core_pack_format --dump`. Do not edit. Regenerate only with
  * a deliberate change of the pack format (CS-2997: full descriptors as type
  * references), on the build that introduces it, and check the difference to
  * the previous buffers: the buffers are the reference every later build is

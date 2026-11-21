@@ -28,7 +28,7 @@
  * library (packint(), unpackstr(), cull_pack_list(), cull_unpack_elem(), ...)
  * are thin wrappers that turn the exception back into the PACK_* code they
  * returned (N-L-1, N-L-2). The bytes on the wire are those of before; the
- * format is pinned by test_cull_pack_format.
+ * format is pinned by test_tom_core_pack_format.
  */
 
 #include <cstddef>

@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Loadable module for test_cull_plugin: a library that links CULL statically, like a spooling plugin
+ * @brief Loadable module for test_tom_core_plugin: a library that links CULL statically, like a spooling plugin
  *
  * Built twice: once as the spooling plugins are, so that its calls into CULL bind
  * to the copy of the loading executable, and once with -Bsymbolic, so that they
@@ -34,7 +34,7 @@
  * @param dp the descriptor
  * @return the registered descriptor, holding a reference
  */
-extern "C" const lDescr *test_cull_plugin_intern(const lDescr *dp) {
+extern "C" const lDescr *test_tom_core_plugin_intern(const lDescr *dp) {
    return ocs::tom::descr_intern(dp);
 }
 
@@ -42,7 +42,7 @@ extern "C" const lDescr *test_cull_plugin_intern(const lDescr *dp) {
  * @brief Release a descriptor through the CULL this module is bound to
  * @param dpp the holder of the descriptor, set to nullptr; nullptr is ignored
  */
-extern "C" void test_cull_plugin_release(const lDescr **dpp) {
+extern "C" void test_tom_core_plugin_release(const lDescr **dpp) {
    if (dpp != nullptr) {
       ocs::tom::release_descr(*dpp);
    }
@@ -56,6 +56,6 @@ extern "C" void test_cull_plugin_release(const lDescr **dpp) {
  *
  * @return the identity of the registry
  */
-extern "C" const void *test_cull_plugin_probe() {
+extern "C" const void *test_tom_core_plugin_probe() {
    return ocs::tom::descr_registry_id();
 }

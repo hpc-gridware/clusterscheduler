@@ -131,3 +131,6 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_raw_ops DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_raw_build DESTINATION testbin/${SGE_ARCH})
 endif ()
+
+# the tests of the list core, formerly the CULL tests (CS-3103)
+add_subdirectory(core)

@@ -382,8 +382,8 @@ static int unpackstr_at_guard(const size_t remaining) {
  * @return 0 if every check passed, 1 otherwise
  */
 int main(int argc, char *argv[]) {
-   DENTER_MAIN(TOP_LAYER, "test_cull_pack");
-   const char *const filename = "test_cull_pack.txt";
+   DENTER_MAIN(TOP_LAYER, "test_tom_core_pack");
+   const char *const filename = "test_tom_core_pack.txt";
    ocs::tom::RawElementPtr copy;
    sge_pack_buffer pb;
    int pack_ret;

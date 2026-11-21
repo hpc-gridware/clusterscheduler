@@ -51,7 +51,7 @@
  * This file is compiled directly into every binary that dlopens the
  * spooling plugins: sge_qmaster (source/daemons/qmaster/CMakeLists.txt),
  * spoolinit / spooldefaults / spooledit (source/utilbin/CMakeLists.txt) and
- * test_cull_plugin (test/libs/cull/CMakeLists.txt). Add it to any new binary
+ * test_tom_core_plugin (test/libs/tom/core/CMakeLists.txt). Add it to any new binary
  * that also dlopens sgeobj-consuming shared libraries.
  */
 /* Clang provides __has_feature; GCC doesn't. Define it as a no-op fallback

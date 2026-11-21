@@ -556,7 +556,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
    ocs::tom::detail::hash_set_min_elems(0);
-   if (!setup_bootstrap("test_cull_lookup")) {
+   if (!setup_bootstrap("test_tom_core_lookup")) {
       printf("FAIL  cannot create the temporary bootstrap file\n");
       return 1;
    }

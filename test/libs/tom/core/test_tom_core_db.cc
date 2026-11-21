@@ -588,7 +588,7 @@ static void teardown_bootstrap() {
 int main(int /*argc*/, char * /*argv*/[]) {
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size},
                                          {"ALIEN", ALIEN_Type, ALIEN_Name, ALIEN_Size}});
-   if (!setup_bootstrap("test_cull_db")) {
+   if (!setup_bootstrap("test_tom_core_db")) {
       printf("FAIL  cannot create the temporary bootstrap file\n");
       return 1;
    }

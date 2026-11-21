@@ -320,7 +320,7 @@ static int enumeration_compare(const lEnumeration *what1, const lEnumeration *wh
  * @return 0 if every check passed, 1 otherwise
  */
 int main(int /*argc*/, char * /*argv*/[]) {
-   DENTER_MAIN(TOP_LAYER, "test_cull_enumeration");
+   DENTER_MAIN(TOP_LAYER, "test_tom_core_enumeration");
    component_set_daemonized(true);
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size},
                                          {"TEST1", TEST1_Type, TEST1_Name, TEST1_Size}});

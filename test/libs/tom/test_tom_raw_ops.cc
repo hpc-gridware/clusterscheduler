@@ -1435,7 +1435,7 @@ test_free_raw() {
 /**
  * @brief descr_registry_shared() refuses an object without the registry probe
  *
- * The positive case, a loaded module that links the probe and shares the registry, is test_cull_plugin.
+ * The positive case, a loaded module that links the probe and shares the registry, is test_tom_core_plugin.
  *
  * @return nothing; CHECK records the results
  */

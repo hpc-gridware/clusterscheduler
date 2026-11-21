@@ -51,7 +51,7 @@ enum SPA_Field {
     * @brief Argument Type
     *
     * If an option has additional arguments the type of the argument,
-    * as defined in source/libs/cull/cull_list.h, enum _enum_lMultiType, e.g.
+    * as defined in source/libs/tom/ocs_Types.h, enum _enum_lMultiType, e.g.
     * lStringT for the -N option (defining a job name as string).
     */
    SPA_argtype,

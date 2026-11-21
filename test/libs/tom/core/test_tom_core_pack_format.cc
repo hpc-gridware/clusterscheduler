@@ -29,8 +29,8 @@
  * cover the other direction, because the old build then reads the new buffers
  * as its own.
  *
- * The recorded buffers live in test_cull_pack_format_golden.h. They were
- * written by `test_cull_pack_format --dump`, run on a build of the base
+ * The recorded buffers live in test_tom_core_pack_format_golden.h. They were
+ * written by `test_tom_core_pack_format --dump`, run on a build of the base
  * revision, and are never regenerated for a change that keeps the format. Since
  * CS-3103 the test drives the core of the typed object model (pack_elem(),
  * pack_list(), unpack_raw_elem(), unpack_raw_list() and the non-throwing buffer
@@ -67,7 +67,7 @@
 #include "ocs_test_model.h"
 
 #ifndef OCS_PACK_FORMAT_DUMP_ONLY
-#include "test_cull_pack_format_golden.h"
+#include "test_tom_core_pack_format_golden.h"
 #endif
 
 /** @brief The element type: every field type the pack format supports, hashed keys, a sublist and a sub-object
@@ -275,7 +275,7 @@ static void dump_array(const char *name, const bytes &b) {
 }
 
 /**
- * @brief Write test_cull_pack_format_golden.h to stdout
+ * @brief Write test_tom_core_pack_format_golden.h to stdout
  *
  * @return 0 on success, 1 if a buffer could not be packed
  */
@@ -286,7 +286,7 @@ static int dump() {
                                  {"bound_elem", s.bound_elem}, {"object_elem", s.object_elem},
                                  {"trans_elem", s.trans_elem}, {"list", s.list}, {"partial_list", s.partial_list}}) {
       if (b.empty()) {
-         fprintf(stderr, "test_cull_pack_format: packing %s failed\n", name);
+         fprintf(stderr, "test_tom_core_pack_format: packing %s failed\n", name);
          failed = true;
       }
    }
@@ -314,9 +314,9 @@ static int dump() {
           "/*___INFO__MARK_END_NEW__*/\n\n"
           "#pragma once\n\n"
           "/** @file\n"
-          " * @brief Pack buffers recorded by the base revision for test_cull_pack_format\n"
+          " * @brief Pack buffers recorded by the base revision for test_tom_core_pack_format\n"
           " *\n"
-          " * Written by `test_cull_pack_format --dump`. Do not edit. Regenerate only with\n"
+          " * Written by `test_tom_core_pack_format --dump`. Do not edit. Regenerate only with\n"
           " * a deliberate change of the pack format (CS-2997: full descriptors as type\n"
           " * references), on the build that introduces it, and check the difference to\n"
           " * the previous buffers: the buffers are the reference every later build is\n"
@@ -441,7 +441,7 @@ int main(int argc, char *argv[]) {
    }
 
 #ifdef OCS_PACK_FORMAT_DUMP_ONLY
-   fprintf(stderr, "test_cull_pack_format: built for --dump only\n");
+   fprintf(stderr, "test_tom_core_pack_format: built for --dump only\n");
    return 2;
 #else
    current = pack_set();

@@ -484,7 +484,7 @@ static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
 }
 
 int main(int argc, char *argv[]) {
-   DENTER_MAIN(TOP_LAYER, "test_cull_hash");
+   DENTER_MAIN(TOP_LAYER, "test_tom_core_hash");
    int i;
 
    if (argc != 1 && argc < 5) {

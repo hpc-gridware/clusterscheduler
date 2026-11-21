@@ -193,7 +193,7 @@ test_select_pack_bytes() {
          task->data_list == nullptr && !task->condition && !task->enumeration);
 
    // the reference, independent of select_pack() that pack_task() uses: the selection made by select_as() and
-   // packed by pack_list() (the same bytes, see test_cull_select_pack), then the answer list pack_task() completed
+   // packed by pack_list() (the same bytes, see test_tom_core_select_pack), then the answer list pack_task() completed
    bool ref_packed = ocs::tom::try_put_uint32(&ref, static_cast<uint32_t>(task->command)) == PACK_SUCCESS &&
                      ocs::tom::try_put_uint32(&ref, static_cast<uint32_t>(task->sub_command)) == PACK_SUCCESS &&
                      ocs::tom::try_put_uint32(&ref, static_cast<uint32_t>(task->target)) == PACK_SUCCESS;

@@ -89,8 +89,8 @@ static module_result probe_module(const char *name) {
    using release_func = void (*)(const lDescr **);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-   const auto intern = reinterpret_cast<intern_func>(dlsym(handle, "test_cull_plugin_intern"));
-   const auto release = reinterpret_cast<release_func>(dlsym(handle, "test_cull_plugin_release"));
+   const auto intern = reinterpret_cast<intern_func>(dlsym(handle, "test_tom_core_plugin_intern"));
+   const auto release = reinterpret_cast<release_func>(dlsym(handle, "test_tom_core_plugin_release"));
 #pragma GCC diagnostic pop
    if (intern != nullptr && release != nullptr) {
       const size_t base = ocs::tom::descr_registry_size();
@@ -107,7 +107,7 @@ static module_result probe_module(const char *name) {
 
 /** @brief PLUGIN-01: a module built like a spooling plugin uses the registry of the process */
 static void test_shared() {
-   const module_result r = probe_module("test_cull_plugin_shared.so");
+   const module_result r = probe_module("test_tom_core_plugin_shared.so");
    CHECK(1, "the module is loaded", r.loaded);
    CHECK(2, "the loader check passes and names one object for both", r.shared && r.own == r.seen);
    CHECK(3, "the module and the executable intern one descriptor into one registry", r.same_descr && r.growth == 1);
@@ -115,10 +115,10 @@ static void test_shared() {
 
 /** @brief PLUGIN-02: a module bound to its own CULL is caught */
 static void test_split() {
-   const module_result r = probe_module("test_cull_plugin_split.so");
+   const module_result r = probe_module("test_tom_core_plugin_split.so");
    CHECK(4, "the module is loaded", r.loaded);
    CHECK(5, "the loader check fails and names the module as the holder of its registry",
-         !r.shared && r.seen.find("test_cull_plugin_split.so") != std::string::npos);
+         !r.shared && r.seen.find("test_tom_core_plugin_split.so") != std::string::npos);
    CHECK(6, "the module builds its own descriptor in its own registry", !r.same_descr && r.growth == 1);
 }
 

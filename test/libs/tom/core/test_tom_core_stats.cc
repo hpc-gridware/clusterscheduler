@@ -466,7 +466,7 @@ static void test_merge_and_write() {
       worker.join();
    }
 
-   char dir_template[] = "/tmp/test_cull_stats.XXXXXX";
+   char dir_template[] = "/tmp/test_tom_core_stats.XXXXXX";
    const char *dir = mkdtemp(dir_template);
    const std::string path = dir != nullptr ? ocs::tom::stats::write(dir) : std::string{};
    const std::string content = path.empty() ? std::string{} : read_file(path);
@@ -478,7 +478,7 @@ static void test_merge_and_write() {
          !path.empty() && path.size() > 5 && path.compare(path.size() - 5, 5, ".json") == 0 &&
          !doc.HasParseError() && json_uint(doc, {"format"}) == 2 &&
          json_at(doc, {"descr_registry_peak"}) != nullptr &&
-         program != nullptr && program->IsString() && strcmp(program->GetString(), "test_cull_stats") == 0 &&
+         program != nullptr && program->IsString() && strcmp(program->GetString(), "test_tom_core_stats") == 0 &&
          json_uint(doc, {"pid"}) == static_cast<uint64_t>(getpid()) &&
          json_at(doc, {"written"}) != nullptr && threads != nullptr && threads->IsObject());
    CHECK(14, "both threads add up in their class, the field named through the installed object model",

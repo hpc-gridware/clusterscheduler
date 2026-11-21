@@ -18,33 +18,28 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# The old function interface of the list library is not public (CS-3103, M6).
+# The internals of the typed object model stay inside it (CS-3103).
 #
 # Product code reaches objects through the typed object model and the raw API
-# (tom/ocs_*.h). Of the old library it may include only tom/ocs_Types.h, the data
-# types: tom/ocs_Types.h (lList, lListElem, lDescr, ... and the object type
-# definition macros) and tom/ocs_PackBuffer.h (sge_pack_buffer, the PACK_*
-# codes); tom/detail/ocs_Errno.h (the error codes the tom error state is set with)
-# may be included directly.
+# (tom/ocs_*.h). The data types are public: tom/ocs_Types.h (lList, lListElem,
+# lDescr, ... and the object type definition macros) and tom/ocs_PackBuffer.h
+# (sge_pack_buffer, the PACK_* codes); tom/detail/ocs_Errno.h (the error codes
+# the tom error state is set with) may be included directly.
 #
 # Two checks, both ERRORs:
 #
-# 1. Includes. Every other header of source/libs/cull (cull/cull_old_api.h and
-#    the headers it collects, cull/pack.h), tom/pack.h (the old pack buffer
-#    primitives), the other cull_*.h headers of source/libs/tom and
-#    tom/ocs_Descr.h declare the old function interface or its internals:
-#    including one is an error, except
-#    - under source/libs/cull, source/libs/tom and source/libs/sgeobj/tom, which
-#      implement the old interface or wrap it, and
-#    - in the tests (any path with a test/ directory in it). Tests that still
-#      build their data with the old interface include cull/cull_test_api.h,
-#      which no file outside the tests may include.
+# 1. Includes. The other headers of tom/detail/ and tom/ocs_Descr.h declare the
+#    internals of the list core: including one is an error, except
+#    - under source/libs/tom and source/libs/sgeobj/tom, which implement the
+#      model, and
+#    - in the tests (any path with a test/ directory in it), which may test the
+#      core directly.
+#    Headers are compared by their file name, so a relative spelling cannot slip
+#    through.
 #
-# 2. Calls. The old function interface is not declared in a product translation
-#    unit any more, the compiler refuses its names. The TOM headers still need
-#    internal headers of the list library for their inline code, so the
-#    internals declared there stay reachable until a later CS-3103 step moves
-#    them behind detail headers of tom: tom/detail/ocs_Hash.h
+# 2. Calls. The TOM headers need the internal headers for their inline code,
+#    so the internals declared there are reachable from every translation unit
+#    that includes a TOM header: tom/detail/ocs_Hash.h
 #    (ocs::tom::detail::hash_*()), tom/detail/ocs_ListP.h
 #    (ocs::tom::detail::slot_index(), elem_kind(), elem_set_*(),
 #    list_hash_table(), ...), tom/detail/ocs_MultitypeP.h
@@ -69,7 +64,7 @@
 # Arguments (-D): SOURCE_DIR (the clusterscheduler checkout), EXTENSIONS_DIR
 # (the extensions checkout, optional), STAMP (optional, touched when the scan
 # passed). Run by hand with
-#   cmake -DSOURCE_DIR=<clusterscheduler> -DEXTENSIONS_DIR=<gcs-extensions> -P check_cull_api.cmake
+#   cmake -DSOURCE_DIR=<clusterscheduler> -DEXTENSIONS_DIR=<gcs-extensions> -P check_tom_api.cmake
 
 # a script run with -P sets no policy version, so if (... IN_LIST ...) needs the policy set here
 cmake_policy(SET CMP0057 NEW)
@@ -84,16 +79,16 @@ foreach (header IN LISTS detail_headers)
    endif ()
 endforeach ()
 list(APPEND forbidden "tom/ocs_Descr.h")
-# headers are compared by their file name: libs/cull and libs/tom export their own directories as include
-# paths, so "cull_list.h" or "./cull_list.h" reach the same header as "cull/cull_list.h"
+# headers are compared by their file name, so "ocs_Hash.h" or "./ocs_Hash.h" reach the same header as
+# "tom/detail/ocs_Hash.h"
 set(forbidden_names "")
 foreach (header IN LISTS forbidden)
    get_filename_component(name "${header}" NAME)
    list(APPEND forbidden_names "${name}")
 endforeach ()
 list(REMOVE_DUPLICATES forbidden_names)
-# one pattern for all of them, cull_test_api.h included
-set(include_alternation "${forbidden_names};cull_test_api.h")
+# one pattern for all of them
+set(include_alternation "${forbidden_names}")
 string(REPLACE "." "\\." include_alternation "${include_alternation}")
 string(REPLACE ";" "|" include_alternation "${include_alternation}")
 set(include_pattern "#[ \t]*include[ \t]*[<\"]([^>\"\n]*/)?(${include_alternation})[>\"]")
@@ -220,9 +215,7 @@ foreach (root IN LISTS roots)
          foreach (include IN LISTS includes)
             string(REGEX REPLACE "^\n[ \t]*#[ \t]*include[ \t]*[<\"]" "" header "${include}")
             get_filename_component(name "${header}" NAME)
-            if (name STREQUAL "cull_test_api.h")
-               list(APPEND violations "${source}: #include \"${header}\" (tests only)")
-            elseif (name IN_LIST forbidden_names)
+            if (name IN_LIST forbidden_names)
                list(APPEND violations "${source}: #include \"${header}\" (not public)")
             endif ()
          endforeach ()
@@ -266,8 +259,8 @@ endforeach ()
 
 if (violations)
    string(REPLACE ";" "\n   " report "${violations}")
-   message(FATAL_ERROR "the old interface of the list library or its internals are used outside libs/cull, "
-                       "libs/tom, libs/sgeobj/tom and the tests (see check_cull_api.cmake):\n   ${report}")
+   message(FATAL_ERROR "internals of the typed object model are used outside libs/tom, libs/sgeobj/tom and the "
+                       "tests (see check_tom_api.cmake):\n   ${report}")
 endif ()
 if (STAMP)
    file(TOUCH "${STAMP}")

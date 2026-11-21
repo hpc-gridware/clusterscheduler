@@ -277,7 +277,7 @@ static ocs::tom::ConstRawElement object_of(const ocs::tom::ConstRawElement ep, c
  * @return the exit status of the module test driver
  */
 int main(int argc, char *argv[]) {
-   DENTER_MAIN(TOP_LAYER, "test_cull_no_transfer");
+   DENTER_MAIN(TOP_LAYER, "test_tom_core_no_transfer");
 
    component_set_daemonized(true);
    ocs::module_test::install_test_model({{"TNT", TNT_Type, TNT_Name, TNT_Size}});
