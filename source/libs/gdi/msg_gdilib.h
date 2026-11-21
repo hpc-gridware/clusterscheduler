@@ -123,4 +123,11 @@
 #define MSG_GDI_PARSING_AUTHINFO_FAILED_SSIS _MESSAGE(55017, _("parsing auth info failed for " SFN "/" SFN "/%uh: " SFN))
 #define MSG_GDI_TLS_CLIENT_CERT_DEFERRED_S   _MESSAGE(55018, _("qmaster client certificate file " PFQMAX " is not yet available; deferring client TLS setup until act_qmaster points to a host with a valid certificate"))
 
+// the check of the sender information of a request received (moved from the list library)
+#define MSG_GDI_AUTHINFO_UIDGIDMISMATCH_UUUU    _MESSAGE(55019, _("uid and gid information from message ( " uid_t_fmt ":" gid_t_fmt ") does not match local user and group information ( " uid_t_fmt ":" gid_t_fmt ")"))
+#define MSG_GDI_AUTHINFO_COULDNOTRESOLVEUSER_U  _MESSAGE(55020, _("could not resolve user name for uid " uid_t_fmt))
+#define MSG_GDI_AUTHINFO_COULDNOTRESOLVEGROUP_U _MESSAGE(55021, _("could not resolve group name for gid " gid_t_fmt))
+#define MSG_GDI_AUTHINFO_CORRECTINGUSERNAME_SS  _MESSAGE(55022, _("correcting user name from authinfo: " SFQ " to re-resolved name " SFQ))
+#define MSG_GDI_AUTHINFO_CORRECTINGGROUPNAME_SS _MESSAGE(55023, _("correcting group name from authinfo: " SFQ " to re-resolved name " SFQ))
+
 // clang-format on

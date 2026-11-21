@@ -45,6 +45,9 @@
 #include "uti/sge_profiling.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_unistd.h"
+#include "uti/sge_component.h"
+#include "uti/sge_string.h"
+#include "uti/sge_uidgid.h"
 
 #include "gdi/msg_gdilib.h"
 #include "gdi/sge_gdi_data.h"
@@ -593,11 +596,75 @@ ocs::gdi::ClientServerBase::to_string(unsigned long tag_value) {
 }
 
 /**
+ * @brief Check and complete the sender information of a request received
+ *
+ * The sender's uid, gid and names travel with the packed request (from munge or the local credentials). The
+ * check compares them with this host's view and corrects names that resolve differently here.
+ *
+ * @param pb the buffer of the request
+ * @param error receives the reason of a mismatch, or a note on a corrected name
+ * @param local_uid_gid true if the sender must run with this process' user and group, or as root
+ * @param reresolve_user true to resolve the user and group names again from the ids
+ * @param reresolve_supp_grp true to resolve the supplementary groups again
+ * @return true if the sender information holds
+ */
+static bool
+check_sender(sge_pack_buffer *pb, dstring *error, const bool local_uid_gid, const bool reresolve_user,
+             const bool reresolve_supp_grp) {
+   DENTER(TOP_LAYER);
+   bool ret = true;
+
+   // the sender must run as this process' user and group, or as root, between components such as
+   // sge_qmaster and sge_execd
+   if (local_uid_gid) {
+      if ((pb->uid != component_get_uid() && pb->uid != 0) || (pb->gid != component_get_gid() && pb->gid != 0)) {
+         sge_dstring_sprintf(error, MSG_GDI_AUTHINFO_UIDGIDMISMATCH_UUUU, pb->uid, pb->gid, component_get_uid(),
+                             component_get_gid());
+         ret = false;
+      }
+   }
+
+   if (ret && reresolve_user) {
+      char buffer[MAX_USER_GROUP]{};
+      if (sge_uid2user(pb->uid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
+         // sge_uid2user() logs the error
+         sge_dstring_sprintf(error, MSG_GDI_AUTHINFO_COULDNOTRESOLVEUSER_U, pb->uid);
+         ret = false;
+      } else if (strcmp(pb->username, buffer) != 0) {
+         sge_dstring_sprintf(error, MSG_GDI_AUTHINFO_CORRECTINGUSERNAME_SS, pb->username, buffer);
+         sge_strlcpy(pb->username, buffer, MAX_USER_GROUP);
+      }
+      if (sge_gid2group(pb->gid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
+         // sge_gid2group() logs the error
+         sge_dstring_sprintf(error, MSG_GDI_AUTHINFO_COULDNOTRESOLVEGROUP_U, pb->gid);
+         ret = false;
+      } else if (strcmp(pb->groupname, buffer) != 0) {
+         sge_dstring_sprintf(error, MSG_GDI_AUTHINFO_CORRECTINGGROUPNAME_SS, pb->groupname, buffer);
+         sge_strlcpy(pb->groupname, buffer, MAX_USER_GROUP);
+      }
+   }
+
+   if (ret && reresolve_supp_grp) {
+      int amount;
+      ocs_grp_elem_t *grp_array;
+      if (ocs_get_groups(pb->username, pb->gid, &amount, &grp_array, error)) {
+         sge_free(&pb->grp_array);
+         pb->grp_amount = amount;
+         pb->grp_array = grp_array;
+      } else {
+         ret = false;
+      }
+   }
+
+   DRETURN(ret);
+}
+
+/**
  * @brief re-resolve and check user information
  *
- * Calls ocs::tom::check_sender() and reacts to the result:
+ * Calls check_sender() and reacts to the result:
  * If an error is reported this will be output as ERROR message.
- * If no error is reported but the dstring passed into ocs::tom::check_sender() contains a message
+ * If no error is reported but the dstring passed into check_sender() contains a message
  * then it is output as INFO message.
  *
  * @param pb the pack buffer containing the request and usage data
@@ -613,7 +680,7 @@ ocs::gdi::ClientServerBase::sge_gdi_reresolve_check_user(sge_pack_buffer *pb, bo
    bool ret;
    DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
 
-   ret = ocs::tom::check_sender(pb, &error_dstr, local_uid_gid, reresolve_user, reresolve_supp_grp);
+   ret = check_sender(pb, &error_dstr, local_uid_gid, reresolve_user, reresolve_supp_grp);
    if (!ret) {
       ERROR(SFNMAX, sge_dstring_get_string(&error_dstr));
    } else if (sge_dstring_strlen(&error_dstr) > 0) {

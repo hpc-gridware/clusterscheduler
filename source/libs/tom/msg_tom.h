@@ -50,7 +50,8 @@
 // Retired ids, not to be reused: messages without any user left were removed, the ids stay reserved
 // so that a catalogue entry never changes its meaning. Retired so far: 41025, 41029 - 41052, 41060,
 // 41062, 41069, 41077 - 41081, 41083, 41084, 41086, 41087, 41089 - 41142 (messages of the removed error
-// numbers), 41160, 41161, 41163, 41165 - 41167, 41170 - 41172, 41176, 41177, 41188, 41189.
+// numbers), 41160, 41161, 41163, 41165 - 41167, 41170 - 41172, 41176, 41177, 41180 - 41184 (the authentication
+// messages, moved to gdi/msg_gdilib.h with the check they belong to), 41188, 41189.
 
 // clang-format off
 
@@ -99,11 +100,6 @@
 #define MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41173, _("error: lAddElemUlong64(" SFN "): run time type error"))
 #define MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41175, _("error: lGetElemUlong64(" SFN "): run time type error"))
 
-#define MSG_TOM_AUTHINFO_UIDGIDMISMATCH_UUUU               _MESSAGE(41180, _("uid and gid information from message ( " uid_t_fmt ":" gid_t_fmt ") does not match local user and group information ( " uid_t_fmt ":" gid_t_fmt ")"))
-#define MSG_TOM_AUTHINFO_COULDNOTRESOLVEUSER_U             _MESSAGE(41181, _("could not resolve user name for uid " uid_t_fmt))
-#define MSG_TOM_AUTHINFO_COULDNOTRESOLVEGROUP_U            _MESSAGE(41182, _("could not resolve group name for gid " gid_t_fmt))
-#define MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS            _MESSAGE(41183, _("correcting user name from authinfo: " SFQ " to re-resolved name " SFQ))
-#define MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS           _MESSAGE(41184, _("correcting group name from authinfo: " SFQ " to re-resolved name " SFQ))
 #define MSG_TOM_DESCR_SOFTCAPREACHED_U                     _MESSAGE(41185, _("descriptor registry of the object model holds " sge_u32 " descriptors, further ones are private copies"))
 #define MSG_TOM_BADSLOT_IIUU                               _MESSAGE(41186, _("value access at position %d of the type starting at field %d lies outside its " sge_u32 " fields or " sge_u32 " values"))
 #define MSG_TOM_DESCRNOTFULLLENGTH_IU                      _MESSAGE(41187, _("reduced descriptor starting at field %d has " sge_u32 " entries instead of the length of its type"))

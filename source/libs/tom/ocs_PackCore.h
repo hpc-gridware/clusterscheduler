@@ -214,18 +214,6 @@ namespace ocs::tom {
    bool buffers_equal(const sge_pack_buffer *a, const sge_pack_buffer *b) noexcept;
 
    /**
-    * @brief Check and complete the sender information of a buffer received, as cull_reresolve_check_user() did
-    * @param pb the buffer
-    * @param error receives the reason of a mismatch, or a note on a corrected name
-    * @param local_uid_gid true if the sender must run with this process' user and group, or as root
-    * @param reresolve_user true to resolve the user and group names again from the ids
-    * @param reresolve_supp_grp true to resolve the supplementary groups again
-    * @return true if the sender information holds
-    */
-   bool check_sender(sge_pack_buffer *pb, dstring *error, bool local_uid_gid, bool reresolve_user,
-                     bool reresolve_supp_grp);
-
-   /**
     * @brief The number of entries in the descriptor table of a buffer
     * @param pb the buffer, or nullptr
     * @return the number of distinct reduced descriptors written to or read from it
