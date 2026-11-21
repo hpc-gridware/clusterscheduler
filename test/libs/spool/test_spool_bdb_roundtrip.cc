@@ -229,7 +229,7 @@ std::string task_part(const uint32_t job_id, const uint32_t ja_task_id) {
  * @return true when the record exists and its bytes are those of the packed element
  */
 bool record_has_bytes(const bdb_info info, const bdb_database database, const std::string &key,
-                      const lListElem *expected) {
+                      const tom::ConstRawElement expected) {
    sge_pack_buffer pb;
    if (tom::try_init_buffer(&pb, 8192, false, false) != PACK_SUCCESS) {
       printf("      cannot initialise a pack buffer\n");
@@ -287,7 +287,7 @@ bool record_matches(const bdb_info info, const bdb_database database, const std:
                     tom::ElementPtr<T> &&expected) {
    auto list = tom::ListPtr<T>::create("expected");
    const auto bound = list->push_back(std::move(expected));
-   return record_has_bytes(info, database, key, bound.raw());
+   return record_has_bytes(info, database, key, bound);
 }
 
 /**
@@ -296,7 +296,7 @@ bool record_matches(const bdb_info info, const bdb_database database, const std:
  * @param prefix the key prefix, e.g. `JATASK:`
  * @return the keys
  */
-std::vector<std::string> read_keys(const lListElem *context, const std::string &prefix) {
+std::vector<std::string> read_keys(const tom::ConstElement<tom::SPC> context, const std::string &prefix) {
    tom::ListPtr<tom::AN> alp;
    lList *lp = nullptr;
    spool_read_keys(&alp, context, &lp, prefix.c_str());
@@ -318,7 +318,7 @@ std::vector<std::string> read_keys(const lListElem *context, const std::string &
  * @return the list read, empty if no record matched
  */
 template <typename T>
-tom::ListPtr<T> read_list(const lListElem *context, const sge_object_type object_type, bool *ok) {
+tom::ListPtr<T> read_list(const tom::ConstElement<tom::SPC> context, const sge_object_type object_type, bool *ok) {
    tom::ListPtr<tom::AN> alp;
    lList *lp = nullptr;
    const bool read = spool_read_list(&alp, context, &lp, object_type);
@@ -335,10 +335,10 @@ tom::ListPtr<T> read_list(const lListElem *context, const sge_object_type object
  * @param object_type the object type
  * @return true when the write succeeded without an error answer
  */
-bool write_ok(const lListElem *context, const tom::ConstRawElement object, const char *key,
-           const sge_object_type object_type) {
+bool write_ok(const tom::ConstElement<tom::SPC> context, const tom::ConstRawElement object, const char *key,
+              const sge_object_type object_type) {
    tom::ListPtr<tom::AN> alp;
-   const bool written = spool_write_object(&alp, context, object.raw(), key, object_type);
+   const bool written = spool_write_object(&alp, context, object, key, object_type);
    return answers_ok(alp, "spool_write_object") && written;
 }
 
@@ -350,7 +350,8 @@ bool write_ok(const lListElem *context, const tom::ConstRawElement object, const
  * @param quiet do not print the error answers, for a delete that is expected to fail
  * @return true when the delete succeeded
  */
-bool delete_ok(const lListElem *context, const sge_object_type object_type, const char *key, const bool quiet = false) {
+bool delete_ok(const tom::ConstElement<tom::SPC> context, const sge_object_type object_type, const char *key,
+               const bool quiet = false) {
    tom::ListPtr<tom::AN> alp;
    const bool deleted = spool_delete_object(&alp, context, object_type, key);
    if (quiet) {
@@ -501,7 +502,7 @@ tom::ElementPtr<tom::JB> make_job() {
  * @param context the spooling context
  * @param info the database handle of the rule
  */
-void test_centry(const lListElem *context, const bdb_info info) {
+void test_centry(const tom::ConstElement<tom::SPC> context, const bdb_info info) {
    printf("\n--- bound element with a unique key (complex entry) ---\n");
 
    auto list = tom::ListPtr<tom::CE>::create("centries");
@@ -556,17 +557,17 @@ void test_centry(const lListElem *context, const bdb_info info) {
  * @param context the spooling context
  * @param info the database handle of the rule
  */
-void test_userset(const lListElem *context, const bdb_info info) {
+void test_userset(const tom::ConstElement<tom::SPC> context, const bdb_info info) {
    printf("\n--- free element with a sub-list (userset) ---\n");
 
    const auto us = make_userset();
    const auto before = us->clone();
-   const lList *entries = us->get<US_entries>().raw();
+   const auto entries = us->get<US_entries>();
 
    CHECK(16, "a free userset is written", write_ok(context, *us, "bdb_acl", SGE_TYPE_USERSET));
    CHECK(17, "the free userset is free again after the write", tom::is_free(*us));
    CHECK(18, "the free userset is unchanged and keeps its entry list",
-         same(*us, *before) && us->get<US_entries>().raw() == entries);
+         same(*us, *before) && us->get<US_entries>() == entries);
    // a free element is written in the format of a bound one
    CHECK(19, "the record USERSET:bdb_acl holds the userset packed as a bound element",
          record_matches(info, BDB_CONFIG_DB, db_key(SGE_TYPE_USERSET, "bdb_acl"), us->clone()));
@@ -596,16 +597,16 @@ void test_userset(const lListElem *context, const bdb_info info) {
  * @param context the spooling context
  * @param info the database handle of the rule
  */
-void test_cqueue(const lListElem *context, const bdb_info info) {
+void test_cqueue(const tom::ConstElement<tom::SPC> context, const bdb_info info) {
    printf("\n--- cluster queue with queue instances ---\n");
 
    const auto cq = make_cqueue();
    const auto before = cq->clone();
-   const lList *qinstances = cq->get<CQ_qinstances>().raw();
+   const auto qinstances = cq->get<CQ_qinstances>();
 
    CHECK(25, "the cluster queue is written", write_ok(context, *cq, QUEUE, SGE_TYPE_CQUEUE));
    CHECK(26, "the cluster queue is unchanged and keeps its queue instance list",
-         same(*cq, *before) && cq->get<CQ_qinstances>().raw() == qinstances);
+         same(*cq, *before) && cq->get<CQ_qinstances>() == qinstances);
    auto expected = cq->clone();
    static_cast<void>(expected->exchange<CQ_qinstances>(tom::ListPtr<tom::QU>()));
    CHECK(27, "the record CQUEUE:bdb.q holds the cluster queue without its queue instances",
@@ -647,7 +648,7 @@ void test_cqueue(const lListElem *context, const bdb_info info) {
  * @param context the spooling context
  * @param info the database handle of the rule
  */
-void test_job(const lListElem *context, const bdb_info info) {
+void test_job(const tom::ConstElement<tom::SPC> context, const bdb_info info) {
    printf("\n--- array job with array tasks and a parallel task ---\n");
 
    const auto job = make_job();
@@ -656,15 +657,14 @@ void test_job(const lListElem *context, const bdb_info info) {
    const auto task1 = tasks.front();
    const auto task2 = task1.next();
    const auto pe_task = task1.get<JAT_task_list>().front();
-   const lList *tasks_raw = tasks.raw();
-   const lList *pe_tasks_raw = task1.get<JAT_task_list>().raw();
+   const auto pe_tasks = task1.get<JAT_task_list>();
 
    // the key <job>.<task> writes the job and that array task
    const std::string key1 = std::to_string(JOB_ID) + ".1";
    CHECK(37, "the job is written with array task 1", write_ok(context, *job, key1.c_str(), SGE_TYPE_JOB));
    CHECK(38, "the job is unchanged and keeps its array task and parallel task lists",
-         same(*job, *before) && job->get<JB_ja_tasks>().raw() == tasks_raw &&
-            task1.get<JAT_task_list>().raw() == pe_tasks_raw);
+         same(*job, *before) && job->get<JB_ja_tasks>() == tasks &&
+            task1.get<JAT_task_list>() == pe_tasks);
 
    auto expected_job = job->clone();
    static_cast<void>(expected_job->exchange<JB_ja_tasks>(tom::ListPtr<tom::JAT>()));
@@ -799,7 +799,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char *argv[]) {
       std::filesystem::remove_all(scratch, error);
       DRETURN(1);
    }
-   lListElem *ctx = context.get().raw();
+   const auto ctx = context.get();
    const auto rule = context->get<SPC_rules>().front();
    const auto info = static_cast<bdb_info>(rule.get<SPR_clientdata>());
 #pragma GCC diagnostic push

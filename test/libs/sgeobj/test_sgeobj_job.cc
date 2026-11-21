@@ -68,18 +68,18 @@ static int s_fail = 0;
 
 /**
  * @brief Set a task id range list of a job
+ * @tparam F the range list field, e.g. JB_ja_n_h_ids
  * @param job the job
- * @param field the range list field, e.g. JB_ja_n_h_ids
  * @param ranges the ranges, e.g. "1-5"
  */
+template <auto F>
 static void
-set_ranges(const ocs::tom::Element<ocs::tom::JB> job, const int field, const char *ranges) {
+set_ranges(const ocs::tom::Element<ocs::tom::JB> job, const char *ranges) {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::RN> list;
    range_list_parse_from_string(list, &alp, ranges, false, false, INF_NOT_ALLOWED);
    alp.reset();
-   // the field is a run-time number, so the list is handed over raw
-   ocs::tom::set(job.raw(), field, ocs::tom::RawListPtr(std::move(list)));
+   job.set<F>(std::move(list));
 }
 
 // ---------------------------------------------------------------------------
@@ -95,21 +95,21 @@ test_unenrolled_extremes() {
 
    // tasks 1-5 pending without hold, 6-10 held by an array dependency
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   set_ranges(*job, JB_ja_n_h_ids, "1-5");
-   set_ranges(*job, JB_ja_a_h_ids, "6-10");
+   set_ranges<JB_ja_n_h_ids>(*job, "1-5");
+   set_ranges<JB_ja_a_h_ids>(*job, "6-10");
    CHECK(1, "smallest over n_h 1-5 and a_h 6-10 is 1", job_get_smallest_unenrolled_task_id(*job) == 1);
    CHECK(2, "biggest over n_h 1-5 and a_h 6-10 is 10", job_get_biggest_unenrolled_task_id(*job) == 10);
 
    // the other way round
    auto other = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   set_ranges(*other, JB_ja_a_h_ids, "1-5");
-   set_ranges(*other, JB_ja_n_h_ids, "6-10");
+   set_ranges<JB_ja_a_h_ids>(*other, "1-5");
+   set_ranges<JB_ja_n_h_ids>(*other, "6-10");
    CHECK(3, "smallest over a_h 1-5 and n_h 6-10 is 1", job_get_smallest_unenrolled_task_id(*other) == 1);
    CHECK(4, "biggest over a_h 1-5 and n_h 6-10 is 10", job_get_biggest_unenrolled_task_id(*other) == 10);
 
    // a_h alone, and no unenrolled task at all
    auto only_a_h = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   set_ranges(*only_a_h, JB_ja_a_h_ids, "3-7");
+   set_ranges<JB_ja_a_h_ids>(*only_a_h, "3-7");
    CHECK(5, "smallest of a_h 3-7 alone is 3", job_get_smallest_unenrolled_task_id(*only_a_h) == 3);
    CHECK(6, "biggest of a_h 3-7 alone is 7", job_get_biggest_unenrolled_task_id(*only_a_h) == 7);
    auto none = ocs::tom::ElementPtr<ocs::tom::JB>::create();

@@ -144,12 +144,11 @@ static bool update_jobs() {
  */
 static bool spool_data() {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context;
    dstring key_ds = DSTRING_INIT;
    const char *key;
    int num_total = 0;
 
-   context = spool_get_default_context();
+   const auto context = spool_get_default_context();
 
    fprintf(stdout, "spooling %zu jobs\n", ocs::DataStore::master_list<SGE_TYPE_JOB>().size());
 
@@ -182,9 +181,8 @@ static bool spool_data() {
  */
 static bool read_spooled_data() {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context;
 
-   context = spool_get_default_context();
+   const auto context = spool_get_default_context();
 
    /* jobs */
    spool_read_list(&answer_list, context, ocs::DataStore::master_list_slot(SGE_TYPE_JOB), SGE_TYPE_JOB);
@@ -199,11 +197,10 @@ static bool read_spooled_data() {
  */
 static bool delete_spooled_data() {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context;
    char key[100];
    int num_total = 0;
 
-   context = spool_get_default_context();
+   const auto context = spool_get_default_context();
 
    /* jobs */
    for (const ocs::tom::ConstElement<ocs::tom::JB> job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
@@ -286,10 +283,16 @@ void clear_caches() {
  */
 /** @} */
 
+/**
+ * @brief Measure writing, reading and deleting jobs through a dynamically loaded spooling backend
+ * @param argc the number of arguments
+ * @param argv method, shared library and backend arguments
+ * @return EXIT_SUCCESS; exits with a failure when the spooling cannot be set up
+ */
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_performance");
 
-   lListElem *spooling_context;
+   ocs::tom::Element<ocs::tom::SPC> spooling_context;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
 #define NM10 "%I%I%I%I%I%I%I%I%I%I"
@@ -314,7 +317,8 @@ int main(int argc, char *argv[]) {
 #define defstring(str) #str
 
    /* initialize spooling */
-   spooling_context = spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]);
+   spooling_context =
+      ocs::tom::Element<ocs::tom::SPC>(spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]));
    answer_list_output(&answer_list);
    if (spooling_context == nullptr) {
       sge_exit(EXIT_FAILURE);

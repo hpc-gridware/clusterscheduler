@@ -174,9 +174,14 @@ create_jobs() {
    };
    const int num_users = 19;
 
+   // the global list stays a raw holder (no static owner); it is created here and read through a handle
+   if (master_job_list == nullptr) {
+      master_job_list = ocs::tom::ListPtr<ocs::tom::JB>::create("job list").release();
+   }
+   const ocs::tom::List<ocs::tom::JB> jobs(master_job_list);
    auto time_start = std::chrono::high_resolution_clock::now();
    for (int i = 0; i < num_jobs; i++) {
-      ocs::tom::Element<ocs::tom::JB> ep = ocs::tom::emplace_back<JB_job_number>(&master_job_list, i + 1);
+      const auto ep = jobs.emplace_back<JB_job_number>(i + 1);
       int idx = i % num_users;
       ep.set<JB_owner>(users[idx].user);
       ep.set<JB_group>(users[idx].group);
@@ -199,10 +204,11 @@ update_jobs() {
    bool ret = true;
    int i;
 
+   const ocs::tom::List<ocs::tom::JB> jobs(master_job_list);
    auto time_start = std::chrono::high_resolution_clock::now();
    for (i = 0; i < num_jobs; i++) {
       uint32_t job_id = random_array[i];
-      ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+      const auto job = jobs.find_first<JB_job_number>(job_id);
       if (job == nullptr) {
          fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;
@@ -231,16 +237,17 @@ delete_jobs() {
    bool ret = true;
    int i;
 
+   const ocs::tom::List<ocs::tom::JB> jobs(master_job_list);
    auto time_start = std::chrono::high_resolution_clock::now();
    for (i = 0; i < num_jobs; i++) {
       uint32_t job_id = random_array[i];
-      const ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, job_id);
+      const auto job = jobs.find_first<JB_job_number>(job_id);
       if (job == nullptr) {
          fprintf(stderr, "didn't find job " sge_u32 " in job list\n", job_id);
          ret = false;
          break;
       } else {
-         ocs::tom::List<ocs::tom::JB>(master_job_list).erase(job);
+         jobs.erase(job);
       }
    }
    ocs::tom::free_raw_list(master_job_list);

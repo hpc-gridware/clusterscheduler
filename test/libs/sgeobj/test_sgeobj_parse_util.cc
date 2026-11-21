@@ -181,26 +181,26 @@ static void test_parse_string_list() {
    {
       lList *lp = nullptr;
       const int ret = parse_words({"-x", "7", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp);
-      const auto list = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(lp);
+      const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
       const auto ep = list ? list->front() : ocs::tom::Element<ocs::tom::SPA>();
       CHECK(1, "one element of five typed words: string, ulong, double, long and int set",
             ret == 0 && list->size() == 1 && same(ep.get<SPA_switch_val>(), "-x") &&
                ep.get<SPA_argval_lUlongT>() == 7 && ep.get<SPA_argval_lDoubleT>() == 1.5 &&
                ep.get<SPA_argval_lLongT>() == -3 && ep.get<SPA_argval_lIntT>() == -4);
-      CHECK(11, "the list carries the given name", list && same(ocs::tom::list_name(list->raw()), "parsed"));
+      CHECK(11, "the list carries the given name", list && same(list->name(), "parsed"));
    }
    {
       lList *lp = nullptr;
       const int ret = parse_words({"-x", "7", "1.5", "-3", "-4", "-y", "8", "2", "3", "4"}, ocs::tom::SPA::descriptor.e,
                                   spa_rule, &lp);
-      const ocs::tom::RawListPtr list(lp);
+      const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
       CHECK(2, "a used up rule starts a new element", ret == 0 && list->size() == 2 &&
                                                           join_strings(list.get(), SPA_switch_val) == "-x -y");
    }
    {
       lList *lp = nullptr;
       const int ret = parse_words({"none", "7", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp);
-      const ocs::tom::RawListPtr list(lp);
+      const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
       CHECK(3, "a string word NONE in any case leaves the field unset",
             ret == 0 && join_strings(list.get(), SPA_switch_val) == "-");
    }
@@ -236,21 +236,20 @@ static void test_parse_string_list() {
       lList *lp = nullptr;
       int list_rule[] = {SPA_switch_val, SPA_argval_lListT, 0};
       const int ret = parse_words({"-x", "ignored"}, ocs::tom::SPA::descriptor.e, list_rule, &lp);
-      const ocs::tom::RawListPtr list(lp);
+      const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
       CHECK(7, "a list field of the rule is skipped",
-            ret == 0 && list->size() == 1 && !list->front().get<ocs::tom::ConstRawList>(SPA_argval_lListT));
+            ret == 0 && list->size() == 1 && !list->front().get<SPA_argval_lListT>());
    }
    {
       lList *lp = nullptr;
       int pn_rule[] = {PN_path, PN_host, 0};
       const int ret = parse_words({"/p", "h1", "/q", "NONE"}, ocs::tom::PN::descriptor.e, pn_rule, &lp);
-      const ocs::tom::RawListPtr list(lp);
+      const ocs::tom::ListPtr<ocs::tom::PN> list(lp);
       auto it = list->begin();
-      const ocs::tom::RawElement first = it != list->end() ? *it++ : nullptr;
-      const ocs::tom::RawElement second = it != list->end() ? *it : nullptr;
+      const ocs::tom::Element<ocs::tom::PN> first = it != list->end() ? *it++ : ocs::tom::Element<ocs::tom::PN>();
+      const ocs::tom::Element<ocs::tom::PN> second = it != list->end() ? *it : ocs::tom::Element<ocs::tom::PN>();
       CHECK(8, "a host word is set, a host word NONE leaves the field unset",
-            ret == 0 && same(first.get<ocs::tom::Host>(PN_host).c_str(), "h1") &&
-               second.get<ocs::tom::Host>(PN_host).c_str() == nullptr);
+            ret == 0 && same(first.get<PN_host>().c_str(), "h1") && second.get<PN_host>().c_str() == nullptr);
    }
    {
       lList *lp = nullptr;
@@ -270,7 +269,7 @@ static void test_parse_string_list() {
       char none[] = "NONE";
       lList *lp = nullptr;
       const int ret = cull_parse_definition_list(text, &lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
-      const ocs::tom::RawListPtr list(lp);
+      const ocs::tom::ListPtr<ocs::tom::CE> list(lp);
       lList *none_lp = reinterpret_cast<lList *>(1);
       const int none_ret = cull_parse_definition_list(none, &none_lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       CHECK(12, "a definition list gives name and value pairs, NONE gives no list",
@@ -508,7 +507,7 @@ static void test_xml_field_walk() {
       auto pn = ocs::tom::ListPtr<ocs::tom::PN>::create("pn");
       add_pn(*pn, "/p", "h1", nullptr);
       std::ostringstream os;
-      lWriteElemXMLTo(pn->front().raw(), os);
+      lWriteElemXMLTo(pn->front(), os);
       CHECK(29, "a host is escaped like a string, an unset host is written as an empty tag",
             os.str() == "<PN_path>/p</PN_path>\n"
                         "<PN_host>h1</PN_host>\n"

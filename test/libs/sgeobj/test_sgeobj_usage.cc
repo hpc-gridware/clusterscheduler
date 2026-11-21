@@ -178,23 +178,25 @@ make_job(const uint32_t job_number, const char *owner, const char *project,
 }
 
 /**
- * @brief The value of an entry of a usage list of a user or a project
- * @param parent the user or the project
- * @param list_field the usage list field, given at run time
+ * @brief The value of an entry of a usage list of a user, a project or a project entry of a user
+ * @tparam F the usage list field
+ * @tparam E the handle type of the parent
+ * @param parent the user, the project or the project entry
  * @param attr the name of the entry
  * @return the value, -1.0 if the list or the entry is missing
  */
+template <auto F, typename E>
 static double
-get_usage_value(const ocs::tom::ConstRawElement parent, const int list_field, const char *attr) {
-   const lList *l = parent.get<const lList *>(list_field);
+get_usage_value(const E parent, const char *attr) {
+   const auto l = parent.template get<F>();
    if (l == nullptr) {
       return -1.0;
    }
-   ocs::tom::ConstElement<ocs::tom::UA> e = ocs::tom::find_first<UA_name>(l, attr);
+   const auto e = l.template find_first<UA_name>(attr);
    if (e == nullptr) {
       return -1.0;
    }
-   return e.get<UA_value>();
+   return e.template get<UA_value>();
 }
 
 /**
@@ -215,9 +217,9 @@ test_sum_usage_user_only(int *id) {
                          /*usage_weight_list=*/ocs::tom::ConstList<ocs::tom::UA>());
 
    CHECK_NEAR((*id)++, "UU_usage cpu == 10 after first finish",
-              get_usage_value(*user, UU_usage, "cpu"), 10.0, 1e-9);
+              get_usage_value<UU_usage>(*user, "cpu"), 10.0, 1e-9);
    CHECK_NEAR((*id)++, "UU_long_term_usage cpu == 10",
-              get_usage_value(*user, UU_long_term_usage, "cpu"), 10.0, 1e-9);
+              get_usage_value<UU_long_term_usage>(*user, "cpu"), 10.0, 1e-9);
 
    /* CS-1239 sharetree routing invariant: user-only job does NOT populate
     * UU_project[*].UPP_usage. */
@@ -227,8 +229,8 @@ test_sum_usage_user_only(int *id) {
    /* Debited-job entry for the finished job should be present so the
     * worker thread's drop_debited_job step has something to remove. */
    ocs::tom::ConstList<ocs::tom::UPU> debited = user->get<UU_debited_job_usage>();
-   const lListElem *upu = (debited != nullptr) ?
-                          static_cast<const lListElem *>(debited.find_first<UPU_job_number>(1)) : nullptr;
+   const auto upu =
+      debited != nullptr ? debited.find_first<UPU_job_number>(1) : ocs::tom::ConstElement<ocs::tom::UPU>();
    CHECK((*id)++, "UU_debited_job_usage contains job 1", upu != nullptr);
 }
 
@@ -252,31 +254,31 @@ test_sum_usage_user_and_project(int *id) {
 
    /* PR_ side gets the full delta. */
    CHECK_NEAR((*id)++, "PR_usage cpu == 7 after first finish",
-              get_usage_value(*project, PR_usage, "cpu"), 7.0, 1e-9);
+              get_usage_value<PR_usage>(*project, "cpu"), 7.0, 1e-9);
    CHECK_NEAR((*id)++, "PR_long_term_usage cpu == 7",
-              get_usage_value(*project, PR_long_term_usage, "cpu"), 7.0, 1e-9);
+              get_usage_value<PR_long_term_usage>(*project, "cpu"), 7.0, 1e-9);
 
    /* CS-1239 sharetree routing: project-bound finish populates
     * UU_project[p1].UPP_usage, NOT UU_usage. */
    ocs::tom::ConstList<ocs::tom::UPP> upp_list = user->get<UU_project>();
-   const lListElem *upp = (upp_list != nullptr) ?
-                          static_cast<const lListElem *>(upp_list.find_first<UPP_name>("p1")) : nullptr;
+   const auto upp =
+      upp_list != nullptr ? upp_list.find_first<UPP_name>("p1") : ocs::tom::ConstElement<ocs::tom::UPP>();
    CHECK((*id)++, "UU_project[p1] entry created", upp != nullptr);
    if (upp != nullptr) {
       CHECK_NEAR((*id)++, "UU_project[p1].UPP_usage cpu == 7",
-                 get_usage_value(upp, UPP_usage, "cpu"), 7.0, 1e-9);
+                 get_usage_value<UPP_usage>(upp, "cpu"), 7.0, 1e-9);
    } else {
       ++(*id);
    }
    CHECK((*id)++, "UU_usage stays empty for project-bound finish",
-         static_cast<const lList *>(user->get<UU_usage>()) == nullptr ||
-         get_usage_value(*user, UU_usage, "cpu") <= 0.0);
+         user->get<UU_usage>() == nullptr ||
+         get_usage_value<UU_usage>(*user, "cpu") <= 0.0);
 
    /* Debited entry recorded on the user object (sum_usage routes debited
     * to UU_ when user is non-null). */
    ocs::tom::ConstList<ocs::tom::UPU> debited = user->get<UU_debited_job_usage>();
-   const lListElem *upu = (debited != nullptr) ?
-                          static_cast<const lListElem *>(debited.find_first<UPU_job_number>(2)) : nullptr;
+   const auto upu =
+      debited != nullptr ? debited.find_first<UPU_job_number>(2) : ocs::tom::ConstElement<ocs::tom::UPU>();
    CHECK((*id)++, "UU_debited_job_usage contains job 2", upu != nullptr);
 }
 
@@ -309,19 +311,19 @@ test_decay_over_interval(int *id) {
    /* 5% tolerance: the decay primitive uses an exponential-equivalent
     * approximation, not a closed-form halving. */
    CHECK_NEAR((*id)++, "UU_usage cpu ~= 50 after one halftime",
-              get_usage_value(*user, UU_usage, "cpu"), 50.0, 2.5);
+              get_usage_value<UU_usage>(*user, "cpu"), 50.0, 2.5);
 
    /* Same seqno again: idempotent, no further decay. */
-   const double after_first = get_usage_value(*user, UU_usage, "cpu");
+   const double after_first = get_usage_value<UU_usage>(*user, "cpu");
    ocs::UserProject::decay_userprj_usage(*user, nullptr, 1, t1);
    CHECK_NEAR((*id)++, "second call with same seqno is a no-op",
-              get_usage_value(*user, UU_usage, "cpu"), after_first, 1e-9);
+              get_usage_value<UU_usage>(*user, "cpu"), after_first, 1e-9);
 
    /* New seqno + another halftime: cpu should halve again (~25). */
    const uint64_t t2 = t1 + sge_gmt32_to_gmt64(3600);
    ocs::UserProject::decay_userprj_usage(*user, nullptr, /*seqno=*/2, t2);
    CHECK_NEAR((*id)++, "UU_usage cpu ~= 25 after two halftimes",
-              get_usage_value(*user, UU_usage, "cpu"), 25.0, 1.5);
+              get_usage_value<UU_usage>(*user, "cpu"), 25.0, 1.5);
 }
 
 /* main ------------------------------------------------------------------- */

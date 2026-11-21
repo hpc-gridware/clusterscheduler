@@ -201,6 +201,12 @@ static void *work(void *args) {
    DRETURN((void *)nullptr);
 }
 
+/**
+ * @brief Spool from several threads into one Berkeley DB
+ * @param argc the number of arguments
+ * @param argv the database url, the number of threads and optionally the delay after writing
+ * @return EXIT_SUCCESS; exits with a failure when the spooling cannot be set up
+ */
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_berkeleydb_mt");
 
@@ -210,7 +216,7 @@ int main(int argc, char *argv[]) {
    int *args;
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   lListElem *spooling_context;
+   ocs::tom::Element<ocs::tom::SPC> spooling_context;
 
    /* parse commandline parameters */
    if (argc < 3) {
@@ -237,7 +243,8 @@ int main(int argc, char *argv[]) {
    DPRINTF("writing to database %s from %d threads\n", url, threads);
 
    /* initialize spooling */
-   spooling_context = spool_create_dynamic_context(&answer_list, nullptr, url, nullptr);
+   spooling_context =
+      ocs::tom::Element<ocs::tom::SPC>(spool_create_dynamic_context(&answer_list, nullptr, url, nullptr));
    answer_list_output(&answer_list);
    if (spooling_context == nullptr) {
       sge_exit(EXIT_FAILURE);

@@ -85,13 +85,13 @@ same_bytes(const sge_pack_buffer *a, const sge_pack_buffer *b) {
  * @brief A list of ST with three names
  * @return the owner of the list
  */
-static ocs::tom::RawListPtr
+static ocs::tom::ListPtr<ocs::tom::ST>
 make_data() {
    auto list = ocs::tom::ListPtr<ocs::tom::ST>::create("test data");
    list->emplace_back<ST_name>("alpha");
    list->emplace_back<ST_name>("beta");
    list->emplace_back<ST_name>("gamma");
-   return ocs::tom::RawListPtr(std::move(list));
+   return list;
 }
 
 /**
@@ -103,7 +103,8 @@ make_full_task() {
    ocs::tom::ListPtr<ocs::tom::AN> answers;
    answer_list_add(&answers, "first answer", STATUS_OK, ANSWER_QUALITY_INFO);
    return new ocs::gdi::Task(ocs::gdi::Target::US_LIST, ocs::gdi::Command::MOD,
-                             ocs::gdi::SubCommand::RETURN_NEW_VERSION, make_data(), std::move(answers),
+                             ocs::gdi::SubCommand::RETURN_NEW_VERSION, ocs::tom::RawListPtr(make_data()),
+                             std::move(answers),
                              ocs::tom::RawWherePtr((ocs::tom::field<ST_name>() == "beta").release()),
                              ocs::tom::RawWhatPtr(ocs::tom::what<ST_name>().release()));
 }
@@ -124,7 +125,7 @@ reference_pack_task(sge_pack_buffer *pb, const ocs::gdi::Task *task, const bool 
    }
    try {
       ocs::tom::pack_list(pb, task->data_list, nullptr, 0);
-      ocs::tom::pack_list(pb, task->answer_list.get().raw(), nullptr, 0);
+      ocs::tom::pack_list(pb, task->answer_list.get(), nullptr, 0);
       ocs::tom::pack_where(pb, task->condition.get());
       ocs::tom::pack_what(pb, task->enumeration.get());
    } catch (const ocs::tom::PackException &) {
@@ -169,7 +170,7 @@ test_select_pack_bytes() {
    printf("\n--- select straight into the buffer ---\n");
 
    // the list the task borrows, as qmaster lends it the master list
-   ocs::tom::RawListPtr source = make_data();
+   const auto source = make_data();
    ocs::tom::RawWherePtr where((ocs::tom::field<ST_name>() == "beta").release());
    ocs::tom::RawWhatPtr what(ocs::tom::what<ST_name>().release());
 
@@ -201,7 +202,7 @@ test_select_pack_bytes() {
       const ocs::tom::RawListPtr selected =
          ocs::tom::select_as("", source.get(), where.get(), what.get(), ocs::tom::Hashing::On);
       ocs::tom::pack_list(&ref, selected.get(), nullptr, 0);
-      ocs::tom::pack_list(&ref, task->answer_list.get().raw(), nullptr, 0);
+      ocs::tom::pack_list(&ref, task->answer_list.get(), nullptr, 0);
       ocs::tom::pack_where(&ref, nullptr);
       ocs::tom::pack_what(&ref, nullptr);
    } catch (const ocs::tom::PackException &) {
@@ -259,7 +260,7 @@ test_unpack_roundtrip() {
 
    // T06: three tasks with their parts
    CHECK(6, "three tasks read back with data, condition and selection",
-         read && back.tasks.size() == 3 && ocs::tom::size(back.tasks[0]->data_list) == 3 &&
+         read && back.tasks.size() == 3 && ocs::tom::ConstRawList(back.tasks[0]->data_list).size() == 3 &&
          back.tasks[0]->condition && back.tasks[0]->enumeration && back.tasks[1]->data_list == nullptr &&
          !back.tasks[1]->condition && back.tasks[2]->answer_list->size() == 1);
 

@@ -105,7 +105,8 @@ static ocs::tom::ElementPtr<ocs::tom::CONF> sge_get_configuration_for_host(const
  * @param anAnswer the answer list
  * @return 0 on success, -1 otherwise
  */
-static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer) {
+static int sge_read_configuration(const ocs::tom::ConstElement<ocs::tom::SPC> aSpoolContext,
+                                  ocs::tom::ListPtr<ocs::tom::AN> *anAnswer) {
    DENTER(TOP_LAYER);
 
    int ret = -1;
@@ -153,7 +154,8 @@ static int sge_read_configuration(const lListElem *aSpoolContext, ocs::tom::List
  */
 template <sge_object_type V>
 static void
-read_master_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, const char *name) {
+read_master_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstElement<ocs::tom::SPC> context,
+                 const char *name) {
    DENTER(TOP_LAYER);
    spool_read_list(answer_list, context, ocs::DataStore::master_list_slot(V), V);
    answer_list_output(answer_list);
@@ -177,9 +179,8 @@ static bool read_spooled_data() {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context;
 
-   context = spool_get_default_context();
+   const auto context = spool_get_default_context();
 
    /* cluster configuration */
    sge_read_configuration(context, &answer_list);
@@ -199,7 +200,8 @@ static bool read_spooled_data() {
          }
       }
       answer_list_output(&answer_list);
-      DPRINTF("read %d entries to master scheduler configuration list\n", static_cast<int>(sconf_get_config_list().get().size()));
+      DPRINTF("read %d entries to master scheduler configuration list\n",
+              static_cast<int>(sconf_get_config_list().get().size()));
    }
    /* complexes */
    read_master_list<SGE_TYPE_CENTRY>(&answer_list, context, "complex entry");
@@ -259,11 +261,10 @@ sge_callback_result spool_event_before([[maybe_unused]] sge_evc_class_t *evc, co
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context;
    ocs::tom::ConstRawElement ep;
    dstring buffer = DSTRING_INIT;
 
-   context = spool_get_default_context();
+   const auto context = spool_get_default_context();
 
    const ocs::tom::ConstRawList master_list = ocs::DataStore::master_list_raw(type);
    const int key_nm = object_type_get_key_nm(type);
@@ -436,12 +437,11 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
 
    sge_callback_result ret = SGE_EMA_OK;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lListElem *context;
    ocs::tom::ConstRawElement ep;
    const char *key;
    dstring buffer = DSTRING_INIT;
 
-   context = spool_get_default_context();
+   const auto context = spool_get_default_context();
 
    const ocs::tom::ConstRawList master_list = ocs::DataStore::master_list_raw(type);
    const int key_nm = object_type_get_key_nm(type);
@@ -566,18 +566,16 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, const sge_object_type t
    DRETURN(ret);
 }
 
-/** @def defstring
- * @brief The macro argument as a string literal
- *
- * Defined inside the function that uses it.
- *
- * @param str the text to stringify
+/**
+ * @brief Spool the cluster data through a dynamically loaded backend and keep it in step with the event mirror
+ * @param argc the number of arguments
+ * @param argv method, shared library and backend arguments
+ * @return EXIT_SUCCESS; exits with a failure when the spooling cannot be set up
  */
-
 int main(int argc, char *argv[]) {
    DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
 
-   lListElem *spooling_context;
+   ocs::tom::Element<ocs::tom::SPC> spooling_context;
    time_t next_prof_output = 0;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    sge_evc_class_t *evc = nullptr;
@@ -610,10 +608,15 @@ int main(int argc, char *argv[]) {
       sge_exit(1);
    }
 
+   /** @def defstring
+    * @brief The macro argument as a string literal
+    * @param str the text to stringify
+    */
 #define defstring(str) #str
 
    /* initialize spooling */
-   spooling_context = spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]); 
+   spooling_context =
+      ocs::tom::Element<ocs::tom::SPC>(spool_create_dynamic_context(&answer_list, argv[1], argv[2], argv[3]));
    answer_list_output(&answer_list);
    if(spooling_context == nullptr) {
       sge_exit(EXIT_FAILURE);

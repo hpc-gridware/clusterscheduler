@@ -413,22 +413,28 @@ make_rsmap(const char *id, uint32_t amount, ...) {
 
 /**
  * @brief how much of an identifier a diagram entry says is in use
+ * @param rde the diagram entry
+ * @param id the identifier
+ * @return the amount in use, 0 if the entry does not name the identifier
  */
 static uint32_t
-rsmap_at(const lListElem *rde, const char *id) {
-   ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first_in<RDE_resource_map_list, RESL_value>(rde, id);
+rsmap_at(const ocs::tom::ConstElement<ocs::tom::RDE> rde, const char *id) {
+   const auto ep = rde.find_first_in<RDE_resource_map_list, RESL_value>(id);
    return (ep != nullptr) ? ep.get<RESL_amount>() : 0;
 }
 
 /**
  * @brief the entry of the diagram which is in force at a point in time
+ * @param cr the resource utilization
+ * @param time the point in time
+ * @return the entry, empty if the diagram starts later
  */
-static const lListElem *
-rde_at_time(const lListElem *cr, uint64_t time) {
-   const lListElem *hit = nullptr;
+static ocs::tom::ConstElement<ocs::tom::RDE>
+rde_at_time(const ocs::tom::ConstElement<ocs::tom::RUE> cr, const uint64_t time) {
+   ocs::tom::ConstElement<ocs::tom::RDE> hit;
    ocs::tom::ConstElement<ocs::tom::RDE> ep;
 
-   for (ep = ocs::tom::get<RUE_utilized>(cr).front(); ep; ep = ep.next()) {
+   for (ep = cr.get<RUE_utilized>().front(); ep; ep = ep.next()) {
       if (ep.get<RDE_time>() > time) {
          break;
       }
@@ -438,9 +444,18 @@ rde_at_time(const lListElem *cr, uint64_t time) {
    return hit;
 }
 
+/**
+ * @brief check how much of an identifier the diagram says is in use at a point in time
+ * @param cr the resource utilization
+ * @param time the point in time
+ * @param id the identifier
+ * @param expected the expected amount
+ * @return 0 if the amount is the expected one, 1 otherwise
+ */
 static int
-check_rsmap(const lListElem *cr, uint64_t time, const char *id, uint32_t expected) {
-   const lListElem *rde = rde_at_time(cr, time);
+check_rsmap(const ocs::tom::ConstElement<ocs::tom::RUE> cr, const uint64_t time, const char *id,
+            const uint32_t expected) {
+   const auto rde = rde_at_time(cr, time);
    uint32_t got = (rde != nullptr) ? rsmap_at(rde, id) : 0;
 
    if (got != expected) {

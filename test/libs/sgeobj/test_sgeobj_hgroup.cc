@@ -404,8 +404,8 @@ test_update_cache() {
       ocs::tom::ListPtr<ocs::tom::HR> referencees;
       CHECK(33, "the referencees of @leaf are found transitively",
             hgroup_find_all_referencees(leaf, nullptr, master_list, &referencees) &&
-            static_cast<const lListElem *>(referencees->find_first<HR_name>(ocs::tom::Host("@mid"))) != nullptr &&
-            static_cast<const lListElem *>(referencees->find_first<HR_name>(ocs::tom::Host("@top"))) != nullptr);
+            referencees->find_first<HR_name>(ocs::tom::Host("@mid")) != nullptr &&
+            referencees->find_first<HR_name>(ocs::tom::Host("@top")) != nullptr);
 
       hgroup_update_cache(leaf, nullptr, master_list);
       for (const ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::ConstList<ocs::tom::HR>(referencees)) {
@@ -446,8 +446,7 @@ test_update_cache() {
       CHECK(38, "a dangling group reference is skipped, not an error",
             hgroup_update_cache(dangling, nullptr, master_list));
       CHECK(39, "both resolve to no hosts at all",
-            static_cast<const lList *>(empty.get<HGRP_cached_hosts>()) == nullptr &&
-            static_cast<const lList *>(dangling.get<HGRP_cached_hosts>()) == nullptr);
+            empty.get<HGRP_cached_hosts>() == nullptr && dangling.get<HGRP_cached_hosts>() == nullptr);
       CHECK(40, "and both are still marked computed -- empty is not uncomputed",
             empty.get<HGRP_cache_version>() != 0 &&
             dangling.get<HGRP_cache_version>() != 0);
@@ -1030,7 +1029,7 @@ test_generated_trees() {
                   break;
             }
             // a host group holds a member once, as href_list_add() keeps it; a member drawn twice is skipped
-            if (static_cast<const lListElem *>(members->find_first<HR_name>(ocs::tom::Host(buffer))) == nullptr) {
+            if (members->find_first<HR_name>(ocs::tom::Host(buffer)) == nullptr) {
                members->emplace_back<HR_name>(ocs::tom::Host(buffer));
             }
          }
@@ -1135,8 +1134,8 @@ test_generated_trees() {
  * @return the number of entries
  */
 static int
-cache_size(const lListElem *hgroup) {
-   return ocs::tom::size(ocs::tom::get<HGRP_match_cache>(hgroup));
+cache_size(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
+   return static_cast<int>(hgroup.get<HGRP_match_cache>().size());
 }
 
 /** @brief Is this host in the matching cache of this group, and findable?
@@ -1150,8 +1149,8 @@ cache_size(const lListElem *hgroup) {
  * @return true if the entry can be found by name
  */
 static bool
-cache_holds(const lListElem *hgroup, const char *hostname) {
-   return static_cast<const lListElem *>(ocs::tom::find_first<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), hostname)) != nullptr;
+cache_holds(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hostname) {
+   return hgroup.get<HGRP_match_cache>().find_first<HM_name>(ocs::tom::Host(hostname)) != nullptr;
 }
 
 /** @brief Send an element through a pack buffer and read it back

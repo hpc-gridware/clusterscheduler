@@ -81,9 +81,8 @@ namespace {
       /** @brief Adopt a response bundle
        * @param bundle the bundle; the model takes ownership
        */
-      void adopt(lList *bundle) {
-         // the test builds an SPP bundle, see make_response()
-         procedure_response = ocs::tom::ListPtr<ocs::tom::SPP>::from_typed(bundle);
+      void adopt(ocs::tom::ListPtr<ocs::tom::SPP> &&bundle) {
+         procedure_response = std::move(bundle);
       }
    };
 
@@ -95,7 +94,8 @@ namespace {
     *                       which is what a response from an older qmaster is
     * @return the bundle, which the caller owns
     */
-   lList *make_response(const char *text, uint32_t reduction, bool with_reduction) {
+   ocs::tom::ListPtr<ocs::tom::SPP> make_response(const char *text, const uint32_t reduction,
+                                                  const bool with_reduction) {
       /* add_parameter_bundle() asserts a non-null bundle, so it starts as an
        * empty list rather than as nullptr */
       auto bundle = ocs::tom::ListPtr<ocs::tom::SPP>::create("");
@@ -108,7 +108,7 @@ namespace {
          ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::REDUCTION,
                                                        ocs::ProcedureParameter::ulong_value_list(reduction));
       }
-      return bundle.release();
+      return bundle;
    }
 }
 

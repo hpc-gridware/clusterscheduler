@@ -185,16 +185,16 @@ struct Layout {
    bool parse_values;                                  ///< the parse_values argument of the reader
    const char *json_type_name;                         ///< the explicit JSON type, nullptr derives it
    bool roundtrip;                                     ///< the product reads this text back
-   lListElem *(*prepare)(const lListElem *) = nullptr; ///< turns the object into what is written, or nullptr
+   tom::RawElementPtr (*prepare)(tom::ConstRawElement) = nullptr; ///< turns the object into what is written, or nullptr
 };
 
 /** @brief One spooled object type with every way it is written */
 struct ObjectCase {
    const char *name;                    ///< file name stem
    const lDescr *descr;                 ///< the descriptor the reader is given
-   lListElem *(*build)(Variant);        ///< builds the object; the caller frees it
+   tom::RawElementPtr (*build)(Variant); ///< builds the object
    bool variants;                       ///< also write the NONE and EMPTY variants
-   void (*fixup)(lListElem *);          ///< applied to an object read back before it is written again, or nullptr
+   void (*fixup)(tom::RawElement);      ///< applied to an object read back before it is written again, or nullptr
    std::vector<Layout> layouts;         ///< the ways the object is written
 };
 
@@ -211,7 +211,7 @@ enum class ListJson {
 struct ListCase {
    const char *name;                      ///< file name stem
    const lDescr *descr;                   ///< the descriptor of the elements
-   lList *(*build)();                     ///< builds the list; the caller frees it
+   tom::RawListPtr (*build)();            ///< builds the list
    FieldSource source;                    ///< the field list
    const spool_flatfile_instr *instr;     ///< the ASCII instruction, nullptr when there is no ASCII form
    bool table;                            ///< fields copied and aligned with padding 3, as QConfTableView does
@@ -475,8 +475,8 @@ spooling_field *copy_fields(const spooling_field *fields) {
  * @param what the file name, for the messages
  * @return the text, empty on an error
  */
-std::string render_object(const lListElem *ep, const Layout &layout, const spooling_field *fields, const Form form,
-                          const std::string &what) {
+std::string render_object(const tom::ConstRawElement ep, const Layout &layout, const spooling_field *fields,
+                          const Form form, const std::string &what) {
    const bool json = select_format(form);
    std::ostringstream os;
    tom::ListPtr<tom::AN> alp;
@@ -522,8 +522,8 @@ tom::RawElementPtr parse_object(const std::string &text, const lDescr *descr, co
  * @param what the file name, for the messages
  * @return the text, empty on an error
  */
-std::string render_list(const lList *lp, const ListCase &c, const spooling_field *fields, const Form form,
-                        const std::string &what) {
+std::string render_list(const tom::ConstRawList lp, const ListCase &c, const spooling_field *fields,
+                        const Form form, const std::string &what) {
    const bool json = select_format(form);
    tom::ListPtr<tom::AN> alp;
    spooling_field *aligned = nullptr;
@@ -893,12 +893,12 @@ tom::ListPtr<tom::RN> range(const uint32_t min, const uint32_t max, const uint32
  * @param variant unused, a calendar has no sublists
  * @return the object, owned by the caller
  */
-lListElem *build_CAL([[maybe_unused]] const Variant variant) {
+tom::ElementPtr<tom::CAL> build_CAL([[maybe_unused]] const Variant variant) {
    auto cal = tom::ElementPtr<tom::CAL>::create();
    cal->set<CAL_name>("golden_cal");
    cal->set<CAL_year_calendar>("1.1.2026=off 24.12.2026-26.12.2026=off");
    cal->set<CAL_week_calendar>("mon-fri=8-18=on sat-sun=off");
-   return cal.release();
+   return cal;
 }
 
 /**
@@ -906,7 +906,7 @@ lListElem *build_CAL([[maybe_unused]] const Variant variant) {
  * @param variant unused, a checkpointing environment has no sublists
  * @return the object, owned by the caller
  */
-lListElem *build_CK([[maybe_unused]] const Variant variant) {
+tom::ElementPtr<tom::CK> build_CK([[maybe_unused]] const Variant variant) {
    auto ck = tom::ElementPtr<tom::CK>::create();
    ck->set<CK_name>("golden_ckpt");
    ck->set<CK_interface>("userdefined");
@@ -917,7 +917,7 @@ lListElem *build_CK([[maybe_unused]] const Variant variant) {
    ck->set<CK_ckpt_dir>("/var/spool/ckpt");
    ck->set<CK_signal>("USR2");
    ck->set<CK_when>("smxr");
-   return ck.release();
+   return ck;
 }
 
 /**
@@ -925,9 +925,8 @@ lListElem *build_CK([[maybe_unused]] const Variant variant) {
  * @param variant unused, the fields of a complex entry that are written hold no sublist
  * @return the object, owned by the caller
  */
-lListElem *build_CE([[maybe_unused]] const Variant variant) {
-   return centry("golden_mem", "gm", ocs::CEntry::Type::MEM, CMPLXLE_OP, REQU_FORCED, CONSUMABLE_JOB, "1G", "1000")
-      .release();
+tom::ElementPtr<tom::CE> build_CE([[maybe_unused]] const Variant variant) {
+   return centry("golden_mem", "gm", ocs::CEntry::Type::MEM, CMPLXLE_OP, REQU_FORCED, CONSUMABLE_JOB, "1G", "1000");
 }
 
 /**
@@ -935,11 +934,11 @@ lListElem *build_CE([[maybe_unused]] const Variant variant) {
  * @param variant shape of the host list
  * @return the object, owned by the caller
  */
-lListElem *build_HGRP(const Variant variant) {
+tom::ElementPtr<tom::HGRP> build_HGRP(const Variant variant) {
    auto hgrp = tom::ElementPtr<tom::HGRP>::create();
    hgrp->set<HGRP_name>(ocs::tom::Host(GRP));
    hgrp->set<HGRP_host_list>(pick(variant, names<HR_name>({"gexec01", HOST, "@ggrp2"})));
-   return hgrp.release();
+   return hgrp;
 }
 
 /**
@@ -947,11 +946,11 @@ lListElem *build_HGRP(const Variant variant) {
  * @param variant shape of the host list
  * @return the object, owned by the caller
  */
-lListElem *build_HGRP_admin(const Variant variant) {
+tom::ElementPtr<tom::HGRP> build_HGRP_admin(const Variant variant) {
    auto hgrp = tom::ElementPtr<tom::HGRP>::create();
    hgrp->set<HGRP_name>(ocs::tom::Host(ADMIN_HOSTGROUP));
    hgrp->set<HGRP_host_list>(pick(variant, names<HR_name>({"gmaster", "gexec01"})));
-   return hgrp.release();
+   return hgrp;
 }
 
 /**
@@ -959,14 +958,14 @@ lListElem *build_HGRP_admin(const Variant variant) {
  * @param variant shape of the entries
  * @return the object, owned by the caller
  */
-lListElem *build_US(const Variant variant) {
+tom::ElementPtr<tom::US> build_US(const Variant variant) {
    auto us = tom::ElementPtr<tom::US>::create();
    us->set<US_name>("golden_acl");
    us->set<US_type>(US_ACL | US_DEPT);
    us->set<US_fshare>(1234);
    us->set<US_oticket>(5678);
    us->set<US_entries>(pick(variant, names<UE_name>({"alice", "bob", "@staff"})));
-   return us.release();
+   return us;
 }
 
 /**
@@ -974,12 +973,12 @@ lListElem *build_US(const Variant variant) {
  * @param variant shape of the entries
  * @return the object, owned by the caller
  */
-lListElem *build_US_manager(const Variant variant) {
+tom::ElementPtr<tom::US> build_US_manager(const Variant variant) {
    auto us = tom::ElementPtr<tom::US>::create();
    us->set<US_name>(MANAGER_USERSET);
    us->set<US_type>(US_ACL);
    us->set<US_entries>(pick(variant, names<UE_name>({"root", "gadmin"})));
-   return us.release();
+   return us;
 }
 
 /**
@@ -987,7 +986,7 @@ lListElem *build_US_manager(const Variant variant) {
  * @param variant shape of the access lists
  * @return the object, owned by the caller
  */
-lListElem *build_PE(const Variant variant) {
+tom::ElementPtr<tom::PE> build_PE(const Variant variant) {
    auto pe = tom::ElementPtr<tom::PE>::create();
    pe->set<PE_name>("golden_pe");
    pe->set<PE_slots>(4711);
@@ -1003,7 +1002,7 @@ lListElem *build_PE(const Variant variant) {
    pe->set<PE_ignore_slave_requests_on_master_host>(true);
    pe->set<PE_master_forks_slaves>(true);
    pe->set<PE_daemon_forks_slaves>(true);
-   return pe.release();
+   return pe;
 }
 
 /**
@@ -1011,14 +1010,14 @@ lListElem *build_PE(const Variant variant) {
  * @param variant shape of the user list and the parent roles
  * @return the object, owned by the caller
  */
-lListElem *build_RL(const Variant variant) {
+tom::ElementPtr<tom::RL> build_RL(const Variant variant) {
    auto rl = tom::ElementPtr<tom::RL>::create();
    rl->set<RL_name>("golden_role");
    rl->set<RL_enabled>(true);
    rl->set<RL_user_list>(pick(variant, names<US_name>({"golden_acl", "role_acl"})));
    rl->set<RL_parent_role_list>(pick(variant, names<ST_name>({"operator", "viewer"})));
    rl->set<RL_perm_list>("client:*:read:queue:*:*,client:*:modify:job:*:owner");
-   return rl.release();
+   return rl;
 }
 
 /**
@@ -1026,12 +1025,12 @@ lListElem *build_RL(const Variant variant) {
  * @param variant unused, the fields written hold no sublist
  * @return the object, owned by the caller
  */
-lListElem *build_CAT([[maybe_unused]] const Variant variant) {
+tom::ElementPtr<tom::CT> build_CAT([[maybe_unused]] const Variant variant) {
    auto ct = tom::ElementPtr<tom::CT>::create();
    ct->set<CT_id>(17);
    ct->set<CT_refcount>(3);
    ct->set<CT_str>("-l h_vmem=1G -q golden.q");
-   return ct.release();
+   return ct;
 }
 
 /**
@@ -1039,7 +1038,7 @@ lListElem *build_CAT([[maybe_unused]] const Variant variant) {
  * @param variant shape of the usage and access lists
  * @return the object, owned by the caller
  */
-lListElem *build_PR(const Variant variant) {
+tom::ElementPtr<tom::PR> build_PR(const Variant variant) {
    auto pr = tom::ElementPtr<tom::PR>::create();
    pr->set<PR_name>("golden_prj");
    pr->set<PR_oticket>(111);
@@ -1051,7 +1050,7 @@ lListElem *build_PR(const Variant variant) {
    pr->set<PR_acl>(pick(variant, names<US_name>({"golden_acl"})));
    pr->set<PR_xacl>(pick(variant, names<US_name>({"bad_acl", "worse_acl"})));
    pr->set<PR_debited_job_usage>(pick(variant, debited_usage()));
-   return pr.release();
+   return pr;
 }
 
 /**
@@ -1059,7 +1058,7 @@ lListElem *build_PR(const Variant variant) {
  * @param variant shape of the usage lists
  * @return the object, owned by the caller
  */
-lListElem *build_UU(const Variant variant) {
+tom::ElementPtr<tom::UU> build_UU(const Variant variant) {
    auto uu = tom::ElementPtr<tom::UU>::create();
    uu->set<UU_name>("alice");
    uu->set<UU_oticket>(333);
@@ -1071,7 +1070,7 @@ lListElem *build_UU(const Variant variant) {
    uu->set<UU_project>(pick(variant, project_usage()));
    uu->set<UU_default_project>("golden_prj");
    uu->set<UU_debited_job_usage>(pick(variant, debited_usage()));
-   return uu.release();
+   return uu;
 }
 
 /**
@@ -1079,7 +1078,7 @@ lListElem *build_UU(const Variant variant) {
  * @param variant shape of the children of the root
  * @return the root node, owned by the caller
  */
-lListElem *build_STN(const Variant variant) {
+tom::ElementPtr<tom::STN> build_STN(const Variant variant) {
    auto root = share_node("Root", 0, 0, 1);
    root->set<STN_version>(7);
 
@@ -1093,7 +1092,7 @@ lListElem *build_STN(const Variant variant) {
    children->push_back(std::move(project));
    children->push_back(share_node("other_prj", 1, 4, 20));
    root->set<STN_children>(pick(variant, std::move(children)));
-   return root.release();
+   return root;
 }
 
 /**
@@ -1101,7 +1100,7 @@ lListElem *build_STN(const Variant variant) {
  * @param variant shape of the load adjustments and the usage weights
  * @return the object, owned by the caller
  */
-lListElem *build_SC(const Variant variant) {
+tom::ElementPtr<tom::SC> build_SC(const Variant variant) {
    auto sc = tom::ElementPtr<tom::SC>::create();
    sc->set<SC_algorithm>("default");
    sc->set<SC_schedule_interval>("0:0:15");
@@ -1140,7 +1139,7 @@ lListElem *build_SC(const Variant variant) {
    sc->set<SC_weight_priority>(2.5);
    sc->set<SC_max_reservation>(42);
    sc->set<SC_default_duration>("8:0:0");
-   return sc.release();
+   return sc;
 }
 
 /**
@@ -1148,7 +1147,7 @@ lListElem *build_SC(const Variant variant) {
  * @param variant unused, the entries are the object
  * @return the object, owned by the caller
  */
-lListElem *build_CONF([[maybe_unused]] const Variant variant) {
+tom::ElementPtr<tom::CONF> build_CONF([[maybe_unused]] const Variant variant) {
    auto conf = tom::ElementPtr<tom::CONF>::create();
    conf->set<CONF_name>(ocs::tom::Host("global"));
    conf->set<CONF_version>(3);
@@ -1186,7 +1185,7 @@ lListElem *build_CONF([[maybe_unused]] const Variant variant) {
       {"jsv_url", "none"},
       {"jsv_allowed_mod", "ac,h,i,e,o,j,M,N,p,w"}
    }));
-   return conf.release();
+   return conf;
 }
 
 /**
@@ -1194,7 +1193,7 @@ lListElem *build_CONF([[maybe_unused]] const Variant variant) {
  * @param variant shape of the sublists
  * @return the object, owned by the caller
  */
-lListElem *build_EH(const Variant variant) {
+tom::ElementPtr<tom::EH> build_EH(const Variant variant) {
    auto eh = tom::ElementPtr<tom::EH>::create();
    eh->set<EH_name>(ocs::tom::Host("gexec01"));
    eh->set<EH_scaling_list>(pick(variant, pairs<HS_name, HS_value, double>(
@@ -1249,7 +1248,7 @@ lListElem *build_EH(const Variant variant) {
    eh->set<EH_reschedule_unknown_list>(pick(variant, std::move(unknown)));
    eh->set<EH_report_variables>(pick(variant, names<STU_name>({"cpu", "mem_free"})));
    eh->set<EH_auto_added_time>(T0 + 3000000);
-   return eh.release();
+   return eh;
 }
 
 /**
@@ -1258,7 +1257,7 @@ lListElem *build_EH(const Variant variant) {
  * @param host the host
  * @return the object, owned by the caller
  */
-lListElem *build_QU_on(const Variant variant, const char *host) {
+tom::ElementPtr<tom::QU> build_QU_on(const Variant variant, const char *host) {
    auto qu = tom::ElementPtr<tom::QU>::create();
    qu->set<QU_qname>("golden.q");
    qu->set<QU_qhostname>(ocs::tom::Host(host));
@@ -1322,7 +1321,7 @@ lListElem *build_QU_on(const Variant variant, const char *host) {
    qu->set<QU_pending_signal>(15);
    qu->set<QU_pending_signal_delivery_time>(T0 + 4000000);
    qu->set<QU_version>(42);
-   return qu.release();
+   return qu;
 }
 
 /**
@@ -1330,7 +1329,7 @@ lListElem *build_QU_on(const Variant variant, const char *host) {
  * @param variant shape of the sublists
  * @return the object, owned by the caller
  */
-lListElem *build_QU(const Variant variant) {
+tom::ElementPtr<tom::QU> build_QU(const Variant variant) {
    return build_QU_on(variant, "gexec01");
 }
 
@@ -1339,7 +1338,7 @@ lListElem *build_QU(const Variant variant) {
  * @param variant shape of the host list and of the default of every list valued attribute
  * @return the object, owned by the caller
  */
-lListElem *build_CQ(const Variant variant) {
+tom::ElementPtr<tom::CQ> build_CQ(const Variant variant) {
    auto cq = tom::ElementPtr<tom::CQ>::create();
    cq->set<CQ_name>("golden.q");
    cq->set<CQ_hostlist>(pick(variant, names<HR_name>({GRP, HOST, "gexec03"})));
@@ -1424,7 +1423,7 @@ lListElem *build_CQ(const Variant variant) {
       lp->push_back(std::move(so));
       return lp;
    }));
-   return cq.release();
+   return cq;
 }
 
 /**
@@ -1470,8 +1469,8 @@ tom::ElementPtr<tom::RQS> rqs(const char *name, const bool enabled) {
  * @param variant unused, the rules are the object
  * @return the object, owned by the caller
  */
-lListElem *build_RQS([[maybe_unused]] const Variant variant) {
-   return rqs("golden_rqs", true).release();
+tom::ElementPtr<tom::RQS> build_RQS([[maybe_unused]] const Variant variant) {
+   return rqs("golden_rqs", true);
 }
 
 /**
@@ -1479,7 +1478,7 @@ lListElem *build_RQS([[maybe_unused]] const Variant variant) {
  * @param variant shape of the sublists
  * @return the object, owned by the caller
  */
-lListElem *build_AR(const Variant variant) {
+tom::ElementPtr<tom::AR> build_AR(const Variant variant) {
    auto ar = tom::ElementPtr<tom::AR>::create();
    ar->set<AR_id>(815);
    ar->set<AR_name>("golden_ar");
@@ -1532,7 +1531,7 @@ lListElem *build_AR(const Variant variant) {
    xacl->push_back(std::move(ara));
    ar->set<AR_xacl_list>(pick(variant, std::move(xacl)));
    ar->set<AR_type>(1);
-   return ar.release();
+   return ar;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1542,18 +1541,18 @@ lListElem *build_AR(const Variant variant) {
  * @brief The resource quota sets, as `qconf -srqs` writes them
  * @return the list, owned by the caller
  */
-lList *build_RQS_list() {
+tom::ListPtr<tom::RQS> build_RQS_list() {
    auto lp = tom::ListPtr<tom::RQS>::create("rqs");
    lp->push_back(rqs("golden_rqs", true));
    lp->push_back(rqs("disabled_rqs", false));
-   return lp.release();
+   return lp;
 }
 
 /**
  * @brief A complex with an entry of every value type, as `qconf -sc` writes it
  * @return the list, owned by the caller
  */
-lList *build_CE_list() {
+tom::ListPtr<tom::CE> build_CE_list() {
    using T = ocs::CEntry::Type;
    auto lp = tom::ListPtr<tom::CE>::create("centries");
    lp->push_back(centry("arch", "a", T::RESTR, CMPLXEQ_OP, REQU_YES, CONSUMABLE_NO, "NONE", "0"));
@@ -1568,49 +1567,49 @@ lList *build_CE_list() {
    lp->push_back(centry("np_load_avg", "nla", T::DOUBLE, CMPLXGT_OP, REQU_NO, CONSUMABLE_NO, "0", "0"));
    lp->push_back(centry("os", "os", T::CSTR, CMPLXNE_OP, REQU_YES, CONSUMABLE_NO, "NONE", "0"));
    lp->push_back(centry("slots", "s", T::INT, CMPLXLT_OP, REQU_YES, CONSUMABLE_YES, "1", "1000"));
-   return lp.release();
+   return lp;
 }
 
 /**
  * @brief Two job categories, as `qconf -scatl` writes them
  * @return the list, owned by the caller
  */
-lList *build_CAT_list() {
+tom::ListPtr<tom::CT> build_CAT_list() {
    auto lp = tom::ListPtr<tom::CT>::create("categories");
-   lp->push_back(tom::ElementPtr<tom::CT>::from_typed(build_CAT(Variant::FULL)));
+   lp->push_back(build_CAT(Variant::FULL));
    auto ct = tom::ElementPtr<tom::CT>::create();
    ct->set<CT_id>(18);
    ct->set<CT_refcount>(1);
    ct->set<CT_str>("-U alice -pe golden_pe 4");
    lp->push_back(std::move(ct));
-   return lp.release();
+   return lp;
 }
 
 /**
  * @brief Two queue instances, as `qconf -sq golden.q@*` writes them in JSON
  * @return the list, owned by the caller
  */
-lList *build_QU_list() {
+tom::ListPtr<tom::QU> build_QU_list() {
    auto lp = tom::ListPtr<tom::QU>::create("qinstances");
-   lp->push_back(tom::ElementPtr<tom::QU>::from_typed(build_QU_on(Variant::FULL, "gexec01")));
-   lp->push_back(tom::ElementPtr<tom::QU>::from_typed(build_QU_on(Variant::FULL, HOST)));
-   return lp.release();
+   lp->push_back(build_QU_on(Variant::FULL, "gexec01"));
+   lp->push_back(build_QU_on(Variant::FULL, HOST));
+   return lp;
 }
 
 /**
  * @brief The managers, as `qconf -sm -fmt json` writes them
  * @return the list, owned by the caller
  */
-lList *build_manager_list() {
-   return names<UE_name>({"gadmin", "root"}).release();
+tom::ListPtr<tom::UE> build_manager_list() {
+   return names<UE_name>({"gadmin", "root"});
 }
 
 /**
  * @brief The administrative hosts, as `qconf -sh -fmt json` writes them
  * @return the list, owned by the caller
  */
-lList *build_adminhost_list() {
-   return names<HR_name>({"gexec01", "gmaster"}).release();
+tom::ListPtr<tom::HR> build_adminhost_list() {
+   return names<HR_name>({"gexec01", "gmaster"});
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1621,8 +1620,8 @@ lList *build_adminhost_list() {
  * @param ep the execution host
  * @return the copy, owned by the caller
  */
-lListElem *prepare_EH_spool(const lListElem *ep) {
-   return ocs_spool_exechost_static_copy(tom::ConstElement<tom::EH>::from_typed(ep)).release();
+tom::RawElementPtr prepare_EH_spool(const tom::ConstRawElement ep) {
+   return tom::RawElementPtr(ocs_spool_exechost_static_copy(tom::ConstElement<tom::EH>(ep)));
 }
 
 /**
@@ -1634,8 +1633,8 @@ lListElem *prepare_EH_spool(const lListElem *ep) {
  *
  * @param ep the execution host read back
  */
-void fixup_EH(lListElem *ep) {
-   const auto eh = tom::Element<tom::EH>::from_typed(ep);
+void fixup_EH(const tom::RawElement ep) {
+   const tom::Element<tom::EH> eh(ep);
    for (const auto ce : eh.get<EH_consumable_config_list>()) {
       if (!ce.get<CE_resource_map_list>().empty()) {
          ce.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
@@ -1645,6 +1644,27 @@ void fixup_EH(lListElem *ep) {
 
 // ---------------------------------------------------------------------------------------------------------------
 // the tables
+
+/**
+ * @brief An object builder of the tables: the typed object handed over as an owner of any type
+ * @tparam Build the typed builder
+ * @param variant the variant the builder is given
+ * @return the object
+ */
+template <auto Build>
+tom::RawElementPtr raw_object(const Variant variant) {
+   return tom::RawElementPtr(Build(variant));
+}
+
+/**
+ * @brief A list builder of the tables: the typed list handed over as an owner of any type
+ * @tparam Build the typed builder
+ * @return the list
+ */
+template <auto Build>
+tom::RawListPtr raw_list() {
+   return tom::RawListPtr(Build());
+}
 
 /**
  * @brief The layouts of a type that qconf and the classic backend write with one static table
@@ -1672,49 +1692,55 @@ std::vector<Layout> static_layouts(spooling_field *table, const spool_flatfile_i
 std::vector<ObjectCase> object_cases() {
    using K = FieldKind;
    return {
-      {"CAL", ocs::tom::CAL::descriptor.e, build_CAL, false, nullptr, static_layouts(CAL_fields, &qconf_sfi, true)},
-      {"CK", ocs::tom::CK::descriptor.e, build_CK, false, nullptr, static_layouts(CK_fields, &qconf_sfi, true)},
-      {"CE", ocs::tom::CE::descriptor.e, build_CE, false, nullptr, {
+      {"CAL", ocs::tom::CAL::descriptor.e, raw_object<build_CAL>, false, nullptr,
+       static_layouts(CAL_fields, &qconf_sfi, true)},
+      {"CK", ocs::tom::CK::descriptor.e, raw_object<build_CK>, false, nullptr,
+       static_layouts(CK_fields, &qconf_sfi, true)},
+      {"CE", ocs::tom::CE::descriptor.e, raw_object<build_CE>, false, nullptr, {
          {"qconf", {K::STATIC, CE_fields}, &qconf_ce_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
          {"spool", {K::STATIC, CE_fields}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"HGRP", ocs::tom::HGRP::descriptor.e, build_HGRP, true, nullptr, static_layouts(HGRP_fields, &qconf_sfi, true)},
-      {"HGRP-adminhosts", ocs::tom::HGRP::descriptor.e, build_HGRP_admin, false, nullptr,
+      {"HGRP", ocs::tom::HGRP::descriptor.e, raw_object<build_HGRP>, true, nullptr,
        static_layouts(HGRP_fields, &qconf_sfi, true)},
-      {"US", ocs::tom::US::descriptor.e, build_US, true, nullptr, static_layouts(US_fields, &qconf_param_sfi, true)},
-      {"US-manager", ocs::tom::US::descriptor.e, build_US_manager, false, nullptr,
+      {"HGRP-adminhosts", ocs::tom::HGRP::descriptor.e, raw_object<build_HGRP_admin>, false, nullptr,
+       static_layouts(HGRP_fields, &qconf_sfi, true)},
+      {"US", ocs::tom::US::descriptor.e, raw_object<build_US>, true, nullptr,
        static_layouts(US_fields, &qconf_param_sfi, true)},
-      {"PE", ocs::tom::PE::descriptor.e, build_PE, true, nullptr, static_layouts(PE_fields, &qconf_sfi, true)},
-      {"RL", ocs::tom::RL::descriptor.e, build_RL, true, nullptr, static_layouts(RL_fields, &qconf_sfi, true)},
-      {"CAT", ocs::tom::CT::descriptor.e, build_CAT, false, nullptr, {
+      {"US-manager", ocs::tom::US::descriptor.e, raw_object<build_US_manager>, false, nullptr,
+       static_layouts(US_fields, &qconf_param_sfi, true)},
+      {"PE", ocs::tom::PE::descriptor.e, raw_object<build_PE>, true, nullptr,
+       static_layouts(PE_fields, &qconf_sfi, true)},
+      {"RL", ocs::tom::RL::descriptor.e, raw_object<build_RL>, true, nullptr,
+       static_layouts(RL_fields, &qconf_sfi, true)},
+      {"CAT", ocs::tom::CT::descriptor.e, raw_object<build_CAT>, false, nullptr, {
          {"qconf", {K::STATIC, CAT_fields}, &qconf_cat_sfi, F_QCONF | F_JSON, false, false, "category", true},
       }},
       // AR_fields is not used by the product (the classic backend packs the reservation), but it is a table
-      {"AR", ocs::tom::AR::descriptor.e, build_AR, true, nullptr, {
+      {"AR", ocs::tom::AR::descriptor.e, raw_object<build_AR>, true, nullptr, {
          {"qconf", {K::STATIC, AR_fields}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
       }},
-      {"PR", ocs::tom::PR::descriptor.e, build_PR, true, nullptr, {
+      {"PR", ocs::tom::PR::descriptor.e, raw_object<build_PR>, true, nullptr, {
          {"qconf", {K::PR, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
          {"spool", {K::PR, nullptr, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"UU", ocs::tom::UU::descriptor.e, build_UU, true, nullptr, {
+      {"UU", ocs::tom::UU::descriptor.e, raw_object<build_UU>, true, nullptr, {
          {"qconf", {K::UU, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, nullptr, true},
          {"spool", {K::UU, nullptr, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"STN", ocs::tom::STN::descriptor.e, build_STN, true, nullptr, {
+      {"STN", ocs::tom::STN::descriptor.e, raw_object<build_STN>, true, nullptr, {
          {"qconf", {K::STN, nullptr, false, true}, &qconf_name_value_list_sfi, F_QCONF, true, true, nullptr, true},
          {"qconf", {K::STN_JSON}, &qconf_name_value_list_sfi, F_JSON, true, true, "sharetree", true},
          {"spool", {K::STN, nullptr, true, true}, &qconf_name_value_list_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"SC", ocs::tom::SC::descriptor.e, build_SC, true, nullptr, {
+      {"SC", ocs::tom::SC::descriptor.e, raw_object<build_SC>, true, nullptr, {
          {"qconf", {K::STATIC, SC_fields}, &qconf_comma_sfi, F_QCONF | F_JSON, false, true, "sched_conf", true},
          {"spool", {K::SC_SPOOL}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"CONF", ocs::tom::CONF::descriptor.e, build_CONF, false, nullptr, {
+      {"CONF", ocs::tom::CONF::descriptor.e, raw_object<build_CONF>, false, nullptr, {
          {"qconf", {K::CONF, nullptr, false}, &qconf_sfi, F_QCONF | F_JSON, false, false, nullptr, true},
          {"spool", {K::CONF, nullptr, true}, &qconf_sfi, F_SPOOL, false, false, nullptr, true},
       }},
-      {"EH", ocs::tom::EH::descriptor.e, build_EH, true, fixup_EH, {
+      {"EH", ocs::tom::EH::descriptor.e, raw_object<build_EH>, true, fixup_EH, {
          // -Ae/-Me and the import: no runtime values
          {"qconf", {K::EH, nullptr, false, false, false, false}, &qconf_sfi, F_QCONF | F_JSON, false, true,
           "exechost", true},
@@ -1727,15 +1753,15 @@ std::vector<ObjectCase> object_cases() {
          {"spool", {K::EH, nullptr, true, false, false, false}, &qconf_sfi, F_SPOOL, false, true, nullptr, true,
           prepare_EH_spool},
       }},
-      {"QU", ocs::tom::QU::descriptor.e, build_QU, true, nullptr, {
+      {"QU", ocs::tom::QU::descriptor.e, raw_object<build_QU>, true, nullptr, {
          {"show", {K::QU, nullptr, true, false}, &qconf_sfi, F_QCONF | F_JSON, false, true, "qinstance", true},
          {"spool", {K::QU, nullptr, false, true}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"CQ", ocs::tom::CQ::descriptor.e, build_CQ, true, nullptr, {
+      {"CQ", ocs::tom::CQ::descriptor.e, raw_object<build_CQ>, true, nullptr, {
          {"qconf", {K::CQ, nullptr, true}, &qconf_sfi, F_QCONF | F_JSON, false, false, nullptr, true},
          {"spool", {K::CQ, nullptr, false}, &qconf_sfi, F_SPOOL, false, true, nullptr, true},
       }},
-      {"RQS", ocs::tom::RQS::descriptor.e, build_RQS, false, nullptr, {
+      {"RQS", ocs::tom::RQS::descriptor.e, raw_object<build_RQS>, false, nullptr, {
          {"spool", {K::STATIC, RQS_fields}, &qconf_rqs_sfi, F_SPOOL, false, true, nullptr, true},
       }},
    };
@@ -1748,17 +1774,22 @@ std::vector<ObjectCase> object_cases() {
 std::vector<ListCase> list_cases() {
    using K = FieldKind;
    return {
-      {"RQS-list", ocs::tom::RQS::descriptor.e, build_RQS_list, {K::STATIC, RQS_fields}, &qconf_rqs_sfi, false, true,
+      {"RQS-list", ocs::tom::RQS::descriptor.e, raw_list<build_RQS_list>,
+       {K::STATIC, RQS_fields}, &qconf_rqs_sfi, false, true,
        ListJson::PLAIN, nullptr, nullptr, NoName, true},
-      {"CE-list", ocs::tom::CE::descriptor.e, build_CE_list, {K::STATIC, CE_fields}, &qconf_ce_list_sfi, true, true,
+      {"CE-list", ocs::tom::CE::descriptor.e, raw_list<build_CE_list>,
+       {K::STATIC, CE_fields}, &qconf_ce_list_sfi, true, true,
        ListJson::PLAIN, nullptr, nullptr, NoName, true},
-      {"CAT-list", ocs::tom::CT::descriptor.e, build_CAT_list, {K::STATIC, CAT_fields}, &qconf_cat_list_sfi,
+      {"CAT-list", ocs::tom::CT::descriptor.e, raw_list<build_CAT_list>, {K::STATIC, CAT_fields}, &qconf_cat_list_sfi,
        true, false, ListJson::TYPED_EX, "category-list", "category", NoName, false},
-      {"QU-list", ocs::tom::QU::descriptor.e, build_QU_list, {K::QU, nullptr, true, false}, nullptr, false, true,
+      {"QU-list", ocs::tom::QU::descriptor.e, raw_list<build_QU_list>,
+       {K::QU, nullptr, true, false}, nullptr, false, true,
        ListJson::TYPED, "qinstance", nullptr, NoName, false},
-      {"MGR-names", ocs::tom::UE::descriptor.e, build_manager_list, {K::STATIC, nullptr}, nullptr, false, true,
+      {"MGR-names", ocs::tom::UE::descriptor.e, raw_list<build_manager_list>,
+       {K::STATIC, nullptr}, nullptr, false, true,
        ListJson::NAMES, "manager", nullptr, UE_name, false},
-      {"AH-names", ocs::tom::HR::descriptor.e, build_adminhost_list, {K::STATIC, nullptr}, nullptr, false, true,
+      {"AH-names", ocs::tom::HR::descriptor.e, raw_list<build_adminhost_list>,
+       {K::STATIC, nullptr}, nullptr, false, true,
        ListJson::NAMES, "adminhost", nullptr, HR_name, false},
    };
 }
@@ -1775,12 +1806,15 @@ void run_object_case(const ObjectCase &c) {
                                                                            Variant::EMPTY}
                                                     : std::vector<Variant>{Variant::FULL};
    for (const Variant variant : variants) {
-      tom::RawElementPtr ep(c.build(variant));
+      tom::RawElementPtr ep = c.build(variant);
       for (const Layout &layout : c.layouts) {
          bool owned = false;
          spooling_field *fields = build_fields(layout.source, &owned);
-         tom::RawElementPtr prepared(layout.prepare != nullptr ? layout.prepare(ep.get()) : nullptr);
-         const lListElem *subject = prepared ? prepared.get() : ep.get();
+         tom::RawElementPtr prepared;
+         if (layout.prepare != nullptr) {
+            prepared = layout.prepare(ep.get());
+         }
+         const tom::ConstRawElement subject = prepared ? prepared.get() : ep.get();
 
          for (const Form form : forms_of(layout.forms)) {
             const std::string name = std::string(c.name) + "." + variant_name(variant) + "." + layout.label + "." +
@@ -1817,7 +1851,7 @@ void run_object_case(const ObjectCase &c) {
  * @param c the case
  */
 void run_list_case(const ListCase &c) {
-   tom::RawListPtr lp(c.build());
+   tom::RawListPtr lp = c.build();
    bool owned = false;
    spooling_field *fields = build_fields(c.source, &owned);
 
@@ -2016,7 +2050,7 @@ void run_classic() {
    ocs::DataStore::master_list_rw<SGE_TYPE_PE>().front().set<PE_control_slaves>(true);
 
    auto job = build_job();
-   auto ar = tom::ElementPtr<tom::AR>::from_typed(build_AR(Variant::FULL));
+   auto ar = build_AR(Variant::FULL);
    if (!write_classic(*job, *ar)) {
       fail("classic", "the job or the advance reservation cannot be spooled");
    }

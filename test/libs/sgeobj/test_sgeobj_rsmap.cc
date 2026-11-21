@@ -138,7 +138,7 @@ test_expand_implicit_ids() {
       auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP), 0);
       bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       CHECK(4, "amount 0 stays without ids",
-            ok && static_cast<const lList *>(centry->get<CE_resource_map_list>()) == nullptr);
+            ok && centry->get<CE_resource_map_list>() == nullptr);
       centry.reset();
       al.reset();
    }
@@ -149,7 +149,7 @@ test_expand_implicit_ids() {
       auto centry = make_centry(static_cast<uint32_t>(ocs::CEntry::Type::INT), 4);
       bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       CHECK(5, "non RSMAP is not expanded",
-            ok && static_cast<const lList *>(centry->get<CE_resource_map_list>()) == nullptr);
+            ok && centry->get<CE_resource_map_list>() == nullptr);
       centry.reset();
       al.reset();
    }
@@ -172,7 +172,7 @@ test_expand_implicit_ids() {
       bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 512);
       const char *msg = first_answer_text(al);
       CHECK(7, "amount above the limit is rejected",
-            !ok && static_cast<const lList *>(centry->get<CE_resource_map_list>()) == nullptr &&
+            !ok && centry->get<CE_resource_map_list>() == nullptr &&
             al->size() == 1 && strstr(msg, "exceeds the limit") != nullptr);
       centry.reset();
       al.reset();
@@ -186,7 +186,7 @@ test_expand_implicit_ids() {
       bool ok = centry_rsmap_expand_implicit_ids(&al, *centry, 0);
       const char *msg = first_answer_text(al);
       CHECK(8, "limit 0 rejects a bare amount",
-            !ok && static_cast<const lList *>(centry->get<CE_resource_map_list>()) == nullptr &&
+            !ok && centry->get<CE_resource_map_list>() == nullptr &&
             al->size() == 1 && strstr(msg, "exceeds the limit") == nullptr);
       centry.reset();
       al.reset();
@@ -221,8 +221,9 @@ test_expand_implicit_ids() {
  * @param[in]     consumable its consumable setting, e.g. CONSUMABLE_NO
  */
 static void
-add_master_centry(lList *master, const char *name, ocs::CEntry::Type type, uint32_t consumable) {
-   ocs::tom::Element<ocs::tom::CE> ep = ocs::tom::emplace_back<CE_name>(&master, name);
+add_master_centry(const ocs::tom::List<ocs::tom::CE> master, const char *name, const ocs::CEntry::Type type,
+                  const uint32_t consumable) {
+   const auto ep = master.emplace_back<CE_name>(name);
    ep.set<CE_valtype>(static_cast<uint32_t>(type));
    ep.set<CE_relop>(type == ocs::CEntry::Type::STR ? CMPLXEQ_OP : CMPLXLE_OP);
    ep.set<CE_consumable>(consumable);

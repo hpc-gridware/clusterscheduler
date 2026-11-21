@@ -330,9 +330,9 @@ test_cache_content_and_invalidation() {
    {
       auto hgroup_list = fetch_hgroup_list();
       CHECK(15, "test host groups removed again",
-            static_cast<const lListElem *>(hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_LEAF))) == nullptr &&
-            static_cast<const lListElem *>(hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_MID))) == nullptr &&
-            static_cast<const lListElem *>(hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_TOP))) == nullptr);
+            hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_LEAF)) == nullptr &&
+            hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_MID)) == nullptr &&
+            hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_TOP)) == nullptr);
       hgroup_list.reset();
    }
 }

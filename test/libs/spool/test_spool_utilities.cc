@@ -125,8 +125,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // T04: for every field in QU, serialize to string and parse back gives identical string
    {
       const lDescr *descr = ocs::tom::QU::descriptor.e;
-      const auto elem = ocs::tom::create_raw_elem(descr);
-      const auto copy = ocs::tom::create_raw_elem(descr);
+      const auto elem = ocs::tom::ElementPtr<ocs::tom::QU>::create();
+      const auto copy = ocs::tom::ElementPtr<ocs::tom::QU>::create();
       dstring elem_str = DSTRING_INIT;
       dstring copy_str = DSTRING_INIT;
       int bad_count = 0;
@@ -167,7 +167,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    // --- the contract of ocs_spool_append_value / ocs_spool_parse_value ---
    printf("\n--- append/parse contract ---\n");
    {
-      const auto qinstance = ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e);
+      const auto qinstance = ocs::tom::ElementPtr<ocs::tom::QU>::create();
       dstring buffer = DSTRING_INIT;
 
       // T05: an empty element is reported, nothing is rendered
@@ -195,7 +195,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       ok = ocs_spool_parse_value(*ocs_spool_field_ops_of(QU_load_thresholds), qinstance.get(), &alp, "NONE");
       CHECK(id, "list field: append gives nullptr, parse gives true and leaves the list unset",
             value == nullptr && ok && !answer_list_has_error(&alp) &&
-            qinstance->get<const lList *>(QU_load_thresholds) == nullptr); id++;
+            qinstance->get<QU_load_thresholds>() == nullptr); id++;
       alp.reset();
 
       // T09: a host field: unset is written as NONE, a parsed name is stored as a host and written back
@@ -207,7 +207,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       value = ocs_spool_append_value(*ocs_spool_field_ops_of(QU_qhostname), qinstance.get(), &alp, &buffer);
       CHECK(id, "host field: unset written as NONE, parsed host stored and written back",
             unset_is_none && ok && value != nullptr && strcmp(value, "host1") == 0 &&
-            strcmp(qinstance->get<ocs::tom::Host>(QU_qhostname).c_str(), "host1") == 0); id++;
+            strcmp(qinstance->get<QU_qhostname>().c_str(), "host1") == 0); id++;
       alp.reset();
 
       // T10: a field of a symbolic kind is parsed from and written as its word
@@ -218,15 +218,15 @@ int main(int /*argc*/, char * /*argv*/[]) {
       DSTRING_STATIC(expected, 64);
       const char *const expected_word = ocs_object_append_symbolic(&expected, ocs_object_symbolic::qinstance_type, BQ);
       CHECK(id, "symbolic field: BATCH parsed into the BQ bit and written back as BATCH",
-            ok && qinstance->get<std::uint32_t>(QU_qtype) == static_cast<std::uint32_t>(BQ) &&
+            ok && qinstance->get<QU_qtype>() == static_cast<std::uint32_t>(BQ) &&
             value != nullptr && expected_word != nullptr && strcmp(value, expected_word) == 0); id++;
       alp.reset();
 
       // T11: a number that does not parse is refused and leaves the field as it was
-      qinstance->set(QU_seq_no, std::uint32_t{7});
+      qinstance->set<QU_seq_no>(7);
       ok = ocs_spool_parse_value(*ocs_spool_field_ops_of(QU_seq_no), qinstance.get(), &alp, "seven");
       CHECK(id, "number field: unparsable text gives false and keeps the old value",
-            !ok && qinstance->get<std::uint32_t>(QU_seq_no) == 7U); id++;
+            !ok && qinstance->get<QU_seq_no>() == 7U); id++;
       alp.reset();
 
       sge_dstring_free(&buffer);
@@ -240,9 +240,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
       auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::create();
       context->set<SPC_name>("default");
-      const lListElem *const raw = context.get();
+      const auto raw = context.get();
       spool_set_default_context(context.release());
-      CHECK(id, "set: get gives the context that was set", spool_get_default_context().raw() == raw); id++;
+      CHECK(id, "set: get gives the context that was set", spool_get_default_context() == raw); id++;
 
       auto cleared = ocs_spool_clear_default_context();
       CHECK(id, "clear: hands over the context and get gives an empty handle afterwards",
@@ -252,7 +252,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
       // the default list stays usable: a context set again is found again
       spool_set_default_context(cleared.release());
-      CHECK(id, "set after clear: get gives the context again", spool_get_default_context().raw() == raw); id++;
+      CHECK(id, "set after clear: get gives the context again", spool_get_default_context() == raw); id++;
       cleared = ocs_spool_clear_default_context();
    }
 
