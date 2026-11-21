@@ -35,6 +35,7 @@
 /*___INFO__MARK_END__*/
 #include <cstring>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -723,11 +724,17 @@ sge_mark_unheard(lListElem *hep, u_long64 gdi_session) {
    DRETURN_VOID;
 }
 
-/* ----------------------------------------
-
-   updates global and host specific load values
-   using the load report list lp
-*/
+/**
+ * @brief Update the global and host specific load values from a load report
+ *
+ * The full topology string of a topology load value is stored in EH_internal_topology of the host the value
+ * belongs to, once that host is looked up (CS-3192); the load value keeps the product-specific version.
+ *
+ * @param rhost the host that sent the report
+ * @param real_host the real host of a simulated host, or nullptr
+ * @param lp the load report list (LR)
+ * @param gdi_session the GDI session of the request
+ */
 void
 sge_update_load_values(const char *rhost, const char* real_host, lList *lp, u_long64 gdi_session) {
    lListElem *ep, **hepp = nullptr;
@@ -785,6 +792,9 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, u_lo
          continue;
       }
 
+      // the full topology string of a topology load value, stored once the host of the value is known
+      std::optional<std::string> internal_topology;
+
       /* handle global or exec host? */
       if (global) {
          hepp = &global_ep;
@@ -801,9 +811,10 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, u_lo
             value = lGetString(real_ep, EH_internal_topology);
          }
 
-         // Keep the original value in the host element and a product-specific version as load value
+         // Keep the original value for the host element and a product-specific version as load value; the host
+         // element is the one of this load value, known only after the host lookup below (CS-3192)
          ocs::TopologyString topology(value);
-         lSetString(*hepp, EH_internal_topology, topology.to_string(true, true, true, false, false, false).c_str());
+         internal_topology = topology.to_string(true, true, true, false, false, false);
          lSetString(ep, LR_value, topology.to_product_topology_string().c_str());
          value = lGetString(ep, LR_value);
       }
@@ -825,6 +836,11 @@ sge_update_load_values(const char *rhost, const char* real_host, lList *lp, u_lo
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
          }
+      }
+
+      // the full topology string goes to the host this load value belongs to (CS-3192)
+      if (internal_topology) {
+         lSetString(*hepp, EH_internal_topology, internal_topology->c_str());
       }
 
       if (is_static == 2) {
