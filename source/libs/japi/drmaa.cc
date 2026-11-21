@@ -2156,7 +2156,7 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
          DPRINTF("Adding args\n");
          const auto ep_opt = sge_add_arg(args, opt, lListT, sw, value);
          DPRINTF("Setting List\n");
-         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(path_list));
+         ep_opt.set<SPA_argval_lListT>(std::move(path_list));
          DPRINTF("Freeing Path\n");
          sge_free(&new_path);
       } else {
@@ -2772,7 +2772,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
 
       ep_opt = sge_add_arg(args, v_OPT, lListT, "-v", sge_dstring_get_string(&env));
       sge_dstring_free(&env);
-      ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(nlp));
+      ep_opt.set<SPA_argval_lListT>(std::move(nlp));
    }
 
    /* email address -- -M */
@@ -2825,7 +2825,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
 
       ep_opt = sge_add_arg(args, M_OPT, lListT, "-M", sge_dstring_get_string(&email));
       sge_dstring_free(&email);
-      ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(nlp));
+      ep_opt.set<SPA_argval_lListT>(std::move(nlp));
    }
 
    /* email supression -- -m */
@@ -3605,7 +3605,7 @@ static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const in
 
    if (task_id_range_list) {
       const auto ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
-      ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(task_id_range_list));
+      ep_opt.set<SPA_argval_lListT>(std::move(task_id_range_list));
 
       DRETURN(0);
    }

@@ -149,9 +149,9 @@ std::string
 ocs::ProcedureParameter::get_procedure_from_bundle(const ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle) {
    DENTER(TOP_LAYER);
    const auto name_value_param = parameter_bundle.find_first<SPP_name>(NAME_VALUE_LIST);
-   // the value list is of any type (CULL_ANY_SUBTYPE): the free lookup checks it
-   const lList *name_value_list = name_value_param.get<SPP_value_list>();
-   const auto procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
+   // the value list is of any type (CULL_ANY_SUBTYPE); get_bundle() puts a VA list in, the view checks it
+   const auto name_value_list = name_value_param.get_as<SPP_value_list, ocs::tom::VA>();
+   const auto procedure_elem = name_value_list.find_first<VA_variable>(PROCEDURE);
    std::string ret = procedure_elem.get<VA_value>();
    DRETURN(ret);
 }
@@ -164,11 +164,11 @@ std::string
 ocs::ProcedureParameter::get_sub_procedure_from_bundle(const ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle) {
    DENTER(TOP_LAYER);
    const auto name_value_param = parameter_bundle.find_first<SPP_name>(NAME_VALUE_LIST);
-   // the value list is of any type (CULL_ANY_SUBTYPE): the free lookup checks it
-   const lList *name_value_list = name_value_param.get<SPP_value_list>();
+   // the value list is of any type (CULL_ANY_SUBTYPE); get_bundle() puts a VA list in, the view checks it
+   const auto name_value_list = name_value_param.get_as<SPP_value_list, ocs::tom::VA>();
 
    // Not every request contains sub-procedure requests
-   if (const auto sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE);
+   if (const auto sub_procedure_elem = name_value_list.find_first<VA_variable>(SUB_PROCEDURE);
        sub_procedure_elem) {
       std::string ret = bundle_string(sub_procedure_elem.get<VA_value>());
       DRETURN(ret);

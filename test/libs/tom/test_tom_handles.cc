@@ -631,6 +631,99 @@ test_no_sub_type() {
          empty && absent && refused);
 }
 
+// a raw pointer and nullptr still reach the raw setter of a field without a sub-type: the setters taking owners
+// cannot deduce the owner's type from them
+static_assert(requires(const Element<SPA> opt, lList *lp) {
+   opt.set<SPA_argval_lListT>(nullptr);
+   opt.set<SPA_argval_lListT>(lp);
+});
+static_assert(requires(const Element<TEST> test, lListElem *ep) {
+   test.set<TEST_obj_any>(nullptr);
+   test.set<TEST_obj_any>(ep);
+});
+static_assert(std::is_same_v<detail::SetterArg<SPA_argval_lListT>::type, lList *>);
+static_assert(std::is_same_v<detail::SetterArg<TEST_obj_any>::type, lListElem *>);
+// the raw setter is the one with the raw pointer parameter
+[[maybe_unused]] static constexpr void (Element<SPA>::*raw_list_setter)(lList *) const =
+        &Element<SPA>::set<SPA_argval_lListT>;
+[[maybe_unused]] static constexpr void (Element<TEST>::*raw_object_setter)(lListElem *) const =
+        &Element<TEST>::set<TEST_obj_any>;
+
+/**
+ * @brief The edges of the members on a field without a sub-type: a reduced element without the field, an
+ *        element bound elsewhere or in the field itself, contents with a reduced layout, and the raw setter
+ * @return nothing; CHECK records the results
+ */
+static void
+test_no_sub_type_edges() {
+   // set(ElementPtr) on a reduced element that does not hold the object field: AbsentField, the element stays
+   const ElementPtr<TEST> reduced = ElementPtr<TEST>::create(layout<TEST_uint32>());
+   ElementPtr<JB> job = ElementPtr<JB>::create();
+   job->set<JB_job_number>(3u);
+   const lListElem *job_raw = job.get().raw();
+   const bool absent = throws_field_exception([&] { reduced->set<TEST_obj_any>(std::move(job)); },
+                                              FieldException::Reason::AbsentField, "TEST_obj_any") &&
+                       job && job.get().raw() == job_raw && job->get<JB_job_number>() == 3 &&
+                       is_free(job.get());
+   CHECK(44, "set of an element into a reduced element without the object field throws AbsentField, the element "
+             "stays with the caller", absent);
+
+   // exchange with an element bound in a list: BoundElement, the element stays in its list, the field unchanged
+   ElementPtr<TEST> test = ElementPtr<TEST>::create();
+   test->set<TEST_obj_any>(std::move(job));
+   const ListPtr<QU> queues = ListPtr<QU>::create("queues");
+   ElementPtr<QU> bound = ElementPtr<QU>::from_typed(queues->emplace_back<QU_qname>("all.q").raw());
+   const bool bound_refused =
+           throws_field_exception([&] { static_cast<void>(test->exchange<TEST_obj_any>(std::move(bound))); },
+                                  FieldException::Reason::BoundElement, "type TEST ") &&
+           !bound && queues.get().size() == 1 && test->get<TEST_obj_any>().raw() == job_raw;
+   // exchange with the element the field holds: it is bound in the field, refused alike, the field keeps it
+   ElementPtr<JB> held = ElementPtr<JB>::from_typed(test->get<TEST_obj_any>().raw());
+   const bool held_refused =
+           throws_field_exception([&] { static_cast<void>(test->exchange<TEST_obj_any>(std::move(held))); },
+                                  FieldException::Reason::BoundElement, "type TEST ") &&
+           !held && test->get<TEST_obj_any>().raw() == job_raw &&
+           test->get_as<TEST_obj_any, JB>().get<JB_job_number>() == 3;
+   CHECK(45, "exchange of an object field with an element bound in a list or held by the field itself throws "
+             "BoundElement, the element stays where it is bound and the field is unchanged",
+         bound_refused && held_refused);
+
+   // get_as accepts a list and an element of the type with a reduced layout
+   ElementPtr<SPA> opt = ElementPtr<SPA>::create();
+   ListPtr<PN> paths = ListPtr<PN>::create("paths", layout<PN_host>());
+   paths->emplace_back<PN_host>(Host("host_a"));
+   opt->set<SPA_argval_lListT>(std::move(paths));
+   ElementPtr<JB> reduced_job = ElementPtr<JB>::create(layout<JB_job_name>());
+   reduced_job->set<JB_job_name>("sleeper");
+   test->set<TEST_obj_any>(std::move(reduced_job));
+   const ConstElement<SPA> const_opt = opt.get();
+   const ConstList<PN> path_view = const_opt.get_as<SPA_argval_lListT, PN>();
+   const Element<JB> job_view = test->get_as<TEST_obj_any, JB>();
+   CHECK(46, "get_as accepts a list and an element of the expected type with a reduced layout",
+         path_view.size() == 1 && std::strcmp(path_view.front().get<PN_host>(), "host_a") == 0 &&
+         !path_view.front().has<PN_path>() && std::strcmp(job_view.get<JB_job_name>(), "sleeper") == 0 &&
+         !job_view.has<JB_job_number>());
+
+   // the raw setter takes a raw list or element over and nullptr empties the field
+   lList *raw_list = ListPtr<ST>::create("names").release();
+   opt->set<SPA_argval_lListT>(raw_list);
+   lListElem *raw_elem = ElementPtr<QU>::create().release();
+   test->set<TEST_obj_any>(raw_elem);
+   const bool raw_taken =
+           opt->get<SPA_argval_lListT>().raw() == raw_list && test->get<TEST_obj_any>().raw() == raw_elem;
+   opt->set<SPA_argval_lListT>(nullptr);
+   test->set<TEST_obj_any>(nullptr);
+   CHECK(47, "a raw pointer and nullptr reach the raw setter of a field without a sub-type: the list or element is "
+             "taken over, nullptr empties the field",
+         raw_taken && !opt->get<SPA_argval_lListT>() && !test->get<TEST_obj_any>());
+}
+
+/**
+ * @brief Run the scenarios
+ * @param argc argument count
+ * @param argv arguments
+ * @return the exit code of the module test framework
+ */
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -709,5 +802,16 @@ int main(int argc, char *argv[]) {
        "view for the right type, throws WrongType for a wrong one and gives an empty view for an empty field; "
        "EmptyHandle, AbsentField and BoundElement as for every member",
        {{"OPS-01", "covers"}}, {38, 39, 40, 41, 42, 43}, test_no_sub_type},
+      {"HANDLE-12", "fields without a sub-type: edges",
+       "the members on a field without a sub-type keep the contract of the members at the edges, and a raw pointer "
+       "still reaches the raw setter (CS-3103)",
+       {"set an element into a reduced element that does not hold the object field",
+        "exchange an object field with an element bound in a list and with the element the field holds",
+        "read a list and an element of the expected type with a reduced layout with get_as",
+        "set a raw list, a raw element and nullptr"},
+       "AbsentField with the element left to the caller; BoundElement with the element left where it is bound and "
+       "the field unchanged; get_as accepts the reduced layouts; the raw setter takes the pointers over and nullptr "
+       "empties the field (checked at compile time as well)",
+       {{"OPS-01", "covers"}}, {44, 45, 46, 47}, test_no_sub_type_edges},
    });
 }

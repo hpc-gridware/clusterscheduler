@@ -65,7 +65,7 @@ void ocs::QStatGroupViewXML::report_cqueue(std::ostream &os, const char *cq_name
    }
    auto attribute_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
    const auto attributes = *attribute_list;
-   ocs::tom::set<XMLE_List>(elem.get().raw(), std::move(attribute_list));
+   elem->set<XMLE_List>(std::move(attribute_list));
 
    xml_append_Attr_S(attributes, "name", cq_name);
    if (summary->is_load_available) {

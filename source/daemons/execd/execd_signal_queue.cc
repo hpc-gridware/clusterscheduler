@@ -141,7 +141,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
                this is done to ensure that signal delivery is also
                forwarded to the job in case the master queue keeps still active */
             for (const auto gdil_ep : jatep.get<JAT_granted_destin_identifier_list>()) {
-               const ocs::tom::Element<ocs::tom::QU> master_q(gdil_ep.get<JG_queue>());
+               const ocs::tom::Element<ocs::tom::QU> master_q = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
                if (master_q) {
                   qnm =  master_q.get<QU_full_name>();
                   if (strcmp(qname, qnm) == 0) {
@@ -647,8 +647,8 @@ CheckShepherdStillRunning:
          DRETURN(1);
       }
 
-      const ocs::tom::ConstElement<ocs::tom::QU> master_q(
-         jatep.get<JAT_granted_destin_identifier_list>().front().get<JG_queue>());
+      const ocs::tom::ConstElement<ocs::tom::QU> master_q =
+         jatep.get<JAT_granted_destin_identifier_list>().front().get_as<JG_queue, ocs::tom::QU>();
 
       DPRINTF("sending %s to job " sge_u32 "." sge_u32 "\n", sge_sig2str(signal), jobid, jataskid);
       if (signal == SGE_SIGCONT) {

@@ -294,9 +294,9 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    while ((ep = pcmdline.find_first<SPA_switch_val>("-pe"))) {
       ar.set<AR_pe>(ep.get<SPA_argval_lStringT>()); /* SGE_STRING, */
       // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
-      // list is taken out raw and adopted as RN here; the range held before is freed by the set
+      // list is taken out and adopted checked as RN here; the range held before is freed by the set
       ar.set<AR_pe_range>(ocs::tom::adopt<ocs::tom::RN>(
-         ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
+         ep.exchange<SPA_argval_lListT>(ocs::tom::ListPtr<ocs::tom::RN>{})));
       pcmdline.erase(ep);
    }
    /*  -par allocation_rule  reserve the slots with this rule instead of the PE's allocation_rule */

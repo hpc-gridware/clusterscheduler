@@ -3775,7 +3775,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
             /* maintain library session data */
             if (type == sgeE_JOB_LIST) {
                // the job list event carries the jobs of the session, reduced to the subscribed fields
-               const auto sge_job_list = ocs::tom::List<ocs::tom::JB>(event.get<ET_new_version>());
+               const auto sge_job_list = event.get_as<ET_new_version, ocs::tom::JB>();
                uint32_t jobid, taskid;
                int finished_tasks = 0;
 
@@ -3835,7 +3835,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                uint32_t wait_status;
                const char *err_str;
                // the job finish event carries the job report (JR)
-               const auto jr = ocs::tom::ConstList<ocs::tom::JR>(event.get<ET_new_version>()).front();
+               const auto jr = event.get_as<ET_new_version, ocs::tom::JR>().front();
 
                DPRINTF (("Handling job finish event\n"));
 
@@ -3888,7 +3888,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
                /* - add task to JJ_started_task_ids */
                ocs::tom::Element<ocs::tom::JJ> japi_job;
                // the task modify event carries the array task (JAT)
-               const auto ep = ocs::tom::ConstList<ocs::tom::JAT>(event.get<ET_new_version>()).front();
+               const auto ep = event.get_as<ET_new_version, ocs::tom::JAT>().front();
                u_long job_status = ep.get<JAT_status>();
                bool task_running = (job_status==JRUNNING || job_status==JTRANSFERING);
 

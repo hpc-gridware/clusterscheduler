@@ -189,7 +189,7 @@ responsible_queue([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::JB> je
    }
    ocs::tom::ConstElement<ocs::tom::QU> master_q;
    if (gdil_ep) {
-      master_q = ocs::tom::ConstElement<ocs::tom::QU>(gdil_ep.get<JG_queue>());
+      master_q = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
    }
 
    DRETURN(master_q);
@@ -223,7 +223,7 @@ responsible_queue([[maybe_unused]] const ocs::tom::ConstElement<ocs::tom::JB> je
    }
    ocs::tom::Element<ocs::tom::QU> master_q;
    if (gdil_ep) {
-      master_q = ocs::tom::Element<ocs::tom::QU>(gdil_ep.get<JG_queue>());
+      master_q = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
    }
 
    DRETURN(master_q);
@@ -427,7 +427,7 @@ exec_job_sum_host_limit(const ocs::CEntry::Type type, const ocs::tom::ConstEleme
    double limit = 0;
    const auto gdil = jatep.get<JAT_granted_destin_identifier_list>();
    for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
-      const ocs::tom::ConstElement<ocs::tom::QU> queue(gdil_ep.get<JG_queue>());
+      const ocs::tom::ConstElement<ocs::tom::QU> queue = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
       if (queue) {
          const char *limit_str = queue.get<F>();
          if (limit_str != nullptr) {

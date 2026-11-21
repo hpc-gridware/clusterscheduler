@@ -290,7 +290,7 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       int slots;
 
-      const ocs::tom::Element<ocs::tom::QU> qep(gdil_ep.get<JG_queue>());
+      const ocs::tom::Element<ocs::tom::QU> qep = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
       if (!qep) {
          qnm = gdil_ep.get<JG_qname>();
          sge_dstring_sprintf(&err_str, MSG_JOB_MISSINGQINGDIL_SU, qnm, jelem.get<JB_job_number>());
@@ -325,8 +325,8 @@ static int handle_job(ocs::tom::ElementPtr<ocs::tom::JB> &owned_job, const ocs::
 
       if (pelem != nullptr && pelem.get<PE_control_slaves>() && !pelem.get<PE_job_is_first_task>()) {
          int slots;
-         const ocs::tom::Element<ocs::tom::QU> mq(
-            jatep.get<JAT_granted_destin_identifier_list>().front().get<JG_queue>());
+         const ocs::tom::Element<ocs::tom::QU> mq =
+            jatep.get<JAT_granted_destin_identifier_list>().front().get_as<JG_queue, ocs::tom::QU>();
          slots = mq.get<QU_job_slots>() + 1;
          DPRINTF("Increasing job slots in master queue \"%s\" to %d because job is not first task\n",
                  mq.get<QU_qname>(), slots);
@@ -586,7 +586,7 @@ job_get_queue_for_task(const uint32_t job_id, const uint32_t ja_task_id,
       // and check if we may still start more
       int total_slots_used = 0;
       for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
-         const ocs::tom::ConstElement<ocs::tom::QU> queue(gdil_ep.get<JG_queue>());
+         const ocs::tom::ConstElement<ocs::tom::QU> queue = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
          if (queue) {
             total_slots_used += qinstance_slots_used(queue);
             if (total_slots_used >= max_slots) {
@@ -606,7 +606,7 @@ job_get_queue_for_task(const uint32_t job_id, const uint32_t ja_task_id,
          continue;
       }
 
-      const ocs::tom::ConstElement<ocs::tom::QU> queue(gdil_ep.get<JG_queue>());
+      const ocs::tom::ConstElement<ocs::tom::QU> queue = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
       if (queue) {
          /* Queue must have free slots */
          if (qinstance_slots_used(queue) < (int)queue.get<QU_job_slots>()) {

@@ -479,7 +479,7 @@ static void test_xml_field_walk() {
    spa->set<SPA_argval_lStringT>("a<b");
    auto st_list = ocs::tom::ListPtr<ocs::tom::ST>::create("st_list");
    add_st(*st_list, "x", 5);
-   spa->set<SPA_argval_lListT>(st_list.release());
+   spa->set<SPA_argval_lListT>(std::move(st_list));
 
    const std::string spa_expected = "<SPA_number>1</SPA_number>\n"
                                     "<SPA_argtype>2</SPA_argtype>\n"
@@ -584,10 +584,10 @@ static void test_xml_values() {
    rde->set<RDE_amount>(0.5);
    auto inner = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
    set_test_numbers(*inner, 2, 0);
-   ocs::tom::set((*inner).raw(), TEST_obj_any, ocs::tom::RawElementPtr(std::move(rde)));
+   inner->set<TEST_obj_any>(std::move(rde));
    auto outer = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
    set_test_numbers(*outer, 1, 9);
-   ocs::tom::set((*outer).raw(), TEST_obj_any, ocs::tom::RawElementPtr(std::move(inner)));
+   outer->set<TEST_obj_any>(std::move(inner));
 
    const std::string inner_text = "<TEST_bool>false</TEST_bool>\n"
                                   "<TEST_uint32>2</TEST_uint32>\n"

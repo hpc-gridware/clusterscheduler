@@ -558,7 +558,7 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, const ocs:
    for (const auto jatep : jep.get<JB_ja_tasks>()) {
       const auto gdil = jatep.get<JAT_granted_destin_identifier_list>();
       for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
-         const ocs::tom::ConstElement<ocs::tom::QU> q(gdil_ep.get<JG_queue>());
+         const ocs::tom::ConstElement<ocs::tom::QU> q = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
          if (!q) {
             // this should never happen, but if it does, we have to skip this gdil_ep
             CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");

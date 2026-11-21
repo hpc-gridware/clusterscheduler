@@ -102,10 +102,8 @@ namespace ocs::detail {
       if (!ep) {
          return false;
       }
-      lList *lp = nullptr;
-      ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
-      // the option parser builds the switch's list with the sub-type of the field it is meant for
-      list = ocs::tom::ListPtr<Sub>::from_typed(lp);
+      // the option parser builds the switch's list with the sub-type of the field it is meant for; adopted checked
+      list = ocs::tom::adopt<Sub>(ep.exchange<SPA_argval_lListT>(ocs::tom::ListPtr<Sub>{}));
       cmdline.erase(ep);
       return true;
    }

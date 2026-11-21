@@ -278,7 +278,7 @@ execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
          lr_list = tmp_lr_list->clone("").release();
          ocs::tom::ElementPtr<ocs::tom::REP>::from_typed(std::exchange(last_lr, nullptr)).reset();
          tmp_lr_list->sort<ocs::tom::asc<LR_host>>();
-         ocs::tom::set<REP_list>(report.get().raw(), std::move(tmp_lr_list));
+         report->set<REP_list>(std::move(tmp_lr_list));
       } else {
          for (const auto lr : ocs::tom::List<ocs::tom::LR>(lr_list)) {
             const char *hostname = lr.get<LR_host>();
@@ -315,7 +315,7 @@ execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
          }
 
          tmp_lr_list->sort<ocs::tom::asc<LR_host>>();
-         ocs::tom::set<REP_list>(report.get().raw(), std::move(tmp_lr_list));
+         report->set<REP_list>(std::move(tmp_lr_list));
          ocs::tom::ElementPtr<ocs::tom::REP>::from_typed(std::exchange(last_lr, nullptr)).reset();
          last_lr = report->clone().release();
       }
@@ -355,7 +355,7 @@ execd_add_conf_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
       report->set<REP_version>(ocs::Version::get_version());
       report->set<REP_seqno>(sge_execd_report_seqno);
       report->set<REP_host>(ocs::tom::Host(qualified_hostname));
-      ocs::tom::set<REP_list>(report.get().raw(),
+      report->set<REP_list>(
          ocs::tom::ConstList<ocs::tom::CONF>(Execd_Config_List).clone("execd config list copy"));
       report_list.push_back(std::move(report));
       DPRINTF("handling conf report in execd_add_conf_report\n");
@@ -397,7 +397,7 @@ execd_add_license_report(const ocs::tom::List<ocs::tom::REP> report_list, const 
          ep_lic->set<LIC_processors>(sge_nprocs());
          ep_lic->set<LIC_arch>(sge_get_arch());
          lp_lic->push_back(std::move(ep_lic));
-         ocs::tom::set<REP_list>(report.get().raw(), std::move(lp_lic));
+         report->set<REP_list>(std::move(lp_lic));
       }
       report_list.push_back(std::move(report));
       DPRINTF("handling license report in execd_add_license_report\n");
@@ -474,7 +474,7 @@ execd_add_job_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint
             complete = false;
          } /* else not sending report for this job */
       }
-      ocs::tom::set<REP_list>(job_report.get().raw(), std::move(job_report_list));
+      job_report->set<REP_list>(std::move(job_report_list));
 
       /* a complete job report contains all jobs on this host, sge_qmaster uses it to find out
        * that a job does not run here any more (reschedule unknown list), see CS-3076
@@ -1190,7 +1190,7 @@ build_reserved_mem_usage(const ocs::tom::ConstElement<ocs::tom::JG> gdil_ep, con
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
     */
-   const ocs::tom::ConstElement<ocs::tom::QU> queue(gdil_ep.get<JG_queue>());
+   const ocs::tom::ConstElement<ocs::tom::QU> queue = gdil_ep.get_as<JG_queue, ocs::tom::QU>();
    double vmem = calculate_reserved_memory(queue, slots, QU_h_vmem, QU_s_vmem);
    *mem += vmem * wallclock / (1024*1024*1024);
    *maxvmem += vmem;

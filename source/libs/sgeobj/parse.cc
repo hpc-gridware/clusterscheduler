@@ -379,7 +379,7 @@ bool parse_multi_stringlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const c
    if (ep != nullptr) {
       while (ep != nullptr) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
-         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ep.get<SPA_argval_lListT>())) {
+         for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             sge_parse_string_list<F>(dest, sep.get<ST_name>());
          }
          cmdline.erase(ep);
@@ -430,9 +430,9 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
       ret = true;
       is_run_once = true;
       if (array_def != nullptr && array_def.get<SPA_number>() == t_OPT) {
-         array_def_list = ocs::tom::ConstList<ocs::tom::RN>(array_def.get<SPA_argval_lListT>());
+         array_def_list = array_def.get_as<SPA_argval_lListT, ocs::tom::RN>();
       }
-      for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ep.get<SPA_argval_lListT>())) {
+      for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
          ocs::tom::ConstList<ocs::tom::RN> temp_array_list;
 
          if (array_def_list && sep.next() == nullptr) {
@@ -487,7 +487,7 @@ int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
 
    const auto ep = cmdline.find_first<SPA_switch_val>(opt);
    if (ep != nullptr) {
-      const auto args = ocs::tom::List<ocs::tom::ST>(ep.get<SPA_argval_lListT>());
+      const auto args = ep.get_as<SPA_argval_lListT, ocs::tom::ST>();
       const auto ep2 = args.front();
       if (ep2 != nullptr) {
          *str = sge_strdup(nullptr, ep2.get<ST_name>());
@@ -550,10 +550,8 @@ parse_u_longlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
    std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>> ret;
 
    if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
-      lList *value = nullptr;
-      ocs::tom::exchange<SPA_argval_lListT>(ep, &value);
-      // the parser records the numbers of the switch as an ULNG list, so it is taken over unchecked
-      ret = ocs::tom::ListPtr<ocs::tom::ULNG>::from_typed(value);
+      // the parser records the numbers of the switch as an ULNG list, which is adopted checked
+      ret = ocs::tom::adopt<ocs::tom::ULNG>(ep.exchange<SPA_argval_lListT>(ocs::tom::ListPtr<ocs::tom::ULNG>{}));
 
       cmdline.erase(ep);
    }

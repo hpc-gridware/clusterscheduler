@@ -2312,12 +2312,13 @@ ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
          }
          auto report_list = get_event_list(thiz, sync, &commlib_error);
          if ((fetch_ok = report_list.has_value())) {
-            // REP_list is runtime typed: taken out raw, wrapped as ET below
-            lList *new_events_raw = nullptr;
-            ocs::tom::exchange<REP_list>((*report_list)->front(), &new_events_raw);
+            // REP_list is runtime typed: the events (ET) of the event report, adopted checked; qmaster may have
+            // sent no report at all, which gives no events, as the exchange on no report did
+            const auto report = (*report_list)->front();
+            auto new_events = report ? ocs::tom::adopt<ocs::tom::ET>(
+                                          report.exchange<REP_list>(ocs::tom::ListPtr<ocs::tom::ET>{}))
+                                     : ocs::tom::ListPtr<ocs::tom::ET>{};
             report_list->reset();
-            // the events (ET) out of the report, from the network as well
-            auto new_events = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(new_events_raw);
             if (!ck_event_number(*new_events, &(sge_evc->next_event), &wrong_number)) {
                /*
                 *  may be we got an old event, that was sent before
@@ -2775,14 +2776,13 @@ ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    // the report (REP) the event master built; its event list is runtime typed
    const auto report = event_list.front();
    // the event list of an event report holds events (ET)
-   const auto report_events = ocs::tom::ConstList<ocs::tom::ET>::from_typed(report.get<REP_list>());
+   const auto report_events = report.get_as<REP_list, ocs::tom::ET>();
    int num_events = static_cast<int>(report_events.size());
    if (num_events > 0) {
       sge_mutex_lock("event_control_mutex", __func__, __LINE__, &(evco->mutex));
-      lList *events = nullptr;
-      ocs::tom::exchange<REP_list>(report, &events);
-      // the event list of an event report holds events (ET)
-      auto report_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events);
+      // the event list of an event report holds events (ET), adopted checked
+      auto report_list =
+         ocs::tom::adopt<ocs::tom::ET>(report.exchange<REP_list>(ocs::tom::ListPtr<ocs::tom::ET>{}));
       if (evco->new_events) {
          evco->new_events->splice(std::move(report_list));
       } else {

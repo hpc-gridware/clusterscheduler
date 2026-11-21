@@ -95,7 +95,7 @@ void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_m
 
    auto jlist = ocs::tom::ListPtr<ocs::tom::SME>::create("");
    jlist->push_back(std::move(sme));
-   ocs::tom::set<OR_joker>(ep.get().raw(), std::move(jlist));
+   ep->set<OR_joker>(std::move(jlist));
 
    ep->set<OR_type>(ORT_job_schedd_info);
    or_list->push_back(std::move(ep));
@@ -210,8 +210,8 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
       order_job.set<JB_rrcontr>(job.get<JB_rrcontr>());
       order_job.set<JB_dlcontr>(job.get<JB_dlcontr>());
       order_job.set<JB_wtcontr>(job.get<JB_wtcontr>());
-      // the joker of an order holds a list of any type (CS-3102), so it takes the raw list
-      ep->set<OR_joker>(jlist.release());
+      // the joker of an order holds a list of any type (CS-3102); it takes the owner of any type
+      ep->set<OR_joker>(std::move(jlist));
    }
 
    ep->set<OR_type>(type);

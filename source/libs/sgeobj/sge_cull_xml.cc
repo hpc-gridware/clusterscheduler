@@ -238,7 +238,7 @@ static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_le
       
       if (is_XML_elem && (xml_elem.get<XMLE_Print>()))  {
          // an element to be printed holds the name and the value of its tag
-         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(xml_elem.get<XMLE_Element>());
+         const ocs::tom::ConstElement<ocs::tom::XMLA> elem = xml_elem.get_as<XMLE_Element, ocs::tom::XMLA>();
          if (elem.get<XMLA_Value>() != nullptr){
             os << indent << "<" << elem.get<XMLA_Name>() << (is_attr ? sge_dstring_get_string(&attr) : "")
                << ">";
@@ -428,7 +428,7 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
       if (xml_elem.get<XMLE_Print>()) {
          dstring attr = DSTRING_INIT;
          // an element to be printed holds the name and the value of its tag
-         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(xml_elem.get<XMLE_Element>());
+         const ocs::tom::ConstElement<ocs::tom::XMLA> elem = xml_elem.get_as<XMLE_Element, ocs::tom::XMLA>();
          const bool is_attr = lAttributesToString_(xml_elem.get<XMLE_Attribute>(), &attr);
 
          os << space << "<" << elem.get<XMLA_Name>() << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
@@ -634,7 +634,7 @@ static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(const ocs::tom::List<ocs:
    elem->set<XMLA_Value>(value);
 
    auto parent = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
-   ocs::tom::set<XMLE_Element>(parent.get().raw(), std::move(elem));
+   parent->set<XMLE_Element>(std::move(elem));
    parent->set<XMLE_Print>(true);
    DRETURN(attributeList.push_back(std::move(parent)));
 }

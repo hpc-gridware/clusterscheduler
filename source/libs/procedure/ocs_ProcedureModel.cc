@@ -92,7 +92,7 @@ ocs::ProcedureModel::get_reduction() const {
    }
    // the value list is of any type (CULL_ANY_SUBTYPE); the checked handle throws on another type, as the
    // getter on the raw element did
-   const auto value = ocs::tom::ConstList<ocs::tom::ULNG>(entry.get<SPP_value_list>()).front();
+   const auto value = entry.get_as<SPP_value_list, ocs::tom::ULNG>().front();
    if (!value) {
       DPRINTF("reduction entry present but empty\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
@@ -122,8 +122,8 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
    }
 
    const auto applied_value =
-           ocs::tom::ConstList<ocs::tom::ULNG>(applied_entry.get<SPP_value_list>()).front();
-   const auto failed_value = ocs::tom::ConstList<ocs::tom::ULNG>(failed_entry.get<SPP_value_list>()).front();
+           applied_entry.get_as<SPP_value_list, ocs::tom::ULNG>().front();
+   const auto failed_value = failed_entry.get_as<SPP_value_list, ocs::tom::ULNG>().front();
    if (!applied_value || !failed_value) {
       DPRINTF("write result present but empty\n");
       DRETURN(false);
@@ -141,7 +141,7 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
                                                     ProcedureParameter::WRITE_ELEMENTS);
       const auto elements_value =
               elements_entry
-              ? ocs::tom::ConstList<ocs::tom::ULNG>(elements_entry.get<SPP_value_list>()).front()
+              ? elements_entry.get_as<SPP_value_list, ocs::tom::ULNG>().front()
               : nullptr;
       if (elements_value) {
          *elements = elements_value.get<ULNG_value>();
@@ -165,10 +165,9 @@ ocs::ProcedureModel::get_export_objects() const {
       DRETURN(std::nullopt);
    }
 
-   /* An empty export is stored by CULL as no list at all, so the null check
-    * comes before the count - lGetNumberOfElem() flags a null list as an error
-    * of its own. The handle is only counted here, so it is not checked; the caller checks it. */
-   const auto exported = ocs::tom::ConstList<ocs::tom::VA>::from_typed(entry.get<SPP_value_list>());
+   // an empty export is stored as no list at all; get_as() gives an empty view then, and a list of another
+   // type than VA throws WrongType
+   const auto exported = entry.get_as<SPP_value_list, ocs::tom::VA>();
    DPRINTF("export entry holds %d object(s)\n", static_cast<int>(exported.size()));
    DRETURN(exported);
 }
@@ -190,7 +189,7 @@ ocs::ProcedureModel::get_output_text() const {
    if (!response_elem) {
       DRETURN("");
    }
-   const auto output_elem = ocs::tom::ConstList<ocs::tom::ST>(response_elem.get<SPP_value_list>()).front();
+   const auto output_elem = response_elem.get_as<SPP_value_list, ocs::tom::ST>().front();
    if (!output_elem) {
       DRETURN("");
    }

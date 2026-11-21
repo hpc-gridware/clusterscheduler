@@ -114,9 +114,9 @@ ocs::QConfWriteParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
 
    const auto set_param = ocs::tom::find_first_rw<SPP_name>(bundle, OBJECT_SET);
    if (set_param != nullptr) {
-      lList *value_list = nullptr;
-      ocs::tom::exchange<SPP_value_list>(set_param, &value_list);
-      items_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(value_list);
+      // taken over unchecked, as the other value lists of the bundle are read (no new throw in qmaster)
+      items_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(
+         set_param.exchange<SPP_value_list>(ocs::tom::ListPtr<ocs::tom::VA>{}).release());
    }
 
    const auto mode_param = bundle.find_first<SPP_name>(WRITE_MODE);

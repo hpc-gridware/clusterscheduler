@@ -381,8 +381,8 @@ send_slave_jobs(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Eleme
       // copy the referenced queue instance; the reduced copy has the layout of the selection
       auto qep_copy = ocs_delivery_queue_copy(src_qep, what);
       const auto qep = qep_copy.get();
-      // JG_queue names no sub-type in the model (it holds a reduced queue instance), so it takes the raw element
-      gdil_ep.set<JG_queue>(qep_copy.release());
+      // JG_queue names no sub-type in the model (it holds a reduced queue instance), it takes the owner of any type
+      gdil_ep.set<JG_queue>(std::move(qep_copy));
 
       // build minimum of job request and queue resource limit
       reduce_queue_limits(master_centry_list, gdil_ep, qep, *tmpjep, tmpjatep, is_pe_job, is_first_gdil_entry);
@@ -592,8 +592,8 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
       // copy the referenced queue instance; the reduced copy has the layout of the selection
       auto qep_copy = ocs_delivery_queue_copy(src_qep, what);
       const auto qep = qep_copy.get();
-      // JG_queue names no sub-type in the model (it holds a reduced queue instance), so it takes the raw element
-      gdil_ep.set<JG_queue>(qep_copy.release());
+      // JG_queue names no sub-type in the model (it holds a reduced queue instance), it takes the owner of any type
+      gdil_ep.set<JG_queue>(std::move(qep_copy));
 
       // build minimum of job request and queue resource limit
       reduce_queue_limits(master_centry_list, gdil_ep, qep, *tmpjep, tmpjatep, is_pe_job, is_first_gdil_entry);

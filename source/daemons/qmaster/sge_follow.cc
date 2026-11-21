@@ -953,7 +953,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
             /* check several fields to be updated */
             // OR_joker names no sub-type in the model; for a ticket order it holds a reduced job
-            if (const auto joker = ocs::tom::ConstList<ocs::tom::JB>(ep.get<OR_joker>()).front(); joker) {
+            if (const auto joker = ep.get_as<OR_joker, ocs::tom::JB>().front(); joker) {
 
                const auto joker_task = joker.get<JB_ja_tasks>().front();
 
@@ -1048,7 +1048,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
                /* check several fields to be updated */
                // OR_joker names no sub-type in the model; for a ticket order it holds a reduced job
-               if (const auto joker = ocs::tom::ConstList<ocs::tom::JB>(ep.get<OR_joker>()).front(); joker) {
+               if (const auto joker = ep.get_as<OR_joker, ocs::tom::JB>().front(); joker) {
 
                   const auto joker_task = joker.get<JB_ja_tasks>().front();
                   distribute_tickets = (joker_task.has<JAT_granted_destin_identifier_list>()) ? true : false;
@@ -1228,7 +1228,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
          if (sconf_is()) {
             // OR_joker names no sub-type in the model; for this order it holds a reduced scheduler configuration
-            if (const auto joker = ocs::tom::ConstList<ocs::tom::SC>(ep.get<OR_joker>()).front(); joker) {
+            if (const auto joker = ep.get_as<OR_joker, ocs::tom::SC>().front(); joker) {
                if (joker.has<SC_weight_tickets_override>()) {
                   uint32_t old_wto = sconf_get_weight_tickets_override();
                   uint32_t new_wto = joker.get<SC_weight_tickets_override>();
@@ -1348,7 +1348,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
       case ORT_job_schedd_info: {
          // OR_joker names no sub-type in the model; for this order it holds the scheduler messages
-         const ocs::tom::List<ocs::tom::SME> sub_order_list(ep.get<OR_joker>());
+         const ocs::tom::List<ocs::tom::SME> sub_order_list = ep.get_as<OR_joker, ocs::tom::SME>();
          DPRINTF("ORDER: ORT_job_schedd_info\n");
 
          if (sub_order_list) {

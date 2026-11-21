@@ -220,7 +220,7 @@ ocs_mirror_update_master_list_by_type(sge_object_type type, sge_event_action act
 template <ocs::tom::ObjectType T>
 inline ocs::tom::List<T>
 ocs_mirror_event_objects(const ocs::tom::Element<ocs::tom::ET> event) {
-   return ocs::tom::List<T>(event.get<ET_new_version>());
+   return event.get_as<ET_new_version, T>();
 }
 
 /**
@@ -238,9 +238,8 @@ ocs_mirror_event_objects(const ocs::tom::Element<ocs::tom::ET> event) {
 template <ocs::tom::ObjectType T>
 inline ocs::tom::ListPtr<T>
 ocs_mirror_exchange_event_objects(const ocs::tom::Element<ocs::tom::ET> event, ocs::tom::ListPtr<T> &&objects) {
-   // ET_new_version holds lists of every object type: the field is exchanged through a raw handle
-   return ocs::tom::adopt<T>(
-      ocs::tom::RawElement(event).exchange(ET_new_version, ocs::tom::RawListPtr(std::move(objects))));
+   // ET_new_version holds lists of every object type: the list held comes back raw and is adopted checked
+   return ocs::tom::adopt<T>(event.exchange<ET_new_version>(std::move(objects)));
 }
 
 /* Error Handling */

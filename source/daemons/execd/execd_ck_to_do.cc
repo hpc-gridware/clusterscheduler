@@ -398,7 +398,7 @@ execd_get_wallclock_limit(const char *qualified_hostname, const ocs::tom::ConstL
       const char *limit;
       uint64_t clock_val;
 
-      const ocs::tom::ConstElement<ocs::tom::QU> queue(gdil.get<JG_queue>());
+      const ocs::tom::ConstElement<ocs::tom::QU> queue = gdil.get_as<JG_queue, ocs::tom::QU>();
       if (queue) {
          limit = queue.get<F>();
 

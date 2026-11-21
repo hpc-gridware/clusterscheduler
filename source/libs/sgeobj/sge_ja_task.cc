@@ -551,7 +551,7 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
 
    if (ret) {
       // JG_queue names no sub-type, it holds a QU object
-      const ocs::tom::ConstElement<ocs::tom::QU> queue(ep.get<JG_queue>());
+      const ocs::tom::ConstElement<ocs::tom::QU> queue = ep.get_as<JG_queue, ocs::tom::QU>();
 
       if (queue) {
          ret = qinstance_verify(queue, answer_list);

@@ -161,8 +161,8 @@ read_config_list(FILE *fp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool sub
             config = ocs::tom::ListPtr<ocs::tom::CF>::create("");
          }
          auto ep = config->emplace_back<CF_name>(name);
-         // CF_sublist has no sub-type in the model, so the field takes the raw list
-         ep.set<CF_sublist>(sub_config.release());
+         // CF_sublist has no sub-type in the model; it takes the owner of any type
+         ep.set<CF_sublist>(std::move(sub_config));
       } else {
          if (!config) {
             config = ocs::tom::ListPtr<ocs::tom::CF>::create("");

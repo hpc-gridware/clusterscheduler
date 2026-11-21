@@ -363,7 +363,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    ep = cmdline.find_first<SPA_switch_val>("-t");
    if (ep != nullptr) {
       /* the -t argument is a range list (RN), parsed by cull_parse_cmdline() or drmaa_set_bulk_range() */
-      const auto range_list = ocs::tom::ConstList<ocs::tom::RN>::from_typed(ep.get<SPA_argval_lListT>());
+      const auto range_list = ep.get_as<SPA_argval_lListT, ocs::tom::RN>();
       pjob->set<JB_ja_structure>(range_list.clone("task_id_range"));
       cmdline.erase(ep);
    
@@ -479,7 +479,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-jsv"))) {
       /* the -jsv argument is a path list (PN) built by cull_parse_cmdline() */
-      const auto list = ocs::tom::ConstList<ocs::tom::PN>::from_typed(ep.get<SPA_argval_lListT>());
+      const auto list = ep.get_as<SPA_argval_lListT, ocs::tom::PN>();
       const char *file = list.front().get<PN_path>();
 
       jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, nullptr, file);
@@ -534,7 +534,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
          /* the argument is a job name list (ST) built by cull_parse_jid_hold_list() */
-         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ep.get<SPA_argval_lListT>())) {
+         for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             DPRINTF("-hold_jid %s\n", sep.get<ST_name>());
             if (!jref_list) {
                // created as the free emplace_back() creates a missing list
@@ -552,7 +552,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
          /* the argument is a job name list (ST) built by cull_parse_jid_hold_list() */
-         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ep.get<SPA_argval_lListT>())) {
+         for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             DPRINTF("-hold_jid_ad %s\n", sep.get<ST_name>());
             if (!jref_list) {
                // created as the free emplace_back() creates a missing list
@@ -663,10 +663,9 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    while ((ep = cmdline.find_first<SPA_switch_val>("-pe"))) {
       pjob->set<JB_pe>(ep.get<SPA_argval_lStringT>());
       // SPA_argval_lListT carries lists of several types; for -pe it is the range list (RN) built by
-      // cull_parse_cmdline(), so it is taken over unchecked; the old range list is freed as before with the option
-      lList *pe_range = nullptr;
-      ocs::tom::exchange<SPA_argval_lListT>(ep, &pe_range);
-      pjob->set<JB_pe_range>(ocs::tom::ListPtr<ocs::tom::RN>::from_typed(pe_range));
+      // cull_parse_cmdline(), which is adopted checked; the old range list is freed by the set
+      pjob->set<JB_pe_range>(
+         ocs::tom::adopt<ocs::tom::RN>(ep.exchange<SPA_argval_lListT>(ocs::tom::ListPtr<ocs::tom::RN>{})));
       cmdline.erase(ep);
    }
 
@@ -727,7 +726,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
          // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
          auto change = pjob->exchange<JB_context_change>(nullptr);
          // the argument of -ac/-dc/-sc is a variable list (VA) built by cull_parse_cmdline()
-         ocs_context_change_add(change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(ep.get<SPA_argval_lListT>()));
+         ocs_context_change_add(change, ep.get_as<SPA_argval_lListT, ocs::tom::VA>());
          pjob->set<JB_context_change>(std::move(change));
          const auto temp = ep.next();
          cmdline.erase(ep);

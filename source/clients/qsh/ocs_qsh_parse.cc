@@ -379,8 +379,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-e"))) {
       // the parser fills the argument of -e with a PN path list
-      job.set<JB_stderr_path_list>(ocs::tom::ConstList<ocs::tom::PN>::from_typed(
-                                                 ep.get<SPA_argval_lListT>()).clone("stderr_path_list"));
+      job.set<JB_stderr_path_list>(ep.get_as<SPA_argval_lListT, ocs::tom::PN>().clone("stderr_path_list"));
       cmdline.erase(ep);
    }
 
@@ -398,7 +397,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
          // the parser fills the argument with an ST name list
-         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ep.get<SPA_argval_lListT>())) {
+         for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             const char *name = sep.get<ST_name>();
             DPRINTF("-hold_jid %s\n", name);
             // a null name added nothing in the free emplace_back()
@@ -421,7 +420,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
          // the parser fills the argument with an ST name list
-         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ep.get<SPA_argval_lListT>())) {
+         for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             const char *name = sep.get<ST_name>();
             DPRINTF("-hold_jid_ad %s\n", name);
             // a null name added nothing in the free emplace_back()
@@ -457,7 +456,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-jsv"))) {
       // the parser fills the argument of -jsv with a PN path list
-      const auto list = ocs::tom::ConstList<ocs::tom::PN>::from_typed(ep.get<SPA_argval_lListT>());
+      const auto list = ep.get_as<SPA_argval_lListT, ocs::tom::PN>();
       const char *file = list.front().get<PN_path>();
 
       jsv_list_add("jsv_switch", JSV_CONTEXT_CLIENT, nullptr, file);
@@ -511,8 +510,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-o"))) {
       // the parser fills the argument of -o with a PN path list
-      job.set<JB_stdout_path_list>(ocs::tom::ConstList<ocs::tom::PN>::from_typed(
-                                                 ep.get<SPA_argval_lListT>()).clone("stdout_path_list"));
+      job.set<JB_stdout_path_list>(ep.get_as<SPA_argval_lListT, ocs::tom::PN>().clone("stdout_path_list"));
       cmdline.erase(ep);
    }
 
@@ -549,9 +547,9 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
 
       /* put sublist from parsing into job */
       // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
-      // list is taken out raw and adopted as RN here; the range held before is freed by the set
+      // list is taken out and adopted checked as RN here; the range held before is freed by the set
       job.set<JB_pe_range>(ocs::tom::adopt<ocs::tom::RN>(
-         ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
+         ep.exchange<SPA_argval_lListT>(ocs::tom::ListPtr<ocs::tom::RN>{})));
       cmdline.erase(ep);
    }
 
@@ -576,7 +574,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
          // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
          auto change = job.exchange<JB_context_change>(nullptr);
          // the parser fills the argument of the context switches with a VA list
-         ocs_context_change_add(change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(ep.get<SPA_argval_lListT>()));
+         ocs_context_change_add(change, ep.get_as<SPA_argval_lListT, ocs::tom::VA>());
          job.set<JB_context_change>(std::move(change));
          const auto temp = ep.next();
          cmdline.erase(ep);

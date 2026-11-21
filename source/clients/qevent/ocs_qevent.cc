@@ -200,7 +200,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const
 
       if (event_type == sgeE_JATASK_MOD) {
          // ET_new_version carries the objects of the event's type, JAT for a task event
-         const auto jat = ocs::tom::ConstList<ocs::tom::JAT>::from_typed(et.get<ET_new_version>());
+         const auto jat = et.get_as<ET_new_version, ocs::tom::JAT>();
          u_long job_id  = et.get<ET_intkey>();
          u_long task_id = et.get<ET_intkey2>();
          // we might get a JATASK_MOD event for a task that is already in transfer or running == already counted
@@ -227,7 +227,7 @@ print_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] const
       }
       if (event_type == sgeE_JOB_ADD) {
          // ET_new_version carries the objects of the event's type, JB for a job event
-         const auto jobs = ocs::tom::ConstList<ocs::tom::JB>::from_typed(et.get<ET_new_version>());
+         const auto jobs = et.get_as<ET_new_version, ocs::tom::JB>();
          u_long job_id  = et.get<ET_intkey>();
          u_long task_id = et.get<ET_intkey2>();
          const auto ep = jobs.front();
@@ -278,7 +278,7 @@ analyze_jatask_event([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] con
 
       if (event_type == sgeE_JATASK_MOD) {
          // ET_new_version carries the objects of the event's type, JAT for a task event
-         const auto jat = ocs::tom::ConstList<ocs::tom::JAT>::from_typed(et.get<ET_new_version>());
+         const auto jat = et.get_as<ET_new_version, ocs::tom::JAT>();
          const auto ep = jat.front();
          u_long job_status = ep.get<JAT_status>();
          int task_running = (job_status==JRUNNING || job_status==JTRANSFERING);

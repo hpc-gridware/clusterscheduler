@@ -335,7 +335,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
             auto user_list = str_list_parse_from_string(*sp, ",");
 
             const auto ep_opt = sge_add_arg(cmdline, 0, lListT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(user_list));
+            ep_opt.set<SPA_argval_lListT>(std::move(user_list));
             sp++;
          }
          rp = sp;
@@ -366,7 +366,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
          }
 
          const auto ep_opt = sge_add_arg(cmdline, t_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(task_id_ranges));
+         ep_opt.set<SPA_argval_lListT>(std::move(task_id_ranges));
 
          sp++;
          rp = sp;
@@ -394,7 +394,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
             }
          }
          if (ep) {
-            ocs::tom::set<SPA_argval_lListT>(ep.raw(), std::move(job_names));
+            ep.set<SPA_argval_lListT>(std::move(job_names));
          }
          sp ++;
          rp = sp;
@@ -450,11 +450,9 @@ static bool sge_parse_qdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom
       }
 
       while ((ep = cmdline.find_first<SPA_switch_val>("-u"))) {
-         // SPA_argval_lListT carries lists of several types and has no typed exchange; the parser fills the
-         // argument of -u with an ST user list
-         lList *users = userlist.release();
-         ocs::tom::exchange<SPA_argval_lListT>(ep, &users);
-         userlist = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(users);
+         // SPA_argval_lListT carries lists of several types; the parser above fills the argument of -u with an
+         // ST user list, which is adopted checked
+         userlist = ocs::tom::adopt<ocs::tom::ST>(ep.exchange<SPA_argval_lListT>(std::move(userlist)));
          cmdline.erase(ep);
       }
 

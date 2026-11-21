@@ -141,12 +141,11 @@ ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id,
    sge_mutex_lock(mirror_thread->mutex_name.c_str(), __func__, __LINE__, &mirror_thread->mutex);
 
    // move the events from control of event master to the event mirror thread
-   // the event master hands over one report (REP) whose event list holds events (ET); no checked
-   // constructor on this path
+   // the event master hands over one report (REP) whose event list holds events (ET); the report list is
+   // taken unchecked, the event list is adopted checked
    const auto new_event_obj = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
-   lList *events_raw = nullptr;
-   ocs::tom::exchange<REP_list>(new_event_obj, &events_raw);
-   auto events = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events_raw);
+   auto events =
+      ocs::tom::adopt<ocs::tom::ET>(new_event_obj.exchange<REP_list>(ocs::tom::ListPtr<ocs::tom::ET>{}));
    if (mirror_thread->new_events) {
       // lAddList() refused a list of another layout softly, splice() throws - not reachable, the event master
       // always builds full ET lists

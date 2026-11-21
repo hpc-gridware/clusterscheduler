@@ -103,9 +103,8 @@ ocs::QConfActionParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> b
 
    const auto args_param = ocs::tom::find_first_rw<SPP_name>(bundle, ACTION_ARGS);
    if (args_param != nullptr) {
-      lList *value_list = nullptr;
-      ocs::tom::exchange<SPP_value_list>(args_param, &value_list);
-      args_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(value_list);
+      args_ = ocs::tom::ListPtr<ocs::tom::VA>::from_typed(
+         args_param.exchange<SPP_value_list>(ocs::tom::ListPtr<ocs::tom::VA>{}).release());
    }
 
    DRETURN_VOID;

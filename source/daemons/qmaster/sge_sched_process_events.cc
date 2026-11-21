@@ -87,13 +87,13 @@ void event_update_func(uint32_t ec_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lL
    // the report list of an event delivery, its first report carries the events (REP_list, ET)
    const auto report = ocs::tom::List<ocs::tom::REP>::from_typed(event_list).front();
    if (Scheduler_Control.new_events != nullptr) {
-      // the storage in Scheduler_Control is process-lifetime and stays untyped; the events move in
-      lList *events = nullptr;
-      ocs::tom::exchange<REP_list>(report, &events);
+      // the storage in Scheduler_Control is process-lifetime and stays untyped; the events move in, adopted
+      // checked: the event master fills REP_list of an event report with its ET event list
       ocs::tom::List<ocs::tom::ET>::from_typed(Scheduler_Control.new_events)
-              .splice(ocs::tom::ListPtr<ocs::tom::ET>::from_typed(events));
+              .splice(ocs::tom::adopt<ocs::tom::ET>(report.exchange<REP_list>(ocs::tom::ListPtr<ocs::tom::ET>{})));
    } else {
-      ocs::tom::exchange<REP_list>(report, &(Scheduler_Control.new_events));
+      // the storage held none: the report gets nullptr back, as the exchange with the empty storage gave it
+      Scheduler_Control.new_events = report.exchange<REP_list>(ocs::tom::ListPtr<ocs::tom::ET>{}).release();
    }
    
    Scheduler_Control.triggered = true;

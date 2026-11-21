@@ -267,7 +267,7 @@ namespace ocs {
          auto value = std::move(parameter);
          SGE_ASSERT(bundle);
          const auto bundle_elem = bundle.emplace_back<SPP_name>(name.c_str());
-         ocs::tom::set<SPP_value_list>(bundle_elem.raw(), std::move(value));
+         bundle_elem.set<SPP_value_list>(std::move(value));
       }
 
 
@@ -286,7 +286,8 @@ namespace ocs {
       /** @brief The value list of a bundle entry, read only
        *
        * The value list of an entry is of any type (CULL_ANY_SUBTYPE): the caller names
-       * the type the sender put in, and the list is wrapped without the descriptor check.
+       * the type the sender put in, and the list is wrapped without the descriptor check, so that an empty list
+       * of another type from a broken client is ignored in qmaster instead of throwing (get_as() would throw).
        *
        * @tparam T the object type of the value list
        * @param entry the bundle entry, not empty
@@ -304,14 +305,15 @@ namespace ocs {
        * without the descriptor check, as value_list() does.
        *
        * @tparam T the object type of the value list
-       * @param entry the bundle entry, or an empty handle, which takes the soft path
+       * @param entry the bundle entry, or an empty handle (the entry is optional), which gives an empty handle
        * @return the value list, an empty handle if the entry holds none
        */
       template <ocs::tom::ObjectType T>
       [[nodiscard]] static ocs::tom::ListPtr<T> take_value_list(const ocs::tom::Element<ocs::tom::SPP> entry) {
-         lList *taken = nullptr;   // the out-parameter of exchange(), which has no typed form
-         ocs::tom::exchange<SPP_value_list>(entry, &taken);
-         return ocs::tom::ListPtr<T>::from_typed(taken);
+         if (!entry) {
+            return {};
+         }
+         return ocs::tom::ListPtr<T>::from_typed(entry.exchange<SPP_value_list>(ocs::tom::ListPtr<T>{}).release());
       }
 
       static std::string get_procedure_from_bundle(ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle);
