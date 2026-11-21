@@ -161,7 +161,7 @@ typedef struct {
    uint32_t taskstep;          ///< `-t`: step of that range
    uint64_t begin_time;        ///< `-b`: ignore records that ended before this
    uint64_t end_time;          ///< `-e`: ignore records that ended after this
-   lList *queue_name_list;     ///< `-q`: the queues to report on (`QR`)
+   ocs::tom::ListPtr<ocs::tom::QR> queue_name_list; ///< `-q`: the queues to report on (`QR`)
 } sge_qacct_options;
 
 static void qacct_usage(FILE *err_fp);
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
    bool summary_view = false;
    int ignored_jobs = 0;             /* counter of ignored jobs for accounting */
 
-   sge_qacct_options options;
+   sge_qacct_options options{}; // zeroed here: queue_name_list is an owning handle, so no memset
 
    sge_rusage_type dusage{}; // zeroed here, the exit code frees its other_usage
    sge_rusage_type totals{};   // zeroed here: other_usage is an owning handle, so no memset
@@ -230,7 +230,6 @@ int main(int argc, char **argv) {
       goto QACCT_EXIT;
    }
 
-   memset(&options, 0, sizeof(options));
    options.begin_time = std::numeric_limits<uint64_t>::max();
    options.end_time = std::numeric_limits<uint64_t>::max();
 
@@ -641,7 +640,10 @@ int main(int argc, char **argv) {
                sge_dstring_append(&qi_name, "*");
             }
 
-            ocs::tom::emplace_back<QR_name>(&options.queue_name_list, sge_dstring_get_string(&qi_name));
+            if (!options.queue_name_list) {
+               options.queue_name_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
+            }
+            options.queue_name_list->emplace_back<QR_name>(sge_dstring_get_string(&qi_name));
 
             sge_dstring_free(&qi_name);
          }
@@ -675,9 +677,7 @@ int main(int argc, char **argv) {
                goto QACCT_EXIT;
             }
 
-            // qref_list_resolve() has no typed form for the destination list yet; it is a member of the
-            // memset options struct
-            qref_list_resolve(*queueref_list, nullptr, &options.queue_name_list,
+            qref_list_resolve(*queueref_list, nullptr, options.queue_name_list,
                            &found_something, *queue_list, *hgrp_list, true, true);
             if (!found_something) {
                fprintf(stderr, "%s\n", MSG_QINSTANCE_NOQUEUES);
@@ -1136,6 +1136,7 @@ int main(int argc, char **argv) {
    */
    sge_free(&(options.group));
    sge_free(&(options.host));
+   options.queue_name_list.reset();
    free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
    sge_exit(0);
    DRETURN(0);
@@ -1148,6 +1149,7 @@ QACCT_EXIT_BUT_NO_ERROR:
    sort_order = ocs::tom::SortOrder<ocs::tom::QAJ>();
    sge_free(&(options.group));
    sge_free(&(options.host));
+   options.queue_name_list.reset();
    free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
    sge_exit(ret);
    DRETURN(ret);
@@ -1843,8 +1845,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
    }
 
    if (options->queue_name_list != nullptr) {
-      // emplace_back<QR_name>() and qref_list_resolve() create the list with QR, so it is wrapped unchecked
-      if (!matches_queue_name_list(d, ocs::tom::ConstList<ocs::tom::QR>::from_typed(options->queue_name_list))) {
+      if (!matches_queue_name_list(d, *options->queue_name_list)) {
          DRETURN(-2);
       }
    }
@@ -2352,8 +2353,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
          DRETURN(-2);
       }
       if (options->queue_name_list != nullptr) {
-         // emplace_back<QR_name>() and qref_list_resolve() create the list with QR: wrapped unchecked
-         if (!matches_queue_name_list(d, ocs::tom::ConstList<ocs::tom::QR>::from_typed(options->queue_name_list))) {
+         if (!matches_queue_name_list(d, *options->queue_name_list)) {
             DRETURN(-2);
          }
       }

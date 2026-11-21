@@ -241,8 +241,8 @@ ptf_get_osjobid(const ocs::tom::ConstElement<ocs::tom::JO> osjob) {
 
 #if !defined(LINUX) && !defined(SOLARIS) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
 
-   osjobid = ocs::tom::get<JO_OS_job_ID2>(osjob);
-   osjobid = (osjobid << 32) + ocs::tom::get<JO_OS_job_ID>(osjob);
+   osjobid = osjob.get<JO_OS_job_ID2>();
+   osjobid = (osjobid << 32) + osjob.get<JO_OS_job_ID>();
 
 #else
 
@@ -267,8 +267,8 @@ ptf_set_osjobid(const ocs::tom::Element<ocs::tom::JO> osjob, const osjobid_t osj
 
 #if !defined(LINUX) && !defined(SOLARIS) && !defined(DARWIN) && !defined(FREEBSD) && !defined(NETBSD)
 
-   ocs::tom::set<JO_OS_job_ID2>(osjob, ((u_osjobid_t) osjobid) >> 32);
-   ocs::tom::set<JO_OS_job_ID>(osjob, osjobid & 0xffffffff);
+   osjob.set<JO_OS_job_ID2>(((u_osjobid_t) osjobid) >> 32);
+   osjob.set<JO_OS_job_ID>(osjobid & 0xffffffff);
 
 #else
 
@@ -591,8 +591,11 @@ ptf_process_job(const osjobid_t os_job_id, const char *task_id_str, const ocs::t
  */
    auto job = ptf_get_job(job_id);
    if (!job) {
-      // the free form, as it creates ptf_jobs when there is none yet
-      job = ocs::tom::emplace_back<JL_job_ID>(&ptf_jobs, job_id);
+      // ptf_jobs is a process-lifetime static held raw; it is created here when there is none yet
+      if (ptf_jobs == nullptr) {
+         ptf_jobs = ocs::tom::ListPtr<ocs::tom::JL>::create("ptf_job_list").release();
+      }
+      job = ocs::tom::List<ocs::tom::JL>(ptf_jobs).emplace_back<JL_job_ID>(job_id);
    }
    if (job) {
       auto osjob = ptf_get_osjob_by_ids(job.get<JL_OS_job_list>(), jataskid, task_id_str);
@@ -1036,7 +1039,7 @@ ptf_set_OS_scheduling_parameters(const ocs::tom::List<ocs::tom::JL> job_list, co
        */
 
 #ifdef notdef
-      pri = pri_max + (pri_range * (ocs::tom::get<JL_curr_pri>(job) / max_share));
+      pri = pri_max + (pri_range * (job.get<JL_curr_pri>() / max_share));
 #endif
 
       if (max_share > 0) {

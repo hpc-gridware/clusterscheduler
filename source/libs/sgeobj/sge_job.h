@@ -524,7 +524,7 @@ job_get_verify_attr(uint32_t op, dstring *string);
 
 void set_context(ocs::tom::ConstList<ocs::tom::CX> change, ocs::tom::Element<ocs::tom::JB> job);
 
-void ocs_context_change_add(lList **change, ocs::tom::ConstList<ocs::tom::VA> option_list);
+void ocs_context_change_add(ocs::tom::ListPtr<ocs::tom::CX> &change, ocs::tom::ConstList<ocs::tom::VA> option_list);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::VA> ocs_context_get_effective(ocs::tom::ConstElement<ocs::tom::JB> job);
 

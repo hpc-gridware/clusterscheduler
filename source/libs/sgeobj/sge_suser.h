@@ -47,8 +47,8 @@
 
 #include "sgeobj/sge_answer.h"
 
-ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                               const char *suser_name);
+ocs::tom::Element<ocs::tom::SU> suser_list_add(ocs::tom::List<ocs::tom::SU> suser_list,
+                                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *suser_name);
 
 ocs::tom::Element<ocs::tom::SU> suser_list_find(ocs::tom::ConstList<ocs::tom::SU> suser_list, const char *suser_name);
 

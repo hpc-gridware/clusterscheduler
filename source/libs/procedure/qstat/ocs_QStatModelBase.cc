@@ -773,13 +773,12 @@ int ocs::QStatModelBase::select_by_qref_list(const ocs::tom::List<ocs::tom::CQ> 
    int ret = 0;
 
    // Resolve queue pattern
-   lList *resolved = nullptr;
+   ocs::tom::ListPtr<ocs::tom::QR> queueref_list;
    bool found_something = true;
    {
       const auto queueref_copy = qref_list.clone("");
-      qref_list_resolve(*queueref_copy, nullptr, &resolved, &found_something, cqueue_list, hgrp_list, true, true);
+      qref_list_resolve(*queueref_copy, nullptr, queueref_list, &found_something, cqueue_list, hgrp_list, true, true);
    }
-   const auto queueref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(resolved);
    if (!found_something) {
       DRETURN(-1);
    }

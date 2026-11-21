@@ -212,8 +212,7 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
              ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
-   // raw out-parameter of the DataStore API: ocs::tom::erase() below frees the list when it becomes empty
-   lList **master_role_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_RL);
+   const auto role_list = ocs::DataStore::master_list_rw<SGE_TYPE_RL>();
 
    if (!ep || !ruser || !rhost) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
@@ -228,7 +227,6 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
    }
 
    const char *role_name = ep.get<RL_name>();
-   const ocs::tom::ConstList<ocs::tom::RL> role_list(*master_role_list);
    if (!role_list.find_first<RL_name>(role_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_ROLE, role_name);
       answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -246,7 +244,11 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
 
    sge_event_spool(alpp, 0, sgeE_RL_DEL, 0, 0, role_name, nullptr, nullptr,
                    nullptr, nullptr, nullptr, true, true, packet->gdi_session);
-   ocs::tom::erase<RL_name>(master_role_list, role_name);
+   role_list.erase<RL_name>(role_name);
+   // the master role list is freed when its last role goes, as the free erase() did
+   if (role_list.empty()) {
+      ocs::DataStore::replace_master_list<SGE_TYPE_RL>(nullptr);
+   }
 
    INFO(MSG_SGETEXT_REMOVEDFROMLIST_SSSS, ruser, rhost, role_name, MSG_OBJ_ROLE);
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);

@@ -754,12 +754,11 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   // stays a raw reference: the free erase() below frees the master job list when it becomes empty
-   lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
+   const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
-   const ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(*master_job_list, jobid);
+   const ocs::tom::Element<ocs::tom::JB> jep = master_job_list.find_first<JB_job_number>(jobid);
    const auto jatep = job_search_task(jep, nullptr, jataskid);
    uint64_t now = sge_get_gmt64();
 
@@ -795,16 +794,17 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
    }
 
    /* check whether a slave execd allowance has to be retransmitted */
-   // stays a raw copy of the list pointer: the free erase() below works on it as the old lDelElemUlong() did
-   lList *jatasks = jep.get<JB_ja_tasks>();
-
    if (jatep.get<JAT_status>() == JTRANSFERING) {
 
       const auto ep = jatep.get<JAT_granted_destin_identifier_list>().front();
 
       if (!ep || !(qnm = ep.get<JG_qname>()) || !(hnm = ep.get<JG_qhostname>())) {
          ERROR(MSG_JOB_UNKNOWNGDIL4TJ_UU, jobid, jataskid);
-         ocs::tom::erase<JB_job_number>(master_job_list, jobid);
+         master_job_list.erase<JB_job_number>(jobid);
+         // the master job list is freed when its last job goes, as the free erase() did
+         if (master_job_list.empty()) {
+            ocs::DataStore::replace_master_list<SGE_TYPE_JOB>(nullptr);
+         }
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          DRETURN_VOID;
       }
@@ -813,7 +813,9 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
       if (!mqep) {
          ERROR(MSG_JOB_NOQUEUE4TJ_SUU, qnm, jobid, jataskid);
-         ocs::tom::erase<JAT_task_number>(&jatasks, jataskid);
+         // a list that becomes empty is freed and the field set to nullptr; the free erase() on a copy of the
+         // list pointer left a dangling pointer in JB_ja_tasks then
+         jep.erase_in<JB_ja_tasks, JAT_task_number>(jataskid);
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          DRETURN_VOID;
       }
@@ -821,7 +823,9 @@ sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor) {
       if (!(hnm = mqep.get<QU_qhostname>()) ||
           !(hep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(master_ehost_list, hnm)))) {
          ERROR(MSG_JOB_NOHOST4TJ_SUU, hnm, jobid, jataskid);
-         ocs::tom::erase<JAT_task_number>(&jatasks, jataskid);
+         // a list that becomes empty is freed and the field set to nullptr; the free erase() on a copy of the
+         // list pointer left a dangling pointer in JB_ja_tasks then
+         jep.erase_in<JB_ja_tasks, JAT_task_number>(jataskid);
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
          DRETURN_VOID;
       }
@@ -1943,9 +1947,10 @@ reduce_queue_limit(const ocs::tom::ConstList<ocs::tom::CE> master_centry_list,
       if (dcep && dcep.get<CE_consumable>()) {
          const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
          if (qep.find_first_in<QU_consumable_config_list, CE_name>(rlimit_name) ||
-             ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(
-                      host_list_locate(master_ehost_list, qep.get<QU_qhostname>()), rlimit_name) ||
-             ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host_list_locate(master_ehost_list, SGE_GLOBAL_NAME), rlimit_name)) {
+             ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(master_ehost_list, qep.get<QU_qhostname>()))
+                .find_first_in<EH_consumable_config_list, CE_name>(rlimit_name) ||
+             ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(master_ehost_list, SGE_GLOBAL_NAME))
+                .find_first_in<EH_consumable_config_list, CE_name>(rlimit_name)) {
             /* managed at queue level, managed at host level or managed at global level */
             qep.set<F>(dcep.get<CE_defaultval>());
          }

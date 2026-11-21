@@ -59,26 +59,28 @@
  * If an element for this user already exists than this element will
  * be returned.
  *
- * The list is a master list, a process-lifetime global held as a raw
- * pointer; it is created if it does not exist yet.
+ * The list is a master list held by the data store; the caller creates it
+ * through the data store if it does not exist yet
+ * (ocs::DataStore::master_list_create()).
  *
- * @param suser_list SU list reference
+ * @param suser_list SU list, may be an empty handle
  * @param answer_list AN list; unused
- * @param suser_name username
+ * @param suser_name username; nullptr adds nothing
  *
  * @return SU element or an empty handle
  */
-ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list,
+ocs::tom::Element<ocs::tom::SU> suser_list_add(const ocs::tom::List<ocs::tom::SU> suser_list,
                                                [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                const char *suser_name) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::SU> ret;
 
-   if (suser_list != nullptr) {
-      ret = suser_list_find(ocs::tom::ConstList<ocs::tom::SU>::from_typed(*suser_list), suser_name);
+   // a null name added nothing in the free emplace_back(), the typed one throws
+   if (suser_list && suser_name != nullptr) {
+      ret = suser_list_find(suser_list, suser_name);
       if (!ret) {
-         ret = ocs::tom::emplace_back<SU_name>(suser_list, suser_name);
+         ret = suser_list.emplace_back<SU_name>(suser_name);
       }
    }
    DRETURN(ret);

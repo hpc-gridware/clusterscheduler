@@ -84,10 +84,8 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
    ocs::tom::ListPtr<ocs::tom::QU> qinstance_list;
 
    const char *name = event.get<ET_strkey>();
-   // the master list slot stays untyped: the generic merge below may create the list through it
-   lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    // a cluster queue of the master list (CQ)
-   const auto cqueue = cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*list), name);
+   const auto cqueue = cqueue_list_locate(ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && cqueue) {
       /*
@@ -97,14 +95,14 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
       qinstance_list = cqueue.exchange<CQ_qinstances>(std::move(qinstance_list));
    }
 
-   if (sge_mirror_update_master_list(list, cqueue, name, action, event) == SGE_EM_OK) {
+   if (ocs_mirror_update_data_store_list<SGE_TYPE_CQUEUE>(cqueue, name, action, event) == SGE_EM_OK) {
       ret = (sge_callback_result)(ret & SGE_EMA_OK);
    } else {
       ret = (sge_callback_result)(ret & SGE_EMA_FAILURE);
    }
 
    // the element the event brought in, or the old one if the merge failed
-   const auto new_cqueue = cqueue_list_locate(ocs::tom::ConstList<ocs::tom::CQ>(*list), name);
+   const auto new_cqueue = cqueue_list_locate(ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(), name);
 
    if ((action == SGE_EMA_MOD || action == SGE_EMA_ADD) && new_cqueue) {
       /*
@@ -150,13 +148,8 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
 
    if (cqueue) {
       dstring key_buffer = DSTRING_INIT;
-      const auto qinstances = cqueue.get<CQ_qinstances>();
-      // stays untyped: the generic merge below may create the list through the pointer
-      lList *list = qinstances;
-
-      const auto qinstance = qinstance_list_locate(qinstances, hostname, nullptr);
+      const auto qinstance = qinstance_list_locate(cqueue.get<CQ_qinstances>(), hostname, nullptr);
       const char *key = nullptr;
-      const bool is_list = list != nullptr;
 
       sge_dstring_sprintf(&key_buffer, SFN "@" SFN, name, hostname);
       key = sge_dstring_get_string(&key_buffer);
@@ -180,15 +173,13 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
             DRETURN(ret);
          }
       }
-      if (sge_mirror_update_master_list(&list, qinstance, key, action, event) == SGE_EM_OK) {
+      // a list created for a cluster queue without one goes into CQ_qinstances
+      if (ocs_mirror_update_sub_list<CQ_qinstances>(cqueue, qinstance, key, action, event) == SGE_EM_OK) {
          ret = (sge_callback_result)(ret & SGE_EMA_OK);
       } else {
          ret = (sge_callback_result)(ret & SGE_EMA_FAILURE);
       }
       sge_dstring_free(&key_buffer);
-      if (!is_list) {
-         ocs::tom::set<CQ_qinstances>(cqueue.raw(), list);
-      }
    } else {
       ERROR(MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, __func__);
       ret = SGE_EMA_FAILURE;

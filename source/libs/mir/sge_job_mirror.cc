@@ -146,10 +146,8 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   // the master list slot stays untyped: the generic merge below may create the list through it
-   lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
    const uint32_t job_id = event.get<ET_intkey>();
-   const auto job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+   const auto job = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().find_first<JB_job_number>(job_id);
 
    if (action == SGE_EMA_MOD) {
       uint32_t event_type = event.get<ET_type>();
@@ -167,8 +165,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
          * Preferable would probably be to send MOD events for the different
          * object types.
          */
-         // the master job list (JB), fetched with its fixed type
-         const bool ret = job_update_master_list_usage(ocs::tom::List<ocs::tom::JB>(*list), event);
+         const bool ret = job_update_master_list_usage(ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(), event);
          DRETURN(ret?SGE_EMA_OK:SGE_EMA_FAILURE);
       } else if (event_type == sgeE_JOB_FINISH) {
          // @todo instead of data of a job a job report is received. why?
@@ -206,10 +203,10 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
              // (scheduler, reader, ...)
              const bool has_category = event_job.has<JB_category>();
              if (has_category && has_category_id) {
-                // the master category list (CT), fetched with its fixed type
-                const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
-                // JB_category is a reference field, which takes the raw element
-                lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
+                // the master category list (CT), read access as master_list() gives it; JB_category is a
+                // reference field, which takes the raw element
+                lListElem *category =
+                   ocs::DataStore::master_list_rw<SGE_TYPE_CATEGORY>(true).find_first<CT_id>(category_id);
 
                 event_job.set<JB_category>(category);
              }
@@ -217,15 +214,15 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
       }
    }
 
-   if (sge_mirror_update_master_list(list, job, job_get_id_string(job_id, 0, nullptr, &id_dstring), action,
-                                     event) != SGE_EM_OK) {
+   if (ocs_mirror_update_data_store_list<SGE_TYPE_JOB>(job, job_get_id_string(job_id, 0, nullptr, &id_dstring),
+                                                       action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
    /* restore ja_task list after modify event */
    if (action == SGE_EMA_MOD && ja_tasks) {
       /* we have to search the replaced job */
-      const auto new_job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
+      const auto new_job = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().find_first<JB_job_number>(job_id);
       if (!new_job) {
          ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring),
                "job_update_master_list");

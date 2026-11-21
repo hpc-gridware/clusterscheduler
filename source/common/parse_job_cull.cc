@@ -725,13 +725,10 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
           !strcmp(ep.get<SPA_switch_val>(), "-dc") ||
           !strcmp(ep.get<SPA_switch_val>(), "-sc")) {
          // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
-         // ocs_context_change_add() takes the change list raw (no typed form)
-         lList *change = nullptr;
-         ocs::tom::exchange<JB_context_change>(*pjob, &change);
+         auto change = pjob->exchange<JB_context_change>(nullptr);
          // the argument of -ac/-dc/-sc is a variable list (VA) built by cull_parse_cmdline()
-         ocs_context_change_add(&change,
-                                ocs::tom::ConstList<ocs::tom::VA>::from_typed(ep.get<SPA_argval_lListT>()));
-         ocs::tom::exchange<JB_context_change>(*pjob, &change);
+         ocs_context_change_add(change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(ep.get<SPA_argval_lListT>()));
+         pjob->set<JB_context_change>(std::move(change));
          const auto temp = ep.next();
          cmdline.erase(ep);
          ep = temp;

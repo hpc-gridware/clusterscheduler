@@ -59,13 +59,24 @@
 #include "sgeobj/tom/ocs_tom_RT.h"
 #include "sgeobj/tom/ocs_tom_PETR.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
 
 #include "msg_common.h"
 
 #include <ocs_gdi_ClientServerBase.h>
 
+/// The remote tasks started by sge_qexecve() (RT); a process-lifetime list held raw, read through checked handles
 static lList *remote_task_list = nullptr;
 static char lasterror[4096];
+
+/**
+ * @brief The remote task list, through a checked non-owning handle
+ * @return the handle on the list, empty while no task was started
+ */
+static ocs::tom::List<ocs::tom::RT>
+remote_tasks() {
+   return ocs::tom::List<ocs::tom::RT>(remote_task_list);
+}
 
 static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerBaseTag tag);
 
@@ -244,7 +255,11 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
    }
 
    /* add list into our remote task list */
-   ocs::tom::Element<ocs::tom::RT> rt = ocs::tom::emplace_back<RT_tid>(&remote_task_list, "none");
+   // the list is created with the first task, as the free emplace_back() did
+   if (remote_task_list == nullptr) {
+      remote_task_list = ocs::tom::ListPtr<ocs::tom::RT>::create("").release();
+   }
+   ocs::tom::Element<ocs::tom::RT> rt = remote_tasks().emplace_back<RT_tid>("none");
    rt.set<RT_hostname>(ocs::tom::Host(hostname));
    rt.set<RT_state>(RT_STATE_WAIT4ACK);
 
@@ -286,7 +301,7 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    if (!(options & WNOHANG))
       rcv_opt |= OPT_SYNCHRON;
 
-   if (tid != nullptr && !(rt = ocs::tom::find_first_rw<RT_tid>(remote_task_list, tid))) {
+   if (tid != nullptr && !(rt = remote_tasks().find_first<RT_tid>(tid))) {
       snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTEXIST_S, tid);
       DRETURN(-1);
    }
@@ -295,8 +310,8 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
            rt.get<RT_state>() != RT_STATE_EXITED && /* not exited */
            rt.get<RT_state>() == RT_STATE_WAIT4ACK) /* waiting for ack */
           || (!rt && /* anybody searched */
-              !ocs::tom::find_first<RT_state>(remote_task_list, RT_STATE_EXITED) && /* none exited */
-              ocs::tom::find_first<RT_state>(remote_task_list, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
+              !remote_tasks().find_first<RT_state>(RT_STATE_EXITED) && /* none exited */
+              remote_tasks().find_first<RT_state>(RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
       /* wait for incoming messeges about exited tasks */
       if ((ret = rcv_from_execd(rcv_opt, ocs::gdi::ClientServerBase::TAG_TASK_EXIT))) {
          DRETURN((ret < 0) ? -1 : 0);
@@ -380,7 +395,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
    switch (tag) {
       case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
          /* change state in exited task */
-         if (!(rt_rcv = ocs::tom::find_first_rw<RT_tid>(remote_task_list, tid))) {
+         if (!(rt_rcv = remote_tasks().find_first<RT_tid>(tid))) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUND_S, tid);
             sge_free(&tid);
             DRETURN(-1);
@@ -392,7 +407,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 
       case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
          /* search task without taskid */
-         if (!(rt_rcv = ocs::tom::find_first_rw<RT_tid>(remote_task_list, "none"))) {
+         if (!(rt_rcv = remote_tasks().find_first<RT_tid>("none"))) {
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid);
             DRETURN(-1);
          }

@@ -42,6 +42,7 @@
 #include "sgeobj/sge_daemonize.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_CQU.h"
@@ -62,7 +63,7 @@ qinstance_change_state_on_calendar(ocs::tom::Element<ocs::tom::QU> this_elem,
 
 bool
 qinstance_modify_attributes(ocs::tom::Element<ocs::tom::QU> this_elem, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            ocs::tom::ConstElement<ocs::tom::CQ> cqueue, const lListElem *reduced_elem,
+                            ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::ConstRawElement reduced_elem,
                             bool all_attributes, bool is_create, bool initial_modify, bool *is_ambiguous,
                             bool *has_changed_conf_attr, bool *need_reinitialize, monitoring_t *monitor,
                             ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,

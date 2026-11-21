@@ -51,11 +51,13 @@
 #include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_object.h"
+#include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/sge_event.h"
 #include "sgeobj/tom/ocs_tom_ET.h"
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
+#include "tom/ocs_Raw.h"
 
 #include "evc/sge_event_client.h"
 
@@ -146,8 +148,57 @@ sge_mirror_process_events(sge_evc_class_t *evc);
 
 template <ocs::tom::ObjectType T>
 sge_mirror_error
-sge_mirror_update_master_list(lList **list, ocs::tom::Element<T> ep, const char *key, sge_event_action action,
-                              ocs::tom::Element<ocs::tom::ET> event);
+sge_mirror_update_master_list(ocs::tom::ListPtr<T> &list, ocs::tom::Element<T> ep, const char *key,
+                              sge_event_action action, ocs::tom::Element<ocs::tom::ET> event);
+
+/**
+ * @brief Apply an event to a master list of the data store, see sge_mirror_update_master_list()
+ *
+ * The list is taken out of its slot for the update, which may create or replace it, and is put back afterwards,
+ * whatever the update returns. The caller must hold the lock of the data store for writing.
+ *
+ * @tparam V the #sge_object_type value of the master list
+ * @param ep the element to manipulate, found in the master list, or an empty handle
+ * @param key the key of the element, for the messages
+ * @param action the action to perform
+ * @param event the event (ET)
+ * @return SGE_EM_OK, or an error code
+ */
+template <sge_object_type V>
+sge_mirror_error
+ocs_mirror_update_data_store_list(const ocs::tom::Element<ocs::DataStore::master_type_t<V>> ep, const char *key,
+                                  const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event) {
+   auto list = ocs::DataStore::replace_master_list<V>(nullptr);
+   const sge_mirror_error ret = sge_mirror_update_master_list(list, ep, key, action, event);
+   ocs::DataStore::replace_master_list<V>(std::move(list));
+   return ret;
+}
+
+/**
+ * @brief Apply an event to the list held in a list field of a parent object, see sge_mirror_update_master_list()
+ *
+ * The list is taken out of the parent's field for the update, which may create or replace it, and is put back
+ * afterwards, whatever the update returns: a list created for a parent without one goes into the parent's field.
+ *
+ * @tparam LF the list field of the parent, e.g. JB_ja_tasks
+ * @tparam P the object type of the parent
+ * @param parent the parent object, not empty
+ * @param ep the element to manipulate, found in the parent's list, or an empty handle
+ * @param key the key of the element, for the messages
+ * @param action the action to perform
+ * @param event the event (ET)
+ * @return SGE_EM_OK, or an error code
+ */
+template <auto LF, ocs::tom::ObjectType P>
+sge_mirror_error
+ocs_mirror_update_sub_list(const ocs::tom::Element<P> parent,
+                           const ocs::tom::Element<typename ocs::tom::FieldTraits<LF>::Sub> ep, const char *key,
+                           const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event) {
+   auto list = parent.template exchange<LF>(nullptr);
+   const sge_mirror_error ret = sge_mirror_update_master_list(list, ep, key, action, event);
+   parent.template set<LF>(std::move(list));
+   return ret;
+}
 
 sge_mirror_error
 ocs_mirror_update_master_list_by_type(sge_object_type type, sge_event_action action,
@@ -187,9 +238,9 @@ ocs_mirror_event_objects(const ocs::tom::Element<ocs::tom::ET> event) {
 template <ocs::tom::ObjectType T>
 inline ocs::tom::ListPtr<T>
 ocs_mirror_exchange_event_objects(const ocs::tom::Element<ocs::tom::ET> event, ocs::tom::ListPtr<T> &&objects) {
-   lList *lp = objects.release();
-   ocs::tom::exchange<ET_new_version>(event, &lp);
-   return ocs::tom::ListPtr<T>(lp);
+   // ET_new_version holds lists of every object type: the field is exchanged through a raw handle
+   return ocs::tom::adopt<T>(
+      ocs::tom::RawElement(event).exchange(ET_new_version, ocs::tom::RawListPtr(std::move(objects))));
 }
 
 /* Error Handling */

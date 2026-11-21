@@ -174,9 +174,6 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
    // a parallel task of the array task (PET), fetched with its fixed type
    auto pe_task = ocs::tom::Element<ocs::tom::PET>(ja_task_search_pe_task(ja_task, pe_task_id));
 
-   // stays untyped: the generic merge below may create the list through the pointer
-   lList *pe_task_list = ja_task.get<JAT_task_list>();
-
    if (action == SGE_EMA_MOD) {
       /* modify event for pe_task.
        * we may not update
@@ -190,9 +187,10 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
       usage = pe_task.exchange<PET_scaled_usage>(std::move(usage));
    }
 
-   if (sge_mirror_update_master_list(&pe_task_list, pe_task, job_get_id_string(job_id, ja_task_id, pe_task_id,
-                                                                                &id_dstring),
-                                     action, event) != SGE_EM_OK) {
+   // a list created for an array task without one goes into JAT_task_list
+   if (ocs_mirror_update_sub_list<JAT_task_list>(ja_task, pe_task, job_get_id_string(job_id, ja_task_id, pe_task_id,
+                                                                                     &id_dstring),
+                                                 action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
@@ -208,11 +206,6 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
       // the list the event brought in comes back and is freed with the handle
       usage = pe_task.exchange<PET_scaled_usage>(std::move(usage));
       usage.reset();
-   }
-
-   /* first petask add event could have created new pe_task list for job */
-   if (!ja_task.get<JAT_task_list>() && pe_task_list != nullptr) {
-      ocs::tom::set<JAT_task_list>(ja_task.raw(), pe_task_list);
    }
 
    DRETURN(SGE_EMA_OK);

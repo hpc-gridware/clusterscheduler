@@ -39,8 +39,11 @@
  * @see sge_load.cc
  */
 
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+
 bool 
 sge_is_static_load_value(const char *name);
 
 int
-load_list_get_nproc(const lList *load_list);
+load_list_get_nproc(ocs::tom::ConstList<ocs::tom::HL> load_list);

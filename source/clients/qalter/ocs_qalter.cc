@@ -915,14 +915,11 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          if (!strcmp(ep.get<SPA_switch_val>(), "-ac") ||
              !strcmp(ep.get<SPA_switch_val>(), "-dc") ||
              !strcmp(ep.get<SPA_switch_val>(), "-sc")) {
-            // the switches are concatenated in their order, as instructions for the qmaster (CS-3058);
-            // ocs_context_change_add() has no typed form for the change list yet
-            lList *change = nullptr;
-            ocs::tom::exchange<JB_context_change>(job, &change);
+            // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
+            auto change = job.exchange<JB_context_change>(nullptr);
             // the parser fills the argument of the context switches with a VA list
-            ocs_context_change_add(&change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(
-                                               ep.get<SPA_argval_lListT>()));
-            ocs::tom::exchange<JB_context_change>(job, &change);
+            ocs_context_change_add(change, ocs::tom::ConstList<ocs::tom::VA>::from_typed(ep.get<SPA_argval_lListT>()));
+            job.set<JB_context_change>(std::move(change));
             const auto temp = ep.next();
             cmdline.erase(ep);
             ep = temp;

@@ -636,14 +636,15 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          } else {
-            lList *data_source = *ocs::DataStore::get_master_list_rw(ao->list_type);
+            // the type of the master list is given at run time by the target
+            const ocs::tom::RawList data_source = *ocs::DataStore::get_master_list_rw(ao->list_type);
 
-            DPRINTF("Got list with %zu elements\n", ocs::tom::size(data_source));
+            DPRINTF("Got list with %zu elements\n", data_source.size());
 
             if (packet->is_intern_request) {
                /* intern requests need no pb so it is not necessary to postpone the operation */
                // the old contract of lSelectHashPack(), as for SC_LIST above
-               task->reset_data_list(ocs::tom::select_as("", data_source, task->condition.get(),
+               task->reset_data_list(ocs::tom::select_as("", data_source.raw(), task->condition.get(),
                                                          task->enumeration.get(), ocs::tom::Hashing::Off));
                task->do_select_pack_simultaneous = false;
 
@@ -656,7 +657,7 @@ sge_c_gdi_get_in_worker(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::Ta
 
             } else {
                /* lSelect will be postponed till packing */
-               task->data_list = data_source;
+               task->data_list = data_source.raw();
                task->do_select_pack_simultaneous = true;
 
                /*
@@ -845,7 +846,7 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
          }
       } else if (ao == nullptr) {
          // a target without a table entry has no element type; every request is refused
-         for (auto n = ocs::tom::size(requests); n > 0; n--) {
+         for (auto n = requests.size(); n > 0; n--) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
             answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
          }
@@ -1104,7 +1105,7 @@ sge_c_gdi_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi::Co
          break;
       default:
          // the element type of a target without a delete is not fixed; every element is refused
-         for (auto n = ocs::tom::size(task->data_list); n > 0; n--) {
+         for (auto n = ocs::tom::ConstRawList(task->data_list).size(); n > 0; n--) {
             ocs_gdi_del_unsupported(&(task->answer_list));
          }
          break;
@@ -1140,7 +1141,7 @@ static void sge_c_gdi_copy([[maybe_unused]] gdi_object_t *ao, ocs::gdi::Packet *
       }
    } else {
       // the element type of another target is not fixed for COPY; every element is refused
-      for (auto n = ocs::tom::size(task->data_list); n > 0; n--) {
+      for (auto n = ocs::tom::ConstRawList(task->data_list).size(); n > 0; n--) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
          answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
       }
@@ -1162,13 +1163,14 @@ static void
 sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    DENTER(TOP_LAYER);
 
-   // whatever client sent - we do not need that, instead we use data from commlib stored in packet
-   task->reset_data_list();
    const char *hostname = packet->host;
    const char *username = packet->user;
 
    // create list with element and fill in username, hostname and corresponding permission
-   ocs::tom::Element<ocs::tom::PERM> ep = ocs::tom::emplace_back<PERM_username>(&task->data_list, username);
+   auto perm_list = ocs::tom::ListPtr<ocs::tom::PERM>::create("");
+   const auto ep = perm_list->emplace_back<PERM_username>(username);
+   // whatever client sent - we do not need that, instead we use data from commlib stored in packet
+   task->reset_data_list(ocs::tom::RawListPtr(std::move(perm_list)));
    ep.set<PERM_host>(ocs::tom::Host(hostname));
 
    // add user roles
@@ -1529,7 +1531,7 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
             break;
          default:
             // a target without a table entry has no element type; every element is refused
-            for (auto n = ocs::tom::size(task->data_list); n > 0; n--) {
+            for (auto n = ocs::tom::ConstRawList(task->data_list).size(); n > 0; n--) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPNOIMPFORTARGET_S, __func__);
                answer_list_add(&(task->answer_list), SGE_EVENT, STATUS_ENOIMP, ANSWER_QUALITY_ERROR);
             }
@@ -2071,18 +2073,21 @@ ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
    sge_dstring_init(&buffer, ds_buffer, sizeof(ds_buffer));
    const char *name;
    ocs::tom::Element<T> old_obj;
+   // read access to the slot, as master_list() gives it; the object found is changed further on
+   const auto master_list = ocs::DataStore::master_list_rw<H::list_type>(true);
    if constexpr (key_type == ocs::tom::FieldType::Uint32) {
       const uint32_t id = request.template get<key>();
       sge_dstring_sprintf(&buffer, sge_u32, id);
       name = sge_dstring_get_string(&buffer);
-      old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), id);
+      old_obj = master_list.template find_first<key>(id);
    } else if constexpr (key_type == ocs::tom::FieldType::Host) {
-      name = request.template get<key>().c_str();
-      old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), name);
+      const auto host = request.template get<key>();
+      name = host.c_str();
+      old_obj = master_list.template find_first<key>(host);
    } else {
       static_assert(key_type == ocs::tom::FieldType::String, "the key is a number, a host or a string");
       name = request.template get<key>();
-      old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), name);
+      old_obj = master_list.template find_first<key>(name);
    }
 
    if (const int status = ocs_gdi_add_mod_check_existence(alpp, object, add, name, static_cast<bool>(old_obj));
@@ -2237,7 +2242,7 @@ ocs_gdi_add_mod_list(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
    });
    if (!generic) {
       // the element type is given at run time by the target, and every request is refused
-      for (auto n = ocs::tom::size(requests); n > 0; n--) {
+      for (auto n = requests.size(); n > 0; n--) {
          ocs_gdi_add_mod_unsupported(&(task->answer_list), object);
       }
    }

@@ -143,9 +143,11 @@ hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_objec
                           [[maybe_unused]] void *clientdata) {
    DENTER(TOP_LAYER);
 
-   // the master list stays untyped: the generic merge below replaces it through the pointer
-   lList **list = ocs::DataStore::get_master_list_rw(type);
+   // the callback serves the host groups only (the mirror table), so type is SGE_TYPE_HGROUP; the handle is taken
+   // again after the merge, which may create or replace the list
    const char *key = event.get<ET_strkey>();
+   // HGRP_name is a host field
+   const ocs::tom::Host hgroup_name(key);
 
    // Both versions are in hand before the merge, which is what lets the decision
    // be made without a version field. On every other action either the old or
@@ -158,7 +160,8 @@ hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_objec
    //
    // The master list is the host group list; the event carries host groups (HGRP).
    const auto before = (action == SGE_EMA_MOD || action == SGE_EMA_DEL)
-                       ? ocs::tom::find_first_rw<HGRP_name>(*list, key) : ocs::tom::Element<ocs::tom::HGRP>();
+                       ? ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>().find_first<HGRP_name>(hgroup_name)
+                       : ocs::tom::Element<ocs::tom::HGRP>();
    const auto after = ocs_mirror_event_objects<ocs::tom::HGRP>(event).front();
    const bool matchers_changed =
            action == SGE_EMA_MOD && before && !ocs::Matcher::cache_carries_over(before, after);
@@ -207,11 +210,12 @@ hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_objec
    if (carry) {
       // the pruning that goes with the move needs the resolved membership of the
       // new element, so it happens here and not above
-      ocs::MatchCache::adopt(ocs::tom::find_first_rw<HGRP_name>(*list, key), std::move(cache));
+      ocs::MatchCache::adopt(ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>().find_first<HGRP_name>(hgroup_name),
+                             std::move(cache));
    }
 
    if (drop_everything) {
-      ocs::MatchCache::discard_all(ocs::tom::List<ocs::tom::HGRP>::from_typed(*list));
+      ocs::MatchCache::discard_all(ocs::DataStore::master_list_rw<SGE_TYPE_HGROUP>());
    }
 
    DRETURN(SGE_EMA_OK);

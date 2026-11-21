@@ -288,7 +288,6 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    std::string jsv_thread_name = "jsv_" + std::string(component_get_thread_name())
                                + "_" + std::to_string(component_get_thread_id());
    lList **master_job_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   lList **master_suser_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_SUSER);
 
    // JSV verification if enabled
    if (jsv_is_enabled(jsv_thread_name.c_str())) {
@@ -399,7 +398,9 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    }
 
    /** increase user counter */
-   suser_increase_job_counter(suser_list_add(master_suser_list, nullptr, packet->user));
+   // the submit user list is created with its first user, as the free emplace_back() did
+   suser_increase_job_counter(suser_list_add(ocs::DataStore::master_list_create<SGE_TYPE_SUSER>(""), nullptr,
+                                             packet->user));
 
    /* JG: TODO: error handling:
     * if job can't be spooled, no event is sent (in sge_event_spool)
@@ -1439,7 +1440,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             // check if the category string changed
             lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
             uint32_t old_category_id = new_job.get<JB_category_id>();
-            const auto old_category = ocs::tom::find_first<CT_id>(*master_category_list, old_category_id);
+            const auto old_category =
+               ocs::DataStore::master_list_rw<SGE_TYPE_CATEGORY>().find_first<CT_id>(old_category_id);
             const char *old_cat_str = old_category.get<CT_str>();
 
             // check if the category string changed and trigger corresponding events

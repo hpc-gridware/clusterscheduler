@@ -34,8 +34,8 @@
  * @brief Free the answer list the holder still holds, if no one has taken it
  */
 ocs::AnswerException::Holder::~Holder() {
-   lList *list = answer_list.exchange(nullptr);
-   ocs::tom::free_raw_list(list);
+   // the atomic slot stays raw; the list taken out of it is freed by the owner
+   const auto list = ocs::tom::ListPtr<ocs::tom::AN>::from_typed(answer_list.exchange(nullptr));
 }
 
 /**

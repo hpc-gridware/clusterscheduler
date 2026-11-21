@@ -176,9 +176,6 @@ ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
 
    // an array task of the job (JAT), fetched with its fixed type
    auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
-   // stays untyped: the generic merge below may create the list through the pointer
-   lList *ja_task_list = job.get<JB_ja_tasks>();
-
    if (action == SGE_EMA_MOD) {
       /* modify event for ja_task.
        * we may not update
@@ -211,9 +208,10 @@ ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
       }
    }
 
-   if (sge_mirror_update_master_list(&ja_task_list, ja_task, job_get_id_string(job_id, ja_task_id, nullptr,
-                                                                                &id_dstring),
-                                     action, event) != SGE_EM_OK) {
+   // a list created for a job without one goes into JB_ja_tasks
+   if (ocs_mirror_update_sub_list<JB_ja_tasks>(job, ja_task, job_get_id_string(job_id, ja_task_id, nullptr,
+                                                                               &id_dstring),
+                                               action, event) != SGE_EM_OK) {
       DRETURN(SGE_EMA_FAILURE);
    }
 
@@ -235,10 +233,6 @@ ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
    }
 
    if (action == SGE_EMA_ADD) {
-      /* first jatask add event could have created new ja_task list for job */
-      if (!job.get<JB_ja_tasks>() && ja_task_list != nullptr) {
-         ocs::tom::set<JB_ja_tasks>(job.raw(), ja_task_list);
-      }
       /* we must enroll the task to have it removed in the pending range list */
       job_enroll(job, nullptr, ja_task_id);
    }

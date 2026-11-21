@@ -77,14 +77,14 @@ bool sge_is_static_load_value(const char *name) {
 /**
  * @brief The processor count a host reported
  *
- * @param load_list the host's load values
+ * @param load_list the host's load values (HL), may be an empty handle
  * @return the count, or 1 when the host did not report one
  */
 int
-load_list_get_nproc(const lList *load_list) {
+load_list_get_nproc(const ocs::tom::ConstList<ocs::tom::HL> load_list) {
    int nproc = 1;
 
-   ocs::tom::ConstElement<ocs::tom::HL> ep_nproc = ocs::tom::find_first<HL_name>(load_list, LOAD_ATTR_NUM_PROC);
+   const auto ep_nproc = load_list.find_first<HL_name>(LOAD_ATTR_NUM_PROC);
    if (ep_nproc != nullptr) {
       const char *cp = ep_nproc.get<HL_value>();
       if (cp != nullptr) {

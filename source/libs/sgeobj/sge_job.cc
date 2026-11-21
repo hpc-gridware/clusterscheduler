@@ -3027,15 +3027,19 @@ void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom:
  * marker first. The request concatenates them as `CX` elements in the
  * order given, where markers and names repeat by design (CS-3058).
  *
- * The request stays an untyped in-out reference: the callers pass the field
- * of a job or a local list that is created here.
+ * The callers take the field out of a job or pass a local list; a request
+ * that does not exist yet is created with its first instruction.
  *
- * @param[in,out] change the `CX` request, created if *change is nullptr
+ * @param[in,out] change the `CX` request, created if it is empty and the switch holds a variable
  * @param option_list the list of one switch, a `VA` list; an empty handle is accepted
  */
-void ocs_context_change_add(lList **change, const ocs::tom::ConstList<ocs::tom::VA> option_list) {
+void ocs_context_change_add(ocs::tom::ListPtr<ocs::tom::CX> &change,
+                            const ocs::tom::ConstList<ocs::tom::VA> option_list) {
    for (const auto var : option_list) {
-      const auto ep = ocs::tom::emplace_back<CX_variable>(change, var.get<VA_variable>());
+      if (!change) {
+         change = ocs::tom::ListPtr<ocs::tom::CX>::create("");
+      }
+      const auto ep = change->emplace_back<CX_variable>(var.get<VA_variable>());
       ep.set<CX_value>(var.get<VA_value>());
    }
 }

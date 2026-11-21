@@ -486,7 +486,7 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
  * @param answer_list receives messages for the caller
  * @param cqueue the cluster queue the values come from
  * @param reduced_elem the reduced element the client sent; it may be of another type (a host group from
- *        hgroup_mod()), then it holds no cluster queue attribute; nullptr with @p all_attributes
+ *        hgroup_mod()), then it holds no cluster queue attribute; an empty handle with @p all_attributes
  * @param all_attributes resolve every attribute, not only those @p reduced_elem holds
  * @param is_create whether the queue instance is being created, see above
  * @param initial_modify whether the queue instance is new, so nothing can conflict with running jobs or
@@ -503,7 +503,8 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
 bool
 qinstance_modify_attributes(const ocs::tom::Element<ocs::tom::QU> this_elem,
                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                            const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, const lListElem *reduced_elem,
+                            const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
+                            const ocs::tom::ConstRawElement reduced_elem,
                             const bool all_attributes, const bool is_create, const bool initial_modify,
                             bool *is_ambiguous, bool *has_changed_conf_attr, bool *need_reinitialize,
                             monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
@@ -515,8 +516,8 @@ qinstance_modify_attributes(const ocs::tom::Element<ocs::tom::QU> this_elem,
    ocs_for_each_cqueue_attr_while([&](const auto &attr) {
       using E = ocs_cqueue_attr_t<decltype(attr)>;
 
-      // has() of the raw element is false for an element of another type
-      if (all_attributes || ocs::tom::has<E::cqueue_field>(reduced_elem)) {
+      // has() of the raw handle is false for an empty handle and for an element of another type
+      if (all_attributes || reduced_elem.has(E::cqueue_field)) {
          const char *matching_host_or_group = nullptr;
          const char *matching_group = nullptr;
          bool tmp_is_ambiguous = false;

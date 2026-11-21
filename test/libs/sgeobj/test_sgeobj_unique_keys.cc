@@ -175,14 +175,13 @@ test_variable_parser() {
  */
 static void
 test_set_lists() {
-   lList *qrefs = nullptr;
-   const int ret = cull_parse_destination_identifier_list(&qrefs, "a.q,b.q,a.q");
+   lList *raw_qrefs = nullptr;
+   const int ret = cull_parse_destination_identifier_list(&raw_qrefs, "a.q,b.q,a.q");
+   ocs::tom::ListPtr<ocs::tom::QR> qrefs(raw_qrefs);
    CHECK(11, "-q a.q,b.q,a.q holds a.q once, in its first position",
-         ret == 0 && ocs::tom::size(qrefs) == 2 &&
-         strcmp(ocs::tom::ConstList<ocs::tom::QR>(qrefs).front().get<QR_name>(), "a.q") == 0);
+         ret == 0 && qrefs->size() == 2 && strcmp(qrefs->front().get<QR_name>(), "a.q") == 0);
    qref_list_add(&qrefs, nullptr, "b.q");
-   CHECK(12, "adding a reference the list holds changes nothing", ocs::tom::size(qrefs) == 2);
-   ocs::tom::free_raw_list(qrefs);
+   CHECK(12, "adding a reference the list holds changes nothing", qrefs->size() == 2);
 
    lList *acl = nullptr;
    {
@@ -205,13 +204,13 @@ test_set_lists() {
 
 /**
  * @brief Append one context switch to a request, built the way the parser builds it
- * @param[in,out] change the context change request
+ * @param[in,out] change the context change request, created with the first instruction
  * @param marker the marker of the switch: "+" for -ac, "-" for -dc, "=" for -sc
  * @param vars the variables of the switch, "name[=value],..."
  * @return nothing
  */
 static void
-add_context_switch(lList **change, const char *marker, const char *vars) {
+add_context_switch(ocs::tom::ListPtr<ocs::tom::CX> &change, const char *marker, const char *vars) {
    ocs::tom::ListPtr<ocs::tom::VA> option;
    var_list_parse_from_string(option, vars, 0);
    auto ep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
@@ -240,17 +239,17 @@ context_has(const lListElem *job, const char *name, const char *value) {
 static void
 test_context_change() {
    // -ac a=1 -ac b=2 -dc a -ac a=3
-   lList *change = nullptr;
-   add_context_switch(&change, "+", "a=1");
-   add_context_switch(&change, "+", "b=2");
-   add_context_switch(&change, "-", "a");
-   add_context_switch(&change, "+", "a=3");
-   const lListElem *a = ocs::tom::find_first<CX_variable>(change, "a");
+   ocs::tom::ListPtr<ocs::tom::CX> change;
+   add_context_switch(change, "+", "a=1");
+   add_context_switch(change, "+", "b=2");
+   add_context_switch(change, "-", "a");
+   add_context_switch(change, "+", "a=3");
+   const auto a = change->find_first<CX_variable>("a");
    CHECK(15, "the request holds four markers and a three times; a lookup of a finds an element",
-         ocs::tom::size(change) == 8 && a != nullptr);
+         change->size() == 8 && a != nullptr);
 
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   job->set<JB_context_change>(ocs::tom::ListPtr<ocs::tom::CX>(change));
+   job->set<JB_context_change>(std::move(change));
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    CHECK(16, "the central check accepts a job holding the request",
          ocs_object_verify_unique_keys(*job, &answer_list, "job 1"));
@@ -261,48 +260,45 @@ test_context_change() {
          job->get<JB_context>().size() == 2 && context_has(*job, "b", "2") && context_has(*job, "a", "3"));
 
    // the context loses its last variable and gets a new one
-   lList *readd = nullptr;
-   add_context_switch(&readd, "=", "a=1");
-   add_context_switch(&readd, "-", "a");
-   add_context_switch(&readd, "+", "c=1");
-   set_context(ocs::tom::ConstList<ocs::tom::CX>(readd), *job);
+   ocs::tom::ListPtr<ocs::tom::CX> readd;
+   add_context_switch(readd, "=", "a=1");
+   add_context_switch(readd, "-", "a");
+   add_context_switch(readd, "+", "c=1");
+   set_context(*readd, *job);
    CHECK(18, "a variable added after the context became empty is kept",
          job->get<JB_context>().size() == 1 && context_has(*job, "c", "1"));
-   ocs::tom::free_raw_list(readd);
 
    // above the hash threshold the markers and a repeated name are hashed without a unique key
-   lList *big = nullptr;
+   ocs::tom::ListPtr<ocs::tom::CX> big;
    for (int i = 0; i < 20; i++) {
       const std::string var = "x" + std::to_string(i) + "=" + std::to_string(i);
-      add_context_switch(&big, "+", var.c_str());
+      add_context_switch(big, "+", var.c_str());
    }
-   add_context_switch(&big, "-", "x0");
-   add_context_switch(&big, "+", "x0=new");
-   const bool found = static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "+")) != nullptr && static_cast<const lListElem *>(ocs::tom::find_first<CX_variable>(big, "x0")) != nullptr;
-   set_context(ocs::tom::ConstList<ocs::tom::CX>(big), *job);
+   add_context_switch(big, "-", "x0");
+   add_context_switch(big, "+", "x0=new");
+   const bool found = big->find_first<CX_variable>("+") != nullptr && big->find_first<CX_variable>("x0") != nullptr;
+   set_context(*big, *job);
    CHECK(19, "above the hash threshold the lookups work; c and the 20 added variables remain, x0 with its new value",
-         ocs::tom::size(big) > OCS_CULL_HASH_MIN_ELEMS && found &&
+         big->size() > OCS_CULL_HASH_MIN_ELEMS && found &&
          job->get<JB_context>().size() == 21 && context_has(*job, "x0", "new"));
-   ocs::tom::free_raw_list(big);
 
    // a request without a marker replaces the context
-   lList *plain = nullptr;
+   ocs::tom::ListPtr<ocs::tom::CX> plain;
    ocs::tom::ListPtr<ocs::tom::VA> vars;
    var_list_parse_from_string(vars, "d=4", 0);
-   ocs_context_change_add(&plain, vars);
+   ocs_context_change_add(plain, vars);
    vars.reset();
-   set_context(ocs::tom::ConstList<ocs::tom::CX>(plain), *job);
+   set_context(*plain, *job);
    CHECK(20, "a request without a marker replaces the context",
          job->get<JB_context>().size() == 1 && context_has(*job, "d", "4"));
-   ocs::tom::free_raw_list(plain);
    job.reset();
 
    // qsh adds PARENT after the switches; a trailing -dc must not delete it
    auto child = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   lList *child_change = nullptr;
-   add_context_switch(&child_change, "+", "e=5");
-   add_context_switch(&child_change, "-", "e");
-   child->set<JB_context_change>(ocs::tom::ListPtr<ocs::tom::CX>(child_change));
+   ocs::tom::ListPtr<ocs::tom::CX> child_change;
+   add_context_switch(child_change, "+", "e=5");
+   add_context_switch(child_change, "-", "e");
+   child->set<JB_context_change>(std::move(child_change));
    setenv("JOB_ID", "42", 1);
    job_add_parent_id_to_context(*child);
    unsetenv("JOB_ID");

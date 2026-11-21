@@ -1723,35 +1723,34 @@ sge_mirror_process_mark4registration(sge_evc_class_t *evc, [[maybe_unused]] cons
  * up. The list may hold a reduced descriptor; a new list takes the descriptor of the event's elements.
  *
  * @tparam K the key field of the object type
- * @param list the master list to update, nullptr if the mirror holds none
+ * @tparam V the #sge_object_type value of the master list
  * @param action action to perform on list
  * @param event the event (ET); its object list is taken over into the master list
- * @return SGE_EM_OK or an error code; SGE_EM_NOT_INITIALIZED without a master list
+ * @return SGE_EM_OK or an error code
  *
  * @see #sge_mirror_update_master_list
  */
-template <auto K>
+template <auto K, sge_object_type V>
 static sge_mirror_error
-ocs_mirror_update_master_list_by_key(lList **list, const sge_event_action action,
-                                     const ocs::tom::Element<ocs::tom::ET> event) {
+ocs_mirror_update_master_list_by_key(const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
-   if (list == nullptr) {
-      DRETURN(SGE_EM_NOT_INITIALIZED);
-   }
-
    const auto key = ocs_mirror_event_key<K>(event);
+   const auto list = ocs::DataStore::master_list_rw<V>();
    sge_mirror_error ret;
 
    if constexpr (ocs::tom::FieldTraits<K>::type == ocs::tom::FieldType::Uint32) {
       ocs::tom::Element<typename ocs::tom::FieldTraits<K>::Type> ep;
       if (key > 0) {
-         ep = ocs::tom::find_first_rw<K>(*list, key);
+         ep = list.template find_first<K>(key);
       }
       DSTRING_STATIC(dstr, 32);
-      ret = sge_mirror_update_master_list(list, ep, sge_dstring_sprintf(&dstr, sge_u32, key), action, event);
+      ret = ocs_mirror_update_data_store_list<V>(ep, sge_dstring_sprintf(&dstr, sge_u32, key), action, event);
+   } else if constexpr (ocs::tom::FieldTraits<K>::type == ocs::tom::FieldType::Host) {
+      ret = ocs_mirror_update_data_store_list<V>(list.template find_first<K>(ocs::tom::Host(key)), key, action,
+                                                 event);
    } else {
-      ret = sge_mirror_update_master_list(list, ocs::tom::find_first_rw<K>(*list, key), key, action, event);
+      ret = ocs_mirror_update_data_store_list<V>(list.template find_first<K>(key), key, action, event);
    }
 
    DRETURN(ret);
@@ -1774,11 +1773,10 @@ ocs_mirror_update_master_list_by_type(const sge_object_type type, const sge_even
                                       const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
-   lList **list = ocs::DataStore::get_master_list_rw(type);
    const auto ret = ocs_with_object_type(type, [&](const auto &entry) {
       using E = ocs_object_type_entry_t<decltype(entry)>;
       if constexpr (E::has_key) {
-         return ocs_mirror_update_master_list_by_key<E::key>(list, action, event);
+         return ocs_mirror_update_master_list_by_key<E::key, E::value>(action, event);
       } else {
          return SGE_EM_BAD_ARG;
       }
@@ -1830,8 +1828,9 @@ generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_obje
  * subscription with a field selection.
  *
  * @tparam T the object type of the list and of the event's objects
- * @param list mirrored list to manipulate; the slot of a master list of the data store or of a sub-list field,
- *        raw because a new list is created through it
+ * @param list mirrored list to manipulate, taken out of the slot of a master list of the data store or of a
+ *        list field of the parent (ocs_mirror_update_data_store_list(), ocs_mirror_update_sub_list()); created
+ *        for an ADD if it is empty, replaced for a LIST
  * @param ep element to manipulate or an empty handle
  * @param key key of an element to manipulate
  * @param action action to perform
@@ -1844,14 +1843,14 @@ generic_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_obje
  */
 template <ocs::tom::ObjectType T>
 sge_mirror_error
-sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const char *key,
+sge_mirror_update_master_list(ocs::tom::ListPtr<T> &list, const ocs::tom::Element<T> ep, const char *key,
                               const sge_event_action action, const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
    switch (action) {
       case SGE_EMA_LIST:
-         /* switch to new list */
-         ocs::tom::exchange<ET_new_version>(event, list);
+         /* switch to new list; the event takes the old one */
+         list = ocs_mirror_exchange_event_objects<T>(event, std::move(list));
          break;
 
       case SGE_EMA_ADD: {
@@ -1864,13 +1863,13 @@ sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const
          const auto objects = ocs_mirror_event_objects<T>(event);
 
          /* if neccessary, create list; without objects the event has no descriptor and no list is created */
-         if (*list == nullptr && objects) {
-            *list = ocs::tom::ListPtr<T>::create("", objects.descr()).release();
+         if (!list && objects) {
+            list = ocs::tom::ListPtr<T>::create("", objects.descr());
          }
 
          /* insert element */
          if (const auto first = objects.front()) {
-            ocs::tom::List<T>::from_typed(*list).push_back(objects.extract(first));
+            list->push_back(objects.extract(first));
          }
          break;
       }
@@ -1883,7 +1882,7 @@ sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const
          }
 
          /* remove element */
-         ocs::tom::List<T>::from_typed(*list).erase(ep);
+         list->erase(ep);
          break;
 
       case SGE_EMA_MOD: {
@@ -1892,7 +1891,7 @@ sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const
             ERROR("element " SFQ " does not exist\n", (key != nullptr) ?key:"nullptr");
             DRETURN(SGE_EM_KEY_NOT_FOUND);
          }
-         const auto master_list = ocs::tom::List<T>::from_typed(*list);
+         const auto master_list = list.get();
          master_list.erase(ep);
          const auto objects = ocs_mirror_event_objects<T>(event);
          if (const auto first = objects.front()) {
@@ -1911,18 +1910,18 @@ sge_mirror_update_master_list(lList **list, const ocs::tom::Element<T> ep, const
  * The mirror callbacks outside this file update the jobs, array tasks, parallel tasks, cluster queues and queue
  * instances with sge_mirror_update_master_list(); the object types updated by key alone instantiate it above.
  */
-template sge_mirror_error sge_mirror_update_master_list<ocs::tom::JB>(lList **, ocs::tom::Element<ocs::tom::JB>,
-                                                                      const char *, sge_event_action,
-                                                                      ocs::tom::Element<ocs::tom::ET>);
-template sge_mirror_error sge_mirror_update_master_list<ocs::tom::JAT>(lList **, ocs::tom::Element<ocs::tom::JAT>,
-                                                                       const char *, sge_event_action,
-                                                                       ocs::tom::Element<ocs::tom::ET>);
-template sge_mirror_error sge_mirror_update_master_list<ocs::tom::PET>(lList **, ocs::tom::Element<ocs::tom::PET>,
-                                                                       const char *, sge_event_action,
-                                                                       ocs::tom::Element<ocs::tom::ET>);
-template sge_mirror_error sge_mirror_update_master_list<ocs::tom::CQ>(lList **, ocs::tom::Element<ocs::tom::CQ>,
-                                                                      const char *, sge_event_action,
-                                                                      ocs::tom::Element<ocs::tom::ET>);
-template sge_mirror_error sge_mirror_update_master_list<ocs::tom::QU>(lList **, ocs::tom::Element<ocs::tom::QU>,
-                                                                      const char *, sge_event_action,
-                                                                      ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error
+sge_mirror_update_master_list<ocs::tom::JB>(ocs::tom::ListPtr<ocs::tom::JB> &, ocs::tom::Element<ocs::tom::JB>,
+                              const char *, sge_event_action, ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error
+sge_mirror_update_master_list<ocs::tom::JAT>(ocs::tom::ListPtr<ocs::tom::JAT> &, ocs::tom::Element<ocs::tom::JAT>,
+                              const char *, sge_event_action, ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error
+sge_mirror_update_master_list<ocs::tom::PET>(ocs::tom::ListPtr<ocs::tom::PET> &, ocs::tom::Element<ocs::tom::PET>,
+                              const char *, sge_event_action, ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error
+sge_mirror_update_master_list<ocs::tom::CQ>(ocs::tom::ListPtr<ocs::tom::CQ> &, ocs::tom::Element<ocs::tom::CQ>,
+                              const char *, sge_event_action, ocs::tom::Element<ocs::tom::ET>);
+template sge_mirror_error
+sge_mirror_update_master_list<ocs::tom::QU>(ocs::tom::ListPtr<ocs::tom::QU> &, ocs::tom::Element<ocs::tom::QU>,
+                              const char *, sge_event_action, ocs::tom::Element<ocs::tom::ET>);

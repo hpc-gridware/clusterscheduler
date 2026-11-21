@@ -83,11 +83,27 @@
 
 
 /**
+ * @brief Append a queue reference to a QR list, creating the list if it does not exist yet
+ *
+ * @param qref_list in-out: the QR list, created if it is empty
+ * @param name the queue reference, not nullptr
+ *
+ * @return the new element, now in the list
+ */
+static ocs::tom::Element<ocs::tom::QR>
+qref_list_append(ocs::tom::ListPtr<ocs::tom::QR> &qref_list, const char *name) {
+   if (!qref_list) {
+      qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
+   }
+   return qref_list->emplace_back<QR_name>(name);
+}
+
+/**
  * @brief Resolve cluster queue references into cluster queue or queue instance references
  *
  * @param cq_qref_list QR list of cluster queue names, may be an empty handle
  * @param answer_list AN list
- * @param qref_list in-out: QR list receiving the references
+ * @param qref_list in-out: QR list receiving the references, created with the first reference
  * @param found_something set to true when a queue instance reference was added
  * @param cqueue_list CQ master list
  * @param resolve_cqueue true to resolve each cluster queue into its queue instances
@@ -96,7 +112,8 @@
  */
 static bool
 qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
-                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **qref_list,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                               ocs::tom::ListPtr<ocs::tom::QR> &qref_list,
                                bool *found_something,
                                const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                                const bool resolve_cqueue) {
@@ -110,11 +127,11 @@ qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_l
          const auto cqueue = cqueue_list.find_first<CQ_name>(cq_name);
          const auto qinstance_list = cqueue.get<CQ_qinstances>();
          for (const auto qinstance : qinstance_list) {
-            ocs::tom::emplace_back<QR_name>(qref_list, qinstance.get<QU_full_name>());
+            qref_list_append(qref_list, qinstance.get<QU_full_name>());
             *found_something = true;
          }
       } else {
-         ocs::tom::emplace_back<QR_name>(qref_list, cq_name);
+         qref_list_append(qref_list, cq_name);
       }
    }
    DRETURN(ret);
@@ -126,7 +143,7 @@ qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_l
  * @param cq_qref_list QR list of cluster queue names, may be an empty handle
  * @param answer_list AN list
  * @param host_or_hgroup the host pattern
- * @param qref_list in-out: QR list receiving the references
+ * @param qref_list in-out: QR list receiving the references, created with the first reference
  * @param found_something set to true when a reference was added
  * @param cqueue_list CQ master list
  *
@@ -135,7 +152,7 @@ qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_l
 static bool
 qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *host_or_hgroup,
-                                  lList **qref_list,
+                                  ocs::tom::ListPtr<ocs::tom::QR> &qref_list,
                                   bool *found_something,
                                   const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list) {
    DENTER(QREF_LAYER);
@@ -151,7 +168,7 @@ qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qre
       for (const auto qi_qref : *qi_ref_list) {
          const char *qi_name = qi_qref.get<QR_name>();
 
-         ocs::tom::emplace_back<QR_name>(qref_list, qi_name);
+         qref_list_append(qref_list, qi_name);
          *found_something = true;
       }
    }
@@ -169,7 +186,7 @@ qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qre
  * @param cq_qref_list QR list of cluster queue names, may be an empty handle
  * @param answer_list AN list
  * @param host_or_hgroup the host group pattern
- * @param qref_list in-out: QR list receiving the references
+ * @param qref_list in-out: QR list receiving the references, created with the first reference
  * @param found_something set to true when a reference was added
  * @param cqueue_list CQ master list
  * @param hgroup_list HGRP master list
@@ -180,7 +197,7 @@ qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qre
 static bool
 qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_list,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list, dstring *host_or_hgroup,
-                                lList **qref_list,
+                                ocs::tom::ListPtr<ocs::tom::QR> &qref_list,
                                 bool *found_something,
                                 const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                                 const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
@@ -215,14 +232,14 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
             if (qinstance) {
                const char *qinstance_name = qinstance_get_name(qinstance, &buffer);
 
-               ocs::tom::emplace_back<QR_name>(qref_list, qinstance_name);
+               qref_list_append(qref_list, qinstance_name);
                *found_something = true;
             }
          } else {
             const char *hgroup_name = href.get<HR_name>();
             const char *qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN, cqueue_name, hgroup_name);
 
-            ocs::tom::emplace_back<QR_name>(qref_list, qinstance_name);
+            qref_list_append(qref_list, qinstance_name);
             *found_something = true;
          }
       }
@@ -238,23 +255,24 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
  * unless the list already holds it (CS-3053).
  * Errors will be reported via return value and "answer_list".
  *
- * @param this_list in-out: the QR list, created if *this_list is nullptr
+ * @param this_list in-out: the QR list, created if *this_list is empty
  * @param answer_list AN
  * @param qref_string queue reference
  *
  * @return error state true  - success false - error
  */
-bool qref_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qref_string) {
+bool qref_list_add(ocs::tom::ListPtr<ocs::tom::QR> *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                   const char *qref_string) {
    DENTER(QREF_LAYER);
 
    bool ret = true;
 
    if (this_list != nullptr && qref_string != nullptr) {
-      if (ocs::tom::find_first<QR_name>(*this_list, qref_string)) {
+      if ((*this_list)->find_first<QR_name>(qref_string)) {
          DRETURN(ret);
       }
 
-      const auto new_elem = ocs::tom::emplace_back<QR_name>(this_list, qref_string);
+      const auto new_elem = qref_list_append(*this_list, qref_string);
       if (!new_elem) {
          answer_list_add(answer_list, MSG_GDI_OUTOFMEMORY,
                          STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -308,7 +326,8 @@ bool qref_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_li
  * @return error state true  - success false - error
  */
 bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list,
-                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **qref_list, bool *found_something,
+                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ListPtr<ocs::tom::QR> &qref_list,
+                       bool *found_something,
                        const ocs::tom::ConstList<ocs::tom::CQ> cqueue_list,
                        const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list,
                        const bool resolve_cqueue, const bool resolve_qdomain) {
@@ -704,12 +723,10 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::
 
             auto qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("qref list");
             qref_list->emplace_back<QR_name>(qref_pattern);
-            // out-parameter of qref_list_resolve(), which takes a raw in-out list
-            lList *resolved_qref_list_raw = nullptr;
+            ocs::tom::ListPtr<ocs::tom::QR> resolved_qref_list;
             /* queue name expression support */
-            qref_list_resolve(*qref_list, answer_list, &resolved_qref_list_raw,
+            qref_list_resolve(*qref_list, answer_list, resolved_qref_list,
                               &found_something, master_cqueue_list, master_hgroup_list, true, true);
-            const auto resolved_qref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(resolved_qref_list_raw);
             for (const auto resolved_qref : *resolved_qref_list) {
                const char *resolved_qref_name = resolved_qref.get<QR_name>();
 

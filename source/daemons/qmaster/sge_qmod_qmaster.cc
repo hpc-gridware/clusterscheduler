@@ -234,18 +234,15 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
       }
 
       if ((id_action & JOB_DO_ACTION) == 0) {
-         // qref_list_add() and qref_list_resolve() have raw out-parameters only, the lists are owned right after
-         lList *raw_qref_list = nullptr;
-         lList *raw_tmp_list = nullptr;
+         ocs::tom::ListPtr<ocs::tom::QR> qref_list;
+         ocs::tom::ListPtr<ocs::tom::QR> tmp_list;
 
-         qref_list_add(&raw_qref_list, nullptr, dep.get<ID_str>());
-         const ocs::tom::ListPtr<ocs::tom::QR> qref_list(raw_qref_list);
+         qref_list_add(&qref_list, nullptr, dep.get<ID_str>());
          qref_list_resolve_hostname(qref_list.get());
-         qref_list_resolve(qref_list.get(), nullptr, &raw_tmp_list,
+         qref_list_resolve(qref_list.get(), nullptr, tmp_list,
                            &found_something, master_cqueue_list,
                            master_hgroup_list,
                            true, true);
-         const ocs::tom::ListPtr<ocs::tom::QR> tmp_list(raw_tmp_list);
          if (found_something) {
             id_action = (id_action & (~QUEUE_DO_ACTION));
 
@@ -312,7 +309,9 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                alltasks = 1;
             }
 
-            ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, jobid);
+            // read access as master_list() gives it; the job found is changed
+            ocs::tom::Element<ocs::tom::JB> job =
+               ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true).find_first<JB_job_number>(jobid);
             if (job != nullptr) {
                ocs::tom::Element<ocs::tom::JAT> jatask = job.get<JB_ja_tasks>().front();
                ocs::tom::Element<ocs::tom::JAT> tmp_task;
@@ -1176,11 +1175,12 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
-   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
 
    if (queue == nullptr) {
-      ocs::tom::Element<ocs::tom::JB> jep = ocs::tom::find_first_rw<JB_job_number>(master_job_list, jobid);
+      // read access as master_list() gives it; the job found is changed
+      ocs::tom::Element<ocs::tom::JB> jep =
+         ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true).find_first<JB_job_number>(jobid);
       ocs::tom::Element<ocs::tom::JAT> jatep = nullptr;
       if (!jep || !(jatep = job_search_task(jep, nullptr, jataskid))) {
          ERROR(MSG_EVE_RESENTSIGNALTASK_UU, jobid, jataskid);
