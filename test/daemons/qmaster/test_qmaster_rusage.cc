@@ -51,12 +51,17 @@
 #define NUM_PE_TASKS      2
 
 /**
- * Builds a tightly integrated job with a master task and NUM_PE_TASKS pe tasks,
- * lets sge_write_rusage() write one JSONL acct record for it and returns the
- * record's wallclock and cpu.
+ * @brief Write one JSONL acct record for a tightly integrated job and read back its wallclock and cpu
  *
- * The pe object is put into the data store because sge_write_rusage() looks up
- * the granted pe there to decide whether it has to aggregate over the pe tasks.
+ * Builds a job with a master task and NUM_PE_TASKS pe tasks and lets sge_write_rusage() write the record. The
+ * pe object is put into the data store because sge_write_rusage() looks up the granted pe there to decide
+ * whether it has to aggregate over the pe tasks.
+ *
+ * @param accounting_summary the accounting_summary setting of the pe
+ * @param intermediate true for an intermediate record, false for the final one
+ * @param[out] wallclock receives the wallclock of the record
+ * @param[out] cpu receives the cpu of the record
+ * @return true if the record was written and parsed
  */
 static bool
 write_acct_record(bool accounting_summary, bool intermediate, double *wallclock, double *cpu) {

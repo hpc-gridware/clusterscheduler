@@ -2294,7 +2294,8 @@ bool sconf_validate_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
    if (config) {
       sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
       // the master list is swapped for the time of the check: the slot borrows the caller's list, and the stored
-      // list is kept aside unowned, so neither list is freed here, also not when the check throws
+      // list is kept aside unowned, so neither list is freed here. A throwing check would leave the borrowed list
+      // in the slot and the stored one aside, as before; it runs under Sched_Conf_Lock and is fatal anyway
       lList *store = ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(
          ocs::tom::ListPtr<ocs::tom::SC>::from_typed(config.raw())).release();
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
