@@ -35,15 +35,17 @@
  * @return the registered descriptor, holding a reference
  */
 extern "C" const lDescr *test_cull_plugin_intern(const lDescr *dp) {
-   return ocs_cull_descr_intern(dp);
+   return ocs::tom::descr_intern(dp);
 }
 
 /**
  * @brief Release a descriptor through the CULL this module is bound to
- * @param dpp the descriptor, set to nullptr
+ * @param dpp the holder of the descriptor, set to nullptr; nullptr is ignored
  */
 extern "C" void test_cull_plugin_release(const lDescr **dpp) {
-   ocs_cull_descr_release(dpp);
+   if (dpp != nullptr) {
+      ocs::tom::release_descr(*dpp);
+   }
 }
 
 /**

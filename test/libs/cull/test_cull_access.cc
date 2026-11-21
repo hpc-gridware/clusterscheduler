@@ -179,7 +179,7 @@ static int pos_of(const int nm) {
 template <typename V>
 static V add_to(const ocs::tom::RawElement ep, const int nm, const V offset) {
    const int pos = ocs::tom::field_pos(ep.descr(), nm);
-   return ocs::tom::add_number<V>(ep, pos, ocs_cull_value(ep, pos), offset);
+   return ocs::tom::add_number<V>(ep, pos, ocs::tom::detail::value(ep, pos), offset);
 }
 
 // ---------------------------------------------------------------------------

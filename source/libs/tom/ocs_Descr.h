@@ -29,14 +29,14 @@
  * #CULL_DESCR_INTERNED in entry 0 and is freed by the release of its last
  * reference.
  *
- * ocs_cull_descr_intern() returns the registered descriptor equal to its
+ * ocs::tom::descr_intern() returns the registered descriptor equal to its
  * argument, registering a copy on the first call. Equality is decided by the
  * entries (field number, type with flags and slot offset, in order); the hash only selects
  * the candidates. Above the soft cap the registry stops growing and hands out
  * private counted copies, which are correct but not shared.
  *
  * The lists and elements of the library hold their descriptor through
- * ocs_cull_descr_acquire(), which hands out the static block of the type for a
+ * ocs::tom::descr_acquire(), which hands out the static block of the type for a
  * full descriptor and the interned one for a reduced descriptor. The static
  * block of a type is found through the installed object model (tom/ocs_Model.h).
  *
@@ -62,43 +62,44 @@ int lCountPresent(const lDescr *dp);
 /** @brief Default number of registered descriptors above which interning falls back to private copies */
 #define OCS_CULL_DESCR_SOFT_CAP 4096
 
-const lDescr *ocs_cull_descr_intern(const lDescr *dp);
+namespace ocs::tom {
+   const lDescr *descr_intern(const lDescr *dp);
 
-const lDescr *ocs_cull_descr_acquire(const lDescr *dp);
+   const lDescr *descr_acquire(const lDescr *dp);
 
-const lDescr *ocs_cull_descr_private(const lDescr *dp);
+   const lDescr *descr_private(const lDescr *dp);
 
-int ocs_cull_descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out);
+   int descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out);
 
-const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &keep);
+   const lDescr *descr_build(const lDescr *src, const std::vector<bool> &keep);
 
-const lDescr *ocs_cull_descr_reduce(const lDescr *type, std::initializer_list<int> fields);
+   const lDescr *descr_reduce(const lDescr *type, std::initializer_list<int> fields);
 
-const lDescr *ocs_cull_descr_ref(const lDescr *dp);
+   const lDescr *descr_ref(const lDescr *dp);
 
-void ocs_cull_descr_release(const lDescr **dpp);
+   void release_descr(const lDescr *&descr) noexcept;
 
-bool ocs_cull_descr_is_counted(const lDescr *dp);
+   bool descr_is_counted(const lDescr *dp);
 
-bool ocs_cull_descr_is_static(const lDescr *dp);
+   bool descr_is_static(const lDescr *dp);
 
-const lDescr *ocs_cull_descr_static_for(int nm);
+   const lDescr *descr_static_for(int nm);
 
-const lDescr *ocs_cull_descr_static_containing(int nm, int *pos);
+   const lDescr *descr_static_containing(int nm, int *pos);
 
-uint32_t ocs_cull_descr_refs(const lDescr *dp);
+   uint32_t descr_refs(const lDescr *dp);
 
-size_t ocs_cull_descr_registry_size();
+   size_t descr_registry_size();
 
 #ifdef OCS_CULL_STATS
-size_t ocs_cull_descr_registry_peak();
+   size_t descr_registry_peak();
 #endif
 
-namespace ocs::tom {
    const void *descr_registry_id();
+
    bool descr_registry_shared(void *handle, std::string &own, std::string &seen);
+
+   size_t descr_set_soft_cap(size_t cap);
 } // namespace ocs::tom
 
 extern "C" const void *ocs_tom_descr_registry_seen();
-
-size_t ocs_cull_descr_set_soft_cap(size_t cap);

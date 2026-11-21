@@ -249,7 +249,7 @@ static bool descr_names_are(const lDescr *dp, const int *names) {
       return false;
    }
    int i = 0;
-   for (const auto f : ocs_cull_present_fields(dp)) {
+   for (const auto f : ocs::tom::present_fields(dp)) {
       if (names[i] == NoName || dp[f.pos].nm != names[i]) {
          return false;
       }
@@ -583,7 +583,7 @@ static void test_partial_descr() {
    const int pos_group = ocs::tom::field_pos(SP_Type, SP_group);
    const int pos_spool = ocs::tom::field_pos(SP_Type, SP_spool);
    std::vector<std::pair<int, int>> present;
-   for (const auto f : ocs_cull_present_fields(dp.data())) {
+   for (const auto f : ocs::tom::present_fields(dp.data())) {
       present.emplace_back(f.pos, f.slot);
    }
    CHECK(14, "partial_descr keeps the length of the type and gives the fields their slots in type order",
@@ -841,7 +841,7 @@ static void test_full_what_on_reduction() {
 int main(int argc, char *argv[]) {
    // the lists here are short; the tables built on them by a lookup are what is tested
    ocs::module_test::install_test_model({{"SP", SP_Type, SP_Name, SP_Size}, {"SPS", SPS_Type, SPS_Name, SPS_Size}});
-   ocs_cull_hash_set_min_elems(0);
+   ocs::tom::detail::hash_set_min_elems(0);
 
    return ocs::module_test::run(argc, argv, {
       {"SELPACK-01", "single-pass select-and-pack equals the two-step path",

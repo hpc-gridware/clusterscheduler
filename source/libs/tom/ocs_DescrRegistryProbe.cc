@@ -22,7 +22,7 @@
  * @brief The probe a loaded object answers the descriptor registry check with (N-A-22)
  *
  * Kept in a translation unit of its own, apart from the registry in
- * ocs_cull_descr.cc: in a loaded object that holds its own copy of the static
+ * tom/ocs_Descr.cc: in a loaded object that holds its own copy of the static
  * library, the probe's call of ocs::tom::descr_registry_id() then goes through the
  * dynamic linker and returns the registry the object's code is bound to. Nothing
  * in a loadable object calls the probe, so the static library would not link this

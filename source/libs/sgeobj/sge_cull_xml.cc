@@ -443,7 +443,7 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
       }
    } else {
       const lDescr *descr = ep.descr();
-      for (const auto f : ocs_cull_present_fields(descr)) {
+      for (const auto f : ocs::tom::present_fields(descr)) {
          const int nm = descr[f.pos].nm;
          const ocs::tom::FieldType type = ocs::tom::field_type_of(descr[f.pos].mt);
 

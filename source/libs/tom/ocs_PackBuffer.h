@@ -87,8 +87,10 @@
  *
  * @see @ref cull_packing
  */
-/// the descriptor table of a pack buffer (N-W-4), see cull_pack.cc
-struct ocs_cull_descr_table;
+namespace ocs::tom {
+   /// the descriptor table of a pack buffer (N-W-4), see tom/ocs_PackCore.cc
+   struct descr_table;
+} // namespace ocs::tom
 
 typedef struct {
    char *head_ptr;                    ///< start of the buffer
@@ -105,7 +107,7 @@ typedef struct {
    int grp_amount;                    ///< number of supplementary groups in #grp_array
    ocs_grp_elem_t *grp_array;         ///< supplementary groups of the sender
    /// descriptors written or read so far, nullptr until the first; freed by #clear_packbuffer
-   ocs_cull_descr_table *dtab;
+   ocs::tom::descr_table *dtab;
 
 } sge_pack_buffer;
 

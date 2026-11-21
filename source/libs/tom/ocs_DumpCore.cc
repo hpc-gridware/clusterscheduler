@@ -173,7 +173,7 @@ namespace ocs::tom {
             fail(LEDESCRNULL, "dumping a null descriptor");
          }
          ret = fprintf(fp, "%s/* NUMBER OF DESCR FIELDS */ %d\n", space.c_str(), lCountPresent(dp));
-         for (const auto f : ocs_cull_present_fields(dp)) {
+         for (const auto f : ocs::tom::present_fields(dp)) {
             if (ret == EOF) {
                break;
             }
@@ -205,11 +205,11 @@ namespace ocs::tom {
          dstring dstr = DSTRING_INIT;
          int ret = fprintf(fp, "%s{ \n", space);
          ret = 0;
-         for (const auto f : ocs_cull_present_fields(ep->descr)) {
+         for (const auto f : ocs::tom::present_fields(ep->descr)) {
             if (ret == EOF) {
                break;
             }
-            const lMultiType &value = ocs_cull_value(ep, f.pos);
+            const lMultiType &value = ocs::tom::detail::value(ep, f.pos);
             const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
                case lIntT:
@@ -605,7 +605,7 @@ namespace ocs::tom {
        */
       void read_values(FILE *fp, lListElem *ep) {
          const lDescr *dp = ep->descr;
-         for (const auto f : ocs_cull_present_fields(dp)) {
+         for (const auto f : ocs::tom::present_fields(dp)) {
             lMultiType &value = ep->cont[f.slot];
             switch (mt_get_type(dp[f.pos].mt)) {
                case lIntT:
@@ -693,7 +693,7 @@ namespace ocs::tom {
 
          // the full length of the type the fields belong to; they are listed in type order, as the values follow
          int first = 0;
-         const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &first) : nullptr;
+         const lDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &first) : nullptr;
          const int type_n = type != nullptr ? descr_length(type) : 0;
          std::vector<bool> keep(type_n, false);
          bool known = type != nullptr;
@@ -713,7 +713,7 @@ namespace ocs::tom {
          if (out == nullptr) {
             fail(LEMALLOC, "reading a descriptor");
          }
-         ocs_cull_descr_layout(type, keep, out);
+         ocs::tom::descr_layout(type, keep, out);
          return out;
       }
 

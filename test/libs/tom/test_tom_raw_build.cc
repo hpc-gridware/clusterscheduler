@@ -90,9 +90,9 @@ namespace {
     */
    template <typename Call>
    int lerrno_after(Call &&call) {
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       call();
-      return cull_state_get_lerrno();
+      return ocs::tom::detail::state_get_lerrno();
    }
 
    /**
@@ -181,7 +181,7 @@ namespace {
       for (const lDescr *dp = ocs::tom::TEST::descriptor.e; dp->nm != NoName; dp++) {
          keep.push_back(std::find(fields.begin(), fields.end(), dp->nm) != fields.end());
       }
-      return ocs_cull_descr_build(ocs::tom::TEST::descriptor.e, keep);
+      return ocs::tom::descr_build(ocs::tom::TEST::descriptor.e, keep);
    }
 
    /**
@@ -343,7 +343,7 @@ test_where_compare_errors() {
          refused = false;
       }
    }
-   ocs_cull_descr_release(&reduced);
+   ocs::tom::release_descr(reduced);
    CHECK(3, "where_compare() with a null descriptor, a foreign field and a field the reduced descriptor leaves out "
             "gives no condition and LEPARSECOND, as lWhere() did",
          refused);
@@ -396,8 +396,8 @@ test_what() {
          std::printf("%s: the reduced descriptors differ\n", label.c_str());
          reduced_same = false;
       }
-      ocs_cull_descr_release(&expected);
-      ocs_cull_descr_release(&new_reduced);
+      ocs::tom::release_descr(expected);
+      ocs::tom::release_descr(new_reduced);
    }
    CHECK(5, "what_of() selects the fields lIntVector2What() selected, in descriptor order and each once, with "
             "the values of the source, through select_as()",
@@ -441,7 +441,7 @@ test_what_errors() {
          refused = false;
       }
    }
-   ocs_cull_descr_release(&reduced);
+   ocs::tom::release_descr(reduced);
    CHECK(8, "what_of() with no field, a foreign field, a null descriptor and a field the reduced descriptor leaves "
             "out gives no selection and LENAMENOT, as lIntVector2What() did",
          refused);

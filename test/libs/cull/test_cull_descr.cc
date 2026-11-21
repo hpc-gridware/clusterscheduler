@@ -171,65 +171,65 @@ static void distinct_reduction(const int n, lDescr out[3]) {
 /** @brief DESCR-01: the static blocks of LISTDEF/LISTEND */
 static void test_static() {
    CHECK(1, "the static block counts the fields and hashes them like the registry",
-         TD_Type_blk.h.n == 4 && TD_Type_blk.h.hash == ocs_cull_descr_hash(TD_Type, 4) &&
+         TD_Type_blk.h.n == 4 && TD_Type_blk.h.hash == ocs::tom::descr_hash(TD_Type, 4) &&
          TD_Type_blk.h.refs.load() == 0 && TD_Type == TD_Type_blk.e);
    const lDescr *dp = TD_Type;
    CHECK(2, "reference operations leave a static descriptor alone",
-         !ocs_cull_descr_is_counted(dp) && ocs_cull_descr_ref(dp) == TD_Type && ocs_cull_descr_refs(dp) == 0);
-   ocs_cull_descr_release(&dp);
+         !ocs::tom::descr_is_counted(dp) && ocs::tom::descr_ref(dp) == TD_Type && ocs::tom::descr_refs(dp) == 0);
+   ocs::tom::release_descr(dp);
    CHECK(3, "releasing a static descriptor only clears the caller's pointer",
          dp == nullptr && TD_Type_blk.h.refs.load() == 0 && TD_Type[0].nm == TD_id);
 }
 
 /** @brief DESCR-02: one descriptor per reduction */
 static void test_intern() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    lDescr *built1 = heap_copy(RED_A);
    lDescr *built2 = heap_copy(RED_A);
 
-   const lDescr *a1 = ocs_cull_descr_intern(built1);
-   const lDescr *a2 = ocs_cull_descr_intern(built2);
-   const lDescr *a3 = ocs_cull_descr_intern(a1);
+   const lDescr *a1 = ocs::tom::descr_intern(built1);
+   const lDescr *a2 = ocs::tom::descr_intern(built2);
+   const lDescr *a3 = ocs::tom::descr_intern(a1);
    CHECK(4, "independently built equal reductions yield one counted descriptor",
-         a1 != nullptr && a1 == a2 && a2 == a3 && a1 != built1 && ocs_cull_descr_is_counted(a1) &&
-         ocs_cull_descr_refs(a1) == 3 && ocs_cull_descr_registry_size() == base + 1);
+         a1 != nullptr && a1 == a2 && a2 == a3 && a1 != built1 && ocs::tom::descr_is_counted(a1) &&
+         ocs::tom::descr_refs(a1) == 3 && ocs::tom::descr_registry_size() == base + 1);
    CHECK(5, "the shared descriptor has the entries of its source",
          a1[0].nm == TD_id && (a1[0].mt & ~CULL_DESCR_INTERNED) == RED_A[0].mt && a1[1].nm == TD_name &&
          a1[1].mt == RED_A[1].mt && mt_get_type(a1[2].mt) == lEndT);
 
-   const lDescr *b = ocs_cull_descr_intern(RED_B);
-   const lDescr *s = ocs_cull_descr_intern(RED_A_SWAPPED);
+   const lDescr *b = ocs::tom::descr_intern(RED_B);
+   const lDescr *s = ocs::tom::descr_intern(RED_A_SWAPPED);
    CHECK(6, "a different reduction and a different field order yield other descriptors",
-         b != nullptr && s != nullptr && b != a1 && s != a1 && s != b && ocs_cull_descr_registry_size() == base + 3);
+         b != nullptr && s != nullptr && b != a1 && s != a1 && s != b && ocs::tom::descr_registry_size() == base + 3);
 
-   const lDescr *none = ocs_cull_descr_intern(nullptr);
+   const lDescr *none = ocs::tom::descr_intern(nullptr);
    CHECK(7, "interning nullptr yields nullptr", none == nullptr);
 
-   ocs_cull_descr_release(&a1);
-   ocs_cull_descr_release(&a2);
-   ocs_cull_descr_release(&a3);
-   ocs_cull_descr_release(&b);
-   ocs_cull_descr_release(&s);
+   ocs::tom::release_descr(a1);
+   ocs::tom::release_descr(a2);
+   ocs::tom::release_descr(a3);
+   ocs::tom::release_descr(b);
+   ocs::tom::release_descr(s);
    sge_free(&built1);
    sge_free(&built2);
 }
 
 /** @brief DESCR-03: reference counts and release, also concurrently */
 static void test_release() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
 
-   const lDescr *a = ocs_cull_descr_intern(RED_A);
-   const lDescr *r = ocs_cull_descr_ref(a);
-   ocs_cull_descr_release(&a);
+   const lDescr *a = ocs::tom::descr_intern(RED_A);
+   const lDescr *r = ocs::tom::descr_ref(a);
+   ocs::tom::release_descr(a);
    CHECK(8, "a descriptor stays registered while a reference is left",
-         a == nullptr && r != nullptr && ocs_cull_descr_refs(r) == 1 && ocs_cull_descr_registry_size() == base + 1);
-   ocs_cull_descr_release(&r);
+         a == nullptr && r != nullptr && ocs::tom::descr_refs(r) == 1 && ocs::tom::descr_registry_size() == base + 1);
+   ocs::tom::release_descr(r);
    CHECK(9, "the last release removes the descriptor from the registry",
-         r == nullptr && ocs_cull_descr_registry_size() == base);
+         r == nullptr && ocs::tom::descr_registry_size() == base);
 
-   const lDescr *again = ocs_cull_descr_intern(RED_A);
+   const lDescr *again = ocs::tom::descr_intern(RED_A);
    CHECK(10, "interning after the last release registers a new descriptor",
-         again != nullptr && ocs_cull_descr_refs(again) == 1 && ocs_cull_descr_registry_size() == base + 1);
+         again != nullptr && ocs::tom::descr_refs(again) == 1 && ocs::tom::descr_registry_size() == base + 1);
 
    // `again` keeps RED_A alive, so every thread must get exactly it; RED_B has
    // no keeper and dies and comes back many times while the threads race
@@ -244,15 +244,15 @@ static void test_release() {
             std::this_thread::yield();
          }
          for (int i = 0; i < rounds; i++) {
-            const lDescr *x = ocs_cull_descr_intern(RED_A);
-            const lDescr *y = ocs_cull_descr_intern((i + t) % 2 == 0 ? RED_B : RED_A_SWAPPED);
-            const lDescr *z = ocs_cull_descr_ref(y);
+            const lDescr *x = ocs::tom::descr_intern(RED_A);
+            const lDescr *y = ocs::tom::descr_intern((i + t) % 2 == 0 ? RED_B : RED_A_SWAPPED);
+            const lDescr *z = ocs::tom::descr_ref(y);
             if (x != again || y == nullptr || z != y || y[1].nm != ((i + t) % 2 == 0 ? TD_value : TD_id)) {
                wrong++;
             }
-            ocs_cull_descr_release(&z);
-            ocs_cull_descr_release(&y);
-            ocs_cull_descr_release(&x);
+            ocs::tom::release_descr(z);
+            ocs::tom::release_descr(y);
+            ocs::tom::release_descr(x);
          }
       });
    }
@@ -263,47 +263,47 @@ static void test_release() {
    CHECK(11, "concurrent interning and release hand out the shared descriptor and the right entries",
          wrong.load() == 0);
    CHECK(12, "after the threads only the kept descriptor is left, with its one reference",
-         ocs_cull_descr_refs(again) == 1 && ocs_cull_descr_registry_size() == base + 1);
-   ocs_cull_descr_release(&again);
-   CHECK(13, "the release of the kept descriptor empties the registry", ocs_cull_descr_registry_size() == base);
+         ocs::tom::descr_refs(again) == 1 && ocs::tom::descr_registry_size() == base + 1);
+   ocs::tom::release_descr(again);
+   CHECK(13, "the release of the kept descriptor empties the registry", ocs::tom::descr_registry_size() == base);
 }
 
 /** @brief DESCR-04: the soft cap */
 static void test_soft_cap() {
-   const size_t base = ocs_cull_descr_registry_size();
-   const size_t prev = ocs_cull_descr_set_soft_cap(base + 2);
+   const size_t base = ocs::tom::descr_registry_size();
+   const size_t prev = ocs::tom::descr_set_soft_cap(base + 2);
 
    const int count = 5;
    std::vector<const lDescr *> held;
    for (int n = 0; n < count; n++) {
       lDescr dp[3];
       distinct_reduction(n, dp);
-      held.push_back(ocs_cull_descr_intern(dp));
+      held.push_back(ocs::tom::descr_intern(dp));
    }
    lDescr last[3];
    distinct_reduction(count - 1, last);
-   const lDescr *other = ocs_cull_descr_intern(last);
+   const lDescr *other = ocs::tom::descr_intern(last);
 
    bool all_counted = true;
    for (const lDescr *dp : held) {
-      all_counted = all_counted && ocs_cull_descr_is_counted(dp);
+      all_counted = all_counted && ocs::tom::descr_is_counted(dp);
    }
    CHECK(14, "above the soft cap descriptors are private counted copies and the registry stops growing",
-         all_counted && ocs_cull_descr_registry_size() == base + 2 && other != held[count - 1] &&
-         ocs_cull_descr_refs(other) == 1 && other[1].nm == held[count - 1][1].nm);
+         all_counted && ocs::tom::descr_registry_size() == base + 2 && other != held[count - 1] &&
+         ocs::tom::descr_refs(other) == 1 && other[1].nm == held[count - 1][1].nm);
 
    lDescr first[3];
    distinct_reduction(0, first);
-   const lDescr *shared = ocs_cull_descr_intern(first);
+   const lDescr *shared = ocs::tom::descr_intern(first);
    CHECK(15, "descriptors registered below the cap are still shared", shared == held[0]);
 
-   ocs_cull_descr_release(&shared);
-   ocs_cull_descr_release(&other);
+   ocs::tom::release_descr(shared);
+   ocs::tom::release_descr(other);
    for (const lDescr *dp : held) {
-      ocs_cull_descr_release(&dp);
+      ocs::tom::release_descr(dp);
    }
-   CHECK(16, "releasing everything shrinks the registry back", ocs_cull_descr_registry_size() == base);
-   ocs_cull_descr_set_soft_cap(prev);
+   CHECK(16, "releasing everything shrinks the registry back", ocs::tom::descr_registry_size() == base);
+   ocs::tom::descr_set_soft_cap(prev);
 }
 
 /**
@@ -412,7 +412,7 @@ static bool elements_borrow(const ocs::tom::ConstRawList lp) {
 
 /** @brief DESCR-05: full descriptors are the static block */
 static void test_full_static() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr lp = make_list(4);
    auto free_ep = ocs::tom::RawElementPtr::create(TD_Type);
    lDescr *heap = heap_copy(TD_Type);
@@ -428,12 +428,12 @@ static void test_full_static() {
          dechained->descr() == TD_Type);
    CHECK(18, "bound elements borrow the static block and nothing is registered",
          elements_borrow(lp.get()) && elements_borrow(copied.get()) && elements_borrow(unpacked.get()) &&
-         ocs_cull_descr_registry_size() == base);
+         ocs::tom::descr_registry_size() == base);
 }
 
 /** @brief DESCR-06: equal reductions share one descriptor across builders */
 static void test_reduced_shared() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr lp = make_list(8);
    ocs::tom::RawWhatPtr what1 = what_of(TD_Type, {TD_id, TD_name});
    ocs::tom::RawWhatPtr what2 = what_of(TD_Type, {TD_name, TD_id});
@@ -449,13 +449,13 @@ static void test_reduced_shared() {
    what1.reset();
 
    CHECK(19, "selected lists of one reduction, in either field order, share one counted descriptor",
-         sel1 && sel2 && sel1->descr() == sel2->descr() && ocs_cull_descr_is_counted(sel1->descr()) &&
+         sel1 && sel2 && sel1->descr() == sel2->descr() && ocs::tom::descr_is_counted(sel1->descr()) &&
          elements_borrow(sel1.get()) && elements_borrow(sel2.get()));
    CHECK(20, "the unpacked list and a free element of that reduction share it as well",
          unpacked && unpacked->descr() == sel1->descr() && ep->descr() == sel1->descr() &&
-         ocs_cull_descr_refs(sel1->descr()) == 4);
+         ocs::tom::descr_refs(sel1->descr()) == 4);
    CHECK(21, "a different reduction gets a descriptor of its own",
-         other && other->descr() != sel1->descr() && ocs_cull_descr_registry_size() == base + 2);
+         other && other->descr() != sel1->descr() && ocs::tom::descr_registry_size() == base + 2);
 
    other.reset();
    ep.reset();
@@ -464,12 +464,12 @@ static void test_reduced_shared() {
    sel1.reset();
    lp.reset();
    CHECK(22, "freeing the lists and elements of the reductions empties the registry",
-         ocs_cull_descr_registry_size() == base);
+         ocs::tom::descr_registry_size() == base);
 }
 
 /** @brief DESCR-07: users of a reduced descriptor in all orders */
 static void test_users_release() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr lp = make_list(6);
    ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_id, TD_value});
    ocs::tom::RawListPtr sel = select_old("sel", lp.get(), what.get());
@@ -479,41 +479,41 @@ static void test_users_release() {
 
    // a taken element takes a reference, an appended one gives it up
    ocs::tom::RawElementPtr ep = sel->take(sel->front());
-   const bool after_dechain = ocs_cull_descr_refs(dp) == 2 && ep->descr() == dp;
+   const bool after_dechain = ocs::tom::descr_refs(dp) == 2 && ep->descr() == dp;
    auto second = ocs::tom::RawListPtr::create(dp, ocs::tom::Hashing::On, "second");
    const ocs::tom::RawElement bound = second->push_back(std::move(ep));
-   const bool after_append = ocs_cull_descr_refs(dp) == 2 && bound.descr() == second->descr();
+   const bool after_append = ocs::tom::descr_refs(dp) == 2 && bound.descr() == second->descr();
    ep = second->take(second->front());
    sel.reset();
-   const bool after_list_freed = ocs_cull_descr_refs(dp) == 2 && ocs_cull_descr_registry_size() == base + 1;
+   const bool after_list_freed = ocs::tom::descr_refs(dp) == 2 && ocs::tom::descr_registry_size() == base + 1;
    second.reset();
-   const bool after_second_freed = ocs_cull_descr_refs(dp) == 1;
+   const bool after_second_freed = ocs::tom::descr_refs(dp) == 1;
    CHECK(23, "lists hold one reference each, free elements one, bound elements none",
          after_dechain && after_append && after_list_freed && after_second_freed);
    ep.reset();
-   CHECK(24, "the last user frees the descriptor", ocs_cull_descr_registry_size() == base);
+   CHECK(24, "the last user frees the descriptor", ocs::tom::descr_registry_size() == base);
 }
 
 /** @brief DESCR-08: a hash added to one list does not change other lists */
 static void test_hash_new() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr a_owner = make_list(4 * OCS_CULL_HASH_MIN_ELEMS);
    ocs::tom::RawListPtr b_owner = make_list(4);
    lList *a = a_owner.get();
    const lList *b = b_owner.get();
    const int static_mt = TD_Type[1].mt;
-   const int ok = cull_hash_new(a, TD_name, false);
+   const int ok = ocs::tom::detail::hash_new(a, TD_name, false);
 
    CHECK(25, "the list gets a private counted copy with the hash flag, its elements follow it",
-         ok == 1 && a->descr != TD_Type && ocs_cull_descr_is_counted(a->descr) && mt_do_hashing(a->descr[1].mt) &&
-         elements_borrow(a) && ocs_cull_descr_registry_size() == base);
+         ok == 1 && a->descr != TD_Type && ocs::tom::descr_is_counted(a->descr) && mt_do_hashing(a->descr[1].mt) &&
+         elements_borrow(a) && ocs::tom::descr_registry_size() == base);
    CHECK(26, "the static block and the other list are unchanged",
          TD_Type[1].mt == static_mt && !mt_do_hashing(TD_Type[1].mt) && b->descr == TD_Type);
    const ocs::tom::ConstRawElement found = a_owner->find_first(TD_name, static_cast<const char *>("n7"));
    ocs::tom::RawElementPtr ep = a_owner->take(a_owner->front());
    CHECK(27, "the added hash answers lookups, and a taken element keeps the copy",
          found && found.get<std::uint32_t>(TD_id) == 7 && list_hash_table(a, 1) != nullptr &&
-         ep->descr() == a->descr && ocs_cull_descr_refs(a->descr) == 2);
+         ep->descr() == a->descr && ocs::tom::descr_refs(a->descr) == 2);
 
    ep.reset();
    b_owner.reset();
@@ -522,41 +522,41 @@ static void test_hash_new() {
    // a hash on the first field changes the entry that carries the reference count mark of the copy
    auto g_owner = ocs::tom::RawListPtr::create(GR_Type, ocs::tom::Hashing::On, "first");
    lList *g = g_owner.get();
-   const int first_ok = cull_hash_new(g, GR_id, true);
+   const int first_ok = ocs::tom::detail::hash_new(g, GR_id, true);
    CHECK(46, "a hash added on the first field leaves the copy counted, so that freeing the list frees it",
-         first_ok == 1 && g->descr != GR_Type && ocs_cull_descr_is_counted(g->descr) &&
-         mt_is_unique(g->descr[0].mt) && ocs_cull_descr_refs(g->descr) == 1);
+         first_ok == 1 && g->descr != GR_Type && ocs::tom::descr_is_counted(g->descr) &&
+         mt_is_unique(g->descr[0].mt) && ocs::tom::descr_refs(g->descr) == 1);
 }
 
 /** @brief DESCR-09: builders and the selection cache hand out shared descriptors */
 static void test_builders() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr lp = make_list(8);
    ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_value, TD_id});
 
    ocs::tom::RawListPtr sel1 = select_old("sel1", lp.get(), what.get());
    const lDescr *dp = descr_of(sel1.get());
-   const uint32_t refs_one = ocs_cull_descr_refs(dp);
+   const uint32_t refs_one = ocs::tom::descr_refs(dp);
    ocs::tom::RawListPtr sel2 = select_old("sel2", lp.get(), what.get());
    CHECK(28, "a selection caches its reduction: a second select adds only the reference of its list",
-         refs_one == 2 && descr_of(sel2.get()) == dp && ocs_cull_descr_refs(dp) == 3 &&
-         ocs_cull_descr_registry_size() == base + 1);
+         refs_one == 2 && descr_of(sel2.get()) == dp && ocs::tom::descr_refs(dp) == 3 &&
+         ocs::tom::descr_registry_size() == base + 1);
 
    // lReduceDescr() and lGetReducedDescr() both gave the shared reduction; reduced_descr() is their core
    const lDescr *reduced = ocs::tom::reduced_descr(TD_Type, what.get());
    const lDescr *got = ocs::tom::reduced_descr(TD_Type, what.get());
    CHECK(29, "reduced_descr() returns the shared reduction with a reference each",
-         reduced == dp && got == dp && ocs_cull_descr_refs(dp) == 5);
-   ocs_cull_descr_release(&reduced);
-   ocs_cull_descr_release(&got);
+         reduced == dp && got == dp && ocs::tom::descr_refs(dp) == 5);
+   ocs::tom::release_descr(reduced);
+   ocs::tom::release_descr(got);
 
    what.reset();
-   CHECK(30, "freeing the selection gives the cached reference up", ocs_cull_descr_refs(dp) == 2);
+   CHECK(30, "freeing the selection gives the cached reference up", ocs::tom::descr_refs(dp) == 2);
 
    sel2.reset();
    sel1.reset();
    lp.reset();
-   CHECK(31, "after the last list the registry is empty again", ocs_cull_descr_registry_size() == base);
+   CHECK(31, "after the last list the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /**
@@ -599,23 +599,23 @@ static int unpack_type_ref(const uint32_t first_nm, const uint32_t count) {
 
 /** @brief DESCR-10: a full descriptor travels as a reference to its type */
 static void test_type_ref() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    lDescr *heap = heap_copy(TD_Type);
-   const lDescr *reduced = ocs_cull_descr_reduce(TD_Type, {TD_id, TD_name});
+   const lDescr *reduced = ocs::tom::descr_reduce(TD_Type, {TD_id, TD_name});
    CHECK(32, "a full descriptor is packed as a type reference, a reduced one enters the table, a flag-filtered one "
          "goes field by field",
          first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF &&
          first_word_of_packed(heap, 0) == CULL_PACK_DESCR_TYPE_REF &&
          first_word_of_packed(TD_Type, CULL_SPOOL) == 4 &&
          first_word_of_packed(reduced, 0) == CULL_PACK_DESCR_TABLE_DEF);
-   ocs_cull_descr_release(&reduced);
+   ocs::tom::release_descr(reduced);
    sge_free(&heap);
 
    ocs::tom::RawListPtr lp = make_list(3);
    ocs::tom::RawListPtr unpacked = pack_unpack(lp.get());
    CHECK(33, "the receiver takes the static block of the type and registers nothing",
          unpacked && unpacked->descr() == TD_Type && unpacked->size() == 3 &&
-         ocs_cull_descr_registry_size() == base);
+         ocs::tom::descr_registry_size() == base);
    CHECK(34, "a type reference to an unknown type, with no field or more fields than the type is a format error",
          unpack_type_ref(9999, 4) == PACK_FORMAT && unpack_type_ref(TD_id, 5) == PACK_FORMAT &&
          unpack_type_ref(TD_id, 0) == PACK_FORMAT && unpack_type_ref(TD_id, 4) == PACK_SUCCESS &&
@@ -656,7 +656,7 @@ static bool pack_unpack_many(const std::vector<const lList *> &lists, std::vecto
 
 /** @brief DESCR-11: reduced descriptors go through the descriptor table of the buffer */
 static void test_descr_table() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr lp = make_list(4);
    ocs::tom::RawWhatPtr what_a = what_of(TD_Type, {TD_id, TD_name});
    ocs::tom::RawWhatPtr what_b = what_of(TD_Type, {TD_id, TD_value});
@@ -678,7 +678,7 @@ static void test_descr_table() {
          out[3]->descr() == b1->descr() && out[1]->descr() == TD_Type && out[2]->size() == 4 &&
          out[3]->front().get<std::uint32_t>(TD_value) == 0 && out[0]->front().get<const char *>(TD_name) != nullptr);
    out.clear();
-   CHECK(37, "the buffers gave their table references up", ocs_cull_descr_refs(a1->descr()) == 2);
+   CHECK(37, "the buffers gave their table references up", ocs::tom::descr_refs(a1->descr()) == 2);
 
    // an index the buffer has not defined yet is a format error
    int forged = PACK_SUCCESS;
@@ -699,7 +699,7 @@ static void test_descr_table() {
    a2.reset();
    a1.reset();
    lp.reset();
-   CHECK(39, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
+   CHECK(39, "after the lists the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /**
@@ -771,7 +771,7 @@ static bool grown_elem_ok(const ocs::tom::ConstRawElement ep, const int sent) {
 
 /** @brief DESCR-12: types grown at the end stay readable (N-W-6) */
 static void test_grown_types() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    const std::vector<lDescr> full(GR_Type, GR_Type + 4);
    const std::vector<lDescr> shorter(GR_Type, GR_Type + 2);
    std::vector<lDescr> longer = full;
@@ -788,7 +788,7 @@ static void test_grown_types() {
    ep.reset();
    CHECK(40, "a shorter type reference and a shorter spooled type unpack into the full type with initial values "
          "after the sent fields, and the data behind them is read next",
-         ref_ok && spool_ok && ocs_cull_descr_registry_size() == base);
+         ref_ok && spool_ok && ocs::tom::descr_registry_size() == base);
 
    unpack_forged_elem(full, false, GR_Type, ep, &trailer_a);
    ref_ok = grown_elem_ok(ep.get(), 4) && trailer_a;
@@ -829,7 +829,7 @@ static void test_grown_types() {
    copy.reset();
    what.reset();
    src.reset();
-   CHECK(45, "after the elements the registry is empty again", ocs_cull_descr_registry_size() == base);
+   CHECK(45, "after the elements the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /**
@@ -850,7 +850,7 @@ static void full_length_name_flag(lDescr out[5], const bool flag_first) {
 
 /** @brief DESCR-13: slots of a full-length descriptor with absent fields */
 static void test_slots() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    CHECK(47, "a static block has a value for every field", TD_Type_blk.h.np == 4 && lCountPresent(TD_Type) == 4);
 
    lDescr built[5];
@@ -858,13 +858,13 @@ static void test_slots() {
    CHECK(48, "a plain full-length array counts its present fields",
          lCountPresent(built) == 2 && ocs::tom::descr_length(built) == 4);
 
-   const lDescr *dp = ocs_cull_descr_intern(built);
-   const cull_descr_header *h = dp != nullptr ? ocs_cull_descr_header_of(dp) : nullptr;
+   const lDescr *dp = ocs::tom::descr_intern(built);
+   const cull_descr_header *h = dp != nullptr ? ocs::tom::descr_header_of(dp) : nullptr;
    bool range_ok = h != nullptr && h->n == 4 && h->np == 2 &&
                    lCountPresent(dp) == 2 && ocs::tom::descr_length(dp) == 4;
    std::vector<std::pair<int, int>> seen;
    if (dp != nullptr) {
-      for (const auto f : ocs_cull_present_fields(dp)) {
+      for (const auto f : ocs::tom::present_fields(dp)) {
          seen.emplace_back(f.pos, f.slot);
       }
    }
@@ -873,15 +873,15 @@ static void test_slots() {
 
    lDescr swapped[5];
    full_length_name_flag(swapped, true);
-   const lDescr *dp2 = ocs_cull_descr_intern(swapped);
+   const lDescr *dp2 = ocs::tom::descr_intern(swapped);
    seen.clear();
    if (dp2 != nullptr) {
-      for (const auto f : ocs_cull_present_fields(dp2)) {
+      for (const auto f : ocs::tom::present_fields(dp2)) {
          seen.emplace_back(f.pos, f.slot);
       }
    }
    CHECK(50, "descriptors that differ only in their slot offsets are different entries",
-         dp2 != nullptr && dp2 != dp && ocs_cull_descr_registry_size() == base + 2 &&
+         dp2 != nullptr && dp2 != dp && ocs::tom::descr_registry_size() == base + 2 &&
          seen == (std::vector<std::pair<int, int>>{{3, 0}, {1, 1}}));
 
    ocs::tom::RawElementPtr ep = dp != nullptr ? ocs::tom::RawElementPtr::create(dp) : ocs::tom::RawElementPtr();
@@ -899,46 +899,46 @@ static void test_slots() {
    CHECK(51, "an element of it holds two values in their slots, read, written and copied by field name", values_ok);
    ep.reset();
 
-   ocs_cull_descr_release(&dp);
-   ocs_cull_descr_release(&dp2);
-   CHECK(52, "after the release the registry is empty again", ocs_cull_descr_registry_size() == base);
+   ocs::tom::release_descr(dp);
+   ocs::tom::release_descr(dp2);
+   CHECK(52, "after the release the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /** @brief DESCR-14: the builder of reduced descriptors from a field list (N-B-5, N-B-9) */
 static void test_reduce() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
 
-   const lDescr *a = ocs_cull_descr_reduce(TD_Type, {TD_flag, TD_name, TD_flag});
-   const lDescr *b = ocs_cull_descr_reduce(TD_Type, {TD_name, TD_flag});
+   const lDescr *a = ocs::tom::descr_reduce(TD_Type, {TD_flag, TD_name, TD_flag});
+   const lDescr *b = ocs::tom::descr_reduce(TD_Type, {TD_name, TD_flag});
    std::vector<std::pair<int, int>> seen;
    if (a != nullptr) {
-      for (const auto f : ocs_cull_present_fields(a)) {
+      for (const auto f : ocs::tom::present_fields(a)) {
          seen.emplace_back(f.pos, f.slot);
       }
    }
    bool order_ok = a != nullptr && a == b && lCountPresent(a) == 2 && ocs::tom::descr_length(a) == 4 &&
                    seen == (std::vector<std::pair<int, int>>{{1, 0}, {3, 1}}) && a[0].off == OCS_CULL_ABSENT &&
                    mt_get_type(a[1].mt) == lStringT && (a[0].mt & CULL_IS_REDUCED) != 0 &&
-                   (a[4].mt & CULL_IS_REDUCED) != 0 && ocs_cull_descr_refs(a) == 2 &&
-                   ocs_cull_descr_registry_size() == base + 1;
+                   (a[4].mt & CULL_IS_REDUCED) != 0 && ocs::tom::descr_refs(a) == 2 &&
+                   ocs::tom::descr_registry_size() == base + 1;
    CHECK(53, "a field list in any order and with duplicates yields one descriptor in type order", order_ok);
 
    ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_flag, TD_name});
    const lDescr *c = ocs::tom::reduced_descr(TD_Type, what.get());
    CHECK(54, "the builder and a selection of the same fields share the descriptor", c == a);
-   ocs_cull_descr_release(&c);
+   ocs::tom::release_descr(c);
    what.reset();
 
-   const lDescr *all = ocs_cull_descr_reduce(TD_Type, {TD_id, TD_name, TD_value, TD_flag});
+   const lDescr *all = ocs::tom::descr_reduce(TD_Type, {TD_id, TD_name, TD_value, TD_flag});
    CHECK(55, "all fields of the type yield the static block", all == TD_Type);
 
    CHECK(56, "a field of another type or no field yields nullptr",
-         ocs_cull_descr_reduce(TD_Type, {TD_id, GR_name}) == nullptr && ocs_cull_descr_reduce(TD_Type, {}) == nullptr &&
-         ocs_cull_descr_registry_size() == base + 1);
+         ocs::tom::descr_reduce(TD_Type, {TD_id, GR_name}) == nullptr &&
+               ocs::tom::descr_reduce(TD_Type, {}) == nullptr && ocs::tom::descr_registry_size() == base + 1);
 
-   ocs_cull_descr_release(&a);
-   ocs_cull_descr_release(&b);
-   CHECK(57, "after the release the registry is empty again", ocs_cull_descr_registry_size() == base);
+   ocs::tom::release_descr(a);
+   ocs::tom::release_descr(b);
+   CHECK(57, "after the release the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /**
@@ -968,7 +968,7 @@ static int unpack_forged_by_index(const std::vector<uint32_t> &indices) {
 
 /** @brief DESCR-15: the wire lists fields in type order (N-B-8) */
 static void test_wire_order() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
 
    CHECK(58, "a table entry listing field indices out of order or twice is a format error",
          unpack_forged_by_index({2, 1}) == PACK_FORMAT && unpack_forged_by_index({1, 1}) == PACK_FORMAT);
@@ -994,7 +994,7 @@ static void test_wire_order() {
    what.reset();
    lp.reset();
 
-   CHECK(60, "after the buffers the registry is empty again", ocs_cull_descr_registry_size() == base);
+   CHECK(60, "after the buffers the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /**
@@ -1031,7 +1031,7 @@ static bool reads_cleanly(const ocs::tom::ConstRawElement ep, const int nm) {
 
 /** @brief DESCR-16: positions, absent and foreign fields of full-length descriptors (N-B-2, N-B-3, N-B-4) */
 static void test_absent_fields() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    ocs::tom::RawListPtr lp = make_list(2);
    ocs::tom::RawWhatPtr what = what_of(TD_Type, {TD_name, TD_value});
    ocs::tom::RawListPtr red = select_old("red", lp.get(), what.get());
@@ -1064,12 +1064,12 @@ static void test_absent_fields() {
    red.reset();
    what.reset();
    lp.reset();
-   CHECK(67, "after the lists the registry is empty again", ocs_cull_descr_registry_size() == base);
+   CHECK(67, "after the lists the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /** @brief DESCR-17: an element of a type the installed object model does not hold (CS-439) */
 static void test_unregistered_type() {
-   const size_t base = ocs_cull_descr_registry_size();
+   const size_t base = ocs::tom::descr_registry_size();
    auto ep = ocs::tom::RawElementPtr::create(UR_Type);
    ep->set(UR_id, std::uint32_t{7});
    ep->set(UR_text, static_cast<const char *>("packed"));
@@ -1089,7 +1089,7 @@ static void test_unregistered_type() {
          pack_ret == PACK_SUCCESS && ret == PACK_FORMAT && !back);
    back.reset();
    ep.reset();
-   CHECK(69, "after the element the registry is empty again", ocs_cull_descr_registry_size() == base);
+   CHECK(69, "after the element the registry is empty again", ocs::tom::descr_registry_size() == base);
 }
 
 /**
@@ -1144,7 +1144,8 @@ int main(int argc, char *argv[]) {
        "lists and free elements hold one reference each, bound ones none, and the last user frees the descriptor",
        {{"SHD-03", "covers"}}, {23, 24}, test_users_release},
       {"DESCR-08", "added hash stays in its list",
-       "cull_hash_new() gives the list a private copy of the descriptor instead of changing the shared one",
+       "ocs::tom::detail::hash_new() gives the list a private copy of the descriptor instead of changing the shared "
+       "one",
        {"add a hash on a field of one list", "look it up and dechain an element", "add a hash on the first field"},
        "the list and its elements hold the copy with the flag, the static block and other lists are unchanged, and "
        "a copy changed in its first field stays counted",

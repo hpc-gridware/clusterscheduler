@@ -1144,7 +1144,7 @@ object_get_primary_key(const lDescr *descr) {
    int ret = NoName;
 
    if (descr != nullptr) {
-      for (const auto f : ocs_cull_present_fields(descr)) {
+      for (const auto f : ocs::tom::present_fields(descr)) {
          if (descr[f.pos].mt & CULL_PRIMARY_KEY) {
             ret = descr[f.pos].nm;
             break;
@@ -1585,7 +1585,7 @@ object_has_differences(const ocs::tom::ConstRawElement this_elem, ocs::tom::List
    bool ret = false;
    int this_count = 0;
 
-   for (const auto f : ocs_cull_present_fields(this_descr)) {
+   for (const auto f : ocs::tom::present_fields(this_descr)) {
       const int nm = this_descr[f.pos].nm;
       const ocs::tom::FieldType type = ocs::tom::field_type_of(this_descr[f.pos].mt);
       const int old_pos = ocs::tom::field_pos(old_descr, nm);
@@ -1608,7 +1608,7 @@ object_has_differences(const ocs::tom::ConstRawElement this_elem, ocs::tom::List
    // every field of this_elem is held by old_elem: they differ if old_elem holds more
    if (!ret) {
       int old_count = 0;
-      for ([[maybe_unused]] const auto f : ocs_cull_present_fields(old_descr)) {
+      for ([[maybe_unused]] const auto f : ocs::tom::present_fields(old_descr)) {
          old_count++;
       }
       if (old_count != this_count) {
@@ -1750,7 +1750,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
    /* check contents of subobject; the walk visits held fields only, of the type read, so no read throws */
    if (ret) {
       const lDescr *elem_descr = ep.descr();
-      for (const auto f : ocs_cull_present_fields(elem_descr)) {
+      for (const auto f : ocs::tom::present_fields(elem_descr)) {
          const int nm = elem_descr[f.pos].nm;
          const ocs::tom::FieldType type = ocs::tom::field_type_of(elem_descr[f.pos].mt);
          if (type == ocs::tom::FieldType::List) {
@@ -1833,7 +1833,7 @@ ocs_object_verify_type(const ocs::tom::ConstRawElement ep, const lDescr *descr) 
       return false;
    }
    // held fields only, read with their own type: no read throws, and the sub-type is not checked by a read
-   for (const auto f : ocs_cull_present_fields(elem_descr)) {
+   for (const auto f : ocs::tom::present_fields(elem_descr)) {
       const int nm = elem_descr[f.pos].nm;
       const ocs::tom::FieldType type = ocs::tom::field_type_of(elem_descr[f.pos].mt);
       if (type == ocs::tom::FieldType::List) {
@@ -1853,8 +1853,8 @@ namespace {
    /**
     * @brief The key of a unique attribute in the form the hash table of the list compares
     *
-    * Host names are normalised as `cull_hash_key()` does it (`sge_hostcpy()`, upper case), so two names that
-    * `sge_hostcmp()` takes for the same host give the same key; strings are taken as they are.
+    * Host names are normalised as `ocs::tom::detail::hash_key()` does it (`sge_hostcpy()`, upper case), so two names
+    * that `sge_hostcmp()` takes for the same host give the same key; strings are taken as they are.
     *
     * @param value the attribute's value, not nullptr
     * @param is_host whether the attribute is a host name
@@ -1899,7 +1899,7 @@ namespace {
       }
       // held fields only, read with their own type: no read throws
       const lDescr *descr = ep.descr();
-      for (const auto f : ocs_cull_present_fields(descr)) {
+      for (const auto f : ocs::tom::present_fields(descr)) {
          const int nm = descr[f.pos].nm;
          const ocs::tom::FieldType type = ocs::tom::field_type_of(descr[f.pos].mt);
          if (type == ocs::tom::FieldType::List) {
@@ -1960,7 +1960,7 @@ namespace {
 
       // the elements have the layout of the list, so each holds every field the list's descriptor holds
       const lDescr *dp = lp.descr();
-      for (const auto f : ocs_cull_present_fields(dp)) {
+      for (const auto f : ocs::tom::present_fields(dp)) {
          if (!mt_is_unique(dp[f.pos].mt)) {
             continue;
          }
@@ -2275,7 +2275,7 @@ ocs_object_list_add_unique(lList **lpp, lList **src) {
       nm = CE_name;
       keep_last = true;
    } else {
-      for (const auto f : ocs_cull_present_fields(dp)) {
+      for (const auto f : ocs::tom::present_fields(dp)) {
          if (mt_is_unique(dp[f.pos].mt) && ocs::tom::field_type_of(dp[f.pos].mt) == ocs::tom::FieldType::String) {
             nm = dp[f.pos].nm;
             break;

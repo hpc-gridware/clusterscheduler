@@ -60,7 +60,7 @@ enum {
    OW_sub,      ///< a sublist of OWS_Type
    OW_obj,      ///< a sub-object of OWS_Type
    OW_group,    ///< non unique hashed key
-   OW_count     ///< not hashed in the type, hashed later with cull_hash_new()
+   OW_count     ///< not hashed in the type, hashed later with ocs::tom::detail::hash_new()
 };
 
 /** @brief The type of the sublist and of the sub-object */
@@ -200,7 +200,8 @@ static bool pack_unpack_list(const lList *lp, ocs::tom::RawListPtr &out) {
 static const lListElem *table_str(const lList *lp, int nm, const char *key) {
    const int pos = ocs::tom::field_pos(lp->descr, nm);
    const void *iterator = nullptr;
-   return cull_hash_first(ocs_cull_hash_lookup_table(lp, pos), key, mt_is_unique(lp->descr[pos].mt), &iterator);
+   return ocs::tom::detail::hash_first(ocs::tom::detail::hash_lookup_table(lp, pos), key,
+                                       mt_is_unique(lp->descr[pos].mt), &iterator);
 }
 
 /**
@@ -218,7 +219,8 @@ static const lListElem *table_str(const lList *lp, int nm, const char *key) {
 static const lListElem *table_ulong(const lList *lp, int nm, uint32_t key) {
    const int pos = ocs::tom::field_pos(lp->descr, nm);
    const void *iterator = nullptr;
-   return cull_hash_first(ocs_cull_hash_lookup_table(lp, pos), &key, mt_is_unique(lp->descr[pos].mt), &iterator);
+   return ocs::tom::detail::hash_first(ocs::tom::detail::hash_lookup_table(lp, pos), &key,
+                                       mt_is_unique(lp->descr[pos].mt), &iterator);
 }
 
 /**
@@ -429,10 +431,10 @@ static void test_hash_follows_owner() {
 
    // a hash added to a live list on a field the type does not hash
    source.front().set(OW_count, std::uint32_t{5});
-   const bool hash_added = cull_hash_new(source, OW_count, false) == 1 && source.raw()->nslots == 3
+   const bool hash_added = ocs::tom::detail::hash_new(source, OW_count, false) == 1 && source.raw()->nslots == 3
                            && table_ulong(source, OW_count, 5) == source.front().raw();
    source.front().set(OW_count, std::uint32_t{6});
-   CHECK(23, "cull_hash_new adds a slot whose table, built by the first lookup, is maintained afterwards",
+   CHECK(23, "ocs::tom::detail::hash_new adds a slot whose table, built by the first lookup, is maintained afterwards",
          hash_added && table_ulong(source, OW_count, 6) == source.front().raw()
          && table_ulong(source, OW_count, 5) == nullptr);
 
@@ -459,7 +461,7 @@ static void test_hash_follows_owner() {
 int main(int argc, char *argv[]) {
    // the lists here are short; the maintenance of their tables is what is tested
    ocs::module_test::install_test_model({{"OW", OW_Type, OW_Name, OW_Size}, {"OWS", OWS_Type, OWS_Name, OWS_Size}});
-   ocs_cull_hash_set_min_elems(0);
+   ocs::tom::detail::hash_set_min_elems(0);
 
    return ocs::module_test::run(argc, argv, {
       {"OWNER-01", "element layout",
@@ -488,7 +490,7 @@ int main(int argc, char *argv[]) {
        "in that list's tables, whichever way the element got there",
        {"create a list, append elements and look them up", "move one with take and push_back",
         "move two with split_from", "pack and unpack a list", "change a hashed field of each moved element",
-        "add a hash on a field with cull_hash_new", "sort a list", "check the size of a descriptor entry"},
+        "add a hash on a field with ocs::tom::detail::hash_new", "sort a list", "check the size of a descriptor entry"},
        "each element is found through the tables of the list that holds it, under its new key, and not "
        "through the tables of the list it came from; the added and the sorted tables are maintained; a "
        "descriptor entry holds no table and is 12 bytes",

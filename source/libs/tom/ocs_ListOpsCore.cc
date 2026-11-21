@@ -187,7 +187,7 @@ namespace ocs::tom {
          return;
       }
       for (lListElem *ep = lp1->first; ep != nullptr && lp1 != nullptr && lp2 != nullptr;) {
-         const char *key = ocs_cull_value(ep, checked_pos(ep, nm, FieldType::String)).str;
+         const char *key = ocs::tom::detail::value(ep, checked_pos(ep, nm, FieldType::String)).str;
          // step on first, the element may be removed
          ep = ep->next;
          if (key == nullptr || find_name(lp2, nm, lStringT, key) == nullptr) {
@@ -229,7 +229,7 @@ namespace ocs::tom {
       }
       free_sort_order(so);
       auto key_of = [pos, type](const lListElem *ep) {
-         const lMultiType &value = ocs_cull_value(ep, pos);
+         const lMultiType &value = ocs::tom::detail::value(ep, pos);
          return type == lStringT ? value.str : value.host;
       };
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
@@ -247,7 +247,7 @@ namespace ocs::tom {
          n = 1;
          const int pos = present_pos(ep->descr, nm);
          if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
-            const lList *children = ocs_cull_value(ep, pos).glp;
+            const lList *children = ocs::tom::detail::value(ep, pos).glp;
             if (children != nullptr) {
                n += count_nodes(nullptr, children, nm);
             }
@@ -265,7 +265,7 @@ namespace ocs::tom {
       if (ep != nullptr) {
          const int pos = present_pos(ep->descr, nm);
          if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
-            const lList *children = ocs_cull_value(ep, pos).glp;
+            const lList *children = ocs::tom::detail::value(ep, pos).glp;
             n = children == nullptr ? 1 : count_leaves(nullptr, children, nm);
          }
       } else if (lp != nullptr) {

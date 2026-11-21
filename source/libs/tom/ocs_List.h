@@ -1129,7 +1129,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Give the list a hash table on a field if it has none, as cull_hash_new_check() does
+       * @brief Give the list a hash table on a field if it has none, as ocs::tom::detail::hash_new_check() does
        *
        * For a field the type does not hash, to speed up the lookups by it on
        * this list; like every other table, it is built by the first lookup.
@@ -1139,14 +1139,14 @@ namespace ocs::tom {
        * @tparam F a string, host or number field of the type
        * @param unique true if no two elements hold the same value in the field
        * @return true on success or if there was nothing to do, also for an empty handle; false if the table
-       *         could not be added, as cull_hash_new_check() gives 0
-       * @see Old form: cull_hash_new_check()
+       *         could not be added, as ocs::tom::detail::hash_new_check() gives 0
+       * @see Old form: ocs::tom::detail::hash_new_check()
        */
       template <auto F>
          requires FieldOf<F, T> && (detail::Textual<F> || FieldTraits<F>::type == FieldType::Uint32 ||
                                     FieldTraits<F>::type == FieldType::Uint64)
       bool add_hash(const bool unique = false) const {
-         return cull_hash_new_check(this->lp_, static_cast<int>(F), unique) != 0;
+         return ocs::tom::detail::hash_new_check(this->lp_, static_cast<int>(F), unique) != 0;
       }
 
       /**
@@ -1541,7 +1541,7 @@ namespace ocs::tom {
 
       /**
        * @brief Create an empty list of a reduced layout, as lCreateList() with a descriptor of
-       *        ocs_cull_descr_reduce() does
+       *        ocs::tom::descr_reduce() does
        * @param name the name of the list, for dumps and messages
        * @param layout the layout of the elements, from layout<F...>()
        * @param hashing whether the list keeps hash tables for its hashed fields
@@ -1585,10 +1585,10 @@ namespace ocs::tom {
             // the list takes a reference of its own on the reduction
             handle.lp_ = create_list(name, descr, hashing == Hashing::On);
          } catch (...) {
-            ocs_cull_descr_release(&descr);
+            ocs::tom::release_descr(descr);
             throw;
          }
-         ocs_cull_descr_release(&descr);
+         ocs::tom::release_descr(descr);
          return handle;
       }
 

@@ -217,13 +217,14 @@ test_errors() {
                             FieldException::Reason::ForeignField, "JB_job_name"));
 
    // the free setter on a null element: -1 and LEELEMNULL, what the old setter gave
-   cull_state_set_lerrno(0);
+   ocs::tom::detail::state_set_lerrno(0);
    const int new_null = ocs::tom::set<TEST_uint32>(nullptr, 1u);
    CHECK(14, "a null element: -1 and LEELEMNULL, like the old setter",
-         new_null == -1 && cull_state_get_lerrno() == LEELEMNULL);
-   cull_state_set_lerrno(0);
+         new_null == -1 && ocs::tom::detail::state_get_lerrno() == LEELEMNULL);
+   ocs::tom::detail::state_set_lerrno(0);
    const int new_null_str = ocs::tom::set<TEST_string>(nullptr, "x");
-   CHECK(15, "a null element for a string field: -1 and LEELEMNULL", new_null_str == -1 && cull_state_get_lerrno() == LEELEMNULL);
+   CHECK(15, "a null element for a string field: -1 and LEELEMNULL",
+         new_null_str == -1 && ocs::tom::detail::state_get_lerrno() == LEELEMNULL);
 
    // an absent number field: the free setter throws, where the old setter aborted, as for every field type since
    // CS-3062 (N-L-4); before, both returned -1, with LENEGPOS for an int field and without one for a uint64 field
@@ -280,7 +281,7 @@ test_hash_tables() {
  */
 static void
 test_create_with_descriptor() {
-   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
+   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
 
    auto full_list = ListPtr<JB>::create("full", ocs::tom::JB::descriptor.e);
    auto full_job = ElementPtr<JB>::create(ocs::tom::JB::descriptor.e);
@@ -309,7 +310,7 @@ test_create_with_descriptor() {
                                 FieldException::Reason::NullDescriptor, ""));
 
    // the list holds its own reference on the reduced descriptor, so the caller's is released independently
-   ocs_cull_descr_release(&reduced);
+   ocs::tom::release_descr(reduced);
 }
 
 /**
@@ -323,7 +324,7 @@ test_create_with_descriptor() {
  */
 static void
 test_layout() {
-   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
+   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
 
    // emplace_back and the free emplace_back (which replaced lAddElemUlong) on an existing reduced list create the
    // element with the list's descriptor
@@ -363,12 +364,12 @@ test_layout() {
    // the same pointer, and an equal descriptor at another address, are accepted
    reduced_job.get().set<JB_job_number>(9u);
    const Element<JB> same = reduced_list.get().push_back(std::move(reduced_job));
-   const lDescr *copy = ocs_cull_descr_private(reduced);
+   const lDescr *copy = ocs::tom::descr_private(reduced);
    auto copied_job = ElementPtr<JB>::create(copy);
    const bool other_address = copied_job->descr() != reduced_list->descr();
    copied_job.get().set<JB_job_number>(10u);
    const Element<JB> equal = reduced_list.get().push_back(std::move(copied_job));
-   ocs_cull_descr_release(&copy);
+   ocs::tom::release_descr(copy);
    full_list.get().push_back(std::move(full_job));
    CHECK(32, "an element with the list's descriptor or an equal one at another address is linked in",
          other_address && reduced_list.get().size() == 3 && full_list.get().size() == 1 &&
@@ -393,7 +394,7 @@ test_layout() {
    // a list that got a hash table later holds a private copy of the type's descriptor whose flags differ
    // (CULL_HASH); elements of the type itself still have its layout and must be linked in
    auto hashed = ListPtr<JB>::create("hashed", Hashing::Off);
-   const bool hash_created = cull_hash_new(hashed.get().raw(), JB_owner, false) == 1;
+   const bool hash_created = ocs::tom::detail::hash_new(hashed.get().raw(), JB_owner, false) == 1;
    const bool private_copy = hashed->descr() != ocs::tom::JB::descriptor.e;
    auto plain_owner = ElementPtr<JB>::create();
    plain_owner->set<JB_job_number>(13u);
@@ -409,7 +410,7 @@ test_layout() {
          hash_created && private_copy && hashed->size() == 2 &&
          hashed->find_first<JB_owner>("someone").raw() == plain_job && typed.get<JB_job_number>() == 14);
 
-   ocs_cull_descr_release(&reduced);
+   ocs::tom::release_descr(reduced);
 }
 
 /**
@@ -466,12 +467,12 @@ test_free_add() {
    lListElem *full = tasks->push_back(ElementPtr<JAT>::create()).raw();
    std::vector<int> seen;
    for (lListElem *ep : {static_cast<lListElem *>(nullptr), full}) {
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       seen.push_back(ocs::tom::add<JAT_status>(ep, 1));
-      seen.push_back(cull_state_get_lerrno());
-      cull_state_set_lerrno(0);
+      seen.push_back(ocs::tom::detail::state_get_lerrno());
+      ocs::tom::detail::state_set_lerrno(0);
       seen.push_back(ocs::tom::add<JAT_tix>(ep, 1.0));
-      seen.push_back(cull_state_get_lerrno());
+      seen.push_back(ocs::tom::detail::state_get_lerrno());
    }
    seen.push_back(static_cast<int>(tasks->front().get<JAT_status>()));
 

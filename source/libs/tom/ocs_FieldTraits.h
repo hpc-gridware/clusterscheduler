@@ -203,14 +203,14 @@ namespace ocs::tom {
    consteval cull_descr_block<N + 1> make_descriptor_impl(const FieldInfo (&fields)[N], std::index_sequence<I...>) {
       const lDescr entries[N + 1] = {{fields[I].nm, cull_type_of(fields[I].type) | cull_flags_of(fields[I].flags), 0}...,
                                      {NoName, lEndT, 0}};
-      return ocs_cull_descr_make(entries);
+      return ocs::tom::descr_make(entries);
    }
 
    /**
     * @brief Whether the hash tables of the list library can hold a field type
     *
-    * cull_hash_create() builds tables for 32 and 64 bit numbers, strings and host names only; for any other
-    * type it logged an error and built none, so a declared hash or uniqueness check went silently missing.
+    * ocs::tom::detail::hash_create() builds tables for 32 and 64 bit numbers, strings and host names only; for any
+    * other type it logged an error and built none, so a declared hash or uniqueness check went silently missing.
     *
     * @param type the field type
     * @return true for Uint32, Uint64, String and Host

@@ -87,9 +87,9 @@ namespace {
    int no_sink_child(const char *missing) {
       setenv("OCS_SOFT_PATH_DIR", missing, 1);
       ocs::tom::install_model(ocs::tom::gcs_model());
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       const int result = ocs::tom::set<TEST_bool>(nullptr, true);
-      return result == -1 && cull_state_get_lerrno() == LEELEMNULL && access(missing, F_OK) != 0 ? 0 : 1;
+      return result == -1 && ocs::tom::detail::state_get_lerrno() == LEELEMNULL && access(missing, F_OK) != 0 ? 0 : 1;
    }
 
    /**
@@ -152,7 +152,7 @@ namespace {
     * @return true if the setter returned -1 with that error number
     */
    [[maybe_unused]] bool returned(const int result, const int lerrno) {
-      return result == -1 && cull_state_get_lerrno() == lerrno;
+      return result == -1 && ocs::tom::detail::state_get_lerrno() == lerrno;
    }
 
    /** @brief A TEST element in a list, a reduced copy of it, and a job with its task list */
@@ -199,7 +199,7 @@ namespace {
       // (CS-3103)
 
       // a null element: -1 with LEELEMNULL, as lSetDouble() gave
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       const bool null_elem = returned(ocs::tom::set<TEST_double>(nullptr, 1.0), LEELEMNULL);
       CHECK(3, "a null element is recorded, the result is unchanged",
             null_elem && lines_for("ocs::tom::set", "TEST_double", "null-element") == 1);
@@ -207,19 +207,19 @@ namespace {
       // CHECK 4 removed: lSetPosUlong() has no TOM counterpart for its soft return, the raw set() throws (CS-3103)
 
       // a null output pointer of exchange, which replaced lXchgList(): -1 with LEELEMNULL
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       const bool null_arg = returned(ocs::tom::exchange<JB_ja_tasks>(f.job, nullptr), LEELEMNULL);
       CHECK(5, "a null argument is recorded, the result is unchanged",
             null_arg && lines_for("ocs::tom::exchange", "JB_ja_tasks", "null-argument") == 1);
 
       // an element bound in a list cannot become an object field: -1 with LEBOUNDELEM, as lSetObject() gave
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       const bool bound = returned(ocs::tom::set<TEST_obj_any>(f.reduced, f.full), LEBOUNDELEM);
       CHECK(6, "a bound element is recorded, the result is unchanged",
             bound && lines_for("ocs::tom::set", "TEST_obj_any", "bound-element") == 1);
 
       // the free setter on a null element, as the old lSetUlong
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       const bool free_setter = returned(ocs::tom::set<TEST_uint32>(nullptr, 1u), LEELEMNULL);
       CHECK(7, "the free setter records a null element like the old setter",
             free_setter && lines_for("ocs::tom::set", "TEST_uint32", "null-element") == 1);
@@ -337,11 +337,11 @@ namespace legacy_cores {
     * @return true if it threw and the error number is the expected one
     */
    bool throws_lerrno(const std::function<void()> &call, const int lerrno) {
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       try {
          call();
       } catch (const ListCoreError &) {
-         return cull_state_get_lerrno() == lerrno;
+         return ocs::tom::detail::state_get_lerrno() == lerrno;
       }
       return false;
    }
@@ -839,7 +839,7 @@ namespace legacy_cores {
             int lerrno = 0;
             bool nothing = false;
             read_text(cut.empty() ? std::string(" ") : cut, [&](FILE *fp) {
-               cull_state_set_lerrno(0);
+               ocs::tom::detail::state_set_lerrno(0);
                if (text == &elem_text) {
                   nothing = reads_nothing([fp] { return ocs::tom::undump_elem(fp, ocs::tom::TEST::descriptor.e); });
                } else if (text == &list_text) {
@@ -847,7 +847,7 @@ namespace legacy_cores {
                } else {
                   nothing = reads_nothing([fp] { return ocs::tom::undump_object(fp); });
                }
-               lerrno = cull_state_get_lerrno();
+               lerrno = ocs::tom::detail::state_get_lerrno();
             });
             all_null = all_null && nothing;
             cuts = fnv1a(reinterpret_cast<const char *>(&lerrno), sizeof(lerrno), cuts);

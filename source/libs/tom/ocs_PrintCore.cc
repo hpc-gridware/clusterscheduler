@@ -68,9 +68,9 @@ namespace ocs::tom {
          const std::string space = indent(level);
          const char *sp = space.c_str();
          sge_dstring_sprintf_append(buffer, "%s-------------------------------\n", sp);
-         for (const auto f : ocs_cull_present_fields(ep->descr)) {
+         for (const auto f : ocs::tom::present_fields(ep->descr)) {
             const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
-            const lMultiType &value = ocs_cull_value(ep, f.pos);
+            const lMultiType &value = ocs::tom::detail::value(ep, f.pos);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
                case lIntT:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", sp, name, value.i);

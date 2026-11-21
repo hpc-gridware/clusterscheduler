@@ -36,6 +36,7 @@
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_Model.h"
+#include "tom/ocs_Raw.h"
 #include "tom/ocs_SelectCore.h"
 
 namespace ocs::tom {
@@ -121,11 +122,11 @@ namespace ocs::tom {
        */
       void bind(lList *lp, lListElem *ep) {
          if (elem_kind(ep) == FREE_ELEM) {
-            ocs_cull_descr_release(&(ep->descr));
+            ocs::tom::release_descr(ep->descr);
          }
          elem_set_bound(ep, lp);
          ep->descr = lp->descr;
-         cull_hash_elem(ep);
+         ocs::tom::detail::hash_elem(ep);
          lp->nelem++;
       }
 
@@ -185,7 +186,7 @@ namespace ocs::tom {
             }
          }
       }
-      ep->descr = ocs_cull_descr_acquire(normalised != nullptr ? normalised : descr);
+      ep->descr = ocs::tom::descr_acquire(normalised != nullptr ? normalised : descr);
       sge_free(&normalised);
       if (ep->descr == nullptr) {
          sge_free(&ep);
@@ -194,9 +195,9 @@ namespace ocs::tom {
 
       elem_set_free(ep);
       // the held descriptor is static or counted, so its header knows the number of values
-      ep->cont = static_cast<lMultiType *>(calloc(1, sizeof(lMultiType) * ocs_cull_descr_header_of(ep->descr)->np));
+      ep->cont = static_cast<lMultiType *>(calloc(1, sizeof(lMultiType) * ocs::tom::descr_header_of(ep->descr)->np));
       if (ep->cont == nullptr) {
-         ocs_cull_descr_release(&(ep->descr));
+         ocs::tom::release_descr(ep->descr);
          sge_free(&ep);
          throw ListCoreError(LEMALLOC, "out of memory creating an element");
       }
@@ -224,14 +225,14 @@ namespace ocs::tom {
       lp->first = nullptr;
       lp->last = nullptr;
       // the list holds a reference on the shared descriptor instead of a copy
-      if ((lp->descr = ocs_cull_descr_acquire(descr)) == nullptr) {
+      if ((lp->descr = ocs::tom::descr_acquire(descr)) == nullptr) {
          sge_free(&(lp->listname));
          sge_free(&lp);
          throw ListCoreError(LEMALLOC, "out of memory creating a list");
       }
       // the hash tables belong to the list: one slot per hashed field if it may be hashed
-      if (!cull_hash_init_slots(lp, hash)) {
-         ocs_cull_descr_release(&(lp->descr));
+      if (!ocs::tom::detail::hash_init_slots(lp, hash)) {
+         ocs::tom::release_descr(lp->descr);
          sge_free(&(lp->listname));
          sge_free(&lp);
          throw ListCoreError(LEMALLOC, "out of memory creating a list");
@@ -249,9 +250,9 @@ namespace ocs::tom {
       }
 
       // remove a bound element from the hash tables of its list
-      cull_hash_remove_elem(ep);
+      ocs::tom::detail::hash_remove_elem(ep);
 
-      for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      for (const auto f : ocs::tom::present_fields(ep->descr)) {
          lMultiType &value = ep->cont[f.slot];
          switch (mt_get_type(ep->descr[f.pos].mt)) {
             case lIntT:
@@ -290,7 +291,7 @@ namespace ocs::tom {
 
       // a bound element borrows the descriptor of its list; the others hold a reference
       if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-         ocs_cull_descr_release(&(ep->descr));
+         ocs::tom::release_descr(ep->descr);
       }
       if (ep->cont != nullptr) {
          sge_free(&(ep->cont));
@@ -304,14 +305,14 @@ namespace ocs::tom {
          return;
       }
       // remove all hash tables first, it is more efficient than maintaining them while emptying
-      cull_hash_free_tables(lp);
+      ocs::tom::detail::hash_free_tables(lp);
       while (lp->first) {
          lListElem *ep = lp->first;
          unlink(lp, ep);
          free_elem(ep);
       }
-      cull_hash_free_slots(lp);
-      ocs_cull_descr_release(&(lp->descr));
+      ocs::tom::detail::hash_free_slots(lp);
+      ocs::tom::release_descr(lp->descr);
       if (lp->listname) {
          sge_free(&(lp->listname));
       }
@@ -328,7 +329,7 @@ namespace ocs::tom {
       } catch (const ListCoreError &) {
          throw ListCoreError(LECREATEELEM, "out of memory copying an element");
       }
-      for (const auto f : ocs_cull_present_fields(ep->descr)) {
+      for (const auto f : ocs::tom::present_fields(ep->descr)) {
          try {
             copy_field(ep, copy, f.pos, f.pos, hash, nullptr, skip_no_transfer);
          } catch (...) {
@@ -366,7 +367,7 @@ namespace ocs::tom {
       }
       if (hash) {
          // the list may be hashed from now on; its tables are built by the first lookups
-         cull_hash_create_hashtables(dst);
+         ocs::tom::make_hashable(dst);
       }
       return dst;
    }
@@ -376,8 +377,8 @@ namespace ocs::tom {
       if (src == nullptr || dst == nullptr) {
          throw_null_elem(nullptr);
       }
-      lMultiType &to = ocs_cull_value(dst, dst_pos);
-      const lMultiType &from = ocs_cull_value(src, src_pos);
+      lMultiType &to = ocs::tom::detail::value(dst, dst_pos);
+      const lMultiType &from = ocs::tom::detail::value(src, src_pos);
 
       // A field marked CULL_NO_TRANSFER holds state that is meaningful only in the process that built it.
       // A copy that will be handed out, an event payload, keeps what create_elem() gave it.
@@ -509,9 +510,9 @@ namespace ocs::tom {
       check_member(lp, ep);
       unlink(lp, ep);
       // remove the hash entries while the element still borrows the list's descriptor
-      cull_hash_remove_elem(ep);
+      ocs::tom::detail::hash_remove_elem(ep);
       // a free element holds a reference of its own
-      ep->descr = ocs_cull_descr_ref(ep->descr);
+      ep->descr = ocs::tom::descr_ref(ep->descr);
       elem_set_free(ep);
    }
 
@@ -545,17 +546,17 @@ namespace ocs::tom {
    }
 
    void exchange_list(lListElem *ep, const int pos, lList *&lp) noexcept {
-      lList *&held = ocs_cull_value(ep, pos).glp;
+      lList *&held = ocs::tom::detail::value(ep, pos).glp;
       if (lp != held) {
          std::swap(lp, held);
       }
    }
 
    lListElem *take_object(lListElem *ep, const int pos) noexcept {
-      lListElem *const held = ocs_cull_value(ep, pos).obj;
+      lListElem *const held = ocs::tom::detail::value(ep, pos).obj;
       if (held != nullptr) {
          elem_set_free(held);
-         ocs_cull_value(ep, pos).obj = nullptr;
+         ocs::tom::detail::value(ep, pos).obj = nullptr;
       }
       return held;
    }
@@ -723,11 +724,11 @@ namespace ocs::tom {
    lListElem *add_elem_at(lList *&lp, const int pos, const KeyArgOf<T> key, const lDescr *descr) {
       if constexpr (T == FieldType::Uint32) {
          return add_with_key(lp, pos, descr, "ulong_sublist", [pos, key](lListElem *ep) {
-            ocs_cull_value(ep, pos).ul = key;
+            ocs::tom::detail::value(ep, pos).ul = key;
          });
       } else if constexpr (T == FieldType::Uint64) {
          return add_with_key(lp, pos, descr, "ulong64_sublist", [pos, key](lListElem *ep) {
-            ocs_cull_value(ep, pos).ul64 = key;
+            ocs::tom::detail::value(ep, pos).ul64 = key;
          });
       } else {
          return add_with_key(lp, pos, descr, "", [pos, key](lListElem *ep) {
@@ -762,7 +763,7 @@ namespace ocs::tom {
       if (mt_get_type(ep->descr[pos].mt) != lListT) [[unlikely]] {
          throw_field_exception(FieldException::Reason::WrongType, ep->descr[pos].nm, ep->descr);
       }
-      lList *&held = ocs_cull_value(ep, pos).glp;
+      lList *&held = ocs::tom::detail::value(ep, pos).glp;
       if (held == nullptr) {
          lList *lp = create_list(name != nullptr ? name : ocs::tom::field_name(ep->descr[pos].nm), descr, true);
          store_list(ep, pos, lp);

@@ -54,7 +54,7 @@ namespace ocs::tom {
       thread_local int unique_check_suspended = 0;
 
       /**
-       * @brief The hash key of a new value, normalised like cull_hash_key() normalises the stored one
+       * @brief The hash key of a new value, normalised like ocs::tom::detail::hash_key() normalises the stored one
        * @param mt the field's multitype
        * @param value the new value, as for check_unique_on_set()
        * @param host_key buffer for a normalised host name
@@ -105,9 +105,9 @@ namespace ocs::tom {
        * @return the other element, or nullptr
        */
       const lListElem *find_other(const lList *lp, const int pos, const lListElem *self, const void *key) {
-         if (const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos); ht != nullptr) {
+         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
             const void *iterator = nullptr;
-            const lListElem *found = cull_hash_first(ht, key, true, &iterator);
+            const lListElem *found = ocs::tom::detail::hash_first(ht, key, true, &iterator);
             return found != self ? found : nullptr;
          }
          const int mt = lp->descr[pos].mt;
@@ -116,7 +116,7 @@ namespace ocs::tom {
             if (ep == self) {
                continue;
             }
-            const void *other = cull_hash_key(ep, pos, host_key);
+            const void *other = ocs::tom::detail::hash_key(ep, pos, host_key);
             if (other != nullptr && keys_equal(mt, other, key)) {
                return ep;
             }
@@ -142,7 +142,7 @@ namespace ocs::tom {
        * @brief The first element of a list that holds a value in a field, the lookup of the core
        *
        * Through the field's table where the list has one or reaches the hash
-       * threshold, building it if needed (#ocs_cull_hash_lookup_table, which
+       * threshold, building it if needed (#ocs::tom::detail::hash_lookup_table, which
        * throws on a repeated key of a unique field). Otherwise by a linear
        * search that stops at the first match; only a debug build goes on to
        * the end of the list for a unique field and throws on a second match
@@ -163,8 +163,8 @@ namespace ocs::tom {
                               const void **iterator) {
          *iterator = nullptr;
          const int mt = lp->descr[pos].mt;
-         if (const cull_htable ht = ocs_cull_hash_lookup_table(lp, pos); ht != nullptr) {
-            return cull_hash_first(ht, hash_key, mt_is_unique(mt), iterator);
+         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
+            return ocs::tom::detail::hash_first(ht, hash_key, mt_is_unique(mt), iterator);
          }
 #ifdef ENABLE_DEBUG_CHECKS
          const bool to_end = mt_do_hashing(mt) && mt_is_unique(mt);
@@ -183,7 +183,7 @@ namespace ocs::tom {
                }
             } else {
                char host_key[CL_MAXHOSTNAMELEN + 1];
-               const void *key = cull_hash_key(ep, pos, host_key);
+               const void *key = ocs::tom::detail::hash_key(ep, pos, host_key);
                throw_duplicate_key(lp->descr[pos].nm, lp->descr, key != nullptr ? key_text(mt, key) : "",
                                    lp->listname);
             }
@@ -212,7 +212,7 @@ namespace ocs::tom {
             return nullptr;
          }
          if (const cull_htable ht = list_hash_table(lp, pos); ht != nullptr) {
-            return cull_hash_next(ht, iterator);
+            return ocs::tom::detail::hash_next(ht, iterator);
          }
          for (lListElem *ep = static_cast<const lListElem *>(*iterator)->next; ep != nullptr; ep = ep->next) {
             if (match(ep)) {
@@ -249,15 +249,15 @@ namespace ocs::tom {
    lListElem *lookup_first(const lList *lp, const int pos, const KeyArgOf<T> value, const void **iterator) {
       if constexpr (T == FieldType::Uint32) {
          return search_first(lp, pos, &value, [pos, value](const lListElem *ep) {
-            return ocs_cull_value(ep, pos).ul == value;
+            return ocs::tom::detail::value(ep, pos).ul == value;
          }, iterator);
       } else if constexpr (T == FieldType::Uint64) {
          return search_first(lp, pos, &value, [pos, value](const lListElem *ep) {
-            return ocs_cull_value(ep, pos).ul64 == value;
+            return ocs::tom::detail::value(ep, pos).ul64 == value;
          }, iterator);
       } else if constexpr (T == FieldType::String) {
          return search_first(lp, pos, value, [pos, value](const lListElem *ep) {
-            const char *s = ocs_cull_value(ep, pos).str;
+            const char *s = ocs::tom::detail::value(ep, pos).str;
             return s != nullptr && strcmp(s, value) == 0;
          }, iterator);
       } else {
@@ -267,7 +267,7 @@ namespace ocs::tom {
          char wanted[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(wanted, value);
          return search_first(lp, pos, host_key, [pos, &wanted](const lListElem *ep) {
-            return same_host(ocs_cull_value(ep, pos).host, wanted);
+            return same_host(ocs::tom::detail::value(ep, pos).host, wanted);
          }, iterator);
       }
    }
@@ -277,22 +277,22 @@ namespace ocs::tom {
    lListElem *lookup_next(const lList *lp, const int pos, const KeyArgOf<T> value, const void **iterator) {
       if constexpr (T == FieldType::Uint32) {
          return search_next(lp, pos, [pos, value](const lListElem *ep) {
-            return ocs_cull_value(ep, pos).ul == value;
+            return ocs::tom::detail::value(ep, pos).ul == value;
          }, iterator);
       } else if constexpr (T == FieldType::Uint64) {
          return search_next(lp, pos, [pos, value](const lListElem *ep) {
-            return ocs_cull_value(ep, pos).ul64 == value;
+            return ocs::tom::detail::value(ep, pos).ul64 == value;
          }, iterator);
       } else if constexpr (T == FieldType::String) {
          return search_next(lp, pos, [pos, value](const lListElem *ep) {
-            const char *s = ocs_cull_value(ep, pos).str;
+            const char *s = ocs::tom::detail::value(ep, pos).str;
             return s != nullptr && strcmp(s, value) == 0;
          }, iterator);
       } else {
          char wanted[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(wanted, value);
          return search_next(lp, pos, [pos, &wanted](const lListElem *ep) {
-            return same_host(ocs_cull_value(ep, pos).host, wanted);
+            return same_host(ocs::tom::detail::value(ep, pos).host, wanted);
          }, iterator);
       }
    }
@@ -330,14 +330,14 @@ namespace ocs::tom {
          return;
       }
       const lDescr *descr = lp->descr;
-      const uint32_t n = ocs_cull_descr_header_of(descr)->n;
+      const uint32_t n = ocs::tom::descr_header_of(descr)->n;
       char host_key[CL_MAXHOSTNAMELEN + 1];
       for (uint32_t pos = 0; pos < n; pos++) {
          const int mt = descr[pos].mt;
          if (!mt_do_hashing(mt) || !mt_is_unique(mt) || ep->descr[pos].off == OCS_CULL_ABSENT) {
             continue;
          }
-         const void *key = cull_hash_key(ep, static_cast<int>(pos), host_key);
+         const void *key = ocs::tom::detail::hash_key(ep, static_cast<int>(pos), host_key);
          if (key != nullptr && find_other(lp, static_cast<int>(pos), ep, key) != nullptr) {
             throw_duplicate_key(descr[pos].nm, descr, key_text(mt, key), lp->listname);
          }
@@ -459,7 +459,7 @@ namespace ocs::tom {
 
    bool store_string(lListElem *ep, const int pos, const char *value) {
       const bool is_host = mt_get_type(ep->descr[pos].mt) == lHostT;
-      char *old_value = is_host ? ocs_cull_value(ep, pos).host : ocs_cull_value(ep, pos).str;
+      char *old_value = is_host ? ocs::tom::detail::value(ep, pos).host : ocs::tom::detail::value(ep, pos).str;
 
       // nothing to do if both are unset or both hold the same text
       if (value == old_value || (value != nullptr && old_value != nullptr && strcmp(value, old_value) == 0)) {
@@ -477,23 +477,23 @@ namespace ocs::tom {
       }
 
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
+         ocs::tom::detail::hash_remove(ep, pos);
       }
 
       if (is_host) {
-         sge_free(&(ocs_cull_value(ep, pos).host));
-         ocs_cull_value(ep, pos).host = new_value;
+         sge_free(&(ocs::tom::detail::value(ep, pos).host));
+         ocs::tom::detail::value(ep, pos).host = new_value;
       } else {
-         sge_free(&(ocs_cull_value(ep, pos).str));
-         ocs_cull_value(ep, pos).str = new_value;
+         sge_free(&(ocs::tom::detail::value(ep, pos).str));
+         ocs::tom::detail::value(ep, pos).str = new_value;
       }
 
-      ocs_cull_hash_insert_changed(ep, pos);
+      ocs::tom::detail::hash_insert_changed(ep, pos);
       return true;
    }
 
    void store_hashed_number(lListElem *ep, const int pos, const std::uint64_t value) {
-      lMultiType &slot = ocs_cull_value(ep, pos);
+      lMultiType &slot = ocs::tom::detail::value(ep, pos);
       const bool is_32 = mt_get_type(ep->descr[pos].mt) == lUlongT;
       if (is_32 ? slot.ul == static_cast<lUlong>(value) : slot.ul64 == value) {
          return;
@@ -506,34 +506,34 @@ namespace ocs::tom {
       }
 
       if (elem_hash_table(ep, pos) != nullptr) {
-         cull_hash_remove(ep, pos);
+         ocs::tom::detail::hash_remove(ep, pos);
       }
       if (is_32) {
          slot.ul = static_cast<lUlong>(value);
       } else {
          slot.ul64 = value;
       }
-      ocs_cull_hash_insert_changed(ep, pos);
+      ocs::tom::detail::hash_insert_changed(ep, pos);
    }
 
    void store_list(lListElem *ep, const int pos, lList *value) {
-      if (value != ocs_cull_value(ep, pos).glp) {
-         free_list(ocs_cull_value(ep, pos).glp);
-         ocs_cull_value(ep, pos).glp = value;
+      if (value != ocs::tom::detail::value(ep, pos).glp) {
+         free_list(ocs::tom::detail::value(ep, pos).glp);
+         ocs::tom::detail::value(ep, pos).glp = value;
       }
    }
 
    bool store_object(lListElem *ep, const int pos, lListElem *value) {
       // the object the field holds already: nothing to do (N-L-4, CS-3062)
-      if (value != nullptr && value == ocs_cull_value(ep, pos).obj) {
+      if (value != nullptr && value == ocs::tom::detail::value(ep, pos).obj) {
          return true;
       }
       if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
          return false;
       }
-      if (value != ocs_cull_value(ep, pos).obj) {
-         free_elem(ocs_cull_value(ep, pos).obj);
-         ocs_cull_value(ep, pos).obj = value;
+      if (value != ocs::tom::detail::value(ep, pos).obj) {
+         free_elem(ocs::tom::detail::value(ep, pos).obj);
+         ocs::tom::detail::value(ep, pos).obj = value;
          if (value != nullptr) {
             elem_set_object(value);
          }
@@ -542,7 +542,7 @@ namespace ocs::tom {
    }
 
    void set_lerrno(const int code) {
-      cull_state_set_lerrno(code);
+      ocs::tom::detail::state_set_lerrno(code);
    }
 
    namespace {
@@ -577,7 +577,7 @@ namespace ocs::tom {
          return nullptr;
       }
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
-         const char *s = ocs_cull_value(ep, pos).str;
+         const char *s = ocs::tom::detail::value(ep, pos).str;
          if (s != nullptr && SGE_STRCASECMP(s, value) == 0) {
             return ep;
          }
@@ -599,7 +599,7 @@ namespace ocs::tom {
       const std::size_t len = strlen(value);
       const bool prefix = len > 0 && value[len - 1] == '*';
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
-         const char *s = ocs_cull_value(ep, pos).str;
+         const char *s = ocs::tom::detail::value(ep, pos).str;
          if (s != nullptr && (strcmp(s, value) == 0 || (prefix && strncmp(s, value, len - 1) == 0))) {
             return ep;
          }

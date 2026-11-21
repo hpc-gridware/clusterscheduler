@@ -172,11 +172,11 @@ test_type_names() {
    CHECK(8, "type_name() of the full descriptor of every type is the type's name", mismatches == 0);
 
    // a reduced descriptor without the first field of the type: the first entry is kept, marked absent
-   const lDescr *reduced = ocs_cull_descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_name, JB_owner});
+   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_name, JB_owner});
    const char *reduced_name = ocs::tom::type_name(reduced);
    CHECK(9, "type_name() of a reduced descriptor without the type's first field is the type's name",
          reduced != nullptr && reduced_name != nullptr && std::strcmp(reduced_name, "JB") == 0);
-   ocs_cull_descr_release(&reduced);
+   ocs::tom::release_descr(reduced);
 
    const lDescr empty[] = {{NoName, lEndT, 0}};
    CHECK(10, "type_name() of nullptr, of an empty descriptor and of the tail of a descriptor is nullptr",
@@ -286,8 +286,8 @@ test_other_thread() {
    bool static_found = false;
    bool answers = false;
    std::thread other([&static_found, &answers] {
-      static_found = ocs_cull_descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
-                     ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e);
+      static_found = ocs::tom::descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
+                     ocs::tom::descr_is_static(ocs::tom::JB::descriptor.e);
       const char *type = ocs::tom::type_name(ocs::tom::JB::descriptor.e);
       answers = ocs::tom::has_model() && std::strcmp(ocs::tom::field_name(JB_job_number), "JB_job_number") == 0 &&
                 ocs::tom::find_field("JB_job_number") == JB_job_number &&
@@ -474,26 +474,26 @@ test_static_descriptors() {
          ocs::tom::type_table(beyond) == nullptr && ocs::tom::type_table(NoName) == nullptr);
 
    int pos = -1;
-   const lDescr *containing = ocs_cull_descr_static_containing(JB_owner, &pos);
+   const lDescr *containing = ocs::tom::descr_static_containing(JB_owner, &pos);
    int unknown_pos = -1;
    CHECK(40, "the static block lookups give JB and the field's position, nothing for a later or unknown field",
-         ocs_cull_descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
-         ocs_cull_descr_static_for(JB_owner) == nullptr &&
-         ocs_cull_descr_static_for(beyond) == nullptr && containing == ocs::tom::JB::descriptor.e &&
-         pos == JB_owner - JB_job_number && ocs_cull_descr_static_containing(beyond, &unknown_pos) == nullptr &&
-         unknown_pos == -1 && ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e));
+         ocs::tom::descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
+         ocs::tom::descr_static_for(JB_owner) == nullptr &&
+         ocs::tom::descr_static_for(beyond) == nullptr && containing == ocs::tom::JB::descriptor.e &&
+         pos == JB_owner - JB_job_number && ocs::tom::descr_static_containing(beyond, &unknown_pos) == nullptr &&
+         unknown_pos == -1 && ocs::tom::descr_is_static(ocs::tom::JB::descriptor.e));
 
    ocs::tom::uninstall_model();
    int none_pos = -1;
    const bool none = ocs::tom::type_table(JB_job_number) == nullptr &&
-                     ocs_cull_descr_static_for(JB_job_number) == nullptr &&
-                     ocs_cull_descr_static_containing(JB_owner, &none_pos) == nullptr && none_pos == -1 &&
-                     !ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e);
+                     ocs::tom::descr_static_for(JB_job_number) == nullptr &&
+                     ocs::tom::descr_static_containing(JB_owner, &none_pos) == nullptr && none_pos == -1 &&
+                     !ocs::tom::descr_is_static(ocs::tom::JB::descriptor.e);
    const bool again = ocs::tom::install_model(ocs::tom::gcs_model());
    CHECK(41, "without a model no type and no static block is found", none);
    CHECK(42, "installed again: JB is the static block of the job type again",
-         again && ocs_cull_descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
-         ocs_cull_descr_is_static(ocs::tom::JB::descriptor.e));
+         again && ocs::tom::descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&
+         ocs::tom::descr_is_static(ocs::tom::JB::descriptor.e));
 }
 
 /**

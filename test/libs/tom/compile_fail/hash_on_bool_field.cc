@@ -23,7 +23,7 @@
  *
  * The hash tables of the list library hold 32 and 64 bit numbers, strings and
  * host names only; make_descriptor() refuses Hash or Unique on any other field
- * type at compile time, where cull_hash_create() logged an error at run time
+ * type at compile time, where ocs::tom::detail::hash_create() logged an error at run time
  * and built no table. The build compiles this file as an expected failure, see
  * expect_compile_failure.cmake; the error must match the line below.
  *

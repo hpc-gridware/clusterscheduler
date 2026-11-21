@@ -93,13 +93,13 @@ static module_result probe_module(const char *name) {
    const auto release = reinterpret_cast<release_func>(dlsym(handle, "test_cull_plugin_release"));
 #pragma GCC diagnostic pop
    if (intern != nullptr && release != nullptr) {
-      const size_t base = ocs_cull_descr_registry_size();
-      const lDescr *mine = ocs_cull_descr_intern(RED);
+      const size_t base = ocs::tom::descr_registry_size();
+      const lDescr *mine = ocs::tom::descr_intern(RED);
       const lDescr *theirs = intern(RED);
       r.same_descr = mine != nullptr && mine == theirs;
-      r.growth = ocs_cull_descr_registry_size() - base;
+      r.growth = ocs::tom::descr_registry_size() - base;
       release(&theirs);
-      ocs_cull_descr_release(&mine);
+      ocs::tom::release_descr(mine);
    }
    dlclose(handle);
    return r;

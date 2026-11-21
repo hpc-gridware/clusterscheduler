@@ -44,18 +44,27 @@
 #    unit any more, the compiler refuses its names. The TOM headers still need
 #    internal headers of the list library for their inline code, so the
 #    internals declared there stay reachable until a later CS-3103 step moves
-#    them behind detail headers of tom: tom/detail/ocs_Hash.h (cull_hash_*,
-#    ocs_cull_hash_*), tom/detail/ocs_ListP.h (ocs_cull_slot(), elem_kind(),
-#    elem_set_*(), list_hash_table(), ...), tom/detail/ocs_MultitypeP.h
-#    (ocs_cull_value(), ocs_cull_bad_slot()), tom/detail/ocs_WhatP.h and
-#    tom/ocs_Descr.h (lCountPresent(), ocs_cull_descr_*()). Outside the
-#    same exceptions no file may call one of them. The names are taken from the
-#    declarations in these headers (a declaration starts in column 0), except
-#    ocs_cull_descr_make*(), which LISTDEF expands to in every object type
-#    definition. A call is a name as a whole word, not after `.`, `->` or `::`,
-#    followed by `(`; comments, string and character literals are removed
-#    first. A plain substring search finds the candidate files; only those are
-#    cleaned and scanned with a regular expression.
+#    them behind detail headers of tom: tom/detail/ocs_Hash.h
+#    (ocs::tom::detail::hash_*()), tom/detail/ocs_ListP.h
+#    (ocs::tom::detail::slot_index(), elem_kind(), elem_set_*(),
+#    list_hash_table(), ...), tom/detail/ocs_MultitypeP.h
+#    (ocs::tom::detail::value(), ocs::tom::detail::bad_slot()),
+#    tom/detail/ocs_WhatP.h and tom/ocs_Descr.h (lCountPresent(),
+#    ocs::tom::descr_*()). Outside the same exceptions no file may call one of
+#    them. The names are taken from the declarations in these headers: a
+#    declaration of a global name starts in column 0, one in a namespace block
+#    (`namespace ocs::tom {` or `namespace ocs::tom::detail {` in column 0) is
+#    indented by one level, three blanks (documentation and bodies are indented
+#    deeper). Left out are descr_make*(), which LISTDEF expands to in every
+#    object type definition, and the names the public raw API tom/ocs_Raw.h
+#    declares as well (release_descr(), ...). A call of a global name is the
+#    name as a whole word, not after `.`, `->` or `::`, followed by `(`; a call
+#    of a name of a namespace is the name qualified with `tom::` or `detail::`
+#    (ocs::tom::descr_ref(), ocs::tom::detail::hash_key(), ...), followed by
+#    `(`; an unqualified call inside a namespace block of ocs::tom is not
+#    found. Comments, string and character literals are removed first. A plain
+#    substring search finds the candidate files; only those are cleaned and
+#    scanned with a regular expression.
 #
 # Arguments (-D): SOURCE_DIR (the clusterscheduler checkout), EXTENSIONS_DIR
 # (the extensions checkout, optional), STAMP (optional, touched when the scan
@@ -90,37 +99,92 @@ string(REPLACE ";" "|" include_alternation "${include_alternation}")
 set(include_pattern "#[ \t]*include[ \t]*[<\"]([^>\"\n]*/)?(${include_alternation})[>\"]")
 
 # ---- the internals product code must not call
-set(internal_headers detail/ocs_Hash.h detail/ocs_ListP.h detail/ocs_MultitypeP.h detail/ocs_WhatP.h ocs_Descr.h)
-set(internal_names "")
-foreach (header IN LISTS internal_headers)
-   # a declaration starts in column 0 (documentation and bodies are indented); the name is the first identifier
-   # followed by `(`, also where the return type is on the line before
-   file(STRINGS "${SOURCE_DIR}/source/libs/tom/${header}" decls REGEX "^[A-Za-z_][^;{}=]*\\(")
-   foreach (decl IN LISTS decls)
+# collect_declarations(<header> <global names var> <member names var>): the names a header declares, global ones
+# (a declaration starts in column 0) and members of a namespace block opened in column 0 (a declaration is indented
+# by three blanks; documentation and bodies are indented deeper). The name is the first identifier followed by `(`,
+# also where the return type is on the line before.
+function(collect_declarations header global_var member_var)
+   set(global_names "")
+   set(member_names "")
+   set(depth 0)
+   file(STRINGS "${header}" lines)
+   foreach (line IN LISTS lines)
+      if (line MATCHES "^namespace [A-Za-z_][A-Za-z0-9_:]*[ \t]*\{")
+         math(EXPR depth "${depth} + 1")
+         continue ()
+      endif ()
+      if (depth GREATER 0 AND line MATCHES "^\}")
+         math(EXPR depth "${depth} - 1")
+         continue ()
+      endif ()
+      # an attribute such as [[nodiscard]] in front of a declaration
+      string(REGEX REPLACE "^([ \t]*)\\[\\[[^]]*\\]\\][ \t]*" "\\1" line "${line}")
+      if (depth EQUAL 0)
+         set(indent "")
+      else ()
+         set(indent "   ")
+      endif ()
+      if (NOT line MATCHES "^${indent}[A-Za-z_][^;{}=]*\\(")
+         continue ()
+      endif ()
+      string(STRIP "${line}" decl)
       if (decl MATCHES "^(typedef|using|namespace|class|struct|enum|template|static_assert|return)[^A-Za-z0-9_]")
          continue ()
       endif ()
       if (decl MATCHES "([A-Za-z_][A-Za-z0-9_]*)[ \t]*\\(")
-         list(APPEND internal_names "${CMAKE_MATCH_1}")
+         if (depth EQUAL 0)
+            list(APPEND global_names "${CMAKE_MATCH_1}")
+         else ()
+            list(APPEND member_names "${CMAKE_MATCH_1}")
+         endif ()
       endif ()
    endforeach ()
+   set(${global_var} "${global_names}" PARENT_SCOPE)
+   set(${member_var} "${member_names}" PARENT_SCOPE)
+endfunction()
+
+set(internal_headers detail/ocs_Hash.h detail/ocs_ListP.h detail/ocs_MultitypeP.h detail/ocs_WhatP.h ocs_Descr.h)
+set(internal_names "")
+set(internal_member_names "")
+foreach (header IN LISTS internal_headers)
+   collect_declarations("${SOURCE_DIR}/source/libs/tom/${header}" global_names member_names)
+   list(APPEND internal_names ${global_names})
+   list(APPEND internal_member_names ${member_names})
 endforeach ()
-# ocs_cull_descr_make*() is what LISTDEF expands to in the object type definitions
-list(FILTER internal_names EXCLUDE REGEX "^ocs_cull_descr_make")
+# descr_make*() is what LISTDEF expands to in the object type definitions
+list(FILTER internal_member_names EXCLUDE REGEX "^descr_make")
+# what the public raw API declares as well is public
+collect_declarations("${SOURCE_DIR}/source/libs/tom/ocs_Raw.h" public_global_names public_member_names)
+foreach (name IN LISTS public_member_names)
+   list(REMOVE_ITEM internal_member_names "${name}")
+endforeach ()
 list(REMOVE_DUPLICATES internal_names)
-# The candidate search: the names up to their second `_` (cull_hash_, ocs_cull_, elem_set_, ...), or whole,
-# searched with string(FIND), which costs far less than a regular expression over every file.
-set(internal_stems "")
+list(REMOVE_DUPLICATES internal_member_names)
+# The candidate search: the names up to their second `_` (elem_set_, hash_new_, ...), or whole, a member name
+# with the `::` in front of it, searched with string(FIND), which costs far less than a regular expression over
+# every file.
+set(global_stems "")
 foreach (name IN LISTS internal_names)
    if (name MATCHES "^([A-Za-z0-9]*_[A-Za-z0-9]*_)")
-      list(APPEND internal_stems "${CMAKE_MATCH_1}")
+      list(APPEND global_stems "${CMAKE_MATCH_1}")
    else ()
-      list(APPEND internal_stems "${name}")
+      list(APPEND global_stems "${name}")
+   endif ()
+endforeach ()
+list(REMOVE_DUPLICATES global_stems)
+set(internal_stems ${global_stems})
+foreach (name IN LISTS internal_member_names)
+   if (name MATCHES "^([A-Za-z0-9]*_[A-Za-z0-9]*_)")
+      list(APPEND internal_stems "::${CMAKE_MATCH_1}")
+   else ()
+      list(APPEND internal_stems "::${name}")
    endif ()
 endforeach ()
 list(REMOVE_DUPLICATES internal_stems)
-string(REPLACE ";" "|" stems_alternation "${internal_stems}")
+string(REPLACE ";" "|" stems_alternation "${global_stems}")
 set(call_pattern "[^A-Za-z0-9_.>:](${stems_alternation})[A-Za-z0-9_]*[ \t]*\\(")
+string(REPLACE ";" "|" members_alternation "${internal_member_names}")
+set(member_call_pattern "(tom|detail)::(${members_alternation})[ \t]*\\(")
 # a string literal, a character literal, a line comment or a block comment; the leftmost match wins, so a
 # comment start inside a literal stays part of the literal and a quote inside a comment part of the comment
 string(CONCAT noise_pattern "\"[^\"\\\\\n]*(\\\\.[^\"\\\\\n]*)*\"|'[^'\\\\\n]*(\\\\.[^'\\\\\n]*)*'"
@@ -184,6 +248,14 @@ foreach (root IN LISTS roots)
             list(APPEND called "${CMAKE_MATCH_1}()")
          endif ()
       endforeach ()
+      if (internal_member_names)
+         string(REGEX MATCHALL "${member_call_pattern}" calls "${content}")
+         foreach (call IN LISTS calls)
+            if (call MATCHES "::([A-Za-z_][A-Za-z0-9_]*)[ \t]*\\($" AND CMAKE_MATCH_1 IN_LIST internal_member_names)
+               list(APPEND called "${CMAKE_MATCH_1}()")
+            endif ()
+         endforeach ()
+      endif ()
       if (called)
          list(REMOVE_DUPLICATES called)
          string(REPLACE ";" ", " called "${called}")

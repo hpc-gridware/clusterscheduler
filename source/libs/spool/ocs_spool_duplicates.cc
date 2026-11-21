@@ -94,7 +94,7 @@ namespace ocs::spool {
     * @param type the object type, for the message
     */
    DuplicateFilter::DuplicateFilter(const lDescr *descr, std::string type) : type_(std::move(type)) {
-      for (const auto f : ocs_cull_present_fields(descr)) {
+      for (const auto f : ocs::tom::present_fields(descr)) {
          if (mt_is_unique(descr[f.pos].mt)) {
             fields_.push_back(descr[f.pos].nm);
          }

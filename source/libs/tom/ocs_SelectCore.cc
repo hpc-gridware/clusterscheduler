@@ -43,6 +43,7 @@
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_ListCore.h"
+#include "tom/ocs_Raw.h"
 
 namespace ocs::tom {
 
@@ -140,7 +141,7 @@ namespace ocs::tom {
          if (mt_get_type(ep->descr[pos].mt) != mt_get_type(cp->operand.cmp.mt)) [[unlikely]] {
             incompatibleType("lCompare");
          }
-         return ocs_cull_value(ep, pos);
+         return ocs::tom::detail::value(ep, pos);
       }
 
       /**
@@ -556,10 +557,10 @@ namespace ocs::tom {
       }
       // the shared reduction, cached in the selection; it sets the error number when it fails
       bool owned;
-      cull_state_set_lerrno(0);
-      const lDescr *descr = ocs_cull_what_descr(what, lp->descr, &owned);
+      ocs::tom::detail::state_set_lerrno(0);
+      const lDescr *descr = ocs::tom::detail::what_descr(what, lp->descr, &owned);
       if (descr == nullptr) {
-         throw ListCoreError(cull_state_get_lerrno(), "reducing the descriptor of a selection failed");
+         throw ListCoreError(ocs::tom::detail::state_get_lerrno(), "reducing the descriptor of a selection failed");
       }
       lList *dst;
       try {
@@ -567,12 +568,12 @@ namespace ocs::tom {
          dst = create_list(name, descr, false);
       } catch (const ListCoreError &) {
          if (owned) {
-            ocs_cull_descr_release(&descr);
+            ocs::tom::release_descr(descr);
          }
          throw ListCoreError(LECREATELIST, "out of memory creating the list of a selection");
       }
       if (owned) {
-         ocs_cull_descr_release(&descr);
+         ocs::tom::release_descr(descr);
       }
 
       // a selection from a list that was checked for duplicate keys when it was filled cannot create one
@@ -598,7 +599,7 @@ namespace ocs::tom {
       }
       if (hash) {
          // the list may be hashed from now on; its tables are built by the first lookups
-         cull_hash_create_hashtables(dst);
+         ocs::tom::make_hashable(dst);
       }
       return dst;
    }
@@ -610,8 +611,8 @@ namespace ocs::tom {
       for (int i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
          free_what(ep[i].ep);
       }
-      ocs_cull_descr_release(&(ep[0].cache_dp));
-      ocs_cull_descr_release(&(ep[0].cache_src));
+      ocs::tom::release_descr(ep[0].cache_dp);
+      ocs::tom::release_descr(ep[0].cache_src);
       sge_free(&ep);
    }
 
@@ -762,7 +763,7 @@ namespace ocs::tom {
       }
       switch (what[0].pos) {
          case WHAT_ALL:
-            for (const auto f : ocs_cull_present_fields(src->descr)) {
+            for (const auto f : ocs::tom::present_fields(src->descr)) {
                copy_field_or_throw(src, dst, f.pos, hash, what[0].ep, skip_no_transfer);
             }
             break;
@@ -790,10 +791,10 @@ namespace ocs::tom {
       }
       // the shared reduction, cached in the selection; it sets the error number when it fails
       bool owned;
-      cull_state_set_lerrno(0);
-      const lDescr *descr = ocs_cull_what_descr(what, ep->descr, &owned);
+      ocs::tom::detail::state_set_lerrno(0);
+      const lDescr *descr = ocs::tom::detail::what_descr(what, ep->descr, &owned);
       if (descr == nullptr) {
-         throw ListCoreError(cull_state_get_lerrno(), "reducing the descriptor of a selection failed");
+         throw ListCoreError(ocs::tom::detail::state_get_lerrno(), "reducing the descriptor of a selection failed");
       }
       lListElem *copy;
       try {
@@ -801,12 +802,12 @@ namespace ocs::tom {
          copy = create_elem(descr);
       } catch (...) {
          if (owned) {
-            ocs_cull_descr_release(&descr);
+            ocs::tom::release_descr(descr);
          }
          throw;
       }
       if (owned) {
-         ocs_cull_descr_release(&descr);
+         ocs::tom::release_descr(descr);
       }
       try {
          copy_elem_partial(copy, ep, what, hash, skip_no_transfer);
@@ -882,7 +883,7 @@ namespace ocs::tom {
                keep[pos] = true;
             }
       }
-      if (ocs_cull_descr_layout(sdp, keep, ddp) < 0) {
+      if (ocs::tom::descr_layout(sdp, keep, ddp) < 0) {
          LERROR(LEENUMDESCR);
          return -1;
       }
@@ -984,11 +985,11 @@ namespace ocs::tom {
          return nullptr;
       }
       bool owned;
-      const lDescr *dp = ocs_cull_what_descr(what, descr, &owned);
+      const lDescr *dp = ocs::tom::detail::what_descr(what, descr, &owned);
       if (dp == nullptr) {
          return nullptr;
       }
-      return owned ? dp : ocs_cull_descr_ref(dp);
+      return owned ? dp : ocs::tom::descr_ref(dp);
    }
 
 } // namespace ocs::tom
@@ -1011,7 +1012,7 @@ namespace ocs::tom {
  * @return the shared reduction borrowed from the cache, or with a reference
  *         for the caller if @p owned is set to true; nullptr on error
  */
-const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned) {
+const lDescr *ocs::tom::detail::what_descr(const lEnumeration *enp, const lDescr *src, bool *owned) {
    *owned = false;
    auto *head = const_cast<lEnumeration *>(enp);
    if (head->cache_dp != nullptr && head->cache_src == src) {
@@ -1034,17 +1035,17 @@ const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bo
       sge_free(&tmp);
       return nullptr;
    }
-   const lDescr *dp = ocs_cull_descr_acquire(tmp);
+   const lDescr *dp = ocs::tom::descr_acquire(tmp);
    sge_free(&tmp);
    if (dp == nullptr) {
       LERROR(LEMALLOC);
       return nullptr;
    }
 
-   if (ocs_cull_descr_is_counted(src) || ocs_cull_descr_is_static(src)) {
-      ocs_cull_descr_release(&(head->cache_dp));
-      ocs_cull_descr_release(&(head->cache_src));
-      head->cache_src = ocs_cull_descr_ref(src);
+   if (ocs::tom::descr_is_counted(src) || ocs::tom::descr_is_static(src)) {
+      ocs::tom::release_descr(head->cache_dp);
+      ocs::tom::release_descr(head->cache_src);
+      head->cache_src = ocs::tom::descr_ref(src);
       head->cache_dp = dp;
       return dp;
    }
@@ -1063,7 +1064,7 @@ const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bo
  * @param dp the descriptor
  * @return true if every selected field is present in dp at its position
  */
-bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp) {
+bool ocs::tom::detail::what_fits(const lEnumeration *enp, const lDescr *dp) {
    if (enp == nullptr || dp == nullptr) {
       return false;
    }

@@ -438,7 +438,7 @@ namespace ocs::tom {
 
       if (hash) {
          // the list may be hashed from now on; its tables are built by the first lookups
-         cull_hash_create_hashtables(dst);
+         ocs::tom::make_hashable(dst);
          // no match is no list, as lSelectDPack() decided it
          if (dst->nelem == 0) {
             LERROR(LEGETNROFELEM);
@@ -604,11 +604,10 @@ namespace ocs::tom {
    }
 
    void make_hashable(const RawList list) noexcept {
-      cull_hash_create_hashtables(list.raw());
-   }
-
-   void release_descr(const lDescr *&descr) noexcept {
-      ocs_cull_descr_release(&descr);
+      lList *lp = list.raw();
+      if (lp != nullptr && lp->nslots == 0) {
+         ocs::tom::detail::hash_init_slots(lp, true);
+      }
    }
 
 

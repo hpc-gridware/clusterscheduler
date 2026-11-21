@@ -226,14 +226,14 @@ namespace ocs::tom {
                      bool reresolve_supp_grp);
 
    /**
-    * @brief The number of entries in the descriptor table of a buffer, as ocs_cull_pack_table_size() gave it
+    * @brief The number of entries in the descriptor table of a buffer
     * @param pb the buffer, or nullptr
     * @return the number of distinct reduced descriptors written to or read from it
     */
    std::size_t descr_table_size(const sge_pack_buffer *pb) noexcept;
 
    /**
-    * @brief Give up the descriptor table of a buffer, as ocs_cull_pack_table_free() did
+    * @brief Give up the descriptor table of a buffer
     * @param pb the buffer, or nullptr; its table is released and set to nullptr
     */
    void free_descr_table(sge_pack_buffer *pb) noexcept;

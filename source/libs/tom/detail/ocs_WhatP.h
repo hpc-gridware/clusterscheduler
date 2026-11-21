@@ -53,29 +53,31 @@ struct _lEnumeration {
    lEnumeration *ep; ///< selection applied inside the field; only for sub-objects and sub-lists
    /// entry 0 only: the descriptor the cached reduction was built from, holding a reference
    const lDescr *cache_src;
-   /// entry 0 only: the shared reduction of cache_src, holding a reference (see ocs_cull_what_descr())
+   /// entry 0 only: the shared reduction of cache_src, holding a reference (see ocs::tom::detail::what_descr())
    const lDescr *cache_dp;
 };
 
-/**
- * @brief The shared reduction of a descriptor that a field selection describes
- *
- * Kept with the selection's cache in the core; see its definition in
- * ocs_SelectCore.cc.
- *
- * @param enp the selection, not NONE
- * @param src the descriptor it is applied to
- * @param[out] owned set to true if the caller has to release the result
- * @return the shared reduction, or nullptr on error
- */
-const lDescr *ocs_cull_what_descr(const lEnumeration *enp, const lDescr *src, bool *owned);
+namespace ocs::tom::detail {
+   /**
+    * @brief The shared reduction of a descriptor that a field selection describes
+    *
+    * Kept with the selection's cache in the core; see its definition in
+    * ocs_SelectCore.cc.
+    *
+    * @param enp the selection, not NONE
+    * @param src the descriptor it is applied to
+    * @param[out] owned set to true if the caller has to release the result
+    * @return the shared reduction, or nullptr on error
+    */
+   const lDescr *what_descr(const lEnumeration *enp, const lDescr *src, bool *owned);
 
-/**
- * @brief Whether a field selection can be applied to a descriptor (CS-439, N-B-11)
- * @param enp the selection
- * @param dp the descriptor
- * @return true if every selected field is present in dp at its position
- */
-bool ocs_cull_what_fits(const lEnumeration *enp, const lDescr *dp);
+   /**
+    * @brief Whether a field selection can be applied to a descriptor (CS-439, N-B-11)
+    * @param enp the selection
+    * @param dp the descriptor
+    * @return true if every selected field is present in dp at its position
+    */
+   bool what_fits(const lEnumeration *enp, const lDescr *dp);
+} // namespace ocs::tom::detail
 
 

@@ -61,7 +61,7 @@ namespace ocs::tom {
          return -1;
       }
       const int pos = nm - descr[0].nm;
-      if (pos < 0 || static_cast<std::uint32_t>(pos) >= ocs_cull_descr_header_of(descr)->n || descr[pos].nm != nm) {
+      if (pos < 0 || static_cast<std::uint32_t>(pos) >= ocs::tom::descr_header_of(descr)->n || descr[pos].nm != nm) {
          return -1;
       }
       return pos;

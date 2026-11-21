@@ -133,7 +133,7 @@ extern const char *multitypes[];
  * time as an inline variable, so every translation unit sees the same block and
  * its contents are constant expressions. The descriptor of a type points at its first field.
  */
-#define LISTDEF(name) inline constexpr auto name##_blk = ocs_cull_descr_make({           ///< opens an object type definition; ends with #LISTEND
+#define LISTDEF(name) inline constexpr auto name##_blk = ocs::tom::descr_make({           ///< opens an object type definition; ends with #LISTEND
 #define LISTEND(name) {NoName, lEndT}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF
 #define SGE_INT(name,flags)         { name, lIntT    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
 #define SGE_HOST(name,flags)        { name, lHostT   | flags },                 ///< declares a host name field
@@ -215,7 +215,7 @@ struct cull_descr_header {
    std::atomic<uint32_t> refs; ///< reference count; 0 for a static block, which is never released
    uint32_t n;                 ///< number of fields, without the terminating #lEndT entry
    uint32_t np;                ///< number of fields that have a value, the slots of an element
-   uint64_t hash;              ///< FNV-1a over field numbers, types and slot offsets, see ocs_cull_descr_hash()
+   uint64_t hash;              ///< FNV-1a over field numbers, types and slot offsets, see ocs::tom::descr_hash()
 };
 static_assert(sizeof(cull_descr_header) == 24, "the fields must start 24 bytes after the header");
 
@@ -230,57 +230,59 @@ struct cull_descr_block {
    lDescr e[N];         ///< the fields, the last one is {#NoName, #lEndT}
 };
 
-/**
- * @brief FNV-1a hash over the field numbers, types and slot offsets of a descriptor
- *
- * The process-local flag #CULL_DESCR_INTERNED is not hashed, so a counted copy
- * hashes like its source.
- *
- * @param e the fields
- * @param n number of fields to hash
- * @return the hash
- */
-constexpr uint64_t ocs_cull_descr_hash(const lDescr *e, const size_t n) {
-   uint64_t h = 0xcbf29ce484222325ULL;
-   for (size_t i = 0; i < n; i++) {
-      for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~CULL_DESCR_INTERNED),
-                               static_cast<uint32_t>(e[i].off)}) {
-         for (int b = 0; b < 4; b++) {
-            h ^= (v >> (8 * b)) & 0xff;
-            h *= 0x100000001b3ULL;
+namespace ocs::tom {
+   /**
+    * @brief FNV-1a hash over the field numbers, types and slot offsets of a descriptor
+    *
+    * The process-local flag #CULL_DESCR_INTERNED is not hashed, so a counted copy
+    * hashes like its source.
+    *
+    * @param e the fields
+    * @param n number of fields to hash
+    * @return the hash
+    */
+   constexpr uint64_t descr_hash(const lDescr *e, const size_t n) {
+      uint64_t h = 0xcbf29ce484222325ULL;
+      for (size_t i = 0; i < n; i++) {
+         for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~CULL_DESCR_INTERNED),
+                                  static_cast<uint32_t>(e[i].off)}) {
+            for (int b = 0; b < 4; b++) {
+               h ^= (v >> (8 * b)) & 0xff;
+               h *= 0x100000001b3ULL;
+            }
          }
       }
+      return h;
    }
-   return h;
-}
 
-/**
- * @brief Builds a static descriptor block from the fields, element by element
- *
- * @tparam N number of entries including the terminating one
- * @tparam I indices 0 .. N-1
- * @param e the fields, terminated by {#NoName, #lEndT}
- * @return the block with header and fields
- */
-template<size_t N, size_t... I>
-consteval cull_descr_block<N> ocs_cull_descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
-   return {{0, N - 1, N - 1, ocs_cull_descr_hash(e, N - 1)}, {e[I]...}};
-}
+   /**
+    * @brief Builds a static descriptor block from the fields, element by element
+    *
+    * @tparam N number of entries including the terminating one
+    * @tparam I indices 0 .. N-1
+    * @param e the fields, terminated by {#NoName, #lEndT}
+    * @return the block with header and fields
+    */
+   template<size_t N, size_t... I>
+   consteval cull_descr_block<N> descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
+      return {{0, N - 1, N - 1, ocs::tom::descr_hash(e, N - 1)}, {e[I]...}};
+   }
 
-/**
- * @brief Builds the static descriptor block of an object type at compile time
- *
- * Used by #LISTDEF/#LISTEND; N is deduced from the braced field list.
- *
- * @tparam N number of entries including the terminating one
- * @param e the fields, terminated by {#NoName, #lEndT}
- * @return the block with header and fields
- */
-template<size_t N>
-consteval cull_descr_block<N> ocs_cull_descr_make(const lDescr (&e)[N]) {
-   static_assert(N >= 1, "a descriptor needs at least its terminating entry");
-   return ocs_cull_descr_make_impl(e, std::make_index_sequence<N>{});
-}
+   /**
+    * @brief Builds the static descriptor block of an object type at compile time
+    *
+    * Used by #LISTDEF/#LISTEND; N is deduced from the braced field list.
+    *
+    * @tparam N number of entries including the terminating one
+    * @param e the fields, terminated by {#NoName, #lEndT}
+    * @return the block with header and fields
+    */
+   template<size_t N>
+   consteval cull_descr_block<N> descr_make(const lDescr (&e)[N]) {
+      static_assert(N >= 1, "a descriptor needs at least its terminating entry");
+      return ocs::tom::descr_make_impl(e, std::make_index_sequence<N>{});
+   }
+} // namespace ocs::tom
 
 #define mt_get_type(mt) ((mt) & 0x000000FF) ///< the @ref _enum_lMultiType out of a field's flags
 #define mt_do_hashing(mt) (((mt) & CULL_HASH) ? true : false) ///< is #CULL_HASH set on this field?

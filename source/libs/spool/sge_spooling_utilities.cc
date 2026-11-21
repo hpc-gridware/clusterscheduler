@@ -222,7 +222,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
 
    /* count fields to spool */
    size = 0;
-   for (const auto f : ocs_cull_present_fields(descr)) {
+   for (const auto f : ocs::tom::present_fields(descr)) {
       if ((descr[f.pos].mt & instr->selection) != 0) {
          size++;
       }
@@ -262,7 +262,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
 
    /* copy field info */
    j = 0;
-   for (const auto f : ocs_cull_present_fields(descr)) {
+   for (const auto f : ocs::tom::present_fields(descr)) {
       if ((descr[f.pos].mt & instr->selection) != 0) {
          spooling_field *sub_fields = nullptr;
 

@@ -400,7 +400,7 @@ namespace ocs::tom {
          }
          if constexpr (Typed) {
             check_holds<LF, true>(ep);
-            return &ocs_cull_value(ep, FieldTraits<LF>::pos).glp;
+            return &ocs::tom::detail::value(ep, FieldTraits<LF>::pos).glp;
          }
          const int pos = typed_pos<LF>(ep->descr);
          if (pos < 0) [[unlikely]] {
@@ -409,7 +409,7 @@ namespace ocs::tom {
                                      : FieldException::Reason::ForeignField,
                                   LF, ep->descr);
          }
-         return &ocs_cull_value(ep, pos).glp;
+         return &ocs::tom::detail::value(ep, pos).glp;
       }
 
       /**
@@ -837,7 +837,7 @@ namespace ocs::tom {
       if (pos < 0) {
          return -1;
       }
-      char *&held = ocs_cull_value(ep, pos).str;
+      char *&held = ocs::tom::detail::value(ep, pos).str;
       if (*str != held) {
          std::swap(*str, held);
       }
@@ -931,7 +931,7 @@ namespace ocs::tom {
    template <auto F, bool Typed = false>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
    [[nodiscard]] lList **list_ref(const lListElem *ep) {
-      return &ocs_cull_value(ep, detail::getter_pos<F, Typed>(ep)).glp;
+      return &ocs::tom::detail::value(ep, detail::getter_pos<F, Typed>(ep)).glp;
    }
 
    /**
@@ -945,7 +945,7 @@ namespace ocs::tom {
    template <auto F, bool Typed = false>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
    [[nodiscard]] const char *get_or_empty(const lListElem *ep) {
-      const char *value = ocs_cull_value(ep, detail::getter_pos<F, Typed>(ep)).str;
+      const char *value = ocs::tom::detail::value(ep, detail::getter_pos<F, Typed>(ep)).str;
       return value != nullptr ? value : "";
    }
 
@@ -965,7 +965,7 @@ namespace ocs::tom {
    template <auto F, bool Typed = false>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
    [[nodiscard]] bool has_any_bits(const lListElem *ep, const std::uint32_t mask) {
-      return (ocs_cull_value(ep, detail::getter_pos<F, Typed>(ep)).ul & mask) > 0;
+      return (ocs::tom::detail::value(ep, detail::getter_pos<F, Typed>(ep)).ul & mask) > 0;
    }
 
    /**
@@ -984,7 +984,7 @@ namespace ocs::tom {
       if (pos < 0) {
          return -1;
       }
-      ocs_cull_value(ep, pos).ul |= mask;
+      ocs::tom::detail::value(ep, pos).ul |= mask;
       return 0;
    }
 
@@ -1004,7 +1004,7 @@ namespace ocs::tom {
       if (pos < 0) {
          return -1;
       }
-      ocs_cull_value(ep, pos).ul &= mask;
+      ocs::tom::detail::value(ep, pos).ul &= mask;
       return 0;
    }
 
@@ -1024,7 +1024,7 @@ namespace ocs::tom {
       if (pos < 0) {
          return -1;
       }
-      ocs_cull_value(ep, pos).ul &= ~mask;
+      ocs::tom::detail::value(ep, pos).ul &= ~mask;
       return 0;
    }
 

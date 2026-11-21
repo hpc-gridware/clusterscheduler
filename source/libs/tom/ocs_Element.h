@@ -622,11 +622,11 @@ namespace ocs::tom {
 
    /**
     * @brief The layout of a type reduced to the fields given as template arguments, as
-    *        ocs_cull_descr_reduce() builds it
+    *        ocs::tom::descr_reduce() builds it
     *
     * Built on the first call for each set of fields and kept for the life of
     * the process, so a call on a hot path costs no allocation: the typed form
-    * of `static const lDescr *const d = ocs_cull_descr_reduce(T_Type, {...})`.
+    * of `static const lDescr *const d = ocs::tom::descr_reduce(T_Type, {...})`.
     * The fields may be given in any order; the layout keeps the full length of
     * the type with the fields not given marked absent, so the checked
     * constructors of the handles accept elements and lists of it.
@@ -642,7 +642,7 @@ namespace ocs::tom {
     * @return the layout
     * @throw ListCoreError with LEMALLOC if there is no memory to build it, on the first call and on every later
     *        call once the first build failed
-    * @see Old form: ocs_cull_descr_reduce(), lReduceDescr()
+    * @see Old form: ocs::tom::descr_reduce(), lReduceDescr()
     */
    template <auto F, auto... Fs>
       requires TypedField<decltype(F)> && (detail::SelectFieldOf<Fs, typename FieldTraits<F>::Type> && ...)
@@ -650,7 +650,7 @@ namespace ocs::tom {
       using T = typename FieldTraits<F>::Type;
       // built once per set of fields and never released, like the descriptor blocks of the types
       static const lDescr *const descr =
-              ocs_cull_descr_reduce(T::descriptor.e, {static_cast<int>(F), static_cast<int>(Fs)...});
+              ocs::tom::descr_reduce(T::descriptor.e, {static_cast<int>(F), static_cast<int>(Fs)...});
       if (descr == nullptr) [[unlikely]] {
          throw ListCoreError(LEMALLOC, "out of memory reducing the descriptor of a layout");
       }
@@ -1629,7 +1629,7 @@ namespace ocs::tom {
 
       /**
        * @brief Create an element of a reduced layout, with every field at its default, as lCreateElem() with a
-       *        descriptor of ocs_cull_descr_reduce() does
+       *        descriptor of ocs::tom::descr_reduce() does
        * @param layout the layout, from layout<F...>()
        * @return the owning handle
        * @throw FieldException with reason NullDescriptor if @p layout is default-constructed
@@ -1669,10 +1669,10 @@ namespace ocs::tom {
             // the element takes a reference of its own on the reduction
             handle.ep_ = create_elem(descr);
          } catch (...) {
-            ocs_cull_descr_release(&descr);
+            ocs::tom::release_descr(descr);
             throw;
          }
-         ocs_cull_descr_release(&descr);
+         ocs::tom::release_descr(descr);
          return handle;
       }
 

@@ -435,16 +435,16 @@ void test_exchange() {
    const auto env = [](const ocs::tom::ElementPtr<ocs::tom::JB> &job) {
       return keys(job->get<JB_env_list>().raw(), VA_variable);
    };
-   cull_state_set_lerrno(0);
+   ocs::tom::detail::state_set_lerrno(0);
    seen.push_back(std::to_string(ocs::tom::exchange<JB_env_list>(a, &other)));
    seen.push_back(env(a_owner) + "/" + keys(other, VA_variable));
-   seen.push_back(then(ocs::tom::exchange<JB_env_list>(nullptr, &other), cull_state_get_lerrno));
-   cull_state_set_lerrno(0);
-   seen.push_back(then(ocs::tom::exchange<JB_env_list>(a, nullptr), cull_state_get_lerrno));
+   seen.push_back(then(ocs::tom::exchange<JB_env_list>(nullptr, &other), ocs::tom::detail::state_get_lerrno));
+   ocs::tom::detail::state_set_lerrno(0);
+   seen.push_back(then(ocs::tom::exchange<JB_env_list>(a, nullptr), ocs::tom::detail::state_get_lerrno));
    seen.push_back(std::to_string(ocs::tom::swap<JB_env_list, JB_env_list>(a, b)));
    seen.push_back(env(a_owner) + "/" + env(b_owner));
-   cull_state_set_lerrno(0);
-   seen.push_back(then(ocs::tom::swap<JB_env_list, JB_env_list>(b, nullptr), cull_state_get_lerrno));
+   ocs::tom::detail::state_set_lerrno(0);
+   seen.push_back(then(ocs::tom::swap<JB_env_list, JB_env_list>(b, nullptr), ocs::tom::detail::state_get_lerrno));
    seen.push_back(env(b_owner));
 
    auto t = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
@@ -493,9 +493,9 @@ void test_small() {
    seen.push_back(then(ocs::tom::or_bits<JAT_status>(task, 0x2), status));
    seen.push_back(then(ocs::tom::and_bits<JAT_status>(task, 0x6), status));
    seen.push_back(then(ocs::tom::clear_bits<JAT_status>(task, 0x2), status));
-   cull_state_set_lerrno(0);
+   ocs::tom::detail::state_set_lerrno(0);
    seen.push_back(then(ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2),
-                       cull_state_get_lerrno));
+                       ocs::tom::detail::state_get_lerrno));
 
    // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4
    const std::vector<std::string> expected{"created", "same", "null",  "ref",  "[]",
@@ -1122,13 +1122,13 @@ test_member_element_forms() {
       same = same && ta->clear_bits<JAT_status>(0x2) == ocs::tom::clear_bits<JAT_status>(eb, 0x2) &&
              ta->get<JAT_status>() == eb.get<JAT_status>() && eb.get<JAT_status>() == 0x4;
       // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4; an empty handle gives -1 with LEELEMNULL in both forms
-      cull_state_set_lerrno(0);
+      ocs::tom::detail::state_set_lerrno(0);
       const int member_null = ocs::tom::Element<ocs::tom::JAT>().clear_bits<JAT_status>(0x2);
-      const int member_errno = cull_state_get_lerrno();
-      cull_state_set_lerrno(0);
+      const int member_errno = ocs::tom::detail::state_get_lerrno();
+      ocs::tom::detail::state_set_lerrno(0);
       const int free_null = ocs::tom::clear_bits<JAT_status>(ocs::tom::Element<ocs::tom::JAT>(), 0x2);
       same = same && member_null == -1 && member_null == free_null && member_errno == LEELEMNULL &&
-             cull_state_get_lerrno() == LEELEMNULL;
+             ocs::tom::detail::state_get_lerrno() == LEELEMNULL;
 
       auto ha = ocs::tom::ElementPtr<ocs::tom::HM>::create();
       auto hb = ocs::tom::ElementPtr<ocs::tom::HM>::create();

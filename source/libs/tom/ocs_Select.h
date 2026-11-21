@@ -700,7 +700,7 @@ namespace ocs::tom {
        */
       [[nodiscard]] static What unpack(sge_pack_buffer &pb) {
          lEnumeration *ep = unpack_what(&pb);
-         if (ep != nullptr && !ocs_cull_what_fits(ep, T::descriptor.e)) [[unlikely]] {
+         if (ep != nullptr && !ocs::tom::detail::what_fits(ep, T::descriptor.e)) [[unlikely]] {
             free_what(ep);
             throw_field_exception(FieldException::Reason::ForeignField, NoName, T::descriptor.e);
          }

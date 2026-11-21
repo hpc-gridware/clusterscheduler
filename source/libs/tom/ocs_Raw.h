@@ -1827,7 +1827,6 @@ namespace ocs::tom {
     * keeps hash tables already is left as it is.
     *
     * @param list the list; an empty handle is ignored
-    * @see Old form: cull_hash_create_hashtables()
     */
    void make_hashable(RawList list) noexcept;
 
@@ -1838,7 +1837,6 @@ namespace ocs::tom {
     * releasing it only clears the holder.
     *
     * @param descr the holder of the reference, or of nullptr; nullptr afterwards
-    * @see Old form: ocs_cull_descr_release(&descr)
     */
    void release_descr(const lDescr *&descr) noexcept;
 
@@ -2465,7 +2463,7 @@ namespace ocs::tom {
     */
    template <ObjectType T>
    [[nodiscard]] What<T> adopt(RawWhatPtr &&raw) {
-      if (raw != nullptr && !ocs_cull_what_fits(raw.get(), T::descriptor.e)) [[unlikely]] {
+      if (raw != nullptr && !ocs::tom::detail::what_fits(raw.get(), T::descriptor.e)) [[unlikely]] {
          throw_field_exception(FieldException::Reason::ForeignField, NoName, T::descriptor.e);
       }
       return What<T>::from_typed(raw.release());

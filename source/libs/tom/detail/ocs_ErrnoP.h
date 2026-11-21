@@ -41,4 +41,4 @@
 #include "tom/detail/ocs_State.h"
 
 /// Record a cull error code as the calling thread's last error
-#define LERROR(x) cull_state_set_lerrno(x);
+#define LERROR(x) ocs::tom::detail::state_set_lerrno(x);

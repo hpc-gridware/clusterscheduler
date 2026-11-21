@@ -47,7 +47,7 @@ typedef struct _cull_htable *cull_htable;
  *
  * A list shorter than this is searched linearly. A table that exists stays when
  * its list shrinks below it. Each thread can choose its own value with
- * ocs_cull_hash_set_min_elems().
+ * ocs::tom::detail::hash_set_min_elems().
  * Provisional until fixed by measurement.
  */
 constexpr uint32_t OCS_CULL_HASH_MIN_ELEMS = 16;

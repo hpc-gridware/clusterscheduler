@@ -41,7 +41,9 @@
 #include "tom/ocs_Types.h"
 #include "uti/sge_dstring.h"
 
-void cull_state_set_lerrno(int i);
+namespace ocs::tom::detail {
+   void state_set_lerrno(int i);
 
-int cull_state_get_lerrno();
+   int state_get_lerrno();
+} // namespace ocs::tom::detail
 

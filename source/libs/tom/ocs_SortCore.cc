@@ -61,8 +61,8 @@ namespace ocs::tom {
        * @return negative, 0 or positive, before the direction is applied
        */
       int compare_field(const lListElem *a, const lListElem *b, const lSortOrder &key) {
-         const lMultiType &x = ocs_cull_value(a, key.pos);
-         const lMultiType &y = ocs_cull_value(b, key.pos);
+         const lMultiType &x = ocs::tom::detail::value(a, key.pos);
+         const lMultiType &y = ocs::tom::detail::value(b, key.pos);
          switch (mt_get_type(key.mt)) {
             case lIntT:
                return three_way(x.i, y.i);
@@ -122,7 +122,7 @@ namespace ocs::tom {
             elems[i]->next = i + 1 < n ? elems[i + 1] : nullptr;
          }
 
-         cull_hash_recreate_after_sort(lp);
+         ocs::tom::detail::hash_recreate_after_sort(lp);
       }
 
    } // namespace

@@ -45,43 +45,42 @@
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_HashP.h"
 
-cull_htable cull_hash_create(const lDescr *dp, int pos, int size);
+namespace ocs::tom::detail {
+   cull_htable hash_create(const lDescr *dp, int pos, int size);
 
-cull_htable ocs_cull_hash_build(const lList *lp, int pos);
+   cull_htable hash_build(const lList *lp, int pos);
 
-cull_htable ocs_cull_hash_lookup_table(const lList *lp, int pos);
+   cull_htable hash_lookup_table(const lList *lp, int pos);
 
-void ocs_cull_hash_set_min_elems(uint32_t n);
+   void hash_set_min_elems(uint32_t n);
 
-int cull_hash_new(lList *lp, int name, bool unique);
+   int hash_new(lList *lp, int name, bool unique);
 
-int cull_hash_new_check(lList *lp, int nm, bool unique);
+   int hash_new_check(lList *lp, int nm, bool unique);
 
-void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique);
+   void hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique);
 
-void ocs_cull_hash_insert_changed(const lListElem *ep, int pos);
+   void hash_insert_changed(const lListElem *ep, int pos);
 
-void cull_hash_remove(const lListElem *ep, const int pos);
+   void hash_remove(const lListElem *ep, int pos);
 
-void cull_hash_elem(const lListElem *ep);
+   void hash_elem(const lListElem *ep);
 
-void cull_hash_remove_elem(const lListElem *ep);
+   void hash_remove_elem(const lListElem *ep);
 
-lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
-                           const void **iterator);
+   lListElem *hash_first(cull_htable ht, const void *key, bool unique, const void **iterator);
 
-lListElem *cull_hash_next(cull_htable ht, const void **iterator);
+   lListElem *hash_next(cull_htable ht, const void **iterator);
 
-void cull_hash_create_hashtables(lList *lp);
+   bool hash_init_slots(lList *lp, bool hashable);
 
-bool cull_hash_init_slots(lList *lp, bool hashable);
+   void hash_free_tables(lList *lp);
 
-void cull_hash_free_tables(lList *lp);
+   void hash_free_slots(lList *lp);
 
-void cull_hash_free_slots(lList *lp);
+   void *hash_key(const lListElem *ep, int pos, char *host_key);
 
-void *cull_hash_key(const lListElem *ep, int pos, char *host_key);
+   const char *hash_statistics(cull_htable ht, dstring *buffer);
 
-const char *cull_hash_statistics(cull_htable ht, dstring *buffer);
-
-void cull_hash_recreate_after_sort(lList *lp);
+   void hash_recreate_after_sort(lList *lp);
+} // namespace ocs::tom::detail

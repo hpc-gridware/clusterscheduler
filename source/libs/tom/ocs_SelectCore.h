@@ -299,7 +299,7 @@ namespace ocs::tom {
     * @brief Lay out the descriptor a selection reduces another one to, as lPartialDescr() did
     *
     * The result has the full length of the type, with the selected fields in
-    * their slots and the others absent (see ocs_cull_descr_layout()). The source
+    * their slots and the others absent (see ocs::tom::descr_layout()). The source
     * may itself be a reduction; every selected field must be present in it. Sets
     * the error number of the list library on error.
     *
@@ -359,7 +359,7 @@ namespace ocs::tom {
     * @param descr the full descriptor of the type
     * @param what the selection
     * @return the descriptor, holding a reference for the caller, who gives it up with
-    *         ocs_cull_descr_release(); nullptr if the selection selects nothing of the type
+    *         ocs::tom::release_descr(); nullptr if the selection selects nothing of the type
     */
    const lDescr *reduced_descr(const lDescr *descr, const lEnumeration *what) noexcept;
 

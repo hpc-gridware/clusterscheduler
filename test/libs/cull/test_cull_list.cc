@@ -671,7 +671,7 @@ static void test_atomic_ulong64() {
    printf("\n--- atomic 64 bit accessors ---\n");
 
    auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
-   lMultiType &slot = ocs_cull_value(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_ulong64));
+   lMultiType &slot = ocs::tom::detail::value(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_ulong64));
 
    // T56-T57: the plain round trip, and that the two kinds of accessor address
    // the same storage - a field must be readable by whichever of them the caller
@@ -896,7 +896,7 @@ static void test_is_free_elem() {
 int main(int /*argc*/, char * /*argv*/[]) {
    // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
-   ocs_cull_hash_set_min_elems(0);
+   ocs::tom::detail::hash_set_min_elems(0);
 
    test_what_where();
    test_field_access();

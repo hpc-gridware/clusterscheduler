@@ -23,7 +23,7 @@
  *
  * A list that may be hashed starts with empty hash slots. The first lookup on a
  * field of a list with at least #OCS_CULL_HASH_MIN_ELEMS elements (the default
- * threshold of ocs_cull_hash_set_min_elems(), which also holds in threads that never call it) builds the
+ * threshold of ocs::tom::detail::hash_set_min_elems(), which also holds in threads that never call it) builds the
  * table of that field; shorter lists are searched linearly. The test checks
  * that no table is built before a lookup, that the built table answers like a
  * linear search and is maintained afterwards, that concurrent first lookups

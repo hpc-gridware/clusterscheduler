@@ -59,8 +59,8 @@
 #include "tom/ocs_Descr.h"
 
 namespace {
-   using ocs::cull_stats::Counter;
-   using ocs::cull_stats::NUM_COUNTERS;
+   using ocs::tom::stats::Counter;
+   using ocs::tom::stats::NUM_COUNTERS;
 
    /** @brief Names of the counters in the dump, in the order of #Counter */
    constexpr std::array<const char *, NUM_COUNTERS> counter_names = {
@@ -180,7 +180,7 @@ namespace {
    void exit_handler() {
       const char *dir = getenv("OCS_CULL_STATS_DIR");
       if (dir != nullptr && *dir != '\0') {
-         ocs::cull_stats::write(dir);
+         ocs::tom::stats::write(dir);
       }
    }
 
@@ -216,7 +216,7 @@ namespace {
     * @return the type name, "NoName" for NoName, or the number when no model is installed or it does not know the
     *         field
     */
-   std::string type_name(const int nm) {
+   std::string stats_type_name(const int nm) {
       if (nm == NoName) {
          return "NoName";
       }
@@ -233,7 +233,7 @@ namespace {
     * @param nm the field number
     * @return the field name, or the number when no model is installed or it does not know the field
     */
-   std::string field_name(const int nm) {
+   std::string stats_field_name(const int nm) {
       const ocs::tom::FieldInfo *info = ocs::tom::field_info(nm);
       return info == nullptr ? std::to_string(nm) : info->name;
    }
@@ -331,7 +331,7 @@ namespace {
    }
 }
 
-namespace ocs::cull_stats {
+namespace ocs::tom::stats {
    void add_type(const int nm, const Counter c, const uint64_t v) {
       add(make_key(true, nm), c, v);
    }
@@ -366,9 +366,9 @@ namespace ocs::cull_stats {
             for (const auto &[key, counters] : table) {
                const int nm = static_cast<int>(static_cast<uint32_t>(key));
                if ((key & TYPE_BIT) != 0) {
-                  add_counters(thread.types[type_name(nm)], counters);
+                  add_counters(thread.types[stats_type_name(nm)], counters);
                } else {
-                  add_counters(thread.fields[type_name(nm)][field_name(nm)], counters);
+                  add_counters(thread.fields[stats_type_name(nm)][stats_field_name(nm)], counters);
                }
             }
          }
@@ -387,7 +387,7 @@ namespace ocs::cull_stats {
       writer.Key("written");
       writer.String(utc_timestamp().c_str());
       writer.Key("descr_registry_peak");
-      writer.Uint64(ocs_cull_descr_registry_peak());
+      writer.Uint64(ocs::tom::descr_registry_peak());
       writer.Key("threads");
       writer.StartObject();
       for (const auto &[thread_class, thread] : dump) {

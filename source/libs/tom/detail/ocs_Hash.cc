@@ -86,10 +86,21 @@
 /// A new hash table is created with 2^#MIN_CULL_HASH_SIZE buckets
 #define MIN_CULL_HASH_SIZE 4
 
-/// Lists shorter than this are searched linearly by this thread; see ocs_cull_hash_set_min_elems()
-static thread_local uint32_t cull_hash_min_elems = OCS_CULL_HASH_MIN_ELEMS;
+// the file-local part of the hash layer; the functions are defined below with their qualified names
+namespace ocs::tom::detail {
+   /// Lists shorter than this are searched linearly by this thread; see ocs::tom::detail::hash_set_min_elems()
+   static thread_local uint32_t hash_min_elems = OCS_CULL_HASH_MIN_ELEMS;
 
-static void cull_hash_destroy(cull_htable *htp);
+   static void hash_destroy(cull_htable *htp);
+
+   static void hash_count_free(cull_htable ht);
+
+   static cull_hash_slot *hash_alloc_slots(const lList *lp);
+
+   static cull_hash_slot *hash_publish_slots(const lList *lp);
+
+   static void hash_delete_non_unique_chain(htable table, const void *key, const void **data);
+} // namespace ocs::tom::detail
 
 /// One node of the chain a non unique hash key maps to; see @ref _non_unique_hash
 typedef struct _non_unique_hash non_unique_hash;
@@ -129,7 +140,7 @@ struct _cull_htable {
  * @brief Count a hash table that is about to be freed (CS-2993)
  * @param ht the table
  */
-static void cull_hash_count_free([[maybe_unused]] const cull_htable ht) {
+void ocs::tom::detail::hash_count_free([[maybe_unused]] const cull_htable ht) {
    CULL_STATS_FIELD(ht->nm, HASH_FREE_USED, ht->looked_up ? 1 : 0);
    CULL_STATS_FIELD(ht->nm, HASH_FREE_UNUSED, ht->looked_up ? 0 : 1);
 }
@@ -150,7 +161,7 @@ static void cull_hash_count_free([[maybe_unused]] const cull_htable ht) {
  *
  * @return initialized hash description
  */
-cull_htable cull_hash_create(const lDescr *dp, const int pos, int size) {
+cull_htable ocs::tom::detail::hash_create(const lDescr *dp, const int pos, int size) {
    const lDescr *descr = &dp[pos];
    htable ht = nullptr;   /* hash table for keys */
    htable nuht = nullptr;   /* hash table for non unique access */
@@ -217,35 +228,17 @@ cull_htable cull_hash_create(const lDescr *dp, const int pos, int size) {
 }
 
 /**
- * @brief Allow a list to be hashed
- *
- * Marks a list created without hashing (lCreateListHash() with hash false) as
- * hashable, with one slot per hashed field of its type. Neither the slots nor
- * a table are allocated here: the first lookup on a field of a long enough
- * list allocates the slot array and builds the field's table
- * (#ocs_cull_hash_lookup_table). A list that is hashable already is left as it
- * is, with the tables it has.
- *
- * @param lp the list; nullptr is ignored
- */
-void cull_hash_create_hashtables(lList *lp) {
-   if (lp != nullptr && lp->nslots == 0) {
-      cull_hash_init_slots(lp, true);
-   }
-}
-
-/**
  * @brief Allocate the slot array of a hashable list, with no table in it
  *
  * One slot per field of the list's descriptor that is marked #CULL_HASH, in
- * descriptor order. That includes a field added by cull_hash_new(), which marks
+ * descriptor order. That includes a field added by ocs::tom::detail::hash_new(), which marks
  * it in the descriptor.
  *
  * @param lp the list, with lp->nslots > 0
  * @return the array of lp->nslots slots, or nullptr if it cannot be allocated
  *         or the descriptor does not match lp->nslots
  */
-static cull_hash_slot *cull_hash_alloc_slots(const lList *lp) {
+cull_hash_slot *ocs::tom::detail::hash_alloc_slots(const lList *lp) {
    auto *slots = (cull_hash_slot *) sge_malloc(sizeof(cull_hash_slot) * lp->nslots);
    if (slots == nullptr) {
       return nullptr;
@@ -256,7 +249,7 @@ static cull_hash_slot *cull_hash_alloc_slots(const lList *lp) {
     * raw memory would be undefined behaviour. The array is still freed with
     * sge_free(): the slots need no destructor. */
    uint32_t n = 0;
-   for (const auto f : ocs_cull_present_fields(lp->descr)) {
+   for (const auto f : ocs::tom::present_fields(lp->descr)) {
       if (mt_do_hashing(lp->descr[f.pos].mt)) {
          if (n == lp->nslots) {
             break;
@@ -265,7 +258,7 @@ static cull_hash_slot *cull_hash_alloc_slots(const lList *lp) {
       }
    }
    if (n != lp->nslots) {
-      // cannot happen while only cull_hash_new() adds hashed fields; the list stays linear
+      // cannot happen while only ocs::tom::detail::hash_new() adds hashed fields; the list stays linear
       sge_free(&slots);
    }
    return slots;
@@ -281,12 +274,12 @@ static cull_hash_slot *cull_hash_alloc_slots(const lList *lp) {
  * @param lp the list, with lp->nslots > 0
  * @return the slot array, or nullptr if it cannot be allocated
  */
-static cull_hash_slot *cull_hash_publish_slots(const lList *lp) {
+cull_hash_slot *ocs::tom::detail::hash_publish_slots(const lList *lp) {
    cull_hash_slot *slots = list_slots(lp);
    if (slots != nullptr) {
       return slots;
    }
-   cull_hash_slot *fresh = cull_hash_alloc_slots(lp);
+   cull_hash_slot *fresh = ocs::tom::detail::hash_alloc_slots(lp);
    if (fresh == nullptr) {
       return nullptr;
    }
@@ -312,24 +305,24 @@ static cull_hash_slot *cull_hash_publish_slots(const lList *lp) {
  * @return the table, or nullptr when it cannot be allocated
  * @throw ocs::tom::FieldException with reason DuplicateKey
  */
-cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
+cull_htable ocs::tom::detail::hash_build(const lList *lp, const int pos) {
    char host_key[CL_MAXHOSTNAMELEN + 1];
 
-   cull_htable ht = cull_hash_create(lp->descr, pos, hash_compute_size(lp->nelem));
+   cull_htable ht = ocs::tom::detail::hash_create(lp->descr, pos, hash_compute_size(lp->nelem));
    if (ht != nullptr) {
       const int mt = lp->descr[pos].mt;
       const bool unique = mt_is_unique(mt);
       for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
-         void *key = cull_hash_key(ep, pos, host_key);
+         void *key = ocs::tom::detail::hash_key(ep, pos, host_key);
          if (unique && key != nullptr) {
             // a unique key held twice: the table is not published, every later lookup builds it again and throws
             if (const void *stored = nullptr; sge_htable_lookup(ht->ht, key, &stored) == True) {
                const std::string text = ocs::tom::key_text(mt, key);
-               cull_hash_destroy(&ht);
+               ocs::tom::detail::hash_destroy(&ht);
                ocs::tom::throw_duplicate_key(lp->descr[pos].nm, lp->descr, text, lp->listname);
             }
          }
-         cull_hash_insert(ep, key, ht, unique);
+         ocs::tom::detail::hash_insert(ep, key, ht, unique);
       }
    }
    return ht;
@@ -339,7 +332,7 @@ cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
  * @brief The hash table of a field for a lookup, built by the first lookup
  *
  * A list that is hashable and has at least the calling thread's threshold of
- * elements (ocs_cull_hash_set_min_elems()) gets the table of the field on its first lookup, and with
+ * elements (ocs::tom::detail::hash_set_min_elems()) gets the table of the field on its first lookup, and with
  * the first table of the list its slot array. Concurrent first lookups, which
  * run under a read lock, may each allocate an array and build a table: the
  * first to publish each by compare-and-swap wins, the others free theirs and
@@ -350,9 +343,9 @@ cull_htable ocs_cull_hash_build(const lList *lp, const int pos) {
  * @param pos position of the field in the list's descriptor
  * @return the table, or nullptr when the list is to be searched linearly
  * @throw ocs::tom::FieldException with reason DuplicateKey when a unique field holds a key twice, see
- *        #ocs_cull_hash_build
+ *        #ocs::tom::detail::hash_build
  */
-cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
+cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) {
    // a list that is never hashed, or a field that is not hashed in it, is searched linearly
    if (lp->nslots == 0 || !mt_do_hashing(lp->descr[pos].mt)) {
       return nullptr;
@@ -362,13 +355,13 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
    CULL_STATS_CODE(
       const int nm = lp->descr[pos].nm;
       // the list length at lookup time, for choosing the threshold
-      ocs::cull_stats::add_field(nm, nelem < 4 ? ocs::cull_stats::LOOKUP_LEN_LT4 :
-                                     nelem < 8 ? ocs::cull_stats::LOOKUP_LEN_LT8 :
-                                     nelem < 16 ? ocs::cull_stats::LOOKUP_LEN_LT16 :
-                                     nelem < 32 ? ocs::cull_stats::LOOKUP_LEN_LT32 :
-                                     nelem < 64 ? ocs::cull_stats::LOOKUP_LEN_LT64 :
-                                     nelem < 128 ? ocs::cull_stats::LOOKUP_LEN_LT128 :
-                                     ocs::cull_stats::LOOKUP_LEN_GE128, 1);
+      ocs::tom::stats::add_field(nm, nelem < 4 ? ocs::tom::stats::LOOKUP_LEN_LT4 :
+                                     nelem < 8 ? ocs::tom::stats::LOOKUP_LEN_LT8 :
+                                     nelem < 16 ? ocs::tom::stats::LOOKUP_LEN_LT16 :
+                                     nelem < 32 ? ocs::tom::stats::LOOKUP_LEN_LT32 :
+                                     nelem < 64 ? ocs::tom::stats::LOOKUP_LEN_LT64 :
+                                     nelem < 128 ? ocs::tom::stats::LOOKUP_LEN_LT128 :
+                                     ocs::tom::stats::LOOKUP_LEN_GE128, 1);
    )
 
    cull_hash_slot *slot = list_hash_slot(lp, pos);
@@ -376,14 +369,14 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
    if (ht != nullptr) {
       return ht;
    }
-   if (nelem < cull_hash_min_elems) {
+   if (nelem < ocs::tom::detail::hash_min_elems) {
       CULL_STATS_FIELD(nm, LOOKUP_LINEAR, 1);
       return nullptr;
    }
 
    if (slot == nullptr) {
       // the first table of the list: its slot array comes with it
-      if (cull_hash_publish_slots(lp) == nullptr || (slot = list_hash_slot(lp, pos)) == nullptr) {
+      if (ocs::tom::detail::hash_publish_slots(lp) == nullptr || (slot = list_hash_slot(lp, pos)) == nullptr) {
          return nullptr;
       }
       ht = slot->get();
@@ -392,7 +385,7 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
       }
    }
 
-   cull_htable fresh = ocs_cull_hash_build(lp, pos);
+   cull_htable fresh = ocs::tom::detail::hash_build(lp, pos);
    if (fresh == nullptr) {
       return nullptr;
    }
@@ -401,7 +394,7 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
       return fresh;
    }
    // another reader published its table first; ht now holds that one
-   cull_hash_destroy(&fresh);
+   ocs::tom::detail::hash_destroy(&fresh);
    return ht;
 }
 
@@ -415,8 +408,8 @@ cull_htable ocs_cull_hash_lookup_table(const lList *lp, const int pos) {
  *
  * @param n the new threshold; 0 builds a table on the first lookup of any hashable list
  */
-void ocs_cull_hash_set_min_elems(const uint32_t n) {
-   cull_hash_min_elems = n;
+void ocs::tom::detail::hash_set_min_elems(const uint32_t n) {
+   ocs::tom::detail::hash_min_elems = n;
 }
 
 /**
@@ -426,16 +419,16 @@ void ocs_cull_hash_set_min_elems(const uint32_t n) {
  * unique keys.
  *
  * A unique table never meets a key it holds already for another element: the
- * build refuses a list with a repeated key (#ocs_cull_hash_build) and an
- * insert after a change drops the table instead (#ocs_cull_hash_insert_changed),
+ * build refuses a list with a repeated key (#ocs::tom::detail::hash_build) and an
+ * insert after a change drops the table instead (#ocs::tom::detail::hash_insert_changed),
  * both since N-H-18 (CS-3052). So a unique insert is a plain store.
  *
  * @param ep the cull object to be stored in a hash list
- * @param key the hash key, from #cull_hash_key
+ * @param key the hash key, from #ocs::tom::detail::hash_key
  * @param ht the table to insert into
  * @param unique true when the field was declared #CULL_UNIQUE
  */
-void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique) {
+void ocs::tom::detail::hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique) {
    if (ht == nullptr || ep == nullptr || key == nullptr) {
       return;
    }
@@ -493,7 +486,7 @@ void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool uniqu
  * @param ep the cull object to be removed
  * @param pos position of the data field
  */
-void cull_hash_remove(const lListElem *ep, const int pos) {
+void ocs::tom::detail::hash_remove(const lListElem *ep, const int pos) {
    char host_key[CL_MAXHOSTNAMELEN + 1];
    cull_htable ht;
    void *key;
@@ -508,7 +501,7 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
       return;
    }
 
-   key = cull_hash_key(ep, pos, host_key);
+   key = ocs::tom::detail::hash_key(ep, pos, host_key);
    if (key != nullptr) {
       if (mt_is_unique(ep->descr[pos].mt)) {
          sge_htable_delete(ht->ht, key);
@@ -573,13 +566,13 @@ void cull_hash_remove(const lListElem *ep, const int pos) {
  * @param ep the element, bound to a list
  * @param pos position of the field
  */
-void ocs_cull_hash_insert_changed(const lListElem *ep, const int pos) {
+void ocs::tom::detail::hash_insert_changed(const lListElem *ep, const int pos) {
    const cull_htable ht = elem_hash_table(ep, pos);
    if (ht == nullptr) {
       return;
    }
    char host_key[CL_MAXHOSTNAMELEN + 1];
-   void *key = cull_hash_key(ep, pos, host_key);
+   void *key = ocs::tom::detail::hash_key(ep, pos, host_key);
    if (key == nullptr) {
       return;
    }
@@ -590,11 +583,11 @@ void ocs_cull_hash_insert_changed(const lListElem *ep, const int pos) {
          cull_hash_slot *slot = list_hash_slot(elem_list(ep), pos);
          cull_htable dropped = slot->get();
          slot->set(nullptr);
-         cull_hash_destroy(&dropped);
+         ocs::tom::detail::hash_destroy(&dropped);
          return;
       }
    }
-   cull_hash_insert(ep, key, ht, unique);
+   ocs::tom::detail::hash_insert(ep, key, ht, unique);
 }
 
 /**
@@ -603,11 +596,11 @@ void ocs_cull_hash_insert_changed(const lListElem *ep, const int pos) {
  * Insert the cull element ep into all hash tables of the list it is bound
  * in. An element that is not bound is in no table. A unique table that
  * already holds one of the element's keys is dropped instead
- * (#ocs_cull_hash_insert_changed).
+ * (#ocs::tom::detail::hash_insert_changed).
  *
  * @param ep the cull object to be hashed
  */
-void cull_hash_elem(const lListElem *ep) {
+void ocs::tom::detail::hash_elem(const lListElem *ep) {
    if (ep == nullptr) {
       return;
    }
@@ -622,20 +615,20 @@ void cull_hash_elem(const lListElem *ep) {
       return;
    }
    for (uint32_t i = 0; i < lp->nslots; i++) {
-      ocs_cull_hash_insert_changed(ep, slots[i].pos);
+      ocs::tom::detail::hash_insert_changed(ep, slots[i].pos);
    }
 }
 
 /**
  * @brief Remove a cull object from all hash tables of its list
  *
- * The counterpart of #cull_hash_elem: removes the bound element ep from every
+ * The counterpart of #ocs::tom::detail::hash_elem: removes the bound element ep from every
  * table of the list that holds it. An element that is not bound is in no
  * table, so nothing is done.
  *
  * @param ep the cull object to be removed from the tables
  */
-void cull_hash_remove_elem(const lListElem *ep) {
+void ocs::tom::detail::hash_remove_elem(const lListElem *ep) {
    if (ep == nullptr) {
       return;
    }
@@ -651,7 +644,7 @@ void cull_hash_remove_elem(const lListElem *ep) {
    }
    for (uint32_t i = 0; i < lp->nslots; i++) {
       if (slots[i].get() != nullptr) {
-         cull_hash_remove(ep, slots[i].pos);
+         ocs::tom::detail::hash_remove(ep, slots[i].pos);
       }
    }
 }
@@ -663,20 +656,19 @@ void cull_hash_remove_elem(const lListElem *ep) {
  * pos in the cull list lp.
  * If an element is found, it is returned.
  * If the hash table uses non unique hash keys, iterator returns the
- * necessary data for consecutive calls of cull_hash_next() returning
+ * necessary data for consecutive calls of ocs::tom::detail::hash_next() returning
  * objects with the same hash key.
  *
  * @param ht the table to search
  * @param key the key to use for the search
  * @param unique true when the table holds unique keys
- * @param[out] iterator receives the state #cull_hash_next continues from
+ * @param[out] iterator receives the state #ocs::tom::detail::hash_next continues from
  *
  * @return first object found matching key, if no object found: nullptr
  *
- * @see #cull_hash_next
+ * @see #ocs::tom::detail::hash_next
  */
-lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
-                           const void **iterator) {
+lListElem *ocs::tom::detail::hash_first(cull_htable ht, const void *key, bool unique, const void **iterator) {
    union {
       lListElem *l;
       void *p;
@@ -723,19 +715,19 @@ lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
  * @brief Find next object matching a key
  *
  * Returns the next object matching the same key as a previous call
- * to cull_hash_first or cull_hash_next.
+ * to ocs::tom::detail::hash_first or ocs::tom::detail::hash_next.
  *
  * @param ht the table to search
- * @param[in,out] iterator the state from #cull_hash_first, advanced by this call
+ * @param[in,out] iterator the state from #ocs::tom::detail::hash_first, advanced by this call
  *
  * @return object if found, else nullptr
  *
  * @note The order in which objects with the same key are returned is not
  *       defined.
  *
- * @see #cull_hash_first
+ * @see #ocs::tom::detail::hash_first
  */
-lListElem *cull_hash_next(cull_htable ht, const void **iterator) {
+lListElem *ocs::tom::detail::hash_next(cull_htable ht, const void **iterator) {
    lListElem *ep = nullptr;
    non_unique_hash *nuh = (non_unique_hash *) *iterator;
 
@@ -769,8 +761,7 @@ lListElem *cull_hash_next(cull_htable ht, const void **iterator) {
  *
  * @see #sge_htable_for_each_ep
  */
-void cull_hash_delete_non_unique_chain(htable table, const void *key,
-                                       const void **data) {
+void ocs::tom::detail::hash_delete_non_unique_chain(htable table, const void *key, const void **data) {
    auto *head = (non_unique_header *) *data;
    if (head != nullptr) {
       non_unique_hash *nuh = head->first;
@@ -788,15 +779,15 @@ void cull_hash_delete_non_unique_chain(htable table, const void *key,
  *
  * @param htp the table to free; set to nullptr. A nullptr table is ignored.
  */
-static void cull_hash_destroy(cull_htable *htp) {
+void ocs::tom::detail::hash_destroy(cull_htable *htp) {
    cull_htable ht = *htp;
    if (ht == nullptr) {
       return;
    }
-   cull_hash_count_free(ht);
+   ocs::tom::detail::hash_count_free(ht);
    if (ht->nuht != nullptr) {
       /* a non unique table: delete the chain of every key */
-      sge_htable_for_each_ep(ht->ht, cull_hash_delete_non_unique_chain);
+      sge_htable_for_each_ep(ht->ht, ocs::tom::detail::hash_delete_non_unique_chain);
       sge_htable_destroy(ht->nuht);
    }
    sge_htable_destroy(ht->ht);
@@ -807,17 +798,17 @@ static void cull_hash_destroy(cull_htable *htp) {
  * @brief Mark a new list as hashable, with one slot per hashed field of its type
  *
  * Called when a list is created, after its descriptor is set, and by
- * #cull_hash_create_hashtables on a list that becomes hashable. Only the number
+ * #ocs::tom::make_hashable on a list that becomes hashable. Only the number
  * of hashed fields is recorded; a list with none is never hashed. The slot
  * array is allocated with the first table of the list, by the first lookup on
- * a field of a long enough list (#ocs_cull_hash_lookup_table), so a list that
+ * a field of a long enough list (#ocs::tom::detail::hash_lookup_table), so a list that
  * is never searched costs no allocation.
  *
  * @param lp the list, with its descriptor and no slot array
  * @param hashable false to leave the list unhashable, so that it is always searched linearly
  * @return true; kept for the callers, which treated a failed slot allocation here
  */
-bool cull_hash_init_slots(lList *lp, const bool hashable) {
+bool ocs::tom::detail::hash_init_slots(lList *lp, const bool hashable) {
    lp->nslots = 0;
    // the list comes from sge_malloc()/calloc(): construct the atomic before it is used
    new (&lp->ht) std::atomic<cull_hash_slot *>(nullptr);
@@ -825,7 +816,7 @@ bool cull_hash_init_slots(lList *lp, const bool hashable) {
       return true;
    }
 
-   for (const auto f : ocs_cull_present_fields(lp->descr)) {
+   for (const auto f : ocs::tom::present_fields(lp->descr)) {
       if (mt_do_hashing(lp->descr[f.pos].mt)) {
          lp->nslots++;
       }
@@ -841,7 +832,7 @@ bool cull_hash_init_slots(lList *lp, const bool hashable) {
  *
  * @param lp the list; nullptr is ignored
  */
-void cull_hash_free_tables(lList *lp) {
+void ocs::tom::detail::hash_free_tables(lList *lp) {
    if (lp == nullptr) {
       return;
    }
@@ -852,7 +843,7 @@ void cull_hash_free_tables(lList *lp) {
    }
    for (uint32_t i = 0; i < lp->nslots; i++) {
       cull_htable ht = slots[i].get();
-      cull_hash_destroy(&ht);
+      ocs::tom::detail::hash_destroy(&ht);
       slots[i].set(nullptr);
    }
 }
@@ -864,11 +855,11 @@ void cull_hash_free_tables(lList *lp) {
  *
  * @param lp the list; nullptr is ignored
  */
-void cull_hash_free_slots(lList *lp) {
+void ocs::tom::detail::hash_free_slots(lList *lp) {
    if (lp == nullptr) {
       return;
    }
-   cull_hash_free_tables(lp);
+   ocs::tom::detail::hash_free_tables(lp);
    cull_hash_slot *slots = list_slots(lp);
    sge_free(&slots);
    lp->ht.store(nullptr, std::memory_order_release);
@@ -885,7 +876,7 @@ void cull_hash_free_slots(lList *lp) {
  * There are cases where for a certain application additional hash
  * tables shall be defined to speed up certain access methods.
  *
- * cull_hash_new_check can be used to create a hash table for a list
+ * ocs::tom::detail::hash_new_check can be used to create a hash table for a list
  * on the contents of a certain field.
  * If it already exist, nothing is done.
  *
@@ -894,7 +885,7 @@ void cull_hash_free_slots(lList *lp) {
  *
  * @code
  * create a non unique hash index on the job owner for a job list
- * cull_hash_new_check(job_list, JB_owner, false);
+ * ocs::tom::detail::hash_new_check(job_list, JB_owner, false);
  * @endcode
  *
  * @param lp the list to hold the new hash table
@@ -903,15 +894,15 @@ void cull_hash_free_slots(lList *lp) {
  *
  * @return 1 on success, else 0
  *
- * @see #cull_hash_new
+ * @see #ocs::tom::detail::hash_new
  */
-int cull_hash_new_check(lList *lp, int nm, bool unique) {
+int ocs::tom::detail::hash_new_check(lList *lp, int nm, bool unique) {
    const lDescr *descr = lp != nullptr ? lp->descr : nullptr;
    int pos = descr != nullptr ? ocs::tom::present_pos(descr, nm) : -1;
 
    if (descr != nullptr && pos >= 0) {
       if (list_hash_slot(lp, pos) == nullptr) {
-         return cull_hash_new(lp, nm, unique);
+         return ocs::tom::detail::hash_new(lp, nm, unique);
       }
    }
 
@@ -927,7 +918,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
  * There are cases where for a certain application additional hash
  * tables shall be defined to speed up certain access methods.
  *
- * cull_hash_new can be used to create a hash table for a list
+ * ocs::tom::detail::hash_new can be used to create a hash table for a list
  * on the contents of a certain field. Like every other table, it is built by
  * the first lookup on that field.
  * The caller can choose whether the field contents have to be
@@ -935,7 +926,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
  *
  * @code
  * create a non unique hash index on the job owner for a job list
- * cull_hash_new(job_list, JB_owner, 0);
+ * ocs::tom::detail::hash_new(job_list, JB_owner, 0);
  * @endcode
  *
  * @param lp the list to hold the new hash table
@@ -944,7 +935,7 @@ int cull_hash_new_check(lList *lp, int nm, bool unique) {
  *
  * @return 1 on success, else 0
  */
-int cull_hash_new(lList *lp, int nm, bool unique) {
+int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
    DENTER(CULL_LAYER);
 
    const lDescr *descr;
@@ -971,7 +962,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
 
    // a list that is never hashed becomes hashable, with the hashed fields of its type
    if (lp->nslots == 0) {
-      cull_hash_init_slots(lp, true);
+      ocs::tom::detail::hash_init_slots(lp, true);
    }
 
    /* A field that is not hashed in the type gets a slot of its own, counted in
@@ -980,7 +971,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
     * an array already gets the slot added to it. The slots hold atomics:
     * realloc() would copy their bytes without constructing them, so the slots
     * are constructed in a new array by placement new instead (see
-    * cull_hash_alloc_slots()). */
+    * ocs::tom::detail::hash_alloc_slots()). */
    if (!mt_do_hashing(descr[pos].mt)) {
       cull_hash_slot *old = list_slots(lp);
       if (old != nullptr) {
@@ -1003,7 +994,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
     * list and its elements hold (copy on write). */
    const int mt = descr[pos].mt | CULL_HASH | (unique ? CULL_UNIQUE : 0);
    if (mt != descr[pos].mt) {
-      const lDescr *copy = ocs_cull_descr_private(descr);
+      const lDescr *copy = ocs::tom::descr_private(descr);
       if (copy == nullptr) {
          DRETURN(0);
       }
@@ -1013,7 +1004,7 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
          ep->descr = copy;
       }
-      ocs_cull_descr_release(&(lp->descr));
+      ocs::tom::release_descr(lp->descr);
       lp->descr = copy;
    }
 
@@ -1029,11 +1020,11 @@ int cull_hash_new(lList *lp, int nm, bool unique) {
  *        normalised before hashing
  * @return the key, pointing either into @p ep or into @p host_key
  */
-void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
+void *ocs::tom::detail::hash_key(const lListElem *ep, int pos, char *host_key) {
    void *key = nullptr;
 
    const lDescr *descr = &(ep->descr[pos]);
-   const lMultiType &value = ocs_cull_value(ep, pos);
+   const lMultiType &value = ocs::tom::detail::value(ep, pos);
 
    switch (mt_get_type(descr->mt)) {
       case lUlongT:
@@ -1057,7 +1048,7 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
          break;
 
       default:
-         unknownType("cull_hash_key");
+         unknownType("ocs::tom::detail::hash_key");
          key = nullptr;
          break;
    }
@@ -1074,7 +1065,7 @@ void *cull_hash_key(const lListElem *ep, int pos, char *host_key) {
  * @return the statistics text, pointing into @p buffer
  */
 const char *
-cull_hash_statistics(cull_htable ht, dstring *buffer) {
+ocs::tom::detail::hash_statistics(cull_htable ht, dstring *buffer) {
    const char *ret = nullptr;
 
    sge_dstring_clear(buffer);
@@ -1104,14 +1095,14 @@ cull_hash_statistics(cull_htable ht, dstring *buffer) {
  *
  * @param lp the sorted list; nullptr is ignored
  */
-void cull_hash_recreate_after_sort(lList *lp) {
+void ocs::tom::detail::hash_recreate_after_sort(lList *lp) {
    cull_hash_slot *slots = lp != nullptr ? list_slots(lp) : nullptr;
    if (slots != nullptr) {
       for (uint32_t i = 0; i < lp->nslots; i++) {
          cull_hash_slot &slot = slots[i];
          cull_htable ht = slot.get();
          if (ht != nullptr && !mt_is_unique(lp->descr[slot.pos].mt)) {
-            cull_hash_destroy(&ht);
+            ocs::tom::detail::hash_destroy(&ht);
             slot.set(nullptr);
          }
       }

@@ -241,7 +241,7 @@ namespace {
     *         none
     */
    const lDescr *static_block_for(const lDescr *dp) {
-      return ocs_cull_descr_static_for(dp[0].nm);
+      return ocs::tom::descr_static_for(dp[0].nm);
    }
 
 } // namespace
@@ -251,7 +251,7 @@ namespace {
  * @param dp the entries of a descriptor, or nullptr
  * @return true for a counted descriptor, false for a static one, one without header and nullptr
  */
-bool ocs_cull_descr_is_counted(const lDescr *dp) {
+bool ocs::tom::descr_is_counted(const lDescr *dp) {
    return dp != nullptr && (dp[0].mt & CULL_DESCR_INTERNED) != 0;
 }
 
@@ -261,7 +261,7 @@ bool ocs_cull_descr_is_counted(const lDescr *dp) {
  * @return the block the installed object model holds for the type, or
  *         nullptr if no model is installed or no type of it starts with the field
  */
-const lDescr *ocs_cull_descr_static_for(const int nm) {
+const lDescr *ocs::tom::descr_static_for(const int nm) {
    const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
    if (table == nullptr || table->descr == nullptr || mt_get_type(table->descr[0].mt) == lEndT ||
        table->descr[0].nm != nm) {
@@ -282,7 +282,7 @@ const lDescr *ocs_cull_descr_static_for(const int nm) {
  * @return the block the installed object model holds for the type, or
  *         nullptr if no model is installed or no type of it contains the field
  */
-const lDescr *ocs_cull_descr_static_containing(const int nm, int *pos) {
+const lDescr *ocs::tom::descr_static_containing(const int nm, int *pos) {
    const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
    if (table == nullptr || table->descr == nullptr) {
       return nullptr;
@@ -300,8 +300,8 @@ const lDescr *ocs_cull_descr_static_containing(const int nm, int *pos) {
  * @param dp the entries of a descriptor, or nullptr
  * @return true if dp is the block the installed object model holds for its type
  */
-bool ocs_cull_descr_is_static(const lDescr *dp) {
-   return dp != nullptr && !ocs_cull_descr_is_counted(dp) && static_block_for(dp) == dp;
+bool ocs::tom::descr_is_static(const lDescr *dp) {
+   return dp != nullptr && !ocs::tom::descr_is_counted(dp) && static_block_for(dp) == dp;
 }
 
 /**
@@ -317,7 +317,7 @@ bool ocs_cull_descr_is_static(const lDescr *dp) {
  * @return the shared or private descriptor holding one reference for the caller,
  *         or nullptr if dp is nullptr or memory is exhausted
  */
-const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
+const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
    DENTER(CULL_LAYER);
 
    if (dp == nullptr) {
@@ -325,7 +325,7 @@ const lDescr *ocs_cull_descr_intern(const lDescr *dp) {
    }
 
    const uint32_t n = count_entries(dp);
-   const uint64_t hash = ocs_cull_descr_hash(dp, n);
+   const uint64_t hash = ocs::tom::descr_hash(dp, n);
    cull_descr_registry &reg = registry();
    cull_descr_header *fresh = nullptr;
    size_t cap;
@@ -393,7 +393,7 @@ static void check_full_length(const lDescr *dp, const uint32_t n) {
       return;
    }
    int pos = 0;
-   const lDescr *type = ocs_cull_descr_static_containing(dp[0].nm, &pos);
+   const lDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
    if (type == nullptr || pos != 0 || count_entries(type) != n) {
       CRITICAL(MSG_CULL_DESCRNOTFULLLENGTH_IU, dp[0].nm, n);
       abort();
@@ -413,12 +413,12 @@ static void check_full_length(const lDescr *dp, const uint32_t n) {
  * @param dp the entries of the descriptor, terminated by #lEndT
  * @return the descriptor to hold, or nullptr if dp is nullptr or memory is exhausted
  */
-const lDescr *ocs_cull_descr_acquire(const lDescr *dp) {
+const lDescr *ocs::tom::descr_acquire(const lDescr *dp) {
    if (dp == nullptr) {
       return nullptr;
    }
-   if (ocs_cull_descr_is_counted(dp)) {
-      return ocs_cull_descr_ref(dp);
+   if (ocs::tom::descr_is_counted(dp)) {
+      return ocs::tom::descr_ref(dp);
    }
 #if defined(ENABLE_DEBUG_CHECKS)
    check_full_length(dp, count_entries(dp));
@@ -433,24 +433,24 @@ const lDescr *ocs_cull_descr_acquire(const lDescr *dp) {
          return block;
       }
    }
-   return ocs_cull_descr_intern(dp);
+   return ocs::tom::descr_intern(dp);
 }
 
 /**
  * @brief A private counted copy of a descriptor, which the caller may still modify
  *
  * The copy is not registered, so no lookup finds it, and it holds one
- * reference for the caller. It is released with ocs_cull_descr_release().
+ * reference for the caller. It is released with ocs::tom::release_descr().
  *
  * @param dp the entries of the descriptor, terminated by #lEndT
  * @return the copy, or nullptr if dp is nullptr or memory is exhausted
  */
-const lDescr *ocs_cull_descr_private(const lDescr *dp) {
+const lDescr *ocs::tom::descr_private(const lDescr *dp) {
    if (dp == nullptr) {
       return nullptr;
    }
    const uint32_t n = count_entries(dp);
-   cull_descr_header *h = alloc_counted(dp, n, ocs_cull_descr_hash(dp, n));
+   cull_descr_header *h = alloc_counted(dp, n, ocs::tom::descr_hash(dp, n));
    if (h == nullptr) {
       return nullptr;
    }
@@ -472,7 +472,7 @@ const lDescr *ocs_cull_descr_private(const lDescr *dp) {
  * @param[out] out room for the entries of src and the terminating one; undefined on an error
  * @return the number of kept fields, or -1 if keep does not match src
  */
-int ocs_cull_descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out) {
+int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out) {
    const uint32_t n = src != nullptr ? count_entries(src) : 0;
    if (n == 0 || keep.size() != n || out == nullptr) {
       return -1;
@@ -500,7 +500,7 @@ int ocs_cull_descr_layout(const lDescr *src, const std::vector<bool> &keep, lDes
  * @brief The shared descriptor that holds some fields of a type (CS-439)
  *
  * The one builder of reduced descriptors (N-B-5): the result has the full
- * length of the type, see ocs_cull_descr_layout(), and the same field set
+ * length of the type, see ocs::tom::descr_layout(), and the same field set
  * always yields the same descriptor. Keeping every field of a type yields the
  * type itself.
  *
@@ -509,12 +509,12 @@ int ocs_cull_descr_layout(const lDescr *src, const std::vector<bool> &keep, lDes
  * @return the shared descriptor holding a reference for the caller, or nullptr
  *         if keep does not match src, selects no field, or memory is exhausted
  */
-const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &keep) {
+const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &keep) {
    DENTER(CULL_LAYER);
 
    const uint32_t n = src != nullptr ? count_entries(src) : 0;
    std::vector<lDescr> entries(n + 1);
-   const int kept = ocs_cull_descr_layout(src, keep, entries.data());
+   const int kept = ocs::tom::descr_layout(src, keep, entries.data());
    if (kept < 0) {
       LERROR(LEENUMDESCR);
       DRETURN(nullptr);
@@ -524,9 +524,9 @@ const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &k
       DRETURN(nullptr);
    }
    if (static_cast<uint32_t>(kept) == n) {
-      DRETURN(ocs_cull_descr_acquire(src));
+      DRETURN(ocs::tom::descr_acquire(src));
    }
-   const lDescr *dp = ocs_cull_descr_intern(entries.data());
+   const lDescr *dp = ocs::tom::descr_intern(entries.data());
    if (dp == nullptr) {
       LERROR(LEMALLOC);
    }
@@ -537,11 +537,11 @@ const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &k
  * @brief The shared descriptor of a type reduced to a list of its fields (CS-439, N-B-9)
  *
  * For descriptors written down in the code: the fields may be listed in any
- * order and more than once; the result is that of ocs_cull_descr_build().
+ * order and more than once; the result is that of ocs::tom::descr_build().
  *
  * @code
  * static const lDescr *const task_descr =
- *    ocs_cull_descr_reduce(ocs::tom::JAT::descriptor.e, {JAT_task_number, JAT_hold});
+ *    ocs::tom::descr_reduce(ocs::tom::JAT::descriptor.e, {JAT_task_number, JAT_hold});
  * @endcode
  *
  * @param type the static block of the object type
@@ -549,7 +549,7 @@ const lDescr *ocs_cull_descr_build(const lDescr *src, const std::vector<bool> &k
  * @return the shared descriptor holding a reference for the caller, or nullptr
  *         if a field does not belong to the type, none is given, or memory is exhausted
  */
-const lDescr *ocs_cull_descr_reduce(const lDescr *type, const std::initializer_list<int> fields) {
+const lDescr *ocs::tom::descr_reduce(const lDescr *type, const std::initializer_list<int> fields) {
    DENTER(CULL_LAYER);
 
    const uint32_t n = type != nullptr ? count_entries(type) : 0;
@@ -562,7 +562,7 @@ const lDescr *ocs_cull_descr_reduce(const lDescr *type, const std::initializer_l
       }
       keep[pos] = true;
    }
-   DRETURN(ocs_cull_descr_build(type, keep));
+   DRETURN(ocs::tom::descr_build(type, keep));
 }
 
 /**
@@ -574,32 +574,30 @@ const lDescr *ocs_cull_descr_reduce(const lDescr *type, const std::initializer_l
  * @param dp the entries of a descriptor, or nullptr
  * @return dp
  */
-const lDescr *ocs_cull_descr_ref(const lDescr *dp) {
-   if (ocs_cull_descr_is_counted(dp)) {
+const lDescr *ocs::tom::descr_ref(const lDescr *dp) {
+   if (ocs::tom::descr_is_counted(dp)) {
       header_of(dp)->refs.fetch_add(1, std::memory_order_relaxed);
    }
    return dp;
 }
 
 /**
- * @brief Give up one reference on a descriptor
+ * @brief Give up one reference on a descriptor and clear the holder
  *
  * The release of the last reference removes the descriptor from the registry,
  * unless a lookup has already replaced it there, and frees it. Static
- * descriptors are not counted.
+ * descriptors are not counted; releasing one only clears the holder.
  *
- * @param dpp the descriptor; set to nullptr. May point to nullptr.
+ * @param descr the holder of the reference, or of nullptr; nullptr afterwards
  */
-void ocs_cull_descr_release(const lDescr **dpp) {
-   if (dpp == nullptr || !ocs_cull_descr_is_counted(*dpp)) {
-      if (dpp != nullptr) {
-         *dpp = nullptr;
-      }
+void ocs::tom::release_descr(const lDescr *&descr) noexcept {
+   if (!ocs::tom::descr_is_counted(descr)) {
+      descr = nullptr;
       return;
    }
 
-   cull_descr_header *h = header_of(*dpp);
-   *dpp = nullptr;
+   cull_descr_header *h = header_of(descr);
+   descr = nullptr;
    if (h->refs.fetch_sub(1, std::memory_order_acq_rel) != 1) {
       return;
    }
@@ -627,8 +625,8 @@ void ocs_cull_descr_release(const lDescr **dpp) {
  * @param dp the entries of a descriptor, or nullptr
  * @return the count of a counted descriptor, 0 for any other
  */
-uint32_t ocs_cull_descr_refs(const lDescr *dp) {
-   if (!ocs_cull_descr_is_counted(dp)) {
+uint32_t ocs::tom::descr_refs(const lDescr *dp) {
+   if (!ocs::tom::descr_is_counted(dp)) {
       return 0;
    }
    return header_of(dp)->refs.load(std::memory_order_relaxed);
@@ -647,7 +645,7 @@ int lCountPresent(const lDescr *dp) {
    if (dp == nullptr) {
       return -1;
    }
-   if (ocs_cull_descr_is_counted(dp)) {
+   if (ocs::tom::descr_is_counted(dp)) {
       return static_cast<int>(header_of(dp)->np);
    }
    return static_cast<int>(count_present(dp, count_entries(dp)));
@@ -656,14 +654,14 @@ int lCountPresent(const lDescr *dp) {
 /**
  * @brief Report a value access outside the slots of an element and abort (CS-439)
  *
- * Called by the debug check of ocs_cull_value(): the position is absent in the
+ * Called by the debug check of ocs::tom::detail::value(): the position is absent in the
  * element's descriptor, lies outside it, or its slot lies outside the values.
  *
  * @param ep the element
  * @param pos the position that was accessed
  */
-void ocs_cull_bad_slot(const lListElem *ep, const int pos) {
-   const cull_descr_header *h = ocs_cull_descr_header_of(ep->descr);
+void ocs::tom::detail::bad_slot(const lListElem *ep, const int pos) {
+   const cull_descr_header *h = ocs::tom::descr_header_of(ep->descr);
    CRITICAL(MSG_CULL_BADSLOT_IIUU, pos, ep->descr[0].nm, h->n, h->np);
    abort();
 }
@@ -672,7 +670,7 @@ void ocs_cull_bad_slot(const lListElem *ep, const int pos) {
  * @brief Number of registered descriptors
  * @return the size of the registry, without private copies
  */
-size_t ocs_cull_descr_registry_size() {
+size_t ocs::tom::descr_registry_size() {
    cull_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    return reg.map.size();
@@ -683,7 +681,7 @@ size_t ocs_cull_descr_registry_size() {
  * @brief The largest number of descriptors the registry held at once
  * @return the peak size of the registry since the process started
  */
-size_t ocs_cull_descr_registry_peak() {
+size_t ocs::tom::descr_registry_peak() {
    cull_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    return reg.peak;
@@ -746,7 +744,7 @@ bool ocs::tom::descr_registry_shared(void *handle, std::string &own, std::string
  * @param cap the new soft cap
  * @return the previous soft cap
  */
-size_t ocs_cull_descr_set_soft_cap(const size_t cap) {
+size_t ocs::tom::descr_set_soft_cap(const size_t cap) {
    cull_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    const size_t prev = reg.soft_cap;

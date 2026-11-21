@@ -53,7 +53,7 @@
 #include <cstdint>
 #include <string>
 
-namespace ocs::cull_stats {
+namespace ocs::tom::stats {
    /** @brief What is counted; the dump names each counter in lower case, e.g. `hash_create` */
    enum Counter {
       DCOPY_ELEM,       ///< temporary copies made by lCreateElem() to mark every field reduced (type)
@@ -139,9 +139,9 @@ namespace ocs::cull_stats {
 }
 
 /** @brief Book @p v on counter @p c of the object type whose first field is @p nm */
-#define CULL_STATS_TYPE(nm, c, v) ocs::cull_stats::add_type((nm), ocs::cull_stats::c, (v))
+#define CULL_STATS_TYPE(nm, c, v) ocs::tom::stats::add_type((nm), ocs::tom::stats::c, (v))
 /** @brief Book @p v on counter @p c of field @p nm */
-#define CULL_STATS_FIELD(nm, c, v) ocs::cull_stats::add_field((nm), ocs::cull_stats::c, (v))
+#define CULL_STATS_FIELD(nm, c, v) ocs::tom::stats::add_field((nm), ocs::tom::stats::c, (v))
 /** @brief Compile the code in the argument only in a statistics build */
 #define CULL_STATS_CODE(...) __VA_ARGS__
 

@@ -476,7 +476,7 @@ static void test_sort_list() {
 // Hash tables after sorting  [T24–T26]
 //
 // sort_list() re-links the elements and then drops the non-unique hash tables
-// (cull_hash_recreate_after_sort), which the next lookup builds again in the new
+// (ocs::tom::detail::hash_recreate_after_sort), which the next lookup builds again in the new
 // order. Every key must still resolve, and the non-unique hash must still yield
 // each element exactly once.
 // ---------------------------------------------------------------------------
@@ -577,7 +577,7 @@ static void test_insert_and_resort() {
 int main(int /*argc*/, char * /*argv*/[]) {
    // the lists here are short; with the threshold at 0 every lookup goes through the hash tables
    ocs::module_test::install_test_model({{"TEST", TEST_Type, TEST_Name, TEST_Size}});
-   ocs_cull_hash_set_min_elems(0);
+   ocs::tom::detail::hash_set_min_elems(0);
 
    test_sort_order();
    test_sort_compare();

@@ -36,7 +36,7 @@
  * @brief Unit tests and benchmark for the hash tables of the core of the typed object model (libs/tom)
  *
  * The lists are driven through the run-time typed interface (tom/ocs_Raw.h)
- * and the core (cull_hash_new(), add_elem_ulong(), lookup_first()/lookup_next()),
+ * and the core (ocs::tom::detail::hash_new(), add_elem_ulong(), lookup_first()/lookup_next()),
  * the functions the old lAddElemUlong(), lGetElemUlongRW(),
  * lGetElemStrFirstRW()/NextRW(), lSetUlong(), lSetString(), lRemoveElem() and
  * lCopyList() ran on, so the benchmark measures the same core operations.
@@ -230,10 +230,10 @@ static void print_scaling(const BenchTimes *t) {
 static ocs::tom::RawListPtr make_hashed_list(const char *name, const bool unique_hash, const bool non_unique_hash) {
    auto lp = ocs::tom::RawListPtr::create(DESCR, ocs::tom::Hashing::On, name);
    if (unique_hash) {
-      cull_hash_new(lp.get(), NM_ULONG, true);
+      ocs::tom::detail::hash_new(lp.get(), NM_ULONG, true);
    }
    if (non_unique_hash) {
-      cull_hash_new(lp.get(), NM_STRING, false);
+      ocs::tom::detail::hash_new(lp.get(), NM_STRING, false);
    }
    return lp;
 }
@@ -377,7 +377,7 @@ static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
    const int pos_string = ocs::tom::field_pos(DESCR, NM_STRING);
 #ifdef HASH_STATISTICS
    cht = list_hash_table(lp, 1);
-   printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
+   printf("%s\n", ocs::tom::detail::hash_statistics(cht, &stat_dstring));
 #endif
 
    clock_gettime(CLOCK_MONOTONIC, &ts0);
@@ -476,7 +476,7 @@ static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
    );
 
 #ifdef HASH_STATISTICS
-   printf("%s\n", cull_hash_statistics(cht, &stat_dstring));
+   printf("%s\n", ocs::tom::detail::hash_statistics(cht, &stat_dstring));
    sge_dstring_free(&stat_dstring);
 #endif
 

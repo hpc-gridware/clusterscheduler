@@ -109,7 +109,7 @@ static_assert(CULL_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference mar
  *
  * An element carries its own descriptor, so it can exist outside any list —
  * `lCreateElem()` produces exactly that. Its field values live in a separate
- * array; ocs_cull_value() in cull_multitypeP.h gives the value of a descriptor
+ * array; ocs::tom::detail::value() in tom/detail/ocs_MultitypeP.h gives the value of a descriptor
  * position.
  */
 struct _lListElem {
@@ -117,178 +117,185 @@ struct _lListElem {
    lListElem *prev;   ///< previous element, or nullptr at the head
    uintptr_t owner;   ///< two parts in one word: the state in the two low bits, the list of a bound element in the upper bits (see @ref cull_elem_status)
    const lDescr *descr; ///< the object type, shared: a static block or a counted descriptor (see tom/ocs_Descr.h)
-   lMultiType *cont;  ///< the field values, at the slots ocs_cull_slot() gives for the descriptor positions
+   lMultiType *cont;  ///< the field values, at the slots ocs::tom::detail::slot_index() gives for the positions
 };
 
-/**
- * @brief The value slot of the field at a descriptor position (CS-439)
- *
- * The slot is the position plus the entry's slot offset. Every single field
- * access to `cont` goes through here, so a descriptor whose positions and
- * slots differ needs no change at the call sites.
- *
- * @param dp the descriptor
- * @param pos a valid field position in @p dp
- * @return the index into `cont` that holds the field's value
- */
-inline int ocs_cull_slot(const lDescr *dp, const int pos) {
-   return pos + dp[pos].off;
-}
+namespace ocs::tom {
+   /**
+    * @brief The header of a static or counted descriptor (CS-439)
+    * @param dp the entries of a static or counted descriptor; a plain array has no header
+    * @return its header
+    */
+   inline const cull_descr_header *descr_header_of(const lDescr *dp) {
+      return reinterpret_cast<const cull_descr_header *>(dp) - 1;
+   }
 
-/**
- * @brief A field of a descriptor that has a value: its position and its slot (CS-439)
- */
-struct ocs_cull_present_field {
-   int pos;  ///< the field position in the descriptor
-   int slot; ///< the index into `cont` that holds the field's value
-};
+   /**
+    * @brief The reverse map of a counted descriptor with absent fields (CS-439, N-B-6)
+    * @param dp the entries of a counted descriptor whose header has np < n
+    * @return the field position per slot, np entries behind the terminating entry
+    */
+   inline const int16_t *descr_rmap(const lDescr *dp) {
+      return reinterpret_cast<const int16_t *>(dp + ocs::tom::descr_header_of(dp)->n + 1);
+   }
+} // namespace ocs::tom
 
-/**
- * @brief The header of a static or counted descriptor (CS-439)
- * @param dp the entries of a static or counted descriptor; a plain array has no header
- * @return its header
- */
-inline const cull_descr_header *ocs_cull_descr_header_of(const lDescr *dp) {
-   return reinterpret_cast<const cull_descr_header *>(dp) - 1;
-}
+namespace ocs::tom::detail {
+   /**
+    * @brief The value slot of the field at a descriptor position (CS-439)
+    *
+    * The slot is the position plus the entry's slot offset. Every single field
+    * access to `cont` goes through here, so a descriptor whose positions and
+    * slots differ needs no change at the call sites.
+    *
+    * @param dp the descriptor
+    * @param pos a valid field position in @p dp
+    * @return the index into `cont` that holds the field's value
+    */
+   inline int slot_index(const lDescr *dp, const int pos) {
+      return pos + dp[pos].off;
+   }
+} // namespace ocs::tom::detail
 
-/**
- * @brief The reverse map of a counted descriptor with absent fields (CS-439, N-B-6)
- * @param dp the entries of a counted descriptor whose header has np < n
- * @return the field position per slot, np entries behind the terminating entry
- */
-inline const int16_t *ocs_cull_descr_rmap(const lDescr *dp) {
-   return reinterpret_cast<const int16_t *>(dp + ocs_cull_descr_header_of(dp)->n + 1);
-}
+namespace ocs::tom {
 
-/**
- * @brief The fields of a descriptor that have a value, in slot order (CS-439)
- *
- * Value loops such as free, copy, pack, unpack and dump run over this range
- * rather than over the descriptor entries, so they visit exactly the values an
- * element holds. A counted descriptor with absent fields is walked over its
- * slots through the reverse map in its header, so a reduction to a few fields
- * of a long type costs a few steps (N-B-6). A full descriptor, one without
- * #CULL_IS_REDUCED, has no absent field, and its slots are its positions. Any
- * other descriptor is walked over its entries, skipping absent ones.
- *
- * @code
- * for (const auto f : ocs_cull_present_fields(ep->descr)) {
- *    free_value(ep->descr[f.pos].mt, ep->cont[f.slot]);
- * }
- * @endcode
- */
-class ocs_cull_present_fields {
-public:
-   /// end of the range
-   struct sentinel {};
-
-   /// position in the range
-   class iterator {
-   public:
-      /**
-       * @brief An iterator at the first field that has a value
-       * @param dp the descriptor
-       * @param rmap the reverse map to walk the slots by, or nullptr to walk the entries
-       * @param np the number of slots, used with a reverse map
-       * @param full true if dp has no absent field, so the entry walk needs no check
-       */
-      iterator(const lDescr *dp, const int16_t *rmap, const int np, const bool full)
-         : dp_(dp), rmap_(rmap), np_(np), i_(0), full_(full) {
-         if (rmap_ == nullptr && !full_) {
-            skip_absent();
-         }
-      }
-
-      /**
-       * @brief The field at the iterator
-       * @return its position and slot
-       */
-      ocs_cull_present_field operator*() const {
-         if (rmap_ != nullptr) {
-            return {rmap_[i_], i_};
-         }
-         if (full_) {
-            return {i_, i_};
-         }
-         return {i_, ocs_cull_slot(dp_, i_)};
-      }
-
-      /**
-       * @brief Advance to the next field that has a value
-       * @return the iterator
-       */
-      iterator &operator++() {
-         ++i_;
-         if (rmap_ == nullptr && !full_) {
-            skip_absent();
-         }
-         return *this;
-      }
-
-      /**
-       * @brief Whether the iterator has not reached the end
-       * @return true while it is at a field
-       */
-      bool operator!=(sentinel) const {
-         if (rmap_ != nullptr) {
-            return i_ < np_;
-         }
-         return mt_get_type(dp_[i_].mt) != lEndT;
-      }
-
-   private:
-      /**
-       * @brief Move an entry walk past absent entries
-       */
-      void skip_absent() {
-         while (mt_get_type(dp_[i_].mt) != lEndT && dp_[i_].off == OCS_CULL_ABSENT) {
-            ++i_;
-         }
-      }
-
-      const lDescr *dp_;    ///< the descriptor
-      const int16_t *rmap_; ///< the reverse map, or nullptr for an entry walk
-      int np_;              ///< the number of slots of a slot walk
-      int i_;               ///< the current slot of a slot walk, or position of an entry walk
-      bool full_;           ///< an entry walk over a descriptor without absent fields
+   /**
+    * @brief A field of a descriptor that has a value: its position and its slot (CS-439)
+    */
+   struct present_field {
+      int pos;  ///< the field position in the descriptor
+      int slot; ///< the index into `cont` that holds the field's value
    };
 
    /**
-    * @brief The range over a descriptor
-    * @param dp the descriptor, not nullptr
+    * @brief The fields of a descriptor that have a value, in slot order (CS-439)
+    *
+    * Value loops such as free, copy, pack, unpack and dump run over this range
+    * rather than over the descriptor entries, so they visit exactly the values an
+    * element holds. A counted descriptor with absent fields is walked over its
+    * slots through the reverse map in its header, so a reduction to a few fields
+    * of a long type costs a few steps (N-B-6). A full descriptor, one without
+    * #CULL_IS_REDUCED, has no absent field, and its slots are its positions. Any
+    * other descriptor is walked over its entries, skipping absent ones.
+    *
+    * @code
+    * for (const auto f : ocs::tom::present_fields(ep->descr)) {
+    *    free_value(ep->descr[f.pos].mt, ep->cont[f.slot]);
+    * }
+    * @endcode
     */
-   explicit ocs_cull_present_fields(const lDescr *dp) : dp_(dp) {}
+   class present_fields {
+   public:
+      /// end of the range
+      struct sentinel {};
 
-   /**
-    * @brief The first field that has a value
-    * @return an iterator at it, or at the end
-    */
-   iterator begin() const {
-      // only a reduced descriptor has absent fields (N-B-1)
-      if ((dp_[0].mt & CULL_IS_REDUCED) == 0) {
-         return {dp_, nullptr, 0, true};
-      }
-      if ((dp_[0].mt & CULL_DESCR_INTERNED) != 0) {
-         const cull_descr_header *h = ocs_cull_descr_header_of(dp_);
-         if (h->np < h->n) {
-            return {dp_, ocs_cull_descr_rmap(dp_), static_cast<int>(h->np), false};
+      /// position in the range
+      class iterator {
+      public:
+         /**
+          * @brief An iterator at the first field that has a value
+          * @param dp the descriptor
+          * @param rmap the reverse map to walk the slots by, or nullptr to walk the entries
+          * @param np the number of slots, used with a reverse map
+          * @param full true if dp has no absent field, so the entry walk needs no check
+          */
+         iterator(const lDescr *dp, const int16_t *rmap, const int np, const bool full)
+            : dp_(dp), rmap_(rmap), np_(np), i_(0), full_(full) {
+            if (rmap_ == nullptr && !full_) {
+               skip_absent();
+            }
          }
+
+         /**
+          * @brief The field at the iterator
+          * @return its position and slot
+          */
+         ocs::tom::present_field operator*() const {
+            if (rmap_ != nullptr) {
+               return {rmap_[i_], i_};
+            }
+            if (full_) {
+               return {i_, i_};
+            }
+            return {i_, ocs::tom::detail::slot_index(dp_, i_)};
+         }
+
+         /**
+          * @brief Advance to the next field that has a value
+          * @return the iterator
+          */
+         iterator &operator++() {
+            ++i_;
+            if (rmap_ == nullptr && !full_) {
+               skip_absent();
+            }
+            return *this;
+         }
+
+         /**
+          * @brief Whether the iterator has not reached the end
+          * @return true while it is at a field
+          */
+         bool operator!=(sentinel) const {
+            if (rmap_ != nullptr) {
+               return i_ < np_;
+            }
+            return mt_get_type(dp_[i_].mt) != lEndT;
+         }
+
+      private:
+         /**
+          * @brief Move an entry walk past absent entries
+          */
+         void skip_absent() {
+            while (mt_get_type(dp_[i_].mt) != lEndT && dp_[i_].off == OCS_CULL_ABSENT) {
+               ++i_;
+            }
+         }
+
+         const lDescr *dp_;    ///< the descriptor
+         const int16_t *rmap_; ///< the reverse map, or nullptr for an entry walk
+         int np_;              ///< the number of slots of a slot walk
+         int i_;               ///< the current slot of a slot walk, or position of an entry walk
+         bool full_;           ///< an entry walk over a descriptor without absent fields
+      };
+
+      /**
+       * @brief The range over a descriptor
+       * @param dp the descriptor, not nullptr
+       */
+      explicit present_fields(const lDescr *dp) : dp_(dp) {}
+
+      /**
+       * @brief The first field that has a value
+       * @return an iterator at it, or at the end
+       */
+      iterator begin() const {
+         // only a reduced descriptor has absent fields (N-B-1)
+         if ((dp_[0].mt & CULL_IS_REDUCED) == 0) {
+            return {dp_, nullptr, 0, true};
+         }
+         if ((dp_[0].mt & CULL_DESCR_INTERNED) != 0) {
+            const cull_descr_header *h = ocs::tom::descr_header_of(dp_);
+            if (h->np < h->n) {
+               return {dp_, ocs::tom::descr_rmap(dp_), static_cast<int>(h->np), false};
+            }
+         }
+         return {dp_, nullptr, 0, false};
       }
-      return {dp_, nullptr, 0, false};
-   }
 
-   /**
-    * @brief The end of the range
-    * @return the sentinel
-    */
-   sentinel end() const {
-      return {};
-   }
+      /**
+       * @brief The end of the range
+       * @return the sentinel
+       */
+      sentinel end() const {
+         return {};
+      }
 
-private:
-   const lDescr *dp_; ///< the descriptor
-};
+   private:
+      const lDescr *dp_; ///< the descriptor
+   };
+} // namespace ocs::tom
 
 /**
  * @brief The hash table of one hashed field of a list
@@ -344,7 +351,7 @@ struct _lList {
    lListElem *last;     ///< last element, or nullptr when the list is empty
    /// nslots hash slots, or nullptr until the first table build; atomic and
    /// mutable because concurrent first lookups on a const list publish it,
-   /// which does not change the list logically, see #ocs_cull_hash_lookup_table
+   /// which does not change the list logically, see #ocs::tom::detail::hash_lookup_table
    mutable std::atomic<cull_hash_slot *> ht;
 };
 static_assert(std::atomic<cull_hash_slot *>::is_always_lock_free, "the slot array pointer must not hide a mutex");

@@ -539,7 +539,7 @@ namespace ocs::tom {
  * entry by its index. Each entry holds one reference, given up when the buffer
  * is cleared.
  */
-struct ocs_cull_descr_table {
+struct ocs::tom::descr_table {
    std::vector<const lDescr *> entries; ///< the shared descriptors, by table index
 };
 
@@ -612,9 +612,9 @@ namespace ocs::tom {
        * @param nm the first field of the descriptor
        * @param c DESCR_PACK_TYPE_REF, DESCR_PACK_TABLE_DEF or DESCR_PACK_TABLE_REF
        */
-      void count_shared(const sge_pack_buffer *pb, const int nm, const ocs::cull_stats::Counter c) {
+      void count_shared(const sge_pack_buffer *pb, const int nm, const ocs::tom::stats::Counter c) {
          if (!pb->just_count) {
-            ocs::cull_stats::add_type(nm, c, 1);
+            ocs::tom::stats::add_type(nm, c, 1);
          }
       }
 
@@ -647,7 +647,7 @@ namespace ocs::tom {
          if (cp == nullptr) {
             return;
          }
-         for (const auto f : ocs_cull_present_fields(descr)) {
+         for (const auto f : ocs::tom::present_fields(descr)) {
             lMultiType &value = cp[f.slot];
             switch (mt_get_type(descr[f.pos].mt)) {
                case lStringT:
@@ -682,7 +682,7 @@ namespace ocs::tom {
          if (ep->descr != nullptr) {
             free_values(ep->cont, ep->descr);
             if (elem_kind(ep) == FREE_ELEM || elem_kind(ep) == OBJECT_ELEM) {
-               ocs_cull_descr_release(&(ep->descr));
+               ocs::tom::release_descr(ep->descr);
             }
          }
          sge_free(&ep);
@@ -739,7 +739,7 @@ namespace ocs::tom {
           * @param dp the descriptor
           */
          void operator()(const lDescr *dp) const noexcept {
-            ocs_cull_descr_release(&dp);
+            ocs::tom::release_descr(dp);
          }
       };
 
@@ -755,7 +755,7 @@ namespace ocs::tom {
        * @return its table
        * @throw PackException with PACK_ENOMEM
        */
-      ocs_cull_descr_table *pack_table(sge_pack_buffer *pb);
+      ocs::tom::descr_table *pack_table(sge_pack_buffer *pb);
 
       /**
        * @brief Write a value
@@ -842,9 +842,9 @@ namespace ocs::tom {
          }
       }
 
-      ocs_cull_descr_table *pack_table(sge_pack_buffer *pb) {
+      ocs::tom::descr_table *pack_table(sge_pack_buffer *pb) {
          if (pb->dtab == nullptr) {
-            pb->dtab = new (std::nothrow) ocs_cull_descr_table;
+            pb->dtab = new (std::nothrow) ocs::tom::descr_table;
             if (pb->dtab == nullptr) {
                fail(PACK_ENOMEM, "creating the descriptor table of a pack buffer");
             }
@@ -871,7 +871,7 @@ namespace ocs::tom {
             return nullptr;
          }
          int pos = 0;
-         const lDescr *type = ocs_cull_descr_static_containing(dp[0].nm, &pos);
+         const lDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
          if (type == nullptr || pos != 0) {
             return nullptr;
          }
@@ -918,7 +918,7 @@ namespace ocs::tom {
             const std::uint32_t first_nm = get_uint32(pb);
             const std::uint32_t count = get_uint32(pb);
             // fewer fields than the local type: the sender's type had only these (N-W-6)
-            const lDescr *block = ocs_cull_descr_static_for(static_cast<int>(first_nm));
+            const lDescr *block = ocs::tom::descr_static_for(static_cast<int>(first_nm));
             if (block == nullptr || count == 0 || static_cast<int>(count) > descr_length(block)) {
                format_error(LEDESCRNULL, "a type reference to an unknown or shorter type");
             }
@@ -937,7 +937,7 @@ namespace ocs::tom {
                if (pb->dtab == nullptr || index >= pb->dtab->entries.size()) {
                   format_error(LEDESCRNULL, "a reference to a descriptor table entry that does not exist");
                }
-               const lDescr *dp = ocs_cull_descr_ref(pb->dtab->entries[index]);
+               const lDescr *dp = ocs::tom::descr_ref(pb->dtab->entries[index]);
                *wire_n = static_cast<std::uint32_t>(lCountPresent(dp));
                return dp;
             }
@@ -947,7 +947,7 @@ namespace ocs::tom {
                // the fields by their index in one type, in type order; mt is taken from the local type (N-W-5, N-B-8)
                const std::uint32_t type_nm = get_uint32(pb);
                const std::uint32_t count = get_uint32(pb);
-               const lDescr *type = ocs_cull_descr_static_for(static_cast<int>(type_nm));
+               const lDescr *type = ocs::tom::descr_static_for(static_cast<int>(type_nm));
                const int type_n = type != nullptr ? descr_length(type) : 0;
                if (type == nullptr || count > static_cast<std::uint32_t>(type_n)) {
                   format_error(LEDESCRNULL, "a descriptor of an unknown type or with too many fields");
@@ -967,15 +967,15 @@ namespace ocs::tom {
                }
                CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
                CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
-               OwnedDescr shared(ocs_cull_descr_build(type, keep));
+               OwnedDescr shared(ocs::tom::descr_build(type, keep));
                if (shared == nullptr) {
                   no_memory("building a descriptor");
                }
-               ocs_cull_descr_table *tab = pack_table(pb);
+               ocs::tom::descr_table *tab = pack_table(pb);
                tab->entries.push_back(shared.get());
                *wire_n = count;
                // the table keeps the reference of the build, the caller gets one of its own
-               return ocs_cull_descr_ref(shared.release());
+               return ocs::tom::descr_ref(shared.release());
             }
             if (kind != CULL_PACK_DESCR_BY_FIELD) {
                format_error(LEDESCRNULL, "a descriptor table entry of an unknown kind");
@@ -1010,7 +1010,7 @@ namespace ocs::tom {
          // a full type packed field by field is the local static type, also when the sender's type was shorter (N-W-6)
          if (!enter_table && !wire_reduced) {
             const lDescr *type = prefix_type(dp.data(), n);
-            if (type != expected && expected != nullptr && ocs_cull_descr_is_static(expected)) {
+            if (type != expected && expected != nullptr && ocs::tom::descr_is_static(expected)) {
                format_error(LEDESCRNULL, "a descriptor of another type than expected");
             }
             if (type != nullptr) {
@@ -1023,7 +1023,7 @@ namespace ocs::tom {
          // the fields on the wire are held by a full-length descriptor of their type, with mt from the local type
          // as for a table entry by index (N-B-1, N-B-8); fields of no known type, or of several, are a format error
          int first = 0;
-         const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &first) : nullptr;
+         const lDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &first) : nullptr;
          const int type_n = type != nullptr ? descr_length(type) : 0;
          std::vector<bool> keep(type_n, false);
          bool known = type != nullptr;
@@ -1038,13 +1038,13 @@ namespace ocs::tom {
          if (!known) {
             format_error(LEDESCRNULL, "a descriptor with fields of no known type");
          }
-         OwnedDescr built(ocs_cull_descr_build(type, keep));
+         OwnedDescr built(ocs::tom::descr_build(type, keep));
          if (built == nullptr) {
             no_memory("building a descriptor");
          }
          if (enter_table) {
-            ocs_cull_descr_table *tab = pack_table(pb);
-            tab->entries.push_back(ocs_cull_descr_ref(built.get()));
+            ocs::tom::descr_table *tab = pack_table(pb);
+            tab->entries.push_back(ocs::tom::descr_ref(built.get()));
          }
          return built.release();
       }
@@ -1065,36 +1065,36 @@ namespace ocs::tom {
       void pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
          const int n = lCountPresent(dp);
 
-         if (!ocs_cull_descr_is_counted(dp)) {
+         if (!ocs::tom::descr_is_counted(dp)) {
             put_uint32(pb, CULL_PACK_DESCR_TYPE_REF);
             put_uint32(pb, dp[0].nm);
             put_uint32(pb, n);
-            CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::cull_stats::DESCR_PACK_TYPE_REF);)
+            CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TYPE_REF);)
             return;
          }
 
-         ocs_cull_descr_table *tab = pack_table(pb);
+         ocs::tom::descr_table *tab = pack_table(pb);
          for (std::size_t k = 0; k < tab->entries.size(); k++) {
             if (tab->entries[k] == dp) {
                put_uint32(pb, CULL_PACK_DESCR_TABLE_REF);
                put_uint32(pb, static_cast<std::uint32_t>(k));
-               CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::cull_stats::DESCR_PACK_TABLE_REF);)
+               CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_REF);)
                return;
             }
          }
-         tab->entries.push_back(ocs_cull_descr_ref(dp));
-         CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::cull_stats::DESCR_PACK_TABLE_DEF);)
+         tab->entries.push_back(ocs::tom::descr_ref(dp));
+         CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_DEF);)
 
          // by index if every field belongs to the type of the first one, with the same data type
          int pos = 0;
-         const lDescr *type = n > 0 ? ocs_cull_descr_static_containing(dp[0].nm, &pos) : nullptr;
+         const lDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &pos) : nullptr;
          std::vector<std::uint32_t> idx;
-         for (const auto f : ocs_cull_present_fields(dp)) {
+         for (const auto f : ocs::tom::present_fields(dp)) {
             if (type == nullptr) {
                break;
             }
             int p = 0;
-            if (ocs_cull_descr_static_containing(dp[f.pos].nm, &p) != type ||
+            if (ocs::tom::descr_static_containing(dp[f.pos].nm, &p) != type ||
                 mt_get_type(type[p].mt) != mt_get_type(dp[f.pos].mt)) {
                type = nullptr;
                break;
@@ -1114,7 +1114,7 @@ namespace ocs::tom {
          }
          put_uint32(pb, CULL_PACK_DESCR_BY_FIELD);
          put_uint32(pb, n);
-         for (const auto f : ocs_cull_present_fields(dp)) {
+         for (const auto f : ocs::tom::present_fields(dp)) {
             // the reference count flag is process local and never leaves the process
             put_uint32(pb, dp[f.pos].nm);
             put_uint32(pb, dp[f.pos].mt & ~CULL_DESCR_INTERNED);
@@ -1140,7 +1140,7 @@ namespace ocs::tom {
 
          CULL_STATS_CODE(if (!pb->just_count) { CULL_STATS_TYPE(dp->nm, PACK_ELEMS, 1); })
          if (what == nullptr) {
-            for (const auto f : ocs_cull_present_fields(dp)) {
+            for (const auto f : ocs::tom::present_fields(dp)) {
                const lDescr &d = dp[f.pos];
                // with flags only the fields matching them, e.g. CULL_SPOOL
                if (flags == 0 || (d.mt & flags) != 0) {
@@ -1155,7 +1155,8 @@ namespace ocs::tom {
                if (flags == 0 || (what[i].mt & flags) != 0) {
                   // also when the client asked for the field by name, not through ALL
                   const bool do_transfer = mt_do_transfer(what[i].mt);
-                  const lMultiType *value = do_transfer ? &cp[ocs_cull_slot(dp, what[i].pos)] : &no_transfer_value;
+                  const lMultiType *value =
+                        do_transfer ? &cp[ocs::tom::detail::slot_index(dp, what[i].pos)] : &no_transfer_value;
                   const lEnumeration *sub_what = do_transfer ? what[i].ep : nullptr;
                   CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
                   pack_value(pb, value, sub_what, mt_get_type(what[i].mt), flags);
@@ -1191,7 +1192,7 @@ namespace ocs::tom {
             no_memory("unpacking the values of an element");
          }
          std::uint32_t i = 0;
-         for (const auto f : ocs_cull_present_fields(dp)) {
+         for (const auto f : ocs::tom::present_fields(dp)) {
             if (i++ == wire_n) {
                break;
             }
@@ -1302,7 +1303,7 @@ namespace ocs::tom {
          return;
       }
       for (const lDescr *dp : pb->dtab->entries) {
-         ocs_cull_descr_release(&dp);
+         ocs::tom::release_descr(dp);
       }
       delete pb->dtab;
       pb->dtab = nullptr;
@@ -1317,8 +1318,8 @@ namespace ocs::tom {
 
       if (flags == 0) {
          // the shared descriptor: what a list or a free element holds, or the one equal to a plain array
-         const bool held = ocs_cull_descr_is_counted(descr) || ocs_cull_descr_is_static(descr);
-         OwnedDescr acquired(held ? nullptr : ocs_cull_descr_acquire(descr));
+         const bool held = ocs::tom::descr_is_counted(descr) || ocs::tom::descr_is_static(descr);
+         OwnedDescr acquired(held ? nullptr : ocs::tom::descr_acquire(descr));
          const lDescr *shared = held ? descr : acquired.get();
          if (shared == nullptr) {
             fail(PACK_ENOMEM, "packing a descriptor");
@@ -1330,7 +1331,7 @@ namespace ocs::tom {
 
       // the number of fields that have a value, without the end mark, and those fields
       put_uint32(pb, lCountPresent(descr));
-      for (const auto f : ocs_cull_present_fields(descr)) {
+      for (const auto f : ocs::tom::present_fields(descr)) {
          put_uint32(pb, descr[f.pos].nm);
          // the reference count flag is process local and never leaves the process
          put_uint32(pb, descr[f.pos].mt & ~CULL_DESCR_INTERNED);
@@ -1343,7 +1344,7 @@ namespace ocs::tom {
       CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
 
       // a selection on the full type applies to a reduction holding its fields (N-B-11)
-      if (!ocs_cull_what_fits(what, descr)) {
+      if (!ocs::tom::detail::what_fits(what, descr)) {
          LERROR(LEENUMDESCR);
          fail(PACK_BADARG, "packing a selection of fields the descriptor does not hold");
       }
@@ -1351,7 +1352,7 @@ namespace ocs::tom {
       PackingProfile profile;
       if (flags == 0 && what[0].pos != WHAT_NONE) {
          bool owned;
-         const lDescr *shared = ocs_cull_what_descr(what, descr, &owned);
+         const lDescr *shared = ocs::tom::detail::what_descr(what, descr, &owned);
          if (shared == nullptr) {
             fail(PACK_ENOMEM, "packing a selection as a descriptor");
          }
@@ -1364,7 +1365,7 @@ namespace ocs::tom {
       put_uint32(pb, count_what(what, descr));
       switch (what[0].pos) {
          case WHAT_ALL:
-            for (const auto f : ocs_cull_present_fields(descr)) {
+            for (const auto f : ocs::tom::present_fields(descr)) {
                put_uint32(pb, descr[f.pos].nm);
                put_uint32(pb, descr[f.pos].mt & ~CULL_DESCR_INTERNED);
             }
@@ -1444,7 +1445,7 @@ namespace ocs::tom {
       if (get_uint32(pb) == 0) {
          return nullptr;
       }
-      CULL_STATS_CODE(const std::uint64_t stats_start = ocs::cull_stats::now_ns();)
+      CULL_STATS_CODE(const std::uint64_t stats_start = ocs::tom::stats::now_ns();)
 
       OwnedList lp(static_cast<lList *>(calloc(1, sizeof(lList))));
       if (lp == nullptr) {
@@ -1457,7 +1458,7 @@ namespace ocs::tom {
       lp->descr = unpack_descr(pb, flags, &wire_n, nullptr);
 
       // one hash slot per hashed field; a table is built by the first lookup on its field
-      if (!cull_hash_init_slots(lp.get(), true)) {
+      if (!ocs::tom::detail::hash_init_slots(lp.get(), true)) {
          fail(PACK_ENOMEM, "unpacking a list");
       }
 
@@ -1468,7 +1469,7 @@ namespace ocs::tom {
          static_cast<void>(ep.release());
       }
 
-      CULL_STATS_CODE(const std::uint64_t stats_end = ocs::cull_stats::now_ns();
+      CULL_STATS_CODE(const std::uint64_t stats_end = ocs::tom::stats::now_ns();
                       CULL_STATS_TYPE(lp->descr->nm, UNPACK_LISTS, 1);
                       CULL_STATS_TYPE(lp->descr->nm, UNPACK_ELEMS, lp->nelem);
                       CULL_STATS_TYPE(lp->descr->nm, UNPACK_NS, stats_end - stats_start);)
@@ -1536,7 +1537,7 @@ namespace ocs::tom {
             nm = static_cast<int>(get_uint32(pb));
          }
          int pos = 0;
-         const lDescr *type = ocs_cull_descr_static_containing(nm, &pos);
+         const lDescr *type = ocs::tom::descr_static_containing(nm, &pos);
          if (type == nullptr) {
             fail(PACK_FORMAT, "peeking at a descriptor of no known type");
          }
@@ -1671,7 +1672,7 @@ namespace ocs::tom {
          // the position, the type and the flags of a field are taken from the local type, not from the sender
          // (N-W-5, N-W-11)
          int local_pos = 0;
-         if (const lDescr *type = ocs_cull_descr_static_containing(ep[i].nm, &local_pos); type != nullptr) {
+         if (const lDescr *type = ocs::tom::descr_static_containing(ep[i].nm, &local_pos); type != nullptr) {
             ep[i].pos = local_pos;
             ep[i].mt = type[local_pos].mt;
          }

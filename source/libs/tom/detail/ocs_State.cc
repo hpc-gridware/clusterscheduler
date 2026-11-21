@@ -59,15 +59,19 @@ typedef struct {
 } cull_state_t;
 
 static pthread_once_t cull_once = PTHREAD_ONCE_INIT;
-static pthread_key_t cull_state_key;
 
 static void cull_once_init();
 
-static void cull_state_destroy(void *theState);
+// the file-local part of the thread state; the functions are defined below with their qualified names
+namespace ocs::tom::detail {
+   static pthread_key_t state_key; ///< the key of the per-thread state
 
-static cull_state_t *cull_state_getspecific(pthread_key_t aKey);
+   static void state_destroy(void *theState);
 
-static void cull_state_init(cull_state_t *theState);
+   static cull_state_t *state_getspecific(pthread_key_t aKey);
+
+   static void state_init(cull_state_t *theState);
+} // namespace ocs::tom::detail
 
 
 /**
@@ -75,12 +79,12 @@ static void cull_state_init(cull_state_t *theState);
  *
  * @return one of the `LE*` codes, or 0 when none was recorded
  */
-int cull_state_get_lerrno() {
+int ocs::tom::detail::state_get_lerrno() {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
-   cull_state = cull_state_getspecific(cull_state_key);
+   cull_state = ocs::tom::detail::state_getspecific(ocs::tom::detail::state_key);
 
    return cull_state->lerrno;
 }
@@ -90,12 +94,12 @@ int cull_state_get_lerrno() {
  *
  * @param i one of the `LE*` codes
  */
-void cull_state_set_lerrno(int i) {
+void ocs::tom::detail::state_set_lerrno(int i) {
    cull_state_t *cull_state = nullptr;
 
    pthread_once(&cull_once, cull_once_init);
 
-   cull_state = cull_state_getspecific(cull_state_key);
+   cull_state = ocs::tom::detail::state_getspecific(ocs::tom::detail::state_key);
 
    cull_state->lerrno = i;
 
@@ -116,7 +120,7 @@ void cull_state_set_lerrno(int i) {
  * @note MT-NOTE: cull_once_init() is MT safe.
  */
 static void cull_once_init() {
-   pthread_key_create(&cull_state_key, cull_state_destroy);
+   pthread_key_create(&ocs::tom::detail::state_key, ocs::tom::detail::state_destroy);
    return;
 } /* cull_once_init() */
 
@@ -129,9 +133,9 @@ static void cull_once_init() {
  *
  * @return none
  *
- * @note MT-NOTE: cull_state_destroy() is MT safe.
+ * @note MT-NOTE: ocs::tom::detail::state_destroy() is MT safe.
  */
-static void cull_state_destroy(void *theState) {
+void ocs::tom::detail::state_destroy(void *theState) {
    sge_free(&theState);
 }
 
@@ -148,26 +152,27 @@ static void cull_state_destroy(void *theState) {
  *
  * @return Pointer to thread local cull state
  *
- * @note MT-NOTE: cull_state_getspecific() is MT safe
+ * @note MT-NOTE: ocs::tom::detail::state_getspecific() is MT safe
  */
-static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
+cull_state_t *ocs::tom::detail::state_getspecific(pthread_key_t aKey) {
    cull_state_t *cull_state = (cull_state_t *) pthread_getspecific(aKey);
 
    if (cull_state == nullptr) {
       int res = EINVAL;
 
       cull_state = (cull_state_t *) sge_malloc(sizeof(cull_state_t));
-      cull_state_init(cull_state);
-      res = pthread_setspecific(cull_state_key, (const void *) cull_state);
+      ocs::tom::detail::state_init(cull_state);
+      res = pthread_setspecific(ocs::tom::detail::state_key, (const void *) cull_state);
 
       if (0 != res) {
-         fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "cull_state_getspecific", strerror(res));
+         fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "ocs::tom::detail::state_getspecific",
+                 strerror(res));
          ocs::TerminationManager::trigger_abort();
       }
    }
 
    return cull_state;
-} /* cull_state_getspecific() */
+} /* ocs::tom::detail::state_getspecific() */
 
 /**
  * @brief Initialize CULL state
@@ -178,8 +183,8 @@ static cull_state_t *cull_state_getspecific(pthread_key_t aKey) {
  *
  * @return none
  *
- * @note MT-NOTE: cull_state_init() is MT safe.
+ * @note MT-NOTE: ocs::tom::detail::state_init() is MT safe.
  */
-static void cull_state_init(cull_state_t *theState) {
+void ocs::tom::detail::state_init(cull_state_t *theState) {
    theState->lerrno = 0;
 }
