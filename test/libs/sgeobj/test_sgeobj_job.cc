@@ -35,6 +35,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/sge_range.h"
@@ -136,6 +137,43 @@ test_mailrec_unparse() {
 }
 
 /**
+ * @brief Job and task ids from the command line ("<job>", "<job>.<range>", names) are split as before
+ *
+ * sge_parse_jobtasks() splits at the first '.' into the job id and the task range; a job id must be a whole
+ * number of at least 1, a name is accepted only with include_names, and "\"*\"" always.
+ */
+static void
+test_parse_jobtasks() {
+   printf("\n--- sge_parse_jobtasks ---\n");
+
+   ocs::tom::ListPtr<ocs::tom::ID> ids;
+   auto [plain_ret, plain] = sge_parse_jobtasks(ids, "123", nullptr, false, nullptr);
+   CHECK(12, "a job id alone: accepted, stored as given, no task range",
+         plain_ret == 1 && plain && strcmp(plain.get<ID_str>(), "123") == 0 && !plain.get<ID_ja_structure>());
+
+   auto [range_ret, ranged] = sge_parse_jobtasks(ids, "42.1-5:2", nullptr, false, nullptr);
+   const auto range = ranged ? ranged.get<ID_ja_structure>().front() : ocs::tom::ConstElement<ocs::tom::RN>();
+   CHECK(13, "job id and task range: split at the '.', the range parsed",
+         range_ret == 1 && ranged && strcmp(ranged.get<ID_str>(), "42") == 0 && range &&
+            range.get<RN_min>() == 1 && range.get<RN_max>() == 5 && range.get<RN_step>() == 2);
+
+   CHECK(14, "two elements are in the id list", ids && ids->size() == 2);
+
+   auto [empty_ret, empty] = sge_parse_jobtasks(ids, "", nullptr, false, nullptr);
+   auto [frac_ret, frac] = sge_parse_jobtasks(ids, "1.5x", nullptr, false, nullptr);
+   auto [zero_ret, zero] = sge_parse_jobtasks(ids, "0", nullptr, false, nullptr);
+   CHECK(15, "an empty string, a bad task range and job id 0 are refused without an element",
+         empty_ret == -1 && !empty && frac_ret == -1 && !frac && zero_ret == -1 && !zero);
+
+   auto [name_ret, name] = sge_parse_jobtasks(ids, "myjob", nullptr, false, nullptr);
+   auto [named_ret, named] = sge_parse_jobtasks(ids, "myjob", nullptr, true, nullptr);
+   auto [all_ret, all] = sge_parse_jobtasks(ids, "\"*\"", nullptr, false, nullptr);
+   CHECK(16, "a name only with include_names, \"*\" always",
+         name_ret == -1 && !name && named_ret == 1 && named && strcmp(named.get<ID_str>(), "myjob") == 0 &&
+            all_ret == 1 && all);
+}
+
+/**
  * @brief Entry point
  * @param argc unused
  * @param argv unused
@@ -146,6 +184,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    test_unenrolled_extremes();
    test_mailrec_unparse();
+   test_parse_jobtasks();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

@@ -44,6 +44,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -264,7 +265,8 @@ bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_t
  * @param arrayDefList in case of job names, a list of array taskes (RN), may be an empty handle
  *
  * @return the state, -1 no valid JobTask-Identifier, 1 everything went fine, and the new ID element
- *         parsed from str_jobtask, which is an empty handle for the state -1 or when it could not be created
+ *         parsed from str_jobtask, which is an empty handle for the state -1
+ * @throw ocs::RuntimeException if there is no memory for the list or the element
  *
  * @note MT-NOTE: sge_parse_jobtasks() is MT safe
  */
@@ -274,39 +276,32 @@ sge_parse_jobtasks(ocs::tom::ListPtr<ocs::tom::ID> &id_list, const char *str_job
                    const ocs::tom::ConstList<ocs::tom::RN> arrayDefList) {
    DENTER(TOP_LAYER);
 
-   char *token;
-   char *job_str;
    ocs::tom::ListPtr<ocs::tom::RN> task_id_range_list;
    int ret = 1;
    ocs::tom::Element<ocs::tom::ID> idp = nullptr;
 
-   job_str = strdup(str_jobtask);
+   // the job id, without the task range part after a '.' once that is split off below
+   std::string job_str(str_jobtask);
 
    /* An empty job id string is a bad job id string! */
-   if (strcmp(job_str, "") == 0) {
+   if (job_str.empty()) {
       ret = -1;
-   }
-      /*
-      ** dup the input string for tokenizing
-      */
-   else if (isdigit(job_str[0])) {
-      const double epsilon = 1.0E-12;
-      char *end_ptr = nullptr;
-      double dbl_value;
-      uint32_t ulng_value;
-
-      if ((token = strchr(job_str, '.')) != nullptr) {
-         token[0] = '\0';
-         token++;
-         if (!range_list_parse_from_string(task_id_range_list, alpp, token,
+   } else if (isdigit(job_str[0])) {
+      // "<job id>.<task range>": the range is parsed, the job id stays
+      if (const auto dot = job_str.find('.'); dot != std::string::npos) {
+         const std::string task_range = job_str.substr(dot + 1);
+         job_str = job_str.substr(0, dot);
+         if (!range_list_parse_from_string(task_id_range_list, alpp, task_range.c_str(),
                                            false, true, INF_NOT_ALLOWED) ||
              !task_id_range_list) {
             ret = -1;
          }
       }
 
-      dbl_value = strtod(job_str, &end_ptr);
-      ulng_value = dbl_value;
+      const double epsilon = 1.0E-12;
+      char *end_ptr = nullptr;
+      const double dbl_value = strtod(job_str.c_str(), &end_ptr);
+      const auto ulng_value = static_cast<uint32_t>(dbl_value);
 
       if ((dbl_value < 1) || (dbl_value - ulng_value > epsilon) ||
           (end_ptr == nullptr) || (end_ptr[0] != '\0')) {
@@ -323,29 +318,19 @@ sge_parse_jobtasks(ocs::tom::ListPtr<ocs::tom::ID> &id_list, const char *str_job
    }
 
    if (ret == 1) {
-      if (!include_names && !isdigit(job_str[0]) && (strcmp(job_str, "\"*\"") != 0)) {
+      if (!include_names && !isdigit(job_str[0]) && job_str != "\"*\"") {
          ret = -1;
       } else {
-         try {
-            if (!id_list) {
-               // the name and hashing ocs::tom::emplace_back() gave a list it created
-               id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
-            }
-            idp = id_list->emplace_back<ID_str>(job_str);
-         } catch (const ocs::RuntimeException &) {
-            // no memory: no element, as the soft path of ocs::tom::emplace_back() gave none
+         // no memory throws, as every allocation of the typed object model does
+         if (!id_list) {
+            // the name and hashing ocs::tom::emplace_back() gave a list it created
+            id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
          }
-
-         if (idp) {
-            range_list_sort_uniq_compress(*task_id_range_list, alpp, true);
-            idp.set<ID_ja_structure>(std::move(task_id_range_list));
-         }
+         idp = id_list->emplace_back<ID_str>(job_str.c_str());
+         range_list_sort_uniq_compress(*task_id_range_list, alpp, true);
+         idp.set<ID_ja_structure>(std::move(task_id_range_list));
       }
    }
-   /*
-   ** free the dupped string
-   */
-   sge_free(&job_str);
    DRETURN(std::make_pair(ret, idp));
 }
 
