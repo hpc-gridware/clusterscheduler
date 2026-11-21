@@ -50,6 +50,7 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_object.h"
 
+#include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_qinstance.h"
@@ -79,6 +80,14 @@ static int s_fail = 0;
       } \
    } while (0)
 
+/**
+ * @brief Run the checks of the spooling utilities and of the default spooling context
+ *
+ * Checks spool_get_fields_to_spool(), that every QU field survives a serialize and parse round-trip, the field
+ * operations, and setting, getting and clearing the default spooling context (CS-3191).
+ *
+ * @return 0 if all checks passed, 1 otherwise
+ */
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_spool_utilities");
    component_set_daemonized(true);
@@ -221,6 +230,30 @@ int main(int /*argc*/, char * /*argv*/[]) {
       alp.reset();
 
       sge_dstring_free(&buffer);
+   }
+
+   // --- the default spooling context (CS-3191) ---
+   printf("\n--- default spooling context ---\n");
+   {
+      CHECK(id, "no default context: get gives an empty handle, clear gives an empty owner",
+            !spool_get_default_context() && !ocs_spool_clear_default_context()); id++;
+
+      auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::create();
+      context->set<SPC_name>("default");
+      const lListElem *const raw = context.get();
+      spool_set_default_context(context.release());
+      CHECK(id, "set: get gives the context that was set", spool_get_default_context().raw() == raw); id++;
+
+      auto cleared = ocs_spool_clear_default_context();
+      CHECK(id, "clear: hands over the context and get gives an empty handle afterwards",
+            cleared.get() == raw && !spool_get_default_context()); id++;
+      CHECK(id, "clear: the handed over context is no longer linked in the default list",
+            cleared->get<SPC_name>() != nullptr && !ocs_spool_clear_default_context()); id++;
+
+      // the default list stays usable: a context set again is found again
+      spool_set_default_context(cleared.release());
+      CHECK(id, "set after clear: get gives the context again", spool_get_default_context().raw() == raw); id++;
+      cleared = ocs_spool_clear_default_context();
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

@@ -264,6 +264,9 @@ spool_set_default_context(lListElem *context);
 ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context();
 
+[[nodiscard]] ocs::tom::ElementPtr<ocs::tom::SPC>
+ocs_spool_clear_default_context();
+
 ocs::tom::Element<ocs::tom::SPR>
 spool_context_create_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPC> context,
                           const char *name, const char *url,

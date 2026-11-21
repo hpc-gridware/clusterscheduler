@@ -520,7 +520,7 @@ bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList
  * tests pass the context the dynamic loader gave them raw.
  *
  * @param context the context to be the default context (SPC), handed over to the default list;
- *                nullptr is ignored
+ *                nullptr is ignored (ocs_spool_clear_default_context() removes the default context)
  *
  * @see #spool_get_default_context
  */
@@ -530,7 +530,6 @@ void spool_set_default_context(lListElem *context) {
       // process-lifetime static: no owning handle, the list is handed over raw
       Default_Spool_Context_List = ocs::tom::ListPtr<ocs::tom::SPC>::create(nullptr).release();
    }
-   // lAppendElem() refused a nullptr element with an error return; the qmaster passes nullptr at shutdown
    if (context != nullptr) {
       // the caller hands the context over to the list
       ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List)
@@ -555,6 +554,31 @@ ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context() {
    // the list is created in spool_set_default_context() with SPC
    return ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List).front();
+}
+
+/**
+ * @brief Remove the default spooling context and hand it to the caller (CS-3191)
+ *
+ * Takes the context out of the default list, so that spool_get_default_context()
+ * gives an empty handle afterwards. The caller owns the context: it shuts it
+ * down and frees it. Freeing the element spool_get_default_context() returns
+ * would leave the list pointing at freed memory.
+ *
+ * @return the default context, or an empty owner if none is set
+ *
+ * @see #spool_set_default_context
+ * @see #spool_get_default_context
+ */
+ocs::tom::ElementPtr<ocs::tom::SPC>
+ocs_spool_clear_default_context() {
+   DENTER(TOP_LAYER);
+   ocs::tom::ElementPtr<ocs::tom::SPC> context;
+   // the list is created in spool_set_default_context() with SPC
+   const auto list = ocs::tom::List<ocs::tom::SPC>::from_typed(Default_Spool_Context_List);
+   if (const auto first = list.front()) {
+      context = list.extract(first);
+   }
+   DRETURN(context);
 }
 
 /**

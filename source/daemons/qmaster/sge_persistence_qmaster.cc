@@ -139,8 +139,9 @@ sge_shutdown_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       answer_list_output(&alp);
    }
 
-   /* shutdown spooling; the default context is the SPC element set in sge_initialize_persistence() */
-   auto context = ocs::tom::ElementPtr<ocs::tom::SPC>::from_typed(spool_get_default_context());
+   // shutdown spooling: take the default context (set in sge_initialize_persistence()) out of the default list,
+   // so that spool_get_default_context() gives nothing afterwards, and free it here (CS-3191)
+   auto context = ocs_spool_clear_default_context();
    if (context) {
       if (answer_list != nullptr) {
          spool_shutdown_context(answer_list, context.get());
@@ -151,7 +152,6 @@ sge_shutdown_persistence(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       }
 
       context.reset();
-      spool_set_default_context(nullptr);
    }
 
    DRETURN(ret);
