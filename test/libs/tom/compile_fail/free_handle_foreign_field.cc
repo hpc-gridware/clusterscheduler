@@ -31,11 +31,15 @@
 #include "tom/ocs_Element.h"
 
 /**
- * @brief Read a queue field of a job handle
+ * @brief Add to a queue field of a job handle
+ *
+ * The free accessors get, set and has are deleted on a handle (CS-3103, see free_get_on_handle.cc), so the case
+ * uses the free add, which still has an overload for the handle.
+ *
  * @param job the job
  * @return never compiles
  */
-unsigned wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
+int wrong_use(const ocs::tom::Element<ocs::tom::JB> &job) {
    // the handle knows its type: a field of the queue type is a compile error, not a run-time throw
-   return ocs::tom::get<QU_job_slots>(job);
+   return ocs::tom::add<QU_job_slots>(job, 1);
 }

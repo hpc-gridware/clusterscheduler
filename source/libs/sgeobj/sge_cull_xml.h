@@ -71,7 +71,7 @@ ocs::tom::ElementPtr<ocs::tom::XMLH> xml_getHead(const char *name, ocs::tom::Lis
                                                  ocs::tom::ListPtr<ocs::tom::XMLA> &&attributes) {
    auto elements = std::move(list);
    auto xml_head = ocs_xml_create_head(name, std::move(attributes));
-   ocs::tom::set<XMLH_Element>(xml_head, std::move(elements));
+   ocs::tom::set<XMLH_Element>(xml_head.get().raw(), std::move(elements));
    return xml_head;
 }
 

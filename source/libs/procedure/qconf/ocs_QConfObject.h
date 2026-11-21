@@ -624,7 +624,7 @@ const char *ocs_qconf_key_of(const ocs::tom::ConstElement<typename E::type> ep) 
 template <typename E>
 void ocs_qconf_set_name(const ocs::tom::Element<typename E::type> ep, [[maybe_unused]] const char *name) {
    if constexpr (E::has_name_key) {
-      ocs::tom::set<E::key>(ep, name);
+      ocs::tom::set<E::key>(ep.raw(), name);
    }
 }
 

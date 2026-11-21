@@ -1897,41 +1897,6 @@ namespace ocs::tom {
       return detail::read<F, true>(ep, detail::checked_slot<F>(ep));
    }
 
-   /**
-    * @brief Read a field of an element handle (L2); the free form of a variable that became a handle
-    *
-    * As get() on a raw pointer, but the type of the element is known: a field
-    * of another type does not compile, and only an empty handle and a reduced
-    * element without the field are checked at run time.
-    *
-    * @tparam F the field number, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the value, as the field table declares it
-    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)>
-   [[nodiscard]] auto get(const ConstElement<T> &ep) {
-      detail::assert_field_of<F, T>();
-      return detail::read<F, false>(ep.raw(), detail::checked_slot<F, true>(ep.raw()));
-   }
-
-   /**
-    * @brief Read a field of a mutable element handle (L2); list and object fields give mutable handles
-    * @tparam F the field number, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the value, as the field table declares it
-    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)>
-   [[nodiscard]] auto get(const Element<T> &ep) {
-      detail::assert_field_of<F, T>();
-      return detail::read<F, true>(ep.raw(), detail::checked_slot<F, true>(ep.raw()));
-   }
-
    namespace detail {
 
       /** @brief Whether a type is an owning element handle, which a setter of an object field takes over */
@@ -2065,26 +2030,68 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief Set a field of a mutable element handle (L2), with the error behaviour of the free setter
-    *
-    * A field of another type than the handle's does not compile; an empty
-    * handle gives -1 with LEELEMNULL, a reduced element without the field
-    * throws, as for the raw pointer.
-    *
-    * @tparam F the field number, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @tparam V the value's type
-    * @param ep the element
-    * @param value the value; a list or an element is taken over, as by the old setter
-    * @return 0 on success, -1 for an empty handle, a string that cannot be copied or an element bound elsewhere
-    * @throw FieldException with reason AbsentField if the element does not hold the field
+    * @brief Deleted: on a typed handle use the member (h.get<F>()), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
     */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   auto get(const ConstElement<T> &ep) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.get<F>()), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   auto get(const Element<T> &ep) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h->get<F>()), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   auto get(const ElementPtr<T> &ep) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.set<F>(v)), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @tparam V the value's type
+    * @param ep the handle
+    * @param value the value
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
    template <auto F, ObjectType T, typename V>
       requires TypedField<decltype(F)>
-   int set(const Element<T> &ep, V &&value) {
-      detail::assert_field_of<F, T>();
-      return detail::free_set<F, true>(ep.raw(), std::forward<V>(value));
-   }
+   int set(const Element<T> &ep, V &&value) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h->set<F>(v)), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @tparam V the value's type
+    * @param ep the handle
+    * @param value the value
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   template <auto F, ObjectType T, typename V>
+      requires TypedField<decltype(F)>
+   int set(const ElementPtr<T> &ep, V &&value) = delete;
 
    /**
     * @brief Add an offset to a number field of an element whose type is known only at run time, with the error behaviour of the old function it replaces (lAddUlong(), lAddUlong64(), lAddDouble())
@@ -2187,36 +2194,7 @@ namespace ocs::tom {
 
    // The owning element handle takes the free forms of the handle it owns: a local variable that owns its element
    // (rule L3) keeps its field access lines. Template deduction does not see conversions, hence one overload each.
-
-   /**
-    * @brief Read a field of an owning element handle (L3), as get() on the handle it owns
-    * @tparam F the field number, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the value, as the field table declares it; list and object fields give mutable handles
-    * @throw FieldException with reason NullElement for an empty handle, AbsentField for a reduced element
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)>
-   [[nodiscard]] auto get(const ElementPtr<T> &ep) {
-      return get<F>(ep.get());
-   }
-
-   /**
-    * @brief Set a field of an owning element handle (L3), as set() on the handle it owns
-    * @tparam F the field number, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @tparam V the value's type
-    * @param ep the element
-    * @param value the value; a list or an element is taken over, as by the old setter
-    * @return 0 on success, -1 for an empty handle, a string that cannot be copied or an element bound elsewhere
-    * @throw FieldException with reason AbsentField if the element does not hold the field
-    */
-   template <auto F, ObjectType T, typename V>
-      requires TypedField<decltype(F)>
-   int set(const ElementPtr<T> &ep, V &&value) {
-      return set<F>(ep.get(), std::forward<V>(value));
-   }
+   // The accessors get, set and has have no free form on a handle or an owner (CS-3103, deleted above).
 
    /**
     * @brief Add an offset to a number field of an owning element handle (L3), as add() on the handle it owns

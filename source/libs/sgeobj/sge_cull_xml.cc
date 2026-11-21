@@ -634,7 +634,7 @@ static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(const ocs::tom::List<ocs:
    elem->set<XMLA_Value>(value);
 
    auto parent = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
-   ocs::tom::set<XMLE_Element>(parent, std::move(elem));
+   ocs::tom::set<XMLE_Element>(parent.get().raw(), std::move(elem));
    parent->set<XMLE_Print>(true);
    DRETURN(attributeList.push_back(std::move(parent)));
 }

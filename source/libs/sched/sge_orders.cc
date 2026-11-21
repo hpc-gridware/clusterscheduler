@@ -95,7 +95,7 @@ void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_m
 
    auto jlist = ocs::tom::ListPtr<ocs::tom::SME>::create("");
    jlist->push_back(std::move(sme));
-   ocs::tom::set<OR_joker>(ep, std::move(jlist));
+   ocs::tom::set<OR_joker>(ep.get().raw(), std::move(jlist));
 
    ep->set<OR_type>(ORT_job_schedd_info);
    or_list->push_back(std::move(ep));

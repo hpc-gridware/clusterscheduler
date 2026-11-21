@@ -158,7 +158,7 @@ global_host_with_acl(ocs::tom::ListPtr<ocs::tom::ST> &&acl) {
    auto lp = ocs::tom::ListPtr<ocs::tom::EH>::create("host", layout);
    auto ep = ocs::tom::ElementPtr<ocs::tom::EH>::create(layout);
    ep->set<EH_name>(ocs::tom::Host("global"));
-   ocs::tom::set<EH_acl>(ep, acl.release());
+   ocs::tom::set<EH_acl>(ep.get().raw(), acl.release());
    lp->push_back(std::move(ep));
    return lp;
 }

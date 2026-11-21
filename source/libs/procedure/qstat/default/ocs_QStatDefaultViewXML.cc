@@ -101,15 +101,15 @@ void ocs::QStatDefaultViewXML::report_started(std::ostream &os, QStatParameter &
    queue_list_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    attr_elem->set<XMLA_Name>("queue_info");
-   ocs::tom::set<XMLE_Element>(queue_list_elem, std::move(attr_elem));
+   ocs::tom::set<XMLE_Element>(queue_list_elem.get().raw(), std::move(attr_elem));
    queue_list_elem->set<XMLE_Print>(true);
 
    job_list_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attr_elem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    attr_elem_xmla->set<XMLA_Name>("job_info");
-   ocs::tom::set<XMLE_Element>(job_list_elem, std::move(attr_elem_xmla));
+   ocs::tom::set<XMLE_Element>(job_list_elem.get().raw(), std::move(attr_elem_xmla));
    job_list_elem->set<XMLE_Print>(true);
-   ocs::tom::set<XMLE_List>(job_list_elem, ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list"));
+   ocs::tom::set<XMLE_List>(job_list_elem.get().raw(), ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list"));
 
    DRETURN_VOID;
 }
@@ -169,7 +169,7 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
          DPRINTF("Had empty queue list, create new one\n");
          auto created = ocs::tom::ListPtr<ocs::tom::XMLE>::create("Queue-List");
          queue_list = *created;
-         ocs::tom::set<XMLE_List>(queue_list_elem, std::move(created));
+         ocs::tom::set<XMLE_List>(queue_list_elem.get().raw(), std::move(created));
       }
       queue_list.push_back(std::move(queue_elem));
    } else {
@@ -202,8 +202,8 @@ void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char
       temp->set<XMLE_Print>(false);
       queue_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
       auto attribute_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
-      ocs::tom::set<XMLE_List>(temp, std::move(attribute_list));
-      ocs::tom::set<XMLE_Element>(queue_elem, std::move(temp));
+      ocs::tom::set<XMLE_List>(temp.get().raw(), std::move(attribute_list));
+      ocs::tom::set<XMLE_Element>(queue_elem.get().raw(), std::move(temp));
    }
 
    DRETURN_VOID;
@@ -365,7 +365,7 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_finished(std::ostream &os, cons
       if (l_job_list == nullptr) {
          auto created = ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list");
          l_job_list = *created;
-         ocs::tom::set<XMLE_List>(owner, std::move(created));
+         ocs::tom::set<XMLE_List>(owner.get().raw(), std::move(created));
       }
       qstat_xml_finish_job_list("running", l_job_list);
    } else {
@@ -469,7 +469,7 @@ void ocs::QStatDefaultViewXML::report_job(std::ostream &os, const uint32_t jid, 
    job_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attributes = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
    const auto attribute_list = *attributes;
-   ocs::tom::set<XMLE_List>(job_elem, std::move(attributes));
+   ocs::tom::set<XMLE_List>(job_elem.get().raw(), std::move(attributes));
 
    sge_ext = (parameter.show_ & QSTAT_DISPLAY_EXTENDED) ? true : false;
    tsk_ext = (parameter.show_ & QSTAT_DISPLAY_TASKS) ? true : false;

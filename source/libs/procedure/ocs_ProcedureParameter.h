@@ -267,7 +267,7 @@ namespace ocs {
          auto value = std::move(parameter);
          SGE_ASSERT(bundle);
          const auto bundle_elem = bundle.emplace_back<SPP_name>(name.c_str());
-         ocs::tom::set<SPP_value_list>(bundle_elem, std::move(value));
+         ocs::tom::set<SPP_value_list>(bundle_elem.raw(), std::move(value));
       }
 
 

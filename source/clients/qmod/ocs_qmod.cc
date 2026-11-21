@@ -324,7 +324,7 @@ ocs::tom::ListPtr<ocs::tom::AN> alp;
          }
 
          const auto ep_opt = sge_add_arg(cmdline, t_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_ranges));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(task_id_ranges));
 
          sp++;
          rp = sp;

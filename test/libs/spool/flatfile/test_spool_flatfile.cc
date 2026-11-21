@@ -1314,7 +1314,7 @@ static int EH_test() {
    ep2_ce_4->set<CE_doubleval>(6969.9696);
    lp->push_back(std::move(ep2_ce_4));
 
-   ocs::tom::set<EH_resource_utilization>(ep_eh, lp.release());
+   ocs::tom::set<EH_resource_utilization>(ep_eh.get().raw(), lp.release());
    
    auto lp_hl = ocs::tom::ListPtr<ocs::tom::HL>::create("Load Values List");
    

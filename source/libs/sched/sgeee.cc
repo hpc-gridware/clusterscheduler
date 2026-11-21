@@ -3383,7 +3383,7 @@ sge_build_sgeee_orders(scheduler_all_data_t *lists, const ocs::tom::List<ocs::to
          auto order = ocs::tom::ElementPtr<ocs::tom::OR>::create();
          order->set<OR_type>(ORT_sched_conf);
          // the order takes the list over, and the element with it
-         ocs::tom::set<OR_joker>(order, std::move(up_list));
+         ocs::tom::set<OR_joker>(order.get().raw(), std::move(up_list));
          order_list.push_back(std::move(order));
 
          DPRINTF("   added 1 order for scheduler configuration\n");

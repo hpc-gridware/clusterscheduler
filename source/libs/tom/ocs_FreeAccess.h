@@ -783,6 +783,30 @@ namespace ocs::tom {
    }
 
    /**
+    * @brief Deleted: on a typed handle use the member (h.has<F>()), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   bool has(const ConstElement<T> &ep) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h->has<F>()), there is one way per operation (CS-3103)
+    * @tparam F the field number
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
+    */
+   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)>
+   bool has(const ElementPtr<T> &ep) = delete;
+
+   /**
     * @brief Put a list into a list field and take out the one held; replaces lXchgList()
     *
     * With the setters' contract (N-L-4): a null element or a null list
@@ -1035,7 +1059,7 @@ namespace ocs::tom {
    // A variable that became a handle keeps its free forms: each has an overload for the handle, which knows the
    // element's type at compile time. A field of another type does not compile, and only an empty handle and a
    // reduced element without the field are checked at run time; otherwise each behaves as its form on the raw
-   // pointer.
+   // pointer. The accessors get, set and has have no free form on a handle (CS-3103, deleted next to has()).
 
    /**
     * @brief find_first_in() on an element handle
@@ -1103,20 +1127,6 @@ namespace ocs::tom {
    int erase_in(const Element<T> &ep, const detail::RawKey<F> key) {
       detail::assert_field_of<LF, T>();
       return erase_in<LF, F, true>(ep.raw(), key);
-   }
-
-   /**
-    * @brief has() on an element handle: false for an empty handle and a reduced element without the field
-    * @tparam F the field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return true if the element holds the field
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)>
-   [[nodiscard]] bool has(const ConstElement<T> &ep) noexcept {
-      detail::assert_field_of<F, T>();
-      return has<F, true>(ep.raw());
    }
 
    /**
@@ -1346,19 +1356,6 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief has() on an owning element handle, as on the handle it owns
-    * @tparam F the field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return true if the element holds the field
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)>
-   [[nodiscard]] bool has(const ElementPtr<T> &ep) {
-      return has<F>(ep.get());
-   }
-
-   /**
     * @brief exchange() of a list field on an owning element handle, as on the handle it owns
     * @tparam F the list field, of the handle's type
     * @tparam T the object type, deduced from the handle
@@ -1507,13 +1504,15 @@ namespace ocs::tom {
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type != FieldType::Ref)
    bool copy_if_present(const Element<T> &dst, const ConstElement<T> &src) {
-      if (!dst || !has<F>(src)) {
+      detail::assert_field_of<F, T>();
+      if (!dst || !has<F, true>(src.raw())) {
          return false;
       }
+      // the core of the free setter: a value the setter refuses gives false, not an exception
       if constexpr (FieldTraits<F>::type == FieldType::List || FieldTraits<F>::type == FieldType::Object) {
-         return set<F>(dst, get<F>(src).clone()) == 0;
+         return detail::free_set<F, true>(dst.raw(), src.template get<F>().clone()) == 0;
       } else {
-         return set<F>(dst, get<F>(src)) == 0;
+         return detail::free_set<F, true>(dst.raw(), src.template get<F>()) == 0;
       }
    }
 
@@ -1535,21 +1534,21 @@ namespace ocs::tom {
       template <auto Key, ObjectType T>
       bool same_key(const ConstElement<T> &a, const ConstElement<T> &b, const bool null_matches) {
          if constexpr (FieldTraits<Key>::type == FieldType::Host) {
-            const Host x = get<Key>(a);
-            const Host y = get<Key>(b);
+            const Host x = a.template get<Key>();
+            const Host y = b.template get<Key>();
             if (x == nullptr || y == nullptr) {
                return null_matches && x == nullptr && y == nullptr;
             }
             return x == y;
          } else if constexpr (FieldTraits<Key>::type == FieldType::String) {
-            const char *const x = get<Key>(a);
-            const char *const y = get<Key>(b);
+            const char *const x = a.template get<Key>();
+            const char *const y = b.template get<Key>();
             if (x == nullptr || y == nullptr) {
                return null_matches && x == y;
             }
             return std::strcmp(x, y) == 0;
          } else {
-            return get<Key>(a) == get<Key>(b);
+            return a.template get<Key>() == b.template get<Key>();
          }
       }
    } // namespace detail
@@ -1619,7 +1618,8 @@ namespace ocs::tom {
             }
          }
          if (found) {
-            set<Value>(found, get<Value>(src_ep));
+            // the core of the free setter: a string that cannot be copied is ignored, as before
+            detail::free_set<Value, true>(found.raw(), src_ep.template get<Value>());
          } else {
             dst.push_back(src_ep.clone());
          }
@@ -1664,13 +1664,13 @@ namespace ocs::tom {
        */
       template <auto Key, ObjectType S>
       const char *sublist_key(const ConstElement<S> &ep) {
-         if (!has<Key>(ep)) {
+         if (!has<Key, true>(ep.raw())) {
             return nullptr;
          }
          if constexpr (FieldTraits<Key>::type == FieldType::Host) {
-            return get<Key>(ep).c_str();
+            return ep.template get<Key>().c_str();
          } else {
-            return get<Key>(ep);
+            return ep.template get<Key>();
          }
       }
 
@@ -1741,13 +1741,14 @@ namespace ocs::tom {
       bool ok = true;
       bool changed = false;
 
-      if (!has<ListF>(ConstElement<T>(request))) {
+      if (!has<ListF, true>(request.raw())) {
          return {false, false};
       }
 
       if (mode.change || mode.append || mode.remove) {
-         const List<S> reduced = get<ListF>(request);
-         const List<S> full = get<ListF>(dst);
+         const List<S> reduced = request.template get<ListF>();
+         // the core of the free getter: an empty destination throws NullElement, as documented
+         const List<S> full = detail::read<ListF, true>(dst.raw(), detail::checked_slot<ListF, true>(dst.raw()));
 
          // first the keys the object holds; whatever is applied leaves the request's sub-list
          Element<S> next_reduced = reduced.front();
@@ -1823,7 +1824,7 @@ namespace ocs::tom {
                      report(SublistEvent::NotHeld, rkey);
                   } else if (!full) {
                      report(SublistEvent::CreatedList, rkey);
-                     set<ListF>(dst, reduced.clone(""));
+                     detail::free_set<ListF, true>(dst.raw(), reduced.clone(""));
                      changed = true;
                      break;
                   } else {
@@ -1836,14 +1837,15 @@ namespace ocs::tom {
          }
       } else {
          // without a flag the request's sub-list replaces the object's
-         set<ListF>(dst, get<ListF>(request).clone(""));
+         detail::free_set<ListF, true>(dst.raw(), request.template get<ListF>().clone(""));
          changed = true;
       }
 
       // a sub-list left without elements is removed
       if (ok) {
-         if (const auto lp = get<ListF>(dst); lp && lp.empty()) {
-            set<ListF>(dst, nullptr);
+         if (const auto lp = detail::read<ListF, true>(dst.raw(), detail::checked_slot<ListF, true>(dst.raw()));
+             lp && lp.empty()) {
+            detail::free_set<ListF, true>(dst.raw(), nullptr);
          }
       }
 

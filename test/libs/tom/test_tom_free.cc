@@ -518,8 +518,9 @@ void test_small() {
 void test_owning() {
    // the explicit constructor from a raw element, which checks its type
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>(make_job().release());
-   bool same = ocs::tom::set<JB_job_number>(job, 7) == 0 && ocs::tom::add<JB_job_number>(job, 3) == 0 &&
-               ocs::tom::get<JB_job_number>(job) == 10 && ocs::tom::has<JB_env_list>(job) &&
+   job->set<JB_job_number>(7);
+   bool same = ocs::tom::add<JB_job_number>(job, 3) == 0 && job->get<JB_job_number>() == 10 &&
+               job->has<JB_env_list>() &&
                ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "A") ==
                   ocs::tom::find_first_in<JB_env_list, VA_variable>(job.get(), "A") &&
                ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 2) != nullptr &&
@@ -532,9 +533,10 @@ void test_owning() {
    same = same && ocs::tom::exchange<JB_owner>(job, &owner) == 0 && owner == nullptr &&
           std::string(ocs::tom::get_or_empty<JB_owner>(job)) == "me";
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
-   same = same && ocs::tom::set<JAT_status>(task, 0x5) == 0 && ocs::tom::has_any_bits<JAT_status>(task, 0x4) &&
-          ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 &&
-          ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 && ocs::tom::get<JAT_status>(task) == 0x4;
+   task->set<JAT_status>(0x5);
+   same = same && ocs::tom::has_any_bits<JAT_status>(task, 0x4) && ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 &&
+          ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 && ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 &&
+          task->get<JAT_status>() == 0x4;
    CHECK(12, "the free forms on an owning element handle give what they give on the handle it owns", same);
 
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
@@ -560,7 +562,7 @@ void test_owning() {
    lListElem *const pe_raw = pe.get().raw();
    auto env = ocs::tom::ListPtr<ocs::tom::VA>::create("env");
    lList *const env_raw = env.get().raw();
-   bool stored = ocs::tom::set<JAT_pe_object>(task, std::move(pe)) == 0 && pe == nullptr &&
+   bool stored = ocs::tom::set<JAT_pe_object>(task.get().raw(), std::move(pe)) == 0 && pe == nullptr &&
                  task->get<JAT_pe_object>().raw() == pe_raw;
    lListElem *const first = jobs->front().raw();
    stored = stored && ocs::tom::set<JB_env_list>(first, std::move(env)) == 0 && env == nullptr &&
@@ -570,12 +572,14 @@ void test_owning() {
    auto bound = task->get<JAT_pe_object>().clone();
    lListElem *const bound_raw = bound.get().raw();
    auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
-   const bool first_store = ocs::tom::set<JAT_pe_object>(other_task, std::move(bound)) == 0 && bound == nullptr;
+   const bool first_store =
+      ocs::tom::set<JAT_pe_object>(other_task.get().raw(), std::move(bound)) == 0 && bound == nullptr;
    // an element bound to a field is refused by a second one: the moved-in handle gives it up, the element stays
    // bound to other_task (which frees it), and the refusing field keeps its own element
    lListElem *const kept_raw = task->get<JAT_pe_object>().raw();
    auto rebound = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(bound_raw);
-   const bool refused = ocs::tom::set<JAT_pe_object>(task, std::move(rebound)) == -1 && rebound == nullptr &&
+   const bool refused = ocs::tom::set<JAT_pe_object>(task.get().raw(), std::move(rebound)) == -1 &&
+                        rebound == nullptr &&
                         other_task->get<JAT_pe_object>().raw() == bound_raw &&
                         task->get<JAT_pe_object>().raw() == kept_raw;
    CHECK(15, "a field refusing a bound element leaves it where it is bound, the moved-in handle gives it up",
@@ -590,7 +594,7 @@ void test_owning() {
 
    auto vars = ocs::tom::ListPtr<ocs::tom::VA>::create("vars");
    auto var = ocs::tom::ElementPtr<ocs::tom::VA>::create();
-   ocs::tom::set<VA_variable>(var, "A");
+   var->set<VA_variable>("A");
    vars->push_back(std::move(var));
    const ocs::tom::ConstList<ocs::tom::VA> view = vars;
    const ocs::tom::List<ocs::tom::VA> rw_view = vars;
@@ -606,24 +610,24 @@ void test_owning() {
 
    auto src = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    auto dst = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   ocs::tom::set<JB_job_number>(src, 4711);
-   ocs::tom::set<JB_job_name>(dst, "old");
+   src->set<JB_job_number>(4711);
+   dst->set<JB_job_name>("old");
    auto src_env = ocs::tom::ListPtr<ocs::tom::VA>::create("env");
    auto src_var = ocs::tom::ElementPtr<ocs::tom::VA>::create();
-   ocs::tom::set<VA_variable>(src_var, "X");
+   src_var->set<VA_variable>("X");
    src_env->push_back(std::move(src_var));
-   ocs::tom::set<JB_env_list>(src, std::move(src_env));
+   src->set<JB_env_list>(std::move(src_env));
    const bool number = ocs::tom::copy_if_present<JB_job_number>(*dst, *src) &&
-                       ocs::tom::get<JB_job_number>(dst) == 4711;
+                       dst->get<JB_job_number>() == 4711;
    // the source holds the name field with nullptr: it is copied as it is
    const bool null_string = ocs::tom::copy_if_present<JB_job_name>(*dst, *src) &&
-                            ocs::tom::get<JB_job_name>(dst) == nullptr;
+                            dst->get<JB_job_name>() == nullptr;
    const bool deep = ocs::tom::copy_if_present<JB_env_list>(*dst, *src) &&
-                     ocs::tom::get<JB_env_list>(dst).size() == 1 &&
-                     ocs::tom::get<JB_env_list>(dst).raw() != ocs::tom::get<JB_env_list>(src).raw();
+                     dst->get<JB_env_list>().size() == 1 &&
+                     dst->get<JB_env_list>().raw() != src->get<JB_env_list>().raw();
    const ocs::tom::ConstElement<ocs::tom::JB> none;
    const bool absent = !ocs::tom::copy_if_present<JB_job_number>(*dst, none) &&
-                       ocs::tom::get<JB_job_number>(dst) == 4711;
+                       dst->get<JB_job_number>() == 4711;
    CHECK(18, "copy_if_present copies a value, a nullptr string and a deep list copy, and nothing from a source "
              "without the field", number && null_string && deep && absent);
 }
@@ -638,8 +642,8 @@ make_vars(std::initializer_list<std::pair<const char *, const char *>> pairs) {
    auto vars = ocs::tom::ListPtr<ocs::tom::VA>::create("vars");
    for (const auto &[name, value] : pairs) {
       auto var = ocs::tom::ElementPtr<ocs::tom::VA>::create();
-      ocs::tom::set<VA_variable>(var, name);
-      ocs::tom::set<VA_value>(var, value);
+      var->set<VA_variable>(name);
+      var->set<VA_value>(value);
       vars->push_back(std::move(var));
    }
    return vars;
@@ -655,7 +659,7 @@ values_of(const ocs::tom::ConstList<ocs::tom::VA> vars) {
    std::string out;
    for (const auto var : vars) {
       out += out.empty() ? "" : ",";
-      const char *value = ocs::tom::get<VA_value>(var);
+      const char *value = var.get<VA_value>();
       out += value != nullptr ? value : "-";
    }
    return out;
@@ -697,8 +701,8 @@ make_paths(std::initializer_list<std::pair<const char *, const char *>> pairs) {
    auto paths = ocs::tom::ListPtr<ocs::tom::PN>::create("paths");
    for (const auto &[host, path] : pairs) {
       auto pn = ocs::tom::ElementPtr<ocs::tom::PN>::create();
-      ocs::tom::set<PN_path>(pn, path);
-      ocs::tom::set<PN_host>(pn, ocs::tom::Host{host});
+      pn->set<PN_path>(path);
+      pn->set<PN_host>(ocs::tom::Host{host});
       paths->push_back(std::move(pn));
    }
    return paths;
@@ -714,7 +718,7 @@ paths_of(const ocs::tom::ConstList<ocs::tom::PN> paths) {
    std::string out;
    for (const auto pn : paths) {
       out += out.empty() ? "" : ",";
-      const char *path = ocs::tom::get<PN_path>(pn);
+      const char *path = pn.get<PN_path>();
       out += path != nullptr ? path : "-";
    }
    return out;
@@ -730,8 +734,8 @@ make_mails(std::initializer_list<std::pair<const char *, const char *>> pairs) {
    auto mails = ocs::tom::ListPtr<ocs::tom::MR>::create("mails");
    for (const auto &[user, domain] : pairs) {
       auto mail = ocs::tom::ElementPtr<ocs::tom::MR>::create();
-      ocs::tom::set<MR_user>(mail, user);
-      ocs::tom::set<MR_host>(mail, domain);
+      mail->set<MR_user>(user);
+      mail->set<MR_host>(domain);
       mails->push_back(std::move(mail));
    }
    return mails;
@@ -747,9 +751,9 @@ mails_of(const ocs::tom::ConstList<ocs::tom::MR> mails) {
    std::string out;
    for (const auto mail : mails) {
       out += out.empty() ? "" : ",";
-      const char *user = ocs::tom::get<MR_user>(mail);
+      const char *user = mail.get<MR_user>();
       out += user != nullptr ? user : "-";
-      if (const char *domain = ocs::tom::get<MR_host>(mail); domain != nullptr) {
+      if (const char *domain = mail.get<MR_host>(); domain != nullptr) {
          out += "@";
          out += domain;
       }
@@ -799,10 +803,10 @@ test_host_keys() {
 static void
 test_completed_contracts() {
    auto src = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   ocs::tom::set<JB_job_number>(src, 4711);
+   src->set<JB_job_number>(4711);
    const bool empty_dst = !ocs::tom::copy_if_present<JB_job_number>(ocs::tom::Element<ocs::tom::JB>(), *src);
    CHECK(24, "copy_if_present into an empty destination returns false, though the source holds the field",
-         empty_dst && ocs::tom::get<JB_job_number>(src) == 4711);
+         empty_dst && src->get<JB_job_number>() == 4711);
 
    // the member setter refuses an element bound to another object with BoundElement; the element stays there
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
@@ -847,14 +851,14 @@ static void
 test_take_object() {
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
-   ocs::tom::set<PE_name>(pe, "make");
+   pe->set<PE_name>("make");
    lListElem *const pe_raw = pe.get().raw();
    task->set<JAT_pe_object>(std::move(pe));
 
    auto taken = task->take<JAT_pe_object>();
    CHECK(28, "take gives the element the object field held, not a copy, and leaves the field empty",
          taken.get().raw() == pe_raw && task->get<JAT_pe_object>().raw() == nullptr &&
-            std::strcmp(ocs::tom::get<PE_name>(taken), "make") == 0);
+            std::strcmp(taken->get<PE_name>(), "make") == 0);
 
    // the element taken is free: another object takes it over; an empty field gives an empty handle
    auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
@@ -891,7 +895,7 @@ static ocs::tom::ElementPtr<ocs::tom::JB>
 make_env_job(std::initializer_list<std::pair<const char *, const char *>> pairs, const bool with_list = true) {
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    if (with_list) {
-      ocs::tom::set<JB_env_list>(job.get(), make_vars(pairs));
+      job->set<JB_env_list>(make_vars(pairs));
    }
    return job;
 }
@@ -903,7 +907,7 @@ make_env_job(std::initializer_list<std::pair<const char *, const char *>> pairs,
  */
 static std::string
 env_of(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   const auto env = ocs::tom::get<JB_env_list>(job);
+   const auto env = job.get<JB_env_list>();
    return env ? values_of(env) : "null";
 }
 
@@ -930,8 +934,8 @@ run_modify_sublist(const ocs::tom::Element<ocs::tom::JB> dst, const ocs::tom::El
    std::string events;
    const auto differs = [](const ocs::tom::ConstElement<ocs::tom::VA> a,
                            const ocs::tom::ConstElement<ocs::tom::VA> b) {
-      const char *x = ocs::tom::get<VA_value>(a);
-      const char *y = ocs::tom::get<VA_value>(b);
+      const char *x = a.get<VA_value>();
+      const char *y = b.get<VA_value>();
       return x == nullptr || y == nullptr ? x != y : std::strcmp(x, y) != 0;
    };
    const auto report = [&events](const ocs::tom::SublistEvent event, const char *key) {

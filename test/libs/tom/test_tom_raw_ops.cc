@@ -1778,15 +1778,15 @@ namespace typed_ops {
          return "none";
       }
       std::string text = std::string(us.get<US_name>()) + ":";
-      if (ocs::tom::has<US_entries>(us)) {
+      if (us.has<US_entries>()) {
          for (const ConstElement<UE> entry : us.get<US_entries>()) {
             text += std::string(entry.get<UE_name>()) + ",";
          }
       }
-      if (ocs::tom::has<US_type>(us)) {
+      if (us.has<US_type>()) {
          text += " type";
       }
-      if (ocs::tom::has<US_fshare>(us)) {
+      if (us.has<US_fshare>()) {
          text += " fshare";
       }
       return text;

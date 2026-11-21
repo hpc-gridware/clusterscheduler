@@ -232,7 +232,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
             [[maybe_unused]] auto [ar_ids_parsed, ar_id_list] = ulong_list_parse_from_string(&answer, *sp, ",");
 
             ep_opt = sge_add_arg(pcmdline, ar_OPT, lListT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(ar_id_list));
+            ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(ar_id_list));
 
             sp++;
             continue;
@@ -298,7 +298,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
          lep->set<VA_variable>("+");
          variable_list->push_front(std::move(lep));
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(variable_list));
 
          sp++;
          continue;
@@ -843,7 +843,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
          lep->set<VA_variable>("-");
          variable_list->push_front(std::move(lep));
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(variable_list));
 
          sp++;
          continue;
@@ -975,7 +975,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
                 DRETURN(answer);
             }
             ep_opt = sge_add_arg(pcmdline, e_OPT, lListT, *(sp-1), *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(path_list));
+            ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(path_list));
          }
 
          sp++;
@@ -1005,7 +1005,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, i_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(path_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(path_list));
 
          sp++;
          continue;
@@ -1127,7 +1127,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, hold_jid_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(jid_hold_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(jid_hold_list));
 
          sp++;
          continue;
@@ -1154,7 +1154,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, hold_jid_ad_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(jid_ad_hold_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(jid_ad_hold_list));
 
          sp++;
          continue;
@@ -1256,7 +1256,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
             if (elem) {
                ep_opt = sge_add_arg(pcmdline, jsv_OPT, lListT, *(sp - 1), *sp);
-               ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(path_list));
+               ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(path_list));
             } else {
                answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                        SFNMAX, MSG_SGETEXT_NOMEM);
@@ -1293,7 +1293,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, l_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(resource_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(resource_list));
          ep_opt.set<SPA_argval_lIntT>(hard_soft_flag);
          ep_opt.set<SPA_argval_lLongT>(scope_flag);
 
@@ -1354,7 +1354,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, masterq_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(id_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(id_list));
          ep_opt.set<SPA_argval_lIntT>(0);
          ep_opt.set<SPA_argval_lLongT>(JRS_SCOPE_MASTER);
 
@@ -1384,7 +1384,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, M_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(mail_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(mail_list));
 
          sp++;
          continue;
@@ -1488,7 +1488,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, o_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(stdout_path_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(stdout_path_list));
 
          sp++;
          continue;
@@ -1648,7 +1648,7 @@ DTRACE;
          sge_dstring_append(&d_arg, *sp);
          ep_opt = sge_add_arg(pcmdline, pe_OPT, lStringT, *(sp - 2), sge_dstring_get_string(&d_arg));
          ep_opt.set<SPA_argval_lStringT>(*(sp - 1));
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(pe_range));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(pe_range));
 
          sp++;
 
@@ -1679,7 +1679,7 @@ DTRACE;
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, q_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(id_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(id_list));
          ep_opt.set<SPA_argval_lIntT>(hard_soft_flag);
          ep_opt.set<SPA_argval_lLongT>(scope_flag);
 
@@ -1778,7 +1778,7 @@ DTRACE;
          auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
          lep->set<VA_variable>("=");
          variable_list->push_front(std::move(lep));
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(variable_list));
 
          sp++;
          continue;
@@ -1899,7 +1899,7 @@ DTRACE;
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, S_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(shell_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(shell_list));
 
          sp++;
          continue;
@@ -1934,7 +1934,7 @@ DTRACE;
 
 
          ep_opt = sge_add_arg(pcmdline, t_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(task_id_range_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(task_id_range_list));
 
          sp++;
          continue;
@@ -2003,7 +2003,7 @@ DTRACE;
          } else {
             auto user_list = str_list_parse_from_string(*sp, ",");
             ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(user_list));
+            ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(user_list));
          }
          sp++;
 
@@ -2043,7 +2043,7 @@ DTRACE;
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, v_OPT, lListT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(variable_list));
 
          sp++;
          continue;
@@ -2072,7 +2072,7 @@ DTRACE;
              DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, V_OPT, lListT, *sp, "");
-         ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(env_list));
+         ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(env_list));
 
          sp++;
          continue;
@@ -2365,7 +2365,7 @@ DTRACE;
                DRETURN(answer);
             }
             ep_opt = sge_add_arg(pcmdline, 0, lListT, STR_PSEUDO_JOBID, *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(jid_list));
+            ocs::tom::set<SPA_argval_lListT>(ep_opt.raw(), std::move(jid_list));
             sp++;
          }
          continue;

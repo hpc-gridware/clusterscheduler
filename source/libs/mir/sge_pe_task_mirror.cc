@@ -212,7 +212,7 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
 
    /* first petask add event could have created new pe_task list for job */
    if (!ja_task.get<JAT_task_list>() && pe_task_list != nullptr) {
-      ocs::tom::set<JAT_task_list>(ja_task, pe_task_list);
+      ocs::tom::set<JAT_task_list>(ja_task.raw(), pe_task_list);
    }
 
    DRETURN(SGE_EMA_OK);

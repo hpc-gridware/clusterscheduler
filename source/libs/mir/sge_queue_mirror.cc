@@ -187,7 +187,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
       }
       sge_dstring_free(&key_buffer);
       if (!is_list) {
-         ocs::tom::set<CQ_qinstances>(cqueue, list);
+         ocs::tom::set<CQ_qinstances>(cqueue.raw(), list);
       }
    } else {
       ERROR(MSG_CQUEUE_CANTFINDFORUPDATEIN_SS, name, __func__);

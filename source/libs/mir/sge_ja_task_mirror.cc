@@ -237,7 +237,7 @@ ja_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
    if (action == SGE_EMA_ADD) {
       /* first jatask add event could have created new ja_task list for job */
       if (!job.get<JB_ja_tasks>() && ja_task_list != nullptr) {
-         ocs::tom::set<JB_ja_tasks>(job, ja_task_list);
+         ocs::tom::set<JB_ja_tasks>(job.raw(), ja_task_list);
       }
       /* we must enroll the task to have it removed in the pending range list */
       job_enroll(job, nullptr, ja_task_id);

@@ -438,7 +438,7 @@ static void test_object_verify_cull(const ocs::tom::Element<ocs::tom::QU> queue,
 
    // T37: sub-list with wrong element type — QU_owner_list expects US, not ST → false
    // handed over raw, which stores the list of another type unchecked
-   ocs::tom::set<QU_owner_list>(queue, st_list.clone("owner_list").release());
+   ocs::tom::set<QU_owner_list>(queue.raw(), st_list.clone("owner_list").release());
    CHECK(37, "QU_owner_list with ST elements → false", object_verify_cull(queue, ocs::tom::QU::descriptor.e) == false);
 }
 

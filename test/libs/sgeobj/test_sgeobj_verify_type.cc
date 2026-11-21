@@ -75,7 +75,7 @@ reduced_host_list(ocs::tom::RawListPtr acl) {
    auto lp = ocs::tom::ListPtr<ocs::tom::EH>::create("host", layout);
    auto ep = ocs::tom::ElementPtr<ocs::tom::EH>::create(layout);
    ep->set<EH_name>(ocs::tom::Host("global"));
-   ocs::tom::set<EH_acl>(ep, acl.release());
+   ocs::tom::set<EH_acl>(ep.get().raw(), acl.release());
    lp->push_back(std::move(ep));
    return lp;
 }
@@ -209,7 +209,7 @@ test_client_shapes() {
       job.set<JB_binding>(ocs::tom::ElementPtr<ocs::tom::BN>::create());
       CHECK(13, "an object field of its type passes", ocs_object_list_verify_type(*lp, ocs::tom::JB::descriptor.e));
       // handed over raw, which stores the object of another type unchecked
-      ocs::tom::set<JB_binding>(job, ocs::tom::ElementPtr<ocs::tom::ST>::create().release());
+      ocs::tom::set<JB_binding>(job.raw(), ocs::tom::ElementPtr<ocs::tom::ST>::create().release());
       CHECK(14, "an object field of another type is refused",
             !ocs_object_list_verify_type(*lp, ocs::tom::JB::descriptor.e));
       lp.reset();
@@ -226,7 +226,7 @@ test_client_shapes() {
       CHECK(16, "a subscription filter packed as PACK passes",
             ocs_object_list_verify_type(*lp, ocs::tom::EV::descriptor.e));
       // handed over raw, which stores the object of another type unchecked
-      ocs::tom::set<EVS_where>(evs, ocs::tom::ElementPtr<ocs::tom::ST>::create().release());
+      ocs::tom::set<EVS_where>(evs.raw(), ocs::tom::ElementPtr<ocs::tom::ST>::create().release());
       CHECK(17, "a subscription filter of another type is refused",
             !ocs_object_list_verify_type(*lp, ocs::tom::EV::descriptor.e));
       lp.reset();

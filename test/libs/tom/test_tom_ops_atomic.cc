@@ -76,7 +76,7 @@ namespace {
             ocs::tom::set_atomic<HM_last_used>(entry, 4711) == 0 &&
             ocs::tom::get_atomic<HM_last_used>(ConstElement<HM>(entry)) == 4711);
       // the ordinary setter and the atomic getter see the same slot
-      ocs::tom::set<HM_last_used>(entry, Pattern_b);
+      entry.set<HM_last_used>(Pattern_b);
       CHECK(3, "get_atomic reads what the ordinary setter stored",
             ocs::tom::get_atomic<HM_last_used>(entry) == Pattern_b);
       // the atomic store bypasses the hash table, which only the name field has
@@ -173,7 +173,7 @@ namespace {
       CHECK(11, "set_atomic on an owning handle stores what get_atomic on it reads",
             ocs::tom::set_atomic<HM_last_used>(entry, Pattern_b) == 0 &&
             ocs::tom::get_atomic<HM_last_used>(entry) == Pattern_b &&
-            ocs::tom::get<HM_last_used>(entry) == Pattern_b);
+            entry->get<HM_last_used>() == Pattern_b);
       ElementPtr<HM> empty;
       CHECK(12, "on an empty owning handle set_atomic gives -1 and get_atomic throws NullElement",
             ocs::tom::set_atomic<HM_last_used>(empty, 1) == -1 &&

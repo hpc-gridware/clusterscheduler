@@ -73,18 +73,18 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    auto xmlElem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attrElem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    attrElem->set<XMLA_Name>("djob_info");
-   ocs::tom::set<XMLE_Element>(xmlElem, std::move(attrElem));
+   ocs::tom::set<XMLE_Element>(xmlElem.get().raw(), std::move(attrElem));
    xmlElem->set<XMLE_Print>(true);
-   ocs::tom::set<XMLE_List>(xmlElem, std::move(model.jlp));
+   ocs::tom::set<XMLE_List>(xmlElem.get().raw(), std::move(model.jlp));
    XML_out->push_back(std::move(xmlElem));
 
    /* add messages */
    auto xmlElem_xmle = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attrElem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
    attrElem_xmla->set<XMLA_Name>("messages");
-   ocs::tom::set<XMLE_Element>(xmlElem_xmle, std::move(attrElem_xmla));
+   ocs::tom::set<XMLE_Element>(xmlElem_xmle.get().raw(), std::move(attrElem_xmla));
    xmlElem_xmle->set<XMLE_Print>(true);
-   ocs::tom::set<XMLE_List>(xmlElem_xmle, std::move(model.ilp));
+   ocs::tom::set<XMLE_List>(xmlElem_xmle.get().raw(), std::move(model.ilp));
    XML_out->push_back(std::move(xmlElem_xmle));
 
    // the head takes the list over
