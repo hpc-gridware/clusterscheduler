@@ -40,10 +40,10 @@
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Raw.h"
 #include "tom/ocs_Select.h"
-#include "tom/cull_listP.h"
+#include "tom/detail/ocs_ListP.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 using namespace ocs::tom;
 

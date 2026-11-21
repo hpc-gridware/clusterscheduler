@@ -29,7 +29,7 @@
 #include "uti/sge_bitfield.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/ocs_BindingIo.h"
 #include "sgeobj/sge_job.h"

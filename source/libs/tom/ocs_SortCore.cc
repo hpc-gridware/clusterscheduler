@@ -27,12 +27,12 @@
 
 #include "uti/sge_string.h"
 
-#include "tom/cull_hash.h"
-#include "tom/cull_lerrno.h"
-#include "tom/cull_lerrnoP.h"
-#include "tom/cull_listP.h"
-#include "tom/cull_multitypeP.h"
-#include "tom/cull_sortP.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_Errno.h"
+#include "tom/detail/ocs_ErrnoP.h"
+#include "tom/detail/ocs_ListP.h"
+#include "tom/detail/ocs_MultitypeP.h"
+#include "tom/detail/ocs_SortP.h"
 
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"

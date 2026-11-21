@@ -22,57 +22,57 @@
 
 add_executable(test_tom_traits test_tom_traits.cc)
 target_include_directories(test_tom_traits PRIVATE "./")
-target_link_libraries(test_tom_traits PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_traits PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_traits COMMAND test_tom_traits)
 
 add_executable(test_tom_handles test_tom_handles.cc)
 target_include_directories(test_tom_handles PRIVATE "./")
-target_link_libraries(test_tom_handles PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_handles PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_handles COMMAND test_tom_handles)
 
 add_executable(test_tom_list test_tom_list.cc)
 target_include_directories(test_tom_list PRIVATE "./")
-target_link_libraries(test_tom_list PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_list PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_list COMMAND test_tom_list)
 
 add_executable(test_tom_unique test_tom_unique.cc)
 target_include_directories(test_tom_unique PRIVATE "./")
-target_link_libraries(test_tom_unique PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_unique PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_unique COMMAND test_tom_unique)
 
 add_executable(test_tom_soft_path test_tom_soft_path.cc)
 target_include_directories(test_tom_soft_path PRIVATE "./")
-target_link_libraries(test_tom_soft_path PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_soft_path PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_soft_path COMMAND test_tom_soft_path)
 
 add_executable(test_tom_free test_tom_free.cc)
 target_include_directories(test_tom_free PRIVATE "./")
-target_link_libraries(test_tom_free PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_free PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_free COMMAND test_tom_free)
 
 add_executable(test_tom_ops_atomic test_tom_ops_atomic.cc)
 target_include_directories(test_tom_ops_atomic PRIVATE "./")
-target_link_libraries(test_tom_ops_atomic PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_ops_atomic PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_ops_atomic COMMAND test_tom_ops_atomic)
 
 add_executable(test_tom_model test_tom_model.cc)
 target_include_directories(test_tom_model PRIVATE "./")
-target_link_libraries(test_tom_model PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_model PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_model COMMAND test_tom_model)
 
 add_executable(test_tom_raw_access test_tom_raw_access.cc)
 target_include_directories(test_tom_raw_access PRIVATE "./")
-target_link_libraries(test_tom_raw_access PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_raw_access PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_raw_access COMMAND test_tom_raw_access)
 
 add_executable(test_tom_raw_ops test_tom_raw_ops.cc)
 target_include_directories(test_tom_raw_ops PRIVATE "./")
-target_link_libraries(test_tom_raw_ops PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_raw_ops PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_raw_ops COMMAND test_tom_raw_ops)
 
 add_executable(test_tom_raw_build test_tom_raw_build.cc)
 target_include_directories(test_tom_raw_build PRIVATE "./")
-target_link_libraries(test_tom_raw_build PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_tom_raw_build PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_raw_build COMMAND test_tom_raw_build)
 
 # TRT-02, WHT-01, OPS-01, RAW-ACC and RAW-OPS: sources that must not compile. Each is compiled with the flags of

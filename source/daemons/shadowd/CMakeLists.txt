@@ -31,7 +31,7 @@ target_link_libraries(
       PRIVATE daemonscommon
       gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti

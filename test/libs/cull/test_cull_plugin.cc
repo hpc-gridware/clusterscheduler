@@ -34,8 +34,8 @@
 #include <string>
 #include <unistd.h>
 
-#include "tom/cull_types.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_Types.h"
+#include "tom/ocs_Descr.h"
 #include "tom/ocs_Raw.h"
 
 #include "ocs_module_test.h"

@@ -55,7 +55,7 @@
 #include "uti/sge_uidgid.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "comm/commlib.h"
 

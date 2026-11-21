@@ -34,31 +34,54 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief The public part of the list library: the data types only
- *
- * Since CS-3103 (M6) product code reaches objects through the typed object model
- * and the raw API (tom/ocs_Element.h, tom/ocs_List.h, tom/ocs_Raw.h, ...). Of the
- * old library this header keeps only the data types, under their old names until
- * they move into the typed object model:
- * - lDescr, lList, lListElem, lCondition, lEnumeration, ... and the object type
- *   definition macros LISTDEF/SGE_* (tom/cull_types.h),
- * - the packbuffer sge_pack_buffer and the PACK_* result codes (tom/ocs_PackBuffer.h).
- *
- * The old function interface, list walking and the pack buffer primitives
- * included, is in cull/cull_old_api.h, which only libs/cull, libs/tom,
- * libs/sgeobj/tom and the tests (through cull/cull_test_api.h) may include. The
- * old functions are not declared in product code. The TOM headers still need
- * internal headers of the list library for their inline code, so only the
- * internals (hash tables, element ownership, descriptor registry, the raw value
- * slot) remain reachable through them until a later CS-3103 step moves them
- * behind TOM's own detail headers; product code must not call them. The build
- * checks both, the includes and the calls of the internals, see
- * test/libs/cull/check_cull_api.cmake.
+ * @brief Hash tables over cull list fields
  */
 
-#include <cstdio>
+#include <cstdint>
 
 #include "uti/sge_dstring.h"
+#include "uti/sge_htable.h"
 
-#include "tom/cull_types.h"
-#include "tom/ocs_PackBuffer.h"
+#include "tom/ocs_Types.h"
+#include "tom/detail/ocs_HashP.h"
+
+cull_htable cull_hash_create(const lDescr *dp, int pos, int size);
+
+cull_htable ocs_cull_hash_build(const lList *lp, int pos);
+
+cull_htable ocs_cull_hash_lookup_table(const lList *lp, int pos);
+
+void ocs_cull_hash_set_min_elems(uint32_t n);
+
+int cull_hash_new(lList *lp, int name, bool unique);
+
+int cull_hash_new_check(lList *lp, int nm, bool unique);
+
+void cull_hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique);
+
+void ocs_cull_hash_insert_changed(const lListElem *ep, int pos);
+
+void cull_hash_remove(const lListElem *ep, const int pos);
+
+void cull_hash_elem(const lListElem *ep);
+
+void cull_hash_remove_elem(const lListElem *ep);
+
+lListElem *cull_hash_first(cull_htable ht, const void *key, bool unique,
+                           const void **iterator);
+
+lListElem *cull_hash_next(cull_htable ht, const void **iterator);
+
+void cull_hash_create_hashtables(lList *lp);
+
+bool cull_hash_init_slots(lList *lp, bool hashable);
+
+void cull_hash_free_tables(lList *lp);
+
+void cull_hash_free_slots(lList *lp);
+
+void *cull_hash_key(const lListElem *ep, int pos, char *host_key);
+
+const char *cull_hash_statistics(cull_htable ht, dstring *buffer);
+
+void cull_hash_recreate_after_sort(lList *lp);

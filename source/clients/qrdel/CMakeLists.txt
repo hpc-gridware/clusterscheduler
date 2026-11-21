@@ -30,7 +30,7 @@ target_link_libraries(
       PRIVATE clientscommon
       gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti

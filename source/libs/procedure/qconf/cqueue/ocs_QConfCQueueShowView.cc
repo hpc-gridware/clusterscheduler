@@ -24,7 +24,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"

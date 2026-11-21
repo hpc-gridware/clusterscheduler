@@ -40,7 +40,7 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_ulong.h"

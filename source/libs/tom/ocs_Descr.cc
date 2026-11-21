@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief The descriptor registry, see ocs_cull_descr.h
+ * @brief The descriptor registry, see tom/ocs_Descr.h
  */
 
 #include <cstddef>
@@ -38,13 +38,13 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "tom/cull_lerrnoP.h"
-#include "tom/cull_types.h"
-#include "tom/cull_multitypeP.h"
-#include "tom/cull_state.h"
-#include "tom/cull_stats.h"
-#include "tom/msg_cull.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/detail/ocs_ErrnoP.h"
+#include "tom/ocs_Types.h"
+#include "tom/detail/ocs_MultitypeP.h"
+#include "tom/detail/ocs_State.h"
+#include "tom/detail/ocs_Stats.h"
+#include "tom/msg_tom.h"
+#include "tom/ocs_Descr.h"
 #include "tom/ocs_Model.h"
 
 static_assert(offsetof(cull_descr_block<2>, e) == sizeof(cull_descr_header),

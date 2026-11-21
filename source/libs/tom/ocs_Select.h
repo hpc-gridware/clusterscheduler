@@ -57,8 +57,8 @@
 #include <utility>
 #include <vector>
 
-#include "tom/cull_multitypeP.h"
-#include "tom/cull_whatP.h"
+#include "tom/detail/ocs_MultitypeP.h"
+#include "tom/detail/ocs_WhatP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_PackCore.h"

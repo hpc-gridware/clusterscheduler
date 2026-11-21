@@ -39,7 +39,7 @@
 
 #include "uti/sge_component.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
 #include "sgeobj/sge_answer.h"

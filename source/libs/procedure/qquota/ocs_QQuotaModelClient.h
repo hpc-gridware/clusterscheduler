@@ -23,7 +23,7 @@
  * @brief Client side model of `qquota`: fetches the lists over GDI
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "ocs_QQuotaModelBase.h"
 #include "sgeobj/sge_answer.h"

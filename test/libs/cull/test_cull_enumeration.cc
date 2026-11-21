@@ -61,9 +61,9 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "tom/cull_types.h"
-#include "tom/cull_whatP.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_Types.h"
+#include "tom/detail/ocs_WhatP.h"
+#include "tom/ocs_Descr.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_PrintCore.h"
 #include "tom/ocs_Raw.h"

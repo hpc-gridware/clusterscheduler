@@ -37,7 +37,7 @@
  * @brief The classic spooling backend: master lists as flat files
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"

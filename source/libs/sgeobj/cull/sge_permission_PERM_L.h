@@ -28,5 +28,5 @@
  * @brief Object used to request given permissions of user and host.
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sgeobj/tom/ocs_tom_PERM.h"

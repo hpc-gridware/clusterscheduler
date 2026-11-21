@@ -39,7 +39,7 @@
  * @see sge_host_mirror.cc
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_object.h"
 

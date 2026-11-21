@@ -50,9 +50,9 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "tom/cull_hash.h"
-#include "tom/cull_listP.h"
-#include "tom/cull_types.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_ListP.h"
+#include "tom/ocs_Types.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_Pack.h"

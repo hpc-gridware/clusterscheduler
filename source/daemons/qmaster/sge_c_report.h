@@ -38,7 +38,7 @@
  * @brief Receiving load and job reports from the execution hosts
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "uti/sge_monitor.h"
 
 #include "gdi/ocs_gdi_Packet.h"

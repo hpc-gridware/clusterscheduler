@@ -36,7 +36,7 @@ if (${WITH_SPOOL_DYNAMIC})
          PRIVATE
          sgeobj
          gdi
-         cull
+         tom
          comm
          uti
          commlists)

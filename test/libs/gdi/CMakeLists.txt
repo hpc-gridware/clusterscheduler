@@ -22,7 +22,7 @@
 
 add_executable(test_gdi_task_pack test_gdi_task_pack.cc)
 target_include_directories(test_gdi_task_pack PRIVATE "./")
-target_link_libraries(test_gdi_task_pack PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_gdi_task_pack PRIVATE gdi sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_gdi_task_pack COMMAND test_gdi_task_pack)
 
 if (INSTALL_SGE_TEST)

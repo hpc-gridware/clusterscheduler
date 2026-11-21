@@ -44,7 +44,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "gdi/ocs_gdi_Command.h"
 

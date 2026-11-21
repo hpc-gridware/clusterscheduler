@@ -46,7 +46,7 @@ target_link_libraries(
       commlists
       gdi
       sgeobj
-      cull
+      tom
       uti
       ${SGE_LIBS})
 

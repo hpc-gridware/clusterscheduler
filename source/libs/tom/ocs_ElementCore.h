@@ -34,9 +34,9 @@
 #include <string>
 #include <type_traits>
 
-#include "tom/cull_types.h"
-#include "tom/cull_listP.h"
-#include "tom/cull_multitypeP.h"
+#include "tom/ocs_Types.h"
+#include "tom/detail/ocs_ListP.h"
+#include "tom/detail/ocs_MultitypeP.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_FieldTraits.h"
 

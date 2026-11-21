@@ -23,7 +23,7 @@
  * @brief Host group members that describe a set of hosts instead of naming one
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "uti/sge_dstring.h"
 

@@ -37,7 +37,7 @@
  * @brief Choosing between dynamic and compiled in spooling
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sgeobj/sge_answer.h"
 
 /* create spooling context dynamically or from compiled in default */

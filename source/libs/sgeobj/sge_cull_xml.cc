@@ -56,8 +56,8 @@
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
 
-#include "tom/cull_lerrno.h"
-#include "cull/cull.h"
+#include "tom/detail/ocs_Errno.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/ocs_EscapedString.h"

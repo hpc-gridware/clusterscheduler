@@ -48,7 +48,7 @@
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/ocs_AutoAddHosts.h"
 #include "sgeobj/sge_object.h"

@@ -23,7 +23,7 @@
  * @brief Job categories, grouping jobs with identical scheduling requirements
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "uti/sge_dstring.h"
 

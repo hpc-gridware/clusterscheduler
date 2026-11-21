@@ -18,18 +18,20 @@
 ###########################################################################
 #___INFO__MARK_END_NEW__
 
-# source/libs/tom: the typed object model (CS-3043)
+# source/libs/tom: the typed object model (CS-3043), the list library of the product (CS-3103)
 #
-# The typed core and the list library are one implementation with two
-# interfaces, so the sources here are built into the cull library rather than
-# into a library of their own.
-# The storage layer moved here from the list library (CS-3088): the structures,
-# the descriptor layout, the hash tables and the error number. They keep their names until the list library is removed.
-target_sources(cull PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/cull_hash.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/cull_lerrno.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/cull_state.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_cull_descr.cc
+# The storage layer (the structures, the descriptor layout, the hash tables, the error number) lives in detail/;
+# the old list library and its interface are gone.
+add_library(tom STATIC)
+# the list library calls the utility library, so it is linked after it (CS-3088)
+target_link_libraries(tom PUBLIC uti)
+target_include_directories(tom PUBLIC ${SGE_INCLUDES})
+
+target_sources(tom PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_Hash.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_Errno.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_State.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/ocs_Descr.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DescrRegistryProbe.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DumpCore.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_ElementCore.cc
@@ -48,7 +50,7 @@ target_sources(cull PRIVATE
 )
 
 if (ENABLE_CULL_STATS)
-   target_sources(cull PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/cull_stats.cc)
+   target_sources(tom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_Stats.cc)
 endif ()
 
 if (SGE_ARCH MATCHES "lx-arm.*")

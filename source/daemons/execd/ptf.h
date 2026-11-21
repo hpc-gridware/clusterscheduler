@@ -50,7 +50,7 @@
 
 #include <sys/types.h>
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/tom/ocs_tom_JB.h"

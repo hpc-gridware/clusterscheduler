@@ -26,12 +26,12 @@
 
 #include "uti/sge_stdlib.h"
 
-#include "tom/cull_hash.h"
-#include "tom/cull_lerrnoP.h"
-#include "tom/cull_listP.h"
-#include "tom/cull_multitypeP.h"
-#include "tom/cull_stats.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_ErrnoP.h"
+#include "tom/detail/ocs_ListP.h"
+#include "tom/detail/ocs_MultitypeP.h"
+#include "tom/detail/ocs_Stats.h"
+#include "tom/ocs_Descr.h"
 
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"

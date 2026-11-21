@@ -37,8 +37,8 @@
  * @brief Internal error state of the cull library
  */
 
-#include "tom/cull_lerrno.h"
-#include "tom/cull_state.h"
+#include "tom/detail/ocs_Errno.h"
+#include "tom/detail/ocs_State.h"
 
 /// Record a cull error code as the calling thread's last error
 #define LERROR(x) cull_state_set_lerrno(x);

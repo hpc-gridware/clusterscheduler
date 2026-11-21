@@ -56,7 +56,7 @@
 #include <utility>
 #include <vector>
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
@@ -65,15 +65,15 @@
 #include "tom/ocs_Pack.h"
 #include "tom/ocs_Model.h"
 #include "tom/ocs_Raw.h"
-#include "tom/cull_hash.h"
-#include "tom/cull_listP.h"
-#include "tom/cull_state.h"
-#include "tom/cull_whatP.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_ListP.h"
+#include "tom/detail/ocs_State.h"
+#include "tom/detail/ocs_WhatP.h"
 #include "tom/ocs_PackCore.h"
 #include "tom/ocs_PrintCore.h"
 #include "tom/ocs_Select.h"
 #include "tom/ocs_SelectCore.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_Descr.h"
 
 #include "ocs_module_test.h"
 

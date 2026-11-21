@@ -22,17 +22,17 @@
 
 add_executable(test_sgeobj_eval_expression test_sgeobj_eval_expression.cc)
 target_include_directories(test_sgeobj_eval_expression PRIVATE "./")
-target_link_libraries(test_sgeobj_eval_expression PRIVATE sgeobj gdi cull commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_eval_expression PRIVATE sgeobj gdi tom commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_eval_expression COMMAND test_sgeobj_eval_expression)
 
 add_executable(test_sgeobj_performance test_sgeobj_performance.cc)
 target_include_directories(test_sgeobj_performance PRIVATE "./")
-target_link_libraries(test_sgeobj_performance PRIVATE sgeobj gdi cull commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_performance PRIVATE sgeobj gdi tom commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_performance COMMAND test_sgeobj_performance)
 
 add_executable(test_sgeobj_auto_add_hosts test_sgeobj_auto_add_hosts.cc)
 target_include_directories(test_sgeobj_auto_add_hosts PRIVATE "./")
-target_link_libraries(test_sgeobj_auto_add_hosts PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_auto_add_hosts PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_auto_add_hosts_plain COMMAND test_sgeobj_auto_add_hosts plain)
 add_test(NAME test_sgeobj_auto_add_hosts_ignore_fqdn COMMAND test_sgeobj_auto_add_hosts ignore_fqdn)
 add_test(NAME test_sgeobj_auto_add_hosts_default_domain
@@ -40,59 +40,59 @@ add_test(NAME test_sgeobj_auto_add_hosts_default_domain
 
 add_executable(test_sgeobj_attr test_sgeobj_attr.cc)
 target_include_directories(test_sgeobj_attr PRIVATE "./")
-target_link_libraries(test_sgeobj_attr PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_attr PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_attr COMMAND test_sgeobj_attr)
 
 add_executable(test_sgeobj_fgl test_sgeobj_fgl.cc)
 target_include_directories(test_sgeobj_fgl PRIVATE "./")
-target_link_libraries(test_sgeobj_fgl PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_fgl PRIVATE sgeobj tom commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_fgl COMMAND test_sgeobj_fgl)
 
 # test_sgeobj_fgl is correct but long-running, so it is kept out of the default
 # ctest run. Opt in by reconfiguring with -DENABLE_LONG_TESTS=ON (same switch as
-# the uti lock/deadlock and cull perf tests).
+# the uti lock/deadlock and tom perf tests).
 if (NOT ENABLE_LONG_TESTS)
    set_tests_properties(test_sgeobj_fgl PROPERTIES DISABLED TRUE)
 endif ()
 
 add_executable(test_sgeobj_object test_sgeobj_object.cc)
 target_include_directories(test_sgeobj_object PRIVATE "./")
-target_link_libraries(test_sgeobj_object PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_object PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_object COMMAND test_sgeobj_object)
 
 add_executable(test_sgeobj_range test_sgeobj_range.cc)
 target_include_directories(test_sgeobj_range PRIVATE "./")
-target_link_libraries(test_sgeobj_range PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_range PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_range COMMAND test_sgeobj_range)
 
 add_executable(test_sgeobj_resource_quota test_sgeobj_resource_quota.cc)
 target_include_directories(test_sgeobj_resource_quota PRIVATE "./")
-target_link_libraries(test_sgeobj_resource_quota PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_resource_quota PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_resource_quota COMMAND test_sgeobj_resource_quota)
 
 add_executable(test_sgeobj_conf test_sgeobj_conf.cc)
 target_include_directories(test_sgeobj_conf PRIVATE "./")
-target_link_libraries(test_sgeobj_conf PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_conf PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_conf COMMAND test_sgeobj_conf)
 
 add_executable(test_sgeobj_schedd_conf test_sgeobj_schedd_conf.cc)
 target_include_directories(test_sgeobj_schedd_conf PRIVATE "./")
-target_link_libraries(test_sgeobj_schedd_conf PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_schedd_conf PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_schedd_conf COMMAND test_sgeobj_schedd_conf)
 
 add_executable(test_sgeobj_utility test_sgeobj_utility.cc)
 target_include_directories(test_sgeobj_utility PRIVATE "./")
-target_link_libraries(test_sgeobj_utility PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_utility PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_utility COMMAND test_sgeobj_utility)
 
 add_executable(test_sgeobj_qref test_sgeobj_qref.cc)
 target_include_directories(test_sgeobj_qref PRIVATE "./")
-target_link_libraries(test_sgeobj_qref PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_qref PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_qref COMMAND test_sgeobj_qref)
 
 add_executable(test_sgeobj_role test_sgeobj_role.cc)
 target_include_directories(test_sgeobj_role PRIVATE "./")
-target_link_libraries(test_sgeobj_role PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_role PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_role COMMAND test_sgeobj_role)
 
 # manop_is_manager()/manop_is_operator() take a gdi::Packet, so libgdi is needed.
@@ -100,83 +100,83 @@ add_test(NAME test_sgeobj_role COMMAND test_sgeobj_role)
 # ocs::Version::get_version(), which live in sgeobj.
 add_executable(test_sgeobj_manop test_sgeobj_manop.cc)
 target_include_directories(test_sgeobj_manop PRIVATE "./")
-target_link_libraries(test_sgeobj_manop PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_manop PRIVATE gdi sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_manop COMMAND test_sgeobj_manop)
 
 # hgroup_is_reserved()/hgroup_is_system_maintained() are plain predicates in
 # sgeobj -- no gdi needed, unlike test_sgeobj_manop above.
 add_executable(test_sgeobj_hgroup test_sgeobj_hgroup.cc)
 target_include_directories(test_sgeobj_hgroup PRIVATE "./")
-target_link_libraries(test_sgeobj_hgroup PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_hgroup PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_hgroup COMMAND test_sgeobj_hgroup)
 
 # CS-3117: cqueue_purge_host() must not leave an attribute field pointing at a freed list
 add_executable(test_sgeobj_cqueue test_sgeobj_cqueue.cc)
 target_include_directories(test_sgeobj_cqueue PRIVATE "./")
-target_link_libraries(test_sgeobj_cqueue PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_cqueue PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_cqueue COMMAND test_sgeobj_cqueue)
 
 # CS-3123: the smallest/biggest unenrolled task id over all five hold lists, a_h included
 add_executable(test_sgeobj_job test_sgeobj_job.cc)
 target_include_directories(test_sgeobj_job PRIVATE "./")
-target_link_libraries(test_sgeobj_job PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_job PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_job COMMAND test_sgeobj_job)
 
 # CS-3125: the type check of request data in qmaster's listener thread
 add_executable(test_sgeobj_verify_type test_sgeobj_verify_type.cc)
 target_include_directories(test_sgeobj_verify_type PRIVATE "./")
-target_link_libraries(test_sgeobj_verify_type PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_verify_type PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_verify_type COMMAND test_sgeobj_verify_type)
 
 # CS-3103: run-time typed sgeobj helpers on the checked raw API
 add_executable(test_sgeobj_obj_misc test_sgeobj_obj_misc.cc)
 target_include_directories(test_sgeobj_obj_misc PRIVATE "./")
-target_link_libraries(test_sgeobj_obj_misc PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_obj_misc PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_obj_misc COMMAND test_sgeobj_obj_misc)
 
 add_executable(test_sgeobj_usage test_sgeobj_usage.cc)
 target_include_directories(test_sgeobj_usage PRIVATE "./")
-target_link_libraries(test_sgeobj_usage PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_usage PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_usage COMMAND test_sgeobj_usage)
 
 add_executable(test_sgeobj_usage_parse test_sgeobj_usage_parse.cc)
 target_include_directories(test_sgeobj_usage_parse PRIVATE "./")
-target_link_libraries(test_sgeobj_usage_parse PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_usage_parse PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_usage_parse COMMAND test_sgeobj_usage_parse)
 
 add_executable(test_sgeobj_request_parse test_sgeobj_request_parse.cc)
 target_include_directories(test_sgeobj_request_parse PRIVATE "./")
-target_link_libraries(test_sgeobj_request_parse PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_request_parse PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_request_parse COMMAND test_sgeobj_request_parse)
 
 add_executable(test_sgeobj_rsmap test_sgeobj_rsmap.cc)
 target_include_directories(test_sgeobj_rsmap PRIVATE "./")
-target_link_libraries(test_sgeobj_rsmap PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_rsmap PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_rsmap COMMAND test_sgeobj_rsmap)
 
 add_executable(test_sgeobj_ulong test_sgeobj_ulong.cc)
 target_include_directories(test_sgeobj_ulong PRIVATE "./")
-target_link_libraries(test_sgeobj_ulong PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_ulong PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_ulong COMMAND test_sgeobj_ulong)
 
 add_executable(test_sgeobj_var test_sgeobj_var.cc)
 target_include_directories(test_sgeobj_var PRIVATE "./")
-target_link_libraries(test_sgeobj_var PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_var PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_var COMMAND test_sgeobj_var)
 
 add_executable(test_sgeobj_parse_util test_sgeobj_parse_util.cc)
 target_include_directories(test_sgeobj_parse_util PRIVATE "./")
-target_link_libraries(test_sgeobj_parse_util PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_parse_util PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_parse_util COMMAND test_sgeobj_parse_util)
 
 add_executable(test_sgeobj_AnswerException test_sgeobj_AnswerException.cc)
 target_include_directories(test_sgeobj_AnswerException PRIVATE "./")
-target_link_libraries(test_sgeobj_AnswerException PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_AnswerException PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_AnswerException COMMAND test_sgeobj_AnswerException)
 
 add_executable(test_sgeobj_unique_keys test_sgeobj_unique_keys.cc)
 target_include_directories(test_sgeobj_unique_keys PRIVATE "./")
-target_link_libraries(test_sgeobj_unique_keys PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_sgeobj_unique_keys PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_unique_keys COMMAND test_sgeobj_unique_keys)
 
 if (INSTALL_SGE_TEST)

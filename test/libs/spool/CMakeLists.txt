@@ -24,12 +24,12 @@ add_subdirectory(flatfile)
 
 add_executable(test_spool_performance test_spool_performance.cc)
 target_include_directories(test_spool_performance PRIVATE "./")
-target_link_libraries(test_spool_performance PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool_performance PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_performance COMMAND test_spool_performance)
 
 add_executable(test_spool_mt test_spool_mt.cc)
 target_include_directories(test_spool_mt PRIVATE "./")
-target_link_libraries(test_spool_mt PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool_mt PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_mt COMMAND test_spool_mt)
 
 # test_spool_performance and test_spool_mt are correct but long-running, so they
@@ -41,18 +41,18 @@ endif ()
 
 add_executable(test_spool_utilities test_spool_utilities.cc)
 target_include_directories(test_spool_utilities PRIVATE "./")
-target_link_libraries(test_spool_utilities PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool_utilities PRIVATE ${SPOOLING_LIBS} gdi sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_utilities COMMAND test_spool_utilities)
 
 add_executable(test_spool_duplicates test_spool_duplicates.cc)
 target_include_directories(test_spool_duplicates PRIVATE "./")
-target_link_libraries(test_spool_duplicates PRIVATE spool sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool_duplicates PRIVATE spool sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_duplicates COMMAND test_spool_duplicates)
 
 # CS-3120: a dot file left behind by a failed rename must not cost a job its tasks
 add_executable(test_spool_classic_job test_spool_classic_job.cc)
 target_include_directories(test_spool_classic_job PRIVATE "./")
-target_link_libraries(test_spool_classic_job PRIVATE spoolc_static spool gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool_classic_job PRIVATE spoolc_static spool gdi sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_classic_job COMMAND test_spool_classic_job)
 
 # Golden output of the flatfile/JSON spooling of every spooled object type, for proving a
@@ -61,7 +61,7 @@ add_test(NAME test_spool_classic_job COMMAND test_spool_classic_job)
 # it only checks that every text reads back and writes again unchanged.
 add_executable(test_spool_golden test_spool_golden.cc)
 target_include_directories(test_spool_golden PRIVATE "./")
-target_link_libraries(test_spool_golden PRIVATE spoolc_static spool gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool_golden PRIVATE spoolc_static spool gdi sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool_golden COMMAND test_spool_golden)
 
 # Round trip of objects through the Berkeley DB spooling backend in a temporary directory: written bytes,
@@ -69,7 +69,7 @@ add_test(NAME test_spool_golden COMMAND test_spool_golden)
 if (${WITH_SPOOL_BERKELEYDB})
    add_executable(test_spool_bdb_roundtrip test_spool_bdb_roundtrip.cc)
    target_include_directories(test_spool_bdb_roundtrip PRIVATE "./")
-   target_link_libraries(test_spool_bdb_roundtrip PRIVATE spoolb_static spool gdi sched sgeobj cull comm commlists
+   target_link_libraries(test_spool_bdb_roundtrip PRIVATE spoolb_static spool gdi sched sgeobj tom comm commlists
          uti berkeleydb ${SGE_LIBS})
    add_test(NAME test_spool_bdb_roundtrip COMMAND test_spool_bdb_roundtrip)
    if (INSTALL_SGE_TEST)
@@ -79,7 +79,7 @@ endif ()
 
 add_executable(test_spool test_spool.cc ../../../source/common/sig_handlers.cc)
 target_include_directories(test_spool PRIVATE "./")
-target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_spool PRIVATE mir evc ${SPOOLING_LIBS} gdi sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_spool COMMAND test_spool)
 
 # test_spool requires arguments (<method> <shared lib> <arguments>) and cannot

@@ -1,4 +1,9 @@
 #pragma once
+
+#include <cstdio>
+
+#include "uti/sge_dstring.h"
+#include "tom/ocs_PackBuffer.h"
 /*___INFO__MARK_BEGIN__*/
 /*************************************************************************
  * 
@@ -49,7 +54,7 @@
 #include <cstdint>
 #include <utility>
 
-#include "tom/cull_hashP.h"
+#include "tom/detail/ocs_HashP.h"
 
 #define NoName -1 ///< field name meaning "no field"; terminates a descriptor
 
@@ -114,7 +119,7 @@ extern const char *multitypes[];
 #define CULL_SUBLIST       0x00010000 ///< the field is spooled when the type appears as a subtype of another, where fewer fields are written
 #define CULL_SPOOL_PROJECT 0x00020000 ///< deprecated?
 #define CULL_SPOOL_USER    0x00040000 ///< deprecated?
-#define CULL_DESCR_INTERNED 0x00080000 ///< set in entry 0 of a reference counted descriptor (see ocs_cull_descr.h); process local, never packed
+#define CULL_DESCR_INTERNED 0x00080000 ///< set in entry 0 of a reference counted descriptor (see tom/ocs_Descr.h); process local, never packed
 #define CULL_UNUSED2       0x00100000 ///< free for reuse
 #define CULL_IS_REDUCED    0x00200000 ///< the descriptor is a reduced one, holding only part of the type's fields
 /** @} */

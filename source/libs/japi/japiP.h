@@ -47,7 +47,7 @@
  * job and one over a cull list of strings.
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 /** @brief The attributes of a job template, both scalar and vector ones */
 struct drmaa_job_template_s {

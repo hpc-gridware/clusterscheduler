@@ -23,7 +23,7 @@
  * @brief Reading and writing the per-instance characteristics of an RSMAP
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "uti/sge_dstring.h"
 #include "sgeobj/sge_answer.h"
 #include "tom/ocs_Element.h"

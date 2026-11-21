@@ -47,7 +47,7 @@
 #include "uti/sge_hostname.h"
 #include "uti/ocs_TerminationManager.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "tom/ocs_PackCore.h"
 
 #include "sgeobj/sge_job.h"

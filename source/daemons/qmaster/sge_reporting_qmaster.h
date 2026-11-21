@@ -40,7 +40,7 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_monitor.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_advance_reservation.h"

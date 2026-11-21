@@ -38,7 +38,7 @@
  * @brief Per-thread state of the cull library
  */
 
-#include "tom/cull_types.h"
+#include "tom/ocs_Types.h"
 #include "uti/sge_dstring.h"
 
 void cull_state_set_lerrno(int i);

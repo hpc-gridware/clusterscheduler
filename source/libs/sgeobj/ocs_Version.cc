@@ -26,7 +26,7 @@
 #include <tuple>
 #include <cctype>
 
-#include "../cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "../uti/sge_log.h"
 #include "../uti/sge_rmon_macros.h"
 #include "sge_answer.h"

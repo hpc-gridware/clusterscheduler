@@ -43,7 +43,7 @@
 
 #include "comm/cl_commlib.h"
 
-#include "../cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "uti/ocs_Bootstrap.h"
 #include "uti/sge_afsutil.h"

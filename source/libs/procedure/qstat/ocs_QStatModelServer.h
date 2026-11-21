@@ -23,7 +23,7 @@
  * @brief Server side model of `qstat`: reads the lists inside qmaster
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "gdi/ocs_gdi_Client.h"
 

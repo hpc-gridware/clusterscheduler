@@ -23,7 +23,7 @@
  * @brief Controller of `qstat -j`: runs the request and drives the view
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "qstat/ocs_QStatModelBase.h"
 #include "qstat/ocs_QStatParameter.h"

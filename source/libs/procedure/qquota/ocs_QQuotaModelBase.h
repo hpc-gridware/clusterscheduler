@@ -23,7 +23,7 @@
  * @brief Base model of `qquota`: the lists the report is built from
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_EH.h"

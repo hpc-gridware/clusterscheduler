@@ -45,11 +45,11 @@
 #include "sgeobj/sge_object.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_Descr.h"
 #include "tom/ocs_Model.h"
 
 #include "ocs_module_test.h"
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 /**
  * @brief The fallback text the model gives for an unknown field

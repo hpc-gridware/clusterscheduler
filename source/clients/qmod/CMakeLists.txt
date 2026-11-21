@@ -26,7 +26,7 @@ target_link_libraries(
       qmod
       PRIVATE gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti

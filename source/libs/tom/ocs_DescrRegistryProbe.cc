@@ -30,7 +30,7 @@
  * ocs_link_registry_probe() (cmake/OcsRegistryProbe.cmake).
  */
 
-#include "tom/ocs_cull_descr.h"
+#include "tom/ocs_Descr.h"
 
 /**
  * @brief The descriptor registry the code of this object uses

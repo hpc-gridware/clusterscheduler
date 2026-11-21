@@ -37,7 +37,7 @@ target_link_libraries(
         clientscommon
         gdi
         sgeobj
-        cull
+        tom
         comm
         commlists
         uti

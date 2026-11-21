@@ -23,7 +23,7 @@
  * @brief Client side model of `qhost`: fetches the lists over GDI
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "ocs_QHostModelBase.h"
 #include "sgeobj/sge_answer.h"

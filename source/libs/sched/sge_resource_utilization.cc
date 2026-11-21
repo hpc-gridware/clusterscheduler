@@ -56,7 +56,7 @@
 #include "uti/sge_hostname.h"
 #include "uti/sge_stdlib.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_ulong.h"

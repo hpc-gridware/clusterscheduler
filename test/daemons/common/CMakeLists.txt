@@ -22,7 +22,7 @@
 
 add_executable(test_common_category test_common_category.cc)
 target_include_directories(test_common_category PRIVATE "./")
-target_link_libraries(test_common_category PRIVATE daemonscommon sched sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_common_category PRIVATE daemonscommon sched sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_common_category COMMAND test_common_category)
 
 add_executable(test_common_heartbeat test_common_heartbeat.cc)

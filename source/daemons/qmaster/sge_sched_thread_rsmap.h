@@ -23,7 +23,7 @@
  * @brief Granting resource map ids to a scheduled task
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sge_select_queue.h"
 
 bool

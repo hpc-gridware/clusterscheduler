@@ -44,7 +44,7 @@
  * info, and the ids of those messages are defined in `sge_schedd_text.h`.
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sgeobj/tom/ocs_tom_CCT.h"
 #include "sgeobj/tom/ocs_tom_CT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"

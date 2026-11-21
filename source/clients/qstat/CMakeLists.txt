@@ -29,7 +29,7 @@ add_executable(
         ../../common/usage.cc)
 
 target_include_directories(qstat PRIVATE ${SGE_INCLUDES} "../../libs/uti"
-      "../../libs/cull" "../../libs/sgeobj")
+      "../../libs/tom" "../../libs/sgeobj")
 
 target_link_libraries(
         qstat
@@ -39,7 +39,7 @@ target_link_libraries(
         sched
         gdi
         sgeobj
-        cull
+        tom
         comm
         commlists
         uti

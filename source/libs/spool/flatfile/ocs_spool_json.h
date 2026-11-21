@@ -23,7 +23,7 @@
  * @brief Rendering cull objects as JSON, for `qconf -fmt json`
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "tom/ocs_Raw.h"
 #include "uti/sge_dstring.h"
 #include "spool/sge_spooling_utilities.h"

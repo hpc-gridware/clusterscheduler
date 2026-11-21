@@ -38,8 +38,8 @@
  */
 
 
-#include "tom/cull_types.h"
-#include "tom/cull_multitypeP.h"
+#include "tom/ocs_Types.h"
+#include "tom/detail/ocs_MultitypeP.h"
 
 /* ---- tokens of the format strings and operators of a condition, returned by scan() ---- */
 

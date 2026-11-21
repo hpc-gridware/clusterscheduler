@@ -21,10 +21,10 @@
 # The old function interface of the list library is not public (CS-3103, M6).
 #
 # Product code reaches objects through the typed object model and the raw API
-# (tom/ocs_*.h). Of the old library it may include only cull/cull.h, the data
-# types: tom/cull_types.h (lList, lListElem, lDescr, ... and the object type
+# (tom/ocs_*.h). Of the old library it may include only tom/ocs_Types.h, the data
+# types: tom/ocs_Types.h (lList, lListElem, lDescr, ... and the object type
 # definition macros) and tom/ocs_PackBuffer.h (sge_pack_buffer, the PACK_*
-# codes); tom/cull_lerrno.h (the error codes the cull error state is set with)
+# codes); tom/detail/ocs_Errno.h (the error codes the tom error state is set with)
 # may be included directly.
 #
 # Two checks, both ERRORs:
@@ -32,7 +32,7 @@
 # 1. Includes. Every other header of source/libs/cull (cull/cull_old_api.h and
 #    the headers it collects, cull/pack.h), tom/pack.h (the old pack buffer
 #    primitives), the other cull_*.h headers of source/libs/tom and
-#    tom/ocs_cull_descr.h declare the old function interface or its internals:
+#    tom/ocs_Descr.h declare the old function interface or its internals:
 #    including one is an error, except
 #    - under source/libs/cull, source/libs/tom and source/libs/sgeobj/tom, which
 #      implement the old interface or wrap it, and
@@ -44,11 +44,11 @@
 #    unit any more, the compiler refuses its names. The TOM headers still need
 #    internal headers of the list library for their inline code, so the
 #    internals declared there stay reachable until a later CS-3103 step moves
-#    them behind detail headers of tom: tom/cull_hash.h (cull_hash_*,
-#    ocs_cull_hash_*), tom/cull_listP.h (ocs_cull_slot(), elem_kind(),
-#    elem_set_*(), list_hash_table(), ...), tom/cull_multitypeP.h
-#    (ocs_cull_value(), ocs_cull_bad_slot()), tom/cull_whatP.h and
-#    tom/ocs_cull_descr.h (lCountPresent(), ocs_cull_descr_*()). Outside the
+#    them behind detail headers of tom: tom/detail/ocs_Hash.h (cull_hash_*,
+#    ocs_cull_hash_*), tom/detail/ocs_ListP.h (ocs_cull_slot(), elem_kind(),
+#    elem_set_*(), list_hash_table(), ...), tom/detail/ocs_MultitypeP.h
+#    (ocs_cull_value(), ocs_cull_bad_slot()), tom/detail/ocs_WhatP.h and
+#    tom/ocs_Descr.h (lCountPresent(), ocs_cull_descr_*()). Outside the
 #    same exceptions no file may call one of them. The names are taken from the
 #    declarations in these headers (a declaration starts in column 0), except
 #    ocs_cull_descr_make*(), which LISTDEF expands to in every object type
@@ -67,19 +67,14 @@ cmake_policy(SET CMP0057 NEW)
 
 # ---- the headers product code must not include
 set(forbidden "")
-file(GLOB cull_headers RELATIVE "${SOURCE_DIR}/source/libs" "${SOURCE_DIR}/source/libs/cull/*.h")
-foreach (header IN LISTS cull_headers)
-   if (NOT header STREQUAL "cull/cull.h")
+file(GLOB detail_headers RELATIVE "${SOURCE_DIR}/source/libs" "${SOURCE_DIR}/source/libs/tom/detail/*.h")
+foreach (header IN LISTS detail_headers)
+   # the error codes of the list core stay public
+   if (NOT header STREQUAL "tom/detail/ocs_Errno.h")
       list(APPEND forbidden "${header}")
    endif ()
 endforeach ()
-file(GLOB tom_headers RELATIVE "${SOURCE_DIR}/source/libs" "${SOURCE_DIR}/source/libs/tom/cull_*.h")
-foreach (header IN LISTS tom_headers)
-   if (NOT header MATCHES "^tom/cull_(types|lerrno)\\.h$")
-      list(APPEND forbidden "${header}")
-   endif ()
-endforeach ()
-list(APPEND forbidden "tom/ocs_cull_descr.h" "tom/pack.h")
+list(APPEND forbidden "tom/ocs_Descr.h")
 # headers are compared by their file name: libs/cull and libs/tom export their own directories as include
 # paths, so "cull_list.h" or "./cull_list.h" reach the same header as "cull/cull_list.h"
 set(forbidden_names "")
@@ -87,9 +82,6 @@ foreach (header IN LISTS forbidden)
    get_filename_component(name "${header}" NAME)
    list(APPEND forbidden_names "${name}")
 endforeach ()
-# the public names win where an old and a public header share a file name (cull/cull_lerrno.h forwards to
-# tom/cull_lerrno.h)
-list(REMOVE_ITEM forbidden_names "cull.h" "cull_types.h" "cull_lerrno.h")
 list(REMOVE_DUPLICATES forbidden_names)
 # one pattern for all of them, cull_test_api.h included
 set(include_alternation "${forbidden_names};cull_test_api.h")
@@ -98,7 +90,7 @@ string(REPLACE ";" "|" include_alternation "${include_alternation}")
 set(include_pattern "#[ \t]*include[ \t]*[<\"]([^>\"\n]*/)?(${include_alternation})[>\"]")
 
 # ---- the internals product code must not call
-set(internal_headers cull_hash.h cull_listP.h cull_multitypeP.h cull_whatP.h ocs_cull_descr.h)
+set(internal_headers detail/ocs_Hash.h detail/ocs_ListP.h detail/ocs_MultitypeP.h detail/ocs_WhatP.h ocs_Descr.h)
 set(internal_names "")
 foreach (header IN LISTS internal_headers)
    # a declaration starts in column 0 (documentation and bodies are indented); the name is the first identifier
@@ -150,7 +142,7 @@ foreach (root IN LISTS roots)
       if (rel MATCHES "(^|/)test/")
          continue ()
       endif ()
-      if (rel MATCHES "^source/libs/(cull|tom|sgeobj/tom)/")
+      if (rel MATCHES "^source/libs/(tom|tom|sgeobj/tom)/")
          continue ()
       endif ()
       # the text starts with a line break, so that a call has a character before the name

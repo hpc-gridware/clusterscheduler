@@ -46,7 +46,7 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_signal.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"

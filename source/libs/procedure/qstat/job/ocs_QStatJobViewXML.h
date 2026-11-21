@@ -23,7 +23,7 @@
  * @brief XML rendering of `qstat -j`
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "qstat/ocs_QStatParameter.h"
 

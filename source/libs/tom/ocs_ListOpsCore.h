@@ -32,7 +32,7 @@
  * N-L-2). LEGACY-16 pins the results.
  */
 
-#include "tom/cull_types.h"
+#include "tom/ocs_Types.h"
 
 namespace ocs::tom {
 

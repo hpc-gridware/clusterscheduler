@@ -18,7 +18,7 @@
  *
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 /*----------------------------------------------------
  *
@@ -36,7 +36,7 @@
  *--------------------------------------------------
  */
 
-/* BASIC_UNIT and MAX_DESCR_SIZE are defined in tom/cull_types.h */
+/* BASIC_UNIT and MAX_DESCR_SIZE are defined in tom/ocs_Types.h */
 
 enum NameSpaceBoundaries {
 

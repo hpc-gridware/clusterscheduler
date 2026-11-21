@@ -33,9 +33,9 @@
  */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "cull/cull.h"
-#include "tom/cull_hash.h"
-#include "tom/cull_multitypeP.h"
+#include "tom/ocs_Types.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_MultitypeP.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_FieldException.h"
 #include "tom/ocs_ListCore.h"

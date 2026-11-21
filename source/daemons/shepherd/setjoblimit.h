@@ -37,7 +37,7 @@
  * @brief The operating system job id the resource limits are set against
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "ptf.h"
 
 osjobid_t get_rlimits_os_job_id ();

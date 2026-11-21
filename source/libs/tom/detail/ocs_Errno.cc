@@ -49,8 +49,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
 
-#include "tom/cull_lerrnoP.h"
-#include "tom/msg_cull.h"
+#include "tom/detail/ocs_ErrnoP.h"
+#include "tom/msg_tom.h"
 
 #include <cinttypes>
 

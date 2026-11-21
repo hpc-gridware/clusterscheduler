@@ -39,7 +39,7 @@
  * @see sge_qinstance_state.cc
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "uti/sge_dstring.h"
 
 #include "tom/ocs_Element.h"

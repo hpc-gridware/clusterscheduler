@@ -44,7 +44,7 @@
 
 #include "uti/sge_dstring.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_PET.h"

@@ -36,7 +36,7 @@
  * @brief Per-thread state of the cull library
  */
 
-#include "tom/cull_state.h"
+#include "tom/detail/ocs_State.h"
 
 #include <cstring>
 #include <cerrno>

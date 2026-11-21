@@ -70,7 +70,7 @@ endif()
 if (PROJECT_FEATURES MATCHES "gcs-extensions")
     add_custom_target(generate_headers
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            COMMAND gen_types json CULL cull TOM tom
+            COMMAND gen_types json CULL tom TOM tom
             COMMENT "Generate the CULL header files and the TOM traits headers"
     )
     add_dependencies(generate_headers validate_json)
@@ -173,7 +173,7 @@ set(LIBRARY_INCLUDES ${SGE_INCLUDES} "./")
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES} ${OUTPUT_FILES})
 # the objects of this library call the list library, so it is linked after them (CS-3088)
-target_link_libraries(${LIBRARY_NAME} PUBLIC cull)
+target_link_libraries(${LIBRARY_NAME} PUBLIC tom)
 #if (PROJECT_FEATURES MATCHES "gcs-extensions")
 #    add_dependencies(${LIBRARY_NAME} cull_header)
 #endif ()

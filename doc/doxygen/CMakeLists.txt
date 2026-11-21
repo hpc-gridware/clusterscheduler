@@ -74,7 +74,6 @@ if (DOXYGEN_FOUND)
    set(DXM_FINISHED_MODULES
          source/libs/evc
          source/libs/uti
-         source/libs/cull
          source/libs/gdi
          source/libs/sgeobj
          source/libs/evm

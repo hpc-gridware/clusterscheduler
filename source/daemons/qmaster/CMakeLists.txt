@@ -116,7 +116,7 @@ target_include_directories(sge_qmaster PUBLIC "./" ${SGE_INCLUDES})
 
 target_link_libraries(
          sge_qmaster
-         PUBLIC daemonscommon procedure spoolc_static sched evm mir evc gdi sgeobj cull comm commlists uti
+         PUBLIC daemonscommon procedure spoolc_static sched evm mir evc gdi sgeobj tom comm commlists uti
          PRIVATE ${SGE_LIBS} ${SPOOLING_LIBS} ${GPERFTOOLS_PROFILER}
 )
 
@@ -147,7 +147,7 @@ if (WITH_PYTHON)
            # renders through the flatfile writer, which lives there. This target
            # is only built with WITH_PYTHON=ON, so a missing entry here would
            # pass every build that has it off.
-           PUBLIC daemonscommon procedure spoolc_static sched evm mir evc gdi sgeobj cull comm commlists uti
+           PUBLIC daemonscommon procedure spoolc_static sched evm mir evc gdi sgeobj tom comm commlists uti
            PRIVATE ${SGE_LIBS} ${SPOOLING_LIBS} ${GPERFTOOLS_PROFILER} ${PYTHON_ALL_LIBRARIES}
    )
 

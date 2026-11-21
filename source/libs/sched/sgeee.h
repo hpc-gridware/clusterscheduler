@@ -45,7 +45,7 @@
  */
 
 #include "sgeobj/cull/sge_boundaries.h"
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "sge_orders.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_STN.h"

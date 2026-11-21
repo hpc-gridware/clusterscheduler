@@ -59,7 +59,7 @@
 #include "sgeobj/cull/sge_japi_JJ_L.h"
 #include "sgeobj/cull/sge_japi_JJAT_L.h"
 #include "sgeobj/cull/sge_japi_NSV_L.h"
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 

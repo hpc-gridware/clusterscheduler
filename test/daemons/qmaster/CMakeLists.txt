@@ -24,7 +24,7 @@ add_executable(test_qmaster_timed_event
       test_qmaster_timed_event.cc
       ../../../source/daemons/qmaster/sge_qmaster_timed_event.cc)
 target_include_directories(test_qmaster_timed_event PRIVATE "./")
-target_link_libraries(test_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 
 # CS-2438: the reserved host group guards live in the qmaster (hgroup_del(),
@@ -34,7 +34,7 @@ add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 # has no cluster. Installed into testbin/ so a testsuite check can drive it.
 add_executable(test_qmaster_hgroup_reserved test_qmaster_hgroup_reserved.cc)
 target_include_directories(test_qmaster_hgroup_reserved PRIVATE "./")
-target_link_libraries(test_qmaster_hgroup_reserved PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_hgroup_reserved PRIVATE gdi sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_hgroup_reserved COMMAND test_qmaster_hgroup_reserved)
 set_tests_properties(test_qmaster_hgroup_reserved PROPERTIES DISABLED TRUE)
 
@@ -44,7 +44,7 @@ set_tests_properties(test_qmaster_hgroup_reserved PROPERTIES DISABLED TRUE)
 # installed treatment as test_qmaster_hgroup_reserved above.
 add_executable(test_qmaster_hgroup_cache test_qmaster_hgroup_cache.cc)
 target_include_directories(test_qmaster_hgroup_cache PRIVATE "./")
-target_link_libraries(test_qmaster_hgroup_cache PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_hgroup_cache PRIVATE gdi sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_hgroup_cache COMMAND test_qmaster_hgroup_cache)
 set_tests_properties(test_qmaster_hgroup_cache PROPERTIES DISABLED TRUE)
 
@@ -56,14 +56,14 @@ set_tests_properties(test_qmaster_hgroup_cache PROPERTIES DISABLED TRUE)
 # cluster, and a testsuite check drives it.
 add_executable(test_qmaster_procedure_mod test_qmaster_procedure_mod.cc)
 target_include_directories(test_qmaster_procedure_mod PRIVATE "./")
-target_link_libraries(test_qmaster_procedure_mod PRIVATE procedure gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_procedure_mod PRIVATE procedure gdi sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_procedure_mod COMMAND test_qmaster_procedure_mod)
 set_tests_properties(test_qmaster_procedure_mod PROPERTIES DISABLED TRUE)
 
 # CS-3125: the structure check of GDI request data in the listener thread; needs a running qmaster
 add_executable(test_qmaster_request_structure test_qmaster_request_structure.cc)
 target_include_directories(test_qmaster_request_structure PRIVATE "./")
-target_link_libraries(test_qmaster_request_structure PRIVATE gdi sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_request_structure PRIVATE gdi sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_request_structure COMMAND test_qmaster_request_structure)
 set_tests_properties(test_qmaster_request_structure PROPERTIES DISABLED TRUE)
 
@@ -71,7 +71,7 @@ add_executable(test_qmaster_rusage
       test_qmaster_rusage.cc
       ../../../source/daemons/qmaster/sge_rusage.cc)
 target_include_directories(test_qmaster_rusage PRIVATE "./" "../../../source/daemons/qmaster")
-target_link_libraries(test_qmaster_rusage PRIVATE sched sgeobj gdi cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_rusage PRIVATE sched sgeobj gdi tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_rusage COMMAND test_qmaster_rusage)
 
 # CS-3103: replace_sublist<F>() of the attribute modification helpers, which took over the run-time
@@ -80,7 +80,7 @@ add_executable(test_qmaster_utility
       test_qmaster_utility.cc
       ../../../source/daemons/qmaster/sge_utility_qmaster.cc)
 target_include_directories(test_qmaster_utility PRIVATE "./" "../../../source/daemons/qmaster")
-target_link_libraries(test_qmaster_utility PRIVATE sgeobj gdi cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(test_qmaster_utility PRIVATE sgeobj gdi tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_utility COMMAND test_qmaster_utility)
 
 add_executable(test_qmaster_calendar
@@ -154,7 +154,7 @@ target_link_libraries(
         # sits ahead of "procedure" here - so the spooling libraries are named a
         # second time behind it. sge_qmaster needs no such repetition because
         # its ${SPOOLING_LIBS} is in the PRIVATE section, after everything else.
-        PRIVATE daemonscommon ${SPOOLING_LIBS} procedure spoolc_static spool sched mir evc evm sgeobj gdi cull comm commlists uti
+        PRIVATE daemonscommon ${SPOOLING_LIBS} procedure spoolc_static spool sched mir evc evm sgeobj gdi tom comm commlists uti
         ${SGE_LIBS} ${GPERFTOOLS_PROFILER})
 add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 

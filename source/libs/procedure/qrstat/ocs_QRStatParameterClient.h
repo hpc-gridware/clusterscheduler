@@ -23,7 +23,7 @@
  * @brief Client side parameters of `qrstat`: parsed from argv and the environment
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "tom/ocs_List.h"

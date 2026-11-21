@@ -35,7 +35,7 @@ target_link_libraries(
       evc
       gdi
       sgeobj
-      cull
+      tom
       uti
       ${SGE_LIBS})
 

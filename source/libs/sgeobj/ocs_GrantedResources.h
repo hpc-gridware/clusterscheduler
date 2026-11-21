@@ -39,7 +39,7 @@
 
 #include <string>
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "cull/sge_grantedres_GRU_L.h"
 

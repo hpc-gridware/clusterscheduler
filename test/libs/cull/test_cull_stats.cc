@@ -43,10 +43,10 @@
 /** @brief Make this translation unit the one that defines the CULL descriptors */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
-#include "tom/cull_hash.h"
-#include "tom/cull_stats.h"
-#include "tom/cull_types.h"
-#include "tom/ocs_cull_descr.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_Stats.h"
+#include "tom/ocs_Types.h"
+#include "tom/ocs_Descr.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_PackBuffer.h"
 #include "tom/ocs_PackCore.h"

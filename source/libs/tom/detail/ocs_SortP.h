@@ -37,7 +37,7 @@
  * @brief Internal representation of a sort order
  */
 
-#include "tom/cull_types.h"
+#include "tom/ocs_Types.h"
 
 /**
  * @brief One sort criterion: which field to compare and in which direction

@@ -26,7 +26,7 @@ target_link_libraries(
       sge_test_reconnect
       PRIVATE gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti

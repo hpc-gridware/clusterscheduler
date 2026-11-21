@@ -37,7 +37,7 @@
  * @brief The job spool directory: one file per job, array task and parallel task
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "uti/sge_spool.h"
 

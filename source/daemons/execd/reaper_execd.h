@@ -47,7 +47,7 @@
  * This is also where jobs left behind by a daemon restart are cleaned up.
  */
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_daemonize.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"

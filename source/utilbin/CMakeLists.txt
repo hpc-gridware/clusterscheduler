@@ -53,27 +53,27 @@ target_link_libraries(fstype PRIVATE commlists uti ${SGE_LIBS})
 # gethostbyaddr
 add_executable(gethostbyaddr gethostbyaddr.cc)
 target_include_directories(gethostbyaddr PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyaddr PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(gethostbyaddr PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 
 # gethostbyname
 add_executable(gethostbyname gethostbyname.cc)
 target_include_directories(gethostbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostbyname PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(gethostbyname PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 
 # gethostname
 add_executable(gethostname gethostname.cc)
 target_include_directories(gethostname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(gethostname PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(gethostname PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 
 # getservbyname
 add_executable(getservbyname getservbyname.cc)
 target_include_directories(getservbyname PRIVATE ${SGE_INCLUDES})
-target_link_libraries(getservbyname PRIVATE sgeobj cull comm commlists uti ${SGE_LIBS})
+target_link_libraries(getservbyname PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 
 # infotext
 add_executable(infotext infotext.cc)
 target_include_directories(infotext PRIVATE ${SGE_INCLUDES})
-target_link_libraries(infotext PRIVATE sgeobj cull commlists uti ${SGE_LIBS})
+target_link_libraries(infotext PRIVATE sgeobj tom commlists uti ${SGE_LIBS})
 
 # loadcheck
 add_executable(loadcheck
@@ -81,7 +81,7 @@ add_executable(loadcheck
       ../../../${PROJECT_FEATURES}/source/daemons/qmaster/TestClass.cc
 )
 target_include_directories(loadcheck PRIVATE ${SGE_INCLUDES})
-target_link_libraries(loadcheck PRIVATE sgeobj cull comm commlists uti ${SGE_TOPO_LIB} ${SGE_LIBS})
+target_link_libraries(loadcheck PRIVATE sgeobj tom comm commlists uti ${SGE_TOPO_LIB} ${SGE_LIBS})
 
 # now
 add_executable(now now.cc)
@@ -94,7 +94,7 @@ target_link_libraries(
       qping
       PRIVATE gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti
@@ -112,7 +112,7 @@ target_link_libraries(
       PRIVATE sched
       gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti
@@ -129,7 +129,7 @@ target_link_libraries(
       sched
       gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti
@@ -146,7 +146,7 @@ target_link_libraries(
       sched
       gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti
@@ -163,7 +163,7 @@ target_link_libraries(
       sched
       sgeobj
       gdi
-      cull
+      tom
       comm
       commlists
       uti
@@ -189,7 +189,7 @@ target_link_libraries(
       work
       PRIVATE gdi
       sgeobj
-      cull
+      tom
       comm
       commlists
       uti

@@ -34,8 +34,8 @@
 #include <iterator>
 #include <utility>
 
-#include "tom/cull_hash.h"
-#include "tom/cull_listP.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_ListP.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_ListOpsCore.h"
 #include "tom/ocs_Sort.h"

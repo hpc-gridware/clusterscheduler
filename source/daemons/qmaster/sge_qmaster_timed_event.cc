@@ -48,7 +48,7 @@
 #include "uti/sge_thread_ctrl.h"
 #include "uti/ocs_cond.h"
 
-#include "cull/cull.h"
+#include "tom/ocs_Types.h"
 
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "tom/ocs_Element.h"

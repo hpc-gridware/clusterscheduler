@@ -39,7 +39,7 @@ target_link_libraries(
         gdi
         sched
         sgeobj
-        cull
+        tom
         uti
         ${SGE_LIBS})
 

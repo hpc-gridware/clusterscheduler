@@ -35,11 +35,11 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
-#include "tom/cull_hash.h"
-#include "tom/cull_listP.h"
-#include "tom/cull_multitypeP.h"
-#include "tom/cull_lerrno.h"
-#include "tom/cull_state.h"
+#include "tom/detail/ocs_Hash.h"
+#include "tom/detail/ocs_ListP.h"
+#include "tom/detail/ocs_MultitypeP.h"
+#include "tom/detail/ocs_Errno.h"
+#include "tom/detail/ocs_State.h"
 
 #include "tom/ocs_ListCore.h"
 

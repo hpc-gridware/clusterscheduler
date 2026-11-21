@@ -26,7 +26,7 @@ target_link_libraries(
       qacct
       PRIVATE comm
       commlists
-      cull
+      tom
       gdi
       sched
       sgeobj
