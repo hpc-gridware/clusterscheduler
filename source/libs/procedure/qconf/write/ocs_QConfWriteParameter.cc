@@ -22,7 +22,7 @@
  * @brief Marshalling the qconf write parameters, see the header
  */
 
-#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "sgeobj/tom/ocs_tom_VA.h"
 #include "sgeobj/tom/ocs_tom_ST.h"

@@ -43,7 +43,7 @@
 
 #include "tom/ocs_Types.h"
 
-#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_all.h"
 
 /* this is not an empty module - even if it appears to be empty.
  * The define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__ makes all list descriptors 

@@ -30,9 +30,6 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/cull/sge_hgroup_HGRP_L.h"
-#include "sgeobj/cull/sge_href_HR_L.h"
-#include "sgeobj/cull/sge_matchcache_HM_L.h"
 #include "sgeobj/ocs_MatchCache.h"
 #include "sgeobj/sge_conf.h"
 #include "tom/ocs_Element.h"

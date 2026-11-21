@@ -44,7 +44,6 @@
 #include "sgeobj/tom/ocs_tom_HS.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 
-#include "sgeobj/cull/sge_usage_UA_L.h"
 
 /**
  * @brief The position of each attribute within the object

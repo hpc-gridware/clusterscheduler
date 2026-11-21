@@ -48,7 +48,6 @@
 #include "sgeobj/tom/ocs_tom_HGRP.h"
 #include "sgeobj/tom/ocs_tom_QR.h"
 
-#include "sgeobj/cull/sge_qref_QR_L.h"
 #include "sgeobj/sge_answer.h"
 
 bool qref_list_add(lList **this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *qref_string);

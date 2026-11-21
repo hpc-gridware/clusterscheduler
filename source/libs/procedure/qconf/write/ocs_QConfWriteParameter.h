@@ -54,7 +54,7 @@
 
 #include "tom/ocs_Types.h"
 #include "gdi/ocs_gdi_Packet.h"
-#include "sgeobj/cull/sge_param_SPP_L.h"
+#include "sgeobj/tom/ocs_tom_SPP.h"
 #include "uti/ocs_ProgName.h"
 #include "uti/sge_rmon_macros.h"
 #include "tom/ocs_List.h"

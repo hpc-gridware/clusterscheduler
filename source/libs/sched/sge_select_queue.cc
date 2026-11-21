@@ -107,9 +107,9 @@
 
 #include "sge_select_queue_rqs.h"
 
-#include "sgeobj/cull/sge_select_queue_LDR_L.h"
-#include "sgeobj/cull/sge_select_queue_QRL_L.h"
-#include "sgeobj/cull/sge_message_MES_L.h"
+#include "sgeobj/tom/ocs_tom_LDR.h"
+#include "sgeobj/tom/ocs_tom_QRL.h"
+#include "sgeobj/tom/ocs_tom_MES.h"
 
 #include "msg_common.h"
 #include "msg_schedd.h"

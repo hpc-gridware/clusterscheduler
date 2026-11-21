@@ -34,8 +34,6 @@
 
 #include "ocs_common_systemd.h"
 
-#include "sgeobj/cull/sge_ptf_JL_L.h"
-#include "sgeobj/cull/sge_ptf_JO_L.h"
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_ja_task.h"

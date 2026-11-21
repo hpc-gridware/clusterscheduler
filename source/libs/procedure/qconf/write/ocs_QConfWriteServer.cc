@@ -22,7 +22,7 @@
  * @brief The qmaster half of the qconf write procedure, see the header
  */
 
-#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/sge_answer.h"
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"

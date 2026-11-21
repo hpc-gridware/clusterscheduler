@@ -33,7 +33,6 @@
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/ocs_GrantedResources.h"
-#include "sgeobj/cull/sge_host_RESL_L.h"
 #include "sgeobj/ocs_TopologyString.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_mailrec.h"

@@ -41,7 +41,6 @@
 
 #include "tom/ocs_Types.h"
 
-#include "cull/sge_grantedres_GRU_L.h"
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"

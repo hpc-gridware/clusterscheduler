@@ -1057,7 +1057,7 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-# The generated headers under sgeobj/cull were excluded here
+# The generated headers (then under sgeobj/cull, now sgeobj/tom) were excluded here
 # while "gen_types" emitted no @file block and listed the attribute summaries as
 # prose instead of documenting the enumerators. Both are fixed (task 29a), so
 # the generated code is documented like anything else and the EXCLUDE is gone.

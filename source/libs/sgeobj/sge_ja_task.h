@@ -54,7 +54,6 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_RN.h"
 
-#include "sgeobj/cull/sge_ja_task_JAT_L.h"
 #include "sgeobj/sge_answer.h"
 
 ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT> ja_task,

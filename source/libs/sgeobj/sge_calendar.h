@@ -49,11 +49,8 @@
 #include "sgeobj/tom/ocs_tom_CQU.h"
 #include "sgeobj/tom/ocs_tom_TM.h"
 
-#include "sgeobj/cull/sge_calendar_CAL_L.h"
-#include "sgeobj/cull/sge_calendar_CA_L.h"
-#include "sgeobj/cull/sge_calendar_CQU_L.h"
-#include "sgeobj/cull/sge_calendar_TMR_L.h"
-#include "sgeobj/cull/sge_calendar_TM_L.h"
+#include "sgeobj/tom/ocs_tom_CA.h"
+#include "sgeobj/tom/ocs_tom_TMR.h"
 #include "sgeobj/sge_answer.h"
 
 bool calendar_parse_year(ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);

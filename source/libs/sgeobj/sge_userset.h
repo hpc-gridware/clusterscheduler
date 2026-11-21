@@ -48,9 +48,8 @@
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
-#include "sgeobj/cull/sge_userset_US_L.h"
-#include "sgeobj/cull/sge_userset_UE_L.h"
-#include "sgeobj/cull/sge_userset_JC_L.h"
+#include "sgeobj/tom/ocs_tom_UE.h"
+#include "sgeobj/tom/ocs_tom_JC.h"
 #include "sgeobj/sge_answer.h"
 
 /**

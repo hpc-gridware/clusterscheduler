@@ -50,7 +50,6 @@
 #include "sgeobj/tom/ocs_tom_HR.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 
-#include "sgeobj/cull/sge_hgroup_HGRP_L.h"
 #include "sgeobj/ocs_Matcher.h"
 #include "sgeobj/sge_answer.h"
 

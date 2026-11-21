@@ -48,10 +48,9 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_JR.h"
 
-#include "sgeobj/cull/sge_report_REP_L.h"
-#include "sgeobj/cull/sge_report_JR_L.h"
-#include "sgeobj/cull/sge_report_LIC_L.h"
-#include "sgeobj/cull/sge_report_LR_L.h"
+#include "sgeobj/tom/ocs_tom_REP.h"
+#include "sgeobj/tom/ocs_tom_LIC.h"
+#include "sgeobj/tom/ocs_tom_LR.h"
 
 /**
  * @brief Valid values for REP_type

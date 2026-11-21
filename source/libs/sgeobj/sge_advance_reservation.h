@@ -49,8 +49,7 @@
 #include "sgeobj/tom/ocs_tom_PE.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
-#include "sgeobj/cull/sge_advance_reservation_AR_L.h"
-#include "sgeobj/cull/sge_advance_reservation_ARA_L.h"
+#include "sgeobj/tom/ocs_tom_ARA.h"
 #include "sgeobj/sge_answer.h"
 
 /// The `-w` letters an advance reservation accepts, in the order of the values below

@@ -46,7 +46,6 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JSV.h"
 
-#include "sgeobj/cull/sge_jsv_JSV_L.h"
 #include "sgeobj/sge_answer.h"
 
 /// The JSV runs in a submit client rather than in qmaster

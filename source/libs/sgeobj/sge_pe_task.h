@@ -44,9 +44,7 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_PETR.h"
 
-#include "sgeobj/cull/sge_pe_task_PET_L.h"
-#include "sgeobj/cull/sge_pe_task_PETR_L.h"
-#include "sgeobj/cull/sge_pe_task_FPET_L.h"
+#include "sgeobj/tom/ocs_tom_FPET.h"
 #include "sgeobj/sge_answer.h"
 
 /**

@@ -71,7 +71,7 @@
 #include "spool/sge_spooling.h"
 
 #include "sgeobj/parse.h"
-#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "sgeobj/ocs_Role.h"
@@ -90,8 +90,6 @@
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_manop.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/cull/sge_userset_US_L.h"
-#include "sgeobj/cull/sge_userset_UE_L.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"

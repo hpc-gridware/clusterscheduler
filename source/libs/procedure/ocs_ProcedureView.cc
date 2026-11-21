@@ -33,7 +33,7 @@
 #include "ocs_ProcedureView.h"
 
 #include "sgeobj/ocs_CEntry.h"
-#include "sgeobj/cull/sge_centry_CE_L.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "tom/ocs_Element.h"
 
 /** @brief Escape a raw string for safe embedding in a JSON value.

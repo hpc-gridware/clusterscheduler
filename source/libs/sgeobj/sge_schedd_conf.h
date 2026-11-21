@@ -50,8 +50,7 @@
 #include "sgeobj/tom/ocs_tom_SME.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 
-#include "sgeobj/cull/sge_schedd_conf_PARA_L.h"
-#include "sgeobj/cull/sge_schedd_conf_SC_L.h"
+#include "sgeobj/tom/ocs_tom_PARA.h"
 #include "sgeobj/sge_answer.h"
 
 /// Valid values for `SC_queue_sort_method`

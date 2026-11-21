@@ -46,10 +46,8 @@
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_UU.h"
 
-#include "sgeobj/cull/sge_userprj_PR_L.h"
-#include "sgeobj/cull/sge_userprj_UU_L.h"
-#include "sgeobj/cull/sge_userprj_UPU_L.h"
-#include "sgeobj/cull/sge_userprj_UPP_L.h"
+#include "sgeobj/tom/ocs_tom_UPU.h"
+#include "sgeobj/tom/ocs_tom_UPP.h"
 #include "sgeobj/sge_answer.h"
 
 /**

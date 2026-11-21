@@ -50,9 +50,7 @@
 #include "sgeobj/tom/ocs_tom_ET.h"
 #include "sgeobj/tom/ocs_tom_EV.h"
 
-#include "sgeobj/cull/sge_event_EV_L.h"
-#include "sgeobj/cull/sge_event_EVS_L.h"
-#include "sgeobj/cull/sge_event_ET_L.h"
+#include "sgeobj/tom/ocs_tom_EVS.h"
 #include "sgeobj/sge_answer.h"
 
 /// What an event master request asks for

@@ -49,7 +49,7 @@
 
 #include "sched/sge_select_queue.h"
 
-#include "sgeobj/cull/sge_qeti_QETI_L.h"
+#include "sgeobj/tom/ocs_tom_QETI.h"
 #include "sgeobj/tom/ocs_tom_RUE.h"
 #include "tom/ocs_List.h"
 

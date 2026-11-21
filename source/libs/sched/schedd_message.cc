@@ -48,8 +48,6 @@
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_schedd_conf.h"
 
-#include "sgeobj/cull/sge_message_SME_L.h"
-#include "sgeobj/cull/sge_message_MES_L.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_MES.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"

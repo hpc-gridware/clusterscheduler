@@ -40,9 +40,8 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/cull/sge_param_SPP_L.h"
-#include "sgeobj/cull/sge_ulong_ULNG_L.h"
-#include "sgeobj/cull/sge_str_ST_L.h"
+#include "sgeobj/tom/ocs_tom_ULNG.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "tom/ocs_Element.h"
 

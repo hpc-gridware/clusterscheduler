@@ -53,11 +53,9 @@
 #include "sgeobj/tom/ocs_tom_RESL.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 
-#include "sgeobj/cull/sge_host_EH_L.h"
-#include "sgeobj/cull/sge_host_RU_L.h"
-#include "sgeobj/cull/sge_host_HL_L.h"
-#include "sgeobj/cull/sge_host_HS_L.h"
-#include "sgeobj/cull/sge_host_RESL_L.h"
+#include "sgeobj/tom/ocs_tom_RU.h"
+#include "sgeobj/tom/ocs_tom_HL.h"
+#include "sgeobj/tom/ocs_tom_HS.h"
 #include "sgeobj/sge_answer.h"
 
 /**

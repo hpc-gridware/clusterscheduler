@@ -76,8 +76,6 @@
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/sge_eval_expression.h"
-#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"

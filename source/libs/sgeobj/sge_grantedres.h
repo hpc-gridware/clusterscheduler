@@ -27,7 +27,6 @@
 
 #include <string>
 
-#include "sgeobj/cull/sge_grantedres_GRU_L.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_GRU.h"

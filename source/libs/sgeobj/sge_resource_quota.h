@@ -52,11 +52,8 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 
-#include "sgeobj/cull/sge_resource_quota_RQS_L.h"
-#include "sgeobj/cull/sge_resource_quota_RQR_L.h"
-#include "sgeobj/cull/sge_resource_quota_RQRF_L.h"
-#include "sgeobj/cull/sge_resource_quota_RQRL_L.h"
-#include "sgeobj/cull/sge_resource_quota_RQL_L.h"
+#include "sgeobj/tom/ocs_tom_RQRL.h"
+#include "sgeobj/tom/ocs_tom_RQL.h"
 #include "sgeobj/sge_answer.h"
 
 /// The five things a resource quota rule can filter on

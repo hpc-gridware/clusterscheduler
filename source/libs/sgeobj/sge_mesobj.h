@@ -47,9 +47,9 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 
-#include "sgeobj/cull/sge_mesobj_QIM_L.h"
-#include "sgeobj/cull/sge_message_SME_L.h"
-#include "sgeobj/cull/sge_message_MES_L.h"
+#include "sgeobj/tom/ocs_tom_QIM.h"
+#include "sgeobj/tom/ocs_tom_SME.h"
+#include "sgeobj/tom/ocs_tom_MES.h"
 
 template <auto F>
 bool object_message_add(ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> this_elem, uint32_t type,

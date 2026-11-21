@@ -43,10 +43,6 @@
 
 #include "spool/sge_spooling.h"
 
-#include "sgeobj/cull/sge_spooling_SPC_L.h"
-#include "sgeobj/cull/sge_spooling_SPR_L.h"
-#include "sgeobj/cull/sge_spooling_SPT_L.h"
-#include "sgeobj/cull/sge_spooling_SPTR_L.h"
 
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_SPC.h"

@@ -47,8 +47,8 @@
 #include <limits>
 #include <vector>
 
-#include "sgeobj/cull/sge_conf_CONF_L.h"
-#include "sgeobj/cull/sge_conf_CF_L.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
+#include "sgeobj/tom/ocs_tom_CF.h"
 #include "sgeobj/tom/ocs_tom_PR.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "tom/ocs_Element.h"

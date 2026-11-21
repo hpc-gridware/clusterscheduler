@@ -24,8 +24,6 @@
 
 #include "uti/sge_rmon_macros.h"
 
-#include "sgeobj/cull/sge_param_SPP_L.h"
-#include "sgeobj/cull/sge_ulong_ULNG_L.h"
 #include "sgeobj/sge_str.h"
 
 #include "gdi/ocs_gdi_Client.h"

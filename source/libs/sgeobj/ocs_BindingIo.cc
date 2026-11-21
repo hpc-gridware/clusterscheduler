@@ -42,7 +42,7 @@
 #include "uti/sge.h"
 
 #include "sgeobj/ocs_BindingIo.h"
-#include "sgeobj/cull/sge_binding_BN_L.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 #include "tom/ocs_Element.h"
 
 #include "ocs_BindingType.h"

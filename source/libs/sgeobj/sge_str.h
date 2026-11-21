@@ -47,8 +47,7 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 
-#include "sgeobj/cull/sge_str_ST_L.h"
-#include "sgeobj/cull/sge_str_STU_L.h"
+#include "sgeobj/tom/ocs_tom_STU.h"
 #include "sgeobj/sge_answer.h"
 
 const char *str_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::ST> this_list, dstring *string, char delimiter);

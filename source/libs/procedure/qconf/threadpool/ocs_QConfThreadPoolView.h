@@ -28,7 +28,6 @@
 #include "../ocs_QConfModelBase.h"
 #include "../ocs_QConfViewBase.h"
 
-#include "sgeobj/cull/sge_str_ST_L.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_ST.h"

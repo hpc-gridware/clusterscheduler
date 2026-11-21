@@ -43,8 +43,7 @@
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_PRO.h"
 
-#include "sgeobj/cull/sge_proc_PRO_L.h"
-#include "sgeobj/cull/sge_proc_GR_L.h"
+#include "sgeobj/tom/ocs_tom_GR.h"
 
 ocs::tom::Element<ocs::tom::PRO> get_pr(int pid);
 ocs::tom::Element<ocs::tom::PRO> append_pr(ocs::tom::ElementPtr<ocs::tom::PRO> &&pr);

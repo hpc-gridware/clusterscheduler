@@ -67,7 +67,6 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_cqueue.h"
 #include "sgeobj/sge_pe.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"

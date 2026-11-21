@@ -49,7 +49,6 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_attr.h"
 #include "sgeobj/sge_centry.h"

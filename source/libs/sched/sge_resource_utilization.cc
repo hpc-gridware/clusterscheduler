@@ -84,8 +84,6 @@
 #include "sge_serf.h"
 #include "uti/sge.h"
 
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_CQU.h"

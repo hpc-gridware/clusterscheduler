@@ -45,7 +45,6 @@
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
 
-#include "sgeobj/cull/sge_sharetree_STN_L.h"
 #include "sgeobj/sge_answer.h"
 
 /**

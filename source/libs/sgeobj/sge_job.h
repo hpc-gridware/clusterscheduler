@@ -68,11 +68,7 @@
 
 #include "gdi/ocs_gdi_Packet.h"
 
-#include "sgeobj/cull/sge_job_JB_L.h"
-#include "sgeobj/cull/sge_job_JG_L.h"
-#include "sgeobj/cull/sge_job_JRS_L.h"
-#include "sgeobj/cull/sge_job_PN_L.h"
-#include "sgeobj/cull/sge_job_ref_JRE_L.h"
+#include "sgeobj/tom/ocs_tom_JRE.h"
 #include "sgeobj/sge_answer.h"
 
 /**

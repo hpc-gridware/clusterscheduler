@@ -56,9 +56,9 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_component.h"
 #include <cinttypes>
-#include "sgeobj/cull/sge_japi_JJ_L.h"
-#include "sgeobj/cull/sge_japi_JJAT_L.h"
-#include "sgeobj/cull/sge_japi_NSV_L.h"
+#include "sgeobj/tom/ocs_tom_JJ.h"
+#include "sgeobj/tom/ocs_tom_JJAT.h"
+#include "sgeobj/tom/ocs_tom_NSV.h"
 #include "tom/ocs_Types.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_JB.h"

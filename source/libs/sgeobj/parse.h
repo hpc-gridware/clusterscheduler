@@ -48,7 +48,6 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"
 
-#include "sgeobj/cull/sge_parse_SPA_L.h"
 #include "sgeobj/sge_answer.h"
 
 /**

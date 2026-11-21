@@ -56,7 +56,6 @@
 #include "sgeobj/tom/ocs_tom_QR.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 
-#include "sgeobj/cull/sge_qinstance_QU_L.h"
 #include "sgeobj/sge_answer.h"
 
 /**

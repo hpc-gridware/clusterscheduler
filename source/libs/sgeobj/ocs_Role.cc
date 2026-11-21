@@ -36,7 +36,6 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/cull/sge_str_ST_L.h"
 #include "sgeobj/ocs_Role.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_ST.h"

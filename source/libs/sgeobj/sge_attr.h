@@ -44,19 +44,7 @@
  * @see sge_attr.cc
  */
 
-#include "sgeobj/cull/sge_attr_ASTR_L.h"
-#include "sgeobj/cull/sge_attr_AULNG_L.h"
-#include "sgeobj/cull/sge_attr_ABOOL_L.h"
-#include "sgeobj/cull/sge_attr_ATIME_L.h"
-#include "sgeobj/cull/sge_attr_AMEM_L.h"
-#include "sgeobj/cull/sge_attr_AINTER_L.h"
-#include "sgeobj/cull/sge_attr_ASTRING_L.h"
-#include "sgeobj/cull/sge_attr_ASTRLIST_L.h"
-#include "sgeobj/cull/sge_attr_AUSRLIST_L.h"
-#include "sgeobj/cull/sge_attr_APRJLIST_L.h"
-#include "sgeobj/cull/sge_attr_ACELIST_L.h"
-#include "sgeobj/cull/sge_attr_ASOLIST_L.h"
-#include "sgeobj/cull/sge_attr_AQTLIST_L.h"
+#include "sgeobj/tom/ocs_tom_ASTRING.h"
 #include "sgeobj/sge_answer.h"
 
 #include "tom/ocs_Element.h"

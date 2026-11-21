@@ -39,9 +39,9 @@
  * @see sge_order.cc
  */
 
-#include "sgeobj/cull/sge_order_OR_L.h"
-#include "sgeobj/cull/sge_order_OQ_L.h"
-#include "sgeobj/cull/sge_order_RTIC_L.h"
+#include "sgeobj/tom/ocs_tom_OR.h"
+#include "sgeobj/tom/ocs_tom_OQ.h"
+#include "sgeobj/tom/ocs_tom_RTIC.h"
 
 /**
  * @brief Valid values for `OR_type`, i.e. what the scheduler asks qmaster to do

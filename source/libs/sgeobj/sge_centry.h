@@ -39,12 +39,11 @@
  * @see sge_centry.cc
  */
 
-#include "sgeobj/cull/sge_centry_CE_L.h"
-#include "sgeobj/cull/sge_ct_SCT_L.h"
-#include "sgeobj/cull/sge_ct_REF_L.h"
-#include "sgeobj/cull/sge_ct_CT_L.h"
-#include "sgeobj/cull/sge_ct_CCT_L.h"
-#include "sgeobj/cull/sge_ct_CTI_L.h"
+#include "sgeobj/tom/ocs_tom_SCT.h"
+#include "sgeobj/tom/ocs_tom_REF.h"
+#include "sgeobj/tom/ocs_tom_CT.h"
+#include "sgeobj/tom/ocs_tom_CCT.h"
+#include "sgeobj/tom/ocs_tom_CTI.h"
 
 #include "sgeobj/ocs_CEntry.h"
 

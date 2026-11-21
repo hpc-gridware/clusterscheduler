@@ -46,7 +46,6 @@
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/tom/ocs_tom_SO.h"
 
-#include "sgeobj/cull/sge_subordinate_SO_L.h"
 #include "sgeobj/sge_answer.h"
 
 /**

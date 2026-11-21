@@ -26,5 +26,5 @@
  * lives in a `RUE` element beside it.
  */
 
-#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
+#include "sgeobj/tom/ocs_tom_RUE.h"

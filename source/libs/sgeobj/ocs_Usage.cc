@@ -56,7 +56,7 @@
 #include "sge_usage.h"
 #include "sge_userprj.h"
 
-#include "cull/sge_eejob_SGEJ_L.h"
+#include "sgeobj/tom/ocs_tom_SGEJ.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_JAT.h"

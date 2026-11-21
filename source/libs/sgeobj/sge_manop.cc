@@ -51,7 +51,6 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include <sge_conf.h>
-#include <cull/sge_userset_UE_L.h>
 
 /**
  * @brief Is a group referenced in a user list?

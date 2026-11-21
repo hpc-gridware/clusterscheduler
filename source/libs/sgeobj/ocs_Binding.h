@@ -52,7 +52,7 @@
 #include "uti/sge_spool.h"
 
 #include "sgeobj/sge_object.h"
-#include "sgeobj/cull/sge_binding_BN_L.h"
+#include "sgeobj/tom/ocs_tom_BN.h"
 
 #include "err_trace.h"
 

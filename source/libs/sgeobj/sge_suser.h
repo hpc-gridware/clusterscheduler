@@ -45,7 +45,6 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_SU.h"
 
-#include "sgeobj/cull/sge_suser_SU_L.h"
 #include "sgeobj/sge_answer.h"
 
 ocs::tom::Element<ocs::tom::SU> suser_list_add(lList **suser_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

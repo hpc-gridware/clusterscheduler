@@ -49,8 +49,7 @@
  */
 
 #include "sge_select_queue.h"
-#include "sgeobj/cull/sge_resource_utilization_RDE_L.h"
-#include "sgeobj/cull/sge_resource_utilization_RUE_L.h"
+#include "sgeobj/tom/ocs_tom_RDE.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_EH.h"

@@ -29,8 +29,6 @@
 #include "../ocs_QConfModelBase.h"
 #include "../ocs_QConfViewBase.h"
 
-#include "sgeobj/cull/sge_host_EH_L.h"
-#include "sgeobj/cull/sge_host_HL_L.h"
 #include "sgeobj/tom/ocs_tom_EH.h"
 #include "sgeobj/tom/ocs_tom_HL.h"
 #include "tom/ocs_Element.h"

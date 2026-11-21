@@ -51,7 +51,7 @@
 #include "gdi/ocs_gdi_Request.h"
 
 #include "sgeobj/sge_answer.h"
-#include "sgeobj/cull/sge_all_listsL.h"
+#include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/sge_schedd_conf.h"
 
 #include "sched/sge_sharetree_printing.h"

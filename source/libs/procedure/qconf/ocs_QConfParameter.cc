@@ -29,7 +29,6 @@
 
 #include "ocs_QConfParameter.h"
 
-#include "sgeobj/cull/sge_param_SPP_L.h"
 #include "sgeobj/tom/ocs_tom_SPP.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/tom/ocs_tom_ULNG.h"

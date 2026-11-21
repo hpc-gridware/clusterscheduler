@@ -40,8 +40,7 @@
  */
 
 #include "uti/sge_error_class.h"
-#include "sgeobj/cull/sge_multi_MA_L.h"
-#include "sgeobj/cull/sge_answer_AN_L.h"
+#include "sgeobj/tom/ocs_tom_MA.h"
 #include "sgeobj/tom/ocs_tom_AN.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
