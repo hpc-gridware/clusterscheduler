@@ -39,6 +39,7 @@
  */
 #include <cstring>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -1109,6 +1110,9 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
    host_ep = nullptr;
    /* loop over all received load values */
    for (const auto ep : lp) {
+      // the full topology string of a topology load value, stored once the host of the value is known
+      std::optional<std::string> internal_topology;
+
       /* get name, value and other info */
       const char *name = ep.get<LR_name>();
       const char *value = ep.get<LR_value>();
@@ -1137,11 +1141,10 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
             value = real_ep.get<EH_internal_topology>();
          }
 
-         // Keep the original value in the host element and a product-specific version as load value
+         // Keep the original value for the host element and a product-specific version as load value; the host
+         // element is the one of this load value, known only after the host lookup below (CS-3192)
          ocs::TopologyString topology(value);
-         if (*hepp != nullptr) {
-            hepp->set<EH_internal_topology>(topology.to_string(true, true, true, false, false, false).c_str());
-         }
+         internal_topology = topology.to_string(true, true, true, false, false, false);
          ep.set<LR_value>(topology.to_product_topology_string().c_str());
          value = ep.get<LR_value>();
       }
@@ -1163,6 +1166,11 @@ sge_update_load_values(const char *rhost, const char* real_host, const ocs::tom:
             INFO(MSG_CANT_ASSOCIATE_LOAD_SS, rhost, host);
             continue;
          }
+      }
+
+      // the full topology string goes to the host this load value belongs to (CS-3192)
+      if (internal_topology) {
+         hepp->set<EH_internal_topology>(internal_topology->c_str());
       }
 
       if (is_static == 2) {
