@@ -338,18 +338,18 @@ sge_setup_job_resend() {
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    for (const auto job : master_job_list) {
-      const uint32_t job_num = ocs::tom::get<JB_job_number>(job);
-      for (const auto task : ocs::tom::get<JB_ja_tasks>(job)) {
-         if (ocs::tom::get<JAT_status>(task) == JTRANSFERING) {
-            const uint32_t task_num = ocs::tom::get<JAT_task_number>(task);
-            const auto granted_queue = ocs::tom::get<JAT_granted_destin_identifier_list>(task).front();
-            const char *qname = ocs::tom::get<JG_qname>(granted_queue);
+      const uint32_t job_num = job.get<JB_job_number>();
+      for (const auto task : job.get<JB_ja_tasks>()) {
+         if (task.get<JAT_status>() == JTRANSFERING) {
+            const uint32_t task_num = task.get<JAT_task_number>();
+            const auto granted_queue = task.get<JAT_granted_destin_identifier_list>().front();
+            const char *qname = granted_queue.get<JG_qname>();
             const auto qinstance = cqueue_list_locate_qinstance(master_cqueue_list, qname);
             // host_list_locate() searches the EH master list
             const auto host = ocs::tom::Element<ocs::tom::EH>::from_typed(
                     host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(),
-                                     ocs::tom::get<QU_qhostname>(qinstance)));
-            uint64_t when = ocs::tom::get<JAT_start_time>(task);
+                                     qinstance.get<QU_qhostname>()));
+            uint64_t when = task.get<JAT_start_time>();
             when += sge_gmt32_to_gmt64(std::max(load_report_interval(host), MAX_JOB_DELIVER_TIME));
             te_event_t ev = te_new_event(when, TYPE_JOB_RESEND_EVENT, ONE_TIME_EVENT, job_num, task_num,
                                          "job-resend_event");
@@ -402,7 +402,7 @@ process_cmdline(char **anArgv) {
       ** high level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s", aep.get<AN_text>());
       }
       alp.reset();
       pcmdline.reset();
@@ -415,7 +415,7 @@ process_cmdline(char **anArgv) {
       ** low level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s", aep.get<AN_text>());
       }
       alp.reset();
       pcmdline.reset();
@@ -679,13 +679,13 @@ sge_propagate_queue_suspension(const ocs::tom::Element<ocs::tom::JB> jep, dstrin
    DENTER(TOP_LAYER);
 
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
-   for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-      uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
+   for (const auto jatep : jep.get<JB_ja_tasks>()) {
+      uint32_t jstate = jatep.get<JAT_state>();
       bool is_suspended = false;
 
-      for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+      for (const auto gdil_ep : jatep.get<JAT_granted_destin_identifier_list>()) {
 
-         if (!cqueue_name_split(ocs::tom::get<JG_qname>(gdil_ep), cqueue_name, host_domain, nullptr, nullptr)) {
+         if (!cqueue_name_split(gdil_ep.get<JG_qname>(), cqueue_name, host_domain, nullptr, nullptr)) {
             continue;
          }
 
@@ -693,7 +693,7 @@ sge_propagate_queue_suspension(const ocs::tom::Element<ocs::tom::JB> jep, dstrin
          if (!cq) {
             continue;
          }
-         const auto qi = ocs::tom::get<CQ_qinstances>(cq).find_first<QU_qhostname>(
+         const auto qi = cq.get<CQ_qinstances>().find_first<QU_qhostname>(
                  ocs::tom::Host(sge_dstring_get_string(host_domain)));
          if (!qi) {
             continue;
@@ -711,7 +711,7 @@ sge_propagate_queue_suspension(const ocs::tom::Element<ocs::tom::JB> jep, dstrin
          jstate |= JSUSPENDED_ON_SUBORDINATE;
       else
          jstate &= ~JSUSPENDED_ON_SUBORDINATE;
-      ocs::tom::set<JAT_state>(jatep, jstate);
+      jatep.set<JAT_state>(jstate);
    }
 
    DRETURN_VOID;
@@ -729,11 +729,11 @@ static void
 clear_deferred_starts(const ocs::tom::Element<ocs::tom::JB> jep) {
    DENTER(TOP_LAYER);
 
-   for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-      uint32_t state = ocs::tom::get<JAT_state>(jatep);
+   for (const auto jatep : jep.get<JB_ja_tasks>()) {
+      uint32_t state = jatep.get<JAT_state>();
       if (state & JDEFERRED_REQ) {
          CLEARBIT(JDEFERRED_REQ, state);
-         ocs::tom::set<JAT_state>(jatep, state);
+         jatep.set<JAT_state>(state);
       }
    }
 
@@ -854,21 +854,21 @@ setup_qmaster() {
 
       for (i = 0; new_complexes[i].name != nullptr; i++) {
          const auto centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
-         const auto entry_long = ocs::tom::find_first<CE_name>(centry_list, new_complexes[i].name);
-         const auto entry_short = ocs::tom::find_first<CE_shortcut>(centry_list, new_complexes[i].shortcut);
+         const auto entry_long = centry_list.find_first<CE_name>(new_complexes[i].name);
+         const auto entry_short = centry_list.find_first<CE_shortcut>(new_complexes[i].shortcut);
 
          if (entry_long == nullptr && entry_short == nullptr) {
             auto new_centry_ptr = ocs::tom::ElementPtr<ocs::tom::CE>::create();
             const auto new_centry = new_centry_ptr.get();
 
-            ocs::tom::set<CE_name>(new_centry, new_complexes[i].name);
-            ocs::tom::set<CE_shortcut>(new_centry, new_complexes[i].shortcut);
-            ocs::tom::set<CE_defaultval>(new_centry, new_complexes[i].valdefault);
-            ocs::tom::set<CE_urgency_weight>(new_centry, new_complexes[i].urgency_weight);
-            ocs::tom::set<CE_valtype>(new_centry, static_cast<uint32_t>(new_complexes[i].valtype));
-            ocs::tom::set<CE_relop>(new_centry, new_complexes[i].relop);
-            ocs::tom::set<CE_consumable>(new_centry, new_complexes[i].consumable);
-            ocs::tom::set<CE_requestable>(new_centry, new_complexes[i].requestable);
+            new_centry.set<CE_name>(new_complexes[i].name);
+            new_centry.set<CE_shortcut>(new_complexes[i].shortcut);
+            new_centry.set<CE_defaultval>(new_complexes[i].valdefault);
+            new_centry.set<CE_urgency_weight>(new_complexes[i].urgency_weight);
+            new_centry.set<CE_valtype>(static_cast<uint32_t>(new_complexes[i].valtype));
+            new_centry.set<CE_relop>(new_complexes[i].relop);
+            new_centry.set<CE_consumable>(new_complexes[i].consumable);
+            new_centry.set<CE_requestable>(new_complexes[i].requestable);
 
             /* append and spool the object */
             if (centry_list) {
@@ -877,7 +877,7 @@ setup_qmaster() {
             // without a master list the element is only spooled and freed with its handle at the end of the
             // block, as it was before when lAppendElem() refused it (and leaked it)
             spool_write_object(nullptr, spool_get_default_context(), new_centry,
-                               ocs::tom::get<CE_name>(new_centry), SGE_TYPE_CENTRY);
+                               new_centry.get<CE_name>(), SGE_TYPE_CENTRY);
 
          }
       }
@@ -915,7 +915,7 @@ setup_qmaster() {
 
    // ensure that all exec hosts have defined slots
    for (const auto ehost : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
-      uint32_t processors = ocs::tom::get<EH_processors>(ehost);
+      uint32_t processors = ehost.get<EH_processors>();
 
       host_ensure_slots_are_defined(ehost, processors);
    }
@@ -955,8 +955,8 @@ setup_qmaster() {
 
          /* the qmaster is an admin host by definition -- see the block below */
          if (strcmp(hgrp_name, ADMIN_HOSTGROUP) == 0 &&
-             !ocs::tom::find_first_in<HGRP_host_list, HR_name>(hgrp, qualified_hostname)) {
-            ocs::tom::emplace_back_in<HGRP_host_list, HR_name>(hgrp, qualified_hostname);
+             !hgrp.find_first_in<HGRP_host_list, HR_name>(qualified_hostname)) {
+            hgrp.emplace_back_in<HGRP_host_list, HR_name>(qualified_hostname);
             changed = true;
          }
 
@@ -1040,11 +1040,11 @@ setup_qmaster() {
          }
 
          const auto us = master_userset_list.emplace_back<US_name>(us_name);
-         ocs::tom::set<US_type>(us, US_ACL);
-         ocs::tom::emplace_back_in<US_entries, UE_name>(us, "root");
+         us.set<US_type>(US_ACL);
+         us.emplace_back_in<US_entries, UE_name>("root");
          if (admin_user_name != nullptr && sge_strnullcasecmp(admin_user_name, NONE_STR) != 0 &&
-             !ocs::tom::find_first_in<US_entries, UE_name>(us, admin_user_name)) {
-            ocs::tom::emplace_back_in<US_entries, UE_name>(us, admin_user_name);
+             !us.find_first_in<US_entries, UE_name>(admin_user_name)) {
+            us.emplace_back_in<US_entries, UE_name>(admin_user_name);
          }
 
          if (!spool_write_object(&answer_list, spooling_context, us, us_name, SGE_TYPE_USERSET)) {
@@ -1091,7 +1091,7 @@ setup_qmaster() {
       dstring name_buffer = DSTRING_INIT;
 
       for (const auto cqueue : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
-         const char *group_name = hgroup_queue_group_name(ocs::tom::get<CQ_name>(cqueue), &name_buffer);
+         const char *group_name = hgroup_queue_group_name(cqueue.get<CQ_name>(), &name_buffer);
 
          if (hgroup_list_locate(master_hgroup_list, group_name)) {
             continue;
@@ -1130,13 +1130,13 @@ setup_qmaster() {
        * cluster queues without slotwise suspend on subordinate to such with
        * slotwise ssos.
        */
-      const auto aso_list = ocs::tom::get<CQ_subordinate_list>(tmpqep);
+      const auto aso_list = tmpqep.get<CQ_subordinate_list>();
       if (aso_list != nullptr) {
 
          /* This cluster queue has a list of subordinate lists (possibly one
           * for each host).*/
          for (const auto aso : aso_list) {
-            const auto so_list = ocs::tom::get<ASOLIST_value>(aso);
+            const auto so_list = aso.get<ASOLIST_value>();
 
             /* Every element of the ASOLIST should have a SOLIST, but we
              * check it to be sure.
@@ -1146,7 +1146,7 @@ setup_qmaster() {
                 * SO_slots_sum value, so it's enough to look in the first
                 * element. A spool written before 6.2u5 has SO elements without the field.
                 */
-               if (!ocs::tom::has<SO_slots_sum>(so_list.front().raw())) {
+               if (!so_list.front().has<SO_slots_sum>()) {
                   /* In the subordinate list of the cluster queue there is no
                    * SO_slots_sum field yet, so we have to create a new
                    * subordinate list, copy the values from the old one and
@@ -1158,19 +1158,19 @@ setup_qmaster() {
 
                   for (const auto so : so_list) {
                      auto new_so = ocs::tom::ElementPtr<ocs::tom::SO>::create();
-                     ocs::tom::set<SO_name>(new_so, ocs::tom::get<SO_name>(so));
-                     ocs::tom::set<SO_threshold>(new_so, ocs::tom::get<SO_threshold>(so));
-                     ocs::tom::set<SO_slots_sum>(new_so, 0);
-                     ocs::tom::set<SO_seq_no>(new_so, 0);
-                     ocs::tom::set<SO_action>(new_so, 0);
+                     new_so->set<SO_name>(so.get<SO_name>());
+                     new_so->set<SO_threshold>(so.get<SO_threshold>());
+                     new_so->set<SO_slots_sum>(0);
+                     new_so->set<SO_seq_no>(0);
+                     new_so->set<SO_action>(0);
                      new_so_list->push_back(std::move(new_so));
                   }
-                  ocs::tom::set<ASOLIST_value>(aso, std::move(new_so_list));
+                  aso.set<ASOLIST_value>(std::move(new_so_list));
                }
             }
          }
       }
-      for (const auto qinstance : ocs::tom::get<CQ_qinstances>(tmpqep)) {
+      for (const auto qinstance : tmpqep.get<CQ_qinstances>()) {
          qinstance_set_full_name(qinstance);
          sge_qmaster_qinstance_state_set_susp_on_sub(qinstance, false, ocs::SessionManager::GDI_SESSION_NONE);
       }
@@ -1223,11 +1223,11 @@ setup_qmaster() {
       const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
       for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
 
-         DPRINTF("JOB " sge_u32 " PRIORITY" sge_u32 "\n", ocs::tom::get<JB_job_number>(jep),
-                 ocs::tom::get<JB_priority>(jep) - BASE_PRIORITY);
+         DPRINTF("JOB " sge_u32 " PRIORITY" sge_u32 "\n", jep.get<JB_job_number>(),
+                 jep.get<JB_priority>() - BASE_PRIORITY);
 
          // normalize the priority and store the normalized value
-         job_normalize_priority(jep, ocs::tom::get<JB_priority>(jep));
+         job_normalize_priority(jep, jep.get<JB_priority>());
 
          /* doing this operation we need the complete job list read in */
          job_suc_pre(jep);
@@ -1380,13 +1380,13 @@ ocs_qmaster_object_key([[maybe_unused]] const ocs::tom::ConstElement<typename E:
       constexpr ocs::tom::FieldType key_type = ocs::tom::FieldTraits<key>::type;
       if (object.template has<key>()) {
          if constexpr (key_type == ocs::tom::FieldType::String) {
-            const char *value = ocs::tom::get<key>(object);
+            const char *value = object.template get<key>();
             ret = value != nullptr ? value : "";
          } else if constexpr (key_type == ocs::tom::FieldType::Host) {
-            const char *value = ocs::tom::get<key>(object).c_str();
+            const char *value = object.template get<key>().c_str();
             ret = value != nullptr ? value : "";
          } else if constexpr (key_type == ocs::tom::FieldType::Uint32) {
-            ret = std::to_string(ocs::tom::get<key>(object));
+            ret = std::to_string(object.template get<key>());
          }
       }
    }
@@ -1443,7 +1443,7 @@ ocs_qmaster_repair_spooled_object(const ocs::tom::RawElement ep, const sge_objec
       answer_list_output(&spool_answers);
    }
    for (const auto error : *errors) {
-      ocs_qmaster_append_entry(unrepaired, ocs::tom::get<AN_text>(error));
+      ocs_qmaster_append_entry(unrepaired, error.get<AN_text>());
    }
    errors.reset();
 
@@ -1468,9 +1468,9 @@ ocs_qmaster_repair_master_list(std::string &unrepaired, [[maybe_unused]] dstring
    for (const auto ep : ocs::DataStore::master_list_rw<E::value>()) {
       int skip_nm = NoName;
       if constexpr (std::is_same_v<T, ocs::tom::CQ>) {
-         for (const auto qinstance : ocs::tom::get<CQ_qinstances>(ep)) {
-            const std::string key = std::string(ocs::tom::get<QU_qname>(qinstance)) + "/" +
-                                    static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance));
+         for (const auto qinstance : ep.template get<CQ_qinstances>()) {
+            const std::string key = std::string(qinstance.template get<QU_qname>()) + "/" +
+                                    static_cast<const char *>(qinstance.template get<QU_qhostname>());
             ocs_qmaster_repair_spooled_object(qinstance, SGE_TYPE_QINSTANCE, key, unrepaired);
          }
          skip_nm = CQ_qinstances;
@@ -1478,7 +1478,7 @@ ocs_qmaster_repair_master_list(std::string &unrepaired, [[maybe_unused]] dstring
 
       std::string key;
       if constexpr (std::is_same_v<T, ocs::tom::JB>) {
-         key = job_get_key(ocs::tom::get<JB_job_number>(ep), 0, nullptr, job_key);
+         key = job_get_key(ep.template get<JB_job_number>(), 0, nullptr, job_key);
       } else if constexpr (E::value == SGE_TYPE_SCHEDD_CONF) {
          key = "schedd_conf";
       } else {
@@ -1562,23 +1562,23 @@ remove_invalid_job_references(const sge_object_type object_type, const char *obj
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
    for (const auto up : ocs::tom::List<T>(*ocs::DataStore::get_master_list_rw(object_type))) {
       bool spool_me = false;
-      const auto debited_job_usage = ocs::tom::get<DebitedF>(up);
+      const auto debited_job_usage = up.template get<DebitedF>();
       auto next = debited_job_usage.front();
       while (const auto upu = next) {
          next = upu.next();
 
-         const uint32_t jobid = ocs::tom::get<UPU_job_number>(upu);
+         const uint32_t jobid = upu.template get<UPU_job_number>();
          if (!master_job_list.find_first<JB_job_number>(jobid)) {
             debited_job_usage.erase(upu);
             WARNING("removing reference to no longer existing job " sge_u32 " of %s " SFQ "\n", jobid, object_name,
-                    ocs::tom::get<NameF>(up));
+                    up.template get<NameF>());
             spool_me = true;
          }
       }
 
       if (spool_me) {
          ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-         spool_write_object(&answer_list, spool_get_default_context(), up, ocs::tom::get<NameF>(up), object_type);
+         spool_write_object(&answer_list, spool_get_default_context(), up, up.template get<NameF>(), object_type);
          answer_list_output(&answer_list);
       }
    }
@@ -1609,18 +1609,18 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
       for (const auto up : ocs::DataStore::master_list_rw<SGE_TYPE_USER>()) {
          bool changed = false;
 
-         changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UU_usage>(up), usage_weight_list);
-         changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UU_long_term_usage>(up), usage_weight_list);
+         changed |= ocs::Usage::strip_irrelevant_usage(up.get<UU_usage>(), usage_weight_list);
+         changed |= ocs::Usage::strip_irrelevant_usage(up.get<UU_long_term_usage>(), usage_weight_list);
 
          /* usage of a user within a project is kept in the UU_project sub-list */
-         for (const auto upp : ocs::tom::get<UU_project>(up)) {
-            changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UPP_usage>(upp), usage_weight_list);
-            changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<UPP_long_term_usage>(upp), usage_weight_list);
+         for (const auto upp : up.get<UU_project>()) {
+            changed |= ocs::Usage::strip_irrelevant_usage(upp.get<UPP_usage>(), usage_weight_list);
+            changed |= ocs::Usage::strip_irrelevant_usage(upp.get<UPP_long_term_usage>(), usage_weight_list);
          }
 
          if (changed) {
             ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-            spool_write_object(&answer_list, spool_get_default_context(), up, ocs::tom::get<UU_name>(up),
+            spool_write_object(&answer_list, spool_get_default_context(), up, up.get<UU_name>(),
                                SGE_TYPE_USER);
             answer_list_output(&answer_list);
          }
@@ -1629,12 +1629,12 @@ remove_irrelevant_userprj_usage(const bool user, const ocs::tom::ConstList<ocs::
       for (const auto up : ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>()) {
          bool changed = false;
 
-         changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<PR_usage>(up), usage_weight_list);
-         changed |= ocs::Usage::strip_irrelevant_usage(ocs::tom::get<PR_long_term_usage>(up), usage_weight_list);
+         changed |= ocs::Usage::strip_irrelevant_usage(up.get<PR_usage>(), usage_weight_list);
+         changed |= ocs::Usage::strip_irrelevant_usage(up.get<PR_long_term_usage>(), usage_weight_list);
 
          if (changed) {
             ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-            spool_write_object(&answer_list, spool_get_default_context(), up, ocs::tom::get<PR_name>(up),
+            spool_write_object(&answer_list, spool_get_default_context(), up, up.get<PR_name>(),
                                SGE_TYPE_PROJECT);
             answer_list_output(&answer_list);
          }
@@ -1667,45 +1667,45 @@ debit_all_jobs_from_qs() {
       /* maybe we have to delete this job */
       next_jep = jep.next();
 
-      uint32_t ar_id = ocs::tom::get<JB_ar>(jep);
+      uint32_t ar_id = jep.get<JB_ar>();
       ocs::tom::Element<ocs::tom::AR> ar = nullptr;
       ocs::tom::Element<ocs::tom::EH> ar_global_host = nullptr;
       if (ar_id != 0) {
          ar = master_ar_list.find_first<AR_id>(ar_id);
          if (ar == nullptr) {
-            ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ar_id, ocs::tom::get<JB_job_number>(jep));
+            ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ar_id, jep.get<JB_job_number>());
             master_job_list.erase(jep);
             continue;
          } else {
-            ar_global_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, SGE_GLOBAL_NAME);
+            ar_global_host = ar.find_first_in_rw<AR_reserved_hosts, EH_name>(SGE_GLOBAL_NAME);
          }
       }
 
-      const auto ja_tasks = ocs::tom::get<JB_ja_tasks>(jep);
+      const auto ja_tasks = jep.get<JB_ja_tasks>();
       auto next_jatep = ja_tasks.front();
       while (const auto jatep = next_jatep) {
          bool master_task = true;
          next_jatep = jatep.next();
 
-         const auto pe = ocs::tom::get<JAT_pe_object>(jatep);
+         const auto pe = jatep.get<JAT_pe_object>();
 
          /* don't look at states - we only trust in "granted destin. ident. list" */
          bool do_per_global_host_booking = true;
          const char *last_hostname = nullptr;
-         for (const auto gdi : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
-            const char *queue_name = ocs::tom::get<JG_qname>(gdi);
-            int slots = (int)ocs::tom::get<JG_slots>(gdi);
+         for (const auto gdi : jatep.get<JAT_granted_destin_identifier_list>()) {
+            const char *queue_name = gdi.get<JG_qname>();
+            int slots = (int)gdi.get<JG_slots>();
 
             const auto qep = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
             if (qep == nullptr) {
-               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, ocs::tom::get<JB_job_number>(jep));
+               ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, jep.get<JB_job_number>());
                // the granted list iterated here goes with the task, so the loop ends right away
                ja_tasks.erase(jatep);
                break;
             } else {
-               const char *host_name = ocs::tom::get<JG_qhostname>(gdi);
+               const char *host_name = gdi.get<JG_qhostname>();
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
-               const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatep);
+               const auto granted_resources_list = jatep.get<JAT_granted_resources_list>();
                // host_list_locate() searches the EH master list
                const auto global_host = ocs::tom::Element<ocs::tom::EH>::from_typed(
                        host_list_locate(master_exechost_list, SGE_GLOBAL_NAME));
@@ -1725,27 +1725,26 @@ debit_all_jobs_from_qs() {
                                           master_hgroup_list, slots, master_task, do_per_host_booking);
                   }
                } else if (ar != nullptr) {
-                  const auto queue = ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(
-                          ar, ocs::tom::get<JG_qname>(gdi));
+                  const auto queue = ar.find_first_in_rw<AR_reserved_queues, QU_full_name>(gdi.get<JG_qname>());
                   if (queue != nullptr) {
                      qinstance_debit_consumable(queue, jep, pe, master_centry_list, slots, master_task,
                                                 do_per_host_booking, nullptr);
                   } else {
                      ERROR("job " sge_u32 " runs in queue " SFQ " not reserved by AR " sge_u32,
-                           ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JG_qname>(gdi), ar_id);
+                           jep.get<JB_job_number>(), gdi.get<JG_qname>(), ar_id);
                   }
 
                   if (ar_global_host != nullptr) {
                      debit_host_consumable(jep, jatep, granted_resources_list, pe, ar_global_host, master_centry_list,
                                            slots, master_task, do_per_global_host_booking, nullptr);
                   }
-                  const auto host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, host_name);
+                  const auto host = ar.find_first_in_rw<AR_reserved_hosts, EH_name>(host_name);
                   if (host != nullptr) {
                      debit_host_consumable(jep, jatep, granted_resources_list, pe, host, master_centry_list, slots,
                                            master_task, do_per_host_booking, nullptr);
                   } else {
                      ERROR("job " sge_u32 " runs on host " SFQ " not reserved by AR " sge_u32,
-                           ocs::tom::get<JB_job_number>(jep), host_name, ar_id);
+                           jep.get<JB_job_number>(), host_name, ar_id);
                   }
                }
             }

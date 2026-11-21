@@ -81,7 +81,7 @@ host_notify_about_X(const ocs::tom::ConstElement<ocs::tom::EH> host, const uint3
    DENTER(TOP_LAYER);
    int ret = -1;
 
-   const char *hostname = ocs::tom::get<EH_name>(host);
+   const char *hostname = host.get<EH_name>();
    if (progname_id == EXECD) {
       unsigned long last_heard_from;
       u_short id = 1;

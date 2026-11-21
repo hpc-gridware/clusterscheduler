@@ -190,8 +190,8 @@ reporting_get_ulong_usage_sum(const ocs::tom::ConstList<ocs::tom::UA> usage_list
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-         ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
+      for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+         ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = pe_task.get<PET_scaled_usage>();
 
          if (pe_usage_list) {
             ocs::tom::List<ocs::tom::UA> pe_reported_list = nullptr;
@@ -302,8 +302,8 @@ reporting_get_double_usage_sum(const ocs::tom::ConstList<ocs::tom::UA> usage_lis
 
    /* when we do an accounting summary, we also have to sum up the pe task usage */
    if (accounting_summary) {
-      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-         ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
+      for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+         ocs::tom::ConstList<ocs::tom::UA> pe_usage_list = pe_task.get<PET_scaled_usage>();
 
          if (pe_usage_list) {
             ocs::tom::List<ocs::tom::UA> pe_reported_list = nullptr;
@@ -397,7 +397,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
     * Figure out if it is a parallel job,
     * and if we shall write individual accounting entries or a summary.
     */
-   const char *granted_pe = ocs::tom::get<JAT_granted_pe>(ja_task);
+   const char *granted_pe = ja_task.get<JAT_granted_pe>();
    if (granted_pe != nullptr) {
       const auto pe = pe_list_locate(master_pe_list, granted_pe);
       do_accounting_summary = pe_do_accounting_summary(pe);
@@ -408,9 +408,9 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
     * - the pe task usage list for pe tasks
     * - the ja_task list for ja tasks
     */
-   uint32_t job_id = ocs::tom::get<JB_job_number>(job);
-   uint32_t ja_task_id = job_is_array(job) ? ocs::tom::get<JAT_task_number>(ja_task) : 0;
-   const char *pe_task_id = ocs::tom::get<JR_pe_task_id_str>(jr);
+   uint32_t job_id = job.get<JB_job_number>();
+   uint32_t ja_task_id = job_is_array(job) ? ja_task.get<JAT_task_number>() : 0;
+   const char *pe_task_id = jr.get<JR_pe_task_id_str>();
    if (pe_task_id != nullptr) {
       /* nothing to be done for pe task, if summary is requested */
       if (do_accounting_summary) {
@@ -418,7 +418,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       }
 
       /* try to find the pe_task */
-      pe_task = ocs::tom::get<JAT_task_list>(ja_task).find_first<PET_id>(pe_task_id);
+      pe_task = ja_task.get<JAT_task_list>().find_first<PET_id>(pe_task_id);
       if (!pe_task) {
          DSTRING_STATIC(err_buffer, MAX_STRING_SIZE);
          ERROR(MSG_GOTUSAGEREPORTFORUNKNOWNPETASK_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &err_buffer));
@@ -426,10 +426,10 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       }
 
       /* we output pe_task usage */
-      usage_list = ocs::tom::get<PET_scaled_usage>(pe_task);
+      usage_list = pe_task.get<PET_scaled_usage>();
    } else {
       /* we output ja_task usage */
-      usage_list = ocs::tom::get<JAT_scaled_usage_list>(ja_task);
+      usage_list = ja_task.get<JAT_scaled_usage_list>();
    }
 
    /*
@@ -453,23 +453,23 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       usage_list_set_ulong64_usage(reported_list, LAST_INTERMEDIATE, now);
    }
 
-   if (ocs::tom::get<JR_queue_name>(jr) == nullptr) {
-      ocs::tom::set<JR_queue_name>(jr, "UNKNOWN@UNKNOWN");
+   if (jr.get<JR_queue_name>() == nullptr) {
+      jr.set<JR_queue_name>("UNKNOWN@UNKNOWN");
    }
 
    /* job name and account get taken from local job structure */
-   if (ocs::tom::get<JB_job_name>(job) == nullptr) {
-      ocs::tom::set<JB_job_name>(job, "UNKNOWN");
+   if (job.get<JB_job_name>() == nullptr) {
+      job.set<JB_job_name>("UNKNOWN");
    }
-   if (ocs::tom::get<JB_account>(job) == nullptr) {
-      ocs::tom::set<JB_account>(job, "UNKNOWN");
+   if (job.get<JB_account>() == nullptr) {
+      job.set<JB_account>("UNKNOWN");
    }
 
    /* figure out queue name and host name */
    DSTRING_STATIC(cqueue, MAX_STRING_SIZE);
    DSTRING_STATIC(hname, MAX_STRING_SIZE);
 
-   cqueue_name_split(ocs::tom::get<JR_queue_name>(jr), &cqueue, &hname, nullptr, nullptr);
+   cqueue_name_split(jr.get<JR_queue_name>(), &cqueue, &hname, nullptr, nullptr);
 
    qname = strdup(sge_dstring_get_string(&cqueue));
    hostname = strdup(sge_dstring_get_string(&hname));
@@ -484,7 +484,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * before job exit
        */
       if (job && !pe_task) {
-         submission_time = ocs::tom::get<JB_submission_time>(job);
+         submission_time = job.get<JB_submission_time>();
       }
       /*
        * For the first intermediate record, the start_time is the ja_task start time.
@@ -492,7 +492,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
        * previous intermediate record's end time.
        */
       if (start_time == 0 && ja_task) {
-         start_time = ocs::tom::get<JAT_start_time>(ja_task);
+         start_time = ja_task.get<JAT_start_time>();
       }
 
       /*
@@ -516,7 +516,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       exit_status = usage_list_get_int_usage(usage_list, "exit_status", 0);
    }
 
-   ar_id = ocs::tom::get<JB_ar>(job);
+   ar_id = job.get<JB_ar>();
    if (ar_id != 0) {
       ar = ar_list_locate(master_ar_list, ar_id);
    }
@@ -534,16 +534,16 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       sge_dstring_sprintf(buffer, ACTFILE_FPRINTF_FORMAT,
                                 qname, delimiter,
                                 hostname, delimiter,
-                                ocs::tom::get<JB_group>(job), delimiter,
-                                ocs::tom::get<JB_owner>(job), delimiter,
-                                ocs::tom::get<JB_job_name>(job), delimiter,
-                                ocs::tom::get<JR_job_number>(jr), delimiter,
-                                ocs::tom::get<JB_account>(job), delimiter,
+                                job.get<JB_group>(), delimiter,
+                                job.get<JB_owner>(), delimiter,
+                                job.get<JB_job_name>(), delimiter,
+                                jr.get<JR_job_number>(), delimiter,
+                                job.get<JB_account>(), delimiter,
                                 usage_list_get_ulong_usage(usage_list, "priority", 0), delimiter,
                                 (uint64_t)sge_gmt64_to_time_t(submission_time), delimiter,
                                 (uint64_t)sge_gmt64_to_time_t(start_time), delimiter,
                                 (uint64_t)sge_gmt64_to_time_t(end_time), delimiter,
-                                ocs::tom::get<JR_failed>(jr), delimiter,
+                                jr.get<JR_failed>(), delimiter,
                                 exit_status, delimiter,
                                 usage_list_get_ulong_usage(usage_list, "ru_wallclock", 0), delimiter,
                                 reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
@@ -584,11 +584,11 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                               "ru_nvcsw", "ru_nvcsw", 0), delimiter,
                                 reporting_get_ulong_usage_sum(usage_list, reported_list, do_accounting_summary, ja_task,
                                                               "ru_nivcsw", "ru_nivcsw", 0), delimiter,
-                                none_string(ocs::tom::get<JB_project>(job)), delimiter,
-                                none_string(ocs::tom::get<JB_department>(job)), delimiter,
+                                none_string(job.get<JB_project>()), delimiter,
+                                none_string(job.get<JB_department>()), delimiter,
                                 none_string(granted_pe), delimiter,
-                                sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)), delimiter,
-                                job_is_array(job) ? ocs::tom::get<JAT_task_number>(ja_task) : 0, delimiter,
+                                sge_granted_slots(ja_task.get<JAT_granted_destin_identifier_list>()), delimiter,
+                                job_is_array(job) ? ja_task.get<JAT_task_number>() : 0, delimiter,
                                 reporting_get_double_usage_sum(usage_list, reported_list, do_accounting_summary,
                                                                ja_task,
                                                                intermediate ? USAGE_ATTR_CPU : USAGE_ATTR_CPU_ACCT,
@@ -611,9 +611,9 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                                                                intermediate ? USAGE_ATTR_MAXVMEM
                                                                             : USAGE_ATTR_MAXVMEM_ACCT,
                                                                USAGE_ATTR_MAXVMEM, 0), delimiter,
-                                ocs::tom::get<JB_ar>(job), delimiter,
+                                job.get<JB_ar>(), delimiter,
                                 (ar) ? static_cast<uint64_t>(
-                                          sge_gmt64_to_time_t(ocs::tom::get<AR_submission_time>(ar))) : 0
+                                          sge_gmt64_to_time_t(ar.get<AR_submission_time>())) : 0
       );
    } else {
       writer->StartObject();
@@ -630,30 +630,30 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, "start_time", start_time);
       write_json(*writer, "end_time", end_time);
 
-      write_json(*writer, "owner", ocs::tom::get<JB_owner>(job));
-      write_json(*writer, "group", ocs::tom::get<JB_group>(job));
-      write_json(*writer, "account", ocs::tom::get<JB_account>(job));
+      write_json(*writer, "owner", job.get<JB_owner>());
+      write_json(*writer, "group", job.get<JB_group>());
+      write_json(*writer, "account", job.get<JB_account>());
 
       write_json(*writer, "qname", qname);
       write_json(*writer, "hostname", hostname);
 
-      write_json(*writer, "project", ocs::tom::get<JB_project>(job));
-      write_json(*writer, "department", ocs::tom::get<JB_department>(job));
+      write_json(*writer, "project", job.get<JB_project>());
+      write_json(*writer, "department", job.get<JB_department>());
       write_json(*writer, "granted_pe", granted_pe);
-      write_json(*writer, "slots", sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)));
+      write_json(*writer, "slots", sge_granted_slots(ja_task.get<JAT_granted_destin_identifier_list>()));
 
       if (ar) {
-         write_json(*writer, "arid", ocs::tom::get<JB_ar>(job));
+         write_json(*writer, "arid", job.get<JB_ar>());
       }
 
       // further attributes
-      write_json(*writer, "job_name", ocs::tom::get<JB_job_name>(job));
+      write_json(*writer, "job_name", job.get<JB_job_name>());
       write_json(*writer, "priority", usage_list_get_ulong_usage(usage_list, "priority", 0));
 
       write_json(*writer, "submission_time", submission_time);
-      write_json(*writer, "submit_cmd_line", ocs::tom::get<JB_submission_command_line>(job));
+      write_json(*writer, "submit_cmd_line", job.get<JB_submission_command_line>());
       if (ar) {
-         write_json(*writer, "ar_submission_time", ocs::tom::get<AR_submission_time>(ar));
+         write_json(*writer, "ar_submission_time", ar.get<AR_submission_time>());
       }
 
       // Match the classic reporting writer (none_string(pe_task_id) above),
@@ -663,7 +663,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, "pe_taskid", pe_task_id != nullptr ? pe_task_id : NONE_STR);
       write_json(*writer, "category", category_str);
 
-      write_json(*writer, "failed", ocs::tom::get<JR_failed>(jr)); // @todo only when != 0?
+      write_json(*writer, "failed", jr.get<JR_failed>()); // @todo only when != 0?
       write_json(*writer, "exit_status", exit_status);
 
       // who deleted the job: a value stored in JAT_joker (qdel, qmaster
@@ -672,7 +672,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       // or by the OOM killer).
       // A pe task which sge_execd or the OOM killer ended itself keeps this cause,
       // the value of the ja task is only used for pe tasks without an own cause.
-      const char *jr_deleted_by = ocs::tom::get<JR_deleted_by>(jr);
+      const char *jr_deleted_by = jr.get<JR_deleted_by>();
       const char *deleted_by = pe_task_id != nullptr ? jr_deleted_by : nullptr;
       if (deleted_by == nullptr) {
          deleted_by = ja_task_get_deleted_by(ja_task);
@@ -768,7 +768,7 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
             writer->StartObject();
 
             for (ocs::tom::ConstElement<ocs::tom::UA> ep : usage_list) {
-               const char *name = ocs::tom::get<UA_name>(ep);
+               const char *name = ep.get<UA_name>();
                if (sge_eval_expression(ocs::CEntry::Type::STR, pattern.c_str(), name, nullptr, true, pattern_is_expression) == 0) {
                   // CS-849: branch on presence of UA_svalue. String custom
                   // usage values are emitted as native JSON strings (no
@@ -779,11 +779,11 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
                   // WARNING) because large PE jobs with per-pe_task string
                   // custom usage would otherwise flood the messages file.
                   // See usage_patterns note in sge_conf(5).
-                  const char *svalue = ocs::tom::get<UA_svalue>(ep);
+                  const char *svalue = ep.get<UA_svalue>();
                   if (svalue != nullptr) {
                      if (do_accounting_summary) {
                         DPRINTF("string custom usage '%s' skipped from accounting_summary output for job " sge_u32 "\n",
-                                name, ocs::tom::get<JR_job_number>(jr));
+                                name, jr.get<JR_job_number>());
                      } else {
                         write_json(*writer, name, svalue);
                      }

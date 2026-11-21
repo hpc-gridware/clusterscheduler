@@ -73,8 +73,8 @@ int multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
 template <auto F>
    requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<F>::has_sub)
 void normalize_sublist(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep) {
-   if (const auto lp = ocs::tom::get<F>(ep); lp && lp.empty()) {
-      ocs::tom::set<F>(ep, nullptr);
+   if (const auto lp = ep.template get<F>(); lp && lp.empty()) {
+      ep.template set<F>(nullptr);
    }
 }
 
@@ -129,8 +129,8 @@ attr_mod_sub_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
                   const char *sub_list_name, const char *object_name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::SublistOutcome outcome = ocs::tom::modify_sublist<ListF, SubKeyF>(
-      this_elem, delta_elem, ocs_sublist_mode(sub_cmd),
+   const ocs::tom::SublistOutcome outcome = this_elem.template modify_sublist<ListF, SubKeyF>(delta_elem,
+                                                                                              ocs_sublist_mode(sub_cmd),
       [](const auto request_ep, const auto held_ep) {
          return object_has_differences(request_ep, nullptr, held_ep);
       },
@@ -174,14 +174,14 @@ replace_sublist(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<T
                 const char *sub_list_name, const char *object_name) {
    DENTER(TOP_LAYER);
 
-   if (!ocs::tom::has<ListF>(delta_elem)) {
+   if (!delta_elem.template has<ListF>()) {
       DRETURN(false);
    }
 
    if (const ocs::tom::SublistMode mode = ocs_sublist_mode(sub_cmd); mode.change || mode.append || mode.remove) {
-      const auto request_list = ocs::tom::get<ListF>(delta_elem);
+      const auto request_list = delta_elem.template get<ListF>();
       if (!request_list.empty()) {
-         const auto held_list = ocs::tom::get<ListF>(ocs::tom::ConstElement<T>(this_elem));
+         const auto held_list = ocs::tom::ConstElement<T>(this_elem).template get<ListF>();
          const std::size_t missing = held_list.empty() ? request_list.size() : held_list.size();
          for (std::size_t i = 0; i < missing; i++) {
             ocs_sublist_answer(alpp, ocs::tom::SublistEvent::MissingKey, nullptr, sub_cmd, sub_list_name,
@@ -190,7 +190,7 @@ replace_sublist(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<T
          DRETURN(false);
       }
    } else {
-      ocs::tom::set<ListF>(this_elem, ocs::tom::get<ListF>(delta_elem).clone(""));
+      this_elem.template set<ListF>(delta_elem.template get<ListF>().clone(""));
    }
 
    // a sub-list left without elements is removed

@@ -131,15 +131,15 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
 
    const char *rqs_name = nullptr;
    bool rules_changed = false;
-   bool previous_enabled = ocs::tom::get<RQS_enabled>(target);
+   bool previous_enabled = target.get<RQS_enabled>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
 
    /* ---- RQS_name */
    if (add) {
       // a nullptr name is refused by verify_obj_name() below
-      ocs::tom::copy_if_present<RQS_name>(target, delta);
+      target.copy_if_present<RQS_name>(delta);
    }
-   rqs_name = ocs::tom::get<RQS_name>(target);
+   rqs_name = target.get<RQS_name>();
 
    /* Name has to be a valid name */
    if (add && verify_obj_name(alpp, rqs_name, MAX_VERIFY_STRING,
@@ -148,21 +148,21 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
    }
 
    /* ---- RQS_description */
-   ocs::tom::copy_if_present<RQS_description>(target, delta);
+   target.copy_if_present<RQS_description>(delta);
 
    /* ---- RQS_enabled */
-   ocs::tom::copy_if_present<RQS_enabled>(target, delta);
+   target.copy_if_present<RQS_enabled>(delta);
 
    /* ---- RQS_rule */
-   if (ocs::tom::has<RQS_rule>(delta)) {
+   if (delta.has<RQS_rule>()) {
       rules_changed = true;
       if ((sub_command & ocs::gdi::SubCommand::SET_ALL) == ocs::gdi::SubCommand::SET_ALL) {
          normalize_sublist<RQS_rule>(delta);
          replace_sublist<RQS_rule>(alpp, target, delta, sub_command, SGE_ATTR_RQSRULES, SGE_OBJ_RQS);
       } else {
          /* *attr cases */
-         for (const auto rule : ocs::tom::get<RQS_rule>(delta)) {
-            const auto new_rule = rqs_rule_locate(ocs::tom::get<RQS_rule>(target), ocs::tom::get<RQR_name>(rule));
+         for (const auto rule : delta.get<RQS_rule>()) {
+            const auto new_rule = rqs_rule_locate(target.get<RQS_rule>(), rule.get<RQR_name>());
             if (new_rule) {
                /* ---- RQR_limit */
                attr_mod_sub_list<RQR_limit, RQRL_name>(alpp, new_rule, rule, sub_command, SGE_ATTR_RQSRULES,
@@ -180,7 +180,7 @@ rqs_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::t
    if (!rqs_verify_attributes(target, alpp, true, master_centry_list)) {
       goto ERROR;
    }
-   if (rules_changed || (ocs::tom::get<RQS_enabled>(target) != previous_enabled)) {
+   if (rules_changed || (target.get<RQS_enabled>() != previous_enabled)) {
       rqs_reinit_consumable_actual_list(target, alpp);
    }
 
@@ -217,12 +217,12 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), rqs,
-                                         ocs::tom::get<RQS_name>(rqs), SGE_TYPE_RQS);
+                                         rqs.get<RQS_name>(), SGE_TYPE_RQS);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<RQS_name>(rqs));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, rqs.get<RQS_name>());
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -256,7 +256,7 @@ rqs_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Elem
             const ocs::tom::ConstElement<ocs::tom::RQS> old_ep, gdi_object_t *object,
             [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
-   const char *rqs_name = ocs::tom::get<RQS_name>(rqs);
+   const char *rqs_name = rqs.get<RQS_name>();
    rqs_update_categories(rqs, old_ep, packet->gdi_session);
    sge_add_event(0, old_ep ? sgeE_RQS_MOD : sgeE_RQS_ADD, 0, 0, rqs_name, nullptr, nullptr, rqs, packet->gdi_session);
    DRETURN(0);
@@ -300,7 +300,7 @@ rqs_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstEle
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *rqs_name = ocs::tom::get<RQS_name>(ep);
+   const char *rqs_name = ep.get<RQS_name>();
    if (!rqs_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -357,31 +357,31 @@ rqs_reinit_consumable_actual_list(const ocs::tom::Element<ocs::tom::RQS> rqs,
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
    if (rqs) {
-      for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
-         for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
-            ocs::tom::set<RQRL_usage>(limit, ocs::tom::ListPtr<ocs::tom::RUE>());
+      for (const auto rule : rqs.get<RQS_rule>()) {
+         for (const auto limit : rule.get<RQR_limit>()) {
+            limit.set<RQRL_usage>(ocs::tom::ListPtr<ocs::tom::RUE>());
          }
       }
 
-      if (!ocs::tom::get<RQS_enabled>(rqs)) {
+      if (!rqs.get<RQS_enabled>()) {
          DRETURN(ret);
       }
 
       for (const auto job : master_job_list) {
-         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+         for (const auto ja_task : job.get<JB_ja_tasks>()) {
             bool is_master_task = true;
 
-            const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
+            const char *pe_name = ja_task.get<JAT_granted_pe>();
             ocs::tom::ConstElement<ocs::tom::PE> pe;
             if (pe_name != nullptr) {
                pe = pe_list_locate(master_pe_list, pe_name);
             }
 
             const char *last_hostname = nullptr;
-            for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)) {
+            for (const auto gdil_ep : ja_task.get<JAT_granted_destin_identifier_list>()) {
                bool do_per_host_booking = host_do_per_host_booking(&last_hostname,
-                                                                   ocs::tom::get<JG_qhostname>(gdil_ep));
-               int tmp_slot = ocs::tom::get<JG_slots>(gdil_ep);
+                                                                   gdil_ep.get<JG_qhostname>());
+               int tmp_slot = gdil_ep.get<JG_slots>();
                rqs_debit_consumable(rqs, job, gdil_ep, pe, master_centry_list,
                                     master_userset_list, master_hgroup_list, tmp_slot, is_master_task,
                                     do_per_host_booking);
@@ -407,19 +407,19 @@ ocs_rqr_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule, const int filte
    ocs::tom::ConstElement<ocs::tom::RQRF> filter;
    switch (filter_nm) {
       case RQR_filter_users:
-         filter = ocs::tom::get<RQR_filter_users>(rule);
+         filter = rule.get<RQR_filter_users>();
          break;
       case RQR_filter_projects:
-         filter = ocs::tom::get<RQR_filter_projects>(rule);
+         filter = rule.get<RQR_filter_projects>();
          break;
       case RQR_filter_pes:
-         filter = ocs::tom::get<RQR_filter_pes>(rule);
+         filter = rule.get<RQR_filter_pes>();
          break;
       case RQR_filter_queues:
-         filter = ocs::tom::get<RQR_filter_queues>(rule);
+         filter = rule.get<RQR_filter_queues>();
          break;
       case RQR_filter_hosts:
-         filter = ocs::tom::get<RQR_filter_hosts>(rule);
+         filter = rule.get<RQR_filter_hosts>();
          break;
       default:
          break;
@@ -486,7 +486,7 @@ filter_diff_usersets_or_projects_scope(const ocs::tom::ConstList<ocs::tom::ST> f
    bool ret = true;
 
    for (const auto scope_ep : filter_scope) {
-      const char *scope = ocs::tom::get<ST_name>(scope_ep);
+      const char *scope = scope_ep.get<ST_name>();
       if constexpr (FILTER == RQR_filter_users) {
          if (!ocs::is_hgroup_name(scope)) {
             continue;
@@ -507,9 +507,9 @@ filter_diff_usersets_or_projects_scope(const ocs::tom::ConstList<ocs::tom::ST> f
       } else {
          if (ocs::is_pattern(scope)) {
             for (const auto ep : master_list) {
-               const char *ep_entry = ocs::tom::get<F>(ep);
+               const char *ep_entry = ep.template get<F>();
                if (fnmatch(scope, ep_entry, 0) == 0) {
-                  if (!ocs::tom::find_first<F>(scope_ref.get(), scope)) {
+                  if (!scope_ref.get().template find_first<F>(scope)) {
                      if (!scope_ref) {
                         scope_ref = ocs::tom::ListPtr<T>::create("");
                      }
@@ -518,7 +518,7 @@ filter_diff_usersets_or_projects_scope(const ocs::tom::ConstList<ocs::tom::ST> f
                }
             }
          } else {
-            if (!ocs::tom::find_first<F>(scope_ref.get(), scope)) {
+            if (!scope_ref.get().template find_first<F>(scope)) {
                if (!scope_ref) {
                   scope_ref = ocs::tom::ListPtr<T>::create("");
                }
@@ -562,14 +562,14 @@ filter_diff_usersets_or_projects(const ocs::tom::ConstElement<ocs::tom::RQR> rul
       DRETURN(ret);
    }
 
-   const auto filter = ocs::tom::get<FILTER>(rule);
+   const auto filter = rule.get<FILTER>();
    if (!filter) {
       DRETURN(ret);
    }
 
-   if ((ret = filter_diff_usersets_or_projects_scope<T, F, FILTER>(ocs::tom::get<RQRF_scope>(filter), scope_l,
+   if ((ret = filter_diff_usersets_or_projects_scope<T, F, FILTER>(filter.template get<RQRF_scope>(), scope_l,
                                                                    master_list))) {
-      ret = filter_diff_usersets_or_projects_scope<T, F, FILTER>(ocs::tom::get<RQRF_xscope>(filter), scope_l,
+      ret = filter_diff_usersets_or_projects_scope<T, F, FILTER>(filter.template get<RQRF_xscope>(), scope_l,
                                                                  master_list);
    }
 
@@ -599,7 +599,7 @@ ocs_rqs_diff(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, const ocs::tom
    bool ret = true;
 
    if (old_rqs && old_list) {
-      for (const auto rule : ocs::tom::get<RQS_rule>(old_rqs)) {
+      for (const auto rule : old_rqs.get<RQS_rule>()) {
          if (!filter_diff_usersets_or_projects<T, F, FILTER>(rule, *old_list, master_list)) {
             break;
          }
@@ -607,7 +607,7 @@ ocs_rqs_diff(const ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, const ocs::tom
    }
 
    if (new_rqs && new_list) {
-      for (const auto rule : ocs::tom::get<RQS_rule>(new_rqs)) {
+      for (const auto rule : new_rqs.get<RQS_rule>()) {
          if (!filter_diff_usersets_or_projects<T, F, FILTER>(rule, *new_list, master_list)) {
             if (!old_rqs || old_list->get().empty()) {
                ret = false;
@@ -752,11 +752,11 @@ scope_is_referenced_rqs(const ocs::tom::ConstElement<ocs::tom::RQS> rqs, const i
       DRETURN(ret);
    }
 
-   for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
+   for (const auto rule : rqs.get<RQS_rule>()) {
       const auto filter = ocs_rqr_filter(rule, nm);
       if (filter) {
-         for (const auto scope_ep : ocs::tom::get<RQRF_scope>(filter)) {
-            const char *scope = ocs::tom::get<ST_name>(scope_ep);
+         for (const auto scope_ep : filter.get<RQRF_scope>()) {
+            const char *scope = scope_ep.get<ST_name>();
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
                break;
@@ -765,8 +765,8 @@ scope_is_referenced_rqs(const ocs::tom::ConstElement<ocs::tom::RQS> rqs, const i
          if (ret) {
             break;
          }
-         for (const auto scope_ep : ocs::tom::get<RQRF_xscope>(filter)) {
-            const char *scope = ocs::tom::get<ST_name>(scope_ep);
+         for (const auto scope_ep : filter.get<RQRF_xscope>()) {
+            const char *scope = scope_ep.get<ST_name>();
             if (fnmatch(scope, name, 0) == 0) {
                ret = true;
                break;

@@ -76,8 +76,8 @@ namespace {
 
       std::vector<std::string> names;
       for (const auto ep : ocs::tom::ConstList<T>(*ocs::DataStore::get_master_list(type))) {
-         if (!ocs::tom::get<UsageF>(ep).empty() || !ocs::tom::get<ProjectF>(ep).empty()) {
-            names.emplace_back(ocs::tom::get<KeyF>(ep));
+         if (!ep.template get<UsageF>().empty() || !ep.template get<ProjectF>().empty()) {
+            names.emplace_back(ep.template get<KeyF>());
          }
       }
 
@@ -87,7 +87,7 @@ namespace {
       for (const std::string &name : names) {
          /* A fresh element's list fields are empty, and empty is the payload. */
          auto reduced = ocs::tom::ElementPtr<T>::create(reduced_layout);
-         ocs::tom::set<KeyF>(reduced, name.c_str());
+         reduced->template set<KeyF>(name.c_str());
 
          ocs::tom::ListPtr<ocs::tom::AN> alp;
          // the on_success hook of users and projects leaves nothing for after the request
@@ -99,8 +99,8 @@ namespace {
          if (ret != STATUS_OK) {
             all_ok = false;
             for (const auto aep : *alp) {
-               if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
-                  answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), ocs::tom::get<AN_status>(aep),
+               if (aep.get<AN_status>() != STATUS_OK) {
+                  answer_list_add(answer_list, aep.get<AN_text>(), aep.get<AN_status>(),
                                   ANSWER_QUALITY_ERROR);
                }
             }

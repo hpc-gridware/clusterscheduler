@@ -156,7 +156,7 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
    const auto obj_master_list = ocs::DataStore::master_list<user_flag ? SGE_TYPE_USER : SGE_TYPE_PROJECT>();
 
    /* ---- UP_name */
-   const char *userprj = ocs::tom::get<F::name>(ep);
+   const char *userprj = ep.template get<F::name>();
    if (add) {
       if (!strcmp(userprj, "default")) {
          ERROR(MSG_UP_NOADDDEFAULT_S, obj_name);
@@ -164,7 +164,7 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
          DRETURN(STATUS_EUNKNOWN);
       }
       /* may not add user/project with same name as an existing project/user */
-      if (ocs::tom::find_first<F::name>(obj_master_list, userprj)) {
+      if (obj_master_list.template find_first<F::name>(userprj)) {
          ERROR(MSG_UP_ALREADYEXISTS_SS, obj_name, userprj);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
@@ -173,44 +173,44 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
          user_flag ? "\\" : nullptr) != STATUS_OK) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      ocs::tom::set<F::name>(modp, userprj);
+      modp.template set<F::name>(userprj);
    }
 
    /* ---- UP_oticket */
-   if (ocs::tom::has<F::oticket>(ep)) {
-      ocs::tom::set<F::oticket>(modp, ocs::tom::get<F::oticket>(ep));
+   if (ep.template has<F::oticket>()) {
+      modp.template set<F::oticket>(ep.template get<F::oticket>());
    }
 
    /* ---- UP_fshare */
-   if (ocs::tom::has<F::fshare>(ep)) {
-      ocs::tom::set<F::fshare>(modp, ocs::tom::get<F::fshare>(ep));
+   if (ep.template has<F::fshare>()) {
+      modp.template set<F::fshare>(ep.template get<F::fshare>());
    }
 
    if constexpr (user_flag) {
       /* ---- UU_delete_time */
-      if (ocs::tom::has<UU_delete_time>(ep)) {
-         ocs::tom::set<UU_delete_time>(modp, ocs::tom::get<UU_delete_time>(ep));
+      if (ep.template has<UU_delete_time>()) {
+         modp.template set<UU_delete_time>(ep.template get<UU_delete_time>());
       }
    }
 
    /* ---- UP_usage */
-   if (ocs::tom::has<F::usage>(ep)) {
-      ocs::tom::set<F::usage>(modp, ocs::tom::get<F::usage>(ep).clone("usage"));
-      ocs::tom::add<F::version>(modp, 1);
+   if (ep.template has<F::usage>()) {
+      modp.template set<F::usage>(ep.template get<F::usage>().clone("usage"));
+      modp.template add<F::version>(1);
    }
 
    /* ---- UP_project */
-   if (ocs::tom::has<F::project>(ep)) {
-      ocs::tom::set<F::project>(modp, ocs::tom::get<F::project>(ep).clone("project"));
-      ocs::tom::add<F::version>(modp, 1);
+   if (ep.template has<F::project>()) {
+      modp.template set<F::project>(ep.template get<F::project>().clone("project"));
+      modp.template add<F::version>(1);
    }
 
    if constexpr (user_flag) {
       /* ---- UU_default_project */
-      if (ocs::tom::has<UU_default_project>(ep)) {
+      if (ep.template has<UU_default_project>()) {
          ocs_null_out_none<UU_default_project>(ep);
          /* make sure default project exists */
-         const char *dproj = ocs::tom::get<UU_default_project>(ep);
+         const char *dproj = ep.template get<UU_default_project>();
          if (dproj) {
             const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
             if (!master_project_list || !prj_list_locate(master_project_list, dproj)) {
@@ -220,33 +220,33 @@ ocs_userprj_mod(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<t
             }
          }
 
-         ocs::tom::set<UU_default_project>(modp, dproj);
+         modp.template set<UU_default_project>(dproj);
       }
    } else {
       /* ---- PR_acl */
-      if (ocs::tom::has<PR_acl>(ep)) {
-         ocs::tom::set<PR_acl>(modp, ocs::tom::get<PR_acl>(ep).clone("acl"));
+      if (ep.template has<PR_acl>()) {
+         modp.template set<PR_acl>(ep.template get<PR_acl>().clone("acl"));
 
-         if (userset_list_validate_acl_list(ocs::tom::get<PR_acl>(ep), alpp, master_userset_list) != STATUS_OK) {
+         if (userset_list_validate_acl_list(ep.template get<PR_acl>(), alpp, master_userset_list) != STATUS_OK) {
             /* answerlist gets filled by userset_list_validate_acl_list() in case of errors */
             DRETURN(STATUS_EUNKNOWN);
          }
       }
 
       /* ---- PR_xacl */
-      if (ocs::tom::has<PR_xacl>(ep)) {
-         ocs::tom::set<PR_xacl>(modp, ocs::tom::get<PR_xacl>(ep).clone("xacl"));
-         if (userset_list_validate_acl_list(ocs::tom::get<PR_xacl>(ep), alpp, master_userset_list) != STATUS_OK) {
+      if (ep.template has<PR_xacl>()) {
+         modp.template set<PR_xacl>(ep.template get<PR_xacl>().clone("xacl"));
+         if (userset_list_validate_acl_list(ep.template get<PR_xacl>(), alpp, master_userset_list) != STATUS_OK) {
             /* answerlist gets filled by userset_list_validate_acl_list() in case of errors */
             DRETURN(STATUS_EUNKNOWN);
          }
       }
 
-      if (ocs::tom::has<PR_xacl>(modp) ||
-          ocs::tom::has<PR_acl>(modp)) {
+      if (modp.template has<PR_xacl>() ||
+          modp.template has<PR_acl>()) {
          if (multiple_occurances<US_name>(alpp,
-                                          ocs::tom::get<PR_acl>(modp),
-                                          ocs::tom::get<PR_xacl>(modp),
+                                          modp.template get<PR_acl>(),
+                                          modp.template get<PR_xacl>(),
                                           userprj,
                                           "project")) {
             DRETURN(STATUS_EUNKNOWN);
@@ -319,8 +319,8 @@ ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F
    const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
    bool reattach_categories = false;
    for (const auto rqs : master_rqs_list) {
-      if (scope_is_referenced_rqs(rqs, F::filter, ocs::tom::get<F::name>(ep))) {
-         ocs::tom::set<F::consider>(ep, true);
+      if (scope_is_referenced_rqs(rqs, F::filter, ep.template get<F::name>())) {
+         ep.template set<F::consider>(true);
          reattach_categories = true;
          break;
       }
@@ -334,7 +334,7 @@ ocs_userprj_success(ocs::gdi::Packet *packet, const ocs::tom::Element<typename F
                                               master_rqs_list, true, packet->gdi_session);
    }
 
-   sge_add_event(0, is_mod ? F::mod_event : F::add_event, 0, 0, ocs::tom::get<F::name>(ep), nullptr, nullptr, ep,
+   sge_add_event(0, is_mod ? F::mod_event : F::add_event, 0, 0, ep.template get<F::name>(), nullptr, nullptr, ep,
                  packet->gdi_session);
 
    DRETURN_VOID;
@@ -396,7 +396,7 @@ userprj_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<
    DENTER(TOP_LAYER);
 
    constexpr bool user_flag = std::is_same_v<T, ocs::tom::UU>;
-   const char *name = ocs::tom::get<FieldsOf<T>::name>(upe);
+   const char *name = upe.template get<FieldsOf<T>::name>();
 
    /* write user or project to file */
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
@@ -435,18 +435,18 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
    DENTER(TOP_LAYER);
 
    for (const auto cqueue : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
-      for (const auto prj : ocs::tom::get<CQ_projects>(cqueue)) {
-         if (ocs::tom::find_first<PR_name>(ocs::tom::get<APRJLIST_value>(prj), name)) {
+      for (const auto prj : cqueue.get<CQ_projects>()) {
+         if (prj.get<APRJLIST_value>().find_first<PR_name>(name)) {
             ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_QUEUE,
-                  ocs::tom::get<CQ_name>(cqueue));
+                  cqueue.get<CQ_name>());
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
       }
-      for (const auto prj : ocs::tom::get<CQ_xprojects>(cqueue)) {
-         if (ocs::tom::find_first<PR_name>(ocs::tom::get<APRJLIST_value>(prj), name)) {
+      for (const auto prj : cqueue.get<CQ_xprojects>()) {
+         if (prj.get<APRJLIST_value>().find_first<PR_name>(name)) {
             ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_QUEUE,
-                  ocs::tom::get<CQ_name>(cqueue));
+                  cqueue.get<CQ_name>());
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
@@ -455,15 +455,15 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
 
    /* check hosts */
    for (const auto host : ocs::DataStore::master_list<SGE_TYPE_EXECHOST>()) {
-      if (prj_list_locate(ocs::tom::get<EH_prj>(host), name)) {
+      if (prj_list_locate(host.get<EH_prj>(), name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_PRJS, MSG_OBJ_EH,
-               static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+               host.get<EH_name>().c_str());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
-      if (prj_list_locate(ocs::tom::get<EH_xprj>(host), name)) {
+      if (prj_list_locate(host.get<EH_xprj>(), name)) {
          ERROR(MSG_SGETEXT_PROJECTSTILLREFERENCED_SSSS, name, MSG_OBJ_XPRJS, MSG_OBJ_EH,
-               static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+               host.get<EH_name>().c_str());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -483,8 +483,8 @@ ocs_verify_project_deletion(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *n
 
    /* check user list for reference */
    const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
-   if (const auto user = ocs::tom::find_first<UU_default_project>(master_user_list, name); user) {
-      ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, ocs::tom::get<UU_name>(user));
+   if (const auto user = master_user_list.find_first<UU_default_project>(name); user) {
+      ERROR(MSG_USERPRJ_PRJXSTILLREFERENCEDINENTRYX_SS, name, user.get<UU_name>());
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EEXIST);
    }
@@ -523,7 +523,7 @@ ocs_del_userprj(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *name = ocs::tom::get<F::name>(up_ep);
+   const char *name = up_ep.template get<F::name>();
    ocs::tom::Element<typename F::Type> ep;
    if constexpr (user) {
       ep = user_list_locate(upl, name);
@@ -622,8 +622,8 @@ verify_project_list(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Const
    DENTER(TOP_LAYER);
 
    for (const auto up : name_list) {
-      if (!ocs::tom::find_first<PR_name>(prj_list, ocs::tom::get<PR_name>(up))) {
-         ERROR(MSG_SGETEXT_UNKNOWNPROJECT_SSSS, ocs::tom::get<PR_name>(up), attr_name, obj_descr, obj_name);
+      if (!prj_list.find_first<PR_name>(up.get<PR_name>())) {
+         ERROR(MSG_SGETEXT_UNKNOWNPROJECT_SSSS, up.get<PR_name>(), attr_name, obj_descr, obj_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -664,7 +664,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
        */
       ocs::tom::Element<ocs::tom::UU> next;
       for (auto user = master_user_list.front(); user; user = next) {
-         uint64_t delete_time = ocs::tom::get<UU_delete_time>(user);
+         uint64_t delete_time = user.get<UU_delete_time>();
          next = user.next();
 
          /* 
@@ -672,11 +672,11 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
           * Never delete them automatically 
           */
          if (delete_time > 0) {
-            const char *name = ocs::tom::get<UU_name>(user);
+            const char *name = user.get<UU_name>();
 
             /* if the user has jobs, we increment the delete time */
             if (suser_get_job_counter(suser_list_find(master_suser_list, name)) > 0) {
-               ocs::tom::set<UU_delete_time>(user, next_delete);
+               user.set<UU_delete_time>(next_delete);
             } else {
                /* if the delete time has expired, delete user */
                if (delete_time <= now) {
@@ -691,7 +691,7 @@ sge_automatic_user_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
                       * if deleting the user failes (due to user being referenced
                       * in other objects, e.g. queue), regard him as non auto user
                       */
-                     ocs::tom::set<UU_delete_time>(user, 0);
+                     user.set<UU_delete_time>(0);
                   }
                   /* output low level error messages */
                   answer_list_output(&answer_list);
@@ -731,10 +731,10 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    /* if the user already exists */
    if (uep) {
       /* and is an auto user */
-      if (ocs::tom::get<UU_delete_time>(uep) != 0) {
+      if (uep.get<UU_delete_time>() != 0) {
          /* and we shall not keep auto users forever */
          if (auto_user_delete_time > 0) {
-            ocs::tom::set<UU_delete_time>(uep, sge_get_gmt64() + auto_user_delete_time);
+            uep.set<UU_delete_time>(sge_get_gmt64() + auto_user_delete_time);
          }
       }
       /* and we are done */
@@ -746,22 +746,22 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    char *auto_user_default_project = nullptr;
 
    /* set user object attributes */
-   ocs::tom::set<UU_name>(uep_uu, user);
+   uep_uu->set<UU_name>(user);
 
    if (auto_user_delete_time > 0) {
-      ocs::tom::set<UU_delete_time>(uep_uu, sge_get_gmt64() + auto_user_delete_time);
+      uep_uu->set<UU_delete_time>(sge_get_gmt64() + auto_user_delete_time);
    } else {
-      ocs::tom::set<UU_delete_time>(uep_uu, 0);
+      uep_uu->set<UU_delete_time>(0);
    }
 
-   ocs::tom::set<UU_oticket>(uep_uu, mconf_get_auto_user_oticket());
-   ocs::tom::set<UU_fshare>(uep_uu, mconf_get_auto_user_fshare());
+   uep_uu->set<UU_oticket>(mconf_get_auto_user_oticket());
+   uep_uu->set<UU_fshare>(mconf_get_auto_user_fshare());
 
    auto_user_default_project = mconf_get_auto_user_default_project();
    if (auto_user_default_project == nullptr || strcasecmp(auto_user_default_project, "none") == 0) {
-      ocs::tom::set<UU_default_project>(uep_uu, nullptr);
+      uep_uu->set<UU_default_project>(nullptr);
    } else {
-      ocs::tom::set<UU_default_project>(uep_uu, auto_user_default_project);
+      uep_uu->set<UU_default_project>(auto_user_default_project);
    }
 
    /* add the auto user via GDI request */
@@ -808,9 +808,9 @@ do_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
 
    if ((STATUS_OK != res) && (nullptr != tmpAnswer)) {
       const auto err = tmpAnswer->front();
-      const char *text = ocs::tom::get<AN_text>(err);
-      uint32_t status = ocs::tom::get<AN_status>(err);
-      answer_quality_t quality = (answer_quality_t) ocs::tom::get<AN_quality>(err);
+      const char *text = err.get<AN_text>();
+      uint32_t status = err.get<AN_status>();
+      answer_quality_t quality = (answer_quality_t) err.get<AN_quality>();
 
       answer_list_add(anAnswer, text, status, quality);
    }
@@ -843,13 +843,13 @@ void sge_userprj_spool(uint64_t gdi_session) {
    SGE_LOCK(LOCK_GLOBAL, LOCK_READ);
 
    for (const auto elem : ocs::DataStore::master_list_rw<SGE_TYPE_USER>(true)) {
-      const char *name = ocs::tom::get<UU_name>(elem);
+      const char *name = elem.get<UU_name>();
       sge_event_spool(&answer_list, now, sgeE_USER_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false,
                       true, gdi_session);
    }
 
    for (const auto elem : ocs::DataStore::master_list_rw<SGE_TYPE_PROJECT>(true)) {
-      const char *name = ocs::tom::get<PR_name>(elem);
+      const char *name = elem.get<PR_name>();
       sge_event_spool(&answer_list, now, sgeE_PROJECT_MOD, 0, 0, name, nullptr, nullptr, elem, nullptr, nullptr, false,
                       true, gdi_session);
    }
@@ -886,20 +886,20 @@ static bool project_still_used(const char *p) {
    }
 
    for (const auto hep : ocs::DataStore::master_list<SGE_TYPE_EXECHOST>()) {
-      if (ocs::tom::find_first<PR_name>(ocs::tom::get<EH_prj>(hep), p) ||
-          ocs::tom::find_first<PR_name>(ocs::tom::get<EH_xprj>(hep), p)) {
+      if (hep.get<EH_prj>().find_first<PR_name>(p) ||
+          hep.get<EH_xprj>().find_first<PR_name>(p)) {
          DRETURN(true);
       }
    }
 
    for (const auto cq : ocs::DataStore::master_list<SGE_TYPE_CQUEUE>()) {
-      for (const auto qc : ocs::tom::get<CQ_projects>(cq)) {
-         if (ocs::tom::find_first<PR_name>(ocs::tom::get<APRJLIST_value>(qc), p)) {
+      for (const auto qc : cq.get<CQ_projects>()) {
+         if (qc.get<APRJLIST_value>().find_first<PR_name>(p)) {
             DRETURN(true);
          }
       }
-      for (const auto qc : ocs::tom::get<CQ_xprojects>(cq)) {
-         if (ocs::tom::find_first<PR_name>(ocs::tom::get<APRJLIST_value>(qc), p)) {
+      for (const auto qc : cq.get<CQ_xprojects>()) {
+         if (qc.get<APRJLIST_value>().find_first<PR_name>(p)) {
             DRETURN(true);
          }
       }
@@ -930,23 +930,23 @@ project_update_categories(const ocs::tom::ConstList<ocs::tom::PR> added,
    bool reattach_categories = false;
 
    for (const auto ep : added) {
-      const char *p = ocs::tom::get<PR_name>(ep);
+      const char *p = ep.get<PR_name>();
       DPRINTF("added project: \"%s\"\n", p);
-      const auto prj = ocs::tom::find_first_rw<PR_name>(master_project_list, p);
-      if (prj && !ocs::tom::get<PR_consider_with_categories>(prj)) {
-         ocs::tom::set<PR_consider_with_categories>(prj, true);
+      const auto prj = master_project_list.find_first<PR_name>(p);
+      if (prj && !prj.get<PR_consider_with_categories>()) {
+         prj.set<PR_consider_with_categories>(true);
          reattach_categories = true;
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj, gdi_session);
       }
    }
 
    for (const auto ep : removed) {
-      const char *p = ocs::tom::get<PR_name>(ep);
+      const char *p = ep.get<PR_name>();
       DPRINTF("removed project: \"%s\"\n", p);
-      const auto prj = ocs::tom::find_first_rw<PR_name>(master_project_list, p);
+      const auto prj = master_project_list.find_first<PR_name>(p);
 
       if (prj && !project_still_used(p)) {
-         ocs::tom::set<PR_consider_with_categories>(prj, false);
+         prj.set<PR_consider_with_categories>(false);
          reattach_categories = true;
          sge_add_event(0, sgeE_PROJECT_MOD, 0, 0, p, nullptr, nullptr, prj, gdi_session);
       }

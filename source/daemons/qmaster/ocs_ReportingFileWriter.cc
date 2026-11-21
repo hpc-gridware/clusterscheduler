@@ -723,9 +723,9 @@ namespace ocs {
        // Optimization: Do not write intermediate usage for jobs that just
        // "started a short time before".
       if (pe_task != nullptr) {
-         start_time = sge_gmt64_to_time_t(ocs::tom::get<PET_start_time>(pe_task));
+         start_time = sge_gmt64_to_time_t(pe_task.get<PET_start_time>());
       } else {
-         start_time = sge_gmt64_to_time_t(ocs::tom::get<JAT_start_time>(ja_task));
+         start_time = sge_gmt64_to_time_t(ja_task.get<JAT_start_time>());
       }
 
       if ((now - start_time) < (INTERMEDIATE_MIN_RUNTIME + tm_now.tm_min * 60 + tm_now.tm_sec)) {
@@ -736,10 +736,10 @@ namespace ocs {
        // If no intermediate report has been written so far, use the job's / pe task's start time.
       if (pe_task != nullptr) {
          last_intermediate = sge_gmt64_to_time_t(
-                 usage_list_get_ulong64_usage(ocs::tom::get<PET_reported_usage>(pe_task), LAST_INTERMEDIATE, 0));
+                 usage_list_get_ulong64_usage(pe_task.get<PET_reported_usage>(), LAST_INTERMEDIATE, 0));
       } else {
          last_intermediate = sge_gmt64_to_time_t(
-                 usage_list_get_ulong64_usage(ocs::tom::get<JAT_reported_usage_list>(ja_task), LAST_INTERMEDIATE, 0));
+                 usage_list_get_ulong64_usage(ja_task.get<JAT_reported_usage_list>(), LAST_INTERMEDIATE, 0));
       }
       if (last_intermediate == 0) {
          last_intermediate = start_time;
@@ -757,8 +757,8 @@ namespace ocs {
          char timebuffer[100];
          DSTRING_STATIC(buffer_dstring, 100);
          INFO(MSG_REPORTING_INTERMEDIATE_SS,
-              job_get_key(ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task),
-                          pe_task != nullptr ? ocs::tom::get<PET_id>(pe_task) : nullptr, &buffer_dstring),
+              job_get_key(job.get<JB_job_number>(), ja_task.get<JAT_task_number>(),
+                          pe_task != nullptr ? pe_task.get<PET_id>() : nullptr, &buffer_dstring),
               asctime_r(&tm_now, timebuffer));
          ret = true;
       }

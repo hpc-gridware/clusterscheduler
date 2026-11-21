@@ -84,7 +84,7 @@ namespace {
    ancestors_path(const ancestors_t &ancestors, dstring *buffer) {
       sge_dstring_clear(buffer);
       for (int i = 0; i < ancestors.depth; i++) {
-         sge_dstring_sprintf_append(buffer, "/%s", ocs::tom::get<STN_name>(ancestors.nodes[i]));
+         sge_dstring_sprintf_append(buffer, "/%s", ancestors.nodes[i].get<STN_name>());
       }
       return sge_dstring_get_string(buffer);
    }
@@ -127,7 +127,7 @@ namespace {
       for (const auto arg : nodes) {
          std::string path;
          int shares = 0;
-         if (!parse_node_shares(ocs::tom::get<STN_name>(arg), path, shares)) {
+         if (!parse_node_shares(arg.get<STN_name>(), path, shares)) {
             report.problem(sge_dstring_sprintf(&buffer, MSG_ANSWER_XISNOTVALIDSEENODESHARESLIST_S, typed));
             continue;
          }
@@ -151,7 +151,7 @@ namespace {
                if (parent) {
                   // a parent without children gets the list with its first child, as the untyped emplace_back()
                   // created it
-                  auto children = ocs::tom::get<STN_children>(parent);
+                  auto children = parent.get<STN_children>();
                   ocs::tom::ListPtr<ocs::tom::STN> new_children;
                   if (!children) {
                      new_children = ocs::tom::ListPtr<ocs::tom::STN>::create("");
@@ -159,7 +159,7 @@ namespace {
                   }
                   const auto added = children.emplace_back<STN_name>(path.substr(last + 1).c_str());
                   if (new_children) {
-                     ocs::tom::set<STN_children>(parent, std::move(new_children));
+                     parent.set<STN_children>(std::move(new_children));
                   }
                   free_ancestors(&ancestors);
                   memset(&ancestors, 0, sizeof(ancestors));
@@ -176,7 +176,7 @@ namespace {
 
          if (node) {
             modified++;
-            ocs::tom::set<STN_shares>(node, shares);
+            node.set<STN_shares>(shares);
             report.info(MSG_TREE_SETTING);
             std::string line = ancestors_path(ancestors, &buffer);
             line += "=" + std::to_string(shares);
@@ -209,7 +209,7 @@ namespace {
       int modified = 0;
       dstring buffer = DSTRING_INIT;
       for (const auto arg : nodes) {
-         const char *path = ocs::tom::get<STN_name>(arg);
+         const char *path = arg.get<STN_name>();
          if (path == nullptr) {
             continue;
          }
@@ -218,7 +218,7 @@ namespace {
          const auto node = search_named_node_path(root, path, &ancestors);
          if (!node) {
             report.problem(sge_dstring_sprintf(&buffer, MSG_TREE_UNABLETOLACATEXINSHARETREE_S, path));
-         } else if (ocs::tom::get<STN_children>(node)) {
+         } else if (node.get<STN_children>()) {
             report.problem(MSG_TREE_CANTDELNODESWITHCHILD);
          } else if (ancestors.depth <= 0) {
             report.problem(MSG_TREE_CANTDELROOTNODE);
@@ -230,10 +230,10 @@ namespace {
                     ? root : ocs::tom::Element<ocs::tom::STN>::from_typed(ancestors.nodes[ancestors.depth - 2]);
             report.info(MSG_TREE_REMOVING);
             report.info(ancestors_path(ancestors, &buffer));
-            const auto siblings = ocs::tom::get<STN_children>(parent);
+            const auto siblings = parent.get<STN_children>();
             siblings.erase(node);
             if (siblings.empty()) {
-               ocs::tom::set<STN_children>(parent, nullptr);
+               parent.set<STN_children>(nullptr);
             }
          }
          free_ancestors(&ancestors);
@@ -289,7 +289,7 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       for (const auto arg : *nodes) {
          std::string path;
          int shares = 0;
-         if (parse_node_shares(ocs::tom::get<STN_name>(arg), path, shares) && shares < 0) {
+         if (parse_node_shares(arg.get<STN_name>(), path, shares) && shares < 0) {
             answer_list_add(answer_list, MSG_QCONF_POSITIVE_SHARE_VALUE, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             DRETURN(false);
          }
@@ -305,8 +305,8 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
    } else if (add) {
       /* "-astnode" on a cluster without a tree starts one, as it did */
       root = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-      ocs::tom::set<STN_name>(root, "Root");
-      ocs::tom::set<STN_shares>(root, 1);
+      root->set<STN_name>("Root");
+      root->set<STN_shares>(1);
    } else {
       answer_list_add(answer_list, MSG_TREE_NOSHARETREE, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       DRETURN(false);
@@ -336,8 +336,8 @@ qconf_sharetree_nodes_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *t
       } else {
          bool reported = false;
          for (const auto aep : *alp) {
-            if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
-               answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), ocs::tom::get<AN_status>(aep),
+            if (aep.get<AN_status>() != STATUS_OK) {
+               answer_list_add(answer_list, aep.get<AN_text>(), aep.get<AN_status>(),
                                ANSWER_QUALITY_ERROR);
                reported = true;
                break;

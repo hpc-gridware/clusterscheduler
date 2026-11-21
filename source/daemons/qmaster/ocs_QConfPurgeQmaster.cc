@@ -130,7 +130,7 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
     * see the function comment. */
    bool hostlist_wanted = false;
    for (const auto attr : *attr_list) {
-      if (sge_eval_expression(ocs::CEntry::Type::HOST, ocs::tom::get<US_name>(attr), SGE_ATTR_HOSTLIST, nullptr) == 0) {
+      if (sge_eval_expression(ocs::CEntry::Type::HOST, attr.get<US_name>(), SGE_ATTR_HOSTLIST, nullptr) == 0) {
          hostlist_wanted = true;
          break;
       }
@@ -143,9 +143,9 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
                                  hgroup_queue_group_name(queue_name, &group_name));
       sge_dstring_free(&group_name);
       if (group) {
-         ocs::tom::set<CQ_hostlist>(copy, ocs::tom::get<HGRP_host_list>(group).clone(""));
+         copy->set<CQ_hostlist>(group.get<HGRP_host_list>().clone(""));
       }
-      hostlist_before = static_cast<uint32_t>(ocs::tom::get<CQ_hostlist>(copy).size());
+      hostlist_before = static_cast<uint32_t>(copy->get<CQ_hostlist>().size());
    }
 
    if (!cqueue_purge_host(*copy, answer_list, *attr_list, domain)) {
@@ -160,11 +160,11 @@ qconf_purge_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monit
    std::vector<int> fields{CQ_name};
    ocs_for_each_cqueue_attr([&copy, stored, &fields](const auto &attr) {
       constexpr auto nm = ocs_cqueue_attr_t<decltype(attr)>::cqueue_field;
-      if (ocs::tom::get<nm>(copy).size() != ocs::tom::get<nm>(stored).size()) {
+      if (copy->get<nm>().size() != stored.get<nm>().size()) {
          fields.push_back(nm);
       }
    });
-   if (hostlist_wanted && static_cast<uint32_t>(ocs::tom::get<CQ_hostlist>(copy).size()) != hostlist_before) {
+   if (hostlist_wanted && static_cast<uint32_t>(copy->get<CQ_hostlist>().size()) != hostlist_before) {
       fields.push_back(CQ_hostlist);
    }
 

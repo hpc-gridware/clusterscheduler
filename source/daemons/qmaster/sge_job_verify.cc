@@ -152,7 +152,7 @@ sge_job_verify_global_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alp
       const auto master_requests = job_get_hard_resource_list(jep, JRS_SCOPE_MASTER);
       const auto slave_requests = job_get_hard_resource_list(jep, JRS_SCOPE_SLAVE);
       for (const auto ep : global_requests) {
-         const char *name = ocs::tom::get<CE_name>(ep);
+         const char *name = ep.get<CE_name>();
          if (centry_list_locate(master_requests, name)) {
             ERROR(MSG_JOB_GLOBALMASTERSLAVE_SSS, soft ? "soft" : "hard", name, "master");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -231,11 +231,11 @@ sge_job_verify_slave_per_job_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
 
    // we only allow slave hard requests, no soft requests
    for (const auto request : job_get_hard_resource_list(jep, JRS_SCOPE_SLAVE)) {
-      const char *name = ocs::tom::get<CE_name>(request);
+      const char *name = request.get<CE_name>();
       if (name != nullptr) {
          const auto centry = centry_list_locate(centry_list, name);
          if (centry) {
-            uint32_t consumable = ocs::tom::get<CE_consumable>(centry);
+            uint32_t consumable = centry.get<CE_consumable>();
             if (consumable == CONSUMABLE_JOB) {
                ERROR(MSG_JOB_SLAVEPERJOBREQUEST_S, name);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -266,11 +266,11 @@ sge_job_verify_per_host_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const oc
    const auto slave_request_list = job_get_hard_resource_list(jep, JRS_SCOPE_SLAVE);
    if (master_request_list && slave_request_list) {
       for (const auto master_request : master_request_list) {
-         const char *name = ocs::tom::get<CE_name>(master_request);
+         const char *name = master_request.get<CE_name>();
          if (name != nullptr) {
             const auto centry = centry_list_locate(master_centry_list, name);
             if (centry) {
-               uint32_t consumable = ocs::tom::get<CE_consumable>(centry);
+               uint32_t consumable = centry.get<CE_consumable>();
                if (consumable == CONSUMABLE_HOST) {
                   if (slave_request_list.find_first<CE_name>(name)) {
                      ERROR(MSG_JOB_PERHOSTINBOTHMASTERSLAVE_S, name);
@@ -300,21 +300,21 @@ job_verify_soft_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   const auto jrs_list = ocs::tom::get<JB_request_set_list>(jep);
+   const auto jrs_list = jep.get<JB_request_set_list>();
    if (jrs_list) {
       for (const auto jrs : jrs_list) {
-         uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
+         uint32_t scope = jrs.get<JRS_scope>();
 
          // we do not allow master and slave soft queue requests
          if (scope == JRS_SCOPE_MASTER || scope == JRS_SCOPE_SLAVE) {
-            if (ocs::tom::get<JRS_soft_queue_list>(jrs)) {
+            if (jrs.get<JRS_soft_queue_list>()) {
                ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTQUEUE);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
                break;
             }
             // we do not allow master and slave soft resource requests
-            if (ocs::tom::get<JRS_soft_resource_list>(jrs)) {
+            if (jrs.get<JRS_soft_resource_list>()) {
                ERROR(SFNMAX, MSG_JOB_MASTERSLAVESOFTREQ);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
@@ -340,11 +340,11 @@ job_verify_non_pe_soft_master_slave_requests(ocs::tom::ListPtr<ocs::tom::AN> *al
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (ocs::tom::get<JB_pe>(jep) == nullptr) {
-      const auto jrs_list = ocs::tom::get<JB_request_set_list>(jep);
+   if (jep.get<JB_pe>() == nullptr) {
+      const auto jrs_list = jep.get<JB_request_set_list>();
       if (jrs_list) {
          for (const auto jrs : jrs_list) {
-            if (ocs::tom::get<JRS_scope>(jrs) != JRS_SCOPE_GLOBAL) {
+            if (jrs.get<JRS_scope>() != JRS_SCOPE_GLOBAL) {
                ERROR(SFNMAX, MSG_JOB_MASTERSLAVENONPE);
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                ret = false;
@@ -380,19 +380,19 @@ sge_job_verify_rsmap_scope_requests(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for (const auto jrs : ocs::tom::get<JB_request_set_list>(jep)) {
-      for (const auto request : ocs::tom::get<JRS_hard_resource_list>(jrs)) {
-         if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(request)) !=
+   for (const auto jrs : jep.get<JB_request_set_list>()) {
+      for (const auto request : jrs.get<JRS_hard_resource_list>()) {
+         if (static_cast<ocs::CEntry::Type>(request.get<CE_valtype>()) !=
              ocs::CEntry::Type::RSMAP) {
             continue;
          }
-         const char *name = ocs::tom::get<CE_name>(request);
+         const char *name = request.get<CE_name>();
          const char *scope = centry_rsmap_request_is_job_scope(request)
                              ? RSMAP_REQUEST_PARAM_SCOPE_JOB : RSMAP_REQUEST_PARAM_SCOPE_HOST;
 
          // only the scopes behind this one, so that a pair is reported once and not twice
          for (auto other_jrs = jrs.next(); other_jrs; other_jrs = other_jrs.next()) {
-            const auto other = ocs::tom::get<JRS_hard_resource_list>(other_jrs).find_first<CE_name>(name);
+            const auto other = other_jrs.get<JRS_hard_resource_list>().find_first<CE_name>(name);
             if (!other) {
                continue;
             }
@@ -566,11 +566,11 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
     * use the master_CEntry_list for all fills
     * JB_hard/soft_resource_list points to a CE list
     */
-   for (const auto jrs : ocs::tom::get<JB_request_set_list>(jep)) {
-      uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
+   for (const auto jrs : jep.get<JB_request_set_list>()) {
+      uint32_t scope = jrs.get<JRS_scope>();
       DPRINTF("request set of scope %s\n", job_scope_name(scope));
 
-      const auto hard_resource_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
+      const auto hard_resource_list = jrs.get<JRS_hard_resource_list>();
       if (centry_list_fill_request(hard_resource_list, alpp, master_centry_list, false, true, false)) {
          ret = STATUS_EUNKNOWN;
          break;
@@ -584,7 +584,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
          break;
       }
 
-      const auto soft_resource_list = ocs::tom::get<JRS_soft_resource_list>(jrs);
+      const auto soft_resource_list = jrs.get<JRS_soft_resource_list>();
       if (centry_list_fill_request(soft_resource_list, alpp, master_centry_list, false, true, false)) {
          ret = STATUS_EUNKNOWN;
          break;
@@ -602,19 +602,19 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
          break;
       }
 
-      const auto queue_list = ocs::tom::get<JRS_hard_queue_list>(jrs);
+      const auto queue_list = jrs.get<JRS_hard_queue_list>();
       if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
          break;
       }
-      const auto queue_list_qr = ocs::tom::get<JRS_soft_queue_list>(jrs);
+      const auto queue_list_qr = jrs.get<JRS_soft_queue_list>();
       if (!qref_list_is_valid(queue_list_qr, alpp, master_cqueue_list, master_hgroup_list, master_centry_list)) {
          ret = STATUS_EUNKNOWN;
          break;
       }
 
       // JRS_allocation_rule
-      const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(jrs);
+      const char *allocation_rule = jrs.get<JRS_allocation_rule>();
       if (allocation_rule != nullptr) {
          if (!pe_validate_allocation_rule(alpp, allocation_rule)) {
             ret = STATUS_EUNKNOWN;
@@ -631,7 +631,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* check for qsh without DISPLAY set */
    if (ret == STATUS_OK) {
-      if (JOB_TYPE_IS_QSH(ocs::tom::get<JB_type>(jep))) {
+      if (JOB_TYPE_IS_QSH(jep.get<JB_type>())) {
          ret = job_check_qsh_display(jep, alpp, false);
       }
    }
@@ -654,10 +654,10 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    if (ret == STATUS_OK) {
       int s1, s2, s3, s4;
 
-      s1 = job_resolve_host_for_path_list(ocs::tom::get<JB_stdout_path_list>(jep), alpp);
-      s2 = job_resolve_host_for_path_list(ocs::tom::get<JB_stdin_path_list>(jep), alpp);
-      s3 = job_resolve_host_for_path_list(ocs::tom::get<JB_shell_list>(jep), alpp);
-      s4 = job_resolve_host_for_path_list(ocs::tom::get<JB_stderr_path_list>(jep), alpp);
+      s1 = job_resolve_host_for_path_list(jep.get<JB_stdout_path_list>(), alpp);
+      s2 = job_resolve_host_for_path_list(jep.get<JB_stdin_path_list>(), alpp);
+      s3 = job_resolve_host_for_path_list(jep.get<JB_shell_list>(), alpp);
+      s4 = job_resolve_host_for_path_list(jep.get<JB_stderr_path_list>(), alpp);
       if (s1 != STATUS_OK || s2 != STATUS_OK || s3 != STATUS_OK || s4 != STATUS_OK) {
          ret = STATUS_EUNKNOWN;
       }
@@ -665,8 +665,8 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* take care that non-binary jobs have a script */
    if (ret == STATUS_OK) {
-      if ((!JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(jep)) &&
-           !ocs::tom::get<JB_script_ptr>(jep) && ocs::tom::get<JB_script_file>(jep))) {
+      if ((!JOB_TYPE_IS_BINARY(jep.get<JB_type>()) &&
+           !jep.get<JB_script_ptr>() && jep.get<JB_script_file>())) {
          ERROR(SFNMAX, MSG_JOB_NOSCRIPT);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = STATUS_EUNKNOWN;
@@ -675,25 +675,25 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* set the jobs submission time */
    if (ret == STATUS_OK) {
-      ocs::tom::set<JB_submission_time>(jep, sge_get_gmt64());
+      jep.set<JB_submission_time>(sge_get_gmt64());
    }
 
    /* initialize the task template element and other sublists */
    if (ret == STATUS_OK) {
-      ocs::tom::set<JB_ja_tasks>(jep, nullptr);
-      ocs::tom::set<JB_jid_successor_list>(jep, nullptr);
-      ocs::tom::set<JB_ja_ad_successor_list>(jep, nullptr);
-      if (!ocs::tom::get<JB_ja_template>(jep)) {
-         ocs::tom::emplace_back_in<JB_ja_template, JAT_task_number>(jep, 0);
+      jep.set<JB_ja_tasks>(nullptr);
+      jep.set<JB_jid_successor_list>(nullptr);
+      jep.set<JB_ja_ad_successor_list>(nullptr);
+      if (!jep.get<JB_ja_template>()) {
+         jep.emplace_back_in<JB_ja_template, JAT_task_number>(0);
       }
    }
 
    /* verify or set the account string */
    if (ret == STATUS_OK) {
-      if (!ocs::tom::get<JB_account>(jep)) {
-         ocs::tom::set<JB_account>(jep, DEFAULT_ACCOUNT);
+      if (!jep.get<JB_account>()) {
+         jep.set<JB_account>(DEFAULT_ACCOUNT);
       } else {
-         if (verify_str_key(alpp, ocs::tom::get<JB_account>(jep), MAX_VERIFY_STRING,
+         if (verify_str_key(alpp, jep.get<JB_account>(), MAX_VERIFY_STRING,
                             "account string", QSUB_TABLE) != STATUS_OK) {
             ret = STATUS_EUNKNOWN;
          }
@@ -742,7 +742,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
       uint32_t max_aj_tasks = mconf_get_max_aj_tasks();
 
       if (max_aj_tasks > 0) {
-         uint32_t submit_size = range_list_get_number_of_ids(ocs::tom::get<JB_ja_structure>(jep));
+         uint32_t submit_size = range_list_get_number_of_ids(jep.get<JB_ja_structure>());
 
          if (submit_size > max_aj_tasks) {
             ERROR(MSG_JOB_MORETASKSTHAN_U, max_aj_tasks);
@@ -754,9 +754,9 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    // the instructions of -ac, -sc and -dc are applied to the context the job was sent with,
    // which is empty unless a GDI client sent one; the job keeps only the result (CS-3058)
-   if (ret == STATUS_OK && ocs::tom::has<JB_context_change>(jep) && ocs::tom::get<JB_context_change>(jep)) {
-      set_context(ocs::tom::get<JB_context_change>(jep), jep);
-      ocs::tom::set<JB_context_change>(jep, nullptr);
+   if (ret == STATUS_OK && jep.has<JB_context_change>() && jep.get<JB_context_change>()) {
+      set_context(jep.get<JB_context_change>(), jep);
+      jep.set<JB_context_change>(nullptr);
    }
 
 #if 0
@@ -774,23 +774,23 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
     * in time is effective in case of job ID rollover.
     */
    /* ORDER IS IMPORTANT */
-   if (ocs::tom::get<JB_job_number>(jep) == 0) {
+   if (jep.get<JB_job_number>() == 0) {
       uint32_t jid;
 
       do {
          jid = sge_get_job_number(monitor);
       } while (master_job_list.find_first<JB_job_number>(jid));
-      ocs::tom::set<JB_job_number>(jep, jid);
-      ocs::tom::set<JB_submission_time>(jep, sge_get_gmt64());
+      jep.set<JB_job_number>(jid);
+      jep.set<JB_submission_time>(sge_get_gmt64());
    }
 
    /*      
     * with interactive jobs, JB_exec_file is not set
     */
-   if (ocs::tom::get<JB_script_file>(jep)) {
+   if (jep.get<JB_script_file>()) {
       dstring string = DSTRING_INIT;
-      sge_dstring_sprintf(&string, "%s/" sge_u32, EXEC_DIR, ocs::tom::get<JB_job_number>(jep));
-      ocs::tom::set<JB_exec_file>(jep, sge_dstring_get_string(&string));
+      sge_dstring_sprintf(&string, "%s/" sge_u32, EXEC_DIR, jep.get<JB_job_number>());
+      jep.set<JB_exec_file>(sge_dstring_get_string(&string));
       sge_dstring_free(&string);
    }
 
@@ -801,8 +801,8 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
       DRETURN(STATUS_NOTOK_DOAGAIN);
    }
 
-   if (ocs::tom::get<JB_verify_suitable_queues>(jep) != JUST_VERIFY &&
-       ocs::tom::get<JB_verify_suitable_queues>(jep) != POKE_VERIFY) {
+   if (jep.get<JB_verify_suitable_queues>() != JUST_VERIFY &&
+       jep.get<JB_verify_suitable_queues>() != POKE_VERIFY) {
       if (suser_check_new_job(jep, mconf_get_max_u_jobs(), master_suser_list) != 0) {
          INFO(MSG_JOB_ALLOWEDJOBSPERUSER_UU, mconf_get_max_u_jobs(), suser_job_count(jep, master_suser_list));
          answer_list_add(alpp, SGE_EVENT, STATUS_NOTOK_DOAGAIN, ANSWER_QUALITY_ERROR);
@@ -830,7 +830,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    {
       const char *pe_name = nullptr;
 
-      pe_name = ocs::tom::get<JB_pe>(jep);
+      pe_name = jep.get<JB_pe>();
       if (pe_name) {
          if (!pe_list_find_matching(master_pe_list, pe_name)) {
             ERROR(MSG_JOB_PEUNKNOWN_S, pe_name);
@@ -838,16 +838,16 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
             DRETURN(STATUS_EUNKNOWN);
          }
          /* check pe_range */
-         if (object_verify_pe_range(alpp, pe_name, ocs::tom::get<JB_pe_range>(jep), SGE_OBJ_JOB) != STATUS_OK) {
+         if (object_verify_pe_range(alpp, pe_name, jep.get<JB_pe_range>(), SGE_OBJ_JOB) != STATUS_OK) {
             DRETURN(STATUS_EUNKNOWN);
          }
       }
    }
 
    {
-      uint32_t ckpt_attr = ocs::tom::get<JB_checkpoint_attr>(jep);
-      uint32_t ckpt_inter = ocs::tom::get<JB_checkpoint_interval>(jep);
-      const char *ckpt_name = ocs::tom::get<JB_checkpoint_name>(jep);
+      uint32_t ckpt_attr = jep.get<JB_checkpoint_attr>();
+      uint32_t ckpt_inter = jep.get<JB_checkpoint_interval>();
+      const char *ckpt_name = jep.get<JB_checkpoint_name>();
       int ckpt_err = 0;
 
       /* request for non-existing ckpt object will be refused */
@@ -856,8 +856,8 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
          if (!ckpt_ep) {
             ckpt_err = 1;
          } else if (!ckpt_attr) {
-            ckpt_attr = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(ckpt_ep));
-            ocs::tom::set<JB_checkpoint_attr>(jep, ckpt_attr);
+            ckpt_attr = sge_parse_checkpoint_attr(ckpt_ep.get<CK_when>());
+            jep.set<JB_checkpoint_attr>(ckpt_attr);
          }
       }
 
@@ -901,9 +901,9 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
       const auto grp_list = grp_list_array2list(packet->amount, packet->grp_array);
 
       for (const auto cqueue : master_cqueue_list) {
-         for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
+         for (const auto qinstance : cqueue.get<CQ_qinstances>()) {
             if (sge_has_access(packet->user, packet->group, *grp_list, qinstance, master_userset_list)) {
-               DPRINTF("job has access to queue " SFQ "\n", ocs::tom::get<QU_qname>(qinstance));
+               DPRINTF("job has access to queue " SFQ "\n", qinstance.get<QU_qname>());
                has_permissions = 1;
                break;
             }
@@ -943,22 +943,22 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    }
 
    /* set default project */
-   if (!ocs::tom::get<JB_project>(jep) && master_user_list) {
+   if (!jep.get<JB_project>() && master_user_list) {
       if (const auto uep = user_list_locate(master_user_list, packet->user)) {
-         ocs::tom::set<JB_project>(jep, ocs::tom::get<UU_default_project>(uep));
+         jep.set<JB_project>(uep.get<UU_default_project>());
       }
    }
 
    /* project */
    {
-      int local_ret = job_verify_project(jep, alpp, packet->user, packet->group, ocs::tom::get<JB_grp_list>(jep));
+      int local_ret = job_verify_project(jep, alpp, packet->user, packet->group, jep.get<JB_grp_list>());
       if (local_ret != STATUS_OK) {
          DRETURN(local_ret);
       }
    }
 
    // check the given department or find a department for the user if none was specified
-   if (const char *dept_name = ocs::tom::get<JB_department>(jep); dept_name != nullptr) {
+   if (const char *dept_name = jep.get<JB_department>(); dept_name != nullptr) {
       if (!job_is_valid_department(jep, alpp, dept_name, master_userset_list)) {
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -971,7 +971,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    /* 
     * If it is a deadline job the user has to be a deadline user
     */
-   if (ocs::tom::get<JB_deadline>(jep) > 0) {
+   if (jep.get<JB_deadline>() > 0) {
       if (!user_is_deadline_user(packet, master_userset_list)) {
          ERROR(MSG_JOB_NODEADLINEUSER_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -981,7 +981,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* Verify existence of ar, if ar exists */
    {
-      uint32_t ar_id = ocs::tom::get<JB_ar>(jep);
+      uint32_t ar_id = jep.get<JB_ar>();
 
       if (ar_id != 0) {
          uint64_t ar_start_time, ar_end_time, job_duration;
@@ -994,17 +994,17 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
             ERROR(MSG_JOB_NOAREXISTS_U, ar_id);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
-         } else if ((ocs::tom::get<AR_state>(ar) == AR_DELETED) ||
-                    (ocs::tom::get<AR_state>(ar) == AR_EXITED)) {
+         } else if ((ar.get<AR_state>() == AR_DELETED) ||
+                    (ar.get<AR_state>() == AR_EXITED)) {
             ERROR(MSG_JOB_ARNOLONGERAVAILABE_U, ar_id);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EEXIST);
          }
          /* fill the job and ar values */
-         ar_start_time = ocs::tom::get<AR_start_time>(ar);
-         ar_end_time = ocs::tom::get<AR_end_time>(ar);
+         ar_start_time = ar.get<AR_start_time>();
+         ar_end_time = ar.get<AR_end_time>();
          now_time = sge_get_gmt64();
-         job_execution_time = ocs::tom::get<JB_execution_time>(jep);
+         job_execution_time = jep.get<JB_execution_time>();
 
          /* execution before now is set to at least now */
          if (job_execution_time < now_time) {
@@ -1040,7 +1040,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    // no unique attribute may hold a key twice; repeated variables and requests are merged above (CS-3053)
    {
-      const std::string job_name = std::string("job ") + std::to_string(ocs::tom::get<JB_job_number>(jep));
+      const std::string job_name = std::string("job ") + std::to_string(jep.get<JB_job_number>());
       if (!ocs_object_verify_unique_keys(jep, alpp, job_name.c_str())) {
          DRETURN(STATUS_ESYNTAX);
       }
@@ -1049,8 +1049,8 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
    /* verify schedulability */
    {
       int ret = verify_suitable_queues(alpp, jep, nullptr, false);
-      if (ocs::tom::get<JB_verify_suitable_queues>(jep) == JUST_VERIFY ||
-          ocs::tom::get<JB_verify_suitable_queues>(jep) == POKE_VERIFY || ret != 0) {
+      if (jep.get<JB_verify_suitable_queues>() == JUST_VERIFY ||
+          jep.get<JB_verify_suitable_queues>() == POKE_VERIFY || ret != 0) {
          DRETURN(ret);
       }
    }
@@ -1059,7 +1059,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
     * only operators and managers are allowed to submit
     * jobs with higher priority than 0 (=BASE_PRIORITY)
     */
-   if (ocs::tom::get<JB_priority>(jep) > BASE_PRIORITY &&
+   if (jep.get<JB_priority>() > BASE_PRIORITY &&
        !manop_is_operator(packet)) {
       ERROR(SFNMAX, MSG_JOB_NONADMINPRIO);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

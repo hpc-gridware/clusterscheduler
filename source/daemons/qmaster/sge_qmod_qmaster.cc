@@ -176,7 +176,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
    */
    for (const auto dep : data_list) {
       bool found_something = true;
-      uint32_t id_action = ocs::tom::get<ID_action>(dep);
+      uint32_t id_action = dep.get<ID_action>();
 
       found = false;
 
@@ -185,7 +185,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
       // On success an answer of STATUS_OK is added with text "RECONNECT_OK <token> <exec_host>",
       // which the qrsh -reconnect client parses to obtain the rendezvous parameters.
       if ((id_action & ~JOB_DO_ACTION) == QI_DO_RECONNECT) {
-         const char *spec = ocs::tom::get<ID_str>(dep);
+         const char *spec = dep.get<ID_str>();
          char spec_copy[1024];
          snprintf(spec_copy, sizeof(spec_copy), "%s", spec != nullptr ? spec : "");
 
@@ -213,9 +213,9 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
          // CS-2206: the reconnecting client's TLS cert (PEM) rides in
          // ID_user_list as a single ST_name element (nullptr in non-TLS mode).
          const char *reconnect_cred = nullptr;
-         ocs::tom::ConstElement<ocs::tom::ST> cred_ep = ocs::tom::get<ID_user_list>(dep).front();
+         ocs::tom::ConstElement<ocs::tom::ST> cred_ep = dep.get<ID_user_list>().front();
          if (cred_ep != nullptr) {
-            reconnect_cred = ocs::tom::get<ST_name>(cred_ep);
+            reconnect_cred = cred_ep.get<ST_name>();
          }
 
          char token[128] = {0};
@@ -238,7 +238,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
          lList *raw_qref_list = nullptr;
          lList *raw_tmp_list = nullptr;
 
-         qref_list_add(&raw_qref_list, nullptr, ocs::tom::get<ID_str>(dep));
+         qref_list_add(&raw_qref_list, nullptr, dep.get<ID_str>());
          const ocs::tom::ListPtr<ocs::tom::QR> qref_list(raw_qref_list);
          qref_list_resolve_hostname(qref_list.get());
          qref_list_resolve(qref_list.get(), nullptr, &raw_tmp_list,
@@ -254,25 +254,25 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                const char *cqueue_name = nullptr;
                const char *hostname = nullptr;
 
-               full_name = ocs::tom::get<QR_name>(qref);
+               full_name = qref.get<QR_name>();
                if (!cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
                   continue;
                }
                cqueue_name = sge_dstring_get_string(&cqueue_buffer);
                hostname = sge_dstring_get_string(&hostname_buffer);
-               ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, cqueue_name);
-               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               ocs::tom::ConstElement<ocs::tom::CQ> cqueue = master_cqueue_list.find_first<CQ_name>(cqueue_name);
+               ocs::tom::ConstList<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
                ocs::tom::Element<ocs::tom::QU> qinstance =
                   ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
 
-               sge_change_queue_state(packet, task, qinstance, id_action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+               sge_change_queue_state(packet, task, qinstance, id_action, dep.get<ID_force>(), &alp, monitor);
                found = true;
             }
          }
       }
       if (!found) {
          bool is_jobName_suport = false;
-         u_long action = ocs::tom::get<ID_action>(dep);
+         u_long action = dep.get<ID_action>();
          if ((action & JOB_DO_ACTION) > 0 &&
              (action & QUEUE_DO_ACTION) == 0) {
             action = (action & (~JOB_DO_ACTION));
@@ -283,19 +283,19 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
          ** We found no queue so look for a job. This only makes sense for
          ** suspend, unsuspend, reschedule, and clear
          */
-         if (sge_strisint(ocs::tom::get<ID_str>(dep)) &&
+         if (sge_strisint(dep.get<ID_str>()) &&
              (action == QI_DO_SUSPEND ||
               action == QI_DO_RESCHEDULE ||
               action == QI_DO_CLEARERROR ||
               action == QI_DO_UNSUSPEND)) {
-            jobid = strtol(ocs::tom::get<ID_str>(dep), nullptr, 10);
+            jobid = strtol(dep.get<ID_str>(), nullptr, 10);
 
-            ocs::tom::ConstElement<ocs::tom::RN> rn = ocs::tom::get<ID_ja_structure>(dep).front();
+            ocs::tom::ConstElement<ocs::tom::RN> rn = dep.get<ID_ja_structure>().front();
             if (rn) {
-               start = ocs::tom::get<RN_min>(rn);
+               start = rn.get<RN_min>();
                if (start) {
-                  end = ocs::tom::get<RN_max>(rn);
-                  step = ocs::tom::get<RN_step>(rn);
+                  end = rn.get<RN_max>();
+                  step = rn.get<RN_step>();
                   if (!step)
                      step = 1;
                   alltasks = 0;
@@ -314,21 +314,21 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
 
             ocs::tom::Element<ocs::tom::JB> job = ocs::tom::find_first_rw<JB_job_number>(master_job_list, jobid);
             if (job != nullptr) {
-               ocs::tom::Element<ocs::tom::JAT> jatask = ocs::tom::get<JB_ja_tasks>(job).front();
+               ocs::tom::Element<ocs::tom::JAT> jatask = job.get<JB_ja_tasks>().front();
                ocs::tom::Element<ocs::tom::JAT> tmp_task;
 
                while ((tmp_task = jatask)) {
                   uint32_t task_number;
 
                   jatask = tmp_task.next();
-                  task_number = ocs::tom::get<JAT_task_number>(tmp_task);
+                  task_number = tmp_task.get<JAT_task_number>();
                   if ((task_number >= start && task_number <= end &&
                        ((task_number - start) % step) == 0) || alltasks) {
                      DPRINTF("Modify job: " sge_u32 "." sge_u32 "\n", jobid, task_number);
 
                      /* this specifies no queue, so lets probe for a job */
                      /* change state of job: */
-                     sge_change_job_state(packet, task, job, tmp_task, 0, action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+                     sge_change_job_state(packet, task, job, tmp_task, 0, action, dep.get<ID_force>(), &alp, monitor);
                      found = true;
                   }
                }
@@ -339,7 +339,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                   per task */
                if (alltasks && job_is_array(job)) {
                   if (!found) {
-                     sge_change_job_state(packet, task, job, nullptr, 0, action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+                     sge_change_job_state(packet, task, job, nullptr, 0, action, dep.get<ID_force>(), &alp, monitor);
                      found = true;
                   }
                } else {
@@ -347,59 +347,63 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                   uint32_t taskid;
 
                   /* handle all pending tasks */
-                  for (const auto range : ocs::tom::get<JB_ja_n_h_ids>(job)) {
+                  for (const auto range : job.get<JB_ja_n_h_ids>()) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid = min; taskid <= max; taskid += step) {
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32 "." sge_u32 "\n", jobid, taskid);
-                           sge_change_job_state(packet, task, job, nullptr, taskid, action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, dep.get<ID_force>(), &alp,
+                                                monitor);
                            found = true;
                         }
                      }
                   }
 
                   /* handle all tasks in user hold */
-                  for (const auto range : ocs::tom::get<JB_ja_u_h_ids>(job)) {
+                  for (const auto range : job.get<JB_ja_u_h_ids>()) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid = min; taskid <= max; taskid += step) {
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32 "." sge_u32 "\n", jobid, taskid);
-                           sge_change_job_state(packet, task, job, nullptr, taskid, action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, dep.get<ID_force>(), &alp,
+                                                monitor);
                            found = true;
                         }
                      }
                   }
 
                   /* handle all tasks in system hold that are not in user hold */
-                  for (const auto range : ocs::tom::get<JB_ja_s_h_ids>(job)) {
+                  for (const auto range : job.get<JB_ja_s_h_ids>()) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid = min; taskid <= max; taskid += step) {
-                        if (range_list_is_id_within(ocs::tom::get<JB_ja_u_h_ids>(job), taskid)) {
+                        if (range_list_is_id_within(job.get<JB_ja_u_h_ids>(), taskid)) {
                            continue;
                         }
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32 "." sge_u32 "\n", jobid, taskid);
-                           sge_change_job_state(packet, task, job, nullptr, taskid, action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, dep.get<ID_force>(), &alp,
+                                                monitor);
                            found = true;
                         }
                      }
                   }
 
                   /* handle all tasks in operator hold that are not in user hold or system hold */
-                  for (const auto range : ocs::tom::get<JB_ja_o_h_ids>(job)) {
+                  for (const auto range : job.get<JB_ja_o_h_ids>()) {
                      range_get_all_ids(range, &min, &max, &step);
                      for (taskid = min; taskid <= max; taskid += step) {
-                        if (range_list_is_id_within(ocs::tom::get<JB_ja_u_h_ids>(job), taskid) ||
-                            range_list_is_id_within(ocs::tom::get<JB_ja_s_h_ids>(job), taskid)) {
+                        if (range_list_is_id_within(job.get<JB_ja_u_h_ids>(), taskid) ||
+                            range_list_is_id_within(job.get<JB_ja_s_h_ids>(), taskid)) {
                            continue;
                         }
                         if ((taskid >= start && taskid <= end &&
                              ((taskid - start) % step) == 0) || alltasks) {
                            DPRINTF("Modify job: " sge_u32 "." sge_u32 "\n", jobid, taskid);
-                           sge_change_job_state(packet, task, job, nullptr, taskid, action, ocs::tom::get<ID_force>(dep), &alp, monitor);
+                           sge_change_job_state(packet, task, job, nullptr, taskid, action, dep.get<ID_force>(), &alp,
+                                                monitor);
                            found = true;
                         }
                      }
@@ -414,13 +418,13 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                  action == QI_DO_CLEARERROR ||
                  action == QI_DO_UNSUSPEND)) {
 
-            const char *job_name = ocs::tom::get<ID_str>(dep);
+            const char *job_name = dep.get<ID_str>();
             for (const auto job : master_job_list) {
-               if (!fnmatch(job_name, ocs::tom::get<JB_job_name>(job), 0)) {
+               if (!fnmatch(job_name, job.get<JB_job_name>(), 0)) {
                   char job_id[40];
                   auto mod = dep.clone();
-                  snprintf(job_id, sizeof(job_id), sge_u32, ocs::tom::get<JB_job_number>(job));
-                  ocs::tom::set<ID_str>(mod, job_id);
+                  snprintf(job_id, sizeof(job_id), sge_u32, job.get<JB_job_number>());
+                  mod->set<ID_str>(job_id);
                   data_list.push_back(std::move(mod));
                   found = true;
                }
@@ -432,7 +436,7 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
       }
 
       if (!found) {
-         u_long action = ocs::tom::get<ID_action>(dep);
+         u_long action = dep.get<ID_action>();
 /*
          if ((action & JOB_DO_ACTION)) {
             action = action - JOB_DO_ACTION;
@@ -449,9 +453,9 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
                  (action & QI_DO_SUSPEND) != 0 ||
                  (action & QI_DO_UNSUSPEND) != 0 ||
                  (action & QI_DO_CLEAN) != 0)) {
-            ERROR(MSG_QUEUE_INVALIDQORJOB_S, ocs::tom::get<ID_str>(dep));
+            ERROR(MSG_QUEUE_INVALIDQORJOB_S, dep.get<ID_str>());
          } else {
-            ERROR(MSG_QUEUE_INVALIDQ_S, ocs::tom::get<ID_str>(dep));
+            ERROR(MSG_QUEUE_INVALIDQ_S, dep.get<ID_str>());
          }
          answer_list_add(&alp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
       }
@@ -491,7 +495,7 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs
    bool isoperator = manop_is_operator(packet);
 
    if (!isowner && !isoperator) {
-      ERROR(MSG_QUEUE_NOCHANGEQPERMS_SS, packet->user, ocs::tom::get<QU_full_name>(qep));
+      ERROR(MSG_QUEUE_NOCHANGEQPERMS_SS, packet->user, qep.get<QU_full_name>());
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
@@ -561,8 +565,8 @@ sge_change_queue_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs
       case QI_DO_RESCHEDULE:
          {
             const auto master_cqueue_list = ocs::DataStore::master_list_rw<SGE_TYPE_CQUEUE>();
-            cqueue_list_del_all_orphaned(master_cqueue_list, answer, ocs::tom::get<QU_qname>(qep),
-                                         ocs::tom::get<QU_qhostname>(qep), packet->gdi_session);
+            cqueue_list_del_all_orphaned(master_cqueue_list, answer, qep.get<QU_qname>(),
+                                         qep.get<QU_qhostname>(), packet->gdi_session);
          }
          break;
       default:
@@ -594,12 +598,12 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
                      const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   uint32_t job_id = ocs::tom::get<JB_job_number>(jep);
+   uint32_t job_id = jep.get<JB_job_number>();
 
    // check the modifying users permissions
    // need to be either owner
    // or operator/manager on an admin host
-   if (sge_strnullcmp(packet->user, ocs::tom::get<JB_owner>(jep)) != 0) {
+   if (sge_strnullcmp(packet->user, jep.get<JB_owner>()) != 0) {
 
       if (!manop_is_operator(packet)) {
          ERROR(MSG_JOB_NOMODJOBPERMS_SU, packet->user, job_id);
@@ -627,7 +631,7 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
       DRETURN(-1);
    }
 
-   task_id = ocs::tom::get<JAT_task_number>(jatep);
+   task_id = jatep.get<JAT_task_number>();
 
    /* CS-1908: under retention a JFINISHED ja_task lives on JB_ja_tasks until
     * the sweep prunes it. qmod actions (suspend/unsuspend/reschedule/
@@ -636,16 +640,16 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
     * silently no-ops when JAT_master_queue is empty (which it is once the
     * finish path has run). Emit the same INFO the mod handler uses so the
     * caller understands why nothing happened. */
-   if (ocs::tom::get<JAT_status>(jatep) == JFINISHED) {
+   if (jatep.get<JAT_status>() == JFINISHED) {
       INFO(MSG_JOB_ALREADYFINISHED_NOMOD_U, job_id);
       answer_list_add(answer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
       DRETURN(0);
    }
 
    ocs::tom::Element<ocs::tom::QU> queueep = nullptr;
-   if (ocs::tom::get<JAT_master_queue>(jatep)) {
+   if (jatep.get<JAT_master_queue>()) {
       const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
-      queueep = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(jatep));
+      queueep = cqueue_list_locate_qinstance(master_cqueue_list, jatep.get<JAT_master_queue>());
    }
 
    switch (action) {
@@ -668,8 +672,8 @@ sge_change_job_state(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::
          break;
 
       case QI_DO_CLEARERROR:
-         if (VALID(JERROR, ocs::tom::get<JAT_state>(jatep))) {
-            ocs::tom::set<JAT_state>(jatep, ocs::tom::get<JAT_state>(jatep) & ~JERROR);
+         if (VALID(JERROR, jatep.get<JAT_state>())) {
+            jatep.set<JAT_state>(jatep.get<JAT_state>() & ~JERROR);
             ja_task_message_trash_all_of_type_X(jatep, 1);
 
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
@@ -719,7 +723,7 @@ qmod_queue_weakclean(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
    DENTER(TOP_LAYER);
 
    if (!isoperator && !isowner) {
-      ERROR(MSG_QUEUE_NORESCHEDULEQPERMS_SS, packet->user, ocs::tom::get<QU_full_name>(qep));
+      ERROR(MSG_QUEUE_NORESCHEDULEQPERMS_SS, packet->user, qep.get<QU_full_name>());
       answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
@@ -751,7 +755,7 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<oc
    const char *qname = nullptr;
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
-   qname = ocs::tom::get<QU_full_name>(qep);
+   qname = qep.get<QU_full_name>();
 
    DPRINTF("cleaning queue >%s<\n", qname);
 
@@ -769,12 +773,12 @@ qmod_queue_clean(const ocs::gdi::Packet *packet, const ocs::tom::ConstElement<oc
    while ((jep = nextjep)) {
       nextjep = jep.next();
 
-      ocs::tom::Element<ocs::tom::JAT> nexttep = ocs::tom::get<JB_ja_tasks>(jep).front();
+      ocs::tom::Element<ocs::tom::JAT> nexttep = jep.get<JB_ja_tasks>().front();
       ocs::tom::Element<ocs::tom::JAT> jatep;
       while ((jatep = nexttep)) {
          nexttep = jatep.next();
 
-         if (ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(jatep, qname) != nullptr) {
+         if (jatep.find_first_in<JAT_granted_destin_identifier_list, JG_qname>(qname) != nullptr) {
             /* 3: JOB_FINISH reports aborted */
             sge_commit_job(jep, jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE, COMMIT_DEFAULT | COMMIT_NEVER_RAN,
                            monitor, packet->gdi_session);
@@ -834,14 +838,14 @@ qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
 
    uint64_t now = sge_get_gmt64();
 
-   jobid = ocs::tom::get<JB_job_number>(jep);
-   jataskid = ocs::tom::get<JAT_task_number>(jatep);
+   jobid = jep.get<JB_job_number>();
+   jataskid = jatep.get<JAT_task_number>();
 
    /* determine whether we actually migrate upon suspend */
-   if (ocs::tom::get<JB_checkpoint_attr>(jep) & CHECKPOINT_SUSPEND)
+   if (jep.get<JB_checkpoint_attr>() & CHECKPOINT_SUSPEND)
       migrate_on_suspend = true;
 
-   if (VALID(JSUSPENDED, ocs::tom::get<JAT_state>(jatep))) {
+   if (VALID(JSUSPENDED, jatep.get<JAT_state>())) {
       /* this job is already suspended or lives in a suspended queue */
       if (force && queueep) {
          /* here force means to send the suspend signal again
@@ -874,12 +878,12 @@ qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
       /*
       ** may be the queue is suspended, than the job might not be
       */
-      state = ocs::tom::get<JAT_state>(jatep);
+      state = jatep.get<JAT_state>();
       CLEARBIT(JRUNNING, state);
       SETBIT(JSUSPENDED, state);
-      ocs::tom::set<JAT_state>(jatep, state);
+      jatep.set<JAT_state>(state);
       if (migrate_on_suspend) {
-         ocs::tom::set<JAT_stop_initiate_time>(jatep, now);
+         jatep.set<JAT_stop_initiate_time>(now);
       }
 
       sge_event_spool(answer, 0, sgeE_JATASK_MOD,
@@ -909,12 +913,12 @@ qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
             answer_list_add(answer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
          }
 
-         state = ocs::tom::get<JAT_state>(jatep);
+         state = jatep.get<JAT_state>();
          CLEARBIT(JRUNNING, state);
          SETBIT(JSUSPENDED, state);
-         ocs::tom::set<JAT_state>(jatep, state);
+         jatep.set<JAT_state>(state);
          if (migrate_on_suspend) {
-            ocs::tom::set<JAT_stop_initiate_time>(jatep, now);
+            jatep.set<JAT_stop_initiate_time>(now);
          }
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
@@ -928,12 +932,12 @@ qmod_job_suspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
             }
             answer_list_add(answer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
-            state = ocs::tom::get<JAT_state>(jatep);
+            state = jatep.get<JAT_state>();
             CLEARBIT(JRUNNING, state);
             SETBIT(JSUSPENDED, state);
-            ocs::tom::set<JAT_state>(jatep, state);
+            jatep.set<JAT_state>(state);
             if (migrate_on_suspend) {
-               ocs::tom::set<JAT_stop_initiate_time>(jatep, now);
+               jatep.set<JAT_stop_initiate_time>(now);
             }
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             jobid, jataskid, nullptr, nullptr, nullptr,
@@ -972,12 +976,12 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::to
 
    uint64_t now = sge_get_gmt64();
 
-   jobid = ocs::tom::get<JB_job_number>(jep);
-   jataskid = ocs::tom::get<JAT_task_number>(jatep);
+   jobid = jep.get<JB_job_number>();
+   jataskid = jatep.get<JAT_task_number>();
 
    /* admin suspend may not override suspend from threshold */
-   if (VALID(JSUSPENDED_ON_THRESHOLD, ocs::tom::get<JAT_state>(jatep))) {
-      if (VALID(JSUSPENDED, ocs::tom::get<JAT_state>(jatep))) {
+   if (VALID(JSUSPENDED_ON_THRESHOLD, jatep.get<JAT_state>())) {
+      if (VALID(JSUSPENDED, jatep.get<JAT_state>())) {
          if (job_is_array(jep)) {
             INFO(MSG_JOB_RMADMSUSPENDTASK_SSUU, packet->user, packet->host, jobid, jataskid);
          } else {
@@ -985,9 +989,9 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::to
          }
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
 
-         state = ocs::tom::get<JAT_state>(jatep);
+         state = jatep.get<JAT_state>();
          CLEARBIT(JSUSPENDED, state);
-         ocs::tom::set<JAT_state>(jatep, state);
+         jatep.set<JAT_state>(state);
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
                          jep, jatep, nullptr, true, true, packet->gdi_session);
@@ -1007,7 +1011,7 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::to
       }
    }
 
-   if (VALID(JRUNNING, ocs::tom::get<JAT_state>(jatep))) {
+   if (VALID(JRUNNING, jatep.get<JAT_state>())) {
       /* this job is already running */
       if (force && queueep) {
          /*
@@ -1065,10 +1069,10 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::to
             answer_list_add(answer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_ERROR);
          }
 
-         state = ocs::tom::get<JAT_state>(jatep);
+         state = jatep.get<JAT_state>();
          SETBIT(JRUNNING, state);
          CLEARBIT(JSUSPENDED, state);
-         ocs::tom::set<JAT_state>(jatep, state);
+         jatep.set<JAT_state>(state);
          sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                          jobid, jataskid, nullptr, nullptr, nullptr,
                          jep, jatep, nullptr, true, true, packet->gdi_session);
@@ -1082,10 +1086,10 @@ qmod_job_unsuspend(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::to
             }
             answer_list_add(answer, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_ERROR);
 
-            state = ocs::tom::get<JAT_state>(jatep);
+            state = jatep.get<JAT_state>();
             SETBIT(JRUNNING, state);
             CLEARBIT(JSUSPENDED, state);
-            ocs::tom::set<JAT_state>(jatep, state);
+            jatep.set<JAT_state>(state);
             sge_event_spool(answer, 0, sgeE_JATASK_MOD,
                             jobid, jataskid, nullptr, nullptr, nullptr,
                             jep, jatep, nullptr, true, true, packet->gdi_session);
@@ -1119,12 +1123,12 @@ rebuild_signal_events() {
 
    /* J O B */
    for (const auto jep : master_job_list) {
-      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-         uint64_t when = ocs::tom::get<JAT_pending_signal_delivery_time>(jatep);
+      for (const auto jatep : jep.get<JB_ja_tasks>()) {
+         uint64_t when = jatep.get<JAT_pending_signal_delivery_time>();
 
-         if (ocs::tom::get<JAT_pending_signal>(jatep) && (when > 0)) {
-            uint32_t key1 = ocs::tom::get<JB_job_number>(jep);
-            uint32_t key2 = ocs::tom::get<JAT_task_number>(jatep);
+         if (jatep.get<JAT_pending_signal>() && (when > 0)) {
+            uint32_t key1 = jep.get<JB_job_number>();
+            uint32_t key2 = jatep.get<JAT_task_number>();
             te_event_t ev = nullptr;
 
             ev = te_new_event(when, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, key1, key2, nullptr);
@@ -1136,11 +1140,11 @@ rebuild_signal_events() {
 
    /* Q U E U E */
    for (const auto cqueue : master_cqueue_list) {
-      for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
-         uint64_t when = ocs::tom::get<QU_pending_signal_delivery_time>(qinstance);
+      for (const auto qinstance : cqueue.get<CQ_qinstances>()) {
+         uint64_t when = qinstance.get<QU_pending_signal_delivery_time>();
 
-         if (ocs::tom::get<QU_pending_signal>(qinstance) && when > 0) {
-            const char *str_key = ocs::tom::get<QU_full_name>(qinstance);
+         if (qinstance.get<QU_pending_signal>() && when > 0) {
+            const char *str_key = qinstance.get<QU_full_name>();
             te_event_t ev = nullptr;
 
             ev = te_new_event(when, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0, str_key);
@@ -1185,9 +1189,9 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
       }
 
       const ocs::tom::Element<ocs::tom::QU> qep =
-              cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(jatep));
+              cqueue_list_locate_qinstance(master_cqueue_list, jatep.get<JAT_master_queue>());
       if (qep) {
-         sge_signal_queue(ocs::tom::get<JAT_pending_signal>(jatep), qep, jep, jatep, monitor);
+         sge_signal_queue(jatep.get<JAT_pending_signal>(), qep, jep, jatep, monitor);
       }
    } else {
       const ocs::tom::Element<ocs::tom::QU> qep = cqueue_list_locate_qinstance(master_cqueue_list, queue);
@@ -1198,7 +1202,7 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
          DRETURN_VOID;
       }
 
-      sge_signal_queue(ocs::tom::get<QU_pending_signal>(qep), qep, ocs::tom::Element<ocs::tom::JB>(),
+      sge_signal_queue(qep.get<QU_pending_signal>(), qep, ocs::tom::Element<ocs::tom::JB>(),
                        ocs::tom::Element<ocs::tom::JAT>(), monitor);
    }
 
@@ -1221,16 +1225,16 @@ sge_propagate_queue_suspension(const char *qnm, const int how) {
 
    DPRINTF("searching for all jobs in queue %s due to %s\n", qnm, sge_sig2str(how));
    for (const auto jep : master_job_list) {
-      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-         if (ocs::tom::find_first<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), qnm)) {
+      for (const auto jatep : jep.get<JB_ja_tasks>()) {
+         if (jatep.get<JAT_granted_destin_identifier_list>().find_first<JG_qname>(qnm)) {
             uint32_t jstate;
-            DPRINTF("found " sge_u32"." sge_u32"\n", ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep));
-            jstate = ocs::tom::get<JAT_state>(jatep);
+            DPRINTF("found " sge_u32"." sge_u32"\n", jep.get<JB_job_number>(), jatep.get<JAT_task_number>());
+            jstate = jatep.get<JAT_state>();
             if (how == SGE_SIGSTOP)
                jstate |= JSUSPENDED_ON_SUBORDINATE;
             else
                jstate &= ~JSUSPENDED_ON_SUBORDINATE;
-            ocs::tom::set<JAT_state>(jatep, jstate);
+            jatep.set<JAT_state>(jstate);
          }
       }
    }
@@ -1263,17 +1267,17 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
    uint64_t now = sge_get_gmt64();
 
    DEBUG("queue_signal: %d, queue: %s, job: " sge_u32 ", jatask: " sge_u32, how,
-      (qep != nullptr ? ocs::tom::get<QU_full_name>(qep) : "none"),
-      jep != nullptr ? ocs::tom::get<JB_job_number>(jep) : 0,
-      jatep != nullptr ? ocs::tom::get<JAT_task_number>(jatep) : 0);
+      (qep != nullptr ? qep.get<QU_full_name>() : "none"),
+      jep != nullptr ? jep.get<JB_job_number>() : 0,
+      jatep != nullptr ? jatep.get<JAT_task_number>() : 0);
 
    if (!jep && (how == SGE_SIGSTOP || how == SGE_SIGCONT)) {
-      sge_propagate_queue_suspension(ocs::tom::get<QU_full_name>(qep), how);
+      sge_propagate_queue_suspension(qep.get<QU_full_name>(), how);
    }
 
    /* don't try to signal unheard queues */
    if (!qinstance_state_is_unknown(qep)) {
-      const char *hnm = ocs::tom::get<QU_qhostname>(qep);
+      const char *hnm = qep.get<QU_qhostname>();
       const char *pnm = to_cstr(EXECD);
 
       if ((i = ocs::tom::try_init_buffer(&pb, 256)) == PACK_SUCCESS) {
@@ -1284,11 +1288,11 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
              *    job is a non-parallel job
              *    or all slaves of the parallel job have been acknowledged
              */
-            if (!ocs::tom::get<JAT_master_queue>(jatep) ||
+            if (!jatep.get<JAT_master_queue>() ||
                 is_pe_master_task_send(jatep)) {
                /* TAG_SIGJOB */
-               ocs::tom::try_put_uint32(&pb, ocs::tom::get<JB_job_number>(jep));
-               ocs::tom::try_put_uint32(&pb, ocs::tom::get<JAT_task_number>(jatep));
+               ocs::tom::try_put_uint32(&pb, jep.get<JB_job_number>());
+               ocs::tom::try_put_uint32(&pb, jatep.get<JAT_task_number>());
                ocs::tom::try_put_str(&pb, nullptr);
                ocs::tom::try_put_uint32(&pb, how);
             }
@@ -1296,7 +1300,7 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
             /* TAG_SIGQUEUE */
             ocs::tom::try_put_uint32(&pb, 0);
             ocs::tom::try_put_uint32(&pb, 0);
-            ocs::tom::try_put_str(&pb, ocs::tom::get<QU_full_name>(qep));
+            ocs::tom::try_put_str(&pb, qep.get<QU_full_name>());
             ocs::tom::try_put_uint32(&pb, how);
          }
 
@@ -1305,7 +1309,7 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
             // @todo check if the job is already in deletion?
             i = CL_RETVAL_OK;
             if (jep && how == SGE_SIGKILL)
-               trigger_job_resend(sge_get_gmt64(), nullptr, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep), 1);
+               trigger_job_resend(sge_get_gmt64(), nullptr, jep.get<JB_job_number>(), jatep.get<JAT_task_number>(), 1);
          } else {
             if (ocs::tom::buffer_filled(&pb)) {
                uint32_t dummy = 0;
@@ -1321,7 +1325,7 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
       }
 
       if (i != CL_RETVAL_OK) {
-         ERROR(MSG_COM_NOUPDATEQSTATE_IS, how, ocs::tom::get<QU_full_name>(qep));
+         ERROR(MSG_COM_NOUPDATEQSTATE_IS, how, qep.get<QU_full_name>());
          DRETURN(i);
       }
       sent = 1;
@@ -1336,34 +1340,34 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
       te_event_t ev = nullptr;
 
       DPRINTF("JOB " sge_u32 ": %s signal %s (retry after " sge_u64 " microseconds) host: %s\n",
-              ocs::tom::get<JB_job_number>(jep), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
-              static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
-      te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ocs::tom::get<JB_job_number>(jep),
-                               ocs::tom::get<JAT_task_number>(jatep), nullptr);
+              jep.get<JB_job_number>(), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
+              qep.get<QU_qhostname>().c_str());
+      te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, jep.get<JB_job_number>(),
+                               jatep.get<JAT_task_number>(), nullptr);
 
       if (!mconf_get_simulate_execds()) {
-         ocs::tom::set<JAT_pending_signal>(jatep, how);
+         jatep.set<JAT_pending_signal>(how);
          ev = te_new_event(next_delivery_time, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT,
-                           ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep), nullptr);
+                           jep.get<JB_job_number>(), jatep.get<JAT_task_number>(), nullptr);
          te_add_event(ev);
          te_free_event(&ev);
-         ocs::tom::set<JAT_pending_signal_delivery_time>(jatep, next_delivery_time);
+         jatep.set<JAT_pending_signal_delivery_time>(next_delivery_time);
       }
    } else {
       te_event_t ev = nullptr;
 
       DPRINTF("QUEUE %s: %s signal %s (retry after " sge_u64" microseconds) host %s\n",
-              ocs::tom::get<QU_full_name>(qep), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
-              static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
-      te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, ocs::tom::get<QU_full_name>(qep));
+              qep.get<QU_full_name>(), sent ? "sent" : "queued", sge_sig2str(how), next_delivery_time - now,
+              qep.get<QU_qhostname>().c_str());
+      te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, qep.get<QU_full_name>());
 
       if (!mconf_get_simulate_execds()) {
-         ocs::tom::set<QU_pending_signal>(qep, how);
+         qep.set<QU_pending_signal>(how);
          ev = te_new_event(next_delivery_time, TYPE_SIGNAL_RESEND_EVENT, ONE_TIME_EVENT, 0, 0,
-                           ocs::tom::get<QU_full_name>(qep));
+                           qep.get<QU_full_name>());
          te_add_event(ev);
          te_free_event(&ev);
-         ocs::tom::set<QU_pending_signal_delivery_time>(qep, next_delivery_time);
+         qep.set<QU_pending_signal_delivery_time>(next_delivery_time);
       }
    }
 
@@ -1371,8 +1375,8 @@ sge_signal_queue(const int how, const ocs::tom::Element<ocs::tom::QU> qep, const
       signal_slave_jobs_in_queue(how, qep, monitor);
    } else {/* is this the master queue of this job to signal ? - then decide whether slave tasks also
            must get signalled */
-      if (!strcmp(ocs::tom::get<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front()),
-                  ocs::tom::get<QU_full_name>(qep))) {
+      if (!strcmp(jatep.get<JAT_granted_destin_identifier_list>().front().get<JG_qname>(),
+                  qep.get<QU_full_name>())) {
          signal_slave_tasks_of_job(how, jep, jatep, monitor);
       }
    }
@@ -1399,34 +1403,34 @@ signal_slave_jobs_in_queue(const int how, const ocs::tom::ConstElement<ocs::tom:
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
 
-   qname = ocs::tom::get<QU_full_name>(qep);
+   qname = qep.get<QU_full_name>();
    /* test whether there are parallel jobs
       with a slave slot in this queue
       if so then signal this job */
    for (const auto jep : master_job_list) {
-      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (const auto jatep : jep.get<JB_ja_tasks>()) {
 
          /* skip sequential and not running jobs */
-         if ((gdil_lp = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)).size() <= 1)
+         if ((gdil_lp = jatep.get<JAT_granted_destin_identifier_list>()).size() <= 1)
             continue;
 
          /* signalling of not "slave controlled" parallel jobs will not work
             since they are not known to the appropriate execd - we should
             omit signalling in this case to prevent waste of communication bandwidth */
-         if (!(pe_name = ocs::tom::get<JAT_granted_pe>(jatep)) || !pe_list_locate(master_pe_list, pe_name))
+         if (!(pe_name = jatep.get<JAT_granted_pe>()) || !pe_list_locate(master_pe_list, pe_name))
             continue;
 
-         if (ocs::tom::find_first<JG_qname>(gdil_lp, qname) != nullptr) {
+         if (gdil_lp.find_first<JG_qname>(qname) != nullptr) {
 
             /* search master queue - needed for signalling of a job */
-            mqname = ocs::tom::get<JG_qname>(gdil_lp.front());
+            mqname = gdil_lp.front().get<JG_qname>();
             const ocs::tom::Element<ocs::tom::QU> mq = cqueue_list_locate_qinstance(master_cqueue_list, mqname);
             if (mq) {
                DPRINTF("found slave job " sge_u32" in queue %s master queue is %s\n",
-                       ocs::tom::get<JB_job_number>(jep), qname, mqname);
+                       jep.get<JB_job_number>(), qname, mqname);
                sge_signal_queue(how, mq, jep, jatep, monitor);
             } else {
-               ERROR(MSG_JOB_UNABLE2FINDMQ_SU, mqname, ocs::tom::get<JB_job_number>(jep));
+               ERROR(MSG_JOB_UNABLE2FINDMQ_SU, mqname, jep.get<JB_job_number>());
             }
          }
       }
@@ -1456,21 +1460,21 @@ signal_slave_tasks_of_job(const int how, const ocs::tom::Element<ocs::tom::JB> j
    /* do not signal slave tasks in case of checkpointing jobs with
       STOP/CONT when suspending means migration */
    if ((how == SGE_SIGCONT || how == SGE_SIGSTOP) &&
-       ISSET(ocs::tom::get<JB_checkpoint_attr>(jep), CHECKPOINT_SUSPEND)) {
+       ISSET(jep.get<JB_checkpoint_attr>(), CHECKPOINT_SUSPEND)) {
       DPRINTF("omit signaling - checkpoint script does action for whole job\n");
       DRETURN_VOID;
    }
 
    /* forward signal to slave exec hosts
       in case of slave controlled jobs */
-   if (!((gdil_lp = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)).size() <= 1 ||
-         !(pe_name = ocs::tom::get<JAT_granted_pe>(jatep)) || !(pe = pe_list_locate(master_pe_list, pe_name)) ||
-         !ocs::tom::get<PE_control_slaves>(pe))) {
+   if (!((gdil_lp = jatep.get<JAT_granted_destin_identifier_list>()).size() <= 1 ||
+         !(pe_name = jatep.get<JAT_granted_pe>()) || !(pe = pe_list_locate(master_pe_list, pe_name)) ||
+         !pe.get<PE_control_slaves>())) {
       for (auto gdil_ep = gdil_lp.front().next(); gdil_ep; gdil_ep = gdil_ep.next()) {
-         qname = ocs::tom::get<JG_qname>(gdil_ep);
+         qname = gdil_ep.get<JG_qname>();
          const ocs::tom::Element<ocs::tom::QU> mq = cqueue_list_locate_qinstance(master_cqueue_list, qname);
          if (mq) {
-            DPRINTF("found slave job " sge_u32" in queue %s\n", ocs::tom::get<JB_job_number>(jep), qname);
+            DPRINTF("found slave job " sge_u32" in queue %s\n", jep.get<JB_job_number>(), qname);
             sge_signal_queue(how, mq, jep, jatep, monitor);
          }
       }

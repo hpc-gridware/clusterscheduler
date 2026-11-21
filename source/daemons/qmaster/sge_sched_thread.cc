@@ -177,12 +177,12 @@ scheduler_global_queue_messages(scheduler_all_data_t *lists, const bool monitor_
       const auto not_available = all_queues.select(where);
 
       for (const auto queue : *not_available) {
-         const char *queue_name = ocs::tom::get<QU_full_name>(queue);
+         const char *queue_name = queue.get<QU_full_name>();
          schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, queue_name);
       }
 
       for (const auto queue : ocs::tom::ConstList<ocs::tom::QU>(*lists->dis_queue_list)) {
-         const char *queue_name = ocs::tom::get<QU_full_name>(queue);
+         const char *queue_name = queue.get<QU_full_name>();
          schedd_mes_add_global(nullptr, monitor_next_run, SCHEDD_INFO_QUEUENOTAVAIL_, queue_name);
       }
 
@@ -419,8 +419,8 @@ do_load_adjustment(scheduler_all_data_t *lists, const ocs::tom::ConstList<ocs::t
          const auto gep = ocs::tom::ConstElement<ocs::tom::EH>(host_list_locate(host_list, "global"));
          if (gep) {
             for (const auto lcep : job_load_adjustments) {
-               const char *attr = ocs::tom::get<CE_name>(lcep);
-               if (ocs::tom::find_first_in<EH_load_list, HL_name>(gep, attr)) {
+               const char *attr = lcep.get<CE_name>();
+               if (gep.find_first_in<EH_load_list, HL_name>(attr)) {
                   DPRINTF("GLOBAL LOAD CORRECTION \"%s\"\n", attr);
                   global_lc = 1;
                   break;
@@ -744,7 +744,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
          bool is_reserve;
          bool is_start;
 
-         job_id = ocs::tom::get<JB_job_number>(orig_job);
+         job_id = orig_job.get<JB_job_number>();
 
          /* 
           * We don't try to get a reservation, if 
@@ -755,8 +755,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
           * - if the job reservation is disabled by category
           */
          if (nreservation < max_reserve &&
-             ocs::tom::get<JB_reserve>(orig_job) &&
-             !JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(orig_job)) &&
+             orig_job.get<JB_reserve>() &&
+             !JOB_TYPE_IS_IMMEDIATE(orig_job.get<JB_type>()) &&
              !ocs::CategorySchedd::job_is_category_reservation_rejected(orig_job)) {
             is_reserve = true;
          } else {
@@ -778,8 +778,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
             }
 
             is_immediate_array_job = (is_immediate_array_job ||
-                                      (JOB_TYPE_IS_ARRAY(ocs::tom::get<JB_type>(orig_job)) &&
-                                       JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(orig_job))));
+                                      (JOB_TYPE_IS_ARRAY(orig_job.get<JB_type>()) &&
+                                       JOB_TYPE_IS_IMMEDIATE(orig_job.get<JB_type>())));
 
 
             const auto job = orig_job.clone();
@@ -848,7 +848,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
          switch (result) {
             case DISPATCH_OK: /* now assignment */
             {
-               char *owner = strdup(ocs::tom::get<JB_owner>(orig_job));
+               char *owner = strdup(orig_job.get<JB_owner>());
                /* here the job got an assignment that will cause it be started immediately */
 
                DPRINTF("Found NOW assignment\n");
@@ -917,10 +917,10 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                /* mark the category as rejected */
                // the category reference of the job is set by refresh_cat_data_in_job(): taken unchecked
                cat = ocs::tom::Element<ocs::tom::CT>::from_typed(
-                       static_cast<lListElem *>(ocs::tom::get<JB_category>(orig_job)));
+                       static_cast<lListElem *>(orig_job.get<JB_category>()));
                if (cat) {
                   DPRINTF("SKIP JOB (R)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
-                          ocs::tom::get<CT_str>(cat), ocs::tom::get<CT_refcount>(cat));
+                          cat.get<CT_str>(), cat.get<CT_refcount>());
                   ocs::CategorySchedd::job_reject_category(orig_job, false);
                }
                /* here no reservation was made for a job that couldn't be started now
@@ -939,7 +939,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   (*(splitted_job_lists[SPLIT_NOT_STARTED]))->push_back(std::move(not_started_job));
                   is_pjob_resort = false;
                } else {
-                  uint32_t ja_task_number = range_list_get_first_id(ocs::tom::get<JB_ja_n_h_ids>(orig_job), nullptr);
+                  uint32_t ja_task_number = range_list_get_first_id(orig_job.get<JB_ja_n_h_ids>(), nullptr);
                   object_delete_range_id<JB_ja_n_h_ids>(orig_job, nullptr, ja_task_number);
                   is_pjob_resort = true;
                }
@@ -952,10 +952,10 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   // do this only once, not when we skipped scheduling as the category was already rejected
                   // the category reference of the job is set by refresh_cat_data_in_job(): taken unchecked
                   cat = ocs::tom::Element<ocs::tom::CT>::from_typed(
-                          static_cast<lListElem *>(ocs::tom::get<JB_category>(orig_job)));
+                          static_cast<lListElem *>(orig_job.get<JB_category>()));
                   if (cat) {
                      DPRINTF("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
-                             ocs::tom::get<CT_str>(cat), ocs::tom::get<CT_refcount>(cat));
+                             cat.get<CT_str>(), cat.get<CT_refcount>());
                      ocs::CategorySchedd::job_reject_category(orig_job, is_reserve);
                   }
                }
@@ -970,7 +970,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   schedd_mes_commit(pending_jobs, 0, cat);
                }
 
-               if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(orig_job))) { /* immediate job */
+               if (JOB_TYPE_IS_IMMEDIATE(orig_job.get<JB_type>())) { /* immediate job */
                   /* remove job from pending list and generate remove immediate orders
                      for all tasks including already assigned ones */
                   remove_immediate_job(pending_jobs, orig_job, orders, 0);
@@ -1151,7 +1151,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
     * seek for ckpt interface definition requested by the job 
     * in case of ckpt jobs 
     *------------------------------------------------------------------*/
-   if ((ckpt_name = ocs::tom::get<JB_checkpoint_name>(job))) {
+   if ((ckpt_name = job.get<JB_checkpoint_name>())) {
       a.ckpt = ocs::tom::ConstElement<ocs::tom::CK>(ckpt_list_locate(ckpt_list, ckpt_name));
       if (a.ckpt == nullptr) {
          schedd_mes_add(a.monitor_alpp, a.monitor_next_run, a.job_id, SCHEDD_INFO_CKPTNOTFOUND_);
@@ -1169,7 +1169,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
    // in case of running in an AR, we swap resources to the AR state
    sge_ar_swap_resource_lists(a);
 
-   if ((pe_name = ocs::tom::get<JB_pe>(job)) != nullptr) {
+   if ((pe_name = job.get<JB_pe>()) != nullptr) {
       /*------------------------------------------------------------------
        * SELECT POSSIBLE QUEUE(S) FOR THIS PE JOB
        *------------------------------------------------------------------*/
@@ -1281,7 +1281,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
     *------------------------------------------------------------------*/
    if (result == DISPATCH_NEVER_CAT || result == DISPATCH_NEVER_JOB) {
       /* failed scheduling this job */
-      if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) { /* immediate job */
+      if (JOB_TYPE_IS_IMMEDIATE(job.get<JB_type>())) { /* immediate job */
          /* generate order for removing it at qmaster */
          order_remove_immediate(job, ja_task, orders);
       }
@@ -1319,7 +1319,7 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
          // resources are debited after it - so returning here leaves the cluster as it was.
          // The partially filled list is taken off the task so that a later run does not find
          // it.
-         ocs::tom::set<JAT_granted_resources_list>(ja_task, nullptr);
+         ja_task.set<JAT_granted_resources_list>(nullptr);
          assignment_release(&a);
          DRETURN(DISPATCH_NEVER_JOB);
       }
@@ -1333,30 +1333,30 @@ select_assign_debit(ocs::tom::ListPtr<ocs::tom::QU> &queue_list, ocs::tom::ListP
          double job_otickets_per_slot;
          double job_stickets_per_slot;
 
-         job_tickets_per_slot = (double) ocs::tom::get<JAT_tix>(ja_task) / a.slots;
-         job_ftickets_per_slot = (double) ocs::tom::get<JAT_fticket>(ja_task) / a.slots;
-         job_otickets_per_slot = (double) ocs::tom::get<JAT_oticket>(ja_task) / a.slots;
-         job_stickets_per_slot = (double) ocs::tom::get<JAT_sticket>(ja_task) / a.slots;
+         job_tickets_per_slot = (double) ja_task.get<JAT_tix>() / a.slots;
+         job_ftickets_per_slot = (double) ja_task.get<JAT_fticket>() / a.slots;
+         job_otickets_per_slot = (double) ja_task.get<JAT_oticket>() / a.slots;
+         job_stickets_per_slot = (double) ja_task.get<JAT_sticket>() / a.slots;
 
          for (const auto granted_el : *a.gdil) {
-            uint32_t granted_slots = ocs::tom::get<JG_slots>(granted_el);
-            ocs::tom::set<JG_ticket>(granted_el, job_tickets_per_slot * granted_slots);
-            ocs::tom::set<JG_oticket>(granted_el, job_otickets_per_slot * granted_slots);
-            ocs::tom::set<JG_fticket>(granted_el, job_ftickets_per_slot * granted_slots);
-            ocs::tom::set<JG_sticket>(granted_el, job_stickets_per_slot * granted_slots);
+            uint32_t granted_slots = granted_el.get<JG_slots>();
+            granted_el.set<JG_ticket>(job_tickets_per_slot * granted_slots);
+            granted_el.set<JG_oticket>(job_otickets_per_slot * granted_slots);
+            granted_el.set<JG_fticket>(job_ftickets_per_slot * granted_slots);
+            granted_el.set<JG_sticket>(job_stickets_per_slot * granted_slots);
          }
-         *total_running_job_tickets += ocs::tom::get<JAT_tix>(ja_task);
+         *total_running_job_tickets += ja_task.get<JAT_tix>();
       }
 
       if (a.pe) {
-         DPRINTF("got PE %s\n", ocs::tom::get<PE_name>(a.pe));
-         ocs::tom::set<JAT_granted_pe>(ja_task, ocs::tom::get<PE_name>(a.pe));
+         DPRINTF("got PE %s\n", a.pe.get<PE_name>());
+         ja_task.set<JAT_granted_pe>(a.pe.get<PE_name>());
       }
 
       sge_create_orders(orders->jobStartOrderList, ORT_start_job, job, ja_task, *a.gdil, true);
 
       /* increase the number of jobs a user/group has running */
-      sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), 1);
+      sge_inc_jc(user_list, job.get<JB_owner>(), 1);
    }
 
    /*------------------------------------------------------------------

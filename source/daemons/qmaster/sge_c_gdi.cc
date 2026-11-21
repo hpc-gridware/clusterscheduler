@@ -716,12 +716,12 @@ sge_c_gdi_add(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       /* is thread save. the global lock is used when needed */
       for (const auto ep : *requests) {
          /* fill address infos from request into event client that must be added */
-         ocs::tom::set<EV_host>(ep, packet->host);
-         ocs::tom::set<EV_commproc>(ep, packet->commproc);
-         ocs::tom::set<EV_commid>(ep, packet->commproc_id);
+         ep.set<EV_host>(ocs::tom::Host(packet->host));
+         ep.set<EV_commproc>(packet->commproc);
+         ep.set<EV_commid>(packet->commproc_id);
 
          /* fill in authentication infos from request */
-         ocs::tom::set<EV_uid>(ep, packet->uid);
+         ep.set<EV_uid>(packet->uid);
          if (!event_client_verify(ep, &(task->answer_list), true)) {
             ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
          } else {
@@ -1169,13 +1169,13 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
 
    // create list with element and fill in username, hostname and corresponding permission
    ocs::tom::Element<ocs::tom::PERM> ep = ocs::tom::emplace_back<PERM_username>(&task->data_list, username);
-   ocs::tom::set<PERM_host>(ep, hostname);
+   ep.set<PERM_host>(ocs::tom::Host(hostname));
 
    // add user roles
    bool is_manager = manop_is_manager(packet);
    bool is_operator = manop_is_operator(packet);
-   ocs::tom::set<PERM_is_manager>(ep, is_manager);
-   ocs::tom::set<PERM_is_operator>(ep, is_operator);
+   ep.set<PERM_is_manager>(is_manager);
+   ep.set<PERM_is_operator>(is_operator);
 
    // add host roles -- through the same helpers as the checks above, so that
    // what permcheck REPORTS and what the permission checks ENFORCE cannot drift
@@ -1183,8 +1183,8 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
    // host lists, which host_list_locate() resolved to for those list types.
    bool is_admin_host = host_is_admin_host(hostname);
    bool is_submit_host = host_is_submit_host(hostname);
-   ocs::tom::set<PERM_is_admin_host>(ep, is_admin_host);
-   ocs::tom::set<PERM_is_submit_host>(ep, is_submit_host);
+   ep.set<PERM_is_admin_host>(is_admin_host);
+   ep.set<PERM_is_submit_host>(is_submit_host);
 
    // show the results
    DPRINTF("manager/operator/admin_host/submit_host: %s/%s/%s/%s\n",
@@ -1294,8 +1294,8 @@ sge_gdi_tigger_thread_state_transition(ocs::gdi::Packet *packet,
    ocs::tom::ListPtr<ocs::tom::AN> *answer_list = &(task->answer_list);
    // every element is read as ID below, as the free access on the raw element did
    for (const auto elem : ocs::tom::List<ocs::tom::ID>(task->data_list)) {
-      const char *name = ocs::tom::get<ID_str>(elem);
-      sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) ocs::tom::get<ID_action>(elem);
+      const char *name = elem.get<ID_str>();
+      sge_thread_state_transitions_t action = (sge_thread_state_transitions_t) elem.get<ID_action>();
 
       if (name != nullptr) {
          if (strcasecmp(name, to_cstr(SCHEDD_THREAD)) == 0) {
@@ -1411,7 +1411,7 @@ static int get_client_id(const ocs::tom::ConstElement<ocs::tom::ID> anElem, int 
 
    const char *id = nullptr;
 
-   if ((id = ocs::tom::get<ID_str>(anElem)) == nullptr) {
+   if ((id = anElem.get<ID_str>()) == nullptr) {
       DRETURN(EINVAL);
    }
 
@@ -1498,12 +1498,12 @@ static void sge_c_gdi_mod(gdi_object_t *ao, ocs::gdi::Packet *packet, ocs::gdi::
          case ocs::gdi::Target::EV_LIST:
             for (const auto ev : ocs::tom::List<ocs::tom::EV>(task->data_list)) {
                /* fill address infos from request into event client that must be added */
-               ocs::tom::set<EV_host>(ev, packet->host);
-               ocs::tom::set<EV_commproc>(ev, packet->commproc);
-               ocs::tom::set<EV_commid>(ev, packet->commproc_id);
+               ev.set<EV_host>(ocs::tom::Host(packet->host));
+               ev.set<EV_commproc>(packet->commproc);
+               ev.set<EV_commid>(packet->commproc_id);
 
                /* fill in authentication infos from request */
-               ocs::tom::set<EV_uid>(ev, packet->uid);
+               ev.set<EV_uid>(packet->uid);
                if (!event_client_verify(ev, &(task->answer_list), false)) {
                   ERROR(MSG_QMASTER_INVALIDEVENTCLIENT_SSS, packet->user, packet->commproc, packet->host);
                } else {
@@ -2061,7 +2061,7 @@ ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
    /* resolve host name in case of objects with hostnames as key before searching for the objects */
    if constexpr (std::is_same_v<T, ocs::tom::EH>) {
       if (ocs_resolve_host<key>(request) != CL_RETVAL_OK) {
-         DRETURN(ocs_gdi_add_mod_unresolved_host(alpp, ocs::tom::get<key>(request).c_str()));
+         DRETURN(ocs_gdi_add_mod_unresolved_host(alpp, request.template get<key>().c_str()));
       }
    }
 
@@ -2072,16 +2072,16 @@ ocs_gdi_add_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPt
    const char *name;
    ocs::tom::Element<T> old_obj;
    if constexpr (key_type == ocs::tom::FieldType::Uint32) {
-      const uint32_t id = ocs::tom::get<key>(request);
+      const uint32_t id = request.template get<key>();
       sge_dstring_sprintf(&buffer, sge_u32, id);
       name = sge_dstring_get_string(&buffer);
       old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), id);
    } else if constexpr (key_type == ocs::tom::FieldType::Host) {
-      name = ocs::tom::get<key>(request).c_str();
+      name = request.template get<key>().c_str();
       old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), name);
    } else {
       static_assert(key_type == ocs::tom::FieldType::String, "the key is a number, a host or a string");
-      name = ocs::tom::get<key>(request);
+      name = request.template get<key>();
       old_obj = ocs::tom::find_first_rw<key>(ocs::DataStore::master_list<H::list_type>(), name);
    }
 

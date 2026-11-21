@@ -63,7 +63,7 @@ add_active_threads(cl_raw_list_t *threads, const ocs::tom::List<ocs::tom::ST> ac
 
    // one entry per thread pool with the number of threads
    const auto st_elem = active_thread_list.emplace_back<ST_name>(name);
-   ocs::tom::set<ST_id>(st_elem, nthreads);
+   st_elem.set<ST_id>(nthreads);
 
    DRETURN_VOID;
 }
@@ -88,7 +88,7 @@ ocs_get_active_thread_list() {
    // Scheduler thread if it is running
    if (sge_scheduler_is_running()) {
       const auto st_elem = active_thread_list->emplace_back<ST_name>(to_cstr(SCHEDD_THREAD));
-      ocs::tom::set<ST_id>(st_elem, 1);
+      st_elem.set<ST_id>(1);
    }
 
    // Thread pools with dynamic number of threads

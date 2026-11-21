@@ -115,9 +115,9 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    /* ---- PE_name */
    if (add) {
       // a nullptr name is refused by verify_obj_name() below
-      ocs::tom::copy_if_present<PE_name>(new_pe, pe);
+      new_pe.copy_if_present<PE_name>(pe);
    }
-   pe_name = ocs::tom::get<PE_name>(new_pe);
+   pe_name = new_pe.get<PE_name>();
 
    /* Name has to be a valid filename without pathchanges */
    if (add && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
@@ -125,8 +125,8 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    }
 
    /* ---- PE_slots */
-   if (ocs::tom::has<PE_slots>(pe)) {
-      uint32_t pe_slots = ocs::tom::get<PE_slots>(pe);
+   if (pe.has<PE_slots>()) {
+      uint32_t pe_slots = pe.get<PE_slots>();
 
       if (pe_validate_slots(alpp, pe_slots, false) != STATUS_OK) {
          goto ERROR;
@@ -136,20 +136,20 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
          goto ERROR;
       }
    }
-   ocs::tom::copy_if_present<PE_slots>(new_pe, pe);
+   new_pe.copy_if_present<PE_slots>(pe);
 
    /* ---- PE_control_slaves */
-   ocs::tom::copy_if_present<PE_control_slaves>(new_pe, pe);
+   new_pe.copy_if_present<PE_control_slaves>(pe);
 
    /* ---- PE_job_is_first_task */
-   ocs::tom::copy_if_present<PE_job_is_first_task>(new_pe, pe);
+   new_pe.copy_if_present<PE_job_is_first_task>(pe);
 
    /* ---- PE_user_list */
-   if (ocs::tom::has<PE_user_list>(pe)) {
+   if (pe.has<PE_user_list>()) {
       DPRINTF("got new PE_user_list\n");
       /* check user_lists */
       normalize_sublist<PE_user_list>(pe);
-      if (userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pe), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_acl_list(pe.get<PE_user_list>(), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 
@@ -157,20 +157,20 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    }
 
    /* ---- PE_xuser_list */
-   if (ocs::tom::has<PE_xuser_list>(pe)) {
+   if (pe.has<PE_xuser_list>()) {
       DPRINTF("got new QU_axcl\n");
       /* check xuser_lists */
       normalize_sublist<PE_xuser_list>(pe);
-      if (userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pe), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_acl_list(pe.get<PE_xuser_list>(), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       attr_mod_sub_list<PE_xuser_list, US_name>(alpp, new_pe, pe, sub_command, SGE_ATTR_XUSER_LISTS, SGE_OBJ_PE);
    }
 
-   if (ocs::tom::has<PE_xuser_list>(pe) ||
-       ocs::tom::has<PE_user_list>(pe)) {
-      if (multiple_occurances<US_name>(alpp, ocs::tom::get<PE_user_list>(new_pe),
-                                       ocs::tom::get<PE_xuser_list>(new_pe), pe_name, object_name)) {
+   if (pe.has<PE_xuser_list>() ||
+       pe.has<PE_user_list>()) {
+      if (multiple_occurances<US_name>(alpp, new_pe.get<PE_user_list>(),
+                                       new_pe.get<PE_xuser_list>(), pe_name, object_name)) {
          goto ERROR;
       }
    }
@@ -183,17 +183,17 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    }
 
    /* -------- PE_allocation_rule */
-   if (ocs::tom::has<PE_allocation_rule>(pe)) {
-      s = ocs::tom::get<PE_allocation_rule>(pe);
+   if (pe.has<PE_allocation_rule>()) {
+      s = pe.get<PE_allocation_rule>();
       if (!pe_validate_allocation_rule(alpp, s, true)) {
          DRETURN(STATUS_EEXIST);
       }
-      ocs::tom::set<PE_allocation_rule>(new_pe, s);
+      new_pe.set<PE_allocation_rule>(s);
    }
 
    /* -------- PE_urgency_slots */
-   if (ocs::tom::has<PE_urgency_slots>(pe)) {
-      s = ocs::tom::get<PE_urgency_slots>(pe);
+   if (pe.has<PE_urgency_slots>()) {
+      s = pe.get<PE_urgency_slots>();
       if (s == nullptr) {
          ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<PE_urgency_slots>::info.name, "validate_pe");
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
@@ -203,17 +203,17 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
       if ((ret = pe_validate_urgency_slots(alpp, s)) != STATUS_OK) {
          DRETURN(ret);
       }
-      ocs::tom::set<PE_urgency_slots>(new_pe, s);
+      new_pe.set<PE_urgency_slots>(s);
    }
 
    /* ---- PE_accounting_summary */
-   ocs::tom::copy_if_present<PE_accounting_summary>(new_pe, pe);
+   new_pe.copy_if_present<PE_accounting_summary>(pe);
    /* ---- PE_ignore_slave_requests_on_master_host */
-   ocs::tom::copy_if_present<PE_ignore_slave_requests_on_master_host>(new_pe, pe);
+   new_pe.copy_if_present<PE_ignore_slave_requests_on_master_host>(pe);
    /* ---- PE_master_forks_slaves */
-   ocs::tom::copy_if_present<PE_master_forks_slaves>(new_pe, pe);
+   new_pe.copy_if_present<PE_master_forks_slaves>(pe);
    /* ---- PE_daemon_forks_slaves */
-   ocs::tom::copy_if_present<PE_daemon_forks_slaves>(new_pe, pe);
+   new_pe.copy_if_present<PE_daemon_forks_slaves>(pe);
 
    /* -------- PE_resource_utilization */
    if (add) {
@@ -250,12 +250,12 @@ pe_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    bool dbret;
 
    dbret = spool_write_object(&answer_list, spool_get_default_context(), pep,
-                              ocs::tom::get<PE_name>(pep), SGE_TYPE_PE);
+                              pep.get<PE_name>(), SGE_TYPE_PE);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<PE_name>(pep));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, pep.get<PE_name>());
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -281,7 +281,7 @@ int pe_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::E
 
    const char *pe_name;
 
-   pe_name = ocs::tom::get<PE_name>(ep);
+   pe_name = ep.get<PE_name>();
 
    pe_update_categories(ep, old_ep, packet->gdi_session);
 
@@ -315,13 +315,13 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (!ocs::tom::has<PE_name>(pep)) {
+   if (!pep.has<PE_name>()) {
       ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<PE_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *pe = ocs::tom::get<PE_name>(pep);
+   const char *pe = pep.get<PE_name>();
    if (!pe) {
       ERROR(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -344,7 +344,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
       if (pe_is_referenced(ep, &local_answer_list, master_job_list, master_cqueue_list)) {
          const auto answer = local_answer_list->front();
 
-         ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
+         ERROR("denied: %s", answer.get<AN_text>());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          local_answer_list.reset();
@@ -382,20 +382,20 @@ debit_all_jobs_from_pes(const ocs::tom::List<ocs::tom::PE> pe_list) {
 
    for (const auto pep : pe_list) {
       pe_set_slots_used(pep, 0);
-      const char *pe_name = ocs::tom::get<PE_name>(pep);
+      const char *pe_name = pep.get<PE_name>();
       DPRINTF("debiting from pe %s:\n", pe_name);
 
       for (const auto jep : master_job_list) {
-         if (ocs::tom::get<JB_pe>(jep) != nullptr) { /* is job  parallel */
+         if (jep.get<JB_pe>() != nullptr) { /* is job  parallel */
             int slots = 0;
-            for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-               if ((ISSET(ocs::tom::get<JAT_status>(jatep), JRUNNING) ||      /* is job running  */
-                    ISSET(ocs::tom::get<JAT_status>(jatep), JTRANSFERING)) && /* or transfering  */
-                   !sge_strnullcmp(pe_name, ocs::tom::get<JAT_granted_pe>(jatep))) {/* this pe         */
-                  slots += sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
+            for (const auto jatep : jep.get<JB_ja_tasks>()) {
+               if ((ISSET(jatep.get<JAT_status>(), JRUNNING) ||      /* is job running  */
+                    ISSET(jatep.get<JAT_status>(), JTRANSFERING)) && /* or transfering  */
+                   !sge_strnullcmp(pe_name, jatep.get<JAT_granted_pe>())) {/* this pe         */
+                  slots += sge_granted_slots(jatep.get<JAT_granted_destin_identifier_list>());
                }
             }
-            pe_debit_slots(pep, slots, ocs::tom::get<JB_job_number>(jep));
+            pe_debit_slots(pep, slots, jep.get<JB_job_number>());
          }
       }
    }
@@ -413,9 +413,9 @@ static void
 ocs_pe_collect_usersets(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::ListPtr<ocs::tom::US> &acl) {
    DENTER(TOP_LAYER);
 
-   for (const auto user_list : {ocs::tom::get<PE_user_list>(pe), ocs::tom::get<PE_xuser_list>(pe)}) {
+   for (const auto user_list : {pe.get<PE_user_list>(), pe.get<PE_xuser_list>()}) {
       for (const auto ep : user_list) {
-         const char *u = ocs::tom::get<US_name>(ep);
+         const char *u = ep.get<US_name>();
          if (!acl) {
             acl = ocs::tom::ListPtr<ocs::tom::US>::create("");
          }

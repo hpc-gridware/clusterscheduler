@@ -155,14 +155,14 @@ job_report_is_from_earlier_run(const ocs::tom::ConstElement<ocs::tom::JAT> jatep
 
    bool ret = false;
    *current_host = MSG_OBJ_NOTRUNNING;
-   uint32_t status = ocs::tom::get<JAT_status>(jatep);
+   uint32_t status = jatep.get<JAT_status>();
    if (status == JIDLE) {
       ret = true;
    } else if (status == JRUNNING || status == JTRANSFERING) {
-      const auto master_gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
+      const auto master_gdil = jatep.get<JAT_granted_destin_identifier_list>().front();
       const char *master_host = nullptr;
       if (master_gdil) {
-         master_host = ocs::tom::get<JG_qhostname>(master_gdil);
+         master_host = master_gdil.get<JG_qhostname>();
       }
       if (master_host != nullptr) {
          *current_host = master_host;
@@ -189,7 +189,7 @@ job_report_take_over_deleted_by(const ocs::tom::Element<ocs::tom::JAT> jatep,
                                 const ocs::tom::ConstElement<ocs::tom::JR> jr) {
    DENTER(TOP_LAYER);
 
-   const char *deleted_by = ocs::tom::get<JR_deleted_by>(jr);
+   const char *deleted_by = jr.get<JR_deleted_by>();
    if (deleted_by != nullptr && ja_task_get_deleted_by(jatep) == nullptr) {
       ja_task_set_deleted_by(jatep, deleted_by);
    }
@@ -256,7 +256,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    // REP_list names no sub-type in the model; a job report holds JR elements, unpacked with their
    // descriptor - from_typed keeps the old tolerance for the data of an execd
-   const auto jrl = ocs::tom::List<ocs::tom::JR>::from_typed(ocs::tom::get<REP_list>(report));
+   const auto jrl = ocs::tom::List<ocs::tom::JR>::from_typed(report.get<REP_list>());
 
    DPRINTF("received job report with %d elements:\n", static_cast<int>(jrl.size()));
 
@@ -286,10 +286,10 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
       int fret;
 
       // find job/task/pe-task ID and state in report
-      uint32_t jobid = ocs::tom::get<JR_job_number>(jr);
-      uint32_t jataskid = ocs::tom::get<JR_ja_task_number>(jr);
-      const char *pe_task_id_str = ocs::tom::get<JR_pe_task_id_str>(jr);
-      uint32_t rstate = ocs::tom::get<JR_state>(jr);
+      uint32_t jobid = jr.get<JR_job_number>();
+      uint32_t jataskid = jr.get<JR_ja_task_number>();
+      const char *pe_task_id_str = jr.get<JR_pe_task_id_str>();
+      uint32_t rstate = jr.get<JR_state>();
 
       // find the corresponding objects
       const auto jep = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true)
@@ -298,13 +298,13 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
       ocs::tom::Element<ocs::tom::PET> petask = nullptr;
       bool petask_already_existed = false;
       if (jep) {
-         jatep = ocs::tom::get<JB_ja_tasks>(jep).find_first<JAT_task_number>(jataskid);
+         jatep = jep.get<JB_ja_tasks>().find_first<JAT_task_number>(jataskid);
 
          if (jatep) {
-            status = ocs::tom::get<JAT_status>(jatep);
+            status = jatep.get<JAT_status>();
 
             if (pe_task_id_str != nullptr) {
-               petask = ocs::tom::find_first_in_rw<JAT_task_list, PET_id>(jatep, pe_task_id_str);
+               petask = jatep.find_first_in_rw<JAT_task_list, PET_id>(pe_task_id_str);
                if (petask) {
                   petask_already_existed = true;
                }
@@ -334,7 +334,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
       }
 
 
-      if ((queue_name = ocs::tom::get<JR_queue_name>(jr)) == nullptr) {
+      if ((queue_name = jr.get<JR_queue_name>()) == nullptr) {
          queue_name = MSG_OBJ_UNKNOWNQ;
       }
 
@@ -377,7 +377,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                       * (TYPE_SIGNAL_RESEND_EVENT), but this can take up to one
                       * minute - better send a kill signal immediately.
                       */
-                     if (ISSET(ocs::tom::get<JAT_state>(jatep), JDELETED)) {
+                     if (ISSET(jatep.get<JAT_state>(), JDELETED)) {
                         DPRINTF("Received report from " sge_u32"." sge_u32
                                 " which is already in \"deleted\" state. "
                                 "==> send kill signal\n", jobid, jataskid);
@@ -388,14 +388,14 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                      if (pe_task_id_str == nullptr) {
 
                         /* store unscaled usage directly in job */
-                        ocs::tom::exchange<JR_usage>(jr, ocs::tom::list_ref<JAT_usage_list>(jatep));
+                        ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_usage_list>());
 
                         /* update jobs scaled usage list */
-                        ocs::tom::set<JAT_scaled_usage_list>(jatep,
-                                 ocs::tom::get<JAT_usage_list>(jatep).clone("scaled"));
-                        scale_usage(ocs::tom::get<EH_usage_scaling_list>(hep),
-                                    ocs::tom::get<JAT_previous_usage_list>(jatep),
-                                    ocs::tom::get<JAT_scaled_usage_list>(jatep));
+                        jatep.set<JAT_scaled_usage_list>(
+                                 jatep.get<JAT_usage_list>().clone("scaled"));
+                        scale_usage(hep.get<EH_usage_scaling_list>(),
+                                    jatep.get<JAT_previous_usage_list>(),
+                                    jatep.get<JAT_scaled_usage_list>());
 
                         if (status == JTRANSFERING) { /* got async ack for this job */
                            DPRINTF("--- transfering job " SFN " is running\n", job_id_string);
@@ -408,70 +408,73 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                             */
                            /* jatask usage is not spooled (?) */
                            sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, nullptr, nullptr,
-                                              ocs::tom::get<JB_session>(jep), ocs::tom::get<JAT_scaled_usage_list>(jatep), gdi_session);
+                                              jep.get<JB_session>(), jatep.get<JAT_scaled_usage_list>(), gdi_session);
                         }
                      } else {
                         /* do we expect a pe task report from this host? */
                         if (ja_task_is_tightly_integrated(jatep, master_pe_list) &&
-                            ocs::tom::find_first<JG_qhostname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), rhost)) {
+                            jatep.get<JAT_granted_destin_identifier_list>()
+                                 .find_first<JG_qhostname>(ocs::tom::Host(rhost))) {
 
                            /* is the task already known (object was created earlier)? */
                            if (!petask) {
                               /* here qmaster hears the first time about this task
                                  and thus adds it to the task list of the appropriate job */
                               DPRINTF("--- task (#%d) " SFN " -> running\n",
-                                      static_cast<int>(ocs::tom::get<JAT_task_list>(jatep).size()), job_id_string);
-                              petask = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(jatep, pe_task_id_str);
-                              ocs::tom::set<PET_status>(petask, JRUNNING);
+                                      static_cast<int>(jatep.get<JAT_task_list>().size()), job_id_string);
+                              petask = jatep.emplace_back_in<JAT_task_list, PET_id>(pe_task_id_str);
+                              petask.set<PET_status>(JRUNNING);
                               // @todo CS-1026: This should be delivered from execd as part of the report
-                              ocs::tom::set<PET_start_time>(petask, sge_get_gmt64());
-                              ocs::tom::set<PET_granted_destin_identifier_list>(petask, nullptr);
-                              if (const auto ep = ocs::tom::emplace_back_in<PET_granted_destin_identifier_list,
-                                                                            JG_qhostname>(petask, rhost);
+                              petask.set<PET_start_time>(sge_get_gmt64());
+                              petask.set<PET_granted_destin_identifier_list>(nullptr);
+                              if (const auto ep = petask.emplace_back_in<PET_granted_destin_identifier_list,
+                                                                            JG_qhostname>(rhost);
                                   ep) {
-                                 ocs::tom::set<JG_qname>(ep, queue_name);
+                                 ep.set<JG_qname>(queue_name);
                               }
                            }
 
                            /* store unscaled usage directly in sub-task */
-                           ocs::tom::exchange<JR_usage>(jr, ocs::tom::list_ref<PET_usage>(petask));
+                           ocs::tom::exchange<JR_usage>(jr, petask.list_ref<PET_usage>());
 
                            /* update task's scaled usage list */
-                           ocs::tom::set<PET_scaled_usage>(petask, ocs::tom::get<PET_usage>(petask).clone("scaled"));
+                           petask.set<PET_scaled_usage>(petask.get<PET_usage>().clone("scaled"));
 
-                           scale_usage(ocs::tom::get<EH_usage_scaling_list>(hep),
-                                       ocs::tom::get<PET_previous_usage>(petask),
-                                       ocs::tom::get<PET_scaled_usage>(petask));
+                           scale_usage(hep.get<EH_usage_scaling_list>(),
+                                       petask.get<PET_previous_usage>(),
+                                       petask.get<PET_scaled_usage>());
 
                            /* notify scheduler of task usage event */
                            if (!petask_already_existed) {
                               sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                               jobid, jataskid, pe_task_id_str, nullptr,
-                                              ocs::tom::get<JB_session>(jep),
+                                              jep.get<JB_session>(),
                                               jep, jatep, petask, true, true, gdi_session);
                            } else {
                               sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid, pe_task_id_str,
-                                                 nullptr, ocs::tom::get<JB_session>(jep),
-                                                 ocs::tom::get<PET_scaled_usage>(petask), gdi_session);
+                                                 nullptr, jep.get<JB_session>(),
+                                                 petask.get<PET_scaled_usage>(), gdi_session);
                            }
                            answer_list_output(&answer_list);
-                        } else if (ocs::tom::get<JAT_status>(jatep) != JFINISHED) {
+                        } else if (jatep.get<JAT_status>() != JFINISHED) {
                            const char *shouldbe_queue_name;
                            const char *shouldbe_host_name;
 
-                           if (const auto jg = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front(); !jg) {
+                           if (const auto jg = jatep.get<JAT_granted_destin_identifier_list>().front(); !jg) {
                               shouldbe_queue_name = MSG_OBJ_NOTRUNNING;
                               shouldbe_host_name = MSG_OBJ_NOTRUNNING;
                            } else {
-                              if ((shouldbe_queue_name = ocs::tom::get<JG_qname>(jg)) == nullptr) {
+                              if ((shouldbe_queue_name = jg.get<JG_qname>()) == nullptr) {
                                  shouldbe_queue_name = MSG_OBJ_UNKNOWN;
                               }
-                              if ((shouldbe_host_name = ocs::tom::get<JG_qhostname>(jg)) == nullptr) {
+                              if ((shouldbe_host_name = jg.get<JG_qhostname>()) == nullptr) {
                                  shouldbe_host_name = MSG_OBJ_UNKNOWN;
                               }
                            }
                            /* should never happen */
-                           ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(ocs::tom::get<JAT_status>(jatep)));
+                           ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid,
+                                 pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name,
+                                 shouldbe_host_name, status2str(jatep.get<JAT_status>()));
                         }
                      }
 
@@ -489,7 +492,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                       */
                      if (ocs::ReportingFileWriter::is_online_usage_required()) {
                         const bool do_accounting_summary =
-                                pe_do_accounting_summary(ocs::tom::get<JAT_pe_object>(jatep));
+                                pe_do_accounting_summary(jatep.get<JAT_pe_object>());
                         if (pe_task_id_str != nullptr) {
                            if (petask && !do_accounting_summary) {
                               ocs::ReportingFileWriter::create_online_usage_records(nullptr, jr, jep, jatep,
@@ -518,12 +521,12 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                             */
                            sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                            jobid, jataskid, pe_task_id_str, nullptr,
-                                           ocs::tom::get<JB_session>(jep),
+                                           jep.get<JB_session>(),
                                            jep, jatep, petask, false, true, gdi_session);
                         } else {
                            sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD,
                                            jobid, jataskid, nullptr, nullptr,
-                                           ocs::tom::get<JB_session>(jep),
+                                           jep.get<JB_session>(),
                                            jep, jatep, nullptr, true, true, gdi_session);
                         }
                         answer_list_output(&answer_list);
@@ -571,29 +574,29 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                 * there might be multiple gdil for one host if the pe job spawns multiple queues
                 * but only the first one is tagged
                 */
-               const auto first_at_host = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)
+               const auto first_at_host = jatep.get<JAT_granted_destin_identifier_list>()
                                              .find_first<JG_qhostname>(ocs::tom::Host(rhost));
                if (first_at_host) {
                   /* If the job is being delivered, we first deliver it to the slave hosts,
                    * once all slave hosts have been notified, we start the master task.
                    * During this time the job is in status JTRANSFERING.
                    */
-                  if (ocs::tom::get<JAT_status>(jatep) == JTRANSFERING) {
+                  if (jatep.get<JAT_status>() == JTRANSFERING) {
                      /* if tag is still 1, this is the ACK for slave notification */
-                     if (ocs::tom::get<JG_tag_slave_job>(first_at_host) != 0) {
+                     if (first_at_host.get<JG_tag_slave_job>() != 0) {
                         DPRINTF("slave job " SFN " arrived on host %s\n", job_id_string, rhost);
-                        ocs::tom::set<JG_tag_slave_job>(first_at_host, 0);
+                        first_at_host.set<JG_tag_slave_job>(0);
 
                         /* should trigger a fast delivery of the job to master execd
                          * script but only when all other slaves have also arrived
                          */
                         if (is_pe_master_task_send(jatep)) {
                            /* triggers direct job delivery to master execd */
-                           const auto master_gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
-                           ocs::tom::set<JAT_master_queue>(jatep, ocs::tom::get<JG_qname>(master_gdil));
+                           const auto master_gdil = jatep.get<JAT_granted_destin_identifier_list>().front();
+                           jatep.set<JAT_master_queue>(master_gdil.get<JG_qname>());
 
                            DPRINTF("trigger retry of job delivery to master execd\n");
-                           ocs::tom::set<JAT_start_time>(jatep, 0);
+                           jatep.set<JAT_start_time>(0);
                            cancel_job_resend(jobid, jataskid);
                            trigger_job_resend(sge_get_gmt64(), nullptr, jobid, jataskid, 0);
                         }
@@ -603,10 +606,10 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                       * When the master task has finished, the hosts gdil is tagged ==> we send a ACK_SIGNAL_SLAVE
                       * When the slave report contains JR_usage with exit_status, we are done, untag gdil, pack_job_exit
                       */
-                     if (ocs::tom::get<JG_tag_slave_job>(first_at_host) != 0) {
-                        if (ocs::tom::get<JR_usage>(jr).find_first<UA_name>("exit_status")) {
+                     if (first_at_host.get<JG_tag_slave_job>() != 0) {
+                        if (jr.get<JR_usage>().find_first<UA_name>("exit_status")) {
                            /* the job is done in this slave exec host */
-                           ocs::tom::set<JG_tag_slave_job>(first_at_host, 0);
+                           first_at_host.set<JG_tag_slave_job>(0);
                            DPRINTF("slave job " SFN " exited on host %s\n", job_id_string, rhost);
                            pack_ack(pb, ACK_JOB_EXIT, jobid, jataskid, pe_task_id_str);
                         } else {
@@ -629,7 +632,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                    * the final slave report, as at the end of a job. Only the final report,
                    * which contains an exit_status, releases the host.
                    */
-                  if (ocs::tom::find_first_in<JR_usage, UA_name>(jr, "exit_status")) {
+                  if (jr.find_first_in<JR_usage, UA_name>("exit_status")) {
                      const auto ehosts = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
                      const ocs::tom::Element<ocs::tom::EH> host(host_list_locate(ehosts, rhost));
                      update_reschedule_unknown_list_for_job(host, jobid, jataskid);
@@ -660,13 +663,13 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                /* job exited */
                if (pe_task_id_str == nullptr) {
                   /* store unscaled usage directly in job */
-                  ocs::tom::exchange<JR_usage>(jr, ocs::tom::list_ref<JAT_usage_list>(jatep));
+                  ocs::tom::exchange<JR_usage>(jr, jatep.list_ref<JAT_usage_list>());
 
                   /* update jobs scaled usage list */
-                  ocs::tom::set<JAT_scaled_usage_list>(jatep, ocs::tom::get<JAT_usage_list>(jatep).clone("scaled"));
-                  scale_usage(ocs::tom::get<EH_usage_scaling_list>(hep),
-                              ocs::tom::get<JAT_previous_usage_list>(jatep),
-                              ocs::tom::get<JAT_scaled_usage_list>(jatep));
+                  jatep.set<JAT_scaled_usage_list>(jatep.get<JAT_usage_list>().clone("scaled"));
+                  scale_usage(hep.get<EH_usage_scaling_list>(),
+                              jatep.get<JAT_previous_usage_list>(),
+                              jatep.get<JAT_scaled_usage_list>());
 
                   /* additional handling for tightly integrated parallel jobs */
                   if (ja_task_is_tightly_integrated(jatep, master_pe_list)) {
@@ -675,8 +678,8 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                       * we tag all gdil entries (including the master gdil_ep)
                       * first report is when the master task gdil_ep is not yet tagged!
                       */
-                     const auto master_gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
-                     uint32_t master_tag = ocs::tom::get<JG_tag_slave_job>(master_gdil);
+                     const auto master_gdil = jatep.get<JAT_granted_destin_identifier_list>().front();
+                     uint32_t master_tag = master_gdil.get<JG_tag_slave_job>();
                      if (master_tag == 0) {
                         ack_all_slaves(jobid, jataskid, jatep, ACK_SIGNAL_SLAVE);
                         tag_all_host_gdil(jatep);
@@ -692,7 +695,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                            if (!all_slave_jobs_finished(jatep)) {
                               skip_job_exit = 1;
                               master_tag++;
-                              ocs::tom::set<JG_tag_slave_job>(master_gdil, master_tag);
+                              master_gdil.set<JG_tag_slave_job>(master_tag);
                               pack_ack(pb, ACK_JOB_REPORT_RESEND, jobid, jataskid, pe_task_id_str);
                            }
                         } else {
@@ -710,10 +713,10 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
 
                            sge_job_exit(jr, jep, jatep, monitor, gdi_session);
                         } else {
-                           uint32_t failed = ocs::tom::get<JR_failed>(jr);
+                           uint32_t failed = jr.get<JR_failed>();
 
-                           if (failed == SSTATE_FAILURE_AFTER_JOB && !ocs::tom::get<JB_checkpoint_name>(jep)) {
-                              if (!ISSET(ocs::tom::get<JAT_state>(jatep), JDELETED)) {
+                           if (failed == SSTATE_FAILURE_AFTER_JOB && !jep.get<JB_checkpoint_name>()) {
+                              if (!ISSET(jatep.get<JAT_state>(), JDELETED)) {
                                  // the job is deleted because the master task failed - what ended
                                  // the master task ended the pe tasks as well
                                  job_report_take_over_deleted_by(jatep, jr);
@@ -733,7 +736,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                   }
                } else {
                   if (ja_task_is_tightly_integrated(jatep, master_pe_list) &&
-                      ocs::tom::find_first<JG_qhostname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep), rhost)) {
+                      jatep.get<JAT_granted_destin_identifier_list>().find_first<JG_qhostname>(ocs::tom::Host(rhost))) {
                      /*
                       * here we get usage of tasks that ran on slave/master execd's
                       * we store the pe task id of finished pe tasks in the ja task
@@ -747,41 +750,41 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
 
                         if (!petask) {
                            known_pe_task = false;
-                           petask = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(jatep, pe_task_id_str);
-                           ocs::tom::set<PET_status>(petask, JRUNNING);
+                           petask = jatep.emplace_back_in<JAT_task_list, PET_id>(pe_task_id_str);
+                           petask.set<PET_status>(JRUNNING);
                         }
 
                         /* store unscaled usage directly in sub-task */
                         /* copy list because we need to keep usage in jr for sge_log_dusage() */
-                        ocs::tom::set<PET_usage>(petask, ocs::tom::get<JR_usage>(jr).clone());
+                        petask.set<PET_usage>(jr.get<JR_usage>().clone());
 
                         /* update task's scaled usage list */
-                        ocs::tom::set<PET_scaled_usage>(petask, ocs::tom::get<PET_usage>(petask).clone("scaled"));
-                        scale_usage(ocs::tom::get<EH_usage_scaling_list>(hep),
-                                    ocs::tom::get<PET_previous_usage>(petask),
-                                    ocs::tom::get<PET_scaled_usage>(petask));
+                        petask.set<PET_scaled_usage>(petask.get<PET_usage>().clone("scaled"));
+                        scale_usage(hep.get<EH_usage_scaling_list>(),
+                                    petask.get<PET_previous_usage>(),
+                                    petask.get<PET_scaled_usage>());
 
 
-                        if (ocs::tom::get<PET_status>(petask) == JRUNNING ||
-                            ocs::tom::get<PET_status>(petask) == JTRANSFERING) {
-                           uint32_t failed = ocs::tom::get<JR_failed>(jr);
+                        if (petask.get<PET_status>() == JRUNNING ||
+                            petask.get<PET_status>() == JTRANSFERING) {
+                           uint32_t failed = jr.get<JR_failed>();
 
                            DPRINTF("--- petask " SFN " -> final usage\n", job_id_string);
-                           ocs::tom::set<PET_status>(petask, JFINISHED);
+                           petask.set<PET_status>(JFINISHED);
 
                            ocs::ReportingFileWriter::create_acct_records(nullptr, jr, jep, jatep, false);
 
                            /* add tasks (scaled) usage to past usage container */
                            {
                               auto container =
-                                 ocs::tom::find_first_in_rw<JAT_task_list, PET_id>(jatep, PE_TASK_PAST_USAGE_CONTAINER);
+                                 jatep.find_first_in_rw<JAT_task_list, PET_id>(PE_TASK_PAST_USAGE_CONTAINER);
                               if (!container) {
                                  ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-                                 container = pe_task_sum_past_usage_list(ocs::tom::get<JAT_task_list>(jatep), petask);
+                                 container = pe_task_sum_past_usage_list(jatep.get<JAT_task_list>(), petask);
                                  /* usage container will be spooled */
                                  sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                                  jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, nullptr,
-                                                 ocs::tom::get<JB_session>(jep),
+                                                 jep.get<JB_session>(),
                                                  jep, jatep, container, true, true, gdi_session);
                                  answer_list_output(&answer_list);
                               } else {
@@ -791,8 +794,8 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                                  /* create list event for the USAGE_CONTAINER */
                                  sge_add_list_event(0, sgeE_JOB_USAGE, jobid, jataskid,
                                                     PE_TASK_PAST_USAGE_CONTAINER, nullptr,
-                                                    ocs::tom::get<JB_session>(jep),
-                                                    ocs::tom::get<PET_scaled_usage>(container), gdi_session);
+                                                    jep.get<JB_session>(),
+                                                    container.get<PET_scaled_usage>(), gdi_session);
                                  /* usage container will be spooled */
                                  /* JG: TODO: it is not really a sgeE_PETASK_ADD,
                                   * but a sgeE_PETASK_MOD. We don't have this event
@@ -800,7 +803,7 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                                   */
                                  sge_event_spool(&answer_list, 0, sgeE_PETASK_ADD,
                                                  jobid, jataskid, PE_TASK_PAST_USAGE_CONTAINER, nullptr,
-                                                 ocs::tom::get<JB_session>(jep),
+                                                 jep.get<JB_session>(),
                                                  jep, jatep, container, false, true, gdi_session);
                                  answer_list_output(&answer_list);
                               }
@@ -815,15 +818,15 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                                               true, true, gdi_session);
                               answer_list_output(&answer_list);
                            }
-                           ocs::tom::get<JAT_task_list>(jatep).erase(petask);
+                           jatep.get<JAT_task_list>().erase(petask);
                            petask = nullptr;
 
                            /* get rid of this job in case a task died from XCPU/XFSZ or
                               exited with a core dump */
                            ocs::tom::ConstElement<ocs::tom::UA> ep;
                            if (failed == SSTATE_FAILURE_AFTER_JOB
-                               && (ep = ocs::tom::get<JR_usage>(jr).find_first<UA_name>("signal"))) {
-                              uint32_t sge_signo = (uint32_t) ocs::tom::get<UA_value>(ep);
+                               && (ep = jr.get<JR_usage>().find_first<UA_name>("signal"))) {
+                              uint32_t sge_signo = (uint32_t) ep.get<UA_value>();
 
                               switch (sge_signo) {
                                  case SGE_SIGXFSZ:
@@ -842,8 +845,8 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                               INFO(MSG_JOB_TASKFAILED_SSUUU, pe_task_id_str, rhost, jobid, jataskid, failed);
                            }
 
-                           if (failed == SSTATE_FAILURE_AFTER_JOB && !ocs::tom::get<JB_checkpoint_name>(jep)) {
-                              if (!ISSET(ocs::tom::get<JAT_state>(jatep), JDELETED)) {
+                           if (failed == SSTATE_FAILURE_AFTER_JOB && !jep.get<JB_checkpoint_name>()) {
+                              if (!ISSET(jatep.get<JAT_state>(), JDELETED)) {
                                  // the job is deleted because the pe task failed - what ended the
                                  // pe task (e.g. oom-killer@<host>) ended the job as well
                                  job_report_take_over_deleted_by(jatep, jr);
@@ -857,19 +860,21 @@ void process_job_report(const ocs::tom::Element<ocs::tom::REP> report, const ocs
                      const char *shouldbe_queue_name;
                      const char *shouldbe_host_name;
 
-                     if (const auto jg = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front(); !jg) {
+                     if (const auto jg = jatep.get<JAT_granted_destin_identifier_list>().front(); !jg) {
                         shouldbe_queue_name = MSG_OBJ_NOTRUNNING;
                         shouldbe_host_name = MSG_OBJ_NOTRUNNING;
                      } else {
-                        if ((shouldbe_queue_name = ocs::tom::get<JG_qname>(jg)) == nullptr) {
+                        if ((shouldbe_queue_name = jg.get<JG_qname>()) == nullptr) {
                            shouldbe_queue_name = MSG_OBJ_UNKNOWN;
                         }
-                        if ((shouldbe_host_name = ocs::tom::get<JG_qhostname>(jg)) == nullptr) {
+                        if ((shouldbe_host_name = jg.get<JG_qhostname>()) == nullptr) {
                            shouldbe_host_name = MSG_OBJ_UNKNOWN;
                         }
                      }
                      /* should never happen */
-                     ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid, pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name, shouldbe_host_name, status2str(ocs::tom::get<JAT_status>(jatep)));
+                     ERROR(MSG_JOB_REPORTEXITQ_SUUSSSSS, rhost, jobid, jataskid,
+                           pe_task_id_str ? pe_task_id_str : MSG_MASTER, queue_name, shouldbe_queue_name,
+                           shouldbe_host_name, status2str(jatep.get<JAT_status>()));
                   }
                }
             }

@@ -189,10 +189,10 @@ ocs_follow_host_ticket_orders(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_orders, 
    if (!rtic_ep) {
       rtic_ep = ticket_orders->emplace_back<RTIC_host>(ocs::tom::Host(hostname));
    }
-   auto host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
+   auto host_tickets = rtic_ep.get<RTIC_tickets>();
    if (!host_tickets) {
-      ocs::tom::set<RTIC_tickets>(rtic_ep, ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", what));
-      host_tickets = ocs::tom::get<RTIC_tickets>(rtic_ep);
+      rtic_ep.set<RTIC_tickets>(ocs::tom::ListPtr<ocs::tom::OR>::create("ticket orders", what));
+      host_tickets = rtic_ep.get<RTIC_tickets>();
    }
    DRETURN(host_tickets);
 }
@@ -227,7 +227,7 @@ ocs_follow_add_host_ticket_order(ocs::tom::ListPtr<ocs::tom::RTIC> &ticket_order
          // no copy, as lSelectElemDPack() gave none; the entry of the host is made all the same
       }
       if (copy && tickets.has_value()) {
-         ocs::tom::set<OR_ticket>(copy, *tickets);
+         copy->set<OR_ticket>(*tickets);
       }
       const auto host_tickets = ocs_follow_host_ticket_orders(ticket_orders, hostname, what);
       if (copy) {
@@ -344,8 +344,8 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
    uint32_t pe_slots = 0, q_slots = 0, q_version;
    uint64_t now = sge_get_gmt64();
 
-   or_type = ocs::tom::get<OR_type>(ep);
-   or_pe = ocs::tom::get<OR_pe>(ep);
+   or_type = ep.get<OR_type>();
+   or_pe = ep.get<OR_pe>();
 
    DPRINTF("-----------------------------------------------------------------------\n");
 
@@ -369,13 +369,13 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
          DPRINTF("ORDER ORT_start_job\n");
 
-         job_number = ocs::tom::get<OR_job_number>(ep);
+         job_number = ep.get<OR_job_number>();
          if (job_number == 0) {
             ERROR(SFNMAX, MSG_JOB_NOJOBID);
             DRETURN(-2);
          }
 
-         task_number = ocs::tom::get<OR_ja_task_number>(ep);
+         task_number = ep.get<OR_ja_task_number>();
          if (task_number == 0) {
             ERROR(MSG_JOB_NOORDERTASK_US, job_number, "ORT_start_job");
             DRETURN(-2);
@@ -390,8 +390,8 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          DPRINTF("ORDER to start Job %ld Task %ld\n", (long) job_number, (long) task_number);
 
          /* if job got modified in the meantime (qalter), do not start it */
-         if (ocs::tom::get<JB_version>(jep) != ocs::tom::get<OR_job_version>(ep)) {
-            WARNING(MSG_ORD_OLDVERSION_UUU, job_number, task_number, ocs::tom::get<OR_job_version>(ep));
+         if (jep.get<JB_version>() != ep.get<OR_job_version>()) {
+            WARNING(MSG_ORD_OLDVERSION_UUU, job_number, task_number, ep.get<OR_job_version>());
             DRETURN(-1);
          }
 
@@ -399,7 +399,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          bool enrolled_task = false;
          jatp = job_search_task(jep, nullptr, task_number);
          if (!jatp) {
-            if (range_list_is_id_within(ocs::tom::get<JB_ja_n_h_ids>(jep), task_number)) {
+            if (range_list_is_id_within(jep.get<JB_ja_n_h_ids>(), task_number)) {
                jatp = job_create_task(jep, nullptr, task_number);
                if (!jatp) {
                   WARNING(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
@@ -413,7 +413,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          }
 
          /* job is not pending - we got the order twice? */
-         if (ocs::tom::get<JAT_status>(jatp) != JIDLE) {
+         if (jatp.get<JAT_status>() != JIDLE) {
             if (enrolled_task) {
                ocs_follow_unenroll_task(jep, jatp);
             }
@@ -432,29 +432,29 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                ERROR(MSG_OBJ_UNABLE2FINDPE_S, or_pe);
                DRETURN(-2);
             }
-            ocs::tom::set<JAT_granted_pe>(jatp, or_pe);  /* free me on error! */
+            jatp.set<JAT_granted_pe>(or_pe);  /* free me on error! */
          }
 
          /* job is running in an advance reservation - find it */
-         uint32_t ar_id = ocs::tom::get<JB_ar>(jep);
+         uint32_t ar_id = jep.get<JB_ar>();
          if (ar_id != 0) {
-            const auto ar = ar_list_locate(master_ar_list, ocs::tom::get<JB_ar>(jep));
+            const auto ar = ar_list_locate(master_ar_list, jep.get<JB_ar>());
             if (!ar) {
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
                }
-               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ocs::tom::get<JB_ar>(jep), ocs::tom::get<JB_job_number>(jep));
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, jep.get<JB_ar>(), jep.get<JB_job_number>());
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-2);
             }
-            ocs::tom::set<JAT_wallclock_limit>(jatp,
-                      ocs::tom::get<AR_end_time>(ar) - now - sge_gmt32_to_gmt64(sconf_get_duration_offset()));
+            jatp.set<JAT_wallclock_limit>(
+                      ar.get<AR_end_time>() - now - sge_gmt32_to_gmt64(sconf_get_duration_offset()));
          }
 
          /* fill number of tickets into job */
-         ocs::tom::set<JAT_tix>(jatp, ocs::tom::get<OR_ticket>(ep));
-         ocs::tom::set<JAT_ntix>(jatp, ocs::tom::get<OR_ntix>(ep));
-         ocs::tom::set<JAT_prio>(jatp, ocs::tom::get<OR_prio>(ep));
+         jatp.set<JAT_tix>(ep.get<OR_ticket>());
+         jatp.set<JAT_ntix>(ep.get<OR_ntix>());
+         jatp.set<JAT_prio>(ep.get<OR_prio>());
 
          /**
           * Move the order granted resource list into a JAT granted
@@ -462,19 +462,19 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
           * done for the RSMAP complex type and hard and soft requests
           * which are passed to the execution daemon.
           **/
-         ocs::tom::swap<JAT_granted_resources_list, OR_granted_resources_list>(jatp, ep);
+         jatp.swap<JAT_granted_resources_list, OR_granted_resources_list>(ep);
 
-         if (const auto oep = ocs::tom::get<OR_queuelist>(ep).front(); oep) {
-            ocs::tom::set<JAT_oticket>(jatp, ocs::tom::get<OQ_oticket>(oep));
-            ocs::tom::set<JAT_fticket>(jatp, ocs::tom::get<OQ_fticket>(oep));
-            ocs::tom::set<JAT_sticket>(jatp, ocs::tom::get<OQ_sticket>(oep));
+         if (const auto oep = ep.get<OR_queuelist>().front(); oep) {
+            jatp.set<JAT_oticket>(oep.get<OQ_oticket>());
+            jatp.set<JAT_fticket>(oep.get<OQ_fticket>());
+            jatp.set<JAT_sticket>(oep.get<OQ_sticket>());
          }
 
-         for (const auto oep : ocs::tom::get<OR_queuelist>(ep)) {
+         for (const auto oep : ep.get<OR_queuelist>()) {
 
-            q_name = ocs::tom::get<OQ_dest_queue>(oep);
-            q_version = ocs::tom::get<OQ_dest_version>(oep);
-            q_slots = ocs::tom::get<OQ_slots>(oep);
+            q_name = oep.get<OQ_dest_queue>();
+            q_version = oep.get<OQ_dest_version>();
+            q_slots = oep.get<OQ_slots>();
 
             /* ----------------------
              *  find and check queue
@@ -484,14 +484,14 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                ERROR(SFNMAX, MSG_OBJ_NOQNAME);
                DRETURN(-2);
             }
 
             DPRINTF("ORDER: start %d slots of job \"%d\" on"
                     " queue \"%s\" v" sge_u32 " with " sge_u32 " initial tickets\n",
-                    q_slots, job_number, q_name, q_version, static_cast<uint32_t>(ocs::tom::get<OR_ticket>(ep)));
+                    q_slots, job_number, q_name, q_version, static_cast<uint32_t>(ep.get<OR_ticket>()));
 
             const auto qep = cqueue_list_locate_qinstance(master_cqueue_list, q_name);
             if (!qep) {
@@ -499,21 +499,21 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, q_name, job_number);
                DRETURN(-2);
             }
 
             /* check queue version */
-            if (q_version != ocs::tom::get<QU_version>(qep)) {
+            if (q_version != qep.get<QU_version>()) {
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
                }
                /* try to repair schedd data */
                qinstance_add_event(qep, sgeE_QINSTANCE_MOD, gdi_session);
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
-               WARNING(MSG_ORD_QVERSION_SUU, q_name, q_version,  ocs::tom::get<QU_version>(qep));
+               jatp.set<JAT_granted_pe>(nullptr);
+               WARNING(MSG_ORD_QVERSION_SUU, q_name, q_version,  qep.get<QU_version>());
                DRETURN(-1);
             }
 
@@ -525,26 +525,26 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
             DPRINTF("Queue version: %d\n", q_version);
 
             /* ensure that the jobs owner has access to this queue */
-            if (!sge_has_access_(ocs::tom::get<JB_owner>(jep), ocs::tom::get<JB_group>(jep), ocs::tom::get<JB_grp_list>(jep),
-                                 ocs::tom::get<QU_acl>(qep), ocs::tom::get<QU_xacl>(qep),
+            if (!sge_has_access_(jep.get<JB_owner>(), jep.get<JB_group>(), jep.get<JB_grp_list>(),
+                                 qep.get<QU_acl>(), qep.get<QU_xacl>(),
                                  master_userset_list)) {
                ERROR(MSG_JOB_JOBACCESSQ_US, job_number, q_name);
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-1);
             }
 
             /* ensure that this queue has enough free slots */
-            if (ocs::tom::get<QU_job_slots>(qep) - qinstance_slots_used(qep) < q_slots) {
+            if (qep.get<QU_job_slots>() - qinstance_slots_used(qep) < q_slots) {
                ERROR(MSG_JOB_FREESLOTS_USUU, q_slots, q_name, job_number, task_number);
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-1);
             }
 
@@ -559,7 +559,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-1);
             }
             if (qinstance_state_is_cal_suspended(qep)) {
@@ -568,13 +568,13 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-1);
             }
             if (qinstance_state_is_cal_disabled(qep)) {
                WARNING(MSG_JOB_QDISABLECAL_S, q_name);
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-1);
             }
 
@@ -582,26 +582,26 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
              *  find and check host
              */
             const ocs::tom::Element<ocs::tom::EH> hep(
-               host_list_locate(exec_host_list, ocs::tom::get<QU_qhostname>(qep)));
+               host_list_locate(exec_host_list, qep.get<QU_qhostname>()));
             if (!hep) {
-               ERROR(MSG_JOB_UNABLE2FINDHOST_S, static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
+               ERROR(MSG_JOB_UNABLE2FINDHOST_S, qep.get<QU_qhostname>().c_str());
                if (enrolled_task) {
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+               jatp.set<JAT_granted_pe>(nullptr);
                DRETURN(-2);
             } else {
                /* host not yet clean after reschedule unknown? */
-               for (const auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(hep)) {
-                  if (job_number == ocs::tom::get<RU_job_number>(ruep)
-                      && task_number == ocs::tom::get<RU_task_number>(ruep)) {
-                     ERROR(MSG_JOB_UNABLE2STARTJOB_US, ocs::tom::get<RU_job_number>(ruep), static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
+               for (const auto ruep : hep.get<EH_reschedule_unknown_list>()) {
+                  if (job_number == ruep.get<RU_job_number>()
+                      && task_number == ruep.get<RU_task_number>()) {
+                     ERROR(MSG_JOB_UNABLE2STARTJOB_US, ruep.get<RU_job_number>(), qep.get<QU_qhostname>().c_str());
                      if (enrolled_task) {
                         ocs_follow_unenroll_task(jep, jatp);
                      }
                      gdil.reset();
-                     ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+                     jatp.set<JAT_granted_pe>(nullptr);
                      DRETURN(-1);
                   }
                }
@@ -615,11 +615,11 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                gdil = ocs::tom::ListPtr<ocs::tom::JG>::create("");
             }
             const auto gdil_ep = gdil->emplace_back<JG_qname>(q_name); /* free me on error! */
-            ocs::tom::set<JG_qhostname>(gdil_ep, ocs::tom::get<QU_qhostname>(qep));
-            ocs::tom::set<JG_slots>(gdil_ep, q_slots);
+            gdil_ep.set<JG_qhostname>(qep.get<QU_qhostname>());
+            gdil_ep.set<JG_slots>(q_slots);
             // the execd uses the version to tell a queue instance change from an unchanged one
-            ocs::tom::set<JG_qversion>(gdil_ep, ocs::tom::get<QU_version>(qep));
-            ocs::tom::set<JG_binding_to_use>(gdil_ep, ocs::tom::get<OQ_binding_to_use>(oep).clone("binding_to_use"));
+            gdil_ep.set<JG_qversion>(qep.get<QU_version>());
+            gdil_ep.set<JG_binding_to_use>(oep.get<OQ_binding_to_use>().clone("binding_to_use"));
 
             /* ------------------------------------------------
              *  tag each gdil entry of slave exec host
@@ -627,11 +627,11 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
              *  this triggers our retry for delivery of slave jobs
              *  and gets untagged when ack has arrived
              */
-            if (pe && ocs::tom::get<PE_control_slaves>(pe)) {
-               ocs::tom::set<JG_ticket>(gdil_ep, ocs::tom::get<OQ_ticket>(oep));
-               ocs::tom::set<JG_oticket>(gdil_ep, ocs::tom::get<OQ_oticket>(oep));
-               ocs::tom::set<JG_fticket>(gdil_ep, ocs::tom::get<OQ_fticket>(oep));
-               ocs::tom::set<JG_sticket>(gdil_ep, ocs::tom::get<OQ_sticket>(oep));
+            if (pe && pe.get<PE_control_slaves>()) {
+               gdil_ep.set<JG_ticket>(oep.get<OQ_ticket>());
+               gdil_ep.set<JG_oticket>(oep.get<OQ_oticket>());
+               gdil_ep.set<JG_fticket>(oep.get<OQ_fticket>());
+               gdil_ep.set<JG_sticket>(oep.get<OQ_sticket>());
 
                /* the master host is the host of the master queue */
                if (master_host && master_host != hep) {
@@ -639,15 +639,15 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   /* ensure each host gets tagged only one time
                    * we tag the first entry for a host in the existing gdil
                    */
-                  const auto first_at_host = gdil->find_first<JG_qhostname>(ocs::tom::get<EH_name>(hep));
+                  const auto first_at_host = gdil->find_first<JG_qhostname>(hep.get<EH_name>());
                   if (!first_at_host) {
-                     ERROR(MSG_JOB_HOSTNAMERESOLVE_US, ocs::tom::get<JB_job_number>(jep), static_cast<const char *>(ocs::tom::get<EH_name>( hep)));
+                     ERROR(MSG_JOB_HOSTNAMERESOLVE_US, jep.get<JB_job_number>(), hep.get<EH_name>().c_str());
                   } else {
-                     ocs::tom::set<JG_tag_slave_job>(first_at_host, 1);
+                     first_at_host.set<JG_tag_slave_job>(1);
                   }
                } else {
                   master_host = hep;
-                  DPRINTF("master host %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(master_host)));
+                  DPRINTF("master host %s\n", master_host.get<EH_name>().c_str());
                }
             } else {
                /* a sequential job only has one host */
@@ -675,13 +675,13 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
             int total_slots = 0;
             const char *host_name = nullptr;
             auto next_gdil_ep = gdil->front();
-            ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(jatp);
+            ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list = jatp.get<JAT_granted_resources_list>();
 
             /* loop over gdil */
-            host_name = ocs::tom::get<JG_qhostname>(next_gdil_ep);
+            host_name = next_gdil_ep.get<JG_qhostname>();
             while (next_gdil_ep) {
                const auto gdil_ep = next_gdil_ep;
-               uint32_t slots = ocs::tom::get<JG_slots>(gdil_ep);
+               uint32_t slots = gdil_ep.get<JG_slots>();
 
                /* sum up slots */
                host_slots += slots;
@@ -689,7 +689,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
                /* gdil end or switch to next host: check booking on the current host */
                next_gdil_ep = gdil_ep.next();
-               if (!next_gdil_ep || strcmp(host_name, ocs::tom::get<JG_qhostname>(next_gdil_ep)) != 0) {
+               if (!next_gdil_ep || strcmp(host_name, next_gdil_ep.get<JG_qhostname>()) != 0) {
                   const ocs::tom::Element<ocs::tom::EH> hep(host_list_locate(exec_host_list, host_name));
                   debit_host_consumable(jep, jatp, granted_resources_list, pe, hep, master_centry_list, host_slots, is_master,
                                         do_per_host_booking,
@@ -707,7 +707,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
                   /* there is a next host: get hostname and reset host slot counter */
                   if (next_gdil_ep) {
-                     host_name = ocs::tom::get<JG_qhostname>(next_gdil_ep);
+                     host_name = next_gdil_ep.get<JG_qhostname>();
                      host_slots = 0;
                   }
                }
@@ -727,7 +727,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   // frees the task and sets jatp to nullptr
                   ocs_follow_unenroll_task(jep, jatp);
                } else {
-                  ocs::tom::set<JAT_granted_pe>(jatp, nullptr);
+                  jatp.set<JAT_granted_pe>(nullptr);
                }
                gdil.reset();
                DRETURN(0);
@@ -735,18 +735,18 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          }
 
          /* fill in master_queue */
-         ocs::tom::set<JAT_master_queue>(jatp, ocs::tom::get<QU_full_name>(master_qep));
+         jatp.set<JAT_master_queue>(master_qep.get<QU_full_name>());
          // the array task takes the list over; the handle stays for the subordinate queues below
          const ocs::tom::List<ocs::tom::JG> granted_gdil = *gdil;
-         ocs::tom::set<JAT_granted_destin_identifier_list>(jatp, std::move(gdil));
+         jatp.set<JAT_granted_destin_identifier_list>(std::move(gdil));
          // store the pe - we need it for unbooking when the job terminates
          if (pe) {
-            ocs::tom::set<JAT_pe_object>(jatp, pe.clone());
+            jatp.set<JAT_pe_object>(pe.clone());
          }
 
          // @todo: can this be summarized with the mod event that will set the job in t-state?
          sge_add_event(now, enrolled_task ? sgeE_JATASK_ADD : sgeE_JATASK_MOD, job_number, task_number,
-                       nullptr, nullptr, ocs::tom::get<JB_session>(jep), jatp, gdi_session);
+                       nullptr, nullptr, jep.get<JB_session>(), jatp, gdi_session);
 
          if (sge_give_job(jep, jatp, master_qep, master_host, monitor, gdi_session)) {
             /* setting of queues in state unheard is done by sge_give_job() */
@@ -755,7 +755,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                could not be delivered. The jobslotsfree had been increased even if
                they were not decreased before. */
 
-            ERROR(MSG_JOB_JOBDELIVER_UU, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatp));
+            ERROR(MSG_JOB_JOBDELIVER_UU, jep.get<JB_job_number>(), jatp.get<JAT_task_number>());
             DRETURN(-3);
          }
 
@@ -766,7 +766,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          /* now send events and spool the job */
          {
             ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-            const char *session = ocs::tom::get<JB_session>(jep);
+            const char *session = jep.get<JB_session>();
 
             /* spool job and ja_task in one transaction, send job mod event */
             sge_event_spool(&answer_list, 0, sgeE_JOB_MOD,
@@ -785,11 +785,11 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          if (pe) {
             pe_debit_slots(pe, pe_slots, job_number);
             /* this info is not spooled */
-            sge_add_event(now, sgeE_PE_MOD, 0, 0, ocs::tom::get<JAT_granted_pe>(jatp), nullptr, nullptr, pe, gdi_session);
+            sge_add_event(now, sgeE_PE_MOD, 0, 0, jatp.get<JAT_granted_pe>(), nullptr, nullptr, pe, gdi_session);
          }
 
          DPRINTF("successfully handed off job \"" sge_u32 "\" to queue \"%s\"\n",
-                 ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_master_queue>(jatp));
+                 jep.get<JB_job_number>(), jatp.get<JAT_master_queue>());
 
          /* now after successfully (we hope) sent the job to execd
           * suspend all subordinated queues that need suspension
@@ -809,13 +809,13 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          {
             const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
-            job_number = ocs::tom::get<OR_job_number>(ep);
+            job_number = ep.get<OR_job_number>();
             if (job_number == 0) {
                ERROR(SFNMAX, MSG_JOB_NOJOBID);
                DRETURN(-2);
             }
 
-            task_number = ocs::tom::get<OR_ja_task_number>(ep);
+            task_number = ep.get<OR_ja_task_number>();
 
             const auto jep = master_job_list.find_first<JB_job_number>(job_number);
             if (!jep) {
@@ -828,7 +828,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                DRETURN(0); /* it's ok - job has exited - forget about him */
             }
 
-            auto next_ja_task = ocs::tom::get<JB_ja_tasks>(jep).front();
+            auto next_ja_task = jep.get<JB_ja_tasks>().front();
 
             /* we have to iterate over the ja-tasks and the template */
             jatp = job_get_ja_task_template_pending(jep, 0);
@@ -838,13 +838,13 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
             }
 
             while (jatp) {
-               ocs::tom::set<JAT_tix>(jatp, 0);
-               ocs::tom::set<JAT_oticket>(jatp, 0);
-               ocs::tom::set<JAT_fticket>(jatp, 0);
-               ocs::tom::set<JAT_sticket>(jatp, 0);
-               ocs::tom::set<JAT_share>(jatp, 0);
-               ocs::tom::set<JAT_prio>(jatp, 0);
-               ocs::tom::set<JAT_ntix>(jatp, 0);
+               jatp.set<JAT_tix>(0);
+               jatp.set<JAT_oticket>(0);
+               jatp.set<JAT_fticket>(0);
+               jatp.set<JAT_sticket>(0);
+               jatp.set<JAT_share>(0);
+               jatp.set<JAT_prio>(0);
+               jatp.set<JAT_ntix>(0);
                if (task_number != 0) {   /* if task_number == 0, we only change the */
                   sge_add_event(now, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr, nullptr, jatp, gdi_session);
                   jatp = next_ja_task;   /* pending tickets, otherwise all */
@@ -854,11 +854,11 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                }
             }
 
-            ocs::tom::set<JB_nurg>(jep, 0);
-            ocs::tom::set<JB_urg>(jep, 0);
-            ocs::tom::set<JB_rrcontr>(jep, 0);
-            ocs::tom::set<JB_dlcontr>(jep, 0);
-            ocs::tom::set<JB_wtcontr>(jep, 0);
+            jep.set<JB_nurg>(0);
+            jep.set<JB_urg>(0);
+            jep.set<JB_rrcontr>(0);
+            jep.set<JB_dlcontr>(0);
+            jep.set<JB_wtcontr>(0);
 
             // @todo CS-913 we should have the tickets in sub-objects and have a ticket event having only the sub-object as data
             sge_add_event(now, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, jep, gdi_session);
@@ -879,13 +879,13 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          {
             const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
-            job_number = ocs::tom::get<OR_job_number>(ep);
+            job_number = ep.get<OR_job_number>();
             if (job_number == 0) {
                ERROR(SFNMAX, MSG_JOB_NOJOBID);
                DRETURN(-2);
             }
 
-            DPRINTF("ORDER : job(" sge_u32 ")->ticket = %f\n", job_number, ocs::tom::get<OR_ticket>(ep));
+            DPRINTF("ORDER : job(" sge_u32 ")->ticket = %f\n", job_number, ep.get<OR_ticket>());
 
             const auto jep = master_job_list.find_first<JB_job_number>(job_number);
             if (!jep) {
@@ -894,7 +894,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                DRETURN(0); /* it's ok - job has exited - forget about him */
             }
 
-            task_number = ocs::tom::get<OR_ja_task_number>(ep);
+            task_number = ep.get<OR_ja_task_number>();
             if (task_number == 0) {
                ERROR(MSG_JOB_NOORDERTASK_US, job_number, "ORT_ptickets");
                DRETURN(-2);
@@ -919,38 +919,38 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   }
                   ERROR(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
                   sge_add_event(now, sgeE_JATASK_DEL, job_number, task_number,
-                                nullptr, nullptr, ocs::tom::get<JB_session>(jep), nullptr, gdi_session);
+                                nullptr, nullptr, jep.get<JB_session>(), nullptr, gdi_session);
                   DRETURN(-2);
                }
             }
 
-            if (ocs::tom::get<JAT_status>(jatp) == JFINISHED) {
-               WARNING(MSG_JOB_CHANGEPTICKETS_UU, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatp));
+            if (jatp.get<JAT_status>() == JFINISHED) {
+               WARNING(MSG_JOB_CHANGEPTICKETS_UU, jep.get<JB_job_number>(), jatp.get<JAT_task_number>());
                DRETURN(0);
             }
 
             /* modify jobs ticket amount */
-            ocs::tom::set<JAT_tix>(jatp, ocs::tom::get<OR_ticket>(ep));
+            jatp.set<JAT_tix>(ep.get<OR_ticket>());
 
             /* check several fields to be updated */
             // OR_joker names no sub-type in the model; for a ticket order it holds a reduced job
-            if (const auto joker = ocs::tom::ConstList<ocs::tom::JB>(ocs::tom::get<OR_joker>(ep)).front(); joker) {
+            if (const auto joker = ocs::tom::ConstList<ocs::tom::JB>(ep.get<OR_joker>()).front(); joker) {
 
-               const auto joker_task = ocs::tom::get<JB_ja_tasks>(joker).front();
+               const auto joker_task = joker.get<JB_ja_tasks>().front();
 
-               ocs::tom::set<JAT_oticket>(jatp, ocs::tom::get<JAT_oticket>(joker_task));
-               ocs::tom::set<JAT_fticket>(jatp, ocs::tom::get<JAT_fticket>(joker_task));
-               ocs::tom::set<JAT_sticket>(jatp, ocs::tom::get<JAT_sticket>(joker_task));
-               ocs::tom::set<JAT_share>(jatp, ocs::tom::get<JAT_share>(joker_task));
-               ocs::tom::set<JAT_prio>(jatp, ocs::tom::get<JAT_prio>(joker_task));
-               ocs::tom::set<JAT_ntix>(jatp, ocs::tom::get<JAT_ntix>(joker_task));
+               jatp.set<JAT_oticket>(joker_task.get<JAT_oticket>());
+               jatp.set<JAT_fticket>(joker_task.get<JAT_fticket>());
+               jatp.set<JAT_sticket>(joker_task.get<JAT_sticket>());
+               jatp.set<JAT_share>(joker_task.get<JAT_share>());
+               jatp.set<JAT_prio>(joker_task.get<JAT_prio>());
+               jatp.set<JAT_ntix>(joker_task.get<JAT_ntix>());
 
                // @todo do we really update the *job* values with every ja_task update?
-               ocs::tom::set<JB_nurg>(jep, ocs::tom::get<JB_nurg>(joker));
-               ocs::tom::set<JB_urg>(jep, ocs::tom::get<JB_urg>(joker));
-               ocs::tom::set<JB_rrcontr>(jep, ocs::tom::get<JB_rrcontr>(joker));
-               ocs::tom::set<JB_dlcontr>(jep, ocs::tom::get<JB_dlcontr>(joker));
-               ocs::tom::set<JB_wtcontr>(jep, ocs::tom::get<JB_wtcontr>(joker));
+               jep.set<JB_nurg>(joker.get<JB_nurg>());
+               jep.set<JB_urg>(joker.get<JB_urg>());
+               jep.set<JB_rrcontr>(joker.get<JB_rrcontr>());
+               jep.set<JB_dlcontr>(joker.get<JB_dlcontr>());
+               jep.set<JB_wtcontr>(joker.get<JB_wtcontr>());
             }
 
             if (send_task_event) {
@@ -977,14 +977,14 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          {
             const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
 
-            job_number = ocs::tom::get<OR_job_number>(ep);
+            job_number = ep.get<OR_job_number>();
             if (job_number == 0) {
                ERROR(SFNMAX, MSG_JOB_NOJOBID);
                DRETURN(-2);
             }
 
             DPRINTF("ORDER: job(" sge_u32 ")->ticket = %f\n",
-                    job_number, ocs::tom::get<OR_ticket>(ep));
+                    job_number, ep.get<OR_ticket>());
 
             const auto jep = master_job_list.find_first<JB_job_number>(job_number);
             if (!jep) {
@@ -992,7 +992,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                INFO(MSG_JOB_UNABLE2FINDJOBORD_U, job_number);
                DRETURN(0); /* it's ok - job has exited - forget about him */
             }
-            task_number = ocs::tom::get<OR_ja_task_number>(ep);
+            task_number = ep.get<OR_ja_task_number>();
             if (task_number == 0) {
                ERROR(MSG_JOB_NOORDERTASK_US, job_number, "ORT_tickets");
                DRETURN(-2);
@@ -1005,45 +1005,47 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   DRETURN(0);
                }
                ERROR(MSG_JOB_FINDJOBTASK_UU, task_number, job_number);
-               sge_add_event(now, sgeE_JATASK_DEL, job_number, task_number, nullptr, nullptr, ocs::tom::get<JB_session>(jep), nullptr, gdi_session);
+               sge_add_event(now, sgeE_JATASK_DEL, job_number, task_number, nullptr, nullptr, jep.get<JB_session>(),
+                             nullptr, gdi_session);
                DRETURN(-2);
             }
 
             /* job must be running */
-            if (ocs::tom::get<JAT_status>(jatp) != JRUNNING &&
-                ocs::tom::get<JAT_status>(jatp) != JTRANSFERING) {
+            if (jatp.get<JAT_status>() != JRUNNING &&
+                jatp.get<JAT_status>() != JTRANSFERING) {
 
                /* if the job just finished, ignore the order */
-               if (ocs::tom::get<JAT_status>(jatp) != JFINISHED) {
-                  WARNING(MSG_JOB_CHANGETICKETS_UUU, ocs::tom::get<JB_job_number>(jep),  ocs::tom::get<JAT_task_number>(jatp), ocs::tom::get<JAT_status>(jatp));
+               if (jatp.get<JAT_status>() != JFINISHED) {
+                  WARNING(MSG_JOB_CHANGETICKETS_UUU, jep.get<JB_job_number>(),  jatp.get<JAT_task_number>(),
+                          jatp.get<JAT_status>());
                   DRETURN(0);
                }
             } else {
                bool distribute_tickets = false;
                /* modify jobs ticket amount and spool job */
-               ocs::tom::set<JAT_tix>(jatp, ocs::tom::get<OR_ticket>(ep));
+               jatp.set<JAT_tix>(ep.get<OR_ticket>());
                DPRINTF("TICKETS: " sge_u32 "." sge_u32 " %f tickets\n",
-                       ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatp), ocs::tom::get<JAT_tix>(jatp));
+                       jep.get<JB_job_number>(), jatp.get<JAT_task_number>(), jatp.get<JAT_tix>());
 
                /* check several fields to be updated */
                // OR_joker names no sub-type in the model; for a ticket order it holds a reduced job
-               if (const auto joker = ocs::tom::ConstList<ocs::tom::JB>(ocs::tom::get<OR_joker>(ep)).front(); joker) {
+               if (const auto joker = ocs::tom::ConstList<ocs::tom::JB>(ep.get<OR_joker>()).front(); joker) {
 
-                  const auto joker_task = ocs::tom::get<JB_ja_tasks>(joker).front();
-                  distribute_tickets = (ocs::tom::has<JAT_granted_destin_identifier_list>(joker_task)) ? true : false;
+                  const auto joker_task = joker.get<JB_ja_tasks>().front();
+                  distribute_tickets = (joker_task.has<JAT_granted_destin_identifier_list>()) ? true : false;
 
-                  ocs::tom::set<JAT_oticket>(jatp, ocs::tom::get<JAT_oticket>(joker_task));
-                  ocs::tom::set<JAT_fticket>(jatp, ocs::tom::get<JAT_fticket>(joker_task));
-                  ocs::tom::set<JAT_sticket>(jatp, ocs::tom::get<JAT_sticket>(joker_task));
-                  ocs::tom::set<JAT_share>(jatp, ocs::tom::get<JAT_share>(joker_task));
-                  ocs::tom::set<JAT_prio>(jatp, ocs::tom::get<JAT_prio>(joker_task));
-                  ocs::tom::set<JAT_ntix>(jatp, ocs::tom::get<JAT_ntix>(joker_task));
+                  jatp.set<JAT_oticket>(joker_task.get<JAT_oticket>());
+                  jatp.set<JAT_fticket>(joker_task.get<JAT_fticket>());
+                  jatp.set<JAT_sticket>(joker_task.get<JAT_sticket>());
+                  jatp.set<JAT_share>(joker_task.get<JAT_share>());
+                  jatp.set<JAT_prio>(joker_task.get<JAT_prio>());
+                  jatp.set<JAT_ntix>(joker_task.get<JAT_ntix>());
 
-                  ocs::tom::set<JB_nurg>(jep, ocs::tom::get<JB_nurg>(joker));
-                  ocs::tom::set<JB_urg>(jep, ocs::tom::get<JB_urg>(joker));
-                  ocs::tom::set<JB_rrcontr>(jep, ocs::tom::get<JB_rrcontr>(joker));
-                  ocs::tom::set<JB_dlcontr>(jep, ocs::tom::get<JB_dlcontr>(joker));
-                  ocs::tom::set<JB_wtcontr>(jep, ocs::tom::get<JB_wtcontr>(joker));
+                  jep.set<JB_nurg>(joker.get<JB_nurg>());
+                  jep.set<JB_urg>(joker.get<JB_urg>());
+                  jep.set<JB_rrcontr>(joker.get<JB_rrcontr>());
+                  jep.set<JB_dlcontr>(joker.get<JB_dlcontr>());
+                  jep.set<JB_wtcontr>(joker.get<JB_wtcontr>());
                }
 
                /* tickets should only be further distributed in the scheduler reprioritize_interval. Only in
@@ -1065,40 +1067,40 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                      all job slots being used on the host */
                   if (!what) {
                      // no selection, no ticket orders to distribute
-                  } else if (ocs::tom::get<OR_queuelist>(ep)) {
+                  } else if (ep.get<OR_queuelist>()) {
                      /* cashed temporary hash list */
                      auto host_tickets_cache = ocs::tom::ListPtr<ocs::tom::UA>::create("");
                      /* set granted slot tickets */
-                     for (const auto oep : ocs::tom::get<OR_queuelist>(ep)) {
-                        const auto gdil_ep = ocs::tom::find_first_in_rw<JAT_granted_destin_identifier_list, JG_qname>(
-                           jatp, ocs::tom::get<OQ_dest_queue>(oep));
+                     for (const auto oep : ep.get<OR_queuelist>()) {
+                        const auto gdil_ep = jatp.find_first_in_rw<JAT_granted_destin_identifier_list, JG_qname>(
+                                 oep.get<OQ_dest_queue>());
                         if (gdil_ep) {
-                           double tickets = ocs::tom::get<OQ_ticket>(oep);
-                           const char *hostname = ocs::tom::get<JG_qhostname>(gdil_ep);
+                           double tickets = oep.get<OQ_ticket>();
+                           const char *hostname = gdil_ep.get<JG_qhostname>();
 
-                           ocs::tom::set<JG_ticket>(gdil_ep, tickets);
-                           ocs::tom::set<JG_oticket>(gdil_ep, ocs::tom::get<OQ_oticket>(oep));
-                           ocs::tom::set<JG_fticket>(gdil_ep, ocs::tom::get<OQ_fticket>(oep));
-                           ocs::tom::set<JG_sticket>(gdil_ep, ocs::tom::get<OQ_sticket>(oep));
+                           gdil_ep.set<JG_ticket>(tickets);
+                           gdil_ep.set<JG_oticket>(oep.get<OQ_oticket>());
+                           gdil_ep.set<JG_fticket>(oep.get<OQ_fticket>());
+                           gdil_ep.set<JG_sticket>(oep.get<OQ_sticket>());
 
                            auto chost_ep = host_tickets_cache->find_first<UA_name>(hostname);
                            if (!chost_ep) {
                               chost_ep = host_tickets_cache->emplace_back<UA_name>(hostname);
                            }
-                           ocs::tom::add<UA_value>(chost_ep, tickets);
+                           chost_ep.add<UA_value>(tickets);
                         }
                      }
 
                      /* map cached tickets back to RTIC list */
                      for (const auto cached : *host_tickets_cache) {
-                        const char *hostname = ocs::tom::get<UA_name>(cached);
-                        ocs_follow_add_host_ticket_order(*topp, hostname, ep, what, ocs::tom::get<UA_value>(cached));
+                        const char *hostname = cached.get<UA_name>();
+                        ocs_follow_add_host_ticket_order(*topp, hostname, ep, what, cached.get<UA_value>());
                      }
                      host_tickets_cache.reset();
                   } else {
-                     ocs::tom::ConstList<ocs::tom::JG> gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatp);
+                     ocs::tom::ConstList<ocs::tom::JG> gdil = jatp.get<JAT_granted_destin_identifier_list>();
                      if (gdil) {
-                        const char *hostname = ocs::tom::get<JG_qhostname>(gdil.front());
+                        const char *hostname = gdil.front().get<JG_qhostname>();
                         ocs_follow_add_host_ticket_order(*topp, hostname, ep, what, std::nullopt);
                      }
 
@@ -1126,12 +1128,12 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
          const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
          DPRINTF("ORDER: ORT_remove_immediate_job\n");
 
-         job_number = ocs::tom::get<OR_job_number>(ep);
+         job_number = ep.get<OR_job_number>();
          if (job_number == 0) {
             ERROR(SFNMAX, MSG_JOB_NOJOBID);
             DRETURN(-2);
          }
-         task_number = ocs::tom::get<OR_ja_task_number>(ep);
+         task_number = ep.get<OR_ja_task_number>();
          if (task_number == 0) {
             ERROR(MSG_JOB_NOORDERTASK_US, job_number, "ORT_remove_immediate_job");
             DRETURN(-2);
@@ -1159,24 +1161,24 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
             sge_event_spool(&answer_list, 0, sgeE_JATASK_ADD,
                             job_number, task_number, nullptr, nullptr,
-                            ocs::tom::get<JB_session>(jep),
+                            jep.get<JB_session>(),
                             jep, jatp, nullptr, true, true, gdi_session);
             answer_list_output(&answer_list);
          }
 
-         if (!JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(jep))) {
-            if (ocs::tom::get<JB_script_file>(jep)) {
-               ERROR(MSG_JOB_REMOVENONINTERACT_U, ocs::tom::get<JB_job_number>(jep));
+         if (!JOB_TYPE_IS_IMMEDIATE(jep.get<JB_type>())) {
+            if (jep.get<JB_script_file>()) {
+               ERROR(MSG_JOB_REMOVENONINTERACT_U, jep.get<JB_job_number>());
             } else {
-               ERROR(MSG_JOB_REMOVENONIMMEDIATE_U, ocs::tom::get<JB_job_number>(jep));
+               ERROR(MSG_JOB_REMOVENONIMMEDIATE_U, jep.get<JB_job_number>());
             }
             DRETURN(-1);
          }
-         if (ocs::tom::get<JAT_status>(jatp) != JIDLE) {
-            ERROR(MSG_JOB_REMOVENOTIDLEIA_U, ocs::tom::get<JB_job_number>(jep));
+         if (jatp.get<JAT_status>() != JIDLE) {
+            ERROR(MSG_JOB_REMOVENOTIDLEIA_U, jep.get<JB_job_number>());
             DRETURN(-1);
          }
-         INFO(MSG_JOB_NOFREERESOURCEIA_UU, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatp), ocs::tom::get<JB_owner>(jep));
+         INFO(MSG_JOB_NOFREERESOURCEIA_UU, jep.get<JB_job_number>(), jatp.get<JAT_task_number>(), jep.get<JB_owner>());
 
          /* remove it */
          sge_commit_job(jep, jatp, nullptr, COMMIT_ST_NO_RESOURCES, COMMIT_DEFAULT | COMMIT_NEVER_RAN, monitor, gdi_session);
@@ -1207,10 +1209,10 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
          if (sconf_is()) {
             // OR_joker names no sub-type in the model; for this order it holds a reduced scheduler configuration
-            if (const auto joker = ocs::tom::ConstList<ocs::tom::SC>(ocs::tom::get<OR_joker>(ep)).front(); joker) {
-               if (ocs::tom::has<SC_weight_tickets_override>(joker)) {
+            if (const auto joker = ocs::tom::ConstList<ocs::tom::SC>(ep.get<OR_joker>()).front(); joker) {
+               if (joker.has<SC_weight_tickets_override>()) {
                   uint32_t old_wto = sconf_get_weight_tickets_override();
-                  uint32_t new_wto = ocs::tom::get<SC_weight_tickets_override>(joker);
+                  uint32_t new_wto = joker.get<SC_weight_tickets_override>();
 
                   if (old_wto != new_wto) {
                      sconf_set_weight_tickets_override(new_wto);
@@ -1233,16 +1235,16 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
          DPRINTF("ORDER: ORT_suspend_on_threshold\n");
 
-         jobid = ocs::tom::get<OR_job_number>(ep);
-         task_number = ocs::tom::get<OR_ja_task_number>(ep);
+         jobid = ep.get<OR_job_number>();
+         task_number = ep.get<OR_ja_task_number>();
 
          if (!(jep = master_job_list.find_first<JB_job_number>(jobid))
              || !(jatp = job_search_task(jep, nullptr, task_number))
-             || !ocs::tom::get<JAT_granted_destin_identifier_list>(jatp)) {
+             || !jatp.get<JAT_granted_destin_identifier_list>()) {
             /* don't panic - it is probably an exiting job */
             WARNING(MSG_JOB_SUSPOTNOTRUN_UU, jobid, task_number);
          } else {
-            const char *qnm = ocs::tom::get<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatp).front());
+            const char *qnm = jatp.get<JAT_granted_destin_identifier_list>().front().get<JG_qname>();
             const auto queueep = cqueue_list_locate_qinstance(master_cqueue_list, qnm);
             if (!queueep) {
                ERROR(MSG_JOB_UNABLE2FINDMQ_SU, qnm, jobid);
@@ -1251,26 +1253,26 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
             INFO(MSG_JOB_SUSPTQ_UUS, jobid, task_number, qnm);
 
-            if (!ISSET(ocs::tom::get<JAT_state>(jatp), JSUSPENDED)) {
+            if (!ISSET(jatp.get<JAT_state>(), JSUSPENDED)) {
                sge_signal_queue(SGE_SIGSTOP, queueep, jep, jatp, monitor);
-               state = ocs::tom::get<JAT_state>(jatp);
+               state = jatp.get<JAT_state>();
                CLEARBIT(JRUNNING, state);
-               ocs::tom::set<JAT_state>(jatp, state);
+               jatp.set<JAT_state>(state);
             }
-            state = ocs::tom::get<JAT_state>(jatp);
+            state = jatp.get<JAT_state>();
             SETBIT(JSUSPENDED_ON_THRESHOLD, state);
-            ocs::tom::set<JAT_state>(jatp, state);
+            jatp.set<JAT_state>(state);
 
             {
                ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-               const char *session = ocs::tom::get<JB_session>(jep);
+               const char *session = jep.get<JB_session>();
                sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, task_number, nullptr, nullptr, session,
                                jep, jatp, nullptr, true, true, gdi_session);
                answer_list_output(&answer_list);
             }
 
             /* update queues time stamp in schedd */
-            ocs::tom::set<QU_last_suspend_threshold_ckeck>(queueep, now);
+            queueep.set<QU_last_suspend_threshold_ckeck>(now);
             qinstance_add_event(queueep, sgeE_QINSTANCE_MOD, gdi_session);
          }
       }
@@ -1284,16 +1286,16 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
          DPRINTF("ORDER: ORT_unsuspend_on_threshold\n");
 
-         jobid = ocs::tom::get<OR_job_number>(ep);
-         task_number = ocs::tom::get<OR_ja_task_number>(ep);
+         jobid = ep.get<OR_job_number>();
+         task_number = ep.get<OR_ja_task_number>();
 
          if (!(jep = master_job_list.find_first<JB_job_number>(jobid))
              || !(jatp = job_search_task(jep, nullptr, task_number))
-             || !ocs::tom::get<JAT_granted_destin_identifier_list>(jatp)) {
+             || !jatp.get<JAT_granted_destin_identifier_list>()) {
             /* don't panic - it is probably an exiting job */
             WARNING(MSG_JOB_UNSUSPOTNOTRUN_UU, jobid, task_number);
          } else {
-            const char *qnm = ocs::tom::get<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatp).front());
+            const char *qnm = jatp.get<JAT_granted_destin_identifier_list>().front().get<JG_qname>();
             const auto queueep = cqueue_list_locate_qinstance(master_cqueue_list, qnm);
             if (!queueep) {
                ERROR(MSG_JOB_UNABLE2FINDMQ_SU, qnm, jobid);
@@ -1302,24 +1304,24 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
             INFO(MSG_JOB_UNSUSPOT_UUS, jobid, task_number, qnm);
 
-            if (!ISSET(ocs::tom::get<JAT_state>(jatp), JSUSPENDED)) {
+            if (!ISSET(jatp.get<JAT_state>(), JSUSPENDED)) {
                sge_signal_queue(SGE_SIGCONT, queueep, jep, jatp, monitor);
-               state = ocs::tom::get<JAT_state>(jatp);
+               state = jatp.get<JAT_state>();
                SETBIT(JRUNNING, state);
-               ocs::tom::set<JAT_state>(jatp, state);
+               jatp.set<JAT_state>(state);
             }
-            state = ocs::tom::get<JAT_state>(jatp);
+            state = jatp.get<JAT_state>();
             CLEARBIT(JSUSPENDED_ON_THRESHOLD, state);
-            ocs::tom::set<JAT_state>(jatp, state);
+            jatp.set<JAT_state>(state);
             {
                ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-               const char *session = ocs::tom::get<JB_session>(jep);
+               const char *session = jep.get<JB_session>();
                sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, jobid, task_number, nullptr, nullptr, session,
                                jep, jatp, nullptr, true, true, gdi_session);
                answer_list_output(&answer_list);
             }
             /* update queues time stamp in schedd */
-            ocs::tom::set<QU_last_suspend_threshold_ckeck>(queueep, now);
+            queueep.set<QU_last_suspend_threshold_ckeck>(now);
             qinstance_add_event(queueep, sgeE_QINSTANCE_MOD, gdi_session);
          }
       }
@@ -1327,7 +1329,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
       case ORT_job_schedd_info: {
          // OR_joker names no sub-type in the model; for this order it holds the scheduler messages
-         const ocs::tom::List<ocs::tom::SME> sub_order_list(ocs::tom::get<OR_joker>(ep));
+         const ocs::tom::List<ocs::tom::SME> sub_order_list(ep.get<OR_joker>());
          DPRINTF("ORDER: ORT_job_schedd_info\n");
 
          if (sub_order_list) {
@@ -1335,7 +1337,7 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
 
             if (sme) {
                DPRINTF("ORDER: got %d schedd infos\n",
-                       static_cast<int>(ocs::tom::get<SME_message_list>(sme).size()));
+                       static_cast<int>(sme.get<SME_message_list>().size()));
 
                // the master list slot may still hold no list, it is created here
                const auto info_list = ocs::DataStore::master_list_create<SGE_TYPE_JOB_SCHEDD_INFO>("schedd info");
@@ -1378,8 +1380,8 @@ int distribute_ticket_orders(const ocs::tom::ConstList<ocs::tom::RTIC> ticket_or
    const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
    for (const auto ep : ticket_orders) {
-      ocs::tom::ConstList<ocs::tom::OR> to_send = ocs::tom::get<RTIC_tickets>(ep);
-      const char *host_name = ocs::tom::get<RTIC_host>(ep);
+      ocs::tom::ConstList<ocs::tom::OR> to_send = ep.get<RTIC_tickets>();
+      const char *host_name = ep.get<RTIC_host>();
       const ocs::tom::ConstElement<ocs::tom::EH> hep(host_list_locate(master_ehost_list, host_name));
 
       int n = static_cast<int>(to_send.size());
@@ -1394,9 +1396,9 @@ int distribute_ticket_orders(const ocs::tom::ConstList<ocs::tom::RTIC> ticket_or
          if (ocs::tom::try_init_buffer(&pb, sizeof(uint32_t) * 3 * n) == PACK_SUCCESS) {
             uint32_t dummyid = 0;
             for (const auto ep2 : to_send) {
-               ocs::tom::try_put_uint32(&pb, ocs::tom::get<OR_job_number>(ep2));
-               ocs::tom::try_put_uint32(&pb, ocs::tom::get<OR_ja_task_number>(ep2));
-               ocs::tom::try_put_double(&pb, ocs::tom::get<OR_ticket>(ep2));
+               ocs::tom::try_put_uint32(&pb, ep2.get<OR_job_number>());
+               ocs::tom::try_put_uint32(&pb, ep2.get<OR_ja_task_number>());
+               ocs::tom::try_put_double(&pb, ep2.get<OR_ticket>());
             }
             cl_err = ocs::gdi::ClientServerBase::gdi_send_message_pb(0, to_cstr(EXECD), 1, host_name,
                                                                  ocs::gdi::ClientServerBase::TAG_CHANGE_TICKET, &pb, &dummyid);

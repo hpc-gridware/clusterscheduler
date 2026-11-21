@@ -104,12 +104,12 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    const char *ckpt_name;
 
    /* ---- CK_name */
-   if (ocs::tom::has<CK_name>(ckpt)) {
+   if (ckpt.has<CK_name>()) {
       if (add) {
          // a nullptr name is refused by verify_obj_name() below
-         ocs::tom::copy_if_present<CK_name>(new_ckpt, ckpt);
+         new_ckpt.copy_if_present<CK_name>(ckpt);
       }
-      ckpt_name = ocs::tom::get<CK_name>(new_ckpt);
+      ckpt_name = new_ckpt.get<CK_name>();
       if (add && verify_obj_name(
               alpp, ckpt_name, MAX_VERIFY_STRING, SGE_ATTR_CKPT_NAME) != STATUS_OK) {
          DRETURN(STATUS_EUNKNOWN);
@@ -121,26 +121,26 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    /* ---- CK_interface */
-   ocs::tom::copy_if_present<CK_interface>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_interface>(ckpt);
 
    /* ---- CK_ckpt_command */
-   ocs::tom::copy_if_present<CK_ckpt_command>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_ckpt_command>(ckpt);
 
    /* ---- CK_migr_command */
-   ocs::tom::copy_if_present<CK_migr_command>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_migr_command>(ckpt);
 
    /* ---- CK_rest_command */
-   ocs::tom::copy_if_present<CK_rest_command>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_rest_command>(ckpt);
 
    /* ---- CK_ckpt_dir */
-   ocs::tom::copy_if_present<CK_ckpt_dir>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_ckpt_dir>(ckpt);
 
    /* ---- CK_when */
-   if (ocs::tom::has<CK_when>(ckpt)) {
+   if (ckpt.has<CK_when>()) {
       int new_flags, flags;
 
-      new_flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(new_ckpt));
-      flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(ckpt));
+      new_flags = sge_parse_checkpoint_attr(new_ckpt.get<CK_when>());
+      flags = sge_parse_checkpoint_attr(ckpt.get<CK_when>());
 
       if ((sub_command & ocs::gdi::SubCommand::APPEND) == ocs::gdi::SubCommand::APPEND ||
           (sub_command & ocs::gdi::SubCommand::CHANGE) == ocs::gdi::SubCommand::CHANGE) {
@@ -151,7 +151,7 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          new_flags = flags;
       }
       if (is_checkpoint_when_valid(new_flags)) {
-         ocs::tom::set<CK_when>(new_ckpt, get_checkpoint_when(new_flags));
+         new_ckpt.set<CK_when>(get_checkpoint_when(new_flags));
       } else {
          ERROR(MSG_CKPT_INVALIDWHENATTRIBUTE_S, ckpt_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -160,13 +160,13 @@ ckpt_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    /* ---- CK_signal */
-   ocs::tom::copy_if_present<CK_signal>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_signal>(ckpt);
 
    /* ---- CK_clean_command */
-   ocs::tom::copy_if_present<CK_clean_command>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_clean_command>(ckpt);
 
    /* ---- CK_job_pid */
-   ocs::tom::copy_if_present<CK_job_pid>(new_ckpt, ckpt);
+   new_ckpt.copy_if_present<CK_job_pid>(ckpt);
 
    /* validate ckpt data */
    if (ckpt_validate(new_ckpt, alpp) != STATUS_OK) {
@@ -203,12 +203,12 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   ocs::tom::get<CK_name>(ep), SGE_TYPE_CKPT);
+                                   ep.get<CK_name>(), SGE_TYPE_CKPT);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<CK_name>(ep));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ep.get<CK_name>());
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -243,7 +243,7 @@ ckpt_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Ele
 
    const char *ckpt_name;
 
-   ckpt_name = ocs::tom::get<CK_name>(ep);
+   ckpt_name = ep.get<CK_name>();
 
    sge_add_event(0, old_ep ? sgeE_CKPT_MOD : sgeE_CKPT_ADD, 0, 0,
                  ckpt_name, nullptr, nullptr, ep, packet->gdi_session);
@@ -281,13 +281,13 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
    }
 
    /* ep is no ckpt element, if ep has no CK_name */
-   if (!ocs::tom::has<CK_name>(ep)) {
+   if (!ep.has<CK_name>()) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CK_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *ckpt_name = ocs::tom::get<CK_name>(ep);
+   const char *ckpt_name = ep.get<CK_name>();
    if (!ckpt_name) {
       CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -312,7 +312,7 @@ sge_del_ckpt(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
                              ocs::DataStore::master_list<SGE_TYPE_CQUEUE>())) {
          const auto answer = local_answer_list->front();
 
-         ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
+         ERROR("denied: %s", answer.get<AN_text>());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN,
                          ANSWER_QUALITY_ERROR);
          local_answer_list.reset();

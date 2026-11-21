@@ -408,9 +408,9 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
    std::vector<PruneCandidate> finished;
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
    for (const auto job : master_job_list) {
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-         if (ocs::tom::get<JAT_status>(ja_task) == JFINISHED) {
-            finished.push_back({job, ja_task, ocs::tom::get<JAT_end_time>(ja_task)});
+      for (const auto ja_task : job.get<JB_ja_tasks>()) {
+         if (ja_task.get<JAT_status>() == JFINISHED) {
+            finished.push_back({job, ja_task, ja_task.get<JAT_end_time>()});
          }
       }
    }
@@ -452,7 +452,7 @@ sge_finished_jobs_sweep_handler(te_event_t anEvent, monitoring_t *monitor) {
     * still-held LOCK_GLOBAL write (see PruneCandidate comment above). */
    const char *sge_root = bootstrap_get_sge_root();
    for (const PruneCandidate &c : eligible) {
-      sge_bury_ja_task(sge_root, c.job, ocs::tom::get<JB_job_number>(c.job),
+      sge_bury_ja_task(sge_root, c.job, c.job.get<JB_job_number>(),
                        c.ja_task, 1 /* spool_job */, 0 /* no_events */,
                        ocs::SessionManager::GDI_SESSION_NONE);
    }

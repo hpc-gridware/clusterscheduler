@@ -151,16 +151,16 @@ ocs::CategoryQmaster::initialize_prj_and_uset_for_categories(const ocs::tom::Lis
     * now set categories flag with usersets/projects used as ACL
     */
    for (const auto ep : *p_list) {
-      const auto prj = master_project_list.find_first<PR_name>(ocs::tom::get<PR_name>(ep));
+      const auto prj = master_project_list.find_first<PR_name>(ep.get<PR_name>());
       if (prj) {
-         ocs::tom::set<PR_consider_with_categories>(prj, true);
+         prj.set<PR_consider_with_categories>(true);
       }
    }
 
    for (const auto ep : *u_list) {
-      const auto acl = master_userset_list.find_first<US_name>(ocs::tom::get<US_name>(ep));
+      const auto acl = master_userset_list.find_first<US_name>(ep.get<US_name>());
       if (acl) {
-         ocs::tom::set<US_consider_with_categories>(acl, true);
+         acl.set<US_consider_with_categories>(true);
       }
    }
 
@@ -245,17 +245,17 @@ ocs::CategoryQmaster::attach_job(lList **master_category_list, const ocs::tom::E
    auto category = category_list.find_first<CT_str>(cat_str);
    if (!category) {
       category = category_list.emplace_back<CT_str>(cat_str);
-      ocs::tom::set<CT_id>(category, Category::get_next_id(category_list));
+      category.set<CT_id>(Category::get_next_id(category_list));
       is_new = true;
    }
    sge_dstring_free(&category_str);
 
    // Increase the reference count
-   ocs::tom::set<CT_refcount>(category, ocs::tom::get<CT_refcount>(category) + 1);
+   category.set<CT_refcount>(category.get<CT_refcount>() + 1);
 
    // Point to the category in the job
-   const uint32_t category_id = ocs::tom::get<CT_id>(category);
-   ocs::tom::set<JB_category_id>(job, category_id);
+   const uint32_t category_id = category.get<CT_id>();
+   job.set<JB_category_id>(category_id);
 
    // Send events if required
    if (send_events) {
@@ -286,19 +286,19 @@ ocs::CategoryQmaster::detach_job(lList **master_category_list, const ocs::tom::E
       DRETURN(false);
    }
    const auto category_list = ocs::tom::List<ocs::tom::CT>::from_typed(*master_category_list);
-   auto category = category_list.find_first<CT_id>(ocs::tom::get<JB_category_id>(job));
+   auto category = category_list.find_first<CT_id>(job.get<JB_category_id>());
 
    // each category that is referenced in a job should also exist
    SGE_ASSERT(category);
 
-   ocs::tom::set<JB_category_id>(job, 0);
+   job.set<JB_category_id>(0);
 
    // decrease the reference count or remove the category
    bool is_del = false;
-   uint32_t refcount = ocs::tom::get<CT_refcount>(category);
-   uint32_t category_id = ocs::tom::get<CT_id>(category);
+   uint32_t refcount = category.get<CT_refcount>();
+   uint32_t category_id = category.get<CT_id>();
    if (refcount > 1) {
-      ocs::tom::set<CT_refcount>(category, refcount - 1);
+      category.set<CT_refcount>(refcount - 1);
    } else {
       category_list.erase(category);
       // as lRemoveElem() did: the event of a removed category carries no element
@@ -342,7 +342,7 @@ ocs::CategoryQmaster::reattach_job(lList **master_category_list, const ocs::tom:
    attach_job(master_category_list, job, master_userset_list, master_project_list, master_rqs_list, send_events,
               gdi_session);
 
-   const uint32_t job_number = ocs::tom::get<JB_job_number>(job);
+   const uint32_t job_number = job.get<JB_job_number>();
    sge_add_event(now, sgeE_JOB_MOD, job_number, 0, nullptr, nullptr, nullptr, job, gdi_session);
    DRETURN_VOID;
 }
@@ -425,23 +425,23 @@ ocs::CategoryQmaster::reset_tmp_data(const ocs::tom::List<ocs::tom::CT> master_c
    for (const auto cat : master_category_list) {
 
       // deallocate memory stored in the cache itself
-      for (ocs::tom::Element<ocs::tom::CCT> cache : ocs::tom::get<CT_cache>(cat)) {
-         auto *range = static_cast<int *>(ocs::tom::get<CCT_pe_job_slots>(cache));
+      for (ocs::tom::Element<ocs::tom::CCT> cache : cat.get<CT_cache>()) {
+         auto *range = static_cast<int *>(cache.get<CCT_pe_job_slots>());
          sge_free(&range);
-         ocs::tom::set<CCT_pe_job_slots>(cache, nullptr);
+         cache.set<CCT_pe_job_slots>(nullptr);
       }
 
       // reset the cache and the messages added flag
-      ocs::tom::set<CT_cache>(cat, nullptr);
-      ocs::tom::set<CT_messages_added>(cat, false);
+      cat.set<CT_cache>(nullptr);
+      cat.set<CT_messages_added>(false);
 
       // reset information if category was rejected
-      ocs::tom::set<CT_rejected>(cat, false);
-      ocs::tom::set<CT_reservation_rejected>(cat, false);
+      cat.set<CT_rejected>(false);
+      cat.set<CT_reservation_rejected>(false);
 
       // reset cached resource contribution
-      ocs::tom::set<CT_rc_valid>(cat, false);
-      ocs::tom::set<CT_resource_contribution>(cat, 0.0);
+      cat.set<CT_rc_valid>(false);
+      cat.set<CT_resource_contribution>(0.0);
    }
 
    DRETURN_VOID;
@@ -456,12 +456,12 @@ void
 ocs::CategoryQmaster::refresh_cat_data_in_job(const ocs::tom::List<ocs::tom::CT> master_category_list,
                                               const ocs::tom::Element<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+   const uint32_t category_id = job.get<JB_category_id>();
    const auto category = master_category_list.find_first<CT_id>(category_id);
 
    SGE_ASSERT(category);
 
-   ocs::tom::set<JB_category>(job, category);
+   job.set<JB_category>(category);
    DRETURN_VOID;
 }
 

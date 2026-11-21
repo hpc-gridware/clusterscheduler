@@ -160,7 +160,7 @@ task_depend_is_finished(const ocs::tom::ConstElement<ocs::tom::JB> job, const ui
    }
 
    const auto ja_task = job_search_task(job, nullptr, task_id);
-   DRETURN(!ja_task || ocs::tom::get<JAT_status>(ja_task) == JFINISHED);
+   DRETURN(!ja_task || ja_task.get<JAT_status>() == JFINISHED);
 }
 
 
@@ -215,11 +215,11 @@ sge_task_depend_update(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::List
    }
 
    /* process the resolved predecessor list */
-   for (const auto pre : ocs::tom::get<JB_ja_ad_predecessor_list>(jep)) {
+   for (const auto pre : jep.get<JB_ja_ad_predecessor_list>()) {
       uint32_t sa, sa_task_id, amin, amax;
 
       /* locate the job id in the master list, if not found we can't do much */
-      const auto pred_jep = master_job_list.find_first<JB_job_number>(ocs::tom::get<JRE_job_number>(pre));
+      const auto pred_jep = master_job_list.find_first<JB_job_number>(pre.get<JRE_job_number>());
       if (!pred_jep) {
          continue;
       }
@@ -310,8 +310,8 @@ sge_task_depend_init(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
       DRETURN(false);
    }
 
-   if (!ocs::tom::get<JB_ja_ad_request_list>(jep).empty()) {
-      if (ocs::tom::get<JB_ja_ad_predecessor_list>(jep).empty()) {
+   if (!jep.get<JB_ja_ad_request_list>().empty()) {
+      if (jep.get<JB_ja_ad_predecessor_list>().empty()) {
          /* fast case where all predecessors are "gone" */
          if (sge_task_depend_flush(jep, alpp, gdi_session)) {
             ret = true;
@@ -371,10 +371,10 @@ sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* ensure empty hold states are consistent. if the request list is empty
       then we don't want to modify array predecessors cache */
-   if (!ocs::tom::get<JB_ja_ad_request_list>(jep).empty() &&
-       ocs::tom::get<JB_ja_ad_predecessor_list>(jep).empty()) {
-      if (ocs::tom::get<JB_ja_a_h_ids>(jep)) {
-         const auto a_h_ids = ocs::tom::get<JB_ja_a_h_ids>(jep).clone("");
+   if (!jep.get<JB_ja_ad_request_list>().empty() &&
+       jep.get<JB_ja_ad_predecessor_list>().empty()) {
+      if (jep.get<JB_ja_a_h_ids>()) {
+         const auto a_h_ids = jep.get<JB_ja_a_h_ids>().clone("");
          for (const auto range : *a_h_ids) {
             uint32_t rmin, rmax, rstep, hold_state;
             range_get_all_ids(range, &rmin, &rmax, &rstep);
@@ -385,14 +385,14 @@ sge_task_depend_flush(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
             }
          }
          /* just make sure it is null */
-         if (ocs::tom::get<JB_ja_a_h_ids>(jep)) {
+         if (jep.get<JB_ja_a_h_ids>()) {
             jep.exchange<JB_ja_a_h_ids>(nullptr);
          }
          ret = true;
       }
       /* unhold any arary held tasks that are enrolled */
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
-         uint32_t task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      for (const auto ja_task : jep.get<JB_ja_tasks>()) {
+         uint32_t task_id = ja_task.get<JAT_task_number>();
          uint32_t hold_state = job_get_hold_state(jep, task_id);
          if ((hold_state & MINUS_H_TGT_JA_AD) != 0) {
             hold_state &= ~MINUS_H_TGT_JA_AD;

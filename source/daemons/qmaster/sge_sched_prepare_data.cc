@@ -453,7 +453,7 @@ sge_process_job_event_after([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unuse
    if (action == SGE_EMA_ADD || action == SGE_EMA_MOD) {
 
       // Find the job for which we received an event (ADD and MOD)
-      job_id = ocs::tom::get<ET_intkey>(event);
+      job_id = event.get<ET_intkey>();
       // the job is modified (JAT_status), so the list is taken writable; for_read keeps the read lock semantics
       const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true);
       job = master_job_list.find_first<JB_job_number>(job_id);
@@ -466,13 +466,13 @@ sge_process_job_event_after([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unuse
 
    switch (action) {
       case SGE_EMA_MOD:
-         switch (ocs::tom::get<ET_type>(event)) {
+         switch (event.get<ET_type>()) {
             case sgeE_JOB_FINAL_USAGE: {
-               const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
+               const char *pe_task_id = event.get<ET_strkey>();
 
                if (pe_task_id == nullptr) {
                   // ignore FINAL_USAGE for a pe task here
-                  uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
+                  uint32_t ja_task_id = event.get<ET_intkey2>();
                   const auto ja_task = ocs::tom::Element<ocs::tom::JAT>(job_search_task(job, nullptr, ja_task_id));
 
                   if (!ja_task) {

@@ -172,7 +172,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       }
 
       // check the tag and the sender
-      uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
+      uint32_t ack_tag = ack->get<ACK_type>();
       if (ack_tag == ACK_SIGJOB || ack_tag == ACK_SIGQUEUE) {
          if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_MUNGE)) {
             // messages needs to come from execd running as same admin user or root
@@ -193,8 +193,8 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
       if (ack_tag == ACK_EVENT_DELIVERY) {
          // event ACKs are handled in the event master thread
          // sge_handle_event_ack stores them into the event master message queue
-         uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);
-         const uint32_t ack_ulong2 = ocs::tom::get<ACK_id2>(ack);
+         uint32_t ack_ulong = ack->get<ACK_id>();
+         const uint32_t ack_ulong2 = ack->get<ACK_id2>();
          sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
       } else {
          // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
@@ -801,10 +801,10 @@ sge_c_ack(const ocs::gdi::Packet *packet, const ocs::gdi::Task *task, monitoring
 
    // extract information from the task about the ACK; the listener built the list of ACK itself
    const auto ack = ocs::tom::ConstList<ocs::tom::ACK>::from_typed(task->data_list).front();
-   const uint32_t ack_tag = ocs::tom::get<ACK_type>(ack);
-   uint32_t ack_ulong = ocs::tom::get<ACK_id>(ack);
-   const uint32_t ack_ulong2 = ocs::tom::get<ACK_id2>(ack);
-   const char *ack_str = ocs::tom::get<ACK_str>(ack);
+   const uint32_t ack_tag = ack.get<ACK_type>();
+   uint32_t ack_ulong = ack.get<ACK_id>();
+   const uint32_t ack_ulong2 = ack.get<ACK_id2>();
+   const char *ack_str = ack.get<ACK_str>();
    DPRINTF("ack_ulong=%ld, ack_ulong2=%ld, ack_str=%s\n", ack_ulong, ack_ulong2, ack_str);
 
    switch (ack_tag) {
@@ -864,11 +864,11 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          }
 
          DPRINTF("JOB " sge_u32 ": SIGNAL ACK\n", ack_ulong);
-         ocs::tom::set<JAT_pending_signal>(jatep, 0);
+         jatep.set<JAT_pending_signal>(0);
          te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, ack_ulong, ack_ulong2, nullptr);
          dstring buffer = DSTRING_INIT;
          spool_write_object(&answer_list, spool_get_default_context(), jep,
-                            job_get_key(ocs::tom::get<JB_job_number>(jep), ack_ulong2, nullptr, &buffer),
+                            job_get_key(jep.get<JB_job_number>(), ack_ulong2, nullptr, &buffer),
                             SGE_TYPE_JOB);
          sge_dstring_free(&buffer);
          answer_list_output(&answer_list);
@@ -882,12 +882,13 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
          dstring cqueue_name = DSTRING_INIT;
          cqueue_name_split(ack_str, &cqueue_name, &host_domain, nullptr, nullptr);
 
-         ocs::tom::ConstElement<ocs::tom::CQ> cqueue = ocs::tom::find_first<CQ_name>(master_cqueue_list, sge_dstring_get_string(&cqueue_name));
+         ocs::tom::ConstElement<ocs::tom::CQ> cqueue =
+                 master_cqueue_list.find_first<CQ_name>(sge_dstring_get_string(&cqueue_name));
          sge_dstring_free(&cqueue_name);
 
          ocs::tom::Element<ocs::tom::QU> qinstance = nullptr;
          if (cqueue != nullptr) {
-            ocs::tom::ConstList<ocs::tom::QU> qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+            ocs::tom::ConstList<ocs::tom::QU> qinstance_list = cqueue.get<CQ_qinstances>();
 
             qinstance = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, sge_dstring_get_string(&host_domain));
          }
@@ -898,13 +899,13 @@ sge_c_job_ack(const char *host, const char *commproc, const uint32_t ack_tag,
             DRETURN_VOID;
          }
 
-         DPRINTF("QUEUE %s: SIGNAL ACK\n", ocs::tom::get<QU_full_name>(qinstance));
+         DPRINTF("QUEUE %s: SIGNAL ACK\n", qinstance.get<QU_full_name>());
 
-         ocs::tom::set<QU_pending_signal>(qinstance, 0);
-         te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, ocs::tom::get<QU_full_name>(qinstance));
+         qinstance.set<QU_pending_signal>(0);
+         te_delete_one_time_event(TYPE_SIGNAL_RESEND_EVENT, 0, 0, qinstance.get<QU_full_name>());
          DSTRING_STATIC(dstr, MAX_STRING_SIZE);
-         const char *key = sge_dstring_sprintf(&dstr, "%s/%s", ocs::tom::get<QU_qname>(qinstance),
-                                               static_cast<const char *>(ocs::tom::get<QU_qhostname>(qinstance)));
+         const char *key = sge_dstring_sprintf(&dstr, "%s/%s", qinstance.get<QU_qname>(),
+                                               qinstance.get<QU_qhostname>().c_str());
          spool_write_object(&answer_list, spool_get_default_context(), qinstance,
                             key, SGE_TYPE_QINSTANCE);
          answer_list_output(&answer_list);

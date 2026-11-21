@@ -99,7 +99,7 @@ qconf_delete_one(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::gdi:
    switch (target) {
       case ocs::gdi::Target::CE_LIST:
          ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-         ocs::tom::set<CE_name>(ep, name);
+         ep->set<CE_name>(name);
          ret = sge_del_centry(packet, task, *ep, answer_list, packet->user, packet->host);
          ep.reset();
          break;
@@ -615,7 +615,7 @@ ocs_qconf_write_delete_leftovers(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
    sge_dstring_free(&state->kept);
 
    for (const auto name_elem : *state->to_delete) {
-      const char *name = ocs::tom::get<ST_name>(name_elem);
+      const char *name = name_elem.get<ST_name>();
       if (parameter.is_dry()) {
          answer_list_add_sprintf(answer_list, STATUS_OK, ANSWER_QUALITY_INFO,
                                  MSG_QCONF_WRITEWOULDDELETE_S, name);
@@ -717,7 +717,7 @@ ocs_qconf_write_report_leftovers(const ocs::QConfWriteParameter &parameter, cons
    }
 
    for (const auto name_elem : *in_scope) {
-      const char *name = ocs::tom::get<ST_name>(name_elem);
+      const char *name = name_elem.get<ST_name>();
       if (name == nullptr) {
          continue;
       }
@@ -820,8 +820,8 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
     * them for every mode keeps one code path instead of two. */
    std::vector<ParsedItem> parsed;
    for (const auto item : parameter.get_items()) {
-      const char *label = ocs::tom::get<VA_variable>(item);
-      const char *text = ocs::tom::get<VA_value>(item);
+      const char *label = item.get<VA_variable>();
+      const char *text = item.get<VA_value>();
 
       if (text == nullptr) {
          /* ocs::tom::get_str() maps an empty string to a null pointer, so this is also
@@ -883,7 +883,7 @@ qconf_write_entry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *
                     ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(parameter.get_select().c_str(), ", ");
             bool all_found = true;
             for (const auto name_elem : *wanted) {
-               const char *name = ocs::tom::get<ST_name>(name_elem);
+               const char *name = name_elem.get<ST_name>();
                ocs::tom::Element<T> found;
                if constexpr (E::has_name_key) {
                   if (name != nullptr) {

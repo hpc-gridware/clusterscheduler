@@ -128,12 +128,12 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
    }
 
    /* do not process load reports from old execution daemons */
-   rversion = ocs::tom::get<REP_version>(reports.front());
+   rversion = reports.front().get<REP_version>();
    if (!ocs::Version::do_versions_match(nullptr, rversion, rhost, commproc, id)) {
       DRETURN_VOID;
    }
 
-   this_seqno = ocs::tom::get<REP_seqno>(reports.front());
+   this_seqno = reports.front().get<REP_seqno>();
 
    /* need exec host for all types of reports */
    if (!(hep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(ocs::DataStore::master_list<SGE_TYPE_EXECHOST>(),
@@ -145,7 +145,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
    /* prevent old reports being proceeded 
       frequent loggings of outdated reports can be an indication 
       of too high message traffic arriving at qmaster */
-   last_seqno = ocs::tom::get<EH_report_seqno>(hep);
+   last_seqno = hep.get<EH_report_seqno>();
 
    if ((this_seqno < last_seqno && (last_seqno - this_seqno) <= 9000) &&
        !(last_seqno > 9990 && this_seqno < 10)) {
@@ -154,7 +154,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
       DRETURN_VOID;
    }
 
-   ocs::tom::set<EH_report_seqno>(hep, this_seqno);
+   hep.set<EH_report_seqno>(this_seqno);
 
    /* RU: */
    /* tag all reschedule_unknown list entries we hope to 
@@ -164,7 +164,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
    // Does this message contain the reports of all jobs on the host? Only then the reschedule
    // unknown list entries of jobs without a report may be removed. An sge_execd of an older
    // version does not tell, its reports are handled as before.
-   bool old_execd = !ocs::tom::has<REP_complete>(reports.front());
+   bool old_execd = !reports.front().has<REP_complete>();
    bool all_jobs_reported = old_execd;
 
    /*
@@ -173,14 +173,14 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
    ** and a configuration version report
    */
    for (const auto report : reports) {
-      rep_type = ocs::tom::get<REP_type>(report);
+      rep_type = report.get<REP_type>();
 
       switch (rep_type) {
          case NUM_REP_REPORT_LOAD:
          case NUM_REP_FULL_REPORT_LOAD:
             MONITOR_ELOAD(monitor);
             /* Now handle execds load reports */
-            if (ocs::tom::get<EH_lt_heard_from>(hep) == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
+            if (hep.get<EH_lt_heard_from>() == 0 && rep_type != NUM_REP_FULL_REPORT_LOAD) {
                host_notify_about_full_load_report(hep);
             } else {
                if (!is_pb_used) {
@@ -190,28 +190,28 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
                // REP_list names no sub-type in the model; a load report holds LR elements, unpacked with their
                // descriptor, from_typed keeps the old tolerance
                sge_update_load_values(rhost, nullptr, ocs::tom::List<ocs::tom::LR>::from_typed(
-                                         ocs::tom::get<REP_list>(report)), packet->gdi_session);
+                                         report.get<REP_list>()), packet->gdi_session);
 
                if (mconf_get_simulate_execds()) {
                   const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
 
                   for (const auto shep : master_exechost_list) {
                      const auto simhostElem =
-                        ocs::tom::get<EH_consumable_config_list>(shep).find_first<CE_name>("load_report_host");
+                        shep.get<EH_consumable_config_list>().find_first<CE_name>("load_report_host");
                      if (simhostElem) {
-                        const char *real_host = ocs::tom::get<CE_stringval>(simhostElem);
+                        const char *real_host = simhostElem.get<CE_stringval>();
                         if (real_host != nullptr && sge_hostcmp(real_host, rhost) == 0) {
-                           const char *sim_host = ocs::tom::get<EH_name>(shep);
+                           const char *sim_host = shep.get<EH_name>();
 
                            DPRINTF("Copy load values of %s to simulated host %s\n", rhost, sim_host);
 
                            // REP_list names no sub-type in the model; a load report holds LR elements, unpacked
                            // with their descriptor, from_typed keeps the old tolerance
                            const auto load_list =
-                              ocs::tom::List<ocs::tom::LR>::from_typed(ocs::tom::get<REP_list>(report));
+                              ocs::tom::List<ocs::tom::LR>::from_typed(report.get<REP_list>());
                            for (const auto clp : load_list) {
-                              if (strcmp(ocs::tom::get<LR_host>(clp), SGE_GLOBAL_NAME) != 0) {
-                                 ocs::tom::set<LR_host>(clp, sim_host);
+                              if (strcmp(clp.get<LR_host>(), SGE_GLOBAL_NAME) != 0) {
+                                 clp.set<LR_host>(ocs::tom::Host(sim_host));
                               }
                            }
                            sge_update_load_values(sim_host, real_host, load_list, packet->gdi_session);
@@ -227,7 +227,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
             MONITOR_ECONF(monitor);
             // REP_list names no sub-type in the model; a configuration report holds CONF elements
             if (sge_compare_configuration(hep, ocs::tom::ConstList<ocs::tom::CONF>::from_typed(
-                                                  ocs::tom::get<REP_list>(report))) != 0) {
+                                                  report.get<REP_list>())) != 0) {
                DPRINTF("%s: configuration on host %s is not up to date\n", __func__, rhost);
                send_tag_new_conf = true;
             }
@@ -240,7 +240,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
             MONITOR_EPROC(monitor);
             // REP_list names no sub-type in the model; a processor report holds LIC elements
             ret = update_license_data(hep,
-                                      ocs::tom::ConstList<ocs::tom::LIC>::from_typed(ocs::tom::get<REP_list>(report)),
+                                      ocs::tom::ConstList<ocs::tom::LIC>::from_typed(report.get<REP_list>()),
                                       packet->gdi_session);
             if (ret) {
                ERROR(MSG_LICENCE_ERRORXUPDATINGLICENSEDATA_I, ret);
@@ -254,7 +254,7 @@ sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, ch
                ocs::tom::try_init_buffer(&pb, 1024);
             }
             process_job_report(report, hep, rhost, commproc, &pb, monitor, packet->gdi_session);
-            if (!old_execd && ocs::tom::get<REP_complete>(report)) {
+            if (!old_execd && report.get<REP_complete>()) {
                all_jobs_reported = true;
             }
             break;
@@ -314,38 +314,38 @@ update_license_data(const ocs::tom::Element<ocs::tom::EH> hep, const ocs::tom::C
    /*
    ** at the moment only the first element is evaluated
    */
-   uint32_t processors = ocs::tom::get<LIC_processors>(lp_lic.front());
+   uint32_t processors = lp_lic.front().get<LIC_processors>();
 
    /*
    ** we spool, cf. cod_update_load_values()
    */
-   if (processors != ocs::tom::get<EH_processors>(hep)) {
+   if (processors != hep.get<EH_processors>()) {
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       // set the processors attribute
-      ocs::tom::set<EH_processors>(hep, processors);
+      hep.set<EH_processors>(processors);
 
       // adapt slots value but do this only if it was not set by a manager already
       host_ensure_slots_are_defined(hep, processors);
 
-      const auto slots_complex = ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(hep, SGE_ATTR_SLOTS);
+      const auto slots_complex = hep.find_first_in_rw<EH_consumable_config_list, CE_name>(SGE_ATTR_SLOTS);
       if (!slots_complex) {
          const auto new_slots_complex =
-            ocs::tom::emplace_back_in<EH_consumable_config_list, CE_name>(hep, SGE_ATTR_SLOTS);
-         ocs::tom::set<CE_doubleval>(new_slots_complex, processors);
-         ocs::tom::set<CE_stringval>(new_slots_complex, std::to_string(processors).c_str());
+            hep.emplace_back_in<EH_consumable_config_list, CE_name>(SGE_ATTR_SLOTS);
+         new_slots_complex.set<CE_doubleval>(processors);
+         new_slots_complex.set<CE_stringval>(std::to_string(processors).c_str());
       } else {
          double val_uninitialized = std::numeric_limits<int>::max();
-         double val = ocs::tom::get<CE_doubleval>(slots_complex);
+         double val = slots_complex.get<CE_doubleval>();
 
          if (val == val_uninitialized) {
-            ocs::tom::set<CE_doubleval>(slots_complex, processors);
-            ocs::tom::set<CE_stringval>(slots_complex, std::to_string(processors).c_str());
+            slots_complex.set<CE_doubleval>(processors);
+            slots_complex.set<CE_stringval>(std::to_string(processors).c_str());
          }
       }
 
-      DPRINTF("%s has " sge_u32 " processors\n", static_cast<const char *>(ocs::tom::get<EH_name>(hep)), processors);
-      sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, ocs::tom::get<EH_name>(hep), nullptr, nullptr,
+      DPRINTF("%s has " sge_u32 " processors\n", hep.get<EH_name>().c_str(), processors);
+      sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD, 0, 0, hep.get<EH_name>(), nullptr, nullptr,
                       hep, nullptr, nullptr, true, true, gdi_session);
       answer_list_output(&answer_list);
    }

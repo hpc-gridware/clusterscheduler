@@ -95,10 +95,10 @@ attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    DENTER(TOP_LAYER);
 
    /* ---- attribute F */
-   if (ocs::tom::has<F>(qep)) {
+   if (qep.template has<F>()) {
       DPRINTF("got new %s\n", attr_name);
 
-      const char *s = ocs::tom::get<F>(qep);
+      const char *s = qep.template get<F>();
       if (s) {
          char *t;
          char *script = (char *) s;
@@ -123,7 +123,7 @@ attr_mod_procedure(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
             DRETURN(STATUS_EEXIST);
          }
       }
-      ocs::tom::set<F>(new_ep, s);
+      new_ep.template set<F>(s);
    }
 
    DRETURN(0);
@@ -223,99 +223,99 @@ attr_mod_obj_binding(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Elem
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (ocs::tom::has<AR_binding>(ar)) {
-      const auto old_binding_elem = ocs::tom::get<AR_binding>(new_ar);
-      const auto new_binding_elem = ocs::tom::get<AR_binding>(ar);
+   if (ar.has<AR_binding>()) {
+      const auto old_binding_elem = new_ar.get<AR_binding>();
+      const auto new_binding_elem = ar.get<AR_binding>();
       if (old_binding_elem == nullptr) {
          // clone() keeps an empty handle empty, as the former nullptr check did
-         ocs::tom::set<AR_binding>(new_ar, new_binding_elem.clone());
+         new_ar.set<AR_binding>(new_binding_elem.clone());
       } else {
          if (new_binding_elem != nullptr) {
             // copy new amount but only if it is not UNINITIALIZED and different from the old one
-            uint32_t new_amount = ocs::tom::get<BN_amount>(new_binding_elem);
+            uint32_t new_amount = new_binding_elem.get<BN_amount>();
             if (new_amount != static_cast<uint32_t>(-1)) {
                uint32_t old_amount = ocs::AdvanceReservation::binding_get_amount(new_ar);
                if (old_amount != new_amount) {
-                  ocs::tom::set<BN_amount>(old_binding_elem, new_amount);
+                  old_binding_elem.set<BN_amount>(new_amount);
                }
             }
 
             // copy new instance but only if it is not UNINITIALIZED and different from the old one
-            auto new_instance = static_cast<ocs::BindingInstance::Instance>(ocs::tom::get<BN_instance>(new_binding_elem));
+            auto new_instance = static_cast<ocs::BindingInstance::Instance>(new_binding_elem.get<BN_instance>());
             if (new_instance != ocs::BindingInstance::Instance::UNINITIALIZED) {
                ocs::BindingInstance::Instance old_instance = ocs::AdvanceReservation::binding_get_instance(new_ar);
                if (old_instance != new_instance) {
-                  ocs::tom::set<BN_instance>(old_binding_elem, new_instance);
+                  old_binding_elem.set<BN_instance>(new_instance);
                }
             }
 
             // copy new unit but only if it is not UNINITIALIZED and different from the old one
-            auto new_unit = static_cast<ocs::BindingUnit::Unit>(ocs::tom::get<BN_unit>(new_binding_elem));
+            auto new_unit = static_cast<ocs::BindingUnit::Unit>(new_binding_elem.get<BN_unit>());
             if (new_unit != ocs::BindingUnit::Unit::UNINITIALIZED) {
                ocs::BindingUnit::Unit old_unit = ocs::AdvanceReservation::binding_get_unit(new_ar);
                if (old_unit != new_unit) {
-                  ocs::tom::set<BN_unit>(old_binding_elem, new_unit);
+                  old_binding_elem.set<BN_unit>(new_unit);
                }
             }
 
             // copy new type but only if it is not UNINITIALIZED and different from the old one
-            auto new_type = static_cast<ocs::BindingType::Type>(ocs::tom::get<BN_new_type>(new_binding_elem));
+            auto new_type = static_cast<ocs::BindingType::Type>(new_binding_elem.get<BN_new_type>());
             if (new_type != ocs::BindingType::Type::UNINITIALIZED) {
                ocs::BindingType::Type old_type = ocs::AdvanceReservation::binding_get_type(new_ar);
                if (old_type != new_type) {
-                  ocs::tom::set<BN_new_type>(old_binding_elem, new_type);
+                  old_binding_elem.set<BN_new_type>(new_type);
                }
             }
 
             // copy new filter but only if it is not UNINITIALIZED and different from the old one
-            const char *new_filter = ocs::tom::get<BN_filter>(new_binding_elem);
+            const char *new_filter = new_binding_elem.get<BN_filter>();
             if (new_filter != nullptr) {
                std::string old_filter = ocs::AdvanceReservation::binding_get_filter(new_ar);
                if (strcmp(old_filter.c_str(), new_filter) != 0) {
-                  ocs::tom::set<BN_filter>(old_binding_elem, new_filter);
+                  old_binding_elem.set<BN_filter>(new_filter);
                }
             }
 
             // copy new sort but only if it is not UNINITIALIZED and different from the old one
-            const char *new_sort = ocs::tom::get<BN_sort>(new_binding_elem);
+            const char *new_sort = new_binding_elem.get<BN_sort>();
             if (new_sort != nullptr) {
                std::string old_sort = ocs::AdvanceReservation::binding_get_sort(new_ar);
                if (old_sort != new_sort) {
-                  ocs::tom::set<BN_sort>(old_binding_elem, new_sort);
+                  old_binding_elem.set<BN_sort>(new_sort);
                }
             }
 
             // copy new start but only if it is not UNINITIALIZED and different from the old one
-            auto new_start = static_cast<ocs::BindingStart::Start>(ocs::tom::get<BN_start>(new_binding_elem));
+            auto new_start = static_cast<ocs::BindingStart::Start>(new_binding_elem.get<BN_start>());
             if (new_start != ocs::BindingStart::Start::UNINITIALIZED) {
                ocs::BindingStart::Start old_start = ocs::AdvanceReservation::binding_get_start(new_ar);
                if (old_start != new_start) {
-                  ocs::tom::set<BN_start>(old_binding_elem, new_start);
+                  old_binding_elem.set<BN_start>(new_start);
                }
             }
 
             // copy new end but only if it is not UNINITIALIZED and different from the old one
-            auto new_stop = static_cast<ocs::BindingStop::Stop>(ocs::tom::get<BN_stop>(new_binding_elem));
+            auto new_stop = static_cast<ocs::BindingStop::Stop>(new_binding_elem.get<BN_stop>());
             if (new_stop != ocs::BindingStop::Stop::UNINITIALIZED) {
                ocs::BindingStop::Stop old_stop = ocs::AdvanceReservation::binding_get_stop(new_ar);
                if (old_stop != new_stop) {
-                  ocs::tom::set<BN_stop>(old_binding_elem, new_stop);
+                  old_binding_elem.set<BN_stop>(new_stop);
                }
             }
 
             // copy new strategy but only if it is not UNINITIALIZED and different from the old one
-            auto new_strategy = static_cast<ocs::BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(new_binding_elem));
+            auto new_strategy = static_cast<ocs::BindingStrategy::Strategy>(new_binding_elem.get<BN_strategy>());
             if (new_strategy != ocs::BindingStrategy::Strategy::UNINITIALIZED) {
                ocs::BindingStrategy::Strategy old_strategy = ocs::AdvanceReservation::binding_get_strategy(new_ar);
                if (old_strategy != new_strategy) {
-                  ocs::tom::set<BN_strategy>(old_binding_elem, new_strategy);
+                  old_binding_elem.set<BN_strategy>(new_strategy);
                }
             }
          }
 
          // if the new binding has no amount, we remove binding completely
          if (ocs::AdvanceReservation::binding_get_amount(new_ar) == 0) {
-            ocs::tom::set<AR_binding>(new_ar, nullptr);
+            new_ar.set<AR_binding>(nullptr);
          }
       }
 
@@ -355,8 +355,8 @@ multiple_occurances(ocs::tom::ListPtr<ocs::tom::AN> *alpp,
    }
 
    for (const auto ep1 : lp1) {
-      const char *s = ocs::tom::get<F>(ep1);
-      if (ocs::tom::find_first<F>(lp2, s)) {
+      const char *s = ep1.template get<F>();
+      if (lp2.template find_first<F>(s)) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_MULTIPLE_OCCUR_SSSS,
                   (F == US_name) ? MSG_OBJ_USERSET : MSG_JOB_PROJECT, s, obj_name, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

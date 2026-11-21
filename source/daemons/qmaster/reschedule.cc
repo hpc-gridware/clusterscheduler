@@ -190,7 +190,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
     * Check if host is still in unknown state
     */
    for (const auto qep : master_list) {
-      const auto qinstance = ocs::tom::get<CQ_qinstances>(qep).find_first<QU_qhostname>(ocs::tom::Host(hostname));
+      const auto qinstance = qep.get<CQ_qinstances>().find_first<QU_qhostname>(ocs::tom::Host(hostname));
 
       if (qinstance) {
          if (!qinstance_state_is_unknown(qinstance)) {
@@ -327,7 +327,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
    const char *hostname;
    int ret = 0;
 
-   job_number = ocs::tom::get<JB_job_number>(jep);
+   job_number = jep.get<JB_job_number>();
 
    /*
     * if jatep is nullptr then reschedule all tasks of this job
@@ -335,7 +335,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
    if (jatep) {
       next_jatep = jatep;
    } else {
-      next_jatep = ocs::tom::get<JB_ja_tasks>(jep).front();
+      next_jatep = jep.get<JB_ja_tasks>().front();
    }
 
    while (next_jatep) {
@@ -350,7 +350,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
          next_jatep = this_jatep.next();
       }
 
-      ocs::tom::ConstList<ocs::tom::JG> granted_qs = ocs::tom::get<JAT_granted_destin_identifier_list>(this_jatep);
+      ocs::tom::ConstList<ocs::tom::JG> granted_qs = this_jatep.get<JAT_granted_destin_identifier_list>();
       const auto first_granted_queue = granted_qs.front();
 
       /*
@@ -360,7 +360,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
          continue;
       }
 
-      task_number = ocs::tom::get<JAT_task_number>(this_jatep);
+      task_number = this_jatep.get<JAT_task_number>();
 
       if (job_is_array(jep)) {
          snprintf(mail_ids, sizeof(mail_ids), sge_u32"." sge_u32, job_number, task_number);
@@ -379,10 +379,10 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
       if (ep && object_has_type(ep, ocs::tom::EH::descriptor.e)) {
          hep = ocs::tom::Element<ocs::tom::EH>::from_typed(ep);   // object_has_type() checked it
          qep = nullptr;
-         hostname = ocs::tom::get<EH_name>(hep);
+         hostname = hep.get<EH_name>();
       } else if (ep && object_has_type(ep, ocs::tom::QU::descriptor.e)) {
          qep = ocs::tom::Element<ocs::tom::QU>::from_typed(ep);   // object_has_type() checked it
-         hostname = ocs::tom::get<QU_qhostname>(qep);
+         hostname = qep.get<QU_qhostname>();
          hep = ocs::tom::Element<ocs::tom::EH>(
             host_list_locate(ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>(), hostname));
       } else {
@@ -398,8 +398,8 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        *    - PE job where none of the tasks is running in queue/host (RESCHEDULE_SLAVE is true)
        */
       {
-         const char *the_queuename = (qep ? ocs::tom::get<QU_full_name>(qep) : nullptr);
-         const char *the_hostname = (hep ? static_cast<const char *>(ocs::tom::get<EH_name>(hep)) : nullptr);
+         const char *the_queuename = (qep ? qep.get<QU_full_name>() : nullptr);
+         const char *the_hostname = (hep ? static_cast<const char *>(hep.get<EH_name>()) : nullptr);
 
          /*
           * If RESCHEDULE_SLAVE is set then
@@ -412,8 +412,8 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
             bool one_matched = false;
 
             for (const auto granted_q : granted_qs) {
-               if ((qep && strcmp(ocs::tom::get<JG_qname>(granted_q), the_queuename) == 0) ||
-                   (hep && sge_hostcmp(ocs::tom::get<JG_qhostname>(granted_q), the_hostname) == 0)) {
+               if ((qep && strcmp(granted_q.get<JG_qname>(), the_queuename) == 0) ||
+                   (hep && sge_hostcmp(granted_q.get<JG_qhostname>(), the_hostname) == 0)) {
                   one_matched = true;
                   break;
                }
@@ -422,8 +422,8 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
                continue;
             }
          } else {
-            if ((qep && strcmp(ocs::tom::get<JG_qname>(first_granted_queue), the_queuename)) ||
-                (hep && sge_hostcmp(ocs::tom::get<JG_qhostname>(first_granted_queue), the_hostname))) {
+            if ((qep && strcmp(first_granted_queue.get<JG_qname>(), the_queuename)) ||
+                (hep && sge_hostcmp(first_granted_queue.get<JG_qhostname>(), the_hostname))) {
                continue;
             }
          }
@@ -433,7 +433,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * Is this job tagged as restartable?
        * If the forced flag is set we will also reschedule this job!
        */
-      if (!force && ocs::tom::get<JB_restart>(jep) == 2) {
+      if (!force && jep.get<JB_restart>() == 2) {
          if (mconf_get_enable_reschedule_kill()) {
             INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
             sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
@@ -450,7 +450,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * qsh, qlogin, qrsh, qrlogin-jobs won't be rescheduled automatically
        * (immediate jobs (qsub -now y ...) will be rescheduled)
        */
-      job_now = ocs::tom::get<JB_type>(jep);
+      job_now = jep.get<JB_type>();
       if (JOB_TYPE_IS_QSH(job_now) || JOB_TYPE_IS_QLOGIN(job_now)
           || JOB_TYPE_IS_QRSH(job_now) || JOB_TYPE_IS_QRLOGIN(job_now)) {
          INFO(MSG_RU_INTERACTIVEJOB_SSS, mail_ids, mail_type, mail_type);
@@ -462,23 +462,23 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * ckpt-jobs will only be rescheduled when the "when" attribute
        * contains an appropriate flag or when the forced flag is set
        */
-      if (!force && ocs::tom::get<JB_checkpoint_name>(jep)) {
+      if (!force && jep.get<JB_checkpoint_name>()) {
          const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
-         const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, ocs::tom::get<JB_checkpoint_name>(jep));
+         const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, jep.get<JB_checkpoint_name>());
          if (ckpt_ep) {
             uint32_t flags;
 
-            flags = ocs::tom::get<JB_checkpoint_attr>(jep);
+            flags = jep.get<JB_checkpoint_attr>();
             if (!flags) {
-               flags = sge_parse_checkpoint_attr(ocs::tom::get<CK_when>(ckpt_ep));
+               flags = sge_parse_checkpoint_attr(ckpt_ep.get<CK_when>());
             }
             if (!(flags & CHECKPOINT_AT_AUTO_RES)) {
-               INFO(MSG_RU_CKPTNOTVALID_SSS, mail_ids, ocs::tom::get<CK_name>(ckpt_ep), mail_type);
+               INFO(MSG_RU_CKPTNOTVALID_SSS, mail_ids, ckpt_ep.get<CK_name>(), mail_type);
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
          } else {
-            INFO(MSG_RU_CKPTEXIST_SS, mail_ids, ocs::tom::get<CK_name>(ckpt_ep));
+            INFO(MSG_RU_CKPTEXIST_SS, mail_ids, ckpt_ep.get<CK_name>());
             answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
             continue;
          }
@@ -488,7 +488,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * Jobs which were registered for deletion will
        * not be automatically rescheduled (exception: forced flag)
        */
-      if (!force && (ocs::tom::get<JAT_state>(this_jatep) & JDELETED)) {
+      if (!force && (this_jatep.get<JAT_state>() & JDELETED)) {
          INFO(MSG_RU_INDELETEDSTATE_SS, mail_type, mail_ids);
          answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
          continue;
@@ -498,17 +498,17 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * If the user did not use the -r flag during submit
        * we have to check the queue default (exception: forced flag)
        */
-      if (!force && ocs::tom::get<JB_restart>(jep) == 0) {
+      if (!force && jep.get<JB_restart>() == 0) {
          ocs::tom::ConstElement<ocs::tom::QU> queue;
 
-         if (qep && !strcmp(ocs::tom::get<JG_qname>(first_granted_queue), ocs::tom::get<QU_full_name>(qep))) {
+         if (qep && !strcmp(first_granted_queue.get<JG_qname>(), qep.get<QU_full_name>())) {
             queue = qep;
          } else {
             queue = cqueue_list_locate_qinstance(
                     ocs::DataStore::master_list<SGE_TYPE_CQUEUE>(),
-                    ocs::tom::get<JG_qname>(first_granted_queue));
+                    first_granted_queue.get<JG_qname>());
          }
-         if (!queue || !ocs::tom::get<QU_rerun>(queue)) {
+         if (!queue || !queue.get<QU_rerun>()) {
             if (mconf_get_enable_reschedule_kill()) {
                INFO(MSG_RU_REAPING_NOT_RESTARTABLE_SS, mail_type, mail_ids);
                sge_commit_job(jep, this_jatep, nullptr, COMMIT_ST_FINISHED_FAILED_EE,
@@ -516,7 +516,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
                continue;
 
             } else {
-               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : ocs::tom::get<QU_full_name>(queue));
+               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : queue.get<QU_full_name>());
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
@@ -527,12 +527,12 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        * Is this task already contained in the list?
        * Append it if necessary
        */
-      if (hep && !sge_hostcmp(ocs::tom::get<JG_qhostname>(first_granted_queue), ocs::tom::get<EH_name>(hep))) {
+      if (hep && !sge_hostcmp(first_granted_queue.get<JG_qhostname>(), hep.get<EH_name>())) {
          host = hep;
       } else {
          host = ocs::tom::Element<ocs::tom::EH>(host_list_locate(ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>(),
-                                                                 ocs::tom::get<JG_qhostname>(first_granted_queue)));
-         hostname = ocs::tom::get<JG_qhostname>(first_granted_queue);
+                                                                 first_granted_queue.get<JG_qhostname>()));
+         hostname = first_granted_queue.get<JG_qhostname>();
       }
       if (get_from_reschedule_unknown_list(host, job_number, task_number)) {
          found = 1;
@@ -552,7 +552,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
          uint32_t mail_options;
          char mail_action[256];
 
-         mail_options = ocs::tom::get<JB_mail_options>(jep);
+         mail_options = jep.get<JB_mail_options>();
          if (force) {
             sge_strlcpy(mail_action, MSG_RU_FORCEDR, sizeof(mail_action));
          } else {
@@ -562,7 +562,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
             char mail_subject[1024];
             char mail_body[1024];
 
-            ocs::tom::ConstList<ocs::tom::MR> mail_users = ocs::tom::get<JB_mail_list>(jep);
+            ocs::tom::ConstList<ocs::tom::MR> mail_users = jep.get<JB_mail_list>();
             snprintf(mail_subject, sizeof(mail_subject), MSG_RU_MAILSUB_SS, mail_type, mail_ids);
             snprintf(mail_body, sizeof(mail_body), MSG_RU_MAILBODY_SSSS, mail_type, mail_ids, hostname, mail_action, mail_type);
             cull_mail(QMASTER, mail_users, mail_subject, mail_body, MSG_RU_MAILTYPE);
@@ -578,11 +578,11 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
        */
       if (!found) {
           /* JR */
-         uint32_t state = ocs::tom::get<JAT_state>(this_jatep);
+         uint32_t state = this_jatep.get<JAT_state>();
 
-         ocs::tom::set<JAT_job_restarted>(this_jatep, 1);
+         this_jatep.set<JAT_job_restarted>(1);
 
-         if (is_manual && host && ocs::tom::get<EH_lt_heard_from>(host) != 0) {
+         if (is_manual && host && host.get<EH_lt_heard_from>() != 0) {
             // The new run must not start before the old run is gone. The old run is killed with
             // the next report of the job from its host. A host which is unknown does not report,
             // waiting for it would block the job, e.g. after qmod -r of the jobs of a host which
@@ -594,15 +594,15 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
              */
             CLEARBIT(JDEFERRED_REQ, state);
          }
-         ocs::tom::set<JAT_state>(this_jatep, state);
+         this_jatep.set<JAT_state>(state);
 
          auto pseudo_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
          {
-            ocs::tom::set<JR_job_number>(pseudo_jr, job_number);
-            ocs::tom::set<JR_ja_task_number>(pseudo_jr, task_number);
-            ocs::tom::set<JR_failed>(pseudo_jr, SSTATE_AGAIN);
-            ocs::tom::set<JR_err_str>(pseudo_jr, (char *) MSG_RU_JR_ERRSTR);
-            ocs::tom::set<JR_queue_name>(pseudo_jr, ocs::tom::get<JG_qname>(first_granted_queue));
+            pseudo_jr->set<JR_job_number>(job_number);
+            pseudo_jr->set<JR_ja_task_number>(task_number);
+            pseudo_jr->set<JR_failed>(SSTATE_AGAIN);
+            pseudo_jr->set<JR_err_str>((char *) MSG_RU_JR_ERRSTR);
+            pseudo_jr->set<JR_queue_name>(first_granted_queue.get<JG_qname>());
 
             // Identify who terminated this run for the accounting record:
             //   - manual qmod -r: <caller_user>@<caller_host>
@@ -616,7 +616,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
                } else {
                   sge_dstring_sprintf(&dstr_deleted_by, "qmaster@%s", component_get_qualified_hostname());
                }
-               ocs::tom::set<JR_deleted_by>(pseudo_jr, sge_dstring_get_string(&dstr_deleted_by));
+               pseudo_jr->set<JR_deleted_by>(sge_dstring_get_string(&dstr_deleted_by));
             }
 
             sge_job_exit(*pseudo_jr, jep, this_jatep, monitor, gdi_session);
@@ -653,17 +653,17 @@ add_to_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const
 
    ocs::tom::Element<ocs::tom::RU> ruep = nullptr;
    if (host) {
-      ruep = ocs::tom::emplace_back_in<EH_reschedule_unknown_list, RU_job_number>(host, job_number);
+      ruep = host.emplace_back_in<EH_reschedule_unknown_list, RU_job_number>(job_number);
 
       DPRINTF("RU: ADDED " sge_u32"." sge_u32" to EH_reschedule_unknown_list of host " SFN "\n",
-              job_number, task_number, static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+              job_number, task_number, host.get<EH_name>().c_str());
 
-      ocs::tom::set<RU_task_number>(ruep, task_number);
-      ocs::tom::set<RU_state>(ruep, state);
+      ruep.set<RU_task_number>(task_number);
+      ruep.set<RU_state>(state);
       {
          ocs::tom::ListPtr<ocs::tom::AN> answer_list;
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                         0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr, host, nullptr, nullptr, true, true, gdi_session);
+                         0, 0, host.get<EH_name>(), nullptr, nullptr, host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
    }
@@ -687,9 +687,9 @@ static ocs::tom::Element<ocs::tom::RU>
 get_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const uint32_t job_number,
                                  const uint32_t task_number) {
    DENTER(TOP_LAYER);
-   for (const auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
-      if (job_number == ocs::tom::get<RU_job_number>(ruep)
-          && task_number == ocs::tom::get<RU_task_number>(ruep)) {
+   for (const auto ruep : host.get<EH_reschedule_unknown_list>()) {
+      if (job_number == ruep.get<RU_job_number>()
+          && task_number == ruep.get<RU_task_number>()) {
          DRETURN(ruep);
       }
    }
@@ -716,19 +716,19 @@ delete_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, 
    DENTER(TOP_LAYER);
 
    bool changed = false;
-   ocs::tom::List<ocs::tom::RU> rulp = ocs::tom::get<EH_reschedule_unknown_list>(host);
+   ocs::tom::List<ocs::tom::RU> rulp = host.get<EH_reschedule_unknown_list>();
    if (rulp) {
       auto next = rulp.front();
       while (next) {
          const auto thiz = next;
-         uint32_t state = ocs::tom::get<RU_state>(thiz);
+         uint32_t state = thiz.get<RU_state>();
 
          next = thiz.next();
 
          if ((state == RESCHEDULE_SKIP_JR_REMOVE && all_jobs_reported)
              || state == RESCHEDULE_HANDLE_JR_REMOVE) {
-            uint32_t job_number = ocs::tom::get<RU_job_number>(thiz);
-            uint32_t task_number = ocs::tom::get<RU_task_number>(thiz);
+            uint32_t job_number = thiz.get<RU_job_number>();
+            uint32_t task_number = thiz.get<RU_task_number>();
 
             DPRINTF("RU: REMOVED " sge_u32"." sge_u32" FROM RU LIST\n", job_number, task_number);
             rulp.erase(thiz);
@@ -745,7 +745,7 @@ delete_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, 
          ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
          sge_event_spool(&answer_list, 0, sgeE_EXECHOST_MOD,
-                         0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
+                         0, 0, host.get<EH_name>(), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
@@ -767,14 +767,14 @@ reschedule_clear_deferred_start(const ocs::tom::Element<ocs::tom::JB> jep, const
                                 const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   uint32_t state = ocs::tom::get<JAT_state>(jatep);
+   uint32_t state = jatep.get<JAT_state>();
    if (state & JDEFERRED_REQ) {
-      uint32_t job_number = ocs::tom::get<JB_job_number>(jep);
-      uint32_t task_number = ocs::tom::get<JAT_task_number>(jatep);
+      uint32_t job_number = jep.get<JB_job_number>();
+      uint32_t task_number = jatep.get<JAT_task_number>();
 
       DPRINTF("RU: deferred start of " sge_u32 "." sge_u32 " ends\n", job_number, task_number);
       CLEARBIT(JDEFERRED_REQ, state);
-      ocs::tom::set<JAT_state>(jatep, state);
+      jatep.set<JAT_state>(state);
 
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
       sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, job_number, task_number, nullptr, nullptr,
@@ -802,10 +802,10 @@ reschedule_clear_deferred_starts_of_host(const lListElem *raw_host, const uint64
 
    // the caller passes a host of the master list, checked here once
    const ocs::tom::ConstElement<ocs::tom::EH> host(raw_host);
-   for (const auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
+   for (const auto ruep : host.get<EH_reschedule_unknown_list>()) {
       if (is_master_host_entry(ruep)) {
-         uint32_t job_number = ocs::tom::get<RU_job_number>(ruep);
-         uint32_t task_number = ocs::tom::get<RU_task_number>(ruep);
+         uint32_t job_number = ruep.get<RU_job_number>();
+         uint32_t task_number = ruep.get<RU_task_number>();
          clear_deferred_start_of_task(job_number, task_number, gdi_session);
       }
    }
@@ -825,7 +825,7 @@ reschedule_clear_deferred_starts_of_host(const lListElem *raw_host, const uint64
 static bool
 is_master_host_entry(const ocs::tom::ConstElement<ocs::tom::RU> ruep) {
    DENTER(TOP_LAYER);
-   uint32_t state = ocs::tom::get<RU_state>(ruep);
+   uint32_t state = ruep.get<RU_state>();
    bool ret = state == RESCHEDULE_SKIP_JR_REMOVE || state == RESCHEDULE_SKIP_JR_SEND_ACK
               || state == RESCHEDULE_SKIP_JR;
    DRETURN(ret);
@@ -846,8 +846,8 @@ has_master_host_entry(const ocs::tom::ConstList<ocs::tom::RU> rulp, const uint32
                       const uint32_t task_number) {
    DENTER(TOP_LAYER);
    for (const auto ruep : rulp) {
-      if (ocs::tom::get<RU_job_number>(ruep) == job_number
-          && ocs::tom::get<RU_task_number>(ruep) == task_number && is_master_host_entry(ruep)) {
+      if (ruep.get<RU_job_number>() == job_number
+          && ruep.get<RU_task_number>() == task_number && is_master_host_entry(ruep)) {
          DRETURN(true);
       }
    }
@@ -867,7 +867,7 @@ clear_deferred_start_of_task(uint32_t job_number, uint32_t task_number, uint64_t
    const auto jep = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(true)
                        .find_first<JB_job_number>(job_number);
    if (jep) {
-      const auto jatep = ocs::tom::get<JB_ja_tasks>(jep).find_first<JAT_task_number>(task_number);
+      const auto jatep = jep.get<JB_ja_tasks>().find_first<JAT_task_number>(task_number);
       if (jatep) {
          reschedule_clear_deferred_start(jep, jatep, gdi_session);
       }
@@ -892,21 +892,21 @@ update_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, const
    DENTER(TOP_LAYER);
    if (host) {
       bool changed = false;
-      for (const auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
-         uint32_t state = ocs::tom::get<RU_state>(ruep);
+      for (const auto ruep : host.get<EH_reschedule_unknown_list>()) {
+         uint32_t state = ruep.get<RU_state>();
 
          if (state == RESCHEDULE_SKIP_JR_SEND_ACK) {
-            ocs::tom::set<RU_state>(ruep, RESCHEDULE_SKIP_JR_REMOVE);
+            ruep.set<RU_state>(RESCHEDULE_SKIP_JR_REMOVE);
             changed = true;
          } else if (state == RESCHEDULE_SKIP_JR) {
-            ocs::tom::set<RU_state>(ruep, RESCHEDULE_SKIP_JR_SEND_ACK);
+            ruep.set<RU_state>(RESCHEDULE_SKIP_JR_SEND_ACK);
             changed = true;
          }
       }
 
       if (changed) {
          ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-         sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD, 0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
+         sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD, 0, 0, host.get<EH_name>(), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
          answer_list_output(&answer_list);
       }
@@ -946,17 +946,17 @@ skip_restarted_job(const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::C
    DENTER(TOP_LAYER);
 
    uint32_t ret = 0;
-   for (const auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
-      if (ocs::tom::get<RU_job_number>(ruep) == job_number
-          && ocs::tom::get<RU_task_number>(ruep) == task_number) {
-         uint32_t state = ocs::tom::get<RU_state>(ruep);
+   for (const auto ruep : host.get<EH_reschedule_unknown_list>()) {
+      if (ruep.get<RU_job_number>() == job_number
+          && ruep.get<RU_task_number>() == task_number) {
+         uint32_t state = ruep.get<RU_state>();
 
          if (state == RESCHEDULE_SKIP_JR_REMOVE) {
-            ocs::tom::set<RU_state>(ruep, RESCHEDULE_SKIP_JR);
+            ruep.set<RU_state>(RESCHEDULE_SKIP_JR);
             ret = 2;
          } else if (state == RESCHEDULE_SKIP_JR_SEND_ACK
                     || state == RESCHEDULE_SKIP_JR) {
-            if (ocs::tom::get<JR_state>(job_report) == JEXITING) {
+            if (job_report.get<JR_state>() == JEXITING) {
                ret = 3;
             } else {
                ret = 1;
@@ -987,12 +987,12 @@ update_reschedule_unknown_list_for_job(const ocs::tom::Element<ocs::tom::EH> hos
    DENTER(TOP_LAYER);
 
    if (host) {
-      for (const auto ruep : ocs::tom::get<EH_reschedule_unknown_list>(host)) {
-         if (ocs::tom::get<RU_job_number>(ruep) == job_number
-             && ocs::tom::get<RU_task_number>(ruep) == task_number) {
-            if (ocs::tom::get<RU_state>(ruep) == RESCHEDULE_HANDLE_JR_WAIT) {
+      for (const auto ruep : host.get<EH_reschedule_unknown_list>()) {
+         if (ruep.get<RU_job_number>() == job_number
+             && ruep.get<RU_task_number>() == task_number) {
+            if (ruep.get<RU_state>() == RESCHEDULE_HANDLE_JR_WAIT) {
 
-               ocs::tom::set<RU_state>(ruep, RESCHEDULE_HANDLE_JR_REMOVE);
+               ruep.set<RU_state>(RESCHEDULE_HANDLE_JR_REMOVE);
                DPRINTF("RU: DECREMENTED PE-TAG OF " sge_u32 "." sge_u32"\n", job_number, task_number);
             }
             break;
@@ -1049,12 +1049,12 @@ update_reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> host) {
    DENTER(TOP_LAYER);
 
    if (host) {
-      const char *hostname = ocs::tom::get<EH_name>(host);
-      uint32_t timeout = ocs::tom::get<EH_reschedule_unknown>(host);
+      const char *hostname = host.get<EH_name>();
+      uint32_t timeout = host.get<EH_reschedule_unknown>();
 
       auto conf_entry = ocs_get_configuration_entry_by_name(hostname, "reschedule_unknown");
       if (conf_entry) {
-         const char *value = ocs::tom::get<CF_value>(conf_entry);
+         const char *value = conf_entry->get<CF_value>();
 
          if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, value, nullptr, 0) == 0) {
             ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, hostname, value);
@@ -1068,7 +1068,7 @@ update_reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> host) {
 
       DPRINTF("%s: reschedule_unknown timeout for host " SFN " is " sge_u32 "\n", __func__, hostname, timeout);
 
-      ocs::tom::set<EH_reschedule_unknown>(host, timeout);
+      host.set<EH_reschedule_unknown>(timeout);
    } else {
       DPRINTF("%s: host == nullptr\n", __func__);
    }
@@ -1094,21 +1094,22 @@ reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> hep) {
    uint32_t timeout = 0;
    const char *host = nullptr;
 
-   host = ocs::tom::get<EH_name>(hep);
-   timeout = ocs::tom::get<EH_reschedule_unknown>(hep);
+   host = hep.get<EH_name>();
+   timeout = hep.get<EH_reschedule_unknown>();
 
    /* cache reschedule_unknown parameter in execd host to prevent host name resolving */
    if (mconf_is_new_config() || not_init) {
       if (auto conf_entry = ocs_get_configuration_entry_by_name(host, "reschedule_unknown"); conf_entry) {
-         if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, ocs::tom::get<CF_value>(conf_entry), nullptr, 0) == 0) {
-            ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, host, ocs::tom::get<CF_value>(conf_entry));
+         if (parse_ulong_val(nullptr, &timeout, ocs::CEntry::Type::TIME, conf_entry->get<CF_value>(), nullptr,
+                             0) == 0) {
+            ERROR(MSG_OBJ_RESCHEDULEUNKN_SS, host, conf_entry->get<CF_value>());
             timeout = 0;
          }
       }
 
       DPRINTF("%s: reschedule_unknown timeout for host %s is " sge_u32"\n", __func__, host, timeout);
 
-      ocs::tom::set<EH_reschedule_unknown>(hep, timeout);
+      hep.set<EH_reschedule_unknown>(timeout);
 
       not_init = 0;
    }
@@ -1141,7 +1142,7 @@ reschedule_unknown_trigger(lListElem *raw_hep) {
    timeout = sge_gmt32_to_gmt64(reschedule_unknown_timeout(hep));
 
    if (timeout) {
-      const char *host = ocs::tom::get<EH_name>(hep);
+      const char *host = hep.get<EH_name>();
       uint64_t when = sge_get_gmt64() + timeout + add_time;
       te_event_t ev = nullptr;
 
@@ -1181,12 +1182,12 @@ remove_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, 
                                     const uint32_t task_number, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    if (host) {
-      ocs::tom::List<ocs::tom::RU> unknown_list = ocs::tom::get<EH_reschedule_unknown_list>(host);
+      ocs::tom::List<ocs::tom::RU> unknown_list = host.get<EH_reschedule_unknown_list>();
       ocs::tom::Element<ocs::tom::RU> elem;
 
       for (const auto ruep : unknown_list) {
-         if (ocs::tom::get<RU_job_number>(ruep) == job_number &&
-             ocs::tom::get<RU_task_number>(ruep) == task_number) {
+         if (ruep.get<RU_job_number>() == job_number &&
+             ruep.get<RU_task_number>() == task_number) {
             elem = ruep;
             break;
          }
@@ -1195,7 +1196,7 @@ remove_from_reschedule_unknown_list(const ocs::tom::Element<ocs::tom::EH> host, 
       if (elem) {
          unknown_list.erase(elem);
          sge_event_spool(nullptr, 0, sgeE_EXECHOST_MOD,
-                         0, 0, ocs::tom::get<EH_name>(host), nullptr, nullptr,
+                         0, 0, host.get<EH_name>(), nullptr, nullptr,
                          host, nullptr, nullptr, true, true, gdi_session);
       }
    }

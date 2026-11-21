@@ -70,8 +70,8 @@ namespace {
 
       auto taken_entries = std::move(entries);
       auto elem = ocs::tom::ElementPtr<ocs::tom::US>::create();
-      ocs::tom::set<US_name>(elem, name);
-      ocs::tom::set<US_entries>(elem, std::move(taken_entries));
+      elem->set<US_name>(name);
+      elem->set<US_entries>(std::move(taken_entries));
 
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       // the on_success hook of access lists leaves nothing for after the request
@@ -81,8 +81,8 @@ namespace {
       why.clear();
       if (ret != STATUS_OK) {
          for (const auto aep : *alp) {
-            if (ocs::tom::get<AN_status>(aep) != STATUS_OK && ocs::tom::get<AN_text>(aep) != nullptr) {
-               why = ocs::tom::get<AN_text>(aep);
+            if (aep.get<AN_status>() != STATUS_OK && aep.get<AN_text>() != nullptr) {
+               why = aep.get<AN_text>();
                break;
             }
          }
@@ -158,7 +158,7 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
 
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    for (const auto list_arg : *lists) {
-      const char *list_name = ocs::tom::get<US_name>(list_arg);
+      const char *list_name = list_arg.get<US_name>();
       const auto stored = master_userset_list.find_first<US_name>(list_name);
 
       if (stored == nullptr && !add) {
@@ -172,12 +172,12 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
        * changed and once as already in (or not in) the list. */
       ocs::tom::ListPtr<ocs::tom::UE> entries;
       if (stored) {
-         entries = ocs::tom::get<US_entries>(stored).clone("");
+         entries = stored.get<US_entries>().clone("");
       }
       // the lists are created with the first entry, as the untyped emplace_back() created them
       ocs::tom::ListPtr<ocs::tom::UE> changed;
       for (const auto user_arg : *users) {
-         const char *user_name = ocs::tom::get<UE_name>(user_arg);
+         const char *user_name = user_arg.get<UE_name>();
          const bool present = static_cast<bool>(entries->find_first<UE_name>(user_name));
          if (add && !present) {
             if (!entries) {
@@ -210,7 +210,7 @@ qconf_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *task, moni
 
       // report in the order the users were named
       for (const auto user_arg : *users) {
-         const char *user_name = ocs::tom::get<UE_name>(user_arg);
+         const char *user_name = user_arg.get<UE_name>();
          const auto carried = changed->find_first<UE_name>(user_name);
          uint32_t status;
          const char *text;
@@ -322,8 +322,8 @@ qconf_hgroup_member_from_procedure(ocs::gdi::Packet *packet, ocs::gdi::Task *tas
       begin = end + 1;
    }
    auto delta = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
-   ocs::tom::set<HGRP_name>(delta, group.c_str());
-   ocs::tom::set<HGRP_host_list>(delta, std::move(hosts));
+   delta->set<HGRP_name>(ocs::tom::Host(group.c_str()));
+   delta->set<HGRP_host_list>(std::move(hosts));
 
    const bool add = (parameter.get_arg(ocs::QConfActionParameter::ARG_ADD) == ocs::QConfActionParameter::ARG_TRUE);
    ocs::tom::ListPtr<ocs::tom::AN> alp;

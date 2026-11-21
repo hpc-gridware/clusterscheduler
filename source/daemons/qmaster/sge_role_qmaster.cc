@@ -77,9 +77,9 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    // ---- RL_name: copy and validate the role name on add
    if (add) {
       // a nullptr name is refused by verify_obj_name() below
-      ocs::tom::copy_if_present<RL_name>(new_ep, ep);
+      new_ep.copy_if_present<RL_name>(ep);
    }
-   const char *role_name = ocs::tom::get<RL_name>(new_ep);
+   const char *role_name = new_ep.get<RL_name>();
 
    if (add && verify_obj_name(alpp, role_name, MAX_VERIFY_STRING, MSG_OBJ_ROLE) != STATUS_OK) {
       // answer list already filled by verify_obj_name()
@@ -87,13 +87,13 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    // ---- RL_enabled
-   ocs::tom::copy_if_present<RL_enabled>(new_ep, ep);
+   new_ep.copy_if_present<RL_enabled>(ep);
 
    // ---- RL_user_list: verify all referenced usersets exist, then apply
-   if (ocs::tom::has<RL_user_list>(ep)) {
+   if (ep.has<RL_user_list>()) {
       normalize_sublist<RL_user_list>(ep);
       const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
-      if (userset_list_validate_acl_list(ocs::tom::get<RL_user_list>(ep), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_acl_list(ep.get<RL_user_list>(), alpp, master_userset_list) != STATUS_OK) {
          // answer list already filled by userset_list_validate_acl_list()
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -101,17 +101,17 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    // ---- RL_parent_role_list: reject self-reference and unknown parents, then apply
-   if (ocs::tom::has<RL_parent_role_list>(ep)) {
+   if (ep.has<RL_parent_role_list>()) {
       normalize_sublist<RL_parent_role_list>(ep);
       const auto master_role_list = ocs::DataStore::master_list<SGE_TYPE_RL>();
-      for (const ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(ep)) {
-         const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
+      for (const ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ep.get<RL_parent_role_list>()) {
+         const char *parent_name = parent_ep.get<ST_name>();
          if (strcmp(parent_name, role_name) == 0) {
             ERROR(MSG_ROLE_SELF_REFERENCE_S, role_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
          }
-         if (!ocs::tom::find_first<RL_name>(master_role_list, parent_name)) {
+         if (!master_role_list.find_first<RL_name>(parent_name)) {
             ERROR(MSG_ROLE_PARENT_DOESNOTEXIST_SS, parent_name, role_name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
@@ -127,8 +127,8 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
    }
 
    // ---- RL_perm_list: validate syntax before applying
-   if (ocs::tom::has<RL_perm_list>(ep)) {
-      const char *perm_str = ocs::tom::get<RL_perm_list>(ep);
+   if (ep.has<RL_perm_list>()) {
+      const char *perm_str = ep.get<RL_perm_list>();
       if (perm_str != nullptr && strcmp(perm_str, "NONE") != 0) {
          if (ocs::Role::PermRuleList rules; !ocs::Role::parse_perm_list(perm_str, rules, alpp)) {
             // answer list already filled by parse_perm_list()
@@ -136,7 +136,7 @@ role_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::
          }
       }
    }
-   ocs::tom::copy_if_present<RL_perm_list>(new_ep, ep);
+   new_ep.copy_if_present<RL_perm_list>(ep);
 
    DRETURN(0);
 }
@@ -160,12 +160,12 @@ role_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    const bool dbret = spool_write_object(&answer_list, spool_get_default_context(), ep,
-                                   ocs::tom::get<RL_name>(ep), SGE_TYPE_RL);
+                                   ep.get<RL_name>(), SGE_TYPE_RL);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<RL_name>(ep));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, ep.get<RL_name>());
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -190,7 +190,7 @@ role_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Ele
              [[maybe_unused]] ocs_gdi_post_processing *post, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const char *role_name = ocs::tom::get<RL_name>(ep);
+   const char *role_name = ep.get<RL_name>();
    sge_add_event(0, old_ep ? sgeE_RL_MOD : sgeE_RL_ADD, 0, 0, role_name, nullptr, nullptr, ep, packet->gdi_session);
 
    DRETURN(0);
@@ -221,13 +221,13 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (!ocs::tom::has<RL_name>(ep)) {
+   if (!ep.has<RL_name>()) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<RL_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   const char *role_name = ocs::tom::get<RL_name>(ep);
+   const char *role_name = ep.get<RL_name>();
    const ocs::tom::ConstList<ocs::tom::RL> role_list(*master_role_list);
    if (!role_list.find_first<RL_name>(role_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_ROLE, role_name);
@@ -237,8 +237,8 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
 
    // refuse deletion if this role is still a parent of another role
    for (const auto other_role : role_list) {
-      if (ocs::tom::find_first_in<RL_parent_role_list, ST_name>(other_role, role_name)) {
-         ERROR(MSG_ROLE_STILL_REFERENCED_INPARENT_SS, role_name, ocs::tom::get<RL_name>(other_role));
+      if (other_role.find_first_in<RL_parent_role_list, ST_name>(role_name)) {
+         ERROR(MSG_ROLE_STILL_REFERENCED_INPARENT_SS, role_name, other_role.get<RL_name>());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }

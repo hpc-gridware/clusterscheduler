@@ -131,7 +131,7 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, cons
    }
    auto temp_conf_list = ocs::tom::ListPtr<ocs::tom::SC>::create("sched config");
 
-   ocs::tom::set<SC_weight_tickets_override>(confp, sconf_get_weight_tickets_override());
+   confp.set<SC_weight_tickets_override>(sconf_get_weight_tickets_override());
 
    const auto new_conf = temp_conf_list->push_back(confp.clone());
 

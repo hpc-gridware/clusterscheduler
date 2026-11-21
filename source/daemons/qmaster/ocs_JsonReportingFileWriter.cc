@@ -86,9 +86,9 @@ namespace ocs {
 
       // get the job category string
       const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
-      const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+      const uint32_t category_id = job.get<JB_category_id>();
       const auto category = master_category_list.find_first<CT_id>(category_id);
-      const char *category_string = ocs::tom::get<CT_str>(category);
+      const char *category_string = category.get<CT_str>();
 
       // get accounting data
       rapidjson::StringBuffer json_buffer;
@@ -171,8 +171,8 @@ namespace ocs {
 
       // a PE task given: report scaled usage of the pe_task,
       // otherwise the (possibly aggregated) scaled usage on the ja_task
-      const ocs::tom::ConstList<ocs::tom::UA> primary_usage = pe_task ? ocs::tom::get<PET_scaled_usage>(pe_task)
-                                                                     : ocs::tom::get<JAT_scaled_usage_list>(ja_task);
+      const ocs::tom::ConstList<ocs::tom::UA> primary_usage = pe_task ? pe_task.get<PET_scaled_usage>()
+                                                                     : ja_task.get<JAT_scaled_usage_list>();
 
       // aggregation only applies to ja_task-level records
       const bool aggregate = !pe_task && aggregate_pe_tasks;
@@ -186,8 +186,8 @@ namespace ocs {
             break;
          }
          if (aggregate) {
-            for (const auto pe_task_iter : ocs::tom::get<JAT_task_list>(ja_task)) {
-               if (ocs::tom::get<PET_scaled_usage>(pe_task_iter).find_first<UA_name>(name.c_str())) {
+            for (const auto pe_task_iter : ja_task.get<JAT_task_list>()) {
+               if (pe_task_iter.get<PET_scaled_usage>().find_first<UA_name>(name.c_str())) {
                   any_data = true;
                   break;
                }
@@ -207,13 +207,13 @@ namespace ocs {
       writer.StartObject();
       write_json(writer, "time", sge_get_gmt64());
       write_json(writer, "type", "online_usage");
-      write_json(writer, "job_number", ocs::tom::get<JB_job_number>(job));
-      int task_number = job_is_array(job) ? (int) ocs::tom::get<JAT_task_number>(ja_task) : 0;
+      write_json(writer, "job_number", job.get<JB_job_number>());
+      int task_number = job_is_array(job) ? (int) ja_task.get<JAT_task_number>() : 0;
       write_json(writer, "task_number", task_number);
       // Always emit pe_taskid so the JSONL record carries the full sge_job
       // primary key; "NONE" is the classic-format sentinel for ja_task-level
       // records (and for jobs without a parallel environment).
-      write_json(writer, "pe_taskid", pe_task ? ocs::tom::get<PET_id>(pe_task) : NONE_STR);
+      write_json(writer, "pe_taskid", pe_task ? pe_task.get<PET_id>() : NONE_STR);
 
       writer.Key("usage");
       writer.StartObject();
@@ -223,15 +223,15 @@ namespace ocs {
 
          const auto u = primary_usage.find_first<UA_name>(name.c_str());
          if (u) {
-            total = ocs::tom::get<UA_value>(u);
+            total = u.get<UA_value>();
             found_any = true;
          }
 
          if (aggregate) {
-            for (const auto pe_task_iter : ocs::tom::get<JAT_task_list>(ja_task)) {
-               const auto pu = ocs::tom::get<PET_scaled_usage>(pe_task_iter).find_first<UA_name>(name.c_str());
+            for (const auto pe_task_iter : ja_task.get<JAT_task_list>()) {
+               const auto pu = pe_task_iter.get<PET_scaled_usage>().find_first<UA_name>(name.c_str());
                if (pu) {
-                  total += ocs::tom::get<UA_value>(pu);
+                  total += pu.get<UA_value>();
                   found_any = true;
                }
             }
@@ -281,8 +281,8 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "new_job");
 
-         write_json(writer, "submission_time", ocs::tom::get<JB_submission_time>(job));
-         write_json(writer, "job_number", ocs::tom::get<JB_job_number>(job));
+         write_json(writer, "submission_time", job.get<JB_submission_time>());
+         write_json(writer, "job_number", job.get<JB_job_number>());
          // A new_job record describes the whole job, before any ja_task/pe_task
          // exists. The dbwriter's sge_job primary key is
          // (j_job_number, j_task_number, j_pe_taskid); emit the "whole job"
@@ -291,13 +291,13 @@ namespace ocs {
          // accounting record's primary key.
          write_json(writer, "task_number", 0);
          write_json(writer, "pe_taskid", NONE_STR);
-         write_json(writer, "job_name", ocs::tom::get<JB_job_name>(job));
-         write_json(writer, "owner", ocs::tom::get<JB_owner>(job));
-         write_json(writer, "group", ocs::tom::get<JB_group>(job));
-         write_json(writer, "project", ocs::tom::get<JB_project>(job));
-         write_json(writer, "department", ocs::tom::get<JB_department>(job));
-         write_json(writer, "account", ocs::tom::get<JB_account>(job));
-         write_json(writer, "priority", ocs::tom::get<JB_priority>(job));
+         write_json(writer, "job_name", job.get<JB_job_name>());
+         write_json(writer, "owner", job.get<JB_owner>());
+         write_json(writer, "group", job.get<JB_group>());
+         write_json(writer, "project", job.get<JB_project>());
+         write_json(writer, "department", job.get<JB_department>());
+         write_json(writer, "account", job.get<JB_account>());
+         write_json(writer, "priority", job.get<JB_priority>());
 
          writer.EndObject();
          create_record(stringBuffer);
@@ -337,7 +337,7 @@ namespace ocs {
          rapidjson::StringBuffer stringBuffer;
          rapidjson::Writer<rapidjson::StringBuffer> writer(stringBuffer);
 
-         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+         uint32_t job_id = job.get<JB_job_number>();
 
          /* set ja_task_id:
           * -1, if we don't have a ja_task
@@ -347,21 +347,21 @@ namespace ocs {
          int ja_task_id = -1;
          if (ja_task != nullptr) {
             if (job_is_array(job)) {
-               ja_task_id = (int) ocs::tom::get<JAT_task_number>(ja_task);
+               ja_task_id = (int) ja_task.get<JAT_task_number>();
             } else {
                ja_task_id = 0;
             }
          }
          const char *pe_task_id = nullptr;
          if (pe_task != nullptr) {
-            pe_task_id = ocs::tom::get_or_empty<PET_id>(pe_task);
+            pe_task_id = pe_task.get_or_empty<PET_id>();
          }
 
          uint32_t jstate;
          if (pe_task != nullptr) {
-            jstate = ocs::tom::get<PET_status>(pe_task);
+            jstate = pe_task.get<PET_status>();
          } else if (ja_task != nullptr) {
-            jstate = ocs::tom::get<JAT_status>(ja_task);
+            jstate = ja_task.get<JAT_status>();
          } else {
             jstate = 0;
          }
@@ -389,14 +389,14 @@ namespace ocs {
          write_json(writer, "user", user);
          write_json(writer, "host", host);
          // write_json(writer, "state_time", state_time); man page: reserved field for later
-         write_json(writer, "submission_time", ocs::tom::get<JB_submission_time>(job));
-         write_json(writer, "job_name", ocs::tom::get<JB_job_name>(job));
-         write_json(writer, "owner", ocs::tom::get<JB_owner>(job));
-         write_json(writer, "group", ocs::tom::get<JB_group>(job));
-         write_json(writer, "project", ocs::tom::get<JB_project>(job));
-         write_json(writer, "department", ocs::tom::get<JB_department>(job));
-         write_json(writer, "account", ocs::tom::get<JB_account>(job));
-         write_json(writer, "priority", ocs::tom::get<JB_priority>(job));
+         write_json(writer, "submission_time", job.get<JB_submission_time>());
+         write_json(writer, "job_name", job.get<JB_job_name>());
+         write_json(writer, "owner", job.get<JB_owner>());
+         write_json(writer, "group", job.get<JB_group>());
+         write_json(writer, "project", job.get<JB_project>());
+         write_json(writer, "department", job.get<JB_department>());
+         write_json(writer, "account", job.get<JB_account>());
+         write_json(writer, "priority", job.get<JB_priority>());
          write_json(writer, "message", message);
 
          writer.EndObject();
@@ -430,12 +430,12 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "host");
 
-         write_json(writer, "hostname", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+         write_json(writer, "hostname", static_cast<const char *>(host.get<EH_name>()));
          write_json(writer, "report_time", report_time);
          write_json(writer, "state", "X");
 
-         if (write_load_values(writer, ocs::tom::get<EH_load_list>(host),
-                           ocs::tom::get<EH_merged_report_variables>(host))) {
+         if (write_load_values(writer, host.get<EH_load_list>(),
+                           host.get<EH_merged_report_variables>())) {
 
             // create the record only when we really wrote any load values
             writer.EndObject();
@@ -473,13 +473,13 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "host_consumable");
 
-         write_json(writer, "hostname", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+         write_json(writer, "hostname", static_cast<const char *>(host.get<EH_name>()));
          write_json(writer, "report_time", report_time);
          write_json(writer, "state", "X");
 
          if (write_consumables(writer,
-                           ocs::tom::get<EH_resource_utilization>(host),
-                           ocs::tom::get<EH_consumable_config_list>(host),
+                           host.get<EH_resource_utilization>(),
+                           host.get<EH_consumable_config_list>(),
                            host, job)) {
             // create the record only when we really wrote any consumables
             writer.EndObject();
@@ -514,8 +514,8 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "queue");
 
-         write_json(writer, "qname", ocs::tom::get<QU_qname>(queue));
-         write_json(writer, "hostname", static_cast<const char *>(ocs::tom::get<QU_qhostname>(queue)));
+         write_json(writer, "qname", queue.get<QU_qname>());
+         write_json(writer, "hostname", static_cast<const char *>(queue.get<QU_qhostname>()));
          write_json(writer, "report_time", report_time);
 
          DSTRING_STATIC(dstr, 10);
@@ -562,8 +562,8 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "queue_consumable");
 
-         write_json(writer, "qname", ocs::tom::get<QU_qname>(queue));
-         write_json(writer, "hostname", static_cast<const char *>(ocs::tom::get<QU_qhostname>(queue)));
+         write_json(writer, "qname", queue.get<QU_qname>());
+         write_json(writer, "hostname", static_cast<const char *>(queue.get<QU_qhostname>()));
          write_json(writer, "report_time", report_time);
 
          DSTRING_STATIC(dstr, 10);
@@ -572,8 +572,8 @@ namespace ocs {
          }
 
          if (write_consumables(writer,
-                           ocs::tom::get<QU_resource_utilization>(queue),
-                           ocs::tom::get<QU_consumable_config_list>(queue),
+                           queue.get<QU_resource_utilization>(),
+                           queue.get<QU_consumable_config_list>(),
                            host, job)) {
             // create the record only when we really wrote any consumables
             writer.EndObject();
@@ -607,9 +607,9 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "new_ar");
 
-         write_json(writer, "ar_submission_time", ocs::tom::get<AR_submission_time>(ar));
-         write_json(writer, "ar_number", ocs::tom::get<AR_id>(ar));
-         write_json(writer, "ar_owner", ocs::tom::get<AR_owner>(ar));
+         write_json(writer, "ar_submission_time", ar.get<AR_submission_time>());
+         write_json(writer, "ar_number", ar.get<AR_id>());
+         write_json(writer, "ar_owner", ar.get<AR_owner>());
 
          writer.EndObject();
          create_record(stringBuffer);
@@ -642,22 +642,22 @@ namespace ocs {
          write_json(writer, "time", sge_get_gmt64());
          write_json(writer, "type", "ar_attribute");
 
-         write_json(writer, "ar_submission_time", ocs::tom::get<AR_submission_time>(ar));
-         write_json(writer, "ar_number", ocs::tom::get<AR_id>(ar));
-         write_json(writer, "ar_name", ocs::tom::get<AR_name>(ar));
-         write_json(writer, "ar_account", ocs::tom::get<AR_account>(ar));
+         write_json(writer, "ar_submission_time", ar.get<AR_submission_time>());
+         write_json(writer, "ar_number", ar.get<AR_id>());
+         write_json(writer, "ar_name", ar.get<AR_name>());
+         write_json(writer, "ar_account", ar.get<AR_account>());
          // the key is left out for an AR which did not request a project
-         write_json(writer, "ar_project", ocs::tom::get<AR_project>(ar));
-         write_json(writer, "ar_start_time", ocs::tom::get<AR_start_time>(ar));
-         write_json(writer, "ar_end_time", ocs::tom::get<AR_end_time>(ar));
-         write_json(writer, "ar_granted_pe", ocs::tom::get<AR_pe>(ar));
+         write_json(writer, "ar_project", ar.get<AR_project>());
+         write_json(writer, "ar_start_time", ar.get<AR_start_time>());
+         write_json(writer, "ar_end_time", ar.get<AR_end_time>());
+         write_json(writer, "ar_granted_pe", ar.get<AR_pe>());
          // the key is left out for an AR which did not request an allocation rule of its own
-         write_json(writer, "ar_allocation_rule", ocs::tom::get<AR_allocation_rule>(ar));
+         write_json(writer, "ar_allocation_rule", ar.get<AR_allocation_rule>());
 
          writer.Key("ar_granted_resources");
          writer.StartObject();
-         for (ocs::tom::ConstElement<ocs::tom::CE> ep : ocs::tom::get<AR_resource_list>(ar)) {
-            write_json(writer, ocs::tom::get<CE_name>(ep), ocs::tom::get<CE_stringval>(ep));
+         for (ocs::tom::ConstElement<ocs::tom::CE> ep : ar.get<AR_resource_list>()) {
+            write_json(writer, ep.get<CE_name>(), ep.get<CE_stringval>());
          }
          writer.EndObject();
 
@@ -696,11 +696,11 @@ namespace ocs {
          write_json(writer, "type", "ar_log");
 
          write_json(writer, "ar_state_change_time", report_time);
-         write_json(writer, "ar_submission_time", ocs::tom::get<AR_submission_time>(ar));
-         write_json(writer, "ar_number", ocs::tom::get<AR_id>(ar));
+         write_json(writer, "ar_submission_time", ar.get<AR_submission_time>());
+         write_json(writer, "ar_number", ar.get<AR_id>());
 
          DSTRING_STATIC(dstr_state, 10);
-         ar_state2dstring((ar_state_t) ocs::tom::get<AR_state>(ar), &dstr_state);
+         ar_state2dstring((ar_state_t) ar.get<AR_state>(), &dstr_state);
          write_json(writer, "ar_state", sge_dstring_get_string(&dstr_state));
 
          write_json(writer, "ar_event", ar_get_string_from_event(event));
@@ -728,9 +728,9 @@ namespace ocs {
       if (ar == nullptr) {
          ret = false;
       } else {
-         for (ocs::tom::ConstElement<ocs::tom::JG> ep : ocs::tom::get<AR_granted_slots>(ar)) {
-            const char *qinstance_name = ocs::tom::get<JG_qname>(ep);
-            uint32_t slots = ocs::tom::get<JG_slots>(ep);
+         for (ocs::tom::ConstElement<ocs::tom::JG> ep : ar.get<AR_granted_slots>()) {
+            const char *qinstance_name = ep.get<JG_qname>();
+            uint32_t slots = ep.get<JG_slots>();
             DSTRING_STATIC(dstr_cqueue, MAX_STRING_SIZE);
             DSTRING_STATIC(dstr_host, MAX_STRING_SIZE);
 
@@ -772,8 +772,8 @@ namespace ocs {
       write_json(writer, "type", "ar_acct");
 
       write_json(writer, "ar_termination_time", report_time);
-      write_json(writer, "ar_submission_time", ocs::tom::get<AR_submission_time>(ar));
-      write_json(writer, "ar_number", ocs::tom::get<AR_id>(ar));
+      write_json(writer, "ar_submission_time", ar.get<AR_submission_time>());
+      write_json(writer, "ar_number", ar.get<AR_id>());
       write_json(writer, "ar_qname", cqueue_name);
       write_json(writer, "ar_hostname", hostname);
       write_json(writer, "ar_slots", slots);
@@ -851,10 +851,10 @@ namespace ocs {
          writer.StartObject();
 
          for (const auto variable : variables) {
-            const char *name = ocs::tom::get<STU_name>(variable);
+            const char *name = variable.get<STU_name>();
             const auto load = load_list.find_first<HL_name>(name);
             if (load) {
-               write_json(writer, name, ocs::tom::get<HL_value>(load));
+               write_json(writer, name, load.get<HL_value>());
             }
          }
          writer.EndObject();
@@ -882,9 +882,9 @@ namespace ocs {
 
       bool consumables_initialized = false;
 
-      const auto report_variables = ocs::tom::get<EH_merged_report_variables>(host);
+      const auto report_variables = host.get<EH_merged_report_variables>();
       for (const auto cep : actual) {
-         const char *name = ocs::tom::get<RUE_name>(cep);
+         const char *name = cep.get<RUE_name>();
          bool log_variable = true;
 
          /*

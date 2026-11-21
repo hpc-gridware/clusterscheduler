@@ -135,34 +135,34 @@ calendar_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<o
 
    /* ---- CAL_name cannot get changed - we just ignore it */
    if (add == 1) {
-      cal_name = ocs::tom::get<CAL_name>(cep);
+      cal_name = cep.get<CAL_name>();
       if (verify_obj_name(alpp, cal_name, MAX_VERIFY_STRING, "calendar") != STATUS_OK)
          goto ERROR;
-      ocs::tom::set<CAL_name>(new_cal, cal_name);
+      new_cal.set<CAL_name>(cal_name);
    } else {
-      cal_name = ocs::tom::get<CAL_name>(new_cal);
+      cal_name = new_cal.get<CAL_name>();
    }
 
    /* ---- CAL_year_calendar */
-   ocs::tom::copy_if_present<CAL_year_calendar>(new_cal, cep);
-   if (ocs::tom::has<CAL_year_calendar>(cep)) {
+   new_cal.copy_if_present<CAL_year_calendar>(cep);
+   if (cep.has<CAL_year_calendar>()) {
       if (!calendar_parse_year(new_cal, alpp))
          goto ERROR;
    }
 
    /* ---- CAL_week_calendar */
-   ocs::tom::copy_if_present<CAL_week_calendar>(new_cal, cep);
-   if (ocs::tom::has<CAL_week_calendar>(cep)) {
+   new_cal.copy_if_present<CAL_week_calendar>(cep);
+   if (cep.has<CAL_week_calendar>()) {
       if (!calendar_parse_week(new_cal, alpp))
          goto ERROR;
    }
 
    if (add != 1) {
       for (const auto cqueue : master_cqueue_list) {
-         for (ocs::tom::ConstElement<ocs::tom::QU> queue : ocs::tom::get<CQ_qinstances>(cqueue)) {
-            const char *q_cal = ocs::tom::get<QU_calendar>(queue);
+         for (ocs::tom::ConstElement<ocs::tom::QU> queue : cqueue.get<CQ_qinstances>()) {
+            const char *q_cal = queue.get<QU_calendar>();
             if ((q_cal != nullptr) && (strcmp(cal_name, q_cal) == 0)) {
-               if (sge_ar_list_conflicts_with_calendar(alpp, ocs::tom::get<QU_full_name>(queue), new_cal,
+               if (sge_ar_list_conflicts_with_calendar(alpp, queue.get<QU_full_name>(), new_cal,
                                                        master_ar_list)) {
                   goto ERROR;
                }
@@ -196,12 +196,12 @@ calendar_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    bool dbret = spool_write_object(&answer_list, spool_get_default_context(), cep,
-                                   ocs::tom::get<CAL_name>(cep), SGE_TYPE_CALENDAR);
+                                   cep.get<CAL_name>(), SGE_TYPE_CALENDAR);
    answer_list_output(&answer_list);
 
    if (!dbret) {
       answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_PERSISTENCE_WRITE_FAILED_S, ocs::tom::get<CAL_name>(cep));
+                              MSG_PERSISTENCE_WRITE_FAILED_S, cep.get<CAL_name>());
    }
 
    DRETURN(dbret ? 0 : 1);
@@ -233,12 +233,12 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    }
 
    /* ep is no calendar element, if cep has no CAL_name */
-   if (!ocs::tom::has<CAL_name>(cep)) {
+   if (!cep.has<CAL_name>()) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CAL_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   cal_name = ocs::tom::get<CAL_name>(cep);
+   cal_name = cep.get<CAL_name>();
 
    if (!master_calendar_list.find_first<CAL_name>(cal_name)) {
       ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CALENDAR, cal_name);
@@ -255,7 +255,7 @@ sge_del_calendar(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
          const ocs::tom::ConstElement<ocs::tom::AN> answer =
                  ocs::tom::ConstList<ocs::tom::AN>(local_answer_list).front();
 
-         ERROR("denied: %s", ocs::tom::get<AN_text>(answer));
+         ERROR("denied: %s", answer.get<AN_text>());
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC,
                          ANSWER_QUALITY_ERROR);
          local_answer_list.reset();
@@ -367,7 +367,7 @@ calendar_update_queue_states(ocs::gdi::Packet *packet, ocs::gdi::Task *task, con
                              const ocs::tom::ConstElement<ocs::tom::CAL> old_cep, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   const char *cal_name = ocs::tom::get<CAL_name>(cep);
+   const char *cal_name = cep.get<CAL_name>();
    sge_add_event(0, old_cep != nullptr ? sgeE_CALENDAR_MOD : sgeE_CALENDAR_ADD, 0, 0, cal_name, nullptr, nullptr, cep,
                  packet->gdi_session);
 

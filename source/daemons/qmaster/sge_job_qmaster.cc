@@ -311,7 +311,7 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
       const auto jsv_millis =
               (end_time.tv_sec - start_time.tv_sec) * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000;
       if (jsv_millis > jsv_threshold || jsv_threshold == 0) {
-         INFO(MSG_JSV_THRESHOLD_UU, ocs::tom::get<JB_job_number>(jep), static_cast<uint32_t>(jsv_millis));
+         INFO(MSG_JSV_THRESHOLD_UU, jep->get<JB_job_number>(), static_cast<uint32_t>(jsv_millis));
       }
       if (!lret) {
          DRETURN(STATUS_EUNKNOWN);
@@ -335,23 +335,23 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    // open a spooling transaction
    if (!spool_transaction(&spool_answer_list, spool_get_default_context(), STC_begin)) {
       answer_list_output(&spool_answer_list);
-      ERROR(MSG_JOB_NOWRITE_U, ocs::tom::get<JB_job_number>(job));
+      ERROR(MSG_JOB_NOWRITE_U, job.get<JB_job_number>());
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EDISK);
    }
 
    // write script to file separately,  we do not want to hold it in memory
-   if (ocs::tom::get<JB_script_file>(job) && !JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job))) {
-      if (!spool_write_script(&spool_answer_list, ocs::tom::get<JB_job_number>(job), job)) {
+   if (job.get<JB_script_file>() && !JOB_TYPE_IS_BINARY(job.get<JB_type>())) {
+      if (!spool_write_script(&spool_answer_list, job.get<JB_job_number>(), job)) {
          spool_transaction(&spool_answer_list, spool_get_default_context(), STC_rollback);
          answer_list_output(&spool_answer_list);
-         ERROR(MSG_JOB_NOWRITE_U, ocs::tom::get<JB_job_number>(job));
+         ERROR(MSG_JOB_NOWRITE_U, job.get<JB_job_number>());
          answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EDISK);
       }
    }
-   ocs::tom::set<JB_script_ptr>(job, nullptr);
-   ocs::tom::set<JB_script_size>(job, 0);
+   job.set<JB_script_ptr>(nullptr);
+   job.set<JB_script_size>(0);
 
    // create or assign a category
    lList** master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
@@ -364,15 +364,15 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
 
    // Handle job spooling and event
    if (!sge_event_spool(alpp, 0, sgeE_JOB_ADD,
-                        ocs::tom::get<JB_job_number>(job), 0, nullptr, nullptr, nullptr,
+                        job.get<JB_job_number>(), 0, nullptr, nullptr, nullptr,
                         job, nullptr, nullptr, true, true, packet->gdi_session)) {
       spool_transaction(&spool_answer_list, spool_get_default_context(), STC_rollback);
       answer_list_output(&spool_answer_list);
-      ERROR(MSG_JOB_NOWRITE_U, ocs::tom::get<JB_job_number>(job));
+      ERROR(MSG_JOB_NOWRITE_U, job.get<JB_job_number>());
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      if ((ocs::tom::get<JB_exec_file>(job) != nullptr)) {
-         unlink(ocs::tom::get<JB_exec_file>(job));
-         ocs::tom::set<JB_exec_file>(job, nullptr);
+      if ((job.get<JB_exec_file>() != nullptr)) {
+         unlink(job.get<JB_exec_file>());
+         job.set<JB_exec_file>(nullptr);
       }
       DRETURN(STATUS_EDISK);
    }
@@ -385,10 +385,10 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    }
 
    if (!job_is_array(job)) {
-      DPRINTF("Added Job " sge_u32"\n", ocs::tom::get<JB_job_number>(job));
+      DPRINTF("Added Job " sge_u32"\n", job.get<JB_job_number>());
    } else {
       std::tie(start, end, step) = job_get_submit_task_ids(job);
-      DPRINTF("Added JobArray " sge_u32"." sge_u32"-" sge_u32":" sge_u32"\n", ocs::tom::get<JB_job_number>(job), start,
+      DPRINTF("Added JobArray " sge_u32"." sge_u32"-" sge_u32":" sge_u32"\n", job.get<JB_job_number>(), start,
               end, step);
    }
 
@@ -412,22 +412,22 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
    /*
    ** immediate jobs trigger scheduling immediately
    */
-   if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
+   if (JOB_TYPE_IS_IMMEDIATE(job.get<JB_type>())) {
       sge_deliver_events_immediately(EV_ID_SCHEDD);
    }
 
    if (!job_is_array(job)) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SUBMITJOB_US,
-               ocs::tom::get<JB_job_number>(job), ocs::tom::get<JB_job_name>(job));
+               job.get<JB_job_number>(), job.get<JB_job_name>());
    } else {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SUBMITJOBARRAY_UUUUS, ocs::tom::get<JB_job_number>(job),
-               start, end, step, ocs::tom::get<JB_job_name>(job));
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_SUBMITJOBARRAY_UUUUS, job.get<JB_job_number>(),
+               start, end, step, job.get<JB_job_name>());
    }
    answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
 
    /* do job logging */
    ocs::ReportingFileWriter::create_new_job_records(nullptr, job);
-   ocs::ReportingFileWriter::create_job_logs(nullptr, ocs::tom::get<JB_submission_time>(job),
+   ocs::ReportingFileWriter::create_job_logs(nullptr, job.get<JB_submission_time>(),
                                              JL_PENDING, packet->user, packet->host,
                                              ocs::tom::ConstElement<ocs::tom::JR>(), job,
                                              ocs::tom::ConstElement<ocs::tom::JAT>(),
@@ -490,8 +490,8 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if (ocs::tom::has<ID_force>(idep)) {
-      if (ocs::tom::get<ID_force>(idep) == 1) {
+   if (idep.has<ID_force>()) {
+      if (idep.get<ID_force>() == 1) {
          forced = true;
       }
    } else {
@@ -514,8 +514,8 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    all_users_flag = ((sub_command & ocs::gdi::SubCommand::ALL_USERS) == ocs::gdi::SubCommand::ALL_USERS);
 
    /* Did we get a user list or something else ? */
-   if (ocs::tom::has<ID_user_list>(idep)) {
-      user_list = ocs::tom::get<ID_user_list>(idep);
+   if (idep.has<ID_user_list>()) {
+      user_list = idep.get<ID_user_list>();
    } else {
       CRITICAL(MSG_NMNOTINELEMENT_S, "ID_user_list");
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -525,7 +525,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    /* Did we get a user list? */
    if (!user_list.empty()) {
       for (const auto user : user_list) {
-         if (strcmp(ocs::tom::get<ST_name>(user), "*") == 0) {
+         if (strcmp(user.get<ST_name>(), "*") == 0) {
             all_users_flag = true;
          }
       }
@@ -534,7 +534,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       }
    }
 
-   jid_str = ocs::tom::get<ID_str>(idep);
+   jid_str = idep.get<ID_str>();
 
    /* Did we get a valid jobid? */
    if (!all_jobs_flag && (jid_str != nullptr) && (strcmp(jid_str, "0") != 0)) {
@@ -552,7 +552,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       if (!user_list) {
          user_list = idep.get_or_create<ID_user_list>("user list");
       }
-      ocs::tom::set<ST_name>(current_user, packet->user);
+      current_user->set<ST_name>(packet->user);
       user_list.push_back(std::move(current_user));
       user_list_flag = true;
    }
@@ -594,7 +594,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       if (job_where && !job.matches(job_where)) {
          continue;
       }
-      job_number = ocs::tom::get<JB_job_number>(job);
+      job_number = job.get<JB_job_number>();
 
       /* Does user have privileges to delete the job/task? */
       if (job_check_owner(packet, job_number, master_job_list)) {
@@ -606,7 +606,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       }
 
       njobs += sge_delete_all_tasks_of_job(packet, alpp, job, &r_start, &r_end, &step,
-                                           ocs::tom::get<ID_ja_structure>(idep),
+                                           idep.get<ID_ja_structure>(),
                                            &alltasks, &deleted_tasks, start_time, monitor, forced,
                                            &deletion_time_reached);
 
@@ -617,7 +617,7 @@ sge_gdi_del_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
    if (!njobs && !deleted_tasks) {
       empty_job_list_filter(packet, alpp, 0, user_list_flag, user_list, jid_flag,
-                            jid_flag ? ocs::tom::get<ID_str>(idep) : "0", all_users_flag, all_jobs_flag,
+                            jid_flag ? idep.get<ID_str>() : "0", all_users_flag, all_jobs_flag,
                             alltasks == 0 ? 1 : 0, r_start, r_end, step);
       DRETURN(STATUS_EEXIST);
    }
@@ -649,8 +649,8 @@ is_pe_master_task_send(const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
    bool all_slaves_arrived = true;
 
-   for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
-      if (ocs::tom::get<JG_tag_slave_job>(gdil_ep) != 0) {
+   for (const auto gdil_ep : jatep.get<JAT_granted_destin_identifier_list>()) {
+      if (gdil_ep.get<JG_tag_slave_job>() != 0) {
          all_slaves_arrived = false;
          break;
       }
@@ -687,12 +687,12 @@ all_slave_jobs_finished(const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
     * The first entry of gdil is the master task - ignore it.
     * Only the first gdil_ep of a host is tagged.
     */
-   const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   const auto gdil = jatep.get<JAT_granted_destin_identifier_list>();
    for (const auto gdil_ep : gdil) {
-      const char *host = ocs::tom::get<JG_qhostname>(gdil_ep);
+      const char *host = gdil_ep.get<JG_qhostname>();
       const auto first_at_host = gdil.find_first<JG_qhostname>(ocs::tom::Host(host));
       if (gdil_ep == first_at_host && gdil_ep != gdil.front()) {
-         if (ocs::tom::get<JG_tag_slave_job>(gdil_ep) == 1) {
+         if (gdil_ep.get<JG_tag_slave_job>() == 1) {
             all_slaves_finished = false;
             break;
          }
@@ -715,16 +715,16 @@ all_slave_jobs_finished(const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
 void
 tag_all_host_gdil(const ocs::tom::Element<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
-   const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   const auto gdil = jatep.get<JAT_granted_destin_identifier_list>();
 
    for (const auto gdil_ep : gdil) {
-      const char *host = ocs::tom::get<JG_qhostname>(gdil_ep);
+      const char *host = gdil_ep.get<JG_qhostname>();
       /* only the first gdil_ep for a host is tagged
        * if the pe job spawns multiple queues there might be multiple entries per host
        */
       const auto first_at_host = gdil.find_first<JG_qhostname>(ocs::tom::Host(host));
       if (gdil_ep == first_at_host) {
-         ocs::tom::set<JG_tag_slave_job>(gdil_ep, 1);
+         gdil_ep.set<JG_tag_slave_job>(1);
       }
    }
    DRETURN_VOID;
@@ -748,10 +748,10 @@ void
 ack_all_slaves(const uint32_t job_id, const uint32_t ja_task_id, const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                const uint32_t type) {
    DENTER(TOP_LAYER);
-   const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
+   const auto gdil = ja_task.get<JAT_granted_destin_identifier_list>();
 
    for (const auto gdil_ep : gdil) {
-      const char *host = ocs::tom::get<JG_qhostname>(gdil_ep);
+      const char *host = gdil_ep.get<JG_qhostname>();
       /* we only signal a slave host once
        * if the pe job spawns multiple queues there might be multiple entries per host
        */
@@ -823,7 +823,7 @@ empty_job_list_filter(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom
                sge_dstring_append(&user_list_string, "...");
                break;
             }
-            sge_dstring_append(&user_list_string, ocs::tom::get<ST_name>(user));
+            sge_dstring_append(&user_list_string, user.get<ST_name>());
             umax--;
          }
       }
@@ -887,7 +887,7 @@ job_list_filter(const ocs::tom::ConstList<ocs::tom::ST> user_list, const char *j
    if (user_list) {
       DPRINTF("Add all users given in userlist to filter\n");
       for (const auto user : user_list) {
-         const char *user_name = ocs::tom::get<ST_name>(user);
+         const char *user_name = user.get<ST_name>();
          auto new_where = ocs::is_pattern(user_name) ? ocs::tom::field<JB_owner>().like(user_name)
                                                      : ocs::tom::field<JB_owner>() == user_name;
          if (!job_filter) {
@@ -979,7 +979,7 @@ get_rid_of_schedd_job_messages(const uint32_t job_number) {
 
    if (master_job_schedd_info_list) {
       const auto sme = master_job_schedd_info_list.front();
-      const auto mes_list = ocs::tom::get<SME_message_list>(sme);
+      const auto mes_list = sme.get<SME_message_list>();
 
       /*
       ** remove all messages for job_number
@@ -988,7 +988,7 @@ get_rid_of_schedd_job_messages(const uint32_t job_number) {
       while (const auto mes = next) {
          next = mes.next();
 
-         const auto job_number_list = ocs::tom::get<MES_job_number_list>(mes);
+         const auto job_number_list = mes.get<MES_job_number_list>();
          if (const auto job_ulng = job_number_list.find_first<ULNG_value>(job_number)) {
             /*
             ** more than one job in list for this message => remove job id
@@ -1027,12 +1027,12 @@ void job_ja_task_send_abort_mail(const ocs::tom::ConstElement<ocs::tom::JB> job,
    const char *job_name = nullptr;
    int send_abort_mail = 0;
 
-   ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
-   job_name = ocs::tom::get<JB_job_name>(job);
-   job_id = ocs::tom::get<JB_job_number>(job);
-   const auto users = ocs::tom::get<JB_mail_list>(job);
-   send_abort_mail = VALID(MAIL_AT_ABORT, ocs::tom::get<JB_mail_options>(job))
-                     && !(ocs::tom::get<JAT_state>(ja_task) & JDELETED);
+   ja_task_id = ja_task.get<JAT_task_number>();
+   job_name = job.get<JB_job_name>();
+   job_id = job.get<JB_job_number>();
+   const auto users = job.get<JB_mail_list>();
+   send_abort_mail = VALID(MAIL_AT_ABORT, job.get<JB_mail_options>())
+                     && !(ja_task.get<JAT_state>() & JDELETED);
 
    if (send_abort_mail) {
       if (job_is_array(job)) {
@@ -1081,14 +1081,14 @@ void get_rid_of_job_due_to_qdel(ocs::tom::Element<ocs::tom::JB> j,
                                 monitoring_t *monitor, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   uint32_t job_number = ocs::tom::get<JB_job_number>(j);
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(t);
+   uint32_t job_number = j.get<JB_job_number>();
+   uint32_t task_number = t.get<JAT_task_number>();
    bool is_array = job_is_array(j);
 
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
-   const auto qep = cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JAT_master_queue>(t));
+   const auto qep = cqueue_list_locate_qinstance(master_cqueue_list, t.get<JAT_master_queue>());
    if (!qep) {
-      ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, ocs::tom::get<JAT_master_queue>(t));
+      ERROR(MSG_JOB_UNABLE2FINDQOFJOB_S, t.get<JAT_master_queue>());
       answer_list_add(answer_list, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
    }
    if (sge_signal_queue(SGE_SIGKILL, qep, j, t, monitor)) {
@@ -1170,14 +1170,14 @@ void job_mark_job_as_deleted(const ocs::tom::Element<ocs::tom::JB> j, const ocs:
 
    if (j && t) {
 
-      uint32_t state = ocs::tom::get<JAT_state>(t);
+      uint32_t state = t.get<JAT_state>();
       SETBIT(JDELETED, state);
-      ocs::tom::set<JAT_state>(t, state);
-      ocs::tom::set<JAT_stop_initiate_time>(t, sge_get_gmt64());
+      t.set<JAT_state>(state);
+      t.set<JAT_stop_initiate_time>(sge_get_gmt64());
 
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-      sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, ocs::tom::get<JB_job_number>(j),
-                      ocs::tom::get<JAT_task_number>(t), nullptr, nullptr, nullptr,
+      sge_event_spool(&answer_list, 0, sgeE_JATASK_MOD, j.get<JB_job_number>(),
+                      t.get<JAT_task_number>(), nullptr, nullptr, nullptr,
                       j, t, nullptr, true, true, 0);
       answer_list_output(&answer_list);
    }
@@ -1356,24 +1356,24 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
        * so the user knows why nothing was modified. */
       if (job_get_not_enrolled_ja_tasks(jobep) == 0) {
          bool all_finished = true;
-         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jobep)) {
-            if (ocs::tom::get<JAT_status>(ja_task) != JFINISHED) {
+         for (const auto ja_task : jobep.get<JB_ja_tasks>()) {
+            if (ja_task.get<JAT_status>() != JFINISHED) {
                all_finished = false;
                break;
             }
          }
          if (all_finished) {
-            INFO(MSG_JOB_ALREADYFINISHED_NOMOD_U, ocs::tom::get<JB_job_number>(jobep));
+            INFO(MSG_JOB_ALREADYFINISHED_NOMOD_U, jobep.get<JB_job_number>());
             answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
             continue;
          }
       }
 
       njobs++;
-      jobid = ocs::tom::get<JB_job_number>(jobep);
+      jobid = jobep.get<JB_job_number>();
 
       /* general check whether ruser is allowed to modify this job */
-      if (strcmp(packet->user, ocs::tom::get<JB_owner>(jobep))
+      if (strcmp(packet->user, jobep.get<JB_owner>())
           && !manop_is_operator(packet)
           && !manop_is_manager(packet)) {
          ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, jobid, MSG_JOB_CHANGEATTR);
@@ -1397,7 +1397,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
       if (trigger & REDEBIT_JOB) {
          INFO("re-debiting job " sge_u32 " after modifying resource requests with -when now",
-              ocs::tom::get<JB_job_number>(jobep));
+              jobep.get<JB_job_number>());
          if (!job_redebit(jobep, new_job, &tmp_alp, packet->gdi_session)) {
             if (*alpp == nullptr) {
                *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
@@ -1411,7 +1411,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
       if (!(trigger & VERIFY_EVENT)) {
          // @todo CS-1156: Why not also for PRIO_EVENT, RECHAIN_JID_HOLD and RECHAIN_JA_AD_HOLD
          if (trigger & MOD_EVENT) {
-            ocs::tom::set<JB_version>(new_job, ocs::tom::get<JB_version>(new_job) + 1);
+            new_job.set<JB_version>(new_job.get<JB_version>() + 1);
          }
 
          // open a spooling transaction. A event transaction is open automatically within worker threads
@@ -1440,9 +1440,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
             // check if the category string changed
             lList **master_category_list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CATEGORY);
-            uint32_t old_category_id = ocs::tom::get<JB_category_id>(new_job);
+            uint32_t old_category_id = new_job.get<JB_category_id>();
             const auto old_category = ocs::tom::find_first<CT_id>(*master_category_list, old_category_id);
-            const char *old_cat_str = ocs::tom::get<CT_str>(old_category);
+            const char *old_cat_str = old_category.get<CT_str>();
 
             // check if the category string changed and trigger corresponding events
             if (strcmp(old_cat_str, cat_str) != 0) {
@@ -1486,7 +1486,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 
          if (trigger & MOD_EVENT) {
             sge_add_job_event(sgeE_JOB_MOD, new_job, ocs::tom::Element<ocs::tom::JAT>(), packet->gdi_session);
-            for (const auto jatep : ocs::tom::get<JB_ja_tasks>(new_job)) {
+            for (const auto jatep : new_job.get<JB_ja_tasks>()) {
                sge_add_jatask_event(sgeE_JATASK_MOD, new_job, jatep, packet->gdi_session);
             }
          }
@@ -1499,13 +1499,13 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             jid_predecessor_list */
 
          if (trigger & RECHAIN_JID_HOLD) {
-            for (const auto jid : ocs::tom::get<JB_jid_predecessor_list>(jobep)) {
-               uint32_t pre_ident = ocs::tom::get<JRE_job_number>(jid);
+            for (const auto jid : jobep.get<JB_jid_predecessor_list>()) {
+               uint32_t pre_ident = jid.get<JRE_job_number>();
 
                DPRINTF(" JOB #" sge_u32": P: " sge_u32"\n", jobid, pre_ident);
 
                if (const auto suc_jobep = job_list.find_first<JB_job_number>(pre_ident)) {
-                  const auto successors = ocs::tom::get<JB_jid_successor_list>(suc_jobep);
+                  const auto successors = suc_jobep.get<JB_jid_successor_list>();
                   const auto temp_job = successors.find_first<JRE_job_number>(jobid);
                   DPRINTF("  JOB " sge_u32 " removed from trigger list of job " sge_u32 "\n", jobid, pre_ident);
                   // lRemoveElem() did nothing for a job that is not in the list
@@ -1517,13 +1517,13 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          }
 
          if (trigger & RECHAIN_JA_AD_HOLD) {
-            for (const auto jid : ocs::tom::get<JB_ja_ad_predecessor_list>(jobep)) {
-               uint32_t pre_ident = ocs::tom::get<JRE_job_number>(jid);
+            for (const auto jid : jobep.get<JB_ja_ad_predecessor_list>()) {
+               uint32_t pre_ident = jid.get<JRE_job_number>();
 
                DPRINTF(" JOB #" sge_u32 ": P: " sge_u32"\n", jobid, pre_ident);
 
                if (const auto suc_jobep = job_list.find_first<JB_job_number>(pre_ident)) {
-                  const auto successors = ocs::tom::get<JB_ja_ad_successor_list>(suc_jobep);
+                  const auto successors = suc_jobep.get<JB_ja_ad_successor_list>();
                   const auto temp_job = successors.find_first<JRE_job_number>(jobid);
                   DPRINTF("  JOB " sge_u32 " removed from trigger list of job " sge_u32 "\n", jobid, pre_ident);
                   // lRemoveElem() did nothing for a job that is not in the list
@@ -1596,9 +1596,9 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
 void sge_add_job_event(const ev_event type, const ocs::tom::Element<ocs::tom::JB> jep,
                        const ocs::tom::ConstElement<ocs::tom::JAT> jatask, const uint64_t gdi_request) {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, ocs::tom::get<JB_job_number>(jep),
-                 jatask ? ocs::tom::get<JAT_task_number>(jatask) : 0,
-                 nullptr, nullptr, ocs::tom::get<JB_session>(jep), jep, gdi_request);
+   sge_add_event(0, type, jep.get<JB_job_number>(),
+                 jatask ? jatask.get<JAT_task_number>() : 0,
+                 nullptr, nullptr, jep.get<JB_session>(), jep, gdi_request);
    DRETURN_VOID;
 }
 
@@ -1628,9 +1628,9 @@ void sge_add_job_event(const ev_event type, const ocs::tom::Element<ocs::tom::JB
 void sge_add_jatask_event(const ev_event type, const ocs::tom::ConstElement<ocs::tom::JB> jep,
                           const ocs::tom::Element<ocs::tom::JAT> jatask, const uint64_t gdi_request) {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, ocs::tom::get<JB_job_number>(jep),
-                 ocs::tom::get<JAT_task_number>(jatask),
-                 nullptr, nullptr, ocs::tom::get<JB_session>(jep), jatask, gdi_request);
+   sge_add_event(0, type, jep.get<JB_job_number>(),
+                 jatask.get<JAT_task_number>(),
+                 nullptr, nullptr, jep.get<JB_session>(), jatask, gdi_request);
    DRETURN_VOID;
 }
 
@@ -1655,33 +1655,33 @@ static void job_suc_pre_doit(const ocs::tom::Element<ocs::tom::JB> jep) {
     * here we check whether every job
     * in the predecessor list has exited
     */
-   auto prep = ocs::tom::get<PRE>(jep).front();
+   auto prep = jep.get<PRE>().front();
    while (prep) {
-      uint32_t pre_ident = ocs::tom::get<JRE_job_number>(prep);
+      uint32_t pre_ident = prep.template get<JRE_job_number>();
 
       const auto parent_jep = master_job_list.find_first<JB_job_number>(pre_ident);
       if (parent_jep) {
          bool Exited = true;
 
-         if (ocs::tom::get<JB_ja_n_h_ids>(parent_jep) ||
-             ocs::tom::get<JB_ja_u_h_ids>(parent_jep) ||
-             ocs::tom::get<JB_ja_o_h_ids>(parent_jep) ||
-             ocs::tom::get<JB_ja_a_h_ids>(parent_jep) ||
-             ocs::tom::get<JB_ja_s_h_ids>(parent_jep)) {
+         if (parent_jep.get<JB_ja_n_h_ids>() ||
+             parent_jep.get<JB_ja_u_h_ids>() ||
+             parent_jep.get<JB_ja_o_h_ids>() ||
+             parent_jep.get<JB_ja_a_h_ids>() ||
+             parent_jep.get<JB_ja_s_h_ids>()) {
             Exited = false;
          }
          if (Exited) {
-            for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(parent_jep)) {
-               if (ocs::tom::get<JAT_status>(ja_task) != JFINISHED) {
+            for (const auto ja_task : parent_jep.get<JB_ja_tasks>()) {
+               if (ja_task.get<JAT_status>() != JFINISHED) {
                   Exited = false;
                   break;
                }
-               for (const auto task : ocs::tom::get<JAT_task_list>(ja_task)) {
+               for (const auto task : ja_task.get<JAT_task_list>()) {
                   /* skip the pseudo pe task used for summing up the usage
                    * of already finished tasks
                    */
-                  if (strcmp(ocs::tom::get<PET_id>(task), PE_TASK_PAST_USAGE_CONTAINER) != 0) {
-                     if (ocs::tom::get<PET_status>(task) != JFINISHED) {
+                  if (strcmp(task.get<PET_id>(), PE_TASK_PAST_USAGE_CONTAINER) != 0) {
+                     if (task.get<PET_status>() != JFINISHED) {
                         /* at least one running pe task exists */
                         Exited = false;
                         break;
@@ -1695,22 +1695,22 @@ static void job_suc_pre_doit(const ocs::tom::Element<ocs::tom::JB> jep) {
          }
          if (!Exited) {
             DPRINTF("adding jid " sge_u32" into successor list of job " sge_u32"\n",
-                    ocs::tom::get<JB_job_number>(jep), pre_ident);
+                    jep.get<JB_job_number>(), pre_ident);
 
             /* add jid to successor_list of parent job */
-            ocs::tom::emplace_back_in<SUC, JRE_job_number>(parent_jep, ocs::tom::get<JB_job_number>(jep));
+            parent_jep.emplace_back_in<SUC, JRE_job_number>(jep.get<JB_job_number>());
 
             prep = prep.next();
          } else {
             DPRINTF("job " sge_u32 " from predecessor list already exited - ignoring it\n", pre_ident);
 
             prep = prep.next();
-            ocs::tom::erase_in<PRE, JRE_job_number>(jep, pre_ident);
+            jep.erase_in<PRE, JRE_job_number>(pre_ident);
          }
       } else {
          DPRINTF("predecessor job " sge_u32 " does not exist\n", pre_ident);
          prep = prep.next();
-         ocs::tom::erase_in<PRE, JRE_job_number>(jep, pre_ident);
+         jep.erase_in<PRE, JRE_job_number>(pre_ident);
       }
    }
 
@@ -1781,8 +1781,8 @@ mod_task_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs:
                     const int is_task_enrolled) {
    DENTER(TOP_LAYER);
 
-   uint32_t jobid = ocs::tom::get<JB_job_number>(job);
-   uint32_t jataskid = ocs::tom::get<JAT_task_number>(new_ja_task);
+   uint32_t jobid = job.get<JB_job_number>();
+   uint32_t jataskid = new_ja_task.get<JAT_task_number>();
 
    if (is_task_enrolled) {
 
@@ -1797,8 +1797,8 @@ mod_task_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs:
             DRETURN(STATUS_ENOOPR);
          }
          uval = tep.get<JAT_fshare>();
-         if (uval != ocs::tom::get<JAT_fshare>(new_ja_task)) {
-            ocs::tom::set<JAT_fshare>(new_ja_task, uval);
+         if (uval != new_ja_task.get<JAT_fshare>()) {
+            new_ja_task.set<JAT_fshare>(uval);
             DPRINTF("JAT_fshare = " sge_u32 "\n", uval);
             *trigger |= MOD_EVENT;
          }
@@ -1864,7 +1864,7 @@ mod_task_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs:
 
 
          if ((target & MINUS_H_TGT_USER) == MINUS_H_TGT_USER) {
-            if (strcmp(packet->user, ocs::tom::get<JB_owner>(job)) &&
+            if (strcmp(packet->user, job.get<JB_owner>()) &&
                 !manop_is_operator(packet)) {
                uint32_t new_mask = op_code_and_hold & ~MINUS_H_TGT_USER;
                tep.set<JAT_hold>(new_mask);
@@ -1923,11 +1923,11 @@ has_invalid_consumable_changes(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs:
     */
    for (const auto old_entry : old_lp) {
       // ignore non-consumables
-      if (ocs::tom::get<CE_consumable>(old_entry) == CONSUMABLE_NO) {
+      if (old_entry.get<CE_consumable>() == CONSUMABLE_NO) {
          continue;
       }
 
-      const char *name = ocs::tom::get<CE_name>(old_entry);
+      const char *name = old_entry.get<CE_name>();
       // search it in the new hard resource list
       if (!new_lp.find_first<CE_name>(name)) {
          if (when_now) {
@@ -1950,10 +1950,10 @@ has_invalid_consumable_changes(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs:
     */
    for (const auto new_entry : new_lp) {
       // ignore non-consumables
-      if (ocs::tom::get<CE_consumable>(new_entry) == CONSUMABLE_NO) {
+      if (new_entry.get<CE_consumable>() == CONSUMABLE_NO) {
          continue;
       }
-      const char *name = ocs::tom::get<CE_name>(new_entry);
+      const char *name = new_entry.get<CE_name>();
 
       // search it in the old hard resource list
       const auto old_entry = old_lp.find_first<CE_name>(name);
@@ -1965,11 +1965,11 @@ has_invalid_consumable_changes(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs:
 
       // compare the request in old_entry with new_entry
       DPRINTF("request: \"%s\" old: %f new: %f\n", name,
-              ocs::tom::get<CE_doubleval>(old_entry),
-              ocs::tom::get<CE_doubleval>(new_entry));
+              old_entry.get<CE_doubleval>(),
+              new_entry.get<CE_doubleval>());
 
-      double old_value = ocs::tom::get<CE_doubleval>(old_entry);
-      double new_value = ocs::tom::get<CE_doubleval>(new_entry);
+      double old_value = old_entry.get<CE_doubleval>();
+      double new_value = new_entry.get<CE_doubleval>();
       if (when_now) {
          if (new_value > old_value) {
             ERROR(MSG_JOB_MOD_ONLYDECRUNNINGJOBCONSUMABLE_S, name);
@@ -2008,7 +2008,7 @@ int deny_soft_consumables(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom:
 
    /* ensure no consumables are requested in JB_soft_resource_list */
    for (const auto entry : srl) {
-      const char *name = ocs::tom::get<CE_name>(entry);
+      const char *name = entry.get<CE_name>();
 
       const auto dcep = centry_list_locate(master_centry_list, name);
       if (!dcep) {
@@ -2018,7 +2018,7 @@ int deny_soft_consumables(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom:
       }
 
       /* ignore non-consumables */
-      if (ocs::tom::get<CE_consumable>(dcep)) {
+      if (dcep.get<CE_consumable>()) {
          ERROR(MSG_JOB_MOD_SOFTREQCONSUMABLE_S, name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(-1);
@@ -2048,7 +2048,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
    bool is_running{false}, may_not_be_running{false};
    uint32_t uval;
-   uint32_t jobid = ocs::tom::get<JB_job_number>(new_job);
+   uint32_t jobid = new_job.get<JB_job_number>();
 
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
@@ -2061,7 +2061,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
    /* is job running? */
    {
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(new_job)) {
+      for (const auto ja_task : new_job.get<JB_ja_tasks>()) {
          if (ja_task_is_running(ja_task)) {
             is_running = true;
             break;
@@ -2108,7 +2108,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
        * Visit tasks
        */
       if (ja_task_list) {
-         uint32_t handle_all_tasks = !ocs::tom::get<JAT_task_number>(ja_task);
+         uint32_t handle_all_tasks = !ja_task.get<JAT_task_number>();
 
          if (handle_all_tasks) {
             /*
@@ -2116,12 +2116,12 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
              * as changing the hold state of a task moves its id between the lists
              */
             const auto visit_unenrolled = [&]<auto F>() {
-               const auto range_list = ocs::tom::get<F>(new_job).clone("task_id_range");
+               const auto range_list = new_job.get<F>().clone("task_id_range");
 
                for (const auto range : *range_list) {
-                  for (uint32_t id = ocs::tom::get<RN_min>(range);
-                       id <= ocs::tom::get<RN_max>(range);
-                       id += ocs::tom::get<RN_step>(range)) {
+                  for (uint32_t id = range.template get<RN_min>();
+                       id <= range.template get<RN_max>();
+                       id += range.template get<RN_step>()) {
                      const auto dst_ja_task = job_get_ja_task_template_pending(new_job, id);
 
                      mod_task_attributes(packet, new_job, dst_ja_task, ja_task,
@@ -2137,13 +2137,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
             /*
              * Visit enrolled tasks
              */
-            for (const auto dst_ja_task : ocs::tom::get<JB_ja_tasks>(new_job)) {
+            for (const auto dst_ja_task : new_job.get<JB_ja_tasks>()) {
                mod_task_attributes(packet, new_job, dst_ja_task, ja_task, alpp,
                                    trigger, job_is_array(new_job), 1);
             }
          } else {
             for (const auto req_ja_task : ja_task_list) {
-               uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(req_ja_task);
+               uint32_t ja_task_id = req_ja_task.get<JAT_task_number>();
                int is_defined = job_is_ja_task_defined(new_job, ja_task_id);
 
                if (is_defined) {
@@ -2179,8 +2179,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       }
 
       /* ok, do it */
-      if (uval != ocs::tom::get<JB_override_tickets>(new_job)) {
-         ocs::tom::set<JB_override_tickets>(new_job, uval);
+      if (uval != new_job.get<JB_override_tickets>()) {
+         new_job.set<JB_override_tickets>(uval);
          *trigger |= MOD_EVENT;
       }
 
@@ -2192,7 +2192,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    if (jep.has<JB_priority>()) {
       uint32_t old_priority;
       uval = jep.get<JB_priority>();
-      if (uval > (old_priority = ocs::tom::get<JB_priority>(new_job))) {
+      if (uval > (old_priority = new_job.get<JB_priority>())) {
          /* need to be at least operator */
          if (!manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_PRIOINC);
@@ -2216,9 +2216,9 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    if (jep.has<JB_jobshare>()) {
       uint32_t old_jobshare;
       uval = jep.get<JB_jobshare>();
-      if (uval != (old_jobshare = ocs::tom::get<JB_jobshare>(new_job))) {
+      if (uval != (old_jobshare = new_job.get<JB_jobshare>())) {
          /* need to be owner or at least operator */
-         if (strcmp(packet->user, ocs::tom::get<JB_owner>(new_job)) &&
+         if (strcmp(packet->user, new_job.get<JB_owner>()) &&
              !manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_CHANGEJOBSHARE);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
@@ -2229,7 +2229,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       if (uval != old_jobshare)
          *trigger |= PRIO_EVENT;
 
-      ocs::tom::set<JB_jobshare>(new_job, uval);
+      new_job.set<JB_jobshare>(uval);
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBSHARESET_SSUU, packet->user, packet->host, jobid, uval);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2237,11 +2237,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
    /* ---- JB_ar */
    if (jep.has<JB_ar>()) {
-      uint32_t ar_id = ocs::tom::get<JB_ar>(new_job);
+      uint32_t ar_id = new_job.get<JB_ar>();
       uval = jep.get<JB_ar>();
       if (uval != ar_id) {
          /* need to be owner or at least operator */
-         if (strcmp(packet->user, ocs::tom::get<JB_owner>(new_job)) &&
+         if (strcmp(packet->user, new_job.get<JB_owner>()) &&
              !manop_is_operator(packet)) {
             ERROR(MSG_SGETEXT_MUST_BE_OPR_TO_SS, packet->user, MSG_JOB_CHANGEJOBAR);
             answer_list_add(alpp, SGE_EVENT, STATUS_ENOOPR, ANSWER_QUALITY_ERROR);
@@ -2251,7 +2251,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
          may_not_be_running = true;
       }
       /* ok, do it */
-      ocs::tom::set<JB_ar>(new_job, uval);
+      new_job.set<JB_ar>(uval);
 
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_JOB_JOBARSET_SSUU, packet->user, packet->host, jobid, uval);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2266,7 +2266,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       } else {
-         ocs::tom::set<JB_deadline>(new_job, ocs::tom::get<JB_deadline>(jep));
+         new_job.set<JB_deadline>(jep.get<JB_deadline>());
          *trigger |= MOD_EVENT;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_DEADLINETIME, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2277,7 +2277,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_execution_time */
    if (jep.has<JB_execution_time>()) {
       DPRINTF("got new JB_execution_time\n");
-      ocs::tom::set<JB_execution_time>(new_job, ocs::tom::get<JB_execution_time>(jep));
+      new_job.set<JB_execution_time>(jep.get<JB_execution_time>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STARTTIME, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2286,11 +2286,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_account */
    if (jep.has<JB_account>()) {
       DPRINTF("got new JB_account\n");
-      if (verify_str_key(alpp, ocs::tom::get<JB_account>(jep), MAX_VERIFY_STRING,
+      if (verify_str_key(alpp, jep.get<JB_account>(), MAX_VERIFY_STRING,
                          "account string", QSUB_TABLE) != STATUS_OK) {
          DRETURN(STATUS_EUNKNOWN);
       }
-      ocs::tom::set<JB_account>(new_job, ocs::tom::get<JB_account>(jep));
+      new_job.set<JB_account>(jep.get<JB_account>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_ACCOUNT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2299,7 +2299,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_cwd */
    if (jep.has<JB_cwd>()) {
       DPRINTF("got new JB_cwd\n");
-      ocs::tom::set<JB_cwd>(new_job, ocs::tom::get<JB_cwd>(jep));
+      new_job.set<JB_cwd>(jep.get<JB_cwd>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_WD, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2310,13 +2310,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       const char *ckpt_name;
 
       DPRINTF("got new JB_checkpoint_name\n");
-      ckpt_name = ocs::tom::get<JB_checkpoint_name>(jep);
+      ckpt_name = jep.get<JB_checkpoint_name>();
       if (ckpt_name && !ckpt_list_locate(master_ckpt_list, ckpt_name)) {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_CKPT, ckpt_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
-      ocs::tom::set<JB_checkpoint_name>(new_job, ckpt_name);
+      new_job.set<JB_checkpoint_name>(ckpt_name);
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_CKPT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2327,10 +2327,10 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_stderr_path_list\n");
 
-      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_stderr_path_list>(jep), alpp)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(jep.get<JB_stderr_path_list>(), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
-      ocs::tom::set<JB_stderr_path_list>(new_job, ocs::tom::get<JB_stderr_path_list>(jep).clone(""));
+      new_job.set<JB_stderr_path_list>(jep.get<JB_stderr_path_list>().clone(""));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDERRPATHLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2341,10 +2341,10 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_stdin_path_list\n");
 
-      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_stdin_path_list>(jep), alpp)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(jep.get<JB_stdin_path_list>(), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
-      ocs::tom::set<JB_stdin_path_list>(new_job, ocs::tom::get<JB_stdin_path_list>(jep).clone(""));
+      new_job.set<JB_stdin_path_list>(jep.get<JB_stdin_path_list>().clone(""));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDINPATHLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2353,7 +2353,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_reserve */
    if (jep.has<JB_reserve>()) {
       DPRINTF("got new JB_reserve\n");
-      ocs::tom::set<JB_reserve>(new_job, ocs::tom::get<JB_reserve>(jep));
+      new_job.set<JB_reserve>(jep.get<JB_reserve>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_RESERVE, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2362,7 +2362,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_merge_stderr */
    if (jep.has<JB_merge_stderr>()) {
       DPRINTF("got new JB_merge_stderr\n");
-      ocs::tom::set<JB_merge_stderr>(new_job, ocs::tom::get<JB_merge_stderr>(jep));
+      new_job.set<JB_merge_stderr>(jep.get<JB_merge_stderr>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MERGEOUTPUT, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2373,36 +2373,36 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       const char *pe_name;
 
       DPRINTF("got new JB_pe\n");
-      pe_name = ocs::tom::get<JB_pe>(jep);
+      pe_name = jep.get<JB_pe>();
       if (pe_name && !pe_list_find_matching(master_pe_list, pe_name)) {
          ERROR(MSG_SGETEXT_DOESNOTEXIST_SS, MSG_OBJ_PE, pe_name);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
-      ocs::tom::set<JB_pe>(new_job, pe_name);
+      new_job.set<JB_pe>(pe_name);
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_OBJ_PE, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
    /* ---- JB_pe_range */
-   if (jep.has<JB_pe_range>() && ocs::tom::get<JB_pe_range>(jep)) {
+   if (jep.has<JB_pe_range>() && jep.get<JB_pe_range>()) {
       const char *pe_name;
       DPRINTF("got new JB_pe_range\n");
 
       /* reject PE ranges change requests for jobs without PE request */
-      if (!(pe_name = ocs::tom::get<JB_pe>(new_job))) {
+      if (!(pe_name = new_job.get<JB_pe>())) {
          ERROR(SFNMAX, MSG_JOB_PERANGE_ONLY_FOR_PARALLEL);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      auto pe_range = ocs::tom::get<JB_pe_range>(jep).clone("");
+      auto pe_range = jep.get<JB_pe_range>().clone("");
       if (object_verify_pe_range(alpp, pe_name, *pe_range, SGE_OBJ_JOB) != STATUS_OK) {
          pe_range.reset();
          DRETURN(STATUS_EUNKNOWN);
       }
-      ocs::tom::set<JB_pe_range>(new_job, std::move(pe_range));
+      new_job.set<JB_pe_range>(std::move(pe_range));
 
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SLOTRANGE, jobid);
@@ -2414,12 +2414,12 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    // need to loop over all JB_request_set_list elements and check the entries
    if (jep.has<JB_request_set_list>()) {
       DPRINTF("got new JB_request_set_list\n");
-      for (const auto jrs : ocs::tom::get<JB_request_set_list>(jep)) {
-         uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
+      for (const auto jrs : jep.get<JB_request_set_list>()) {
+         uint32_t scope = jrs.get<JRS_scope>();
          DPRINTF("request set of scope " sge_u32 "\n", scope);
 
          // ---- JRS_hard_resource_list
-         const auto resource_list = ocs::tom::get<JRS_hard_resource_list>(jrs);
+         const auto resource_list = jrs.get<JRS_hard_resource_list>();
          if (resource_list) {
             DPRINTF("got new JRS_hard_resource_list\n");
             if (centry_list_fill_request(resource_list, alpp, master_centry_list, false, true, false)) {
@@ -2463,7 +2463,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
 
          // ---- JRS_soft_resource_list
-         const auto resource_list_ce = ocs::tom::get<JRS_soft_resource_list>(jrs);
+         const auto resource_list_ce = jrs.get<JRS_soft_resource_list>();
          if (resource_list_ce) {
             DPRINTF("got new JRS_soft_resource_list\n");
             if (centry_list_fill_request(resource_list_ce, alpp, master_centry_list, false, true, false)) {
@@ -2486,7 +2486,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
 
          // JRS_hard_queue_list
-         const auto queue_list = ocs::tom::get<JRS_hard_queue_list>(jrs);
+         const auto queue_list = jrs.get<JRS_hard_queue_list>();
          if (queue_list) {
             DPRINTF("got new JRS_hard_queue_list\n");
             if (!qref_list_is_valid(queue_list, alpp, master_cqueue_list, master_hgroup_list,
@@ -2501,7 +2501,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
 
          // JRS_soft_queue_list
-         const auto queue_list_qr = ocs::tom::get<JRS_soft_queue_list>(jrs);
+         const auto queue_list_qr = jrs.get<JRS_soft_queue_list>();
          if (queue_list_qr) {
             DPRINTF("got new JRS_soft_queue_list\n");
             if (!qref_list_is_valid(queue_list_qr, alpp, master_cqueue_list, master_hgroup_list,
@@ -2515,7 +2515,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
          }
 
          // JRS_allocation_rule
-         const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(jrs);
+         const char *allocation_rule = jrs.get<JRS_allocation_rule>();
          if (allocation_rule != nullptr) {
             if (!pe_validate_allocation_rule(alpp, allocation_rule, true)) {
                DRETURN(STATUS_EUNKNOWN);
@@ -2535,7 +2535,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_mail_options */
    if (jep.has<JB_mail_options>()) {
       DPRINTF("got new JB_mail_options\n");
-      ocs::tom::set<JB_mail_options>(new_job, ocs::tom::get<JB_mail_options>(jep));
+      new_job.set<JB_mail_options>(jep.get<JB_mail_options>());
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MAILOPTIONS, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
@@ -2543,28 +2543,28 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_mail_list */
    if (jep.has<JB_mail_list>()) {
       DPRINTF("got new JB_mail_list\n");
-      ocs::tom::set<JB_mail_list>(new_job, ocs::tom::get<JB_mail_list>(jep).clone(""));
+      new_job.set<JB_mail_list>(jep.get<JB_mail_list>().clone(""));
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_MAILLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
    }
 
    /* ---- JB_job_name */
-   if (jep.has<JB_job_name>() && ocs::tom::get<JB_job_name>(jep)) {
+   if (jep.has<JB_job_name>() && jep.get<JB_job_name>()) {
 /*      uint32_t succ_jid;*/
-      const char *new_name = ocs::tom::get<JB_job_name>(jep);
+      const char *new_name = jep.get<JB_job_name>();
 
       DPRINTF("got new JB_job_name\n");
 
       /* preform checks only if job name _really_ changes */
-      if (strcmp(new_name, ocs::tom::get<JB_job_name>(new_job))) {
+      if (strcmp(new_name, new_job.get<JB_job_name>())) {
          char job_descr[100];
          const char *job_name;
 
          snprintf(job_descr, sizeof(job_descr), "job " sge_u32, jobid);
-         job_name = ocs::tom::get<JB_job_name>(new_job);
-         ocs::tom::set<JB_job_name>(new_job, new_name);
+         job_name = new_job.get<JB_job_name>();
+         new_job.set<JB_job_name>(new_name);
          if (object_verify_name<JB_job_name>(new_job, alpp)) {
-            ocs::tom::set<JB_job_name>(new_job, job_name);
+            new_job.set<JB_job_name>(job_name);
             DRETURN(STATUS_EUNKNOWN);
          }
       }
@@ -2575,10 +2575,10 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    }
 
    /* ---- JB_jid_predecessor_list */
-   if (jep.has<JB_jid_request_list>() && ocs::tom::get<JB_jid_request_list>(jep)) {
+   if (jep.has<JB_jid_request_list>() && jep.get<JB_jid_request_list>()) {
       ocs::tom::ListPtr<ocs::tom::JRE> exited_pre_list;
 
-      if (ocs::tom::has<JB_ja_tasks>(jep)) {
+      if (jep.has<JB_ja_tasks>()) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPTIONONLEONJOBS_U, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
@@ -2588,8 +2588,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       DPRINTF("got new JB_jid_predecessor_list\n");
 
       ocs::tom::ListPtr<ocs::tom::JRE> req_list;
-      if (!ocs::tom::get<JB_jid_request_list>(jep).empty()) {
-         req_list = ocs::tom::get<JB_jid_request_list>(jep).clone("requested_jid_list");
+      if (!jep.get<JB_jid_request_list>().empty()) {
+         req_list = jep.get<JB_jid_request_list>().clone("requested_jid_list");
       }
 
       // the job gets the requested list and no predecessors, the old lists are kept to restore them
@@ -2605,14 +2605,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       req_list.reset();
       pred_list.reset();
 
-      auto new_pre_list = ocs::tom::get<JB_jid_predecessor_list>(new_job);
+      auto new_pre_list = new_job.get<JB_jid_predecessor_list>();
 
       /* remove jobid's of all no longer existing jobs from this
          new job - this must be done before event is sent to schedd */
       auto nxt = new_pre_list.front();
       while (const auto pre = nxt) {
          int move_to_exited = 0;
-         uint32_t pre_ident = ocs::tom::get<JRE_job_number>(pre);
+         uint32_t pre_ident = pre.get<JRE_job_number>();
 
          nxt = pre.next();
          DPRINTF("jid: " sge_u32 "\n", pre_ident);
@@ -2633,9 +2633,9 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       }
 
       if (new_pre_list.empty()) {
-         ocs::tom::set<JB_jid_predecessor_list>(new_job, nullptr);
+         new_job.set<JB_jid_predecessor_list>(nullptr);
          new_pre_list = nullptr;
-      } else if (contains_dependency_cycles(new_job, ocs::tom::get<JB_job_number>(new_job), alpp)) {
+      } else if (contains_dependency_cycles(new_job, new_job.get<JB_job_number>(), alpp)) {
          DRETURN(STATUS_EUNKNOWN);
       }
 
@@ -2655,10 +2655,10 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    }
 
    /* ---- JB_ja_ad_predecessor_list */
-   if (jep.has<JB_ja_ad_request_list>() && ocs::tom::get<JB_ja_ad_request_list>(jep)) {
+   if (jep.has<JB_ja_ad_request_list>() && jep.get<JB_ja_ad_request_list>()) {
       ocs::tom::ListPtr<ocs::tom::JRE> exited_pre_list;
 
-      if (ocs::tom::has<JB_ja_tasks>(jep)) {
+      if (jep.has<JB_ja_tasks>()) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_OPTIONONLEONJOBS_U, jobid);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
@@ -2668,8 +2668,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       DPRINTF("got new JB_ja_ad_predecessor_list\n");
 
       ocs::tom::ListPtr<ocs::tom::JRE> req_list;
-      if (!ocs::tom::get<JB_ja_ad_request_list>(jep).empty()) {
-         req_list = ocs::tom::get<JB_ja_ad_request_list>(jep).clone("requested_ja_ad_list");
+      if (!jep.get<JB_ja_ad_request_list>().empty()) {
+         req_list = jep.get<JB_ja_ad_request_list>().clone("requested_ja_ad_list");
       }
 
       // the job gets the requested list and no predecessors, the old lists are kept to restore them
@@ -2685,14 +2685,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       req_list.reset();
       pred_list.reset();
 
-      auto new_pre_list = ocs::tom::get<JB_ja_ad_predecessor_list>(new_job);
+      auto new_pre_list = new_job.get<JB_ja_ad_predecessor_list>();
 
       /* remove jobid's of all no longer existing jobs from this
          new job - this must be done before event is sent to schedd */
       auto nxt = new_pre_list.front();
       while (const auto pre = nxt) {
          int move_to_exited = 0;
-         uint32_t pre_ident = ocs::tom::get<JRE_job_number>(pre);
+         uint32_t pre_ident = pre.get<JRE_job_number>();
 
          nxt = pre.next();
          DPRINTF("jid: " sge_u32"\n", pre_ident);
@@ -2713,9 +2713,9 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       }
 
       if (new_pre_list.empty()) {
-         ocs::tom::set<JB_ja_ad_predecessor_list>(new_job, nullptr);
+         new_job.set<JB_ja_ad_predecessor_list>(nullptr);
          new_pre_list = nullptr;
-      } else if (contains_dependency_cycles(new_job, ocs::tom::get<JB_job_number>(new_job), alpp)) {
+      } else if (contains_dependency_cycles(new_job, new_job.get<JB_job_number>(), alpp)) {
          DRETURN(STATUS_EUNKNOWN);
       }
 
@@ -2737,7 +2737,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_notify */
    if (jep.has<JB_notify>()) {
       DPRINTF("got new JB_notify\n");
-      ocs::tom::set<JB_notify>(new_job, ocs::tom::get<JB_notify>(jep));
+      new_job.set<JB_notify>(jep.get<JB_notify>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_NOTIFYBEHAVIOUR, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2748,10 +2748,10 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_stdout_path_list?\n");
 
-      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_stdout_path_list>(jep), alpp)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(jep.get<JB_stdout_path_list>(), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
-      ocs::tom::set<JB_stdout_path_list>(new_job, ocs::tom::get<JB_stdout_path_list>(jep).clone(""));
+      new_job.set<JB_stdout_path_list>(jep.get<JB_stdout_path_list>().clone(""));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_STDOUTPATHLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2761,8 +2761,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    if (jep.has<JB_project>()) {
       int ret;
       int changed;
-      const char *new_project = ocs::tom::get<JB_project>(jep);
-      const char *old_project = ocs::tom::get<JB_project>(new_job);
+      const char *new_project = jep.get<JB_project>();
+      const char *old_project = new_job.get<JB_project>();
 
       if (old_project == nullptr && new_project == nullptr) {
          changed = 0;
@@ -2776,13 +2776,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       if (changed) {
          DPRINTF("got new JB_project\n");
 
-         ret = job_verify_project(jep, alpp, ocs::tom::get<JB_owner>(new_job), ocs::tom::get<JB_group>(new_job),
-                                  ocs::tom::get<JB_grp_list>(new_job));
+         ret = job_verify_project(jep, alpp, new_job.get<JB_owner>(), new_job.get<JB_group>(),
+                                  new_job.get<JB_grp_list>());
          if (ret != STATUS_OK) {
             DRETURN(ret);
          }
 
-         ocs::tom::set<JB_project>(new_job, new_project);
+         new_job.set<JB_project>(new_project);
          may_not_be_running = true;
          *trigger |= MOD_EVENT;
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_PROJECT, jobid);
@@ -2794,67 +2794,67 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    if (jep.has<JB_binding>()) {
       DPRINTF("got new JB_binding\n");
 
-      const auto old_binding_elem = ocs::tom::get<JB_binding>(new_job);
-      const auto new_binding_elem = ocs::tom::get<JB_binding>(jep);
+      const auto old_binding_elem = new_job.get<JB_binding>();
+      const auto new_binding_elem = jep.get<JB_binding>();
       if (!old_binding_elem) {
-         ocs::tom::set<JB_binding>(new_job, new_binding_elem ? new_binding_elem.clone()
+         new_job.set<JB_binding>(new_binding_elem ? new_binding_elem.clone()
                                                              : ocs::tom::ElementPtr<ocs::tom::BN>());
          *trigger |= MOD_EVENT;
       } else {
          if (new_binding_elem) {
             // copy new amount but only if it is not UNINITIALIZED and different from the old one
-            uint32_t new_amount = ocs::tom::get<BN_amount>(new_binding_elem);
+            uint32_t new_amount = new_binding_elem.get<BN_amount>();
             if (new_amount != static_cast<uint32_t>(-1)) {
                uint32_t old_amount = ocs::Job::binding_get_amount(new_job);
                if (old_amount != new_amount) {
-                  ocs::tom::set<BN_amount>(old_binding_elem, new_amount);
+                  old_binding_elem.set<BN_amount>(new_amount);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new instance but only if it is not UNINITIALIZED and different from the old one
             auto new_instance =
-                    static_cast<ocs::BindingInstance::Instance>(ocs::tom::get<BN_instance>(new_binding_elem));
+                    static_cast<ocs::BindingInstance::Instance>(new_binding_elem.get<BN_instance>());
             if (new_instance != ocs::BindingInstance::Instance::UNINITIALIZED) {
                ocs::BindingInstance::Instance old_instance = ocs::Job::binding_get_instance(new_job);
                if (old_instance != new_instance) {
-                  ocs::tom::set<BN_instance>(old_binding_elem, new_instance);
+                  old_binding_elem.set<BN_instance>(new_instance);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new unit but only if it is not UNINITIALIZED and different from the old one
-            auto new_unit = static_cast<ocs::BindingUnit::Unit>(ocs::tom::get<BN_unit>(new_binding_elem));
+            auto new_unit = static_cast<ocs::BindingUnit::Unit>(new_binding_elem.get<BN_unit>());
             if (new_unit != ocs::BindingUnit::Unit::UNINITIALIZED) {
                ocs::BindingUnit::Unit old_unit = ocs::Job::binding_get_unit(new_job);
                if (old_unit != new_unit) {
-                  ocs::tom::set<BN_unit>(old_binding_elem, new_unit);
+                  old_binding_elem.set<BN_unit>(new_unit);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new type but only if it is not UNINITIALIZED and different from the old one
-            auto new_type = static_cast<ocs::BindingType::Type>(ocs::tom::get<BN_new_type>(new_binding_elem));
+            auto new_type = static_cast<ocs::BindingType::Type>(new_binding_elem.get<BN_new_type>());
             if (new_type != ocs::BindingType::Type::UNINITIALIZED) {
                ocs::BindingType::Type old_type = ocs::Job::binding_get_type(new_job);
                if (old_type != new_type) {
-                  ocs::tom::set<BN_new_type>(old_binding_elem, new_type);
+                  old_binding_elem.set<BN_new_type>(new_type);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new filter but only if it is not UNINITIALIZED and different from the old one
-            const char *new_filter = ocs::tom::get<BN_filter>(new_binding_elem);
+            const char *new_filter = new_binding_elem.get<BN_filter>();
             if (new_filter != nullptr) {
                std::string old_filter = ocs::Job::binding_get_filter(new_job);
                if (strcmp(old_filter.c_str(), new_filter) != 0) {
-                  ocs::tom::set<BN_filter>(old_binding_elem, new_filter);
+                  old_binding_elem.set<BN_filter>(new_filter);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new sort but only if it is not UNINITIALIZED and different from the old one
-            const char *new_sort = ocs::tom::get<BN_sort>(new_binding_elem);
+            const char *new_sort = new_binding_elem.get<BN_sort>();
 #if !defined(WITH_EXTENSIONS)
             if (new_sort != nullptr) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFN2, MSG_SGETEXT_BINDING_NOT_AVAILABLE);
@@ -2865,13 +2865,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
             if (new_sort != nullptr) {
                std::string old_sort = ocs::Job::binding_get_sort(new_job);
                if (old_sort != new_sort) {
-                  ocs::tom::set<BN_sort>(old_binding_elem, new_sort);
+                  old_binding_elem.set<BN_sort>(new_sort);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new start but only if it is not UNINITIALIZED and different from the old one
-            auto new_start = static_cast<ocs::BindingStart::Start>(ocs::tom::get<BN_start>(new_binding_elem));
+            auto new_start = static_cast<ocs::BindingStart::Start>(new_binding_elem.get<BN_start>());
 #if !defined(WITH_EXTENSIONS)
             // in OCS binding start is not available
             if (new_start != ocs::BindingStart::UNINITIALIZED && new_start != ocs::BindingStart::NONE) {
@@ -2883,13 +2883,13 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
             if (new_start != ocs::BindingStart::Start::UNINITIALIZED) {
                ocs::BindingStart::Start old_start = ocs::Job::binding_get_start(new_job);
                if (old_start != new_start) {
-                  ocs::tom::set<BN_start>(old_binding_elem, new_start);
+                  old_binding_elem.set<BN_start>(new_start);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new end but only if it is not UNINITIALIZED and different from the old one
-            auto new_stop = static_cast<ocs::BindingStop::Stop>(ocs::tom::get<BN_stop>(new_binding_elem));
+            auto new_stop = static_cast<ocs::BindingStop::Stop>(new_binding_elem.get<BN_stop>());
 #if !defined(WITH_EXTENSIONS)
             // in OCS binding start is not available
             if (new_stop != ocs::BindingStop::UNINITIALIZED && new_stop != ocs::BindingStop::NONE) {
@@ -2901,18 +2901,18 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
             if (new_stop != ocs::BindingStop::Stop::UNINITIALIZED) {
                ocs::BindingStop::Stop old_stop = ocs::Job::binding_get_stop(new_job);
                if (old_stop != new_stop) {
-                  ocs::tom::set<BN_stop>(old_binding_elem, new_stop);
+                  old_binding_elem.set<BN_stop>(new_stop);
                   *trigger |= MOD_EVENT;
                }
             }
 
             // copy new strategy but only if it is not UNINITIALIZED and different from the old one
             auto new_strategy =
-                    static_cast<ocs::BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(new_binding_elem));
+                    static_cast<ocs::BindingStrategy::Strategy>(new_binding_elem.get<BN_strategy>());
             if (new_strategy != ocs::BindingStrategy::Strategy::UNINITIALIZED) {
                ocs::BindingStrategy::Strategy old_strategy = ocs::Job::binding_get_strategy(new_job);
                if (old_strategy != new_strategy) {
-                  ocs::tom::set<BN_strategy>(old_binding_elem, new_strategy);
+                  old_binding_elem.set<BN_strategy>(new_strategy);
                   *trigger |= MOD_EVENT;
                }
             }
@@ -2920,12 +2920,12 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
          // if the new binding has no amount, we remove binding completely
          if (ocs::Job::binding_get_amount(new_job) == 0) {
-            ocs::tom::set<JB_binding>(new_job, nullptr);
+            new_job.set<JB_binding>(nullptr);
             *trigger |= MOD_EVENT;
          }
       }
 
-      if (ocs::tom::get<JB_binding>(new_job)) {
+      if (new_job.get<JB_binding>()) {
          ocs::Job::binding_set_missing_defaults(new_job, alpp);
 
          // new binding set
@@ -2939,7 +2939,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_restart */
    if (jep.has<JB_restart>()) {
       DPRINTF("got new JB_restart\n");
-      ocs::tom::set<JB_restart>(new_job, ocs::tom::get<JB_restart>(jep));
+      new_job.set<JB_restart>(jep.get<JB_restart>());
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_RESTARTBEHAVIOR, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2950,10 +2950,10 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       int status;
       DPRINTF("got new JB_shell_list\n");
 
-      if ((status = job_resolve_host_for_path_list(ocs::tom::get<JB_shell_list>(jep), alpp)) != STATUS_OK) {
+      if ((status = job_resolve_host_for_path_list(jep.get<JB_shell_list>(), alpp)) != STATUS_OK) {
          DRETURN(status);
       }
-      ocs::tom::set<JB_shell_list>(new_job, ocs::tom::get<JB_shell_list>(jep).clone(""));
+      new_job.set<JB_shell_list>(jep.get<JB_shell_list>().clone(""));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SHELLLIST, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -2966,7 +2966,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
       DPRINTF("got new JB_env_list\n");
 
       /* check for qsh without DISPLAY set */
-      if (JOB_TYPE_IS_QSH(ocs::tom::get<JB_type>(new_job))) {
+      if (JOB_TYPE_IS_QSH(new_job.get<JB_type>())) {
          int ret = job_check_qsh_display(jep, alpp, false);
          if (ret != STATUS_OK) {
             DRETURN(ret);
@@ -2975,8 +2975,8 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
 
       /* save existing prefix env vars from being overwritten; they replace
          a variable of the same name in the request, so none appears twice (CS-3053) */
-      var_list_split_prefix_vars(ocs::tom::get<JB_env_list>(new_job), prefix_vars, VAR_PREFIX);
-      ocs::tom::set<JB_env_list>(new_job, ocs::tom::get<JB_env_list>(jep).clone(""));
+      var_list_split_prefix_vars(new_job.get<JB_env_list>(), prefix_vars, VAR_PREFIX);
+      new_job.set<JB_env_list>(jep.get<JB_env_list>().clone(""));
       if (prefix_vars) {
          // takes the elements of prefix_vars and frees the list itself
          var_list_add_as_set(new_job.get_or_create<JB_env_list>(""), std::move(prefix_vars));
@@ -2995,7 +2995,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_job_args */
    if (jep.has<JB_job_args>()) {
       DPRINTF("got new JB_job_args\n");
-      ocs::tom::set<JB_job_args>(new_job, ocs::tom::get<JB_job_args>(jep).clone(""));
+      new_job.set<JB_job_args>(jep.get<JB_job_args>().clone(""));
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_SCRIPTARGS, jobid);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -3004,11 +3004,11 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_verify_suitable_queues */
    if (jep.has<JB_verify_suitable_queues>()) {
       int ret;
-      ocs::tom::set<JB_verify_suitable_queues>(new_job,
-                ocs::tom::get<JB_verify_suitable_queues>(jep));
+      new_job.set<JB_verify_suitable_queues>(
+                jep.get<JB_verify_suitable_queues>());
       ret = verify_suitable_queues(alpp, new_job, trigger, true);
-      if (ocs::tom::get<JB_verify_suitable_queues>(new_job) == JUST_VERIFY ||
-          ocs::tom::get<JB_verify_suitable_queues>(new_job) == POKE_VERIFY || ret != 0) {
+      if (new_job.get<JB_verify_suitable_queues>() == JUST_VERIFY ||
+          new_job.get<JB_verify_suitable_queues>() == POKE_VERIFY || ret != 0) {
          DRETURN(ret);
       }
    }
@@ -3016,14 +3016,14 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    /* ---- JB_context and JB_context_change */
    // a context sent as such replaces the job's context, the instructions of -ac, -sc and -dc change it (CS-3058)
    bool context_modified = false;
-   if (ocs::tom::has<JB_context>(jep)) {
+   if (jep.has<JB_context>()) {
       DPRINTF("got new JB_context\n");
-      ocs::tom::set<JB_context>(new_job, ocs::tom::get<JB_context>(jep).clone("context_list"));
+      new_job.set<JB_context>(jep.get<JB_context>().clone("context_list"));
       context_modified = true;
    }
-   if (ocs::tom::has<JB_context_change>(jep)) {
+   if (jep.has<JB_context_change>()) {
       DPRINTF("got new JB_context_change\n");
-      set_context(ocs::tom::get<JB_context_change>(jep), new_job);
+      set_context(jep.get<JB_context_change>(), new_job);
       context_modified = true;
    }
    if (context_modified) {
@@ -3036,7 +3036,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
    if (jep.has<JB_ja_task_concurrency>()) {
       uint32_t task_concurrency;
       DPRINTF("got new JB_ja_task_concurrency\n");
-      task_concurrency = ocs::tom::get<JB_ja_task_concurrency>(jep);
+      task_concurrency = jep.get<JB_ja_task_concurrency>();
 
       if (task_concurrency > 0 && !job_is_array(new_job)) {
          ERROR(MSG_PARSE_INVALIDOPTIONARGUMENTX_S, MSG_JOB_TASK_CONCURRENCY);
@@ -3044,7 +3044,7 @@ mod_job_attributes(const ocs::gdi::Packet *packet, const ocs::tom::Element<ocs::
          DRETURN(STATUS_EUNKNOWN);
       }
 
-      ocs::tom::set<JB_ja_task_concurrency>(new_job, task_concurrency);
+      new_job.set<JB_ja_task_concurrency>(task_concurrency);
       *trigger |= MOD_EVENT;
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_MOD_JOBS_SU, MSG_JOB_TASK_CONCURRENCY, task_concurrency);
       answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -3087,15 +3087,15 @@ static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB
    DENTER(TOP_LAYER);
 
    bool is_cycle = false;
-   const auto predecessor_list = ocs::tom::get<JB_jid_predecessor_list>(new_job);
-   const auto predecessor_list_ad = ocs::tom::get<JB_ja_ad_predecessor_list>(new_job);
+   const auto predecessor_list = new_job.get<JB_jid_predecessor_list>();
+   const auto predecessor_list_ad = new_job.get<JB_ja_ad_predecessor_list>();
    uint32_t pre_nr;
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    for (const auto pre_elem : predecessor_list) {
-      pre_nr = ocs::tom::get<JRE_job_number>(pre_elem);
+      pre_nr = pre_elem.get<JRE_job_number>();
       if (pre_nr == job_number) {
-         uint32_t temp = ocs::tom::get<JB_job_number>(new_job);
+         uint32_t temp = new_job.get<JB_job_number>();
          ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, job_number, temp);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
@@ -3109,9 +3109,9 @@ static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB
    }
 
    for (const auto pre_elem : predecessor_list_ad) {
-      pre_nr = ocs::tom::get<JRE_job_number>(pre_elem);
+      pre_nr = pre_elem.get<JRE_job_number>();
       if (pre_nr == job_number) {
-         uint32_t temp = ocs::tom::get<JB_job_number>(new_job);
+         uint32_t temp = new_job.get<JB_job_number>();
          ERROR(MSG_JOB_DEPENDENCY_CYCLE_UU, job_number, temp);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
@@ -3143,14 +3143,14 @@ static bool contains_dependency_cycles(const ocs::tom::ConstElement<ocs::tom::JB
 int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
-   uint32_t jobid = ocs::tom::get<JB_job_number>(job);
+   uint32_t jobid = job.get<JB_job_number>();
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
-   const auto predecessors_req = ocs::tom::get<JB_jid_request_list>(job);
+   const auto predecessors_req = job.get<JB_jid_request_list>();
    auto predecessors_id = ocs::tom::ListPtr<ocs::tom::JRE>::create("job_predecessors");
 
    for (const auto pre : predecessors_req) {
-      const char *pre_ident = ocs::tom::get<JRE_job_name>(pre);
+      const char *pre_ident = pre.get<JRE_job_name>();
 
       if (isdigit(pre_ident[0])) {
          if (strchr(pre_ident, '.')) {
@@ -3166,20 +3166,20 @@ int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom:
             DRETURN(STATUS_EUNKNOWN);
          }
          auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
-         ocs::tom::set<JRE_job_number>(pre_temp, atoi(pre_ident));
+         pre_temp->set<JRE_job_number>(atoi(pre_ident));
          predecessors_id->push_back(std::move(pre_temp));
 
       } else {
-         const char *owner = ocs::tom::get<JB_owner>(job);
+         const char *owner = job.get<JB_owner>();
 
          for (const auto user_job : master_job_list.find_all<JB_owner>(owner)) {
-            const char *job_name = ocs::tom::get<JB_job_name>(user_job);
+            const char *job_name = user_job.get<JB_job_name>();
             int result = string_base_cmp(ocs::CEntry::Type::RESTR, pre_ident, job_name);
 
             if (!result) {
-               if (ocs::tom::get<JB_job_number>(user_job) != jobid) {
+               if (user_job.get<JB_job_number>() != jobid) {
                   auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
-                  ocs::tom::set<JRE_job_number>(pre_temp, ocs::tom::get<JB_job_number>(user_job));
+                  pre_temp->set<JRE_job_number>(user_job.get<JB_job_number>());
                   predecessors_id->push_back(std::move(pre_temp));
                }
             }
@@ -3193,7 +3193,7 @@ int job_verify_predecessors(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom:
       predecessors_id.reset();
    }
 
-   ocs::tom::set<JB_jid_predecessor_list>(job, std::move(predecessors_id));
+   job.set<JB_jid_predecessor_list>(std::move(predecessors_id));
 
    DRETURN(0);
 }
@@ -3219,10 +3219,10 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
                                const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   uint32_t jobid = ocs::tom::get<JB_job_number>(job);
+   uint32_t jobid = job.get<JB_job_number>();
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
-   const auto predecessors_req = ocs::tom::get<JB_ja_ad_request_list>(job);
+   const auto predecessors_req = job.get<JB_ja_ad_request_list>();
    auto predecessors_id = ocs::tom::ListPtr<ocs::tom::JRE>::create("job_predecessors_ad");
 
    /* only verify -hold_jid_ad option if predecessors are requested */
@@ -3237,7 +3237,7 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
    }
 
    for (const auto pre : predecessors_req) {
-      const char *pre_ident = ocs::tom::get<JRE_job_name>(pre);
+      const char *pre_ident = pre.get<JRE_job_name>();
       if (isdigit(pre_ident[0])) {
          if (strchr(pre_ident, '.')) {
             DPRINTF("a job cannot wait for a task to finish\n");
@@ -3252,18 +3252,18 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
             DRETURN(STATUS_EUNKNOWN);
          }
          auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
-         ocs::tom::set<JRE_job_number>(pre_temp, atoi(pre_ident));
+         pre_temp->set<JRE_job_number>(atoi(pre_ident));
          predecessors_id->push_back(std::move(pre_temp));
       } else {
-         const char *owner = ocs::tom::get<JB_owner>(job);
+         const char *owner = job.get<JB_owner>();
 
          for (const auto user_job : master_job_list.find_all<JB_owner>(owner)) {
-            const char *job_name = ocs::tom::get<JB_job_name>(user_job);
+            const char *job_name = user_job.get<JB_job_name>();
             int result = string_base_cmp(ocs::CEntry::Type::RESTR, pre_ident, job_name);
             if (!result) {
-               if (ocs::tom::get<JB_job_number>(user_job) != jobid) {
+               if (user_job.get<JB_job_number>() != jobid) {
                   auto pre_temp = ocs::tom::ElementPtr<ocs::tom::JRE>::create();
-                  ocs::tom::set<JRE_job_number>(pre_temp, ocs::tom::get<JB_job_number>(user_job));
+                  pre_temp->set<JRE_job_number>(user_job.get<JB_job_number>());
                   predecessors_id->push_back(std::move(pre_temp));
                }
             }
@@ -3277,7 +3277,7 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
    /* to prevent iterating over task ids when no predecessors are matched */
    if (predecessors_id->empty()) {
       predecessors_id.reset();
-      ocs::tom::set<JB_ja_ad_predecessor_list>(job, std::move(predecessors_id));
+      job.set<JB_ja_ad_predecessor_list>(std::move(predecessors_id));
       /* flush task dependency state for empty predecessors list */
       sge_task_depend_flush(job, alpp, gdi_session);
       DRETURN(0);
@@ -3286,7 +3286,7 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
    /* verify the predecessor list before we try to calculate dependency info */
    for (const auto pre : *predecessors_id) {
       /* locate the job id in the master list, if not found we can't do much here */
-      const auto pred_job = master_job_list.find_first<JB_job_number>(ocs::tom::get<JRE_job_number>(pre));
+      const auto pred_job = master_job_list.find_first<JB_job_number>(pre.get<JRE_job_number>());
       if (!pred_job) {
          continue;
       }
@@ -3307,7 +3307,7 @@ int job_verify_predecessors_ad(const ocs::tom::Element<ocs::tom::JB> job, ocs::t
    }
 
    /* this obviously needs to be done before we call the update function */
-   ocs::tom::set<JB_ja_ad_predecessor_list>(job, std::move(predecessors_id));
+   job.set<JB_ja_ad_predecessor_list>(std::move(predecessors_id));
 
    /* recalculate dependence information for each task of this job */
    sge_task_depend_init(job, alpp, gdi_session);
@@ -3453,7 +3453,7 @@ static uint32_t guess_highest_job_number() {
    const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
 
    for (const auto jep : master_job_list) {
-      maxid = MAX(maxid, ocs::tom::get<JB_job_number>(jep));
+      maxid = MAX(maxid, jep.get<JB_job_number>());
    }
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
@@ -3477,7 +3477,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
                            int *trigger, const bool is_modify) {
    DENTER(TOP_LAYER);
 
-   int verify_mode = ocs::tom::get<JB_verify_suitable_queues>(jep);
+   int verify_mode = jep.get<JB_verify_suitable_queues>();
    bool verify_only = (verify_mode == JUST_VERIFY || verify_mode == POKE_VERIFY) ? true : false;
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
    const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
@@ -3511,7 +3511,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
       int try_it = 1;
       const char *ckpt_name;
       const auto job_hard_queue_list = job_get_hard_queue_list(jep);
-      const char *pe_name = ocs::tom::get<JB_pe>(jep);
+      const char *pe_name = jep.get<JB_pe>();
 
       sge_assignment_t a{};
 
@@ -3521,7 +3521,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
       DPRINTF("verify schedulability = %c\n", OPTION_VERIFY_STR[verify_mode]);
 
       /* checkpointing */
-      if ((ckpt_name = ocs::tom::get<JB_checkpoint_name>(jep))) {
+      if ((ckpt_name = jep.get<JB_checkpoint_name>())) {
          if (!(a.ckpt = ckpt_list_locate(master_ckpt_list, ckpt_name))) {
             try_it = 0;
          }
@@ -3533,7 +3533,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
 
          if (a.ar_id != 0) {
             if (a.ar) {
-               ar_granted_slots = ocs::tom::get<AR_granted_slots>(a.ar);
+               ar_granted_slots = a.ar.get<AR_granted_slots>();
             }
          }
 
@@ -3541,7 +3541,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
          a.centry_list = master_centry_list;
          a.acl_list = master_userset_list;
          a.hgrp_list = master_hgroup_list;
-         if (ocs::tom::get<JB_ar>(jep) == 0) {
+         if (jep.get<JB_ar>() == 0) {
             a.rqs_list = master_rqs_list;
          } else {
             a.ar_list = master_ar_list;
@@ -3575,14 +3575,14 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
          }
 
          for (const auto cqueue : master_cqueue_list) {
-            const char *cqname = ocs::tom::get<CQ_name>(cqueue);
+            const char *cqname = cqueue.get<CQ_name>();
 
             /* we sort out explicit -q -l requests on queues */
             if (cqueue_match_static(cqname, &a) != DISPATCH_OK) {
                continue;
             }
 
-            for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
+            for (const auto qinstance : cqueue.get<CQ_qinstances>()) {
                /*
                 * When we are in POKE_VERIFY mode (qalter -w p) we may work on
                 * a reduced set of queues (the actual status of the cluster).
@@ -3592,7 +3592,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
                 * resources available.
                 */
                if (verify_mode == POKE_VERIFY) {
-                  uint32_t qi_state = ocs::tom::get<QU_state>(qinstance);
+                  uint32_t qi_state = qinstance.get<QU_state>();
                   if ((qi_state & QI_CAL_SUSPENDED) ||
                       (qi_state & QI_CAL_DISABLED) ||
                       (qi_state & QI_SUSPENDED) ||
@@ -3603,7 +3603,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
                       (qi_state & QI_AMBIGUOUS)
                           ) {
                      schedd_mes_add(a.monitor_alpp, a.monitor_next_run, a.job_id,
-                                    SCHEDD_INFO_QUEUENOTAVAIL_, ocs::tom::get<QU_full_name>(qinstance));
+                                    SCHEDD_INFO_QUEUENOTAVAIL_, qinstance.get<QU_full_name>());
                      continue;
                   }
                }
@@ -3611,15 +3611,15 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
                /* we only have to consider requested queues or hosts*/
                if (job_hard_queue_list) {
                   if (qref_list_cq_rejected(job_hard_queue_list, cqname,
-                                            ocs::tom::get<QU_qhostname>(qinstance), a.hgrp_list)) {
+                                            qinstance.get<QU_qhostname>(), a.hgrp_list)) {
                      schedd_mes_add(a.monitor_alpp, a.monitor_next_run, a.job_id, SCHEDD_INFO_NOTINHARDQUEUELST_S,
-                                    ocs::tom::get<QU_full_name>(qinstance));
+                                    qinstance.get<QU_full_name>());
                      continue;
                   }
                }
 
                if (ar_granted_slots) {
-                  if (!ar_granted_slots.find_first<JG_qname>(ocs::tom::get<QU_full_name>(qinstance))) {
+                  if (!ar_granted_slots.find_first<JG_qname>(qinstance.get<QU_full_name>())) {
                      continue;
                   }
                }
@@ -3628,8 +3628,8 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
                if (pe_name != nullptr) {
                   bool found = false;
 
-                  for (const auto pe_ref : ocs::tom::get<QU_pe_list>(qinstance)) {
-                     if (pe_name_is_matching(ocs::tom::get<ST_name>(pe_ref), pe_name)) {
+                  for (const auto pe_ref : qinstance.get<QU_pe_list>()) {
+                     if (pe_name_is_matching(pe_ref.get<ST_name>(), pe_name)) {
                         found = true;
                         break;
                      }
@@ -3752,7 +3752,7 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    }
 
    /* seek job */
-   seek_jid = ocs::tom::get<JB_job_number>(jep);
+   seek_jid = jep.get<JB_job_number>();
    DPRINTF("SEEK jobid " sge_u32 " for COPY operation\n", seek_jid);
 
    const auto old_jep = master_job_list.find_first<JB_job_number>(seek_jid);
@@ -3763,8 +3763,8 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    }
 
    /* ensure copy is allowed */
-   if (strcmp(packet->user, ocs::tom::get<JB_owner>(old_jep)) && !manop_is_manager(packet)) {
-      ERROR(MSG_JOB_NORESUBPERMS_SSS, packet->user, packet->host, ocs::tom::get<JB_owner>(old_jep));
+   if (strcmp(packet->user, old_jep.get<JB_owner>()) && !manop_is_manager(packet)) {
+      ERROR(MSG_JOB_NORESUBPERMS_SSS, packet->user, packet->host, old_jep.get<JB_owner>());
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -3772,7 +3772,7 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    auto new_jep = old_jep.clone();
 
    /* read script from old job and reuse it */
-   if (ocs::tom::get<JB_exec_file>(new_jep) && !JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(new_jep))) {
+   if (new_jep->get<JB_exec_file>() && !JOB_TYPE_IS_BINARY(new_jep->get<JB_type>())) {
       if (!spool_read_script(alpp, seek_jid, new_jep.get())) {
          DRETURN(STATUS_EUNKNOWN);
       }
@@ -3787,7 +3787,7 @@ int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPt
    }
 
    /* reset the job number. we will get a new one when we add the job */
-   ocs::tom::set<JB_job_number>(new_jep, 0);
+   new_jep->set<JB_job_number>(0);
 
    /* call add() method */
    ret = sge_gdi_add_job(new_jep, alpp, lpp, packet, task, monitor);
@@ -3858,13 +3858,13 @@ bool spool_read_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint3
    PROF_STOP_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    /* The spooled out structure must be restored */
    if (script_el) {
-      char *script = (char *) ocs::tom::get<STU_name>(script_el);
+      char *script = (char *) script_el->get<STU_name>();
       char *dummy = nullptr;
       int len = strlen(script);
       ocs::tom::exchange<JB_script_ptr>(jep, &script);
       ocs::tom::exchange<STU_name>(script_el, &dummy);
       script_el.reset();
-      ocs::tom::set<JB_script_size>(jep, len);
+      jep.set<JB_script_size>(len);
    } else {
       ret = false;
    }
@@ -3899,9 +3899,9 @@ bool spool_delete_script(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uin
                              SGE_TYPE_JOBSCRIPT, jobscript_get_key(jep, &buffer));
    PROF_STOP_MEASUREMENT(SGE_PROF_JOBSCRIPT);
    sge_dstring_free(&buffer);
-   ocs::tom::set<JB_exec_file>(jep, nullptr);
-   ocs::tom::set<JB_script_file>(jep, nullptr);
-   ocs::tom::set<JB_script_size>(jep, 0);
+   jep.set<JB_exec_file>(nullptr);
+   jep.set<JB_script_file>(nullptr);
+   jep.set<JB_script_size>(0);
    DRETURN(ret);
 }
 
@@ -3937,7 +3937,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
    uint32_t task_number = 0;
    uint32_t existing_tasks;
    ocs::tom::ListPtr<ocs::tom::RN> range_list;
-   uint32_t job_number = ocs::tom::get<JB_job_number>(job);
+   uint32_t job_number = job.get<JB_job_number>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
    uint64_t max_job_deletion_time = sge_gmt32_to_gmt64(mconf_get_max_job_deletion_time());
@@ -3958,8 +3958,8 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
     * a copy of the job session before calling sge_commit_job(). This copy
     * must be free'd!
     */
-   if (ocs::tom::get<JB_session>(job)) {
-      dupped_session = strdup(ocs::tom::get<JB_session>(job));
+   if (job.get<JB_session>()) {
+      dupped_session = strdup(job.get<JB_session>());
    }
 
    /*
@@ -3984,10 +3984,10 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
       enrolled_end = job_get_biggest_enrolled_task_id(job);
 
       if (rn) {
-         *r_start = ocs::tom::get<RN_min>(rn);
-         *r_end = ocs::tom::get<RN_max>(rn);
+         *r_start = rn.get<RN_min>();
+         *r_end = rn.get<RN_max>();
 
-         *step = ocs::tom::get<RN_step>(rn);
+         *step = rn.get<RN_step>();
          if (!(*step)) {
             *step = 1;
          }
@@ -4130,7 +4130,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
             int is_defined = job_is_ja_task_defined(job, task_number);
 
             if (is_defined) {
-               const auto tmp_task = ocs::tom::get<JB_ja_tasks>(job).find_first<JAT_task_number>(task_number);
+               const auto tmp_task = job.get<JB_ja_tasks>().find_first<JAT_task_number>(task_number);
 
                if (!tmp_task) {
                   /* ja task does not exist anymore - ignore silently */
@@ -4145,11 +4145,11 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
                 * on a host in unknown state.
                 */
                if (get_enable_forced_qdel_if_unknown) {
-                  const auto gdil_ep = ocs::tom::get<JAT_granted_destin_identifier_list>(tmp_task).front();
+                  const auto gdil_ep = tmp_task.get<JAT_granted_destin_identifier_list>().front();
 
                   if (gdil_ep) {
                      const auto qinstance =
-                             cqueue_list_locate_qinstance(master_cqueue_list, ocs::tom::get<JG_qname>(gdil_ep));
+                             cqueue_list_locate_qinstance(master_cqueue_list, gdil_ep.get<JG_qname>());
 
                      if (qinstance) {
                         /*
@@ -4163,16 +4163,16 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
                            forced = true;
                         } else {
                            if (job_is_tight_parallel(job, master_pe_list)) {
-                              for (const auto pe_task : ocs::tom::get<JAT_task_list>(tmp_task)) {
+                              for (const auto pe_task : tmp_task.get<JAT_task_list>()) {
                                  const auto pe_gdil_ep =
-                                         ocs::tom::get<PET_granted_destin_identifier_list>(pe_task).front();
+                                         pe_task.get<PET_granted_destin_identifier_list>().front();
 
                                  if (pe_gdil_ep) {
                                     const auto pe_qinstance = cqueue_list_locate_qinstance(
-                                            master_cqueue_list, ocs::tom::get<JG_qname>(pe_gdil_ep));
+                                            master_cqueue_list, pe_gdil_ep.get<JG_qname>());
 
                                     if (pe_qinstance && qinstance_state_is_unknown(pe_qinstance)) {
-                                       ocs::tom::set<PET_do_contact>(pe_task, false);
+                                       pe_task.set<PET_do_contact>(false);
                                     }
                                  }
                               }
@@ -4186,10 +4186,10 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
                 * if task is already in status deleted and was signaled
                 * only recently and deletion is not forced, do nothing
                 */
-               if ((ocs::tom::get<JAT_status>(tmp_task) & JFINISHED) ||
-                   (simulate_execds && ocs::tom::get<JAT_state>(tmp_task) & JDELETED) ||
-                   (ocs::tom::get<JAT_state>(tmp_task) & JDELETED &&
-                    ocs::tom::get<JAT_pending_signal_delivery_time>(tmp_task) > sge_get_gmt64() &&
+               if ((tmp_task.get<JAT_status>() & JFINISHED) ||
+                   (simulate_execds && tmp_task.get<JAT_state>() & JDELETED) ||
+                   (tmp_task.get<JAT_state>() & JDELETED &&
+                    tmp_task.get<JAT_pending_signal_delivery_time>() > sge_get_gmt64() &&
                     !forced)) {
                   INFO(MSG_JOB_ALREADYDELETED_U, job_number);
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK, ANSWER_QUALITY_INFO);
@@ -4217,7 +4217,7 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
                job_set_deleted_by(tmp_task, packet->user, packet->host);
 
                bool ja_task_buried = false;
-               if (ocs::tom::get<JAT_master_queue>(tmp_task) && is_pe_master_task_send(tmp_task)) {
+               if (tmp_task.get<JAT_master_queue>() && is_pe_master_task_send(tmp_task)) {
                   job_ja_task_send_abort_mail(job, tmp_task, packet->user, packet->host, nullptr);
                   get_rid_of_job_due_to_qdel(job, tmp_task, alpp, packet->user, forced, monitor,
                                              packet->gdi_session);
@@ -4330,7 +4330,7 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
    DENTER(TOP_LAYER);
 
    int ret = STATUS_OK;
-   const char *project = ocs::tom::get<JB_project>(job);
+   const char *project = job.get<JB_project>();
    const auto projects = mconf_get_projects();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
@@ -4347,7 +4347,7 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
 
       if (ret == STATUS_OK) {
          /* ensure user belongs to this project */
-         if (!sge_has_access_(user, group, grp_list, ocs::tom::get<PR_acl>(pep), ocs::tom::get<PR_xacl>(pep),
+         if (!sge_has_access_(user, group, grp_list, pep.get<PR_acl>(), pep.get<PR_xacl>(),
                               master_userset_list)) {
             ERROR(MSG_SGETEXT_NO_ACCESS2PRJ4USER_SS, project, user);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -4507,15 +4507,15 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
    const auto master_rqs_list = ocs::DataStore::master_list_rw<SGE_TYPE_RQS>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
 
-   uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+   uint32_t job_id = job.get<JB_job_number>();
 
    // host_list_locate() has no typed form; it finds EH elements of the host list
    const auto global_host_ep =
            ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(master_exechost_list, SGE_GLOBAL_NAME));
-   const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
+   const auto pe = ja_task.get<JAT_pe_object>();
    bool do_per_global_host_booking = true;
 
-   uint32_t ar_id = ocs::tom::get<JB_ar>(job);
+   uint32_t ar_id = job.get<JB_ar>();
    ocs::tom::Element<ocs::tom::AR> ar = nullptr;
    ocs::tom::Element<ocs::tom::EH> ar_global_host = nullptr;
    if (ar_id != 0) {
@@ -4526,14 +4526,14 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
          ocs::TerminationManager::trigger_abort();
 #endif
       } else {
-         ar_global_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, SGE_GLOBAL_NAME);
+         ar_global_host = ar.find_first_in_rw<AR_reserved_hosts, EH_name>(SGE_GLOBAL_NAME);
       }
    }
 
    bool master_task = true;
    const char *last_hostname = nullptr;
-   for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)) {
-      const char *queue_name = ocs::tom::get<JG_qname>(gdil_ep);
+   for (const auto gdil_ep : ja_task.get<JAT_granted_destin_identifier_list>()) {
+      const char *queue_name = gdil_ep.get<JG_qname>();
       const auto queue = cqueue_list_locate_qinstance(master_cqueue_list, queue_name);
       if (!queue) {
          CRITICAL(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, queue_name, job_id);
@@ -4541,10 +4541,10 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
          ocs::TerminationManager::trigger_abort();
 #endif
       } else {
-         const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
-         const char *queue_hostname = ocs::tom::get<QU_qhostname>(queue);
+         const auto granted_resources_list = ja_task.get<JAT_granted_resources_list>();
+         const char *queue_hostname = queue.get<QU_qhostname>();
          bool do_per_host_booking = host_do_per_host_booking(&last_hostname, queue_hostname);
-         int slots = ocs::tom::get<JG_slots>(gdil_ep) * factor;
+         int slots = gdil_ep.get<JG_slots>() * factor;
 
          /* debit consumable resources from global host */
          if (debit_host_consumable(job, ja_task, granted_resources_list, pe, global_host_ep, master_centry_list, slots,
@@ -4577,14 +4577,14 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
                if (rqs_debit_consumable(rqs, job, gdil_ep, pe, master_centry_list, master_userset_list,
                                         master_hgroup_list, slots, master_task, do_per_host_booking) > 0) {
                   /* this info is not spooled */
-                  sge_add_event(0, sgeE_RQS_MOD, 0, 0, ocs::tom::get<RQS_name>(rqs), nullptr, nullptr, rqs,
+                  sge_add_event(0, sgeE_RQS_MOD, 0, 0, rqs.get<RQS_name>(), nullptr, nullptr, rqs,
                                 gdi_session);
                }
             }
          } else if (ar) {
             /* debit in advance reservation */
             int bookings = 0;
-            const auto ar_queue = ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(ar, queue_name);
+            const auto ar_queue = ar.find_first_in_rw<AR_reserved_queues, QU_full_name>(queue_name);
             if (ar_queue) {
                bookings += qinstance_debit_consumable(ar_queue, job, pe, master_centry_list, slots, master_task,
                                                       do_per_host_booking, nullptr) > 0;
@@ -4594,7 +4594,7 @@ job_ja_task_debit(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs::tom
                                                  master_centry_list, slots, master_task, do_per_global_host_booking,
                                                  nullptr) > 0;
             }
-            const auto ar_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, queue_hostname);
+            const auto ar_host = ar.find_first_in_rw<AR_reserved_hosts, EH_name>(queue_hostname);
             if (ar_host) {
                bookings += debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_host, master_centry_list,
                                                  slots, master_task, do_per_host_booking, nullptr) > 0;
@@ -4679,7 +4679,7 @@ job_redebit(const ocs::tom::ConstElement<ocs::tom::JB> old_job, const ocs::tom::
    bool ret = true;
 
    // undebit old job
-   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(old_job)) {
+   for (const auto ja_task : old_job.get<JB_ja_tasks>()) {
       // so far job_ja_task_undebit will always return true (or abort() on critical errors in the dev build)
       if (ja_task_is_running(ja_task)) {
          job_ja_task_undebit(old_job, ja_task, answer_list, gdi_session);
@@ -4688,7 +4688,7 @@ job_redebit(const ocs::tom::ConstElement<ocs::tom::JB> old_job, const ocs::tom::
 
    // debit new job
    if (ret) {
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(new_job)) {
+      for (const auto ja_task : new_job.get<JB_ja_tasks>()) {
          // so far job_ja_task_debit will always return true (or abort() on critical errors in the dev build)
          if (ja_task_is_running(ja_task)) {
             job_ja_task_debit(new_job, ja_task, answer_list, gdi_session);

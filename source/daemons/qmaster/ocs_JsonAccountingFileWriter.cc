@@ -61,9 +61,9 @@ namespace ocs {
       if (!intermediate) {
          // get the job category string
          const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
-         const uint32_t category_id = ocs::tom::get<JB_category_id>(job);
+         const uint32_t category_id = job.get<JB_category_id>();
          const auto category = master_category_list.find_first<CT_id>(category_id);
-         const char *category_string = ocs::tom::get<CT_str>(category);
+         const char *category_string = category.get<CT_str>();
 
          // get accounting data
          rapidjson::StringBuffer json_buffer;

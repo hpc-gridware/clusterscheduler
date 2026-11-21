@@ -378,20 +378,20 @@ te_add_event(te_event_t anEvent) {
    uint64_t when = (ONE_TIME_EVENT == anEvent->mode) ? anEvent->when : (sge_get_gmt64() + anEvent->interval);
 
    auto le = ocs::tom::ElementPtr<ocs::tom::TE>::create();
-   ocs::tom::set<TE_when>(le, when);
-   ocs::tom::set<TE_type>(le, anEvent->type);
-   ocs::tom::set<TE_mode>(le, anEvent->mode);
-   ocs::tom::set<TE_interval>(le, anEvent->interval);
-   ocs::tom::set<TE_uval0>(le, anEvent->ulong_key_1);
-   ocs::tom::set<TE_uval1>(le, anEvent->ulong_key_2);
-   ocs::tom::set<TE_sval>(le, anEvent->str_key);
+   le->set<TE_when>(when);
+   le->set<TE_type>(anEvent->type);
+   le->set<TE_mode>(anEvent->mode);
+   le->set<TE_interval>(anEvent->interval);
+   le->set<TE_uval0>(anEvent->ulong_key_1);
+   le->set<TE_uval1>(anEvent->ulong_key_2);
+   le->set<TE_sval>(anEvent->str_key);
 
    DPRINTF("%s: (t:" sge_u32" w:" sge_u64" m:" sge_u32" s:%s)\n", __func__, static_cast<uint32_t>(anEvent->type),
            when, static_cast<uint32_t>(anEvent->mode), anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
-   ocs::tom::set<TE_seqno>(le, Event_Control.seq_no++);
+   le->set<TE_seqno>(Event_Control.seq_no++);
 
    // Event_Control.list and .sort_order are process-lifetime globals that hold the list and the order raw (no
    // static owner), so the core inserts; without a list or an order the event is refused, as lInsertSorted()
@@ -671,7 +671,7 @@ void te_check_time(uint64_t aTime) {
       WARNING(MSG_SYSTEM_SYSTEMHASBEENMODIFIEDXSECONDS_I, (int) sge_gmt64_to_gmt32(delta));
 
       for (const auto le : ocs::tom::List<ocs::tom::TE>::from_typed(Event_Control.list)) {
-         ocs::tom::set<TE_when>(le, (ocs::tom::get<TE_when>(le) - delta));
+         le.set<TE_when>((le.get<TE_when>() - delta));
       }
 
       Event_Control.last = aTime;
@@ -703,15 +703,15 @@ te_event_t te_event_from_list_elem(const ocs::tom::ConstElement<ocs::tom::TE> aL
 
    ev = (te_event_t) sge_malloc(sizeof(struct te_event));
 
-   ev->when = ocs::tom::get<TE_when>(aListElem);
-   ev->interval = ocs::tom::get<TE_interval>(aListElem);
-   ev->type = (te_type_t) ocs::tom::get<TE_type>(aListElem);
-   ev->mode = (te_mode_t) ocs::tom::get<TE_mode>(aListElem);
-   ev->ulong_key_1 = ocs::tom::get<TE_uval0>(aListElem);
-   ev->ulong_key_2 = ocs::tom::get<TE_uval1>(aListElem);
-   ev->seq_no = ocs::tom::get<TE_seqno>(aListElem);
+   ev->when = aListElem.get<TE_when>();
+   ev->interval = aListElem.get<TE_interval>();
+   ev->type = (te_type_t) aListElem.get<TE_type>();
+   ev->mode = (te_mode_t) aListElem.get<TE_mode>();
+   ev->ulong_key_1 = aListElem.get<TE_uval0>();
+   ev->ulong_key_2 = aListElem.get<TE_uval1>();
+   ev->seq_no = aListElem.get<TE_seqno>();
 
-   str = ocs::tom::get<TE_sval>(aListElem);
+   str = aListElem.get<TE_sval>();
    ev->str_key = ((str != nullptr) ? strdup(str) : nullptr);
 
    DRETURN(ev);

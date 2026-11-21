@@ -171,9 +171,9 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
    const auto configs = ocs::tom::List<ocs::tom::CONF>::from_typed(*config_list);
 
    // add potentially missing attributes, in this order
-   const auto spooled_global = ocs::tom::find_first_rw<CONF_name>(configs, "global");
+   const auto spooled_global = configs.find_first<CONF_name>(ocs::tom::Host("global"));
    if (spooled_global) {
-      const ocs::tom::ConstList<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(spooled_global);
+      const ocs::tom::ConstList<ocs::tom::CF> entries = spooled_global.get<CONF_entries>();
       const std::pair<const char *, const char *> defaults[] = {
          {"jsv_url", NONE_STR},
          {"jsv_allowed_mod", JSV_ALLOWED_MOD_DEFAULT},
@@ -183,9 +183,9 @@ sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
          {"topology_file", NONE_STR},
       };
       for (const auto &[name, value] : defaults) {
-         if (!ocs::tom::find_first<CF_name>(entries, name)) {
-            const auto entry = ocs::tom::emplace_back_in<CONF_entries, CF_name>(spooled_global, name);
-            ocs::tom::set<CF_value>(entry, value);
+         if (!entries.find_first<CF_name>(name)) {
+            const auto entry = spooled_global.emplace_back_in<CONF_entries, CF_name>(name);
+            entry.set<CF_value>(value);
          }
       }
    }
@@ -259,7 +259,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((tmp_name = ocs::tom::get<CONF_name>(aConf)) == nullptr) {
+   if ((tmp_name = aConf.get<CONF_name>()) == nullptr) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CONF_name>::info.name, __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -279,7 +279,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       const auto conf_obj = sge_get_configuration_for_host(tmp_name);
       if (conf_obj) {
          DPRINTF("using hostname stored in configuration object\n");
-         strcpy(unique_name, ocs::tom::get<CONF_name>(conf_obj));
+         strcpy(unique_name, conf_obj->get<CONF_name>());
       } else {
          ERROR(MSG_SGETEXT_CANT_DEL_CONFIG2_S, tmp_name);
          answer_list_add(anAnswer, SGE_EVENT,
@@ -353,9 +353,9 @@ invalidate_load_report_intervals(const char *conf_name) {
 
    const bool is_global = strcmp(conf_name, SGE_GLOBAL_NAME) == 0;
    for (const auto hep : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
-      const char *host = ocs::tom::get<EH_name>(hep);
+      const char *host = hep.get<EH_name>();
       if (is_global || sge_hostcmp(conf_name, host) == 0) {
-         ocs::tom::set<EH_load_report_interval>(hep, 0);
+         hep.set<EH_load_report_interval>(0);
       }
    }
 
@@ -387,14 +387,14 @@ notify_execds_about_conf_change(const char *conf_name) {
 
    const bool is_global = strcmp(conf_name, SGE_GLOBAL_NAME) == 0;
    for (const auto hep : ocs::DataStore::master_list_rw<SGE_TYPE_EXECHOST>()) {
-      const char *host = ocs::tom::get<EH_name>(hep);
+      const char *host = hep.get<EH_name>();
       if (strcmp(host, SGE_GLOBAL_NAME) == 0 || strcmp(host, SGE_TEMPLATE_NAME) == 0) {
          continue;
       }
       if (!is_global && sge_hostcmp(conf_name, host) != 0) {
          continue;
       }
-      if (ocs::tom::get<EH_lt_heard_from>(hep) == 0) {
+      if (hep.get<EH_lt_heard_from>() == 0) {
          continue;
       }
       // an sge_execd stopped by a signal is taken as known until it is unheard, a notification
@@ -449,7 +449,7 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::L
       DRETURN(STATUS_EUNKNOWN);
    }
 
-   if ((tmp_name = ocs::tom::get<CONF_name>(aConf)) == nullptr) {
+   if ((tmp_name = aConf.get<CONF_name>()) == nullptr) {
       CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CONF_name>::info.name, __func__);
       answer_list_add(anAnswer, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
@@ -583,10 +583,10 @@ sge_update_heard_from_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
    for (const auto conf : config_list) {
-      const auto entry = ocs::tom::find_first_in<CONF_entries, CF_name>(conf, "load_report_time");
+      const auto entry = conf.find_first_in<CONF_entries, CF_name>("load_report_time");
       uint32_t load_report_time = 0;
       if (entry && parse_ulong_val(nullptr, &load_report_time, ocs::CEntry::Type::TIME,
-                                              ocs::tom::get<CF_value>(entry), nullptr, 0) != 0) {
+                                              entry.get<CF_value>(), nullptr, 0) != 0) {
          max_load_report_time = std::max(max_load_report_time, load_report_time);
       }
    }
@@ -651,7 +651,7 @@ check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement
    const char *name, *value;
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
 
-   const char *conf_name = ocs::tom::get<CONF_name>(conf);
+   const char *conf_name = conf.get<CONF_name>();
 
    // an attribute given twice has no defined value (CS-3053)
    const std::string object_name = std::string("configuration ") + (conf_name != nullptr ? conf_name : "");
@@ -659,9 +659,9 @@ check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement
       DRETURN(STATUS_ESYNTAX);
    }
 
-   for (const auto ep : ocs::tom::get<CONF_entries>(conf)) {
-      name = ocs::tom::get<CF_name>(ep);
-      value = ocs::tom::get<CF_value>(ep);
+   for (const auto ep : conf.get<CONF_entries>()) {
+      name = ep.get<CF_name>();
+      value = ep.get<CF_value>();
 
       if (name == nullptr) {
          ERROR(MSG_CONF_NAMEISNULLINCONFIGURATIONLISTOFX_S, conf_name);
@@ -944,15 +944,15 @@ sge_compare_configuration(const ocs::tom::ConstElement<ocs::tom::EH> aHost,
    DENTER(TOP_LAYER);
 
    if (aConf.empty()) {
-      const char *host_name = ocs::tom::get<EH_name>(aHost);
+      const char *host_name = aHost.get<EH_name>();
       DPRINTF("%s: configuration for %s is empty\n", __func__, host_name);
       DRETURN(1);
    }
 
    for (const auto conf_entry : aConf) {
-      const char *host_name = ocs::tom::get<CONF_name>(conf_entry);
+      const char *host_name = conf_entry.get<CONF_name>();
       const uint32_t master_version = sge_get_config_version_for_host(host_name);
-      const uint32_t conf_version = ocs::tom::get<CONF_version>(conf_entry);
+      const uint32_t conf_version = conf_entry.get<CONF_version>();
 
       if (master_version != conf_version) {
          DPRINTF("%s: configuration for %s changed from version %ld to %ld\n", __func__, host_name, master_version,
@@ -1010,7 +1010,7 @@ ocs_get_configuration_entry_by_name(const char *aHost, const char *anEntryName) 
 static ocs::tom::ElementPtr<ocs::tom::CF>
 get_entry_from_conf(const ocs::tom::ConstElement<ocs::tom::CONF> aConf, const char *anEntryName) {
    DENTER(TOP_LAYER);
-   const auto elem = ocs::tom::find_first<CF_name>(ocs::tom::get<CONF_entries>(aConf), anEntryName);
+   const auto elem = aConf.get<CONF_entries>().find_first<CF_name>(anEntryName);
    DRETURN(elem.clone());
 }
 
@@ -1060,7 +1060,7 @@ sge_get_config_version_for_host(const char *aName) {
 
    const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
-   auto conf = ocs::tom::find_first<CONF_name>(config_list, aName);
+   auto conf = config_list.find_first<CONF_name>(ocs::tom::Host(aName));
    if (!conf) {
       /*
        * Due to CR 6319231 IZ 1760:
@@ -1072,13 +1072,13 @@ sge_get_config_version_for_host(const char *aName) {
       if (CL_RETVAL_OK != ret) {
          DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
       }
-      conf = ocs::tom::find_first<CONF_name>(config_list, unique_name);
+      conf = config_list.find_first<CONF_name>(ocs::tom::Host(unique_name));
    }
 
    if (!conf) {
       DPRINTF("%s: no master configuration for %s found\n", __func__, aName);
    } else {
-      version = ocs::tom::get<CONF_version>(conf);
+      version = conf.get<CONF_version>();
    }
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
@@ -1118,7 +1118,7 @@ sge_get_configuration_for_host(const char *aName) {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
-   auto conf = ocs::tom::find_first<CONF_name>(config_list, unique_name).clone();
+   auto conf = config_list.find_first<CONF_name>(ocs::tom::Host(unique_name)).clone();
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -1143,15 +1143,15 @@ do_mod_config(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CONF> anOl
               const ocs::tom::Element<ocs::tom::CONF> aNewConf, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
               const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   const auto old_entries = ocs::tom::get<CONF_entries>(anOldConf);
-   const auto new_entries = ocs::tom::get<CONF_entries>(aNewConf);
+   const auto old_entries = anOldConf.get<CONF_entries>();
+   const auto new_entries = aNewConf.get<CONF_entries>();
 
    // VALIDATION AND ADJUSTMENTS
 
    // check if gdi_request_limits are correct
-   const auto gdi_request_limits_cfg = ocs::tom::find_first<CF_name>(new_entries, "gdi_request_limits");
+   const auto gdi_request_limits_cfg = new_entries.find_first<CF_name>("gdi_request_limits");
    if (gdi_request_limits_cfg) {
-      const char *gdi_request_limit_str = ocs::tom::get<CF_value>(gdi_request_limits_cfg);
+      const char *gdi_request_limit_str = gdi_request_limits_cfg.get<CF_value>();
       ocs::RequestLimits& limits_instance = ocs::RequestLimits::get_instance();
       if (!limits_instance.parse(gdi_request_limit_str, anAnswer)) {
          DRETURN(STATUS_EUNKNOWN);
@@ -1198,12 +1198,12 @@ check_static_conf_entries(const ocs::tom::ConstList<ocs::tom::CF> theOldConfEntr
    while (nullptr != Static_Conf_Entries[entry_idx]) {
       const char *entry_name = Static_Conf_Entries[entry_idx];
 
-      const auto old_entry = ocs::tom::find_first<CF_name>(theOldConfEntries, entry_name);
-      const auto new_entry = ocs::tom::find_first<CF_name>(theNewConfEntries, entry_name);
+      const auto old_entry = theOldConfEntries.find_first<CF_name>(entry_name);
+      const auto new_entry = theNewConfEntries.find_first<CF_name>(entry_name);
 
       if (old_entry && new_entry) {
-         const char *old_value = ocs::tom::get<CF_value>(old_entry);
-         const char *new_value = ocs::tom::get<CF_value>(new_entry);
+         const char *old_value = old_entry.get<CF_value>();
+         const char *new_value = new_entry.get<CF_value>();
 
          if (((nullptr != old_value) && (nullptr != new_value)) && (strcmp(old_value, new_value) != 0)) {
             /* log in qmaster messages file */
@@ -1240,20 +1240,20 @@ exchange_conf_by_name(char *aConfName, const ocs::tom::ConstElement<ocs::tom::CO
                       const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   const char *old_conf_name = ocs::tom::get<CONF_name>(anOldConf);
-   const uint32_t old_version = ocs::tom::get<CONF_version>(anOldConf);
+   const char *old_conf_name = anOldConf.get<CONF_name>();
+   const uint32_t old_version = anOldConf.get<CONF_version>();
    const uint32_t new_version = (old_version + 1);
 
-   ocs::tom::set<CONF_version>(aNewConf, new_version);
+   aNewConf.set<CONF_version>(new_version);
 
    /* Make sure, 'aNewConf' does have a unique name */
-   ocs::tom::set<CONF_name>(aNewConf, old_conf_name);
+   aNewConf.set<CONF_name>(ocs::tom::Host(old_conf_name));
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    const auto config_list = ocs::DataStore::master_list_rw<SGE_TYPE_CONFIG>();
 
-   if (const auto old_elem = ocs::tom::find_first_rw<CONF_name>(config_list, old_conf_name); old_elem) {
+   if (const auto old_elem = config_list.find_first<CONF_name>(ocs::tom::Host(old_conf_name)); old_elem) {
       config_list.erase(old_elem);
    }
 
@@ -1281,11 +1281,11 @@ has_reschedule_unknown_change(const ocs::tom::ConstList<ocs::tom::CF> theOldConf
 
    bool res = false;
 
-   const auto old_elem = ocs::tom::find_first<CF_name>(theOldConfEntries, "reschedule_unknown");
-   const auto new_elem = ocs::tom::find_first<CF_name>(theNewConfEntries, "reschedule_unknown");
+   const auto old_elem = theOldConfEntries.find_first<CF_name>("reschedule_unknown");
+   const auto new_elem = theNewConfEntries.find_first<CF_name>("reschedule_unknown");
 
-   const char *old_value = old_elem ? ocs::tom::get<CF_value>(old_elem) : nullptr;
-   const char *new_value = new_elem ? ocs::tom::get<CF_value>(new_elem) : nullptr;
+   const char *old_value = old_elem ? old_elem.get<CF_value>() : nullptr;
+   const char *new_value = new_elem ? new_elem.get<CF_value>() : nullptr;
 
    if ((nullptr == old_value) || (nullptr == new_value)) {
       res = true;  /* change by omission in one configuration */
@@ -1343,7 +1343,7 @@ remove_conf_by_name(char *aConfName) {
 
    const auto config_list = ocs::DataStore::master_list_rw<SGE_TYPE_CONFIG>();
 
-   if (const auto elem = ocs::tom::find_first_rw<CONF_name>(config_list, aConfName); elem) {
+   if (const auto elem = config_list.find_first<CONF_name>(ocs::tom::Host(aConfName)); elem) {
       config_list.erase(elem);
    }
 
@@ -1370,7 +1370,7 @@ conf_exists_by_name(const char *aConfName) {
 
    const auto config_list = ocs::DataStore::master_list<SGE_TYPE_CONFIG>();
 
-   const bool exists = static_cast<bool>(ocs::tom::find_first<CONF_name>(config_list, aConfName));
+   const bool exists = static_cast<bool>(config_list.find_first<CONF_name>(ocs::tom::Host(aConfName)));
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 

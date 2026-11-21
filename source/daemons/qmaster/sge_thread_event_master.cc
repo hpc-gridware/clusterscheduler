@@ -171,8 +171,8 @@ sge_event_master_main(void *arg) {
    // freed by the cancellation cleanup handler, which empties the handle (see there)
    auto report_list = ocs::tom::ListPtr<ocs::tom::REP>::create("report list", ocs::tom::Hashing::Off);
    const auto report = report_list->push_back(ocs::tom::ElementPtr<ocs::tom::REP>::create());
-   ocs::tom::set<REP_type>(report, NUM_REP_REPORT_EVENTS);
-   ocs::tom::set<REP_host>(report, component_get_qualified_hostname());
+   report.set<REP_type>(NUM_REP_REPORT_EVENTS);
+   report.set<REP_host>(ocs::tom::Host(component_get_qualified_hostname()));
 
    while (true) {
       thread_start_stop_profiling();

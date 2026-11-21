@@ -146,12 +146,12 @@ sge_mod_sharetree(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom
          We simply replace the old element with the new one. If there is no
          old we simle add the new. */
 
-      prev_version = ocs::tom::get<STN_version>(first);
+      prev_version = first.get<STN_version>();
       tree.erase(first);
       adding = 0;
    }
 
-   ocs::tom::set<STN_version>(ep, prev_version + 1);
+   ep.set<STN_version>(prev_version + 1);
 
    id_sharetree(alpp, ep, 0);
 
@@ -245,16 +245,16 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::STN> save_found;
-   const char *name = ocs::tom::get<STN_name>(node);
+   const char *name = node.get<STN_name>();
 
    /* Check for dangling or circular references. */
    if (name == nullptr) {
-      ERROR(MSG_STREE_NOVALIDNODEREF_U, ocs::tom::get<STN_id>(node));
+      ERROR(MSG_STREE_NOVALIDNODEREF_U, node.get<STN_id>());
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(-1);
    }
 
-   if (const auto children = ocs::tom::get<STN_children>(node); children) {
+   if (const auto children = node.get<STN_children>(); children) {
 
       /* not a leaf node */
 
@@ -263,13 +263,13 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
 
          /* check for sub-projects (not allowed) */
          if (project) {
-            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
+            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, project.get<PR_name>());
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
 
          /* check for projects appearing more than once */
-         if (ocs::tom::find_first<STN_name>(found.get(), name)) {
+         if (found.get().find_first<STN_name>(name)) {
             ERROR(MSG_STREE_PRJTWICE_S, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
@@ -295,8 +295,8 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
       for (const auto child : children) {
          /* ensure pathes are identically inside share tree */
          for (auto remaining = child.next(); remaining; remaining = remaining.next()) {
-            const char *cn = ocs::tom::get<STN_name>(child);
-            const char *rn = ocs::tom::get<STN_name>(remaining);
+            const char *cn = child.get<STN_name>();
+            const char *rn = remaining.get<STN_name>();
             if (cn == nullptr || rn == nullptr) {
                ERROR(MSG_GDI_KEYSTR_NULL_S, "STN_name");
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -307,7 +307,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
                DRETURN(-1);
             }
             if (!strcmp(cn, rn)) {
-               ERROR(MSG_SGETEXT_FOUND_UP_TWICE_SS, cn, ocs::tom::get<STN_name>(node));
+               ERROR(MSG_SGETEXT_FOUND_UP_TWICE_SS, cn, node.get<STN_name>());
                answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
                /* restore old found list */
                if (save_found) {
@@ -335,7 +335,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
 
       /* check if this is a project node */
       if (prj_list_locate(project_list, name)) {
-         ocs::tom::set<STN_type>(node, STT_PROJECT);
+         node.set<STN_type>(STT_PROJECT);
       }
 
       if (project) {
@@ -344,7 +344,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
 
          /* check for sub-projects */
          if (prj_list_locate(project_list, name)) {
-            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
+            ERROR(MSG_STREE_PRJINPTJSUBTREE_SS, name, project.get<PR_name>());
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -358,8 +358,8 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
          }
 
          /* make sure this user is in the project sub-tree once */
-         if (ocs::tom::find_first<STN_name>(found.get(), name)) {
-            ERROR(MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, ocs::tom::get<PR_name>(project));
+         if (found.get().find_first<STN_name>(name)) {
+            ERROR(MSG_STREE_USERTWICEINPRJSUBTREE_SS, name, project.get<PR_name>());
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
          }
@@ -381,7 +381,7 @@ check_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element<o
 
          /* make sure this user or project is in the non-project sub-tree 
             portion of the share tree only once */
-         if (ocs::tom::find_first<STN_name>(found.get(), name)) {
+         if (found.get().find_first<STN_name>(name)) {
             ERROR(MSG_STREE_USERPRJTWICE_SS, objname, name);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(-1);
@@ -417,10 +417,10 @@ getNode(const ocs::tom::ConstList<ocs::tom::STN> share_tree, const char *name, c
    }
 
    for (const auto node : share_tree) {
-      if (!strcmp(name, ocs::tom::get<STN_name>(node))) {
+      if (!strcmp(name, node.get<STN_name>())) {
          DRETURN(node);
       }
-      if (const auto tmp = getNode(ocs::tom::get<STN_children>(node), name, node_type, 1); tmp) {
+      if (const auto tmp = getNode(node.get<STN_children>(), name, node_type, 1); tmp) {
          DRETURN(tmp);
       }
    }
