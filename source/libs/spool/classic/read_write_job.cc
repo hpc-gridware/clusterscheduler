@@ -236,7 +236,9 @@ ja_task_list_create_from_file(const uint32_t job_id, const uint32_t ja_task_id, 
                      }
                   }
                   // an array task that could not be read keeps nothing; the parallel tasks are freed then
-                  ja_task.get().set<JAT_task_list>(std::move(pe_tasks));
+                  if (ja_task) {
+                     ja_task.get().set<JAT_task_list>(std::move(pe_tasks));
+                  }
                } else {
                   ja_task = ja_task_create_from_file(job_id, ja_task_id, nullptr, flags);
                }

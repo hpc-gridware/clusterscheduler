@@ -1146,7 +1146,9 @@ setup_qmaster() {
                 * SO_slots_sum value, so it's enough to look in the first
                 * element. A spool written before 6.2u5 has SO elements without the field.
                 */
-               if (!so_list.front().has<SO_slots_sum>()) {
+               // an empty subordinate list has nothing to convert
+               const auto first_so = so_list.front();
+               if (first_so && !first_so.has<SO_slots_sum>()) {
                   /* In the subordinate list of the cluster queue there is no
                    * SO_slots_sum field yet, so we have to create a new
                    * subordinate list, copy the values from the old one and

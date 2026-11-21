@@ -444,7 +444,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, jep.get<JB_ar>(), jep.get<JB_job_number>());
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                DRETURN(-2);
             }
             jatp.set<JAT_wallclock_limit>(
@@ -484,7 +486,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                ERROR(SFNMAX, MSG_OBJ_NOQNAME);
                DRETURN(-2);
             }
@@ -499,7 +503,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                ERROR(MSG_CONFIG_CANTFINDQUEUEXREFERENCEDINJOBY_SU, q_name, job_number);
                DRETURN(-2);
             }
@@ -512,7 +518,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                /* try to repair schedd data */
                qinstance_add_event(qep, sgeE_QINSTANCE_MOD, gdi_session);
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                WARNING(MSG_ORD_QVERSION_SUU, q_name, q_version,  qep.get<QU_version>());
                DRETURN(-1);
             }
@@ -533,7 +541,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                DRETURN(-1);
             }
 
@@ -544,7 +554,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                DRETURN(-1);
             }
 
@@ -559,7 +571,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                DRETURN(-1);
             }
             if (qinstance_state_is_cal_suspended(qep)) {
@@ -568,7 +582,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                DRETURN(-1);
             }
             if (qinstance_state_is_cal_disabled(qep)) {
@@ -589,7 +605,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                   ocs_follow_unenroll_task(jep, jatp);
                }
                gdil.reset();
-               jatp.set<JAT_granted_pe>(nullptr);
+               if (jatp) {   // empty if the enrolled task was unenrolled above
+                  jatp.set<JAT_granted_pe>(nullptr);
+               }
                DRETURN(-2);
             } else {
                /* host not yet clean after reschedule unknown? */
@@ -601,7 +619,9 @@ sge_follow_order(const ocs::tom::Element<ocs::tom::OR> ep, [[maybe_unused]] char
                         ocs_follow_unenroll_task(jep, jatp);
                      }
                      gdil.reset();
-                     jatp.set<JAT_granted_pe>(nullptr);
+                     if (jatp) {   // empty if the enrolled task was unenrolled above
+                        jatp.set<JAT_granted_pe>(nullptr);
+                     }
                      DRETURN(-1);
                   }
                }
