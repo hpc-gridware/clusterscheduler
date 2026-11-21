@@ -80,8 +80,8 @@ bool ocs::QHostModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
    // tag jobs for printing if they should be shown
    if ((show & QHOST_DISPLAY_JOBS) == QHOST_DISPLAY_JOBS) {
       for (const auto job : *job_list_) {
-         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-            ocs::tom::set<JAT_suitable>(ja_task, TAG_SHOW_IT);
+         for (const auto ja_task : job.get<JB_ja_tasks>()) {
+            ja_task.set<JAT_suitable>(TAG_SHOW_IT);
          }
       }
    }
@@ -97,7 +97,7 @@ bool ocs::QHostModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
 
       // initialize tag field for hosts
       for (const auto host : *exec_host_list_) {
-         ocs::tom::set<EH_tagged>(host, 0);
+         host.set<EH_tagged>(0);
       }
    }
    DRETURN(true);
@@ -128,7 +128,7 @@ void ocs::QHostModelBase::filter_data(const ocs::tom::ConstList<ocs::tom::CE> re
                                        ocs::tom::ConstElement<ocs::tom::JB>());
    if (is_selected) {
       for (const auto host : *exec_host_list_) {
-         ocs::tom::set<EH_tagged>(host, 1);
+         host.set<EH_tagged>(1);
       }
    } else {
       // If there is hostname request, remove it as we cannot match hostname in sge_select_queue()
@@ -139,7 +139,7 @@ void ocs::QHostModelBase::filter_data(const ocs::tom::ConstList<ocs::tom::CE> re
       }
 
       for (const auto host : *exec_host_list_) {
-         const char *hostname = ocs::tom::get<EH_name>(host);
+         const char *hostname = host.get<EH_name>();
 
          // try to find a matching attribute
          is_selected = sge_select_queue(*tmp_resource_list, ocs::tom::ConstElement<ocs::tom::QU>(), host,
@@ -148,15 +148,15 @@ void ocs::QHostModelBase::filter_data(const ocs::tom::ConstList<ocs::tom::CE> re
                                         ocs::tom::ConstElement<ocs::tom::JB>());
          if (is_selected) {
             // this host is selected, tag it for output
-            ocs::tom::set<EH_tagged>(host, 1);
+            host.set<EH_tagged>(1);
 
             // if there is hostname request, check it here as sge_select_queue cannot handle it
             if (host_match_elem != nullptr &&
-                sge_hostcmp(ocs::tom::get<CE_stringval>(*host_match_elem), hostname) != 0) {
-               ocs::tom::set<EH_tagged>(host, 0);
+                sge_hostcmp(host_match_elem->get<CE_stringval>(), hostname) != 0) {
+               host.set<EH_tagged>(0);
             }
          } else {
-            ocs::tom::set<EH_tagged>(host, 0);
+            host.set<EH_tagged>(0);
          }
       }
    }
@@ -238,7 +238,7 @@ ocs::QHostModelBase::get_host_where(const ocs::tom::ConstList<ocs::tom::ST> host
    ocs::tom::Where<ocs::tom::EH> where;
 
    for (const auto host : hostname_list) {
-      where |= ocs::tom::field<EH_name>().same_host(ocs::tom::get<ST_name>(host));
+      where |= ocs::tom::field<EH_name>().same_host(host.get<ST_name>());
    }
 
    // without host request from the user we include the global host, too.
@@ -277,7 +277,7 @@ ocs::tom::Where<ocs::tom::JB> ocs::QHostModelBase::get_job_where(const ocs::tom:
    ocs::tom::Where<ocs::tom::JB> where;
 
    for (const auto user : user_name_list) {
-      if (const char *user_name = ocs::tom::get<ST_name>(user); is_pattern(user_name)) {
+      if (const char *user_name = user.get<ST_name>(); is_pattern(user_name)) {
          where |= ocs::tom::field<JB_owner>().like(user_name);
       } else {
          where |= ocs::tom::field<JB_owner>() == user_name;

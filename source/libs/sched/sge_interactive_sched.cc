@@ -89,25 +89,25 @@ int remove_immediate_jobs(const ocs::tom::List<ocs::tom::JB> pending_job_list,
       next_job = job.next();
 
       /* skip non immediate .. */
-      if (!JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
+      if (!JOB_TYPE_IS_IMMEDIATE(job.get<JB_type>())) {
          continue;
       }
 
       /* .. and non idle jobs */
-      auto first_task = ocs::tom::get<JB_ja_tasks>(job).front();
-      if (first_task && ocs::tom::get<JAT_status>(first_task) == JIDLE) {
+      auto first_task = job.get<JB_ja_tasks>().front();
+      if (first_task && first_task.get<JAT_status>() == JIDLE) {
          continue;
       }
 
       // the job is freed when it is removed, its number is needed for the running list
-      auto job_number = ocs::tom::get<JB_job_number>(job);
+      auto job_number = job.get<JB_job_number>();
 
       /* Remove the job from the pending list */
       remove_immediate_job(pending_job_list, job, orders, 0);
 
       /* If the job also exists in the running list, we need to remove it there
        * as well since array jobs are all or nothing. */
-      auto running_job = ocs::tom::find_first_rw<JB_job_number>(running_job_list, job_number);
+      auto running_job = running_job_list.find_first<JB_job_number>(job_number);
       if (running_job) {
          remove_immediate_job(running_job_list, running_job, orders, 1);
       }
@@ -135,7 +135,7 @@ void remove_immediate_job(const ocs::tom::List<ocs::tom::JB> job_list, const ocs
                           order_t *orders, const int remove_orders) {
    DENTER(TOP_LAYER);
 
-   for (auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+   for (auto ja_task : job.get<JB_ja_tasks>()) {
       if (remove_orders) {
          order_remove_order_and_immediate(job, ja_task, orders);
       }
@@ -144,10 +144,10 @@ void remove_immediate_job(const ocs::tom::List<ocs::tom::JB> job_list, const ocs
       }
    }
    
-   for (auto range : ocs::tom::get<JB_ja_n_h_ids>(job)) {
-      for (uint32_t ja_task_id = ocs::tom::get<RN_min>(range);
-           ja_task_id <= ocs::tom::get<RN_max>(range);
-           ja_task_id += ocs::tom::get<RN_step>(range)) {
+   for (auto range : job.get<JB_ja_n_h_ids>()) {
+      for (uint32_t ja_task_id = range.get<RN_min>();
+           ja_task_id <= range.get<RN_max>();
+           ja_task_id += range.get<RN_step>()) {
          auto ja_task = job_get_ja_task_template_pending(job, ja_task_id);
 
          /* No need to remove the orders here because tasks in JB_ja_n_h_ids
@@ -191,13 +191,13 @@ order_remove_order_and_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
     * the whole job can run
     */  
    const auto order_list = orders->jobStartOrderList.get();
-   auto job_number = ocs::tom::get<JB_job_number>(job);
-   auto task_number = ocs::tom::get<JAT_task_number>(ja_task);
+   auto job_number = job.get<JB_job_number>();
+   auto task_number = ja_task.get<JAT_task_number>();
 
    // remove the first start order of this task
    for (auto ep : order_list) {
-      if (ocs::tom::get<OR_type>(ep) == ORT_start_job && ocs::tom::get<OR_job_number>(ep) == job_number &&
-          ocs::tom::get<OR_ja_task_number>(ep) == task_number) {
+      if (ep.get<OR_type>() == ORT_start_job && ep.get<OR_job_number>() == job_number &&
+          ep.get<OR_ja_task_number>() == task_number) {
          DPRINTF("Removing job start order for job task %u.%u\n", job_number, task_number);
          order_list.erase(ep);
          break;
@@ -228,7 +228,7 @@ int order_remove_immediate(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DENTER(TOP_LAYER);
 
    DPRINTF("JOB " sge_u32 "." sge_u32 " can't get dispatched - removing\n",
-           ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task));
+           job.get<JB_job_number>(), ja_task.get<JAT_task_number>());
    
    sge_create_orders(orders->jobStartOrderList, ORT_remove_immediate_job, job, ja_task,
                      ocs::tom::ConstList<ocs::tom::JG>(), true);

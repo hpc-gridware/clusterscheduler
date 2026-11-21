@@ -257,7 +257,7 @@ bool ocs::QStatModelClient::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
    }
    // taken now: prepare_data() hands schedd_config_ over to the sconf module
    if (const auto sc = schedd_config_->front(); sc != nullptr) {
-      job_load_adjustments_ = ocs::tom::get<SC_job_load_adjustments>(sc).clone("load_adj_copy");
+      job_load_adjustments_ = sc.get<SC_job_load_adjustments>().clone("load_adj_copy");
    }
    // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
    // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which

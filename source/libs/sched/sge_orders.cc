@@ -81,7 +81,7 @@ void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_m
 
    auto sme = schedd_mes_obtain_package(global_mes_count, job_mes_count);
 
-   if (!sme || (ocs::tom::get<SME_message_list>(sme).empty() && ocs::tom::get<SME_global_message_list>(sme).empty())) {
+   if (!sme || (sme->get<SME_message_list>().empty() && sme->get<SME_global_message_list>().empty())) {
       DRETURN_VOID;
    }
 
@@ -97,7 +97,7 @@ void sge_add_schedd_info(ocs::tom::ListPtr<ocs::tom::OR> &or_list, int *global_m
    jlist->push_back(std::move(sme));
    ocs::tom::set<OR_joker>(ep, std::move(jlist));
 
-   ocs::tom::set<OR_type>(ep, ORT_job_schedd_info);
+   ep->set<OR_type>(ORT_job_schedd_info);
    or_list->push_back(std::move(ep));
 
    DRETURN_VOID;
@@ -141,17 +141,17 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
    /* build sublist of granted */
    if (update_execd) {
       for (const auto gel : granted) {
-         qslots = ocs::tom::get<JG_slots>(gel);
+         qslots = gel.get<JG_slots>();
          if (qslots) { /* ignore Qs with slots==0 */
             auto ep2 = ocs::tom::ElementPtr<ocs::tom::OQ>::create();
-            ocs::tom::set<OQ_slots>(ep2, qslots);
-            ocs::tom::set<OQ_binding_to_use>(ep2, ocs::tom::get<JG_binding_to_use>(gel).clone("binding_to_use"));
-            ocs::tom::set<OQ_dest_queue>(ep2, ocs::tom::get<JG_qname>(gel));
-            ocs::tom::set<OQ_dest_version>(ep2, ocs::tom::get<JG_qversion>(gel));
-            ocs::tom::set<OQ_ticket>(ep2, ocs::tom::get<JG_ticket>(gel));
-            ocs::tom::set<OQ_oticket>(ep2, ocs::tom::get<JG_oticket>(gel));
-            ocs::tom::set<OQ_fticket>(ep2, ocs::tom::get<JG_fticket>(gel));
-            ocs::tom::set<OQ_sticket>(ep2, ocs::tom::get<JG_sticket>(gel));
+            ep2->set<OQ_slots>(qslots);
+            ep2->set<OQ_binding_to_use>(gel.get<JG_binding_to_use>().clone("binding_to_use"));
+            ep2->set<OQ_dest_queue>(gel.get<JG_qname>());
+            ep2->set<OQ_dest_version>(gel.get<JG_qversion>());
+            ep2->set<OQ_ticket>(gel.get<JG_ticket>());
+            ep2->set<OQ_oticket>(gel.get<JG_oticket>());
+            ep2->set<OQ_fticket>(gel.get<JG_fticket>());
+            ep2->set<OQ_sticket>(gel.get<JG_sticket>());
             if (ql == nullptr) {
                ql = ocs::tom::ListPtr<ocs::tom::OQ>::create("orderlist");
             }
@@ -164,9 +164,9 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
    auto ep=ocs::tom::ElementPtr<ocs::tom::OR>::create();
 
    if(ja_task != nullptr) {
-      ocs::tom::set<OR_ticket>(ep,    ocs::tom::get<JAT_tix>(ja_task));
-      ocs::tom::set<OR_ntix>(ep,      ocs::tom::get<JAT_ntix>(ja_task));
-      ocs::tom::set<OR_prio>(ep,      ocs::tom::get<JAT_prio>(ja_task));
+      ep->set<OR_ticket>(ja_task.get<JAT_tix>());
+      ep->set<OR_ntix>(ja_task.get<JAT_ntix>());
+      ep->set<OR_prio>(ja_task.get<JAT_prio>());
    }
 
    if (type == ORT_tickets || type == ORT_ptickets) {
@@ -187,51 +187,51 @@ void sge_create_orders(ocs::tom::ListPtr<ocs::tom::OR> &or_list, const uint32_t 
          auto tlist = ocs::tom::ListPtr<ocs::tom::JAT>::create("", task_layout);
          auto new_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create(task_layout);
          if (update_execd) {
-            ocs::tom::set<JAT_granted_destin_identifier_list>(
-               new_task, ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).clone(""));
+            new_task->set<JAT_granted_destin_identifier_list>(
+               ja_task.get<JAT_granted_destin_identifier_list>().clone(""));
          }
          const auto tempElem = tlist->push_back(std::move(new_task));
 
-         ocs::tom::set<JAT_tix>(tempElem, ocs::tom::get<JAT_tix>(ja_task));
-         ocs::tom::set<JAT_oticket>(tempElem, ocs::tom::get<JAT_oticket>(ja_task));
-         ocs::tom::set<JAT_fticket>(tempElem, ocs::tom::get<JAT_fticket>(ja_task));
-         ocs::tom::set<JAT_sticket>(tempElem, ocs::tom::get<JAT_sticket>(ja_task));
-         ocs::tom::set<JAT_share>(tempElem, ocs::tom::get<JAT_share>(ja_task));
-         ocs::tom::set<JAT_prio>(tempElem, ocs::tom::get<JAT_prio>(ja_task));
-         ocs::tom::set<JAT_ntix>(tempElem, ocs::tom::get<JAT_ntix>(ja_task));
+         tempElem.set<JAT_tix>(ja_task.get<JAT_tix>());
+         tempElem.set<JAT_oticket>(ja_task.get<JAT_oticket>());
+         tempElem.set<JAT_fticket>(ja_task.get<JAT_fticket>());
+         tempElem.set<JAT_sticket>(ja_task.get<JAT_sticket>());
+         tempElem.set<JAT_share>(ja_task.get<JAT_share>());
+         tempElem.set<JAT_prio>(ja_task.get<JAT_prio>());
+         tempElem.set<JAT_ntix>(ja_task.get<JAT_ntix>());
 
-         ocs::tom::set<JB_ja_tasks>(jep, std::move(tlist));
+         jep->set<JB_ja_tasks>(std::move(tlist));
       }
 
       /* Create a reduced job list with only the required fields */
       const auto order_job = jlist->push_back(std::move(jep));
-      ocs::tom::set<JB_nurg>(order_job, ocs::tom::get<JB_nurg>(job));
-      ocs::tom::set<JB_urg>(order_job, ocs::tom::get<JB_urg>(job));
-      ocs::tom::set<JB_rrcontr>(order_job, ocs::tom::get<JB_rrcontr>(job));
-      ocs::tom::set<JB_dlcontr>(order_job, ocs::tom::get<JB_dlcontr>(job));
-      ocs::tom::set<JB_wtcontr>(order_job, ocs::tom::get<JB_wtcontr>(job));
+      order_job.set<JB_nurg>(job.get<JB_nurg>());
+      order_job.set<JB_urg>(job.get<JB_urg>());
+      order_job.set<JB_rrcontr>(job.get<JB_rrcontr>());
+      order_job.set<JB_dlcontr>(job.get<JB_dlcontr>());
+      order_job.set<JB_wtcontr>(job.get<JB_wtcontr>());
       // the joker of an order holds a list of any type (CS-3102), so it takes the raw list
-      ocs::tom::set<OR_joker>(ep, jlist.release());
+      ep->set<OR_joker>(jlist.release());
    }
 
-   ocs::tom::set<OR_type>(ep, type);
-   ocs::tom::set<OR_job_number>(ep, ocs::tom::get<JB_job_number>(job));
-   ocs::tom::set<OR_job_version>(ep, ocs::tom::get<JB_version>(job));
-   ocs::tom::set<OR_queuelist>(ep, std::move(ql));
+   ep->set<OR_type>(type);
+   ep->set<OR_job_number>(job.get<JB_job_number>());
+   ep->set<OR_job_version>(job.get<JB_version>());
+   ep->set<OR_queuelist>(std::move(ql));
 
    if (ja_task != nullptr) {
       const char *s = nullptr;
 
-      ocs::tom::set<OR_ja_task_number>(ep, ocs::tom::get<JAT_task_number>(ja_task));
-      s = ocs::tom::get<JAT_granted_pe>(ja_task);
+      ep->set<OR_ja_task_number>(ja_task.get<JAT_task_number>());
+      s = ja_task.get<JAT_granted_pe>();
       if (s != nullptr) {
-         ocs::tom::set<OR_pe>(ep, s);
+         ep->set<OR_pe>(s);
       }
 
       /* RSMAP: copy from JAT_granted_resources_list
        * we can not lSwapList() it - it is still needed for debiting later
        */
-      ocs::tom::set<OR_granted_resources_list>(ep, ocs::tom::get<JAT_granted_resources_list>(ja_task).clone());
+      ep->set<OR_granted_resources_list>(ja_task.get<JAT_granted_resources_list>().clone());
    }
 
    or_list->push_back(std::move(ep));

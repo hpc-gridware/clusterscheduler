@@ -92,8 +92,8 @@ namespace ocs {
          os << std::format("{:<15} {}\n", MSG_TABLE_EV_POOL, MSG_TABLE_SIZE);
          os << "--------------------\n";
          for (const auto pool : list) {
-            const char *name = ocs::tom::get<ST_name>(pool);
-            os << std::format("{:<15} {}\n", (name != nullptr) ? name : "", ocs::tom::get<ST_id>(pool));
+            const char *name = pool.get<ST_name>();
+            os << std::format("{:<15} {}\n", (name != nullptr) ? name : "", pool.get<ST_id>());
          }
       }
    };

@@ -88,14 +88,14 @@ ocs::tom::Where<ocs::tom::AR> ocs::QRStatModelBase::get_ar_where(QRStatParameter
    // Summay or full view
    if (!parameter.is_summary()) {
       for (const auto elem : parameter.get_ar_id_list()) {
-         where |= ocs::tom::field<AR_id>() == ocs::tom::get<ULNG_value>(elem);
+         where |= ocs::tom::field<AR_id>() == elem.get<ULNG_value>();
       }
    } else {
       // filter users
       parameter.transform_user_list();
 
       for (const auto elem : parameter.get_user_list()) {
-         where |= ocs::tom::field<AR_owner>().like(ocs::tom::get<ST_name>(elem));
+         where |= ocs::tom::field<AR_owner>().like(elem.get<ST_name>());
       }
    }
    DRETURN(where);

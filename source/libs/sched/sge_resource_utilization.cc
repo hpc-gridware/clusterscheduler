@@ -150,7 +150,7 @@ bool utilization_print_to_dstring(const ocs::tom::ConstElement<ocs::tom::RUE> th
    if (this_elem == nullptr || string == nullptr) {
       return true;
    }
-   return double_print_to_dstring(ocs::tom::get<RUE_utilized_now>(this_elem), string);
+   return double_print_to_dstring(this_elem.get<RUE_utilized_now>(), string);
 }
 
 
@@ -173,10 +173,10 @@ static void utilization_print_all(const ocs::tom::ConstList<ocs::tom::PE> pe_lis
 
    /* pe_list */
    for (const auto ep : pe_list) {
-      name = ocs::tom::get<PE_name>(ep);
+      name = ep.get<PE_name>();
       DPRINTF("-------------------------------------------\n");
       DPRINTF("PARALLEL ENVIRONMENT \"%s\"\n", name);
-      for (const auto cr : ocs::tom::get<PE_resource_utilization>(ep)) {
+      for (const auto cr : ep.get<PE_resource_utilization>()) {
          utilization_print(cr, name, false);
       }
    }
@@ -185,18 +185,18 @@ static void utilization_print_all(const ocs::tom::ConstList<ocs::tom::PE> pe_lis
    if (const auto ep = host_list.find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME)); ep != nullptr) {
       DPRINTF("-------------------------------------------\n");
       DPRINTF("GLOBAL HOST RESOURCES\n");
-      for (const auto cr : ocs::tom::get<EH_resource_utilization>(ep)) {
+      for (const auto cr : ep.get<EH_resource_utilization>()) {
          utilization_print(cr, SGE_GLOBAL_NAME, false);
       }
    }
 
    /* exec hosts */
    for (const auto ep : host_list) {
-      name = ocs::tom::get<EH_name>(ep);
+      name = ep.get<EH_name>();
       if (sge_hostcmp(name, SGE_GLOBAL_NAME)) {
          DPRINTF("-------------------------------------------\n");
          DPRINTF("EXEC HOST \"%s\"\n", name);
-         for (const auto cr : ocs::tom::get<EH_resource_utilization>(ep)) {
+         for (const auto cr : ep.get<EH_resource_utilization>()) {
             utilization_print(cr, name, true);
          }
       }
@@ -204,11 +204,11 @@ static void utilization_print_all(const ocs::tom::ConstList<ocs::tom::PE> pe_lis
 
    /* queue instances */
    for (const auto ep : queue_list) {
-      name = ocs::tom::get<QU_full_name>(ep);
+      name = ep.get<QU_full_name>();
       if (strcmp(name, SGE_TEMPLATE_NAME) != 0) {
          DPRINTF("-------------------------------------------\n");
          DPRINTF("QUEUE \"%s\"\n", name);
-         for (const auto cr : ocs::tom::get<QU_resource_utilization>(ep)) {
+         for (const auto cr : ep.get<QU_resource_utilization>()) {
             utilization_print(cr, name, false);
          }
       }
@@ -217,22 +217,22 @@ static void utilization_print_all(const ocs::tom::ConstList<ocs::tom::PE> pe_lis
 
    /* advance reservations */
    for (const auto ep : ar_list) {
-      uint32_t ar_id = ocs::tom::get<AR_id>(ep);
+      uint32_t ar_id = ep.get<AR_id>();
 
-      for (const auto host : ocs::tom::get<AR_reserved_hosts>(ep)) {
-         name = ocs::tom::get<EH_name>(host);
+      for (const auto host : ep.get<AR_reserved_hosts>()) {
+         name = host.get<EH_name>();
          DPRINTF("-------------------------------------------\n");
          DPRINTF("AR " sge_u32 " HOST \"%s\"\n", ar_id, name);
-         for (const auto cr : ocs::tom::get<EH_resource_utilization>(host)) {
+         for (const auto cr : host.get<EH_resource_utilization>()) {
             utilization_print(cr, name, false);
          }
       }
-      for (const auto queue : ocs::tom::get<AR_reserved_queues>(ep)) {
-         name = ocs::tom::get<QU_full_name>(queue);
+      for (const auto queue : ep.get<AR_reserved_queues>()) {
+         name = queue.get<QU_full_name>();
          if (strcmp(name, SGE_TEMPLATE_NAME)) {
             DPRINTF("-------------------------------------------\n");
             DPRINTF("AR " sge_u32 " QUEUE \"%s\"\n", ar_id, name);
-            for (const auto cr : ocs::tom::get<QU_resource_utilization>(queue)) {
+            for (const auto cr : queue.get<QU_resource_utilization>()) {
                utilization_print(cr, name, false);
             }
          }
@@ -261,18 +261,18 @@ static void utilization_print(const ocs::tom::ConstElement<ocs::tom::RUE> cr, co
    if (object_name == nullptr) {
       object_name = "<unknown_object>";
    }
-   const char *name = ocs::tom::get<RUE_name>(cr);
-   double utilized_now = ocs::tom::get<RUE_utilized_now>(cr);
+   const char *name = cr.get<RUE_name>();
+   double utilized_now = cr.get<RUE_utilized_now>();
 
    DPRINTF("resource utilization: %s: utilized-now: %s=%f\n", object_name, name, utilized_now);
 
-   for (const auto rde : ocs::tom::get<RUE_utilized>(cr)) {
-      uint64_t time = ocs::tom::get<RDE_time>(rde);
-      double amount = ocs::tom::get<RDE_amount>(rde);
+   for (const auto rde : cr.get<RUE_utilized>()) {
+      uint64_t time = rde.get<RDE_time>();
+      double amount = rde.get<RDE_amount>();
       const char *time_str = sge_ctime64(time, &dstr);
 
       if (show_binding_inuse) {
-         const char *binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(rde);
+         const char *binding_inuse_str = rde.get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             ocs::TopologyString binding_in_use_obj(binding_inuse_str);
             DPRINTF("\t%s %f (%s)\n", time_str, amount, binding_in_use_obj.to_product_topology_string().c_str());
@@ -284,9 +284,10 @@ static void utilization_print(const ocs::tom::ConstElement<ocs::tom::RUE> cr, co
          DPRINTF("\t%s %f\n", time_str, amount);
       }
    }
-   DPRINTF("resource utilization: %s: utilized-now-non-exclusive: %s=%f\n", object_name, name, ocs::tom::get<RUE_utilized_now_nonexclusive>(cr));
-   for (const auto rde : ocs::tom::get<RUE_utilized_nonexclusive>(cr)) {
-      DPRINTF("\t%s  %f\n", sge_ctime64(ocs::tom::get<RDE_time>(rde), &dstr), ocs::tom::get<RDE_amount>(rde));
+   DPRINTF("resource utilization: %s: utilized-now-non-exclusive: %s=%f\n", object_name, name,
+           cr.get<RUE_utilized_now_nonexclusive>());
+   for (const auto rde : cr.get<RUE_utilized_nonexclusive>()) {
+      DPRINTF("\t%s  %f\n", sge_ctime64(rde.get<RDE_time>(), &dstr), rde.get<RDE_amount>());
    }
 
    DRETURN_VOID;
@@ -327,8 +328,8 @@ utilization_rsmap_set(const ocs::tom::Element<ocs::tom::RDE> rde, const ocs::tom
    auto ids = previous != nullptr ? previous.clone("rsmap_inuse") : ocs::tom::ListPtr<ocs::tom::RESL>();
 
    for (const auto ep : change) {
-      const char *id = ocs::tom::get<RESL_value>(ep);
-      const uint32_t amount = ocs::tom::get<RESL_amount>(ep);
+      const char *id = ep.get<RESL_value>();
+      const uint32_t amount = ep.get<RESL_amount>();
 
       auto dst = ids != nullptr ? ids->find_first<RESL_value>(id) : ocs::tom::Element<ocs::tom::RESL>();
       if (dst == nullptr) {
@@ -347,17 +348,17 @@ utilization_rsmap_set(const ocs::tom::Element<ocs::tom::RDE> rde, const ocs::tom
          }
       }
 
-      const uint32_t in_use = ocs::tom::get<RESL_amount>(dst);
+      const uint32_t in_use = dst.get<RESL_amount>();
       if (add) {
-         ocs::tom::set<RESL_amount>(dst, in_use + amount);
+         dst.set<RESL_amount>(in_use + amount);
       } else if (in_use > amount) {
-         ocs::tom::set<RESL_amount>(dst, in_use - amount);
+         dst.set<RESL_amount>(in_use - amount);
       } else {
          ids->erase(dst);
       }
    }
 
-   ocs::tom::set<RDE_resource_map_list>(rde, std::move(ids));
+   rde.set<RDE_resource_map_list>(std::move(ids));
 }
 
 /**
@@ -379,8 +380,8 @@ utilization_rsmap_equal(const ocs::tom::ConstList<ocs::tom::RESL> a, const ocs::
    }
 
    for (const auto ep : a) {
-      const auto other = ocs::tom::find_first<RESL_value>(b, ocs::tom::get<RESL_value>(ep));
-      if (other == nullptr || ocs::tom::get<RESL_amount>(other) != ocs::tom::get<RESL_amount>(ep)) {
+      const auto other = b.find_first<RESL_value>(ep.get<RESL_value>());
+      if (other == nullptr || other.get<RESL_amount>() != ep.get<RESL_amount>()) {
          DRETURN(false);
       }
    }
@@ -435,14 +436,14 @@ utilization_rsmap_max(const ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t n
 
    // what is held at this moment
    if (!at_queue_end && start_time <= now) {
-      const auto in_use = ocs::tom::get<RUE_utilized_now_resource_map_list>(cr);
+      const auto in_use = cr.get<RUE_utilized_now_resource_map_list>();
       if (in_use != nullptr) {
          taken = in_use.clone("rsmap_taken");
       }
    }
 
    // and what the diagram says about the window
-   const auto diagram = ocs::tom::get<RUE_utilized>(cr);
+   const auto diagram = cr.get<RUE_utilized>();
    if (diagram != nullptr) {
       const uint64_t end_time = utilization_endtime(start_time, duration);
 
@@ -453,14 +454,14 @@ utilization_rsmap_max(const ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t n
       if (rde == nullptr) {
          // the window opens before the diagram does
          rde = diagram.front();
-         if (rde != nullptr && ocs::tom::get<RDE_time>(rde) >= end_time) {
+         if (rde != nullptr && rde.get<RDE_time>() >= end_time) {
             rde = nullptr;
          }
       }
       while (rde != nullptr) {
-         for (const auto ep : ocs::tom::get<RDE_resource_map_list>(rde)) {
-            const char *id = ocs::tom::get<RESL_value>(ep);
-            const uint32_t amount = ocs::tom::get<RESL_amount>(ep);
+         for (const auto ep : rde.get<RDE_resource_map_list>()) {
+            const char *id = ep.get<RESL_value>();
+            const uint32_t amount = ep.get<RESL_amount>();
 
             if (taken == nullptr) {
                taken = ocs::tom::ListPtr<ocs::tom::RESL>::create("rsmap_taken");
@@ -469,13 +470,13 @@ utilization_rsmap_max(const ocs::tom::ConstElement<ocs::tom::RUE> cr, uint64_t n
             if (dst == nullptr) {
                dst = taken->emplace_back<RESL_value>(id);
             }
-            if (dst != nullptr && ocs::tom::get<RESL_amount>(dst) < amount) {
-               ocs::tom::set<RESL_amount>(dst, amount);
+            if (dst != nullptr && dst.get<RESL_amount>() < amount) {
+               dst.set<RESL_amount>(amount);
             }
          }
 
          rde = rde.next();
-         if (rde != nullptr && ocs::tom::get<RDE_time>(rde) >= end_time) {
+         if (rde != nullptr && rde.get<RDE_time>() >= end_time) {
             break;
          }
       }
@@ -527,7 +528,7 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
       DRETURN(DISPATCH_TIME_NOW);
    }
 
-   const auto diagram = (cr != nullptr) ? ocs::tom::get<RUE_utilized>(cr) : ocs::tom::ConstList<ocs::tom::RDE>();
+   const auto diagram = (cr != nullptr) ? cr.get<RUE_utilized>() : ocs::tom::ConstList<ocs::tom::RDE>();
    if (diagram.empty()) {
       // nothing is booked over any period, so whether a group can serve the request is a
       // question about the configuration alone and the answer does not change with time
@@ -549,7 +550,7 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
    bool found = false;
 
    for (const auto key_ep : keys.get()) {
-      const char *key = (key_name != nullptr) ? ocs::tom::get<ST_name>(key_ep) : nullptr;
+      const char *key = (key_name != nullptr) ? key_ep.get<ST_name>() : nullptr;
 
       // Walk this group's history backwards. The entry which does not fit ends the search: the
       // one after it is the point from which the group is free to the end of the diagram.
@@ -561,7 +562,7 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
       uint64_t when = DISPATCH_TIME_NOW;
       bool never = false;
       for (auto rde = diagram.back(); rde != nullptr; rde = rde.prev()) {
-         ocs::tom::ConstList<ocs::tom::RESL> rde_taken = ocs::tom::get<RDE_resource_map_list>(rde);
+         ocs::tom::ConstList<ocs::tom::RESL> rde_taken = rde.get<RDE_resource_map_list>();
          const uint32_t free = (key != nullptr)
                ? centry_rsmap_group_free(definition, rde_taken, key_name, key, id_expr,
                                          required_props)
@@ -573,7 +574,7 @@ utilization_rsmap_below(const ocs::tom::ConstElement<ocs::tom::CE> definition,
          if (next == nullptr) {
             never = true;
          } else {
-            when = ocs::tom::get<RDE_time>(next);
+            when = next.get<RDE_time>();
          }
          break;
       }
@@ -625,12 +626,12 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
                     const ocs::tom::ConstList<ocs::tom::ST> binding_touse,
                     const ocs::tom::ConstList<ocs::tom::RESL> rsmap_inuse) {
    DENTER(TOP_LAYER);
-   const char *name = ocs::tom::get<RUE_name>(cr);
+   const char *name = cr.get<RUE_name>();
    uint64_t end_time;
 
    // the diagram of the exclusive or of the non-exclusive utilization
-   auto resource_diagram = implicit_non_exclusive ? ocs::tom::get<RUE_utilized_nonexclusive>(cr)
-                                                  : ocs::tom::get<RUE_utilized>(cr);
+   auto resource_diagram = implicit_non_exclusive ? cr.get<RUE_utilized_nonexclusive>()
+                                                  : cr.get<RUE_utilized>();
 
    /* A reservation is only necessary in one of the following cases:
       - for_job is true (this means no advance reservation request) 
@@ -654,13 +655,13 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
 
       // we have at least one binding_to_use element. copy the first one to the binding_touse_dstr
       auto to_use_elem = binding_touse.front();
-      ocs::TopologyString binding_to_add(ocs::tom::get<ST_name>(to_use_elem));
+      ocs::TopologyString binding_to_add(to_use_elem.get<ST_name>());
       binding_to_use_obj.mark_nodes_as_used_or_unused(binding_to_add, true);
 
       // add all cores/threads of additional elements to the binding_to_use_dstr
       to_use_elem = to_use_elem.next();
       while (to_use_elem != nullptr) {
-         binding_to_add.reset_topology(ocs::tom::get<ST_name>(to_use_elem));
+         binding_to_add.reset_topology(to_use_elem.get<ST_name>());
          binding_to_use_obj.mark_nodes_as_used_or_unused(binding_to_add, true);
          to_use_elem = to_use_elem.next();
       }
@@ -684,9 +685,9 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
       auto created = ocs::tom::ListPtr<ocs::tom::RDE>::create(name);
       resource_diagram = created.get();
       if (implicit_non_exclusive) {
-         ocs::tom::set<RUE_utilized_nonexclusive>(cr, std::move(created));
+         cr.set<RUE_utilized_nonexclusive>(std::move(created));
       } else {
-         ocs::tom::set<RUE_utilized>(cr, std::move(created));
+         cr.set<RUE_utilized>(std::move(created));
       }
    }
 
@@ -696,18 +697,18 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
    const char *binding_prev = nullptr;
    if (start) {
       // if the start element is already there, we can just add the utilization to it
-      ocs::tom::add<RDE_amount>(start, utilization);
+      start.add<RDE_amount>(utilization);
 
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
-         if (ocs::tom::get<RDE_binding_inuse>(start) != nullptr) {
-            topo_binding_now.reset_topology(ocs::tom::get<RDE_binding_inuse>(start));
+         if (start.get<RDE_binding_inuse>() != nullptr) {
+            topo_binding_now.reset_topology(start.get<RDE_binding_inuse>());
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(start, topo_binding_now,
                                                                                    binding_to_use_obj, true);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(start, ocs::tom::get<RDE_resource_map_list>(start), rsmap_inuse,
+         utilization_rsmap_set(start, start.get<RDE_resource_map_list>(), rsmap_inuse,
          rsmap_taken);
       }
    } else {
@@ -716,16 +717,16 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
       // otherwise we just create a new element with the utilization. it is the new list beginning
       ocs::tom::ConstList<ocs::tom::RESL> rsmap_prev;
       if (prev != nullptr) {
-         util_prev = ocs::tom::get<RDE_amount>(prev);
-         binding_prev = ocs::tom::get<RDE_binding_inuse>(prev);
-         rsmap_prev = ocs::tom::get<RDE_resource_map_list>(prev);
+         util_prev = prev.get<RDE_amount>();
+         binding_prev = prev.get<RDE_binding_inuse>();
+         rsmap_prev = prev.get<RDE_resource_map_list>();
       }
 
       // create a new start element with the utilization and binding_inuse
       auto new_start = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
       start = new_start.get();
-      ocs::tom::set<RDE_time>(start, start_time);
-      ocs::tom::set<RDE_amount>(start, utilization + util_prev);
+      start.set<RDE_time>(start_time);
+      start.set<RDE_amount>(utilization + util_prev);
 
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
@@ -753,27 +754,27 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
 
    /* find existing end element or the element before */
    while (thiz != nullptr) {
-      if (end_time == ocs::tom::get<RDE_time>(thiz)) {
+      if (end_time == thiz.get<RDE_time>()) {
          end = thiz;
          break;
       }
-      if (end_time < ocs::tom::get<RDE_time>(thiz)) {
+      if (end_time < thiz.get<RDE_time>()) {
          break;
       }
 
       /* increment amount of elements in-between */
-      ocs::tom::add<RDE_amount>(thiz, utilization);
+      thiz.add<RDE_amount>(utilization);
 
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
-         if (ocs::tom::get<RDE_binding_inuse>(thiz) != nullptr) {
-            topo_binding_now.reset_topology(ocs::tom::get<RDE_binding_inuse>(thiz));
+         if (thiz.get<RDE_binding_inuse>() != nullptr) {
+            topo_binding_now.reset_topology(thiz.get<RDE_binding_inuse>());
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(thiz, topo_binding_now,
                                                                                    binding_to_use_obj, true);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(thiz, ocs::tom::get<RDE_resource_map_list>(thiz), rsmap_inuse,
+         utilization_rsmap_set(thiz, thiz.get<RDE_resource_map_list>(), rsmap_inuse,
          rsmap_taken);
       }
       prev = thiz;
@@ -781,13 +782,13 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
    }
 
    if (end == nullptr) {
-      util_prev = ocs::tom::get<RDE_amount>(prev);
-      binding_prev = ocs::tom::get<RDE_binding_inuse>(prev);
-      const auto rsmap_prev_end = ocs::tom::get<RDE_resource_map_list>(prev);
+      util_prev = prev.get<RDE_amount>();
+      binding_prev = prev.get<RDE_binding_inuse>();
+      const auto rsmap_prev_end = prev.get<RDE_resource_map_list>();
 
       auto new_end = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
-      ocs::tom::set<RDE_time>(new_end, end_time);
-      ocs::tom::set<RDE_amount>(new_end, util_prev - utilization);
+      new_end->set<RDE_time>(end_time);
+      new_end->set<RDE_amount>(util_prev - utilization);
       if (handle_binding) {
          ocs::TopologyString topo_binding_now;
          if (binding_prev != nullptr) {
@@ -837,7 +838,7 @@ utilization_find_time_or_prevstart_or_prev(const ocs::tom::ConstList<ocs::tom::R
    // the caller may change the elements of the read-only list, so the walk hands out mutable elements
    for (auto thiz = ocs::tom::Element<ocs::tom::RDE>::from_typed(const_cast<lListElem *>(diagram.front().raw()));
         thiz != nullptr; thiz = thiz.next()) {
-      uint64_t rde_time = ocs::tom::get<RDE_time>(thiz);
+      uint64_t rde_time = thiz.get<RDE_time>();
       if (time == rde_time) {
          DRETURN(std::make_pair(thiz, prev));
       }
@@ -867,7 +868,7 @@ static void utilization_normalize(const ocs::tom::List<ocs::tom::RDE> diagram) {
 
    auto thiz = diagram.front();
 
-   while (thiz != nullptr && ocs::tom::get<RDE_amount>(thiz) == 0.0) {
+   while (thiz != nullptr && thiz.get<RDE_amount>() == 0.0) {
       diagram.erase(thiz);
       thiz = diagram.front();
    }
@@ -881,16 +882,16 @@ static void utilization_normalize(const ocs::tom::List<ocs::tom::RDE> diagram) {
       DRETURN_VOID;
    }
 
-   double util_prev = ocs::tom::get<RDE_amount>(thiz);
-   const char *bind_prev = ocs::tom::get<RDE_binding_inuse>(thiz);
-   auto rsmap_prev = ocs::tom::get<RDE_resource_map_list>(thiz);
+   double util_prev = thiz.get<RDE_amount>();
+   const char *bind_prev = thiz.get<RDE_binding_inuse>();
+   auto rsmap_prev = thiz.get<RDE_resource_map_list>();
 
    while ((thiz = next) != nullptr) {
       next = thiz.next();
 
-      double util = ocs::tom::get<RDE_amount>(thiz);
-      const char *bind = ocs::tom::get<RDE_binding_inuse>(thiz);
-      const auto rsmap = ocs::tom::get<RDE_resource_map_list>(thiz);
+      double util = thiz.get<RDE_amount>();
+      const char *bind = thiz.get<RDE_binding_inuse>();
+      const auto rsmap = thiz.get<RDE_resource_map_list>();
 
       // values need to be the same, and binding and the resource map instances also need to be
       // the same so that we can remove an entry
@@ -971,18 +972,18 @@ static double utilization_queue_end(const sge_assignment_t *a, const ocs::tom::C
 
    double max = 0.0;
    const char *binding_inuse_str = nullptr;
-   const auto ep = ocs::tom::get<RUE_utilized>(cr).back();
+   const auto ep = cr.get<RUE_utilized>().back();
    if (ep != nullptr) {
-      if (ocs::tom::get<RDE_time>(ep) != std::numeric_limits<uint64_t>::max()) {
-         max = ocs::tom::get<RDE_amount>(ep);
-         binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(ep);
+      if (ep.get<RDE_time>() != std::numeric_limits<uint64_t>::max()) {
+         max = ep.get<RDE_amount>();
+         binding_inuse_str = ep.get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
             max = increase_util_depending_on_binding(a, host, tmp_binding_inuse, max, total, slots);
          }
       } else {
-         max = ocs::tom::get<RDE_amount>(ep.prev());
-         binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(ep.prev());
+         max = ep.prev().get<RDE_amount>();
+         binding_inuse_str = ep.prev().get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
             max = increase_util_depending_on_binding(a, host, tmp_binding_inuse, max, total, slots);
@@ -993,18 +994,18 @@ static double utilization_queue_end(const sge_assignment_t *a, const ocs::tom::C
    if (for_excl_request) {
       double max_nonexclusive;
       const char *binding_inuse_nonexclusive_str = nullptr;
-      const auto ep = ocs::tom::get<RUE_utilized_nonexclusive>(cr).back();
+      const auto ep = cr.get<RUE_utilized_nonexclusive>().back();
       if (ep != nullptr) {
-         if (ocs::tom::get<RDE_time>(ep) != std::numeric_limits<uint64_t>::max()) {
-            max_nonexclusive = ocs::tom::get<RDE_amount>(ep);
-            binding_inuse_nonexclusive_str = ocs::tom::get<RDE_binding_inuse>(ep);
+         if (ep.get<RDE_time>() != std::numeric_limits<uint64_t>::max()) {
+            max_nonexclusive = ep.get<RDE_amount>();
+            binding_inuse_nonexclusive_str = ep.get<RDE_binding_inuse>();
             if (binding_inuse_nonexclusive_str != nullptr) {
                ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_nonexclusive_str);
                max_nonexclusive = increase_util_depending_on_binding(a, host, tmp_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
             }
          } else {
-            max_nonexclusive = ocs::tom::get<RDE_amount>(ep.prev());
-            binding_inuse_nonexclusive_str = ocs::tom::get<RDE_binding_inuse>(ep.prev());
+            max_nonexclusive = ep.prev().get<RDE_amount>();
+            binding_inuse_nonexclusive_str = ep.prev().get<RDE_binding_inuse>();
             if (binding_inuse_nonexclusive_str != nullptr) {
                ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_nonexclusive_str);
                max_nonexclusive = increase_util_depending_on_binding(a, host, tmp_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
@@ -1063,15 +1064,15 @@ utilization_max(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom
    // ----------------------------------------------------------------------------------------------------------------
    // find current utilization
    if (start_time == DISPATCH_TIME_NOW) {
-      max = ocs::tom::get<RUE_utilized_now>(cr);
-      binding_inuse_str = ocs::tom::get<RUE_utilized_now_binding_inuse>(cr);
+      max = cr.get<RUE_utilized_now>();
+      binding_inuse_str = cr.get<RUE_utilized_now_binding_inuse>();
       if (binding_inuse_str != nullptr) {
          ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
          max = increase_util_depending_on_binding(a, host, tmp_binding_inuse, max, total, slots);
       }
 
       if (for_excl_request) {
-         max = std::max(ocs::tom::get<RUE_utilized_now_nonexclusive>(cr), max);
+         max = std::max(cr.get<RUE_utilized_now_nonexclusive>(), max);
       }
 
       if (combined_binding_inuse.is_empty()) {
@@ -1101,40 +1102,40 @@ utilization_max(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom
 #endif
 
       const auto [start, prev] =
-         utilization_find_time_or_prevstart_or_prev(ocs::tom::get<RUE_utilized>(cr), start_time);
+         utilization_find_time_or_prevstart_or_prev(cr.get<RUE_utilized>(), start_time);
       uint64_t time = 0;
       if (start != nullptr) {
          rde = start.next();
-         max = ocs::tom::get<RDE_amount>(start);
-         time = ocs::tom::get<RDE_time>(start);
+         max = start.get<RDE_amount>();
+         time = start.get<RDE_time>();
          DPRINTF("utilization_max: found entry with exact start time  %s (" sge_u32 ")\n", sge_ctime64(time, &dstr), time);
 
-         binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(start);
+         binding_inuse_str = start.get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             combined_binding_inuse.reset_topology(binding_inuse_str);
             max = increase_util_depending_on_binding(a, host, combined_binding_inuse, max, total, slots);
          }
       } else if (prev != nullptr) {
          rde = prev.next();
-         max = ocs::tom::get<RDE_amount>(prev);
-         time = ocs::tom::get<RDE_time>(prev);
+         max = prev.get<RDE_amount>();
+         time = prev.get<RDE_time>();
          DPRINTF("utilization_max: found entry before start time  %s (" sge_u32 ")\n", sge_ctime64(time, &dstr), time);
 
-         binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(prev);
+         binding_inuse_str = prev.get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             combined_binding_inuse.reset_topology(binding_inuse_str);
             max = increase_util_depending_on_binding(a, host, combined_binding_inuse, max, total, slots);
          }
       } else {
-         rde = ocs::tom::get<RUE_utilized>(cr).front();
+         rde = cr.get<RUE_utilized>().front();
       }
 
       /* now watch out for the maximum before end time */
-      while (rde != nullptr && end_time > ocs::tom::get<RDE_time>(rde)) {
-         double candidate_max = ocs::tom::get<RDE_amount>(rde);
-         uint64_t candidate_time = ocs::tom::get<RDE_time>(rde);
+      while (rde != nullptr && end_time > rde.get<RDE_time>()) {
+         double candidate_max = rde.get<RDE_amount>();
+         uint64_t candidate_time = rde.get<RDE_time>();
 
-         binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(rde);
+         binding_inuse_str = rde.get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
             combined_binding_inuse.mark_nodes_as_used_or_unused(tmp_binding_inuse, true);
@@ -1157,12 +1158,12 @@ utilization_max(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom
          ocs::TopologyString combined_binding_inuse_nonexclusive;
 
          const auto [start_ne, prev_ne] =
-            utilization_find_time_or_prevstart_or_prev(ocs::tom::get<RUE_utilized_nonexclusive>(cr), start_time);
+            utilization_find_time_or_prevstart_or_prev(cr.get<RUE_utilized_nonexclusive>(), start_time);
          if (start_ne != nullptr) {
             rde = start_ne.next();
-            max_nonexclusive = ocs::tom::get<RDE_amount>(start_ne);
-            time_nonexclusive = ocs::tom::get<RDE_time>(start_ne);
-            binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(start_ne);
+            max_nonexclusive = start_ne.get<RDE_amount>();
+            time_nonexclusive = start_ne.get<RDE_time>();
+            binding_inuse_str = start_ne.get<RDE_binding_inuse>();
             if (binding_inuse_str != nullptr) {
                combined_binding_inuse_nonexclusive.reset_topology(binding_inuse_str);
                max_nonexclusive = increase_util_depending_on_binding(a, host, combined_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
@@ -1170,22 +1171,22 @@ utilization_max(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom
          } else if (prev_ne != nullptr) {
             rde = prev_ne.next();
 
-            max_nonexclusive = ocs::tom::get<RDE_amount>(prev_ne);
-            time_nonexclusive = ocs::tom::get<RDE_time>(prev_ne);
-            binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(prev_ne);
+            max_nonexclusive = prev_ne.get<RDE_amount>();
+            time_nonexclusive = prev_ne.get<RDE_time>();
+            binding_inuse_str = prev_ne.get<RDE_binding_inuse>();
             if (binding_inuse_str != nullptr) {
                combined_binding_inuse_nonexclusive.reset_topology(binding_inuse_str);
                max_nonexclusive = increase_util_depending_on_binding(a, host, combined_binding_inuse_nonexclusive, max_nonexclusive, total, slots);
             }
          } else {
-            rde = ocs::tom::get<RUE_utilized_nonexclusive>(cr).front();
+            rde = cr.get<RUE_utilized_nonexclusive>().front();
          }
 
          /* now watch out for the maximum before end time */
-         while (rde != nullptr && end_time > ocs::tom::get<RDE_time>(rde)) {
-            double candidate_max_nonexclusive = ocs::tom::get<RDE_amount>(rde);
+         while (rde != nullptr && end_time > rde.get<RDE_time>()) {
+            double candidate_max_nonexclusive = rde.get<RDE_amount>();
 
-            binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(rde);
+            binding_inuse_str = rde.get<RDE_binding_inuse>();
             if (binding_inuse_str != nullptr) {
                ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_str);
                combined_binding_inuse_nonexclusive.mark_nodes_as_used_or_unused(tmp_binding_inuse_nonexclusive, true);
@@ -1194,7 +1195,7 @@ utilization_max(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::tom
 
             if (candidate_max_nonexclusive > max_nonexclusive) {
                max_nonexclusive = candidate_max_nonexclusive;
-               time_nonexclusive = ocs::tom::get<RDE_time>(rde);
+               time_nonexclusive = rde.get<RDE_time>();
             }
             rde = rde.next();
          }
@@ -1288,12 +1289,12 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
 
    // search backward starting from the diagram's end
    bool reuse_prev_util = false;
-   for (auto rde = ocs::tom::get<RUE_utilized>(cr).back(); rde != nullptr; rde = rde.prev()) {
+   for (auto rde = cr.get<RUE_utilized>().back(); rde != nullptr; rde = rde.prev()) {
 
       // avoid doing work twice: reuse fetched data once and look at each binding pattern also only once
       if (!reuse_prev_util) {
-         util = ocs::tom::get<RDE_amount>(rde);
-         binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(rde);
+         util = rde.get<RDE_amount>();
+         binding_inuse_str = rde.get<RDE_binding_inuse>();
          if (binding_inuse_str != nullptr) {
             combined_binding_inuse.reset_topology(binding_inuse_str);
             DPRINTF("XXX combined_binding_inuse: %s\n", combined_binding_inuse.to_product_topology_string().c_str());
@@ -1315,8 +1316,8 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
          const auto p = rde.prev();
          if (p != nullptr) {
 
-            util = ocs::tom::get<RDE_amount>(p);
-            binding_inuse_str = ocs::tom::get<RDE_binding_inuse>(p);
+            util = p.get<RDE_amount>();
+            binding_inuse_str = p.get<RDE_binding_inuse>();
             if (binding_inuse_str != nullptr) {
                ocs::TopologyString tmp_binding_inuse(binding_inuse_str);
                tmp_binding_inuse.mark_nodes_as_used_or_unused(combined_binding_inuse, true);
@@ -1328,8 +1329,9 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
             // and the current entry is the first one below max_util. if the previous entry also fits,
             // we continue with the next entry
             if (util > max_util) {
-               DPRINTF("utilization_below: found max utilization at due to combined binding in resource diagram %s\n", sge_ctime64(ocs::tom::get<RDE_time>(p), &dstr));
-               when = ocs::tom::get<RDE_time>(rde);
+               DPRINTF("utilization_below: found max utilization at due to combined binding in resource diagram %s\n",
+                       sge_ctime64(p.get<RDE_time>(), &dstr));
+               when = rde.get<RDE_time>();
                break;
             }
          }
@@ -1343,10 +1345,10 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
       uint64_t when_nonexclusive = DISPATCH_TIME_NOW;
       const char *binding_inuse_str_nonexclusive = nullptr;
 
-      for (auto rde = ocs::tom::get<RUE_utilized_nonexclusive>(cr).back(); rde != nullptr; rde = rde.prev()) {
+      for (auto rde = cr.get<RUE_utilized_nonexclusive>().back(); rde != nullptr; rde = rde.prev()) {
          if (!reuse_prev_util) {
-            util = ocs::tom::get<RDE_amount>(rde);
-            binding_inuse_str_nonexclusive = ocs::tom::get<RDE_binding_inuse>(rde);
+            util = rde.get<RDE_amount>();
+            binding_inuse_str_nonexclusive = rde.get<RDE_binding_inuse>();
             if (binding_inuse_str_nonexclusive != nullptr) {
                combined_binding_inuse_nonexclusive.reset_topology(binding_inuse_str_nonexclusive);
                DPRINTF("combined_binding_inuse: %s\n", combined_binding_inuse_nonexclusive.to_product_topology_string().c_str());
@@ -1364,8 +1366,8 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
             const auto p = rde.prev();
             if (p != nullptr) {
 
-               util = ocs::tom::get<RDE_amount>(p);
-               binding_inuse_str_nonexclusive = ocs::tom::get<RDE_binding_inuse>(p);
+               util = p.get<RDE_amount>();
+               binding_inuse_str_nonexclusive = p.get<RDE_binding_inuse>();
                if (binding_inuse_str_nonexclusive != nullptr) {
                   ocs::TopologyString tmp_binding_inuse_nonexclusive(binding_inuse_str_nonexclusive);
                   tmp_binding_inuse_nonexclusive.mark_nodes_as_used_or_unused(combined_binding_inuse_nonexclusive, true);
@@ -1374,8 +1376,9 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
                reuse_prev_util = true;
 
                if (util > max_util) {
-                  DPRINTF("utilization_below: found max utilization-nonexclusive at due to combined binding in resource diagram %s\n", sge_ctime64(ocs::tom::get<RDE_time>(p), &dstr));
-                  when_nonexclusive = ocs::tom::get<RDE_time>(rde);
+                  DPRINTF("utilization_below: found max utilization-nonexclusive at due to combined binding in "
+                          "resource diagram %s\n", sge_ctime64(p.get<RDE_time>(), &dstr));
+                  when_nonexclusive = rde.get<RDE_time>();
                   break;
                }
             }
@@ -1405,8 +1408,8 @@ utilization_below(const sge_assignment_t *a, const ocs::tom::ConstElement<ocs::t
                                     combined_binding_inuse)) {
          earlier = a->now;
       } else {
-         for (const auto candidate_rde : ocs::tom::get<RUE_utilized>(cr)) {
-            const uint64_t candidate = ocs::tom::get<RDE_time>(candidate_rde);
+         for (const auto candidate_rde : cr.get<RUE_utilized>()) {
+            const uint64_t candidate = candidate_rde.get<RDE_time>();
 
             // a window can only open where an entry of the diagram begins, so those are the
             // only moments worth asking about
@@ -1468,7 +1471,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    // the resource map instances this assignment holds, so that the diagram records which ones
    // are taken over its window and not only how many
    const auto job_granted_resources = (a->ja_task != nullptr)
-                                      ? ocs::tom::get<JAT_granted_resources_list>(a->ja_task)
+                                      ? a->ja_task.get<JAT_granted_resources_list>()
                                       : ocs::tom::List<ocs::tom::GRU>();
 
    DENTER(TOP_LAYER);
@@ -1479,8 +1482,8 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       dstring rue_name = DSTRING_INIT;
       /* parallel environment  */
       if (a->pe) {
-         utilization_add(ocs::tom::get<PE_resource_utilization>(a->pe).front(), a->start, a->duration, a->slots,
-                         a->job_id, a->ja_task_id, PE_TAG, ocs::tom::get<PE_name>(a->pe), type,
+         utilization_add(a->pe.get<PE_resource_utilization>().front(), a->start, a->duration, a->slots,
+                         a->job_id, a->ja_task_id, PE_TAG, a->pe.get<PE_name>(), type,
                          for_job_scheduling, false, ocs::tom::ConstList<ocs::tom::ST>(),
                          ocs::tom::ConstList<ocs::tom::RESL>());
       }
@@ -1489,11 +1492,11 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
       const char *last_eh_name = nullptr;
       bool do_per_global_host_booking = true;
       for (const auto gdil_ep : ocs::tom::ConstList<ocs::tom::JG>(*a->gdil)) {
-         int slots = ocs::tom::get<JG_slots>(gdil_ep);
-         const char *eh_name = ocs::tom::get<JG_qhostname>(gdil_ep);
-         const char *qname = ocs::tom::get<JG_qname>(gdil_ep);
-         const char* pe = (a->pe)?ocs::tom::get<PE_name>(a->pe):nullptr;
-         const char *queue_instance = ocs::tom::get<JG_qname>(gdil_ep);
+         int slots = gdil_ep.get<JG_slots>();
+         const char *eh_name = gdil_ep.get<JG_qhostname>();
+         const char *qname = gdil_ep.get<JG_qname>();
+         const char* pe = (a->pe)?a->pe.get<PE_name>():nullptr;
+         const char *queue_instance = gdil_ep.get<JG_qname>();
          char *queue = cqueue_get_name_from_qinstance(queue_instance);
          bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
@@ -1533,7 +1536,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
 
          /* resource quotas */
          for (const auto rqs : ocs::tom::ConstList<ocs::tom::RQS>(a->rqs_list)) {
-            if (!ocs::tom::get<RQS_enabled>(rqs)) {
+            if (!rqs.get<RQS_enabled>()) {
                continue;
             }
 
@@ -1544,7 +1547,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
                rqs_get_rue_string(&rue_name, rule, a->user, a->project, eh_name, queue, pe);
 
                rqs_add_job_utilization(a->job, a->pe, a->ja_task_id, type, rule, rue_name,
-                                       a->centry_list, slots, ocs::tom::get<RQS_name>(rqs),
+                                       a->centry_list, slots, rqs.get<RQS_name>(),
                                        a->start, a->duration, is_master_task, do_per_host_booking);
             }
          }
@@ -1558,20 +1561,20 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
    } else {
       /* debit AR-job */
       if (a->ar != nullptr) {
-         const auto ar_global_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(a->ar, SGE_GLOBAL_NAME);
+         const auto ar_global_host = a->ar.find_first_in_rw<AR_reserved_hosts, EH_name>(SGE_GLOBAL_NAME);
 
          bool is_master_task = true;
          bool do_per_global_host_booking = true;
          const char *last_eh_name = nullptr;
          for (const auto gdil_ep : ocs::tom::ConstList<ocs::tom::JG>(*a->gdil)) {
-            int slots = ocs::tom::get<JG_slots>(gdil_ep);
-            const char *qname = ocs::tom::get<JG_qname>(gdil_ep);
-            const char *eh_name = ocs::tom::get<JG_qhostname>(gdil_ep);
+            int slots = gdil_ep.get<JG_slots>();
+            const char *qname = gdil_ep.get<JG_qname>();
+            const char *eh_name = gdil_ep.get<JG_qhostname>();
             bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
             // CS-1745: what about the parallel environment utilization for AR jobs?
 
-            if (const auto qep = ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(a->ar, qname);
+            if (const auto qep = a->ar.find_first_in_rw<AR_reserved_queues, QU_full_name>(qname);
                 qep != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, qep, a->centry_list, slots,
                                       qname, a->start,
@@ -1585,7 +1588,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
                                       a->duration, HOST_TAG, for_job_scheduling, is_master_task,
                                       do_per_global_host_booking, job_granted_resources);
             }
-            const auto host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(a->ar, eh_name);
+            const auto host = a->ar.find_first_in_rw<AR_reserved_hosts, EH_name>(eh_name);
             if (host != nullptr) {
                rc_add_job_utilization(gdil_ep, a->job, a->pe, a->ja_task_id, type, host, a->centry_list, slots,
                                       eh_name, a->start,
@@ -1658,20 +1661,20 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
 
    if (ep == nullptr) {
       ERROR("rc_add_job_utilization nullptr object " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n",
-            ocs::tom::get<JB_job_number>(jep), obj_name, type, slots, static_cast<void *>(ep.raw()));
+            jep.get<JB_job_number>(), obj_name, type, slots, static_cast<void *>(ep.raw()));
       DRETURN(0);
    }
 
    if (slots == 0) {
       ERROR("rc_add_job_utilization 0 slot amount " "(job " sge_u32 " obj %s type %s) slots %d ep %p\n",
-            ocs::tom::get<JB_job_number>(jep), obj_name, type, slots, static_cast<void *>(ep.raw()));
+            jep.get<JB_job_number>(), obj_name, type, slots, static_cast<void *>(ep.raw()));
       DRETURN(0);
    }
 
-   uint32_t job_id = ocs::tom::get<JB_job_number>(jep);
+   uint32_t job_id = jep.get<JB_job_number>();
 
-   for (const auto cr_config : ocs::tom::get<ConfigF>(ep)) {
-      const char *name = ocs::tom::get<CE_name>(cr_config);
+   for (const auto cr_config : ep.template get<ConfigF>()) {
+      const char *name = cr_config.template get<CE_name>();
 
       /* search default request */  
       const auto dcep = ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
@@ -1680,13 +1683,13 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
          DRETURN(-1);
       }
 
-      uint32_t consumable = ocs::tom::get<CE_consumable>(dcep);
+      uint32_t consumable = dcep.get<CE_consumable>();
 
       if (consumable != CONSUMABLE_NO) {
          /* ensure attribute is in actual list */
-         cr = ocs::tom::find_first_in_rw<ActualF, RUE_name>(ep, name);
+         cr = ep.template find_first_in_rw<ActualF, RUE_name>(name);
          if (cr == nullptr) {
-            cr = ocs::tom::emplace_back_in<ActualF, RUE_name>(ep, name);
+            cr = ep.template emplace_back_in<ActualF, RUE_name>(name);
             /* CE_double is implicitly set to zero */
          }
       }
@@ -1696,10 +1699,12 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
       // assignment was granted and are looked up here by the map and the object they were
       // granted on.
       ocs::tom::ConstList<ocs::tom::RESL> rsmap_inuse;
-      if ((tag == HOST_TAG || tag == GLOBAL_TAG) && static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(dcep)) == ocs::CEntry::Type::RSMAP) {
+      if ((tag == HOST_TAG || tag == GLOBAL_TAG) &&
+          static_cast<ocs::CEntry::Type>(dcep.get<CE_valtype>()) == ocs::CEntry::Type::RSMAP) {
          const auto gru = gru_list_search(granted_resources_list, name, obj_name);
-         if (gru != nullptr && static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(gru)) == ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
-            rsmap_inuse = ocs::tom::get<GRU_resource_map_list>(gru);
+         if (gru != nullptr && static_cast<ocs::GrantedResources::Type>(gru.get<GRU_type>()) ==
+                                  ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
+            rsmap_inuse = gru.get<GRU_resource_map_list>();
          }
       }
 
@@ -1717,7 +1722,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
             /* update RUE_utilized resource diagram to reflect jobs utilization */
             ocs::tom::ConstList<ocs::tom::ST> binding_to_use;
             if (tag == HOST_TAG) {
-               binding_to_use = ocs::tom::get<JG_binding_to_use>(gdil);
+               binding_to_use = gdil.get<JG_binding_to_use>();
             }
             utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
                             obj_name, type, for_job_scheduling, false, binding_to_use, rsmap_inuse);
@@ -1738,7 +1743,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
                   /* update RUE_utilized resource diagram to reflect jobs utilization */
                   // book it for one slot (the master task)
                   utilization_add(cr, start_time, duration, slot_signum(debit_slots) * dval, job_id, task_id, tag,
-                                  obj_name, type, for_job_scheduling, false, ocs::tom::get<JG_binding_to_use>(gdil),
+                                  obj_name, type, for_job_scheduling, false, gdil.get<JG_binding_to_use>(),
                                rsmap_inuse);
                   mods++;
                   did_booking = true;
@@ -1753,7 +1758,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
             bool tmp_ret;
             dval = 0.0;
             // if we are on the master host, and we shall ignore slave requests to booking only for slots
-            if (is_master_task && ocs::tom::get<PE_ignore_slave_requests_on_master_host>(pe)) {
+            if (is_master_task && pe.get<PE_ignore_slave_requests_on_master_host>()) {
                tmp_ret = true;
                if (sge_strnullcmp(name, SGE_ATTR_SLOTS) == 0) {
                   dval = 1.0;
@@ -1767,7 +1772,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
                // book it for the remaining slave tasks
                slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
                utilization_add(cr, start_time, duration, slave_debit_slots * dval, job_id, task_id, tag,
-                               obj_name, type, for_job_scheduling, false, ocs::tom::get<JG_binding_to_use>(gdil),
+                               obj_name, type, for_job_scheduling, false, gdil.get<JG_binding_to_use>(),
                                rsmap_inuse);
                mods++;
                did_booking = true;
@@ -1776,11 +1781,11 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
       }
 
       // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
-      if (!did_booking && ocs::tom::get<CE_relop>(dcep) == CMPLXEXCL_OP) {
+      if (!did_booking && dcep.get<CE_relop>() == CMPLXEXCL_OP) {
          dval = 1.0;
          /* update RUE_utilized resource diagram to reflect jobs utilization */
          utilization_add(cr, start_time, duration, debit_slots * dval, job_id, task_id, tag,
-                         obj_name, type, for_job_scheduling, true, ocs::tom::get<JG_binding_to_use>(gdil),
+                         obj_name, type, for_job_scheduling, true, gdil.get<JG_binding_to_use>(),
                          ocs::tom::ConstList<ocs::tom::RESL>());
          mods++;
       }
@@ -1893,12 +1898,12 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
    int mods = 0;
 
    if (jep != nullptr) {
-      uint32_t job_id = ocs::tom::get<JB_job_number>(jep);
+      uint32_t job_id = jep.get<JB_job_number>();
 
-      for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
+      for (const auto limit : rule.get<RQR_limit>()) {
          ocs::tom::Element<ocs::tom::RUE> rue_elem;
 
-         const char *centry_name = ocs::tom::get<RQRL_name>(limit);
+         const char *centry_name = limit.get<RQRL_name>();
          
          const auto raw_centry =
             ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, centry_name));
@@ -1907,12 +1912,12 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
             continue;
          }
 
-         uint32_t consumable = ocs::tom::get<CE_consumable>(raw_centry);
+         uint32_t consumable = raw_centry.get<CE_consumable>();
 
          if (consumable != CONSUMABLE_NO) {
-            rue_elem = ocs::tom::find_first_in_rw<RQRL_usage, RUE_name>(limit, sge_dstring_get_string(&rue_name));
+            rue_elem = limit.find_first_in_rw<RQRL_usage, RUE_name>(sge_dstring_get_string(&rue_name));
             if (rue_elem == nullptr) {
-               rue_elem = ocs::tom::emplace_back_in<RQRL_usage, RUE_name>(limit, sge_dstring_get_string(&rue_name));
+               rue_elem = limit.emplace_back_in<RQRL_usage, RUE_name>(sge_dstring_get_string(&rue_name));
                /* RUE_utilized_now is implicitly set to zero */
             }
          }
@@ -1966,7 +1971,7 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
                bool tmp_ret;
                dval = 0.0;
                // if we are on the master host, and we shall ignore slave requests to booking only for slots
-               if (is_master_task && ocs::tom::get<PE_ignore_slave_requests_on_master_host>(pe)) {
+               if (is_master_task && pe.get<PE_ignore_slave_requests_on_master_host>()) {
                   tmp_ret = true;
                   if (sge_strnullcmp(centry_name, SGE_ATTR_SLOTS) == 0) {
                      dval = 1.0;
@@ -1988,7 +1993,7 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
          }
 
          // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
-         if (!did_booking && ocs::tom::get<CE_relop>(raw_centry) == CMPLXEXCL_OP) {
+         if (!did_booking && raw_centry.get<CE_relop>() == CMPLXEXCL_OP) {
             dval = 1.0;
             utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
                             RQS_TAG, obj_name, type, true, true, ocs::tom::ConstList<ocs::tom::ST>(),
@@ -2028,7 +2033,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
                          const uint64_t now) {
    DENTER(TOP_LAYER);
 
-   auto gep = ocs::tom::find_first_rw<EH_name>(host_list, SGE_GLOBAL_NAME);
+   auto gep = host_list.find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
    const char *type;
    uint32_t interval = sconf_get_schedule_interval();
 
@@ -2039,13 +2044,13 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
    }   
 
    for (const auto jep : job_list) {
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (const auto ja_task : jep.get<JB_ja_tasks>()) {
          sge_assignment_t a{};
 
          assignment_init(&a, jep, ja_task, nullptr);
          assignment_init_ar(&a, ar_list);
 
-         a.start = ocs::tom::get<JAT_start_time>(ja_task);
+         a.start = ja_task.get<JAT_start_time>();
 
          task_get_duration(&a.duration, ja_task);
 
@@ -2071,7 +2076,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
          // The granted list belongs to the task, but a.gdil owns what it holds: the loan gives it back before the
          // assignment ends, also when an exception leaves the loop, so the task keeps its list
          a.gdil = ocs::tom::ListPtr<ocs::tom::JG>::from_typed(
-               ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task));
+               ja_task.get<JAT_granted_destin_identifier_list>());
          struct GdilLoan {
             ocs::tom::ListPtr<ocs::tom::JG> &gdil; ///< the owning member holding the borrowed list
 
@@ -2091,7 +2096,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
          a.gep = gep;
 
          // Step 1/3 We need the current PE for the resource utilization calculation
-         const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
+         const char *pe_name = ja_task.get<JAT_granted_pe>();
          a.pe = ocs::tom::Element<ocs::tom::PE>(pe_list_locate(pe_list, pe_name));
          if (pe_name != nullptr && a.pe == nullptr) {
             CRITICAL("===> granted_pe is %s but pe_object is nullptr", pe_name);
@@ -2105,17 +2110,17 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
          // - This has to be reset further down below (step 4/4)
          bool org_sromh = false;
          if (a.pe != nullptr) {
-            const auto old_pe = ocs::tom::get<JAT_pe_object>(ja_task);
-            bool old_sromh = ocs::tom::get<PE_ignore_slave_requests_on_master_host>(old_pe);
+            const auto old_pe = ja_task.get<JAT_pe_object>();
+            bool old_sromh = old_pe.get<PE_ignore_slave_requests_on_master_host>();
 
-            org_sromh = ocs::tom::get<PE_ignore_slave_requests_on_master_host>(a.pe);
-            ocs::tom::set<PE_ignore_slave_requests_on_master_host>(a.pe, old_sromh);
+            org_sromh = a.pe.get<PE_ignore_slave_requests_on_master_host>();
+            a.pe.set<PE_ignore_slave_requests_on_master_host>(old_sromh);
          }
 
          if (DPRINTF_IS_ACTIVE) {
             DSTRING_STATIC(dstr, 64);
             DPRINTF("Adding job " sge_u32 "." sge_u32 " into schedule start %s duration %.0f\n",
-                    ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task),
+                    jep.get<JB_job_number>(), ja_task.get<JAT_task_number>(),
                     sge_ctime64(a.start, &dstr), sge_gmt64_to_gmt32_double(a.duration));
          }
 
@@ -2124,7 +2129,7 @@ add_job_list_to_schedule(const ocs::tom::List<ocs::tom::JB> job_list, const bool
 
          // Step 4/4: debiting is done. Reset the PE object with the original value
          if (a.pe != nullptr) {
-            ocs::tom::set<PE_ignore_slave_requests_on_master_host>(a.pe, org_sromh);
+            a.pe.set<PE_ignore_slave_requests_on_master_host>(org_sromh);
          }
       }
    }
@@ -2199,34 +2204,34 @@ add_calendar_to_schedule(const ocs::tom::List<ocs::tom::QU> queue_list, uint64_t
    DENTER(TOP_LAYER);
 
    for (const auto queue : queue_list) {
-      const auto queue_states = ocs::tom::get<QU_state_changes>(queue);
+      const auto queue_states = queue.get<QU_state_changes>();
       uint64_t from = now;
 
       if (queue_states != nullptr) {
       
-         const auto consumable_list = ocs::tom::get<QU_consumable_config_list>(queue);
-         const auto slot_elem = ocs::tom::find_first<CE_name>(consumable_list, SGE_ATTR_SLOTS);
-         double slot_count = ocs::tom::get<CE_doubleval>(slot_elem); 
+         const auto consumable_list = queue.get<QU_consumable_config_list>();
+         const auto slot_elem = consumable_list.find_first<CE_name>(SGE_ATTR_SLOTS);
+         double slot_count = slot_elem.get<CE_doubleval>(); 
 
-         const auto queue_uti_list = ocs::tom::get<QU_resource_utilization>(queue);
-         const auto slot_uti = ocs::tom::find_first_rw<RUE_name>(queue_uti_list, SGE_ATTR_SLOTS);
-         auto slot_uti_list = ocs::tom::get<RUE_utilized>(slot_uti);
+         const auto queue_uti_list = queue.get<QU_resource_utilization>();
+         const auto slot_uti = queue_uti_list.find_first<RUE_name>(SGE_ATTR_SLOTS);
+         auto slot_uti_list = slot_uti.get<RUE_utilized>();
          
-         DPRINTF("queue: %s time " sge_u64" \n", ocs::tom::get<QU_full_name>(queue), from);
+         DPRINTF("queue: %s time " sge_u64" \n", queue.get<QU_full_name>(), from);
 
          if (slot_uti_list == nullptr) {
             auto created = ocs::tom::ListPtr<ocs::tom::RDE>::create("slot_uti");
             slot_uti_list = created.get();
-            ocs::tom::set<RUE_utilized>(slot_uti, std::move(created));
+            slot_uti.set<RUE_utilized>(std::move(created));
          }
 
          for (const auto queue_state : queue_states) {
-            bool is_full = (ocs::tom::get<CQU_state>(queue_state) != QI_DO_NOTHING)?true:false;
-            uint64_t till = ocs::tom::get<CQU_till>(queue_state);
+            bool is_full = (queue_state.get<CQU_state>() != QI_DO_NOTHING)?true:false;
+            uint64_t till = queue_state.get<CQU_till>();
           
             /* check for now, and set it if it is now */
             if (is_full && (from == now)) {
-               ocs::tom::set<RUE_utilized_now>(slot_uti, slot_count);
+               slot_uti.set<RUE_utilized_now>(slot_count);
             }
           
             set_utilization(slot_uti_list, from, till, is_full?slot_count:0);
@@ -2272,20 +2277,20 @@ set_utilization(const ocs::tom::List<ocs::tom::RDE> uti_list, uint64_t from, uin
      
       /* search for the starting point */
       while (uti_elem_next != nullptr) {
-         uint64_t rde_time = ocs::tom::get<RDE_time>(uti_elem_next);
+         uint64_t rde_time = uti_elem_next.get<RDE_time>();
          if (rde_time > from) { /*insert before this elem */
             if (const auto before = uti_elem_next.prev(); before != nullptr) {
                uti_list.insert_after(before, newResourceElem(from, uti));
             } else {
                uti_list.push_front(newResourceElem(from, uti));
             }
-            past_uti = ocs::tom::get<RDE_amount>(uti_elem_next);
+            past_uti = uti_elem_next.get<RDE_amount>();
             is_from_added = true; 
             break;
          } else if (rde_time == from) { /* modify found elem */
             /* override utilization is maximun */
-            past_uti = ocs::tom::get<RDE_amount>(uti_elem_next);
-            ocs::tom::set<RDE_amount>(uti_elem_next, uti);
+            past_uti = uti_elem_next.get<RDE_amount>();
+            uti_elem_next.set<RDE_amount>(uti);
             is_from_added = true;
             break;
          } else { /* did not find it, continue */
@@ -2295,7 +2300,7 @@ set_utilization(const ocs::tom::List<ocs::tom::RDE> uti_list, uint64_t from, uin
 
       if (is_from_added) { /* search for the endpoint */
           while (uti_elem_next != nullptr) {
-             uint64_t rde_time = ocs::tom::get<RDE_time>(uti_elem_next);
+             uint64_t rde_time = uti_elem_next.get<RDE_time>();
             if (rde_time > till) { /*insert before this elem */
                if (const auto before = uti_elem_next.prev(); before != nullptr) {
                   uti_list.insert_after(before, newResourceElem(till, past_uti));
@@ -2309,7 +2314,7 @@ set_utilization(const ocs::tom::List<ocs::tom::RDE> uti_list, uint64_t from, uin
                break;
             } else { /* did not find it, remove the current elem and continue*/
                const auto next = uti_elem_next.next();
-               past_uti = ocs::tom::get<RDE_amount>(uti_elem_next);
+               past_uti = uti_elem_next.get<RDE_amount>();
                uti_list.erase(uti_elem_next);
                uti_elem_next = next;
             }
@@ -2340,8 +2345,8 @@ set_utilization(const ocs::tom::List<ocs::tom::RDE> uti_list, uint64_t from, uin
  */
 static ocs::tom::ElementPtr<ocs::tom::RDE> newResourceElem(uint64_t time, double amount) {
    auto elem = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
-   ocs::tom::set<RDE_time>(elem, time);
-   ocs::tom::set<RDE_amount>(elem, amount);
+   elem->set<RDE_time>(time);
+   elem->set<RDE_amount>(amount);
    return elem;
 }
 
@@ -2356,7 +2361,7 @@ static ocs::tom::ElementPtr<ocs::tom::RDE> newResourceElem(uint64_t time, double
 int qinstance_slots_reserved_now(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(TOP_LAYER);
    int ret = 0;
-   if (const auto slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   if (const auto slots = this_elem.find_first_in<QU_resource_utilization, RUE_name>(SGE_ATTR_SLOTS);
        slots != nullptr) {
       const uint64_t now = sge_get_gmt64();
       ocs::TopologyString binding_in_use;

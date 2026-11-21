@@ -175,13 +175,13 @@ void ocs::QStatModelBase::calc_longest_queue_length(QStatParameter &parameter) c
    if (queue_length == -1) {
       if (parameter.output_mode_ == QStatParameter::OutputMode::QSTAT_GROUP) {
          for (const auto cqueue : *cqueue_list_) {
-            if (const char *qname = ocs::tom::get<CQ_name>(cqueue); qname != nullptr) {
+            if (const char *qname = cqueue.get<CQ_name>(); qname != nullptr) {
                queue_length = std::max(queue_length, static_cast<int>(strlen(qname)));
             }
          }
       } else {
          for (const auto qep : *qinstance_list_) {
-            if (const char *qname = ocs::tom::get<QU_full_name>(qep); qname != nullptr) {
+            if (const char *qname = qep.get<QU_full_name>(); qname != nullptr) {
                queue_length = std::max(queue_length, static_cast<int>(strlen(qname)));
             }
          }
@@ -309,7 +309,7 @@ ocs::QStatModelBase::get_job_owner_where(const ocs::tom::ConstList<ocs::tom::ST>
    ocs::tom::Where<ocs::tom::JB> where;
 
    for (const auto ep : user_list) {
-      if (const char *user = ocs::tom::get<ST_name>(ep); is_pattern(user)) {
+      if (const char *user = ep.get<ST_name>(); is_pattern(user)) {
          where |= ocs::tom::field<JB_owner>().like(user);
       } else {
          where |= ocs::tom::field<JB_owner>() == user;
@@ -525,7 +525,7 @@ ocs::QStatModelBase::get_job_view_where(const ocs::tom::ConstList<ocs::tom::ST> 
    ocs::tom::Where<ocs::tom::JB> where;
 
    for (const auto j_elem : job_view_list) {
-      const char *job_name = ocs::tom::get<ST_name>(j_elem);
+      const char *job_name = j_elem.get<ST_name>();
 
       if (job_name != nullptr && isdigit(static_cast<unsigned char>(job_name[0]))) {
          char *end = nullptr;
@@ -631,7 +631,7 @@ bool ocs::QStatModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
          const auto elem = next_elem;
          next_elem = elem.next();
 
-         if (is_pattern(ocs::tom::get<ST_name>(elem))) {
+         if (is_pattern(elem.get<ST_name>())) {
             jid_list.erase(elem);
             removed_pattern = true;
          }
@@ -647,7 +647,7 @@ bool ocs::QStatModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
                ss << ", ";
             }
             first_time = false;
-            ss << ocs::tom::get<ST_name>(elem);
+            ss << elem.get<ST_name>();
          }
       } else {
          if (removed_pattern) {
@@ -669,23 +669,23 @@ bool ocs::QStatModelBase::prepare_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
       message) from the message_list that have no jobs in them.
    */
    for (const auto sme : *ilp) {
-      const auto msg_list = ocs::tom::get<SME_message_list>(sme);
+      const auto msg_list = sme.get<SME_message_list>();
 
       auto next_msg = msg_list.front();
       while (next_msg != nullptr) {
          const auto msg_elem = next_msg;
          next_msg = msg_elem.next();
 
-         const auto jb_list = ocs::tom::get<MES_job_number_list>(msg_elem);
+         const auto jb_list = msg_elem.get<MES_job_number_list>();
          auto next_jb = jb_list.front();
          while (next_jb != nullptr) {
             const auto jb_elem = next_jb;
             next_jb = jb_elem.next();
-            if (jlp->find_first<JB_job_number>(ocs::tom::get<ULNG_value>(jb_elem)) == nullptr) {
+            if (jlp->find_first<JB_job_number>(jb_elem.get<ULNG_value>()) == nullptr) {
                jb_list.erase(jb_elem);
             }
          }
-         if (ocs::tom::get<MES_job_number_list>(msg_elem).empty()) {
+         if (msg_elem.get<MES_job_number_list>().empty()) {
             msg_list.erase(msg_elem);
          }
       }
@@ -732,7 +732,7 @@ int ocs::QStatModelBase::select_by_queue_state(const uint32_t queue_states,
    }
 
    for (const auto cqueue : queue_list) {
-      for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
+      for (const auto qep : cqueue.get<CQ_qinstances>()) {
          bool has_value_from_object;
          double load_avg;
          uint32_t interval;
@@ -740,20 +740,20 @@ int ocs::QStatModelBase::select_by_queue_state(const uint32_t queue_states,
          /* compute the load and suspend alarm */
          sge_get_double_qattr(&load_avg, load_avg_str, qep, exechost_list, centry_list, load_adjustments,
                               &has_value_from_object);
-         if (sge_load_alarm(nullptr, 0, qep, ocs::tom::get<QU_load_thresholds>(qep), exechost_list, centry_list,
+         if (sge_load_alarm(nullptr, 0, qep, qep.get<QU_load_thresholds>(), exechost_list, centry_list,
                             ocs::tom::ConstList<ocs::tom::CE>(), load_adjustments, true)) {
             qinstance_state_set_alarm(qep, true);
          }
-         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, ocs::tom::get<QU_suspend_interval>(qep),
+         parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, qep.get<QU_suspend_interval>(),
                          nullptr, 0);
-         if (ocs::tom::get<QU_nsuspend>(qep) != 0 && interval != 0 &&
-             sge_load_alarm(nullptr, 0, qep, ocs::tom::get<QU_suspend_thresholds>(qep), exechost_list, centry_list,
+         if (qep.get<QU_nsuspend>() != 0 && interval != 0 &&
+             sge_load_alarm(nullptr, 0, qep, qep.get<QU_suspend_thresholds>(), exechost_list, centry_list,
                             ocs::tom::ConstList<ocs::tom::CE>(), load_adjustments, false)) {
             qinstance_state_set_suspend_alarm(qep, true);
          }
 
          if (!qinstance_has_state(qep, queue_states)) {
-            ocs::tom::set<QU_tag>(qep, 0);
+            qep.set<QU_tag>(0);
          }
       }
    }
@@ -789,17 +789,17 @@ int ocs::QStatModelBase::select_by_qref_list(const ocs::tom::List<ocs::tom::CQ> 
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
 
-         if (const char *full_name = ocs::tom::get<QR_name>(qref);
+         if (const char *full_name = qref.get<QR_name>();
              cqueue_name_split(full_name, &cqueue_buffer, &hostname_buffer, nullptr, nullptr)) {
             const char *cqueue_name = sge_dstring_get_string(&cqueue_buffer);
             const char *hostname = sge_dstring_get_string(&hostname_buffer);
 
             if (const auto cqueue = cqueue_list.find_first<CQ_name>(cqueue_name); cqueue != nullptr) {
-               const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+               const auto qinstance_list = cqueue.get<CQ_qinstances>();
                if (const auto qinstance = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(hostname));
                    qinstance != nullptr) {
-                  const uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
-                  ocs::tom::set<QU_tag>(qinstance, tag | TAG_SELECT_IT);
+                  const uint32_t tag = qinstance.get<QU_tag>();
+                  qinstance.set<QU_tag>(tag | TAG_SELECT_IT);
                }
             }
          }
@@ -809,12 +809,12 @@ int ocs::QStatModelBase::select_by_qref_list(const ocs::tom::List<ocs::tom::CQ> 
       }
 
       for (const auto cqueue : cqueue_list) {
-         for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
-            uint32_t tag = ocs::tom::get<QU_tag>(qinstance);
+         for (const auto qinstance : cqueue.get<CQ_qinstances>()) {
+            uint32_t tag = qinstance.get<QU_tag>();
 
             if (const bool selected = (tag & TAG_SELECT_IT) != 0; !selected) {
                tag &= ~(TAG_SELECT_IT | TAG_SHOW_IT);
-               ocs::tom::set<QU_tag>(qinstance, tag);
+               qinstance.set<QU_tag>(tag);
             } else {
                ret++;
             }
@@ -842,23 +842,23 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
 
    // select all jobs which are not finished
    for (const auto jep : job_list) {
-      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-         if (!(ocs::tom::get<JAT_status>(jatep) & JFINISHED))
-            ocs::tom::set<JAT_suitable>(jatep, TAG_SHOW_IT);
+      for (const auto jatep : jep.get<JB_ja_tasks>()) {
+         if (!(jatep.get<JAT_status>() & JFINISHED))
+            jatep.set<JAT_suitable>(TAG_SHOW_IT);
       }
    }
 
    // untag all jobs which do not fit to the user list (-u)
    if (!parameter.get_user_list().empty()) {
       for (const auto up : parameter.get_user_list()) {
-         const char *user = ocs::tom::get<ST_name>(up);
+         const char *user = up.get<ST_name>();
          if (user == nullptr) {
             break;
          }
 
          const bool is_pattern = ocs::is_pattern(user);
          for (const auto jep : job_list) {
-            const char *owner = ocs::tom::get<JB_owner>(jep);
+            const char *owner = jep.get<JB_owner>();
 
             int match;
             if (is_pattern) {
@@ -867,9 +867,9 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
                match = sge_strnullcmp(user, owner);
             }
             if (match == 0) {
-               for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-                  ocs::tom::set<JAT_suitable>(jatep,
-                                              ocs::tom::get<JAT_suitable>(jatep) | TAG_SHOW_IT | TAG_SELECT_IT);
+               for (const auto jatep : jep.get<JB_ja_tasks>()) {
+                  jatep.set<JAT_suitable>(
+                                              jatep.get<JAT_suitable>() | TAG_SHOW_IT | TAG_SELECT_IT);
                }
             }
          }
@@ -888,16 +888,16 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
       for (const auto jep : job_list) {
          bool show_job = false;
          for (const auto cqueue : *cqueue_list_) {
-            for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
+            for (const auto qep : cqueue.get<CQ_qinstances>()) {
 
-               if (!(ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT)) {
+               if (!(qep.get<QU_tag>() & TAG_SHOW_IT)) {
                   continue;
                }
 
                // find if the queue instance is in the list of selected queues and if the job fits into this queue
                // instance
                if (const auto host = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(
-                      host_list_locate(*exechost_list_, ocs::tom::get<QU_qhostname>(qep)));
+                      host_list_locate(*exechost_list_, qep.get<QU_qhostname>()));
                    host != nullptr) {
                   const auto hard_resources =
                      ocs::tom::List<ocs::tom::CE>::from_typed(job_get_hard_resource_listRW(jep));
@@ -912,19 +912,19 @@ void ocs::QStatModelBase::filter_jobs(const QStatParameter &parameter) {
             }
          }
 
-         for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-            if (!show_job && !(ocs::tom::get<JAT_status>(jatep) == JRUNNING ||
-                               (ocs::tom::get<JAT_status>(jatep) == JTRANSFERING))) {
-               DPRINTF("show task " sge_u32"." sge_u32"\n", ocs::tom::get<JB_job_number>(jep),
-                       ocs::tom::get<JAT_task_number>(jatep));
-               ocs::tom::set<JAT_suitable>(jatep, ocs::tom::get<JAT_suitable>(jatep) & ~TAG_SHOW_IT);
+         for (const auto jatep : jep.get<JB_ja_tasks>()) {
+            if (!show_job && !(jatep.get<JAT_status>() == JRUNNING ||
+                               (jatep.get<JAT_status>() == JTRANSFERING))) {
+               DPRINTF("show task " sge_u32"." sge_u32"\n", jep.get<JB_job_number>(),
+                       jatep.get<JAT_task_number>());
+               jatep.set<JAT_suitable>(jatep.get<JAT_suitable>() & ~TAG_SHOW_IT);
             }
          }
          if (!show_job) {
-            ocs::tom::set<JB_ja_n_h_ids>(jep, nullptr);
-            ocs::tom::set<JB_ja_u_h_ids>(jep, nullptr);
-            ocs::tom::set<JB_ja_o_h_ids>(jep, nullptr);
-            ocs::tom::set<JB_ja_s_h_ids>(jep, nullptr);
+            jep.set<JB_ja_n_h_ids>(nullptr);
+            jep.set<JB_ja_u_h_ids>(nullptr);
+            jep.set<JB_ja_o_h_ids>(nullptr);
+            jep.set<JB_ja_s_h_ids>(nullptr);
          }
       }
 
@@ -1050,18 +1050,18 @@ bool ocs::QStatModelBase::is_cqueue_selected(const ocs::tom::List<ocs::tom::CQ> 
 
    //bool a_qinstance_is_selected = false;
    for (const auto cqueue : queue_list) {
-      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstance_list = cqueue.get<CQ_qinstances>();
       bool tmp_a_qinstance_is_selected = false;
 
       for (const auto qep : qinstance_list) {
-         if (ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT) {
+         if (qep.get<QU_tag>() & TAG_SHOW_IT) {
             tmp_a_qinstance_is_selected = true;
             break;
          }
       }
       //a_qinstance_is_selected |= tmp_a_qinstance_is_selected;
-      if (!tmp_a_qinstance_is_selected && !ocs::tom::get<CQ_qinstances>(cqueue).empty()) {
-         ocs::tom::set<CQ_tag>(cqueue, TAG_DEFAULT);
+      if (!tmp_a_qinstance_is_selected && !cqueue.get<CQ_qinstances>().empty()) {
+         cqueue.set<CQ_tag>(TAG_DEFAULT);
       } else {
          a_cqueue_is_selected |= true;
       }
@@ -1095,7 +1095,7 @@ int ocs::QStatModelBase::select_by_resource_list(const ocs::tom::List<ocs::tom::
 
    /* prepare request */
    for (const auto cqueue : queue_list) {
-      for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
+      for (const auto qep : cqueue.get<CQ_qinstances>()) {
          if (empty_qs) {
             sconf_set_qs_state(QS_STATE_EMPTY);
          }
@@ -1110,8 +1110,8 @@ int ocs::QStatModelBase::select_by_resource_list(const ocs::tom::List<ocs::tom::
          }
 
          if (!selected) {
-            DPRINTF("unselecting queue " SFQ "\n", ocs::tom::get<QU_full_name>(qep));
-            ocs::tom::set<QU_tag>(qep, 0);
+            DPRINTF("unselecting queue " SFQ "\n", qep.get<QU_full_name>());
+            qep.set<QU_tag>(0);
          }
       }
    }
@@ -1141,7 +1141,7 @@ int ocs::QStatModelBase::select_by_pe_list(const ocs::tom::List<ocs::tom::CQ> qu
     */
    ocs::tom::ListPtr<ocs::tom::PE> pe_selected;
    for (const auto pe : peref_list) {
-      const auto ref_pe = pe_list.find_first<PE_name>(ocs::tom::get<ST_name>(pe));
+      const auto ref_pe = pe_list.find_first<PE_name>(pe.get<ST_name>());
       if (ref_pe == nullptr) {
          continue;
       }
@@ -1161,23 +1161,23 @@ int ocs::QStatModelBase::select_by_pe_list(const ocs::tom::List<ocs::tom::CQ> qu
     * by a pe in the selected pe list entry of a queue
     */
    for (const auto cqueue : queue_list) {
-      for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
+      for (const auto qep : cqueue.get<CQ_qinstances>()) {
          ocs::tom::ConstElement<ocs::tom::ST> found;
 
          if (!qinstance_is_parallel_queue(qep)) {
-            ocs::tom::set<QU_tag>(qep, 0);
+            qep.set<QU_tag>(0);
             continue;
          }
          for (const auto pe : *pe_selected) {
-            const char *pe_name = ocs::tom::get<PE_name>(pe);
+            const char *pe_name = pe.get<PE_name>();
 
-            found = ocs::tom::get<QU_pe_list>(qep).find_first<ST_name>(pe_name);
+            found = qep.get<QU_pe_list>().find_first<ST_name>(pe_name);
             if (found != nullptr) {
                break;
             }
          }
          if (found == nullptr) {
-            ocs::tom::set<QU_tag>(qep, 0);
+            qep.set<QU_tag>(0);
          } else {
             nqueues++;
          }
@@ -1224,28 +1224,28 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
 
    auto ehep = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(exechost_list, "global"));
    if (ehep != nullptr) {
-      global_acl  = ocs::tom::get<EH_acl>(ehep);
-      global_xacl = ocs::tom::get<EH_xacl>(ehep);
-      global_prj  = ocs::tom::get<EH_prj>(ehep);
-      global_xprj = ocs::tom::get<EH_xprj>(ehep);
+      global_acl  = ehep.get<EH_acl>();
+      global_xacl = ehep.get<EH_xacl>();
+      global_prj  = ehep.get<EH_prj>();
+      global_xprj = ehep.get<EH_xprj>();
    }
 
    for (const auto cqueue : cqueue_list) {
-      for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
+      for (const auto qep : cqueue.get<CQ_qinstances>()) {
          int access = 0;
 
-         const auto prj = ocs::tom::get<QU_projects>(qep);
-         const auto xprj = ocs::tom::get<QU_xprojects>(qep);
+         const auto prj = qep.get<QU_projects>();
+         const auto xprj = qep.get<QU_xprojects>();
 
          /* get exec host list element for current queue
             and its access lists */
-         const char *host_name = ocs::tom::get<QU_qhostname>(qep);
+         const char *host_name = qep.get<QU_qhostname>();
          ehep = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(exechost_list, host_name));
          if (ehep != nullptr) {
-            h_acl = ocs::tom::get<EH_acl>(ehep);
-            h_xacl = ocs::tom::get<EH_xacl>(ehep);
-            h_prj = ocs::tom::get<EH_prj>(ehep);
-            h_xprj = ocs::tom::get<EH_xprj>(ehep);
+            h_acl = ehep.get<EH_acl>();
+            h_xacl = ehep.get<EH_xacl>();
+            h_prj = ehep.get<EH_prj>();
+            h_xprj = ehep.get<EH_xprj>();
          }
 
          for (const auto qu : queue_user_list) {
@@ -1254,7 +1254,7 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
             int gh_access = 0;
             int conf_access = 0;
 
-            const char *name = ocs::tom::get<ST_name>(qu);
+            const char *name = qu.get<ST_name>();
             if (name == nullptr)
                continue;
 
@@ -1271,10 +1271,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
             if (project_list != nullptr) {
                DPRINTF("testing queue projects lists\n");
                for (const auto pep : prj) {
-                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
+                  if (const char *prj_name = pep.get<PR_name>(); prj_name != nullptr) {
                      if (const auto prj_elem = project_list.find_first<PR_name>(prj_name); prj_elem != nullptr) {
-                        const auto prj_acl = ocs::tom::get<PR_acl>(prj_elem);
-                        const auto prj_xacl = ocs::tom::get<PR_xacl>(prj_elem);
+                        const auto prj_acl = prj_elem.get<PR_acl>();
+                        const auto prj_xacl = prj_elem.get<PR_xacl>();
                         q_access &= (name[0] == '@')
                                     ? sge_has_access_(nullptr, &name[1], nullptr, prj_acl, prj_xacl, acl_list)
                                     : sge_has_access_(name, nullptr, nullptr, prj_acl, prj_xacl, acl_list);
@@ -1284,10 +1284,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
                   }
                }
                for (const auto pep : xprj) {
-                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
+                  if (const char *prj_name = pep.get<PR_name>(); prj_name != nullptr) {
                      if (const auto prj_elem = project_list.find_first<PR_name>(prj_name); prj_elem != nullptr) {
-                        const auto prj_acl = ocs::tom::get<PR_acl>(prj_elem);
-                        const auto prj_xacl = ocs::tom::get<PR_xacl>(prj_elem);
+                        const auto prj_acl = prj_elem.get<PR_acl>();
+                        const auto prj_xacl = prj_elem.get<PR_xacl>();
                         q_access &= (name[0] == '@')
                                     ? !sge_has_access_(nullptr, &name[1], nullptr, prj_acl, prj_xacl, acl_list)
                                     : !sge_has_access_(name, nullptr, nullptr, prj_acl, prj_xacl, acl_list);
@@ -1314,10 +1314,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
             if (project_list != nullptr) {
                DPRINTF("testing host projects lists\n");
                for (const auto pep : h_prj) {
-                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
+                  if (const char *prj_name = pep.get<PR_name>(); prj_name != nullptr) {
                      if (const auto prj_elem = project_list.find_first<PR_name>(prj_name); prj_elem != nullptr) {
-                        const auto prj_acl = ocs::tom::get<PR_acl>(prj_elem);
-                        const auto prj_xacl = ocs::tom::get<PR_xacl>(prj_elem);
+                        const auto prj_acl = prj_elem.get<PR_acl>();
+                        const auto prj_xacl = prj_elem.get<PR_xacl>();
                         q_access &= (name[0] == '@')
                                     ? sge_has_access_(nullptr, &name[1], nullptr, prj_acl, prj_xacl, acl_list)
                                     : sge_has_access_(name, nullptr, nullptr, prj_acl, prj_xacl, acl_list);
@@ -1327,10 +1327,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
                   }
                }
                for (const auto pep : h_xprj) {
-                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
+                  if (const char *prj_name = pep.get<PR_name>(); prj_name != nullptr) {
                      if (const auto prj_elem = project_list.find_first<PR_name>(prj_name); prj_elem != nullptr) {
-                        const auto prj_acl = ocs::tom::get<PR_acl>(prj_elem);
-                        const auto prj_xacl = ocs::tom::get<PR_xacl>(prj_elem);
+                        const auto prj_acl = prj_elem.get<PR_acl>();
+                        const auto prj_xacl = prj_elem.get<PR_xacl>();
                         q_access &= (name[0] == '@')
                                     ? !sge_has_access_(nullptr, &name[1], nullptr, prj_acl, prj_xacl, acl_list)
                                     : !sge_has_access_(name, nullptr, nullptr, prj_acl, prj_xacl, acl_list);
@@ -1358,10 +1358,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
             if (project_list != nullptr) {
                DPRINTF("testing host projects lists\n");
                for (const auto pep : global_prj) {
-                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
+                  if (const char *prj_name = pep.get<PR_name>(); prj_name != nullptr) {
                      if (const auto prj_elem = project_list.find_first<PR_name>(prj_name); prj_elem != nullptr) {
-                        const auto prj_acl = ocs::tom::get<PR_acl>(prj_elem);
-                        const auto prj_xacl = ocs::tom::get<PR_xacl>(prj_elem);
+                        const auto prj_acl = prj_elem.get<PR_acl>();
+                        const auto prj_xacl = prj_elem.get<PR_xacl>();
                         q_access &= (name[0] == '@')
                                     ? sge_has_access_(nullptr, &name[1], nullptr, prj_acl, prj_xacl, acl_list)
                                     : sge_has_access_(name, nullptr, nullptr, prj_acl, prj_xacl, acl_list);
@@ -1371,10 +1371,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
                   }
                }
                for (const auto pep : global_xprj) {
-                  if (const char *prj_name = ocs::tom::get<PR_name>(pep); prj_name != nullptr) {
+                  if (const char *prj_name = pep.get<PR_name>(); prj_name != nullptr) {
                      if (const auto prj_elem = project_list.find_first<PR_name>(prj_name); prj_elem != nullptr) {
-                        const auto prj_acl = ocs::tom::get<PR_acl>(prj_elem);
-                        const auto prj_xacl = ocs::tom::get<PR_xacl>(prj_elem);
+                        const auto prj_acl = prj_elem.get<PR_acl>();
+                        const auto prj_xacl = prj_elem.get<PR_xacl>();
                         q_access &= (name[0] == '@')
                                     ? !sge_has_access_(nullptr, &name[1], nullptr, prj_acl, prj_xacl, acl_list)
                                     : !sge_has_access_(name, nullptr, nullptr, prj_acl, prj_xacl, acl_list);
@@ -1408,10 +1408,10 @@ int ocs::QStatModelBase::select_by_queue_user_list(const ocs::tom::ConstList<ocs
             }
          }
          if (!access) {
-            DPRINTF("no access for queue %s\n", ocs::tom::get<QU_qname>(qep));
-            ocs::tom::set<QU_tag>(qep, 0);
+            DPRINTF("no access for queue %s\n", qep.get<QU_qname>());
+            qep.set<QU_tag>(0);
          } else {
-            DPRINTF("access for queue %s\n", ocs::tom::get<QU_qname>(qep));
+            DPRINTF("access for queue %s\n", qep.get<QU_qname>());
             nqueues++;
          }
       }

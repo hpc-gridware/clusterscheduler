@@ -605,7 +605,7 @@ auto ocs_qconf_key_value(const char *name) {
 template <typename E>
 const char *ocs_qconf_key_of(const ocs::tom::ConstElement<typename E::type> ep) {
    if constexpr (E::has_name_key) {
-      return static_cast<const char *>(ocs::tom::get<E::key>(ep));
+      return ep.template get<E::key>();
    } else {
       return nullptr;
    }
@@ -819,7 +819,7 @@ void ocs_qconf_json_fill_complex_field(const ocs::tom::Element<typename ocs::tom
                                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    static_assert(std::is_same_v<typename ocs::tom::FieldTraits<F>::Sub, ocs::tom::CE>,
                  "the field holds a complex entry sublist");
-   const auto sub = ocs::tom::get<F>(obj);
+   const auto sub = obj.template get<F>();
    if (sub && !sub.empty()) {
       ocs::tom::ListPtr<ocs::tom::AN> fill_alp;
       centry_list_fill_request(sub, &fill_alp, master_centry_list, true, true, true);

@@ -44,7 +44,7 @@ ocs::QConfHGroupResolvedController::process_request([[maybe_unused]] QConfParame
    DENTER(TOP_LAYER);
 
    const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list(model.get_object_list());
-   const auto hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, model.get_requested_name());
+   const auto hgroup = hgroup_list.find_first<HGRP_name>(ocs::tom::Host(model.get_requested_name()));
    if (hgroup != nullptr) {
       view.show_resolved(out_, hgroup, hgroup_list);
    }

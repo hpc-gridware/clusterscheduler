@@ -94,22 +94,22 @@ namespace ocs {
          write_rule(os, binding);
 
          for (const auto host : list) {
-            const auto arch_elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, "arch");
-            const char *hostname = ocs::tom::get<EH_name>(host);
+            const auto arch_elem = host.find_first_in<EH_load_list, HL_name>("arch");
+            const char *hostname = host.get<EH_name>();
 
             os << std::format("{:<25.24}", (hostname != nullptr) ? hostname : "");
-            os << std::format("{:>10}", static_cast<int32_t>(ocs::tom::get<EH_processors>(host)));
+            os << std::format("{:>10}", static_cast<int32_t>(host.get<EH_processors>()));
 
             if (binding) {
                socket_sum += write_load_value(os, host, "m_socket");
                core_sum += write_load_value(os, host, "m_core");
             }
             if (arch_elem != nullptr) {
-               const char *arch = ocs::tom::get<HL_value>(arch_elem);
+               const char *arch = arch_elem.get<HL_value>();
                os << std::format("{:>12.11}", (arch != nullptr) ? arch : "");
             }
             os << "\n";
-            sum += ocs::tom::get<EH_processors>(host);
+            sum += host.get<EH_processors>();
          }
 
          write_rule(os, binding);
@@ -147,12 +147,12 @@ namespace ocs {
        */
       static uint32_t write_load_value(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::EH> host,
                                        const char *name) {
-         const auto elem = ocs::tom::find_first_in<EH_load_list, HL_name>(host, name);
+         const auto elem = host.find_first_in<EH_load_list, HL_name>(name);
          if (elem == nullptr) {
             os << std::format("{:>6.5}", "-");
             return 0;
          }
-         const char *value = ocs::tom::get<HL_value>(elem);
+         const char *value = elem.get<HL_value>();
          os << std::format("{:>6.5}", (value != nullptr) ? value : "");
          return (value != nullptr) ? static_cast<uint32_t>(atol(value)) : 0;
       }

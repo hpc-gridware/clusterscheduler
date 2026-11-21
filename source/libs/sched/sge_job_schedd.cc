@@ -115,7 +115,7 @@ bool task_get_duration(uint64_t *duration, const ocs::tom::ConstElement<ocs::tom
    DENTER(TOP_LAYER);
 
    if (ja_task != nullptr) {
-      *duration = ocs::tom::get<JAT_wallclock_limit>(ja_task);
+      *duration = ja_task.get<JAT_wallclock_limit>();
       if (*duration == std::numeric_limits<uint64_t>::max()) {
          *duration = sge_gmt32_to_gmt64(sconf_get_default_duration());
       }
@@ -201,8 +201,8 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
    bool ret = false;
    const auto pending = pending_job;
 
-   const uint32_t job_id = ocs::tom::get<JB_job_number>(pending);
-   auto ja_task_list = ocs::tom::get<JB_ja_tasks>(pending);
+   const uint32_t job_id = pending.get<JB_job_number>();
+   auto ja_task_list = pending.get<JB_ja_tasks>();
    auto ja_task = ja_task_list.front();
 
    /*
@@ -241,7 +241,7 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
     * or move the existing array task into the running job
     */
    if (ja_task == nullptr) {
-      const auto n_h_ids = ocs::tom::get<JB_ja_n_h_ids>(pending);
+      const auto n_h_ids = pending.get<JB_ja_n_h_ids>();
 
       const uint32_t ja_task_id = range_list_get_first_id(n_h_ids, nullptr);
       ja_task = job_search_task(pending, nullptr, ja_task_id);
@@ -254,18 +254,18 @@ bool job_move_first_pending_to_running(ocs::tom::Element<ocs::tom::JB> &pending_
       if (ja_task == nullptr) {
          ja_task = job_create_task(pending, nullptr, ja_task_id);
       }
-      ja_task_list = ocs::tom::get<JB_ja_tasks>(pending);
+      ja_task_list = pending.get<JB_ja_tasks>();
    }
 
    /*
     * Create an array task list if necessary
     */
-   auto r_ja_task_list = ocs::tom::get<JB_ja_tasks>(running_job);
+   auto r_ja_task_list = running_job.get<JB_ja_tasks>();
    if (r_ja_task_list == nullptr) {
       // the list gets the layout of the (possibly reduced) task
       auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("", ja_task);
       r_ja_task_list = created.get();
-      ocs::tom::set<JB_ja_tasks>(running_job, std::move(created));
+      running_job.set<JB_ja_tasks>(std::move(created));
    }
 
    r_ja_task_list.push_back(ja_task_list.extract(ja_task));
@@ -302,19 +302,19 @@ job_get_next_task(const ocs::tom::Element<ocs::tom::JB> job) {
 
    uint32_t ja_task_id;
 
-   auto ja_task = ocs::tom::get<JB_ja_tasks>(job).front();
+   auto ja_task = job.get<JB_ja_tasks>().front();
    if (ja_task == nullptr) {
       // range_list_get_first_id() reports through a raw answer list
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
-      ja_task_id = range_list_get_first_id(ocs::tom::get<JB_ja_n_h_ids>(job), &answer_list);
+      ja_task_id = range_list_get_first_id(job.get<JB_ja_n_h_ids>(), &answer_list);
       if (answer_list_has_error(&answer_list)) {
          answer_list.reset();
          DRETURN(std::nullopt);
       }
       ja_task = job_get_ja_task_template_pending(job, ja_task_id);
    } else {
-      ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      ja_task_id = ja_task.get<JAT_task_number>();
    }
 
    DRETURN(std::make_pair(ja_task, ja_task_id));
@@ -340,7 +340,7 @@ void user_list_init_jc(ocs::tom::ListPtr<ocs::tom::JC> &user_list,
       if (splitted_job_lists[split] != nullptr) {
          for (const auto job : splitted_job_lists[split]->get()) {
             // @todo (CS-451) the 3rd argument to sge_inc_jc is "slots", but we pass the number of array tasks. Correct?
-            sge_inc_jc(user_list, ocs::tom::get<JB_owner>(job), job_get_ja_tasks(job));
+            sge_inc_jc(user_list, job.get<JB_owner>(), job_get_ja_tasks(job));
          }
       }
    }
@@ -396,8 +396,8 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
          next_user = user_list.find_first<JC_name>(user_name);
       }
       while ((user = next_user) != nullptr) {
-         uint32_t jobs_for_user = ocs::tom::get<JC_jobs>(user);
-         const char *jc_user_name = ocs::tom::get<JC_name>(user);
+         uint32_t jobs_for_user = user.get<JC_jobs>();
+         const char *jc_user_name = user.get<JC_name>();
 
          if (user_name == nullptr) {
             next_user = user.next();
@@ -414,7 +414,7 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
             while ((user_job = next_user_job)) {
                next_user_job = ocs::tom::find_next_rw<JB_owner>(pending_list, jc_user_name, &user_iterator);
                schedd_mes_add(nullptr, monitor_next_run,
-                              ocs::tom::get<JB_job_number>(user_job),
+                              user_job.get<JB_job_number>(),
                               SCHEDD_INFO_USRGRPLIMIT_);
 
                auto excluded_job = pending_list.extract(user_job);
@@ -502,13 +502,13 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
       ocs::tom::Element<ocs::tom::JAT> next_ja_task;
       int i, move_job;
 #ifdef JOB_SPLIT_DEBUG
-      uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+      uint32_t job_id = job.get<JB_job_number>();
 #endif
 
       previous_job = job.prev();
       next_job = job.next();
 
-      const auto task_instances = static_cast<uint32_t>(ocs::tom::get<JB_ja_tasks>(job).size());
+      const auto task_instances = static_cast<uint32_t>(job.get<JB_ja_tasks>().size());
 
       /*
        * Remove all ballast for a minimal copy operation of the job
@@ -528,12 +528,12 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
 #endif
       next_ja_task = ja_task_list->front();
       while ((ja_task = next_ja_task)) {
-         uint32_t ja_task_status = ocs::tom::get<JAT_status>(ja_task);
-         uint32_t ja_task_state = ocs::tom::get<JAT_state>(ja_task);
-         uint32_t ja_task_hold = ocs::tom::get<JAT_hold>(ja_task);
+         uint32_t ja_task_status = ja_task.get<JAT_status>();
+         uint32_t ja_task_state = ja_task.get<JAT_state>();
+         uint32_t ja_task_hold = ja_task.get<JAT_hold>();
          ocs::tom::ListPtr<ocs::tom::JAT> *target = nullptr;
 #ifdef JOB_SPLIT_DEBUG
-         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+         uint32_t ja_task_id = ja_task.get<JAT_task_number>();
 #endif
          next_ja_task = ja_task.next();
 
@@ -571,7 +571,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
             target = &(target_tasks[SPLIT_ERROR]);
          } 
          if (target == nullptr && result_list[SPLIT_WAITING_DUE_TO_TIME] &&
-             (ocs::tom::get<JB_execution_time>(job) > sge_get_gmt64()) &&
+             (job.get<JB_execution_time>() > sge_get_gmt64()) &&
              (ja_task_status == JIDLE)) {
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Task " sge_u32 " is waiting due to time.\n", ja_task_id);
@@ -579,7 +579,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
             target = &(target_tasks[SPLIT_WAITING_DUE_TO_TIME]);
          }
          if (target == nullptr && result_list[SPLIT_WAITING_DUE_TO_PREDECESSOR] &&
-             (ocs::tom::get<JB_jid_predecessor_list>(job) != nullptr) &&
+             (job.get<JB_jid_predecessor_list>() != nullptr) &&
              (ja_task_status == JIDLE)) {
 #ifdef JOB_SPLIT_DEBUG
             DPRINTF("Task " sge_u32 " is waiting due to pred.\n", ja_task_id);
@@ -602,8 +602,8 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
 #endif
                target = &(target_tasks[SPLIT_SUSPENDED]);
             } else {
-               if ((ocs::tom::get<JAT_state>(ja_task) & JSUSPENDED_ON_SUBORDINATE) ||
-                   (ocs::tom::get<JAT_state>(ja_task) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
+               if ((ja_task.get<JAT_state>() & JSUSPENDED_ON_SUBORDINATE) ||
+                   (ja_task.get<JAT_state>() & JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
 #ifdef JOB_SPLIT_DEBUG
                   DPRINTF("Task " sge_u32 " is in suspended state\n",ja_task_id);
 #endif
@@ -649,7 +649,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
 
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_WAITING_DUE_TO_PREDECESSOR] &&
-          ocs::tom::get<JB_jid_predecessor_list>(job) != nullptr) {
+          job.get<JB_jid_predecessor_list>() != nullptr) {
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Unenrolled tasks are waiting for pred. jobs\n");
 #endif
@@ -658,7 +658,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
       }
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_WAITING_DUE_TO_TIME] &&
-          ocs::tom::get<JB_execution_time>(job) > sge_get_gmt64()) {
+          job.get<JB_execution_time>() > sge_get_gmt64()) {
 #ifdef JOB_SPLIT_DEBUG
          DPRINTF("Unenrolled tasks are waiting due to time\n");
 #endif
@@ -668,7 +668,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
       if (target_for_ids == SPLIT_LAST &&
           result_list[SPLIT_PENDING_EXCLUDED_INSTANCES] &&
           max_aj_instances > 0) {
-         uint32_t task_concurrency = ocs::tom::get<JB_ja_task_concurrency>(job);
+         uint32_t task_concurrency = job.get<JB_ja_task_concurrency>();
          uint32_t max_aj_conc_instances = max_aj_instances;
          if (task_concurrency > 0 && task_concurrency < max_aj_instances) {
             max_aj_conc_instances = task_concurrency;
@@ -708,7 +708,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
                if (move_job == 1) {
 #ifdef JOB_SPLIT_DEBUG
                   DPRINTF(("Reuse job element " sge_u32" for " SFN "-list\n",
-                           ocs::tom::get<JB_job_number>(job), get_name_of_split_value(i)));
+                           job.get<JB_job_number>(), get_name_of_split_value(i)));
 #endif
                   move_job = 0;
                   if (do_copy) {
@@ -719,13 +719,13 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
                } else {
 #ifdef JOB_SPLIT_DEBUG
                   DPRINTF(("Copy job element " sge_u32 " for " SFN "-list\n",
-                           ocs::tom::get<JB_job_number>(job), get_name_of_split_value(i)));
+                           job.get<JB_job_number>(), get_name_of_split_value(i)));
 #endif
                   new_job = job.clone();
                }
 #ifdef JOB_SPLIT_DEBUG
                DPRINTF(("Add job element " sge_u32 " into " SFN "-list\n",
-                        ocs::tom::get<JB_job_number>(new_job.get()), get_name_of_split_value(i)));
+                        new_job->get<JB_job_number>(), get_name_of_split_value(i)));
 #endif
                target_job[i] = (*(result_list[i]))->push_back(std::move(new_job));
             }
@@ -791,7 +791,7 @@ void split_jobs(const ocs::tom::List<ocs::tom::JB> job_list, const uint32_t max_
 #ifdef JOB_SPLIT_DEBUG 
             DPRINTF("Put " SFQ "-tasks into job\n", get_name_of_split_value(i));
 #endif
-            ocs::tom::set<JB_ja_tasks>(target_job[i], std::move(target_tasks[i]));
+            target_job[i].set<JB_ja_tasks>(std::move(target_tasks[i]));
          }
       }
       
@@ -857,7 +857,7 @@ void trash_splitted_jobs(const bool monitor_next_run, ocs::tom::ListPtr<ocs::tom
       int is_first_of_category = 1;
 
       for (const auto job : jobs) {
-         const uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+         const uint32_t job_id = job.get<JB_job_number>();
 
          switch (split_id_a[i]) {
          case SPLIT_ERROR:
@@ -964,7 +964,7 @@ void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, cons
 
    auto ep = jc_list->find_first<JC_name>(name);
    if (ep) {
-      n = ocs::tom::get<JC_jobs>(ep);
+      n = ep.get<JC_jobs>();
    } else {
       // created as the free emplace_back() created it: unnamed and hashed
       if (jc_list == nullptr) {
@@ -975,7 +975,7 @@ void sge_inc_jc(ocs::tom::ListPtr<ocs::tom::JC> &jc_list, const char *name, cons
 
    n += slots;
 
-   ocs::tom::set<JC_jobs>(ep, n);
+   ep.set<JC_jobs>(n);
 
    DRETURN_VOID;
 }
@@ -994,14 +994,14 @@ int nslots_granted(const ocs::tom::ConstList<ocs::tom::JG> granted, const char *
 
    if (qhostname == nullptr) {
       for (const auto gdil_ep : granted) {
-         nslots += ocs::tom::get<JG_slots>(gdil_ep);
+         nslots += gdil_ep.get<JG_slots>();
       }
    } else {
       const void *iterator = nullptr;
 
       auto gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
-         nslots += ocs::tom::get<JG_slots>(gdil_ep);
+         nslots += gdil_ep.get<JG_slots>();
          gdil_ep = ocs::tom::find_next<JG_qhostname>(granted , qhostname, &iterator);
       }
    }
@@ -1026,19 +1026,19 @@ int active_subtasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *
    ocs::tom::ConstElement<ocs::tom::JG> ep;
    const char *task_qname;
 
-   for (const auto jatask : ocs::tom::get<JB_ja_tasks>(job)) {
-      const char *master_qname = ocs::tom::get<JAT_master_queue>(jatask);
+   for (const auto jatask : job.get<JB_ja_tasks>()) {
+      const char *master_qname = jatask.get<JAT_master_queue>();
 
       /* always consider the master queue to have active sub-tasks */
       if (master_qname && !strcmp(qname, master_qname)) {
          DRETURN(1);
       }
 
-      for (const auto petask : ocs::tom::get<JAT_task_list>(jatask)) {
+      for (const auto petask : jatask.get<JAT_task_list>()) {
          if (qname &&
-             ocs::tom::get<PET_status>(petask) != JFINISHED &&
-             ((ep = ocs::tom::get<PET_granted_destin_identifier_list>(petask).front())) &&
-             ((task_qname=ocs::tom::get<JG_qname>(ep))) &&
+             petask.get<PET_status>() != JFINISHED &&
+             ((ep = petask.get<PET_granted_destin_identifier_list>().front())) &&
+             ((task_qname=ep.get<JG_qname>())) &&
              !strcmp(qname, task_qname)) {
             DRETURN(1);
          }   
@@ -1066,10 +1066,10 @@ active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs:
 
    if (qhostname == nullptr) {
       for (const auto gdil_ep : granted) {   /* for all hosts */
-         for (const auto jatask : ocs::tom::get<JB_ja_tasks>(job)) {
-            const auto task_list = ocs::tom::get<JAT_task_list>(jatask);
-            if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
-               nslots += ocs::tom::get<JG_slots>(gdil_ep);
+         for (const auto jatask : job.get<JB_ja_tasks>()) {
+            const auto task_list = jatask.get<JAT_task_list>();
+            if (task_list == nullptr || active_subtasks(job, gdil_ep.get<JG_qname>()))
+               nslots += gdil_ep.get<JG_slots>();
          }
       }
    } else {
@@ -1078,10 +1078,10 @@ active_nslots_granted(const ocs::tom::ConstElement<ocs::tom::JB> job, const ocs:
       /* only for qhostname */
       auto gdil_ep = ocs::tom::find_first<JG_qhostname>(granted, qhostname, &iterator);
       while (gdil_ep != nullptr) {
-         for (const auto jatask : ocs::tom::get<JB_ja_tasks>(job)) {
-            const auto task_list = ocs::tom::get<JAT_task_list>(jatask);
-            if (task_list == nullptr || active_subtasks(job, ocs::tom::get<JG_qname>(gdil_ep)))
-               nslots += ocs::tom::get<JG_slots>(gdil_ep);
+         for (const auto jatask : job.get<JB_ja_tasks>()) {
+            const auto task_list = jatask.get<JAT_task_list>();
+            if (task_list == nullptr || active_subtasks(job, gdil_ep.get<JG_qname>()))
+               nslots += gdil_ep.get<JG_slots>();
          }
          gdil_ep = ocs::tom::find_next<JG_qhostname>(granted, qhostname, &iterator);
       }
@@ -1101,7 +1101,7 @@ int sge_granted_slots(const ocs::tom::ConstList<ocs::tom::JG> gdil) {
    int slots = 0;
 
    for (const auto ep : gdil) {
-      slots += ocs::tom::get<JG_slots>(ep);
+      slots += ep.get<JG_slots>();
    }
 
    return slots;

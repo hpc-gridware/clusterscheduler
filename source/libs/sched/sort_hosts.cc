@@ -122,8 +122,8 @@ int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstL
 
       /* build complexes for that host */
       double load = scaled_mixed_load(load_formula, global, hlp, centry_list, ocs::tom::ConstList<ocs::tom::CE>());
-      ocs::tom::set<EH_sort_value>(hlp, load);
-      DPRINTF("%s: %f\n", static_cast<const char *>(ocs::tom::get<EH_name>(hlp)), load);
+      hlp.set<EH_sort_value>(load);
+      DPRINTF("%s: %f\n", hlp.get<EH_name>().c_str(), load);
    }
    sge_free(&load_formula);
 
@@ -329,10 +329,10 @@ static int get_load_value(double *dvalp, const ocs::tom::ConstElement<ocs::tom::
       DRETURN(1);
    }
 
-   if (ocs::tom::get<CE_pj_dominant>(cep) & DOMINANT_TYPE_VALUE) {
-      *dvalp = ocs::tom::get<CE_doubleval>(cep);
+   if (cep->get<CE_pj_dominant>() & DOMINANT_TYPE_VALUE) {
+      *dvalp = cep->get<CE_doubleval>();
    } else {
-      *dvalp = ocs::tom::get<CE_pj_doubleval>(cep);
+      *dvalp = cep->get<CE_pj_doubleval>();
    }
 
    DRETURN(0);

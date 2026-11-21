@@ -78,11 +78,11 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::ProcedureParameter::get_bundle() {
    auto name_value_list = ocs::tom::ListPtr<ocs::tom::VA>::create("");
 
    const auto ep = name_value_list->emplace_back<VA_variable>(PROCEDURE);
-   ocs::tom::set<VA_value>(ep, procedure_name_.c_str());
+   ep.set<VA_value>(procedure_name_.c_str());
    DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
 
    const auto ep_va = name_value_list->emplace_back<VA_variable>(SUB_PROCEDURE);
-   ocs::tom::set<VA_value>(ep_va, sub_procedure_name_.c_str());
+   ep_va.set<VA_value>(sub_procedure_name_.c_str());
    DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
 
    add_parameter_bundle(*bundle, NAME_VALUE_LIST, std::move(name_value_list));
@@ -116,18 +116,18 @@ void ocs::ProcedureParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP
    const auto name_value_param = bundle.find_first<SPP_name>(NAME_VALUE_LIST);
    const auto name_value_list = value_list<ocs::tom::VA>(name_value_param);
    const auto procedure_elem = name_value_list.find_first<VA_variable>(PROCEDURE);
-   procedure_name_ = bundle_string(ocs::tom::get<VA_value>(procedure_elem));
+   procedure_name_ = bundle_string(procedure_elem.get<VA_value>());
    DPRINTF("procedure_name: " SFN "\n", procedure_name_.c_str());
 
    // sub-procedure name
    const auto sub_procedure_elem = name_value_list.find_first<VA_variable>(SUB_PROCEDURE);
-   sub_procedure_name_ = bundle_string(ocs::tom::get<VA_value>(sub_procedure_elem));
+   sub_procedure_name_ = bundle_string(sub_procedure_elem.get<VA_value>());
    DPRINTF("sub_procedure_name: " SFN "\n", sub_procedure_name_.c_str());
 
    // -fmt
    const auto output_format_param = bundle.find_first<SPP_name>(OUTPUT_FORMAT);
    const auto output_format_value = value_list<ocs::tom::ULNG>(output_format_param).front();
-   output_format_ = static_cast<OutputFormat>(ocs::tom::get<ULNG_value>(output_format_value));
+   output_format_ = static_cast<OutputFormat>(output_format_value.get<ULNG_value>());
    DPRINTF("output_format: %d\n", output_format_);
 
    // environment
@@ -149,11 +149,11 @@ void ocs::ProcedureParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP
 std::string
 ocs::ProcedureParameter::get_procedure_from_bundle(const ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle) {
    DENTER(TOP_LAYER);
-   const auto name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
+   const auto name_value_param = parameter_bundle.find_first<SPP_name>(NAME_VALUE_LIST);
    // the value list is of any type (CULL_ANY_SUBTYPE): the free lookup checks it
-   const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
+   const lList *name_value_list = name_value_param.get<SPP_value_list>();
    const auto procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, PROCEDURE);
-   std::string ret = ocs::tom::get<VA_value>(procedure_elem);
+   std::string ret = procedure_elem.get<VA_value>();
    DRETURN(ret);
 }
 
@@ -164,14 +164,14 @@ ocs::ProcedureParameter::get_procedure_from_bundle(const ocs::tom::ConstList<ocs
 std::string
 ocs::ProcedureParameter::get_sub_procedure_from_bundle(const ocs::tom::ConstList<ocs::tom::SPP> parameter_bundle) {
    DENTER(TOP_LAYER);
-   const auto name_value_param = ocs::tom::find_first<SPP_name>(parameter_bundle, NAME_VALUE_LIST);
+   const auto name_value_param = parameter_bundle.find_first<SPP_name>(NAME_VALUE_LIST);
    // the value list is of any type (CULL_ANY_SUBTYPE): the free lookup checks it
-   const lList *name_value_list = ocs::tom::get<SPP_value_list>(name_value_param);
+   const lList *name_value_list = name_value_param.get<SPP_value_list>();
 
    // Not every request contains sub-procedure requests
    if (const auto sub_procedure_elem = ocs::tom::find_first<VA_variable>(name_value_list, SUB_PROCEDURE);
        sub_procedure_elem) {
-      std::string ret = bundle_string(ocs::tom::get<VA_value>(sub_procedure_elem));
+      std::string ret = bundle_string(sub_procedure_elem.get<VA_value>());
       DRETURN(ret);
    }
    DRETURN(std::string());
@@ -196,7 +196,7 @@ void ocs::ProcedureParameter::add_variable(const char *name, const char *value) 
    }
    const auto elem = env_variable_list_->emplace_back<VA_variable>(name);
    if (value != nullptr) {
-      ocs::tom::set<VA_value>(elem, value);
+      elem.set<VA_value>(value);
    }
    DRETURN_VOID;
 }
@@ -209,9 +209,9 @@ const char *ocs::ProcedureParameter::get_variable(const char *name) const {
    DENTER(TOP_LAYER);
    // the free form on the raw list: the list came unchecked out of a received bundle, and the free
    // lookup takes the soft path on a list of another type instead of throwing inside qmaster
-   const auto elem = ocs::tom::find_first<VA_variable>(env_variable_list_.get(), name);
+   const auto elem = env_variable_list_.get().find_first<VA_variable>(name);
    if (elem == nullptr) {
       DRETURN(nullptr);
    }
-   DRETURN(ocs::tom::get<VA_value>(elem));
+   DRETURN(elem.get<VA_value>());
 }

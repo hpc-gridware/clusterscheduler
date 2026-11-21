@@ -97,7 +97,7 @@ ocs_qconf_arg_names(const qconf_op &op, const char *list_name) {
    for (size_t i = 0; i < op.arg_count(); i++) {
       const auto part = ocs::tom::ListPtr<T>::template from_string<F>(op.arg(i), ", ");
       for (const auto elem : *part) {
-         const char *name = ocs::tom::get<F>(elem);
+         const char *name = elem.template get<F>();
          if (!names->template find_first<F>(name)) {
             names->template emplace_back<F>(name);
          }
@@ -357,7 +357,7 @@ ocs_qconf_names_where([[maybe_unused]] const qconf_op &op) {
       const auto name_list = ocs_qconf_arg_names<ST_name>(op, "");
 
       for (const auto name_elem : *name_list) {
-         where |= ocs_qconf_object_where<E>(ocs::tom::get<ST_name>(name_elem));
+         where |= ocs_qconf_object_where<E>(name_elem.get<ST_name>());
       }
    }
 
@@ -637,8 +637,8 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
    /* The controller is handed no answer list, so a missing group is reported
     * here - the same place the table-driven read reports read.not_found_msg. */
    const auto hgroup = (requested_name_ != nullptr)
-                       ? ocs::tom::find_first<HGRP_name>(ocs::tom::ConstList<ocs::tom::HGRP>(object_list_.get().raw()),
-                                                         requested_name_)
+                       ? ocs::tom::ConstList<ocs::tom::HGRP>(object_list_.get().raw())
+                            .find_first<HGRP_name>(ocs::tom::Host(requested_name_))
                        : ocs::tom::ConstElement<ocs::tom::HGRP>();
    if (requested_name_ != nullptr && hgroup == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -657,15 +657,15 @@ ocs::QConfModelBase::make_hgroup_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
        * product - but it is a change, and the -ectx comparison of a short name
        * is what shows whether the two agree. */
       auto probe = ocs::tom::ElementPtr<ocs::tom::HR>::create();
-      ocs::tom::set<HR_name>(probe, parameter.get_operation().arg(1));
+      probe->set<HR_name>(ocs::tom::Host(parameter.get_operation().arg(1)));
       ocs_resolve_host<HR_name>(*probe);
 
       dstring found_in = DSTRING_INIT;
       dstring matcher = DSTRING_INIT;
-      hgroup_why_.route = hgroup_why(hgroup, ocs::tom::get<HR_name>(probe),
+      hgroup_why_.route = hgroup_why(hgroup, probe->get<HR_name>(),
                                      ocs::tom::ConstList<ocs::tom::HGRP>(object_list_.get().raw()), &found_in,
                                      &matcher);
-      hgroup_why_.host = static_cast<const char *>(ocs::tom::get<HR_name>(probe));
+      hgroup_why_.host = static_cast<const char *>(probe->get<HR_name>());
 
       /* a cleared dstring hands back an empty string rather than nothing once it
        * has held a value, so "no group to report" is emptiness and not nullptr */
@@ -717,11 +717,11 @@ cqueue_json_type_complex_overrides(const ocs::tom::Element<ocs::tom::CQ> cqueue,
    if (cqueue == nullptr || centry_list == nullptr) {
       DRETURN_VOID;
    }
-   for (const auto override_list : {ocs::tom::get<CQ_consumable_config_list>(cqueue),
-                                    ocs::tom::get<CQ_load_thresholds>(cqueue),
-                                    ocs::tom::get<CQ_suspend_thresholds>(cqueue)}) {
+   for (const auto override_list : {cqueue.get<CQ_consumable_config_list>(),
+                                    cqueue.get<CQ_load_thresholds>(),
+                                    cqueue.get<CQ_suspend_thresholds>()}) {
       for (const auto entry : override_list) {
-         const auto ce_list = ocs::tom::get<ACELIST_value>(entry);
+         const auto ce_list = entry.get<ACELIST_value>();
          if (!ce_list.empty()) {
             ocs::tom::ListPtr<ocs::tom::AN> fill_alp;
             centry_list_fill_request(ce_list, &fill_alp, centry_list, true, true, true);
@@ -784,7 +784,7 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
    }
 
    for (const auto elem : ocs::tom::ConstList<ocs::tom::EH>(object_list_.get().raw())) {
-      const char *hostname = ocs::tom::get<EH_name>(elem);
+      const char *hostname = elem.get<EH_name>();
       bool already_handled = false;
 
       if (fnmatch(attr, SGE_ATTR_HOSTNAME, 0) == 0 && fnmatch(val, hostname, 0) == 0) {
@@ -794,8 +794,8 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_LOAD_SCALING, 0) == 0) {
          dstring value = DSTRING_INIT;
-         for (const auto ep : ocs::tom::get<EH_scaling_list>(elem)) {
-            sge_dstring_sprintf_append(&value, "%s=%.10g", ocs::tom::get<HS_name>(ep), ocs::tom::get<HS_value>(ep));
+         for (const auto ep : elem.get<EH_scaling_list>()) {
+            sge_dstring_sprintf_append(&value, "%s=%.10g", ep.get<HS_name>(), ep.get<HS_value>());
             if (ep.next() != nullptr) {
                sge_dstring_append(&value, ",");
             }
@@ -809,16 +809,16 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_COMPLEX_VALUES, 0) == 0) {
          dstring value = DSTRING_INIT;
-         for (const auto ep : ocs::tom::get<EH_consumable_config_list>(elem)) {
-            sge_dstring_sprintf_append(&value, "%s=", ocs::tom::get<CE_name>(ep));
-            if (ocs::tom::get<CE_stringval>(ep) != nullptr) {
-               sge_dstring_append(&value, ocs::tom::get<CE_stringval>(ep));
+         for (const auto ep : elem.get<EH_consumable_config_list>()) {
+            sge_dstring_sprintf_append(&value, "%s=", ep.get<CE_name>());
+            if (ep.get<CE_stringval>() != nullptr) {
+               sge_dstring_append(&value, ep.get<CE_stringval>());
             } else {
                /* the hand written switch read this double field with lGetString
                 * and printed it as %f, which is a CULL type error and undefined
                 * behaviour; the branch is only reached when a complex value has
                 * no string form, which is why it survived (CS-2819) */
-               sge_dstring_sprintf_append(&value, "%f", ocs::tom::get<CE_doubleval>(ep));
+               sge_dstring_sprintf_append(&value, "%f", ep.get<CE_doubleval>());
             }
             if (ep.next() != nullptr) {
                sge_dstring_append(&value, ",");
@@ -833,8 +833,8 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_LOAD_VALUES, 0) == 0) {
          dstring value = DSTRING_INIT;
-         for (const auto ep : ocs::tom::get<EH_load_list>(elem)) {
-            sge_dstring_sprintf_append(&value, "%s=%s", ocs::tom::get<HL_name>(ep), ocs::tom::get<HL_value>(ep));
+         for (const auto ep : elem.get<EH_load_list>()) {
+            sge_dstring_sprintf_append(&value, "%s=%s", ep.get<HL_name>(), ep.get<HL_value>());
             if (ep.next() != nullptr) {
                sge_dstring_append(&value, ",");
             }
@@ -848,7 +848,7 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_PROCESSORS, 0) == 0) {
          dstring value = DSTRING_INIT;
-         sge_dstring_sprintf(&value, "%d", static_cast<int>(ocs::tom::get<EH_processors>(elem)));
+         sge_dstring_sprintf(&value, "%d", static_cast<int>(elem.get<EH_processors>()));
          if (fnmatch(val, sge_dstring_get_string(&value), 0) == 0) {
             filtered_names_.emplace_back(hostname);
             already_handled = true;
@@ -856,14 +856,14 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
          sge_dstring_free(&value);
       }
 
-      for (const auto &[attr_name, user_lists] : {std::pair{SGE_ATTR_USER_LISTS, ocs::tom::get<EH_acl>(elem)},
-                                                  std::pair{SGE_ATTR_XUSER_LISTS, ocs::tom::get<EH_xacl>(elem)}}) {
+      for (const auto &[attr_name, user_lists] : {std::pair{SGE_ATTR_USER_LISTS, elem.get<EH_acl>()},
+                                                  std::pair{SGE_ATTR_XUSER_LISTS, elem.get<EH_xacl>()}}) {
          if (already_handled || fnmatch(attr, attr_name, 0) != 0) {
             continue;
          }
          dstring value = DSTRING_INIT;
          for (const auto ep : user_lists) {
-            sge_dstring_append(&value, ocs::tom::get<US_name>(ep));
+            sge_dstring_append(&value, ep.get<US_name>());
             if (ep.next() != nullptr) {
                sge_dstring_append(&value, " ");
             }
@@ -909,7 +909,7 @@ sobjl_match_cqueue_attr(const ocs::tom::ConstList<A> attribute_list, const char 
    dstring value = DSTRING_INIT;
 
    for (const auto attribute : attribute_list) {
-      const char *host_hgroup = ocs::tom::get<ocs_attr_traits<A>::href>(attribute);
+      const char *host_hgroup = attribute.template get<ocs_attr_traits<A>::href>();
       const bool is_cqueue = strcmp(host_hgroup, HOSTREF_DEFAULT) == 0;
       const bool is_domain = !is_cqueue && ocs::is_hgroup_name(host_hgroup);
       const bool is_qinstance = !is_domain && !is_cqueue;
@@ -982,7 +982,7 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
    cqueue_list_fill_hostlist(ocs::tom::List<ocs::tom::CQ>(object_list_.get().raw()), *hgroup_list_);
 
    for (const auto cqueue : ocs::tom::ConstList<ocs::tom::CQ>(object_list_.get().raw())) {
-      const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
+      const char *cqueue_name = cqueue.get<CQ_name>();
       bool already_handled = false;
 
       if (fnmatch(attr, SGE_ATTR_QNAME, 0) == 0 && handle_cqueue &&
@@ -993,7 +993,7 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
 
       if (!already_handled && fnmatch(attr, SGE_ATTR_HOST_LIST, 0) == 0) {
          dstring value = DSTRING_INIT;
-         if (const auto hostref_list = ocs::tom::get<CQ_hostlist>(cqueue); hostref_list != nullptr) {
+         if (const auto hostref_list = cqueue.get<CQ_hostlist>(); hostref_list != nullptr) {
             href_list_append_to_dstring(hostref_list, &value);
          } else {
             sge_dstring_copy_string(&value, "NONE");
@@ -1009,7 +1009,7 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
          ocs_for_each_cqueue_attr_while([&](const auto &entry) {
             if (fnmatch(attr, entry.name, 0) == 0) {
                already_handled = sobjl_match_cqueue_attr(
-                  ocs::tom::get<ocs_cqueue_attr_t<decltype(entry)>::cqueue_field>(cqueue), val, cqueue_name,
+                  cqueue.get<ocs_cqueue_attr_t<decltype(entry)>::cqueue_field>(), val, cqueue_name,
                   handle_cqueue, handle_domain, handle_qinstance, filtered_names_);
             }
             return !already_handled;
@@ -1164,7 +1164,7 @@ ocs::QConfModelBase::make_sharetree_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *an
     * commas is skipped rather than reported as a missing node */
    const auto path_list = ocs::tom::ListPtr<ocs::tom::STN>::from_string<STN_name>(paths, ", ");
    for (const auto path_elem : *path_list) {
-      const char *path = ocs::tom::get<STN_name>(path_elem);
+      const char *path = path_elem.get<STN_name>();
       if (path == nullptr) {
          continue;
       }
@@ -1423,7 +1423,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
       dstring host_domain = DSTRING_INIT;
       bool has_hostname;
       bool has_domain;
-      const char *name = ocs::tom::get<QR_name>(qref_pattern);
+      const char *name = qref_pattern.get<QR_name>();
 
       if (!cqueue_name_split(name, &cqueue_name, &host_domain, &has_hostname, &has_domain)) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1491,7 +1491,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
       dstring host_domain = DSTRING_INIT;
       bool has_hostname;
       bool has_domain;
-      const char *name = ocs::tom::get<QR_name>(qref_pattern);
+      const char *name = qref_pattern.get<QR_name>();
 
       /* split again rather than remember: the filter loop above threw the parts
        * away, and splitting is pure string work on a handful of references */
@@ -1512,14 +1512,14 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
          hgroup_list_find_matching_and_resolve(*hgroup_list_, nullptr,
                                                sge_dstring_get_string(&host_domain), &href_list);
          for (const auto qref : *qref_list) {
-            const auto cqueue = cqueues.find_first<CQ_name>(ocs::tom::get<QR_name>(qref));
+            const auto cqueue = cqueues.find_first<CQ_name>(qref.get<QR_name>());
             if (cqueue == nullptr) {
                continue;
             }
-            const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+            const auto qinstance_list = cqueue.get<CQ_qinstances>();
             for (const auto href : *href_list) {
                const auto qinstance =
-                  ocs::tom::find_first<QU_qhostname>(qinstance_list, ocs::tom::get<HR_name>(href));
+                  qinstance_list.find_first<QU_qhostname>(href.get<HR_name>());
                if (qinstance != nullptr) {
                   auto qi_copy = qinstance.clone();
                   ocs_qconf_json_fill_complex<ocs::tom::QU, QU_consumable_config_list, QU_load_thresholds,
@@ -1532,14 +1532,14 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
          const char *h_pattern = sge_dstring_get_string(&host_domain);
          const bool is_expr = is_expression(h_pattern);
          for (const auto qref : *qref_list) {
-            const auto cqueue = cqueues.find_first<CQ_name>(ocs::tom::get<QR_name>(qref));
+            const auto cqueue = cqueues.find_first<CQ_name>(qref.get<QR_name>());
             if (cqueue == nullptr) {
                continue;
             }
-            for (const auto qinstance : ocs::tom::get<CQ_qinstances>(cqueue)) {
+            for (const auto qinstance : cqueue.get<CQ_qinstances>()) {
                /* sge_eval_expression() returns 0 on a match, as strcmp does */
                if (sge_eval_expression(CEntry::Type::HOST, h_pattern,
-                                       ocs::tom::get<QU_qhostname>(qinstance), nullptr,
+                                       qinstance.get<QU_qhostname>(), nullptr,
                                        true, is_expr) == 0) {
                   auto qi_copy = qinstance.clone();
                   ocs_qconf_json_fill_complex<ocs::tom::QU, QU_consumable_config_list, QU_load_thresholds,
@@ -1550,7 +1550,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
          }
       } else {
          for (const auto qref : *qref_list) {
-            const auto cqueue = cqueues.find_first<CQ_name>(ocs::tom::get<QR_name>(qref));
+            const auto cqueue = cqueues.find_first<CQ_name>(qref.get<QR_name>());
             if (cqueue != nullptr) {
                group.cqueues->push_back(cqueue.clone());
             }
@@ -1842,7 +1842,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             // the owner was fetched with the descriptor of the read's object type
             auto fetched = ocs::tom::ListPtr<T>::from_typed(object_list_.release());
             const auto owner = fetched->front();
-            auto members = owner ? ocs::tom::get<Member::list>(owner).clone("") : ocs::tom::ListPtr<M>();
+            auto members = owner ? owner.template get<Member::list>().clone("") : ocs::tom::ListPtr<M>();
             fetched.reset();
             if (!members) {
                members = ocs::tom::ListPtr<M>::create("");
@@ -1893,7 +1893,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          bool all_found = true;
          bool template_refused = false;
          for (const auto name_elem : *wanted) {
-            const char *name = ocs::tom::get<ST_name>(name_elem);
+            const char *name = name_elem.get<ST_name>();
             const bool found = ocs_with_qconf_object(object_, [this, name](const auto &entry) {
                using E = ocs_qconf_object_entry_t<decltype(entry)>;
                // object_list_ was fetched with the descriptor of the read's object type

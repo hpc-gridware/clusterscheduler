@@ -145,10 +145,10 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       rrc = dtc = 0.0;
 
       /* waiting time dependent contribution */
-      wtc = weight_waiting_time * sge_gmt64_to_gmt32(now - ocs::tom::get<JB_submission_time>(jep));
+      wtc = weight_waiting_time * sge_gmt64_to_gmt32(now - jep.get<JB_submission_time>());
 
       /* job deadline dependent contribution */
-      deadline = ocs::tom::get<JB_deadline>(jep);
+      deadline = jep.get<JB_deadline>();
       if (deadline > 0) {
          if (deadline >= now) {
             dtc = weight_deadline / std::max(sge_gmt64_to_gmt32_double(deadline - now), 1.0);
@@ -162,9 +162,9 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       /* we do category based caching when determining the resource request dependent contribution */
       // the category is a reference (lRefT) to the job's category element
       const auto cat =
-         ocs::tom::Element<ocs::tom::CT>::from_typed(static_cast<lListElem *>(ocs::tom::get<JB_category>(jep)));
-      if (cat != nullptr && ocs::tom::get<CT_rc_valid>(cat)) {
-         rrc = ocs::tom::get<CT_resource_contribution>(cat);
+         ocs::tom::Element<ocs::tom::CT>::from_typed(static_cast<lListElem *>(jep.get<JB_category>()));
+      if (cat != nullptr && cat.get<CT_rc_valid>()) {
+         rrc = cat.get<CT_resource_contribution>();
 /*         DPRINTF("  resource contribution from category cache ---> %7f\n", rrc); */
       } else {
          double contribution;
@@ -182,29 +182,29 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
 
          /* contribution for all explicit requests */
          for (const auto rr : job_get_hard_resource_list(jep)) {
-            const char *name = ocs::tom::get<CE_name>(rr);
+            const char *name = rr.get<CE_name>();
             const auto centry = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
             if (centry == nullptr) {
                continue;
             }
-            contribution = centry_urgency_contribution(slots, ocs::tom::get<CE_name>(rr), 
-                  ocs::tom::get<CE_doubleval>(rr), centry);
+            contribution = centry_urgency_contribution(slots, rr.get<CE_name>(), 
+                  rr.get<CE_doubleval>(), centry);
             rrc += contribution;
          }
 
          /* cache in category */
          if (cat != nullptr) {
-            ocs::tom::set<CT_rc_valid>(cat,              true);
-            ocs::tom::set<CT_resource_contribution>(cat, rrc);
+            cat.set<CT_rc_valid>(true);
+            cat.set<CT_resource_contribution>(rrc);
          }
       }
       absolute_urgency = wtc + dtc + rrc; 
 
       /* store these values with the job */
-      ocs::tom::set<JB_dlcontr>(jep, dtc);
-      ocs::tom::set<JB_rrcontr>(jep, rrc);
-      ocs::tom::set<JB_wtcontr>(jep, wtc);
-      ocs::tom::set<JB_urg>(jep, absolute_urgency);
+      jep.set<JB_dlcontr>(dtc);
+      jep.set<JB_rrcontr>(rrc);
+      jep.set<JB_wtcontr>(wtc);
+      jep.set<JB_urg>(absolute_urgency);
 
       
       /* track min/max values */
@@ -236,9 +236,9 @@ static void sge_normalize_urgency(const ocs::tom::List<ocs::tom::JB> job_list, d
 
    DPRINTF("ASU min = %13.11f, ASU max = %13.11f\n", min_urgency, max_urgency);
    for (const auto jep : job_list) {
-      double asu = ocs::tom::get<JB_urg>(jep);
+      double asu = jep.get<JB_urg>();
       double nsu = sge_normalize_value(asu, min_urgency, max_urgency);
-      ocs::tom::set<JB_nurg>(jep, nsu);
+      jep.set<JB_nurg>(nsu);
    }
    DRETURN_VOID;
 }
@@ -270,12 +270,12 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
    int n;
   
    /* sequential job */
-   if (!(pe_name=ocs::tom::get<JB_pe>(job))) {
+   if (!(pe_name=job.get<JB_pe>())) {
       DRETURN(1);
    } 
 
    /* parallel job with fixed slot request */
-   const auto range_list = ocs::tom::get<JB_pe_range>(job);
+   const auto range_list = job.get<JB_pe_range>();
    if (range_list_get_number_of_ids(range_list)==1) { 
       DRETURN(range_list_get_first_id(range_list, nullptr));
    } 
@@ -287,7 +287,7 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
       /* use the first matching pe */
       pep = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_find_matching(pe_list, pe_name));
       if (pep != nullptr) {
-         DPRINTF("use %s as first matching pe for %s to verify schedulability\n", ocs::tom::get<PE_name>(pep), pe_name);
+         DPRINTF("use %s as first matching pe for %s to verify schedulability\n", pep.get<PE_name>(), pe_name);
       }
    }
    if (pep == nullptr) {
@@ -295,7 +295,7 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
       DRETURN(1);
    }
 
-   urgency_slot_setting = ocs::tom::get<PE_urgency_slots>(pep);
+   urgency_slot_setting = pep.get<PE_urgency_slots>();
 
    n = pe_urgency_slots(pep, urgency_slot_setting, range_list); 
 
@@ -305,7 +305,7 @@ int sge_job_slot_request(const ocs::tom::ConstElement<ocs::tom::JB> job,
       sge_dstring_init(&pe_range, pe_range_str, sizeof(pe_range_str));
       range_list_print_to_string(range_list, &pe_range, true, false, false);
       DPRINTF("slot request assumed for static urgency is %d for %s PE range due to "
-          "PE's \"%s\" setting \"%s\"\n", n, pe_range_str, ocs::tom::get<PE_name>(pep), 
+          "PE's \"%s\" setting \"%s\"\n", n, pe_range_str, pep.get<PE_name>(), 
           urgency_slot_setting);
    }
 

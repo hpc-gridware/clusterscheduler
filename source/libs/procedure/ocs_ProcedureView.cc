@@ -258,22 +258,22 @@ void ocs::ProcedureView::show_resource_as_JSON_type(std::ostream &os,
                                                    const ocs::tom::ConstElement<ocs::tom::CE> resource) {
    DENTER(TOP_LAYER);
    // get the dominant value of the resource for this host
-   const auto type = static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(resource));
+   const auto type = static_cast<CEntry::Type>(resource.get<CE_valtype>());
    const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR
                           || type == CEntry::Type::HOST || type == CEntry::Type::RESTR;
    const bool as_double = type == CEntry::Type::DOUBLE;
    const bool as_bool = type == CEntry::Type::BOOL;
    if (as_string) {
-      const char *strval = ocs::tom::get<CE_stringval>(resource);
+      const char *strval = resource.get<CE_stringval>();
       os << "\"" << raw2JSON(strval != nullptr ? strval : "") << "\"";
    } else if (as_bool) {
-      os << (ocs::tom::get<CE_doubleval>(resource) > 0.0 ? "true" : "false");
+      os << (resource.get<CE_doubleval>() > 0.0 ? "true" : "false");
    } else {
       // Numeric resource (DOUBLE, or INT/TIME/MEM/RSMAP). An unlimited value is stored
       // as DBL_MAX; emit it as the string INFINITY_STR (the same token qconf -fmt json
       // uses, see spool_json_write_ce_value()) instead of letting it overflow the
       // uint64_t cast (undefined behaviour) or print 1.79769e+308 (CS-2318).
-      const double dval = ocs::tom::get<CE_doubleval>(resource);
+      const double dval = resource.get<CE_doubleval>();
       if (dval == DBL_MAX) {
          os << '"' << INFINITY_STR << '"';
       } else if (as_double) {

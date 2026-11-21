@@ -87,20 +87,20 @@ ocs::ProcedureModel::get_reduction() const {
     * zero, so a reading of zero alone cannot tell "qmaster said nothing was
     * reduced" from "the entry never arrived" - and the second would mean the
     * channel is broken while looking exactly like the healthy case. */
-   const auto entry = ocs::tom::find_first<SPP_name>(procedure_response.get(), ProcedureParameter::REDUCTION);
+   const auto entry = procedure_response.get().find_first<SPP_name>(ProcedureParameter::REDUCTION);
    if (entry == nullptr) {
       DPRINTF("no reduction entry in the response\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
    // the value list is of any type (CULL_ANY_SUBTYPE); the checked handle throws on another type, as the
    // getter on the raw element did
-   const auto value = ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(entry)).front();
+   const auto value = ocs::tom::ConstList<ocs::tom::ULNG>(entry.get<SPP_value_list>()).front();
    if (!value) {
       DPRINTF("reduction entry present but empty\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
 
-   DRETURN(static_cast<uint32_t>(ocs::tom::get<ULNG_value>(value)));
+   DRETURN(value.get<ULNG_value>());
 }
 
 /** @brief What a write procedure did, see the header
@@ -114,9 +114,9 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
                                       uint32_t *elements) const {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::SPP> applied_entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
+   ocs::tom::ConstElement<ocs::tom::SPP> applied_entry = procedure_response.get().find_first<SPP_name>(
                                                 ProcedureParameter::WRITE_APPLIED);
-   ocs::tom::ConstElement<ocs::tom::SPP> failed_entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
+   ocs::tom::ConstElement<ocs::tom::SPP> failed_entry = procedure_response.get().find_first<SPP_name>(
                                                ProcedureParameter::WRITE_PARSE_FAILED);
    if (applied_entry == nullptr || failed_entry == nullptr) {
       DPRINTF("no write result in the response\n");
@@ -124,29 +124,29 @@ ocs::ProcedureModel::get_write_result(uint32_t &applied, uint32_t &parse_failed,
    }
 
    const auto applied_value =
-           ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(applied_entry)).front();
-   const auto failed_value = ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(failed_entry)).front();
+           ocs::tom::ConstList<ocs::tom::ULNG>(applied_entry.get<SPP_value_list>()).front();
+   const auto failed_value = ocs::tom::ConstList<ocs::tom::ULNG>(failed_entry.get<SPP_value_list>()).front();
    if (!applied_value || !failed_value) {
       DPRINTF("write result present but empty\n");
       DRETURN(false);
    }
 
-   applied = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(applied_value));
-   parse_failed = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(failed_value));
+   applied = applied_value.get<ULNG_value>();
+   parse_failed = failed_value.get<ULNG_value>();
 
    /* The element count is reported next to the two above and asked for by the
     * one caller that prints a count of objects. It is read on its own, so a
     * response that carries only the two older entries is still a complete
     * write result - the counts a caller must have are those two. */
    if (elements != nullptr) {
-      ocs::tom::ConstElement<ocs::tom::SPP> elements_entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
+      ocs::tom::ConstElement<ocs::tom::SPP> elements_entry = procedure_response.get().find_first<SPP_name>(
                                                     ProcedureParameter::WRITE_ELEMENTS);
       const auto elements_value =
               elements_entry
-              ? ocs::tom::ConstList<ocs::tom::ULNG>(ocs::tom::get<SPP_value_list>(elements_entry)).front()
+              ? ocs::tom::ConstList<ocs::tom::ULNG>(elements_entry.get<SPP_value_list>()).front()
               : nullptr;
       if (elements_value) {
-         *elements = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(elements_value));
+         *elements = elements_value.get<ULNG_value>();
       }
    }
 
@@ -160,7 +160,7 @@ std::optional<ocs::tom::ConstList<ocs::tom::VA>>
 ocs::ProcedureModel::get_export_objects() const {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstElement<ocs::tom::SPP> entry = ocs::tom::find_first<SPP_name>(procedure_response.get(),
+   ocs::tom::ConstElement<ocs::tom::SPP> entry = procedure_response.get().find_first<SPP_name>(
                                         ProcedureParameter::EXPORT_OBJECTS);
    if (entry == nullptr) {
       DPRINTF("no export entry in the response\n");
@@ -170,7 +170,7 @@ ocs::ProcedureModel::get_export_objects() const {
    /* An empty export is stored by CULL as no list at all, so the null check
     * comes before the count - lGetNumberOfElem() flags a null list as an error
     * of its own. The handle is only counted here, so it is not checked; the caller checks it. */
-   const auto exported = ocs::tom::ConstList<ocs::tom::VA>::from_typed(ocs::tom::get<SPP_value_list>(entry));
+   const auto exported = ocs::tom::ConstList<ocs::tom::VA>::from_typed(entry.get<SPP_value_list>());
    DPRINTF("export entry holds %d object(s)\n", static_cast<int>(exported.size()));
    DRETURN(exported);
 }
@@ -188,14 +188,14 @@ ocs::ProcedureModel::get_export_objects() const {
 const char *
 ocs::ProcedureModel::get_output_text() const {
    DENTER(TOP_LAYER);
-   const auto response_elem = ocs::tom::find_first<SPP_name>(procedure_response.get(), ProcedureParameter::RESPONSE);
+   const auto response_elem = procedure_response.get().find_first<SPP_name>(ProcedureParameter::RESPONSE);
    if (!response_elem) {
       DRETURN("");
    }
-   const auto output_elem = ocs::tom::ConstList<ocs::tom::ST>(ocs::tom::get<SPP_value_list>(response_elem)).front();
+   const auto output_elem = ocs::tom::ConstList<ocs::tom::ST>(response_elem.get<SPP_value_list>()).front();
    if (!output_elem) {
       DRETURN("");
    }
-   const char *output = ocs::tom::get<ST_name>(output_elem);
+   const char *output = output_elem.get<ST_name>();
    DRETURN(output != nullptr ? output : "");
 }

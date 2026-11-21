@@ -50,9 +50,9 @@ void ocs::QStatSelectController::process_request(QStatParameter &parameter, QSta
    view.report_started(out_);
 
    for (const auto cqueue : model.get_cqueue_list()) {
-      for (const auto qep : ocs::tom::get<CQ_qinstances>(cqueue)) {
-         if ((ocs::tom::get<QU_tag>(qep) & TAG_SHOW_IT) == TAG_SHOW_IT) {
-            if (const char *qname = ocs::tom::get<QU_full_name>(qep); qname != nullptr) {
+      for (const auto qep : cqueue.get<CQ_qinstances>()) {
+         if ((qep.get<QU_tag>() & TAG_SHOW_IT) == TAG_SHOW_IT) {
+            if (const char *qname = qep.get<QU_full_name>(); qname != nullptr) {
                view.report_queue(out_, qname);
             }
          }

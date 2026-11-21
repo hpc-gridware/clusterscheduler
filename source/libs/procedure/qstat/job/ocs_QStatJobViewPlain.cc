@@ -99,8 +99,8 @@ void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const ocs::tom:
          os << separator << indent;
       }
 
-      const char *name = ocs::tom::get<CE_name>(ce);
-      if (const char *s = ocs::tom::get<CE_stringval>(ce)) {
+      const char *name = ce.get<CE_name>();
+      if (const char *s = ce.get<CE_stringval>()) {
          os << name << "=" << s;
       } else {
          os << name;
@@ -156,19 +156,19 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
 
       /* print global schduling info */
       bool first_run = true;
-      for (const auto mes : ocs::tom::get<SME_global_message_list>(sme)) {
+      for (const auto mes : sme.get<SME_global_message_list>()) {
          if (first_run) {
             os << std::format("{:<{}} {}\n", ocs::ascii_width(MSG_SCHEDD_SCHEDULINGINFO), left_width,
-                              ocs::tom::get<MES_message>(mes));
+                              mes.get<MES_message>());
             first_run = false;
          } else {
-            os << std::format("{:<{}} {}\n", ocs::ascii_width(""), left_width, ocs::tom::get<MES_message>(mes));
+            os << std::format("{:<{}} {}\n", ocs::ascii_width(""), left_width, mes.get<MES_message>());
          }
       }
 
       // the messages are summarized in the order they were stored in; a sort by MES_message_number would change
       // the output (the lPSortList(mlp, "I+", ...) that stood here lacked the '%' and sorted by no key)
-      auto mlp = ocs::tom::get<SME_message_list>(sme);
+      auto mlp = sme.get<SME_message_list>();
 
       /*
        * Remove all jids which have more than one entry for a MES_message_number
@@ -185,9 +185,9 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
             bool found_msg = false;
             flt_nxt_msg = flt_msg.next();
             for (const auto ref_msg : *new_list) {
-               if (ocs::tom::get<MES_message_number>(ref_msg) == ocs::tom::get<MES_message_number>(flt_msg)) {
-                  const auto flt_jids = ocs::tom::get<MES_job_number_list>(flt_msg);
-                  const auto ref_jids = ocs::tom::get<MES_job_number_list>(ref_msg);
+               if (ref_msg.get<MES_message_number>() == flt_msg.get<MES_message_number>()) {
+                  const auto flt_jids = flt_msg.get<MES_job_number_list>();
+                  const auto ref_jids = ref_msg.get<MES_job_number_list>();
                   auto flt_nxt_jid = flt_jids.front();
                   while (flt_nxt_jid != nullptr) {
                      const auto flt_jid = flt_nxt_jid;
@@ -195,7 +195,7 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
 
                      bool found_jid = false;
                      for (const auto ref_jid : ref_jids) {
-                        if (ocs::tom::get<ULNG_value>(ref_jid) == ocs::tom::get<ULNG_value>(flt_jid)) {
+                        if (ref_jid.get<ULNG_value>() == flt_jid.get<ULNG_value>()) {
                            flt_jids.erase(flt_jid);
                            found_jid = true;
                            break;
@@ -217,7 +217,7 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
             }
          }
          const auto filtered = *new_list;
-         ocs::tom::set<SME_message_list>(sme, std::move(new_list));
+         sme.set<SME_message_list>(std::move(new_list));
          mlp = filtered;
       }
 
@@ -229,11 +229,11 @@ ocs::QStatJobViewPlain::show_reasons(std::ostream &os, QStatParameter &parameter
       first_run = true;
       for (const auto mes : mlp) {
          // the job ids keep their stored order as well, see above
-         for (const auto jid_ulng : ocs::tom::get<MES_job_number_list>(mes)) {
+         for (const auto jid_ulng : mes.get<MES_job_number_list>()) {
             bool skip = false;
             bool header = false;
-            const uint32_t mid = ocs::tom::get<MES_message_number>(mes);
-            const uint32_t jid = ocs::tom::get<ULNG_value>(jid_ulng);
+            const uint32_t mid = mes.get<MES_message_number>();
+            const uint32_t jid = jid_ulng.get<ULNG_value>();
 
             if (initialized) {
                if (last_mid == mid && last_jid == jid) {
@@ -330,7 +330,7 @@ void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const ocs::tom::Con
                                            int flags) {
    DENTER(TOP_LAYER);
    if (!(flags & FLG_QALTER)) {
-      uint32_t jid = ocs::tom::get<JB_job_number>(job);
+      uint32_t jid = job.get<JB_job_number>();
       if (jid > 0) {
          os << std::format("{:<{}} {}", ocs::ascii_width("job_number:"), left_width, jid) << "\n";
       } else {
@@ -347,9 +347,9 @@ void ocs::QStatJobViewPlain::report_job_id(std::ostream &os, const ocs::tom::Con
  */
 void ocs::QStatJobViewPlain::report_category_id(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_category_id>(job)) {
+   if (job.has<JB_category_id>()) {
       os << std::format("{:<{}} {}", ocs::ascii_width("category_id:"), left_width,
-                        ocs::tom::get<JB_category_id>(job)) << "\n";
+                        job.get<JB_category_id>()) << "\n";
    }
    DRETURN_VOID;
 }
@@ -361,8 +361,8 @@ void ocs::QStatJobViewPlain::report_category_id(std::ostream &os, const ocs::tom
  */
 void ocs::QStatJobViewPlain::report_exec_file(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_exec_file>(job)) {
-      if (const char *exec_file = ocs::tom::get<JB_exec_file>(job)) {
+   if (job.has<JB_exec_file>()) {
+      if (const char *exec_file = job.get<JB_exec_file>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("exec_file:"), left_width, exec_file) << "\n";
       }
    }
@@ -377,8 +377,8 @@ void ocs::QStatJobViewPlain::report_exec_file(std::ostream &os, const ocs::tom::
 void ocs::QStatJobViewPlain::report_submission_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
-   if (ocs::tom::has<JB_submission_time>(job)) {
-      if (const uint64_t time_value = ocs::tom::get<JB_submission_time>(job); time_value > 0) {
+   if (job.has<JB_submission_time>()) {
+      if (const uint64_t time_value = job.get<JB_submission_time>(); time_value > 0) {
          os << std::format("{:<{}} {}", ocs::ascii_width("submission_time:"), left_width,
                            sge_ctime64(time_value, &dstr)) << "\n";
       }
@@ -394,8 +394,8 @@ void ocs::QStatJobViewPlain::report_submission_time(std::ostream &os, const ocs:
 void ocs::QStatJobViewPlain::report_deadline_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
-   if (ocs::tom::has<JB_deadline>(job)) {
-      if (const uint64_t time_value = ocs::tom::get<JB_deadline>(job); time_value > 0) {
+   if (job.has<JB_deadline>()) {
+      if (const uint64_t time_value = job.get<JB_deadline>(); time_value > 0) {
          os << std::format("{:<{}} {}", ocs::ascii_width("deadline:"), left_width,
                            sge_ctime64(time_value, &dstr)) << "\n";
       }
@@ -410,8 +410,8 @@ void ocs::QStatJobViewPlain::report_deadline_time(std::ostream &os, const ocs::t
  */
 void ocs::QStatJobViewPlain::report_submit_cmd_line(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_submission_command_line>(job)) {
-      if (const char *str = ocs::tom::get<JB_submission_command_line>(job); str != nullptr) {
+   if (job.has<JB_submission_command_line>()) {
+      if (const char *str = job.get<JB_submission_command_line>(); str != nullptr) {
          os << std::format("{:<{}} {}", ocs::ascii_width("submit_cmd_line:"), left_width, str) << "\n";
       }
    }
@@ -426,8 +426,8 @@ void ocs::QStatJobViewPlain::report_submit_cmd_line(std::ostream &os, const ocs:
 void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os,
                                                               const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_submission_command_line>(job)) {
-      if (const char *str = ocs::tom::get<JB_submission_command_line>(job); str != nullptr) {
+   if (job.has<JB_submission_command_line>()) {
+      if (const char *str = job.get<JB_submission_command_line>(); str != nullptr) {
          char *copied_str = strdup(str);
          char *saveptr = nullptr;
          if (const char *command = strtok_r(copied_str, " ", &saveptr); command != nullptr) {
@@ -449,34 +449,34 @@ void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os,
  */
 void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_owner>(job)) {
-      if (const char *owner = ocs::tom::get<JB_owner>(job)) {
+   if (job.has<JB_owner>()) {
+      if (const char *owner = job.get<JB_owner>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("owner:"), left_width, owner) << "\n";
       } else {
          os << std::format("{:<{}} {}", ocs::ascii_width("owner:"), left_width, "") << "\n";
       }
    }
 
-   if (ocs::tom::has<JB_uid>(job)) {
-      os << std::format("{:<{}} {}", ocs::ascii_width("uid:"), left_width, (int) ocs::tom::get<JB_uid>(job)) << "\n";
+   if (job.has<JB_uid>()) {
+      os << std::format("{:<{}} {}", ocs::ascii_width("uid:"), left_width, (int) job.get<JB_uid>()) << "\n";
    }
 
-   if (ocs::tom::has<JB_group>(job)) {
-      if (const char *group = ocs::tom::get<JB_group>(job)) {
+   if (job.has<JB_group>()) {
+      if (const char *group = job.get<JB_group>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("group:"), left_width, group) << "\n";
       } else {
          os << std::format("{:<{}} {}", ocs::ascii_width("group:"), left_width, "") << "\n";
       }
    }
 
-   if (ocs::tom::has<JB_gid>(job)) {
-      os << std::format("{:<{}} {}", ocs::ascii_width("gid:"), left_width, ocs::tom::get<JB_gid>(job)) << "\n";
+   if (job.has<JB_gid>()) {
+      os << std::format("{:<{}} {}", ocs::ascii_width("gid:"), left_width, job.get<JB_gid>()) << "\n";
    }
 
-   if (ocs::tom::has<JB_grp_list>(job)) {
+   if (job.has<JB_grp_list>()) {
       std::stringstream ss_groups;
 #if defined(WITH_EXTENSIONS)
-      ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
+      ocs::tom::ConstList<ocs::tom::ST> grp_list = job.get<JB_grp_list>();
 
       if (grp_list == nullptr) {
          ss_groups << "NONE";
@@ -489,7 +489,7 @@ void ocs::QStatJobViewPlain::report_ownership(std::ostream &os, const ocs::tom::
             } else {
                ss_groups << ",";
             }
-            ss_groups << std::format("{}({})", ocs::tom::get<ST_id>(grp_elem), ocs::tom::get<ST_name>(grp_elem));
+            ss_groups << std::format("{}({})", grp_elem.get<ST_id>(), grp_elem.get<ST_name>());
          }
       }
 #else
@@ -531,9 +531,9 @@ void ocs::QStatJobViewPlain::report_env_core(std::ostream &os, const ocs::tom::C
  */
 void ocs::QStatJobViewPlain::report_execution_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_execution_time>(job)) {
+   if (job.has<JB_execution_time>()) {
       DSTRING_STATIC(dstr, 128);
-      if (const uint64_t time_value = ocs::tom::get<JB_execution_time>(job); time_value > 0) {
+      if (const uint64_t time_value = job.get<JB_execution_time>(); time_value > 0) {
          os << std::format("{:<{}} {}", ocs::ascii_width("execution_time:"), left_width,
                            sge_ctime64(time_value, &dstr)) << "\n";
       }
@@ -548,8 +548,8 @@ void ocs::QStatJobViewPlain::report_execution_time(std::ostream &os, const ocs::
  */
 void ocs::QStatJobViewPlain::report_account(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_account>(job)) {
-      if (const char *account = ocs::tom::get<JB_account>(job)) {
+   if (job.has<JB_account>()) {
+      if (const char *account = job.get<JB_account>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("account:"), left_width, account) << "\n";
       }
    }
@@ -563,22 +563,22 @@ void ocs::QStatJobViewPlain::report_account(std::ostream &os, const ocs::tom::Co
  */
 void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_checkpoint_name>(job)) {
-      if (const char *ckpt_name = ocs::tom::get<JB_checkpoint_name>(job)) {
+   if (job.has<JB_checkpoint_name>()) {
+      if (const char *ckpt_name = job.get<JB_checkpoint_name>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("checkpoint_object:"), left_width, ckpt_name) << "\n";
       }
    }
 
-   if (ocs::tom::has<JB_checkpoint_attr>(job)) {
-      if (uint32_t ckpt_attr = ocs::tom::get<JB_checkpoint_attr>(job)) {
+   if (job.has<JB_checkpoint_attr>()) {
+      if (uint32_t ckpt_attr = job.get<JB_checkpoint_attr>()) {
          std::stringstream ss_ckpt_attr;
          job_get_ckpt_attr(ss_ckpt_attr, ckpt_attr);
          os << std::format("{:<{}} {}", ocs::ascii_width("checkpoint_attr:"), left_width, ss_ckpt_attr.str()) << "\n";
       }
    }
 
-   if (ocs::tom::has<JB_checkpoint_interval>(job)) {
-      if (uint32_t ckpt_int = ocs::tom::get<JB_checkpoint_interval>(job)) {
+   if (job.has<JB_checkpoint_interval>()) {
+      if (uint32_t ckpt_int = job.get<JB_checkpoint_interval>()) {
          os << std::format("{:<{}} {} seconds", ocs::ascii_width("checkpoint_interval:"), left_width, ckpt_int) << "\n";
       }
    }
@@ -592,8 +592,8 @@ void ocs::QStatJobViewPlain::report_checkpoint(std::ostream &os, const ocs::tom:
  */
 void ocs::QStatJobViewPlain::report_cwd(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_cwd>(job)) {
-      if (const char *cwd = ocs::tom::get<JB_cwd>(job)) {
+   if (job.has<JB_cwd>()) {
+      if (const char *cwd = job.get<JB_cwd>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("cwd:"), left_width, cwd) << "\n";
       }
    }
@@ -607,12 +607,12 @@ void ocs::QStatJobViewPlain::report_cwd(std::ostream &os, const ocs::tom::ConstE
  */
 void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_cwd>(job)) {
-      if (const char *cwd = ocs::tom::get<JB_cwd>(job)) {
+   if (job.has<JB_cwd>()) {
+      if (const char *cwd = job.get<JB_cwd>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("cwd:"), left_width, cwd) << "\n";
       }
-      if (ocs::tom::has<JB_path_aliases>(job)) {
-         if (ocs::tom::ConstList<ocs::tom::PA> path_aliases = ocs::tom::get<JB_path_aliases>(job)) {
+      if (job.has<JB_path_aliases>()) {
+         if (ocs::tom::ConstList<ocs::tom::PA> path_aliases = job.get<JB_path_aliases>()) {
             std::ostringstream ss_path_aliases;
             delis[0] = " ";
             int fields[] = {PA_origin, PA_submit_host, PA_exec_host, PA_translation, 0};
@@ -632,8 +632,8 @@ void ocs::QStatJobViewPlain::report_path_aliases(std::ostream &os, const ocs::to
  */
 void ocs::QStatJobViewPlain::report_directive_prefix(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_directive_prefix>(job)) {
-      if (const char *prefix = ocs::tom::get<JB_directive_prefix>(job)) {
+   if (job.has<JB_directive_prefix>()) {
+      if (const char *prefix = job.get<JB_directive_prefix>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("directive_prefix:"), left_width, prefix) << "\n";
       }
    }
@@ -647,8 +647,8 @@ void ocs::QStatJobViewPlain::report_directive_prefix(std::ostream &os, const ocs
  */
 void ocs::QStatJobViewPlain::report_stdin_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_stdin_path_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<JB_stdin_path_list>(job)) {
+   if (job.has<JB_stdin_path_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::PN> list = job.get<JB_stdin_path_list>()) {
          std::ostringstream ss_list;
          delis[0] = ":";
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
@@ -667,8 +667,8 @@ void ocs::QStatJobViewPlain::report_stdin_path_list(std::ostream &os, const ocs:
  */
 void ocs::QStatJobViewPlain::report_stdout_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_stdout_path_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<JB_stdout_path_list>(job)) {
+   if (job.has<JB_stdout_path_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::PN> list = job.get<JB_stdout_path_list>()) {
          std::ostringstream ss_list;
          delis[0] = ":";
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
@@ -686,8 +686,8 @@ void ocs::QStatJobViewPlain::report_stdout_path_list(std::ostream &os, const ocs
  */
 void ocs::QStatJobViewPlain::report_stderr_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_stderr_path_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::PN> path_list = ocs::tom::get<JB_stderr_path_list>(job)) {
+   if (job.has<JB_stderr_path_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::PN> path_list = job.get<JB_stderr_path_list>()) {
          std::ostringstream ss_path_list;
          delis[0] = ":";
          int fields[] = {PN_host, PN_file_host, PN_path, PN_file_staging, 0};
@@ -706,8 +706,8 @@ void ocs::QStatJobViewPlain::report_stderr_path_list(std::ostream &os, const ocs
  */
 void ocs::QStatJobViewPlain::report_reserve(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_reserve>(job)) {
-      if (const bool reserve = ocs::tom::get<JB_reserve>(job)) {
+   if (job.has<JB_reserve>()) {
+      if (const bool reserve = job.get<JB_reserve>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("reserve:"), left_width, reserve ? "y" : "n") << "\n";
       }
    }
@@ -721,8 +721,8 @@ void ocs::QStatJobViewPlain::report_reserve(std::ostream &os, const ocs::tom::Co
  */
 void ocs::QStatJobViewPlain::report_merge_stderr(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_merge_stderr>(job)) {
-      if (const bool merge = ocs::tom::get<JB_merge_stderr>(job)) {
+   if (job.has<JB_merge_stderr>()) {
+      if (const bool merge = job.get<JB_merge_stderr>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("merge:"), left_width, merge ? "y" : "n") << "\n";
       }
    }
@@ -736,12 +736,12 @@ void ocs::QStatJobViewPlain::report_merge_stderr(std::ostream &os, const ocs::to
  */
 void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_request_set_list>(job)) {
-      ocs::tom::ConstList<ocs::tom::JRS> jrs_list = ocs::tom::get<JB_request_set_list>(job);
+   if (job.has<JB_request_set_list>()) {
+      ocs::tom::ConstList<ocs::tom::JRS> jrs_list = job.get<JB_request_set_list>();
       for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : jrs_list) {
-         uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
+         uint32_t scope = jrs.get<JRS_scope>();
 
-         if (ocs::tom::ConstList<ocs::tom::CE> lp = ocs::tom::get<JRS_hard_resource_list>(jrs)) {
+         if (ocs::tom::ConstList<ocs::tom::CE> lp = jrs.get<JRS_hard_resource_list>()) {
             std::string str_attrib = get_scope_list_name(scope, JRS_hard_resource_list, true);
 
             std::ostringstream ss_list;
@@ -750,7 +750,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs
             os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str()) << "\n";
          }
 
-         if (ocs::tom::ConstList<ocs::tom::CE> lp = ocs::tom::get<JRS_soft_resource_list>(jrs)) {
+         if (ocs::tom::ConstList<ocs::tom::CE> lp = jrs.get<JRS_soft_resource_list>()) {
             std::string str_attrib = get_scope_list_name(scope, JRS_soft_resource_list, true);
 
             std::ostringstream ss_list;
@@ -759,7 +759,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs
             os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str()) << "\n";
          }
 
-         if (ocs::tom::ConstList<ocs::tom::QR> lp = ocs::tom::get<JRS_hard_queue_list>(jrs)) {
+         if (ocs::tom::ConstList<ocs::tom::QR> lp = jrs.get<JRS_hard_queue_list>()) {
             std::string str_attrib = get_scope_list_name(scope, JRS_hard_queue_list, true);
             delis[0] = " ";
 
@@ -770,7 +770,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs
             os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str());
          }
 
-         if (ocs::tom::ConstList<ocs::tom::QR> lp = ocs::tom::get<JRS_soft_queue_list>(jrs)) {
+         if (ocs::tom::ConstList<ocs::tom::QR> lp = jrs.get<JRS_soft_queue_list>()) {
             std::string str_attrib = get_scope_list_name(scope, JRS_soft_queue_list, true);
             delis[0] = " ";
 
@@ -781,7 +781,7 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs
             os << std::format("{:<{}} {}", ocs::ascii_width(str_attrib), left_width, ss_list.str());
          }
 
-         const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(jrs);
+         const char *allocation_rule = jrs.get<JRS_allocation_rule>();
          if (allocation_rule != nullptr) {
             std::string str_attrib = get_scope_list_name(scope, JRS_allocation_rule, true);
 
@@ -799,8 +799,8 @@ void ocs::QStatJobViewPlain::report_request_set_list(std::ostream &os, const ocs
  */
 void ocs::QStatJobViewPlain::report_mail_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_mail_options>(job)) {
-      if (const uint32_t mail_options = ocs::tom::get<JB_mail_options>(job)) {
+   if (job.has<JB_mail_options>()) {
+      if (const uint32_t mail_options = job.get<JB_mail_options>()) {
          dstring mailopt = DSTRING_INIT;
          sge_dstring_append_mailopt(&mailopt, mail_options);
          os << std::format("{:<{}} {}", ocs::ascii_width("mail_options:"), left_width,
@@ -818,8 +818,8 @@ void ocs::QStatJobViewPlain::report_mail_options(std::ostream &os, const ocs::to
  */
 void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_mail_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::MR> mail_list = ocs::tom::get<JB_mail_list>(job)) {
+   if (job.has<JB_mail_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::MR> mail_list = job.get<JB_mail_list>()) {
          std::ostringstream ss_list;
          int fields[] = {MR_user, MR_host, 0};
          delis[0] = "@";
@@ -837,9 +837,9 @@ void ocs::QStatJobViewPlain::report_mail_list(std::ostream &os, const ocs::tom::
  */
 void ocs::QStatJobViewPlain::report_notify(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_notify>(job)) {
+   if (job.has<JB_notify>()) {
       os << std::format("{:<{}} ", ocs::ascii_width("notify:"), left_width)
-         << (ocs::tom::get<JB_notify>(job) ? "TRUE" : "FALSE") << "\n";
+         << (job.get<JB_notify>() ? "TRUE" : "FALSE") << "\n";
    }
    DRETURN_VOID;
 }
@@ -851,9 +851,9 @@ void ocs::QStatJobViewPlain::report_notify(std::ostream &os, const ocs::tom::Con
  */
 void ocs::QStatJobViewPlain::report_name(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_job_name>(job)) {
-      os << std::format("{:<{}} ", ocs::ascii_width("job_name:"), left_width) << (ocs::tom::get<JB_job_name>(job)
-                                                                   ? ocs::tom::get<JB_job_name>(job)
+   if (job.has<JB_job_name>()) {
+      os << std::format("{:<{}} ", ocs::ascii_width("job_name:"), left_width) << (job.get<JB_job_name>()
+                                                                   ? job.get<JB_job_name>()
                                                                    : "") << "\n";
    }
    DRETURN_VOID;
@@ -866,9 +866,9 @@ void ocs::QStatJobViewPlain::report_name(std::ostream &os, const ocs::tom::Const
  */
 void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_priority>(job)) {
+   if (job.has<JB_priority>()) {
       os << std::format("{:<{}} {}", ocs::ascii_width("priority:"), left_width,
-                        static_cast<int>(ocs::tom::get<JB_priority>(job)) - BASE_PRIORITY) << "\n";
+                        static_cast<int>(job.get<JB_priority>()) - BASE_PRIORITY) << "\n";
    }
    DRETURN_VOID;
 }
@@ -880,9 +880,9 @@ void ocs::QStatJobViewPlain::report_priority(std::ostream &os, const ocs::tom::C
  */
 void ocs::QStatJobViewPlain::report_job_share(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_jobshare>(job)) {
+   if (job.has<JB_jobshare>()) {
       os << std::format("{:<{}} {}", ocs::ascii_width("jobshare:"), left_width,
-                        ocs::tom::get<JB_jobshare>(job)) << "\n";
+                        job.get<JB_jobshare>()) << "\n";
    }
    DRETURN_VOID;
 }
@@ -894,8 +894,8 @@ void ocs::QStatJobViewPlain::report_job_share(std::ostream &os, const ocs::tom::
  */
 void ocs::QStatJobViewPlain::report_restart(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_restart>(job)) {
-      if (const uint32_t restart = ocs::tom::get<JB_restart>(job)) {
+   if (job.has<JB_restart>()) {
+      if (const uint32_t restart = job.get<JB_restart>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("restart:"), left_width, (restart == 2) ? "n" : "y") << "\n";
       }
    }
@@ -909,8 +909,8 @@ void ocs::QStatJobViewPlain::report_restart(std::ostream &os, const ocs::tom::Co
  */
 void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_shell_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<JB_shell_list>(job)) {
+   if (job.has<JB_shell_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::PN> list = job.get<JB_shell_list>()) {
          std::ostringstream ss_list;
          delis[0] = ":";
          constexpr int fields[] = {PN_host, PN_path, 0};
@@ -938,8 +938,8 @@ void ocs::QStatJobViewPlain::report_shell_list(std::ostream &os, const ocs::tom:
  */
 void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_env_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::VA> env_list = ocs::tom::get<JB_env_list>(job)) {
+   if (job.has<JB_env_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::VA> env_list = job.get<JB_env_list>()) {
          // the variables with VAR_PREFIX are not shown: they are split off a copy, since the job is the caller's
          const auto list = env_list.clone();
          ocs::tom::ListPtr<ocs::tom::VA> do_not_print;
@@ -966,8 +966,8 @@ void ocs::QStatJobViewPlain::report_env_list(std::ostream &os, const ocs::tom::C
  */
 void ocs::QStatJobViewPlain::report_verify(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_verify>(job)) {
-      if (ocs::tom::get<JB_verify>(job)) {
+   if (job.has<JB_verify>()) {
+      if (job.get<JB_verify>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("verify:"), left_width, "-verify") << "\n";
       }
    }
@@ -981,8 +981,8 @@ void ocs::QStatJobViewPlain::report_verify(std::ostream &os, const ocs::tom::Con
  */
 void ocs::QStatJobViewPlain::report_job_args(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_job_args>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::ST> list = ocs::tom::get<JB_job_args>(job); list != nullptr) {
+   if (job.has<JB_job_args>()) {
+      if (ocs::tom::ConstList<ocs::tom::ST> list = job.get<JB_job_args>(); list != nullptr) {
          std::ostringstream ss_list;
          delis[0] = "";
          int fields[] = {ST_name, 0};
@@ -1001,8 +1001,8 @@ void ocs::QStatJobViewPlain::report_job_args(std::ostream &os, const ocs::tom::C
 void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os,
                                                         const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_job_identifier_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::ID> list = ocs::tom::get<JB_job_identifier_list>(job)) {
+   if (job.has<JB_job_identifier_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::ID> list = job.get<JB_job_identifier_list>()) {
          std::ostringstream ss_list;
          // the identifiers are ID elements, as the JSON view reads them
          int fields[] = {ID_str, 0};
@@ -1021,8 +1021,8 @@ void ocs::QStatJobViewPlain::report_job_identifier_list(std::ostream &os,
  */
 void ocs::QStatJobViewPlain::report_script_size(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_script_size>(job)) {
-      if (const uint32_t size = ocs::tom::get<JB_script_size>(job)) {
+   if (job.has<JB_script_size>()) {
+      if (const uint32_t size = job.get<JB_script_size>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("script_size:"), left_width, size) << "\n";
       }
    }
@@ -1036,8 +1036,8 @@ void ocs::QStatJobViewPlain::report_script_size(std::ostream &os, const ocs::tom
  */
 void ocs::QStatJobViewPlain::report_script_file(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_script_file>(job)) {
-      if (const char *file = ocs::tom::get<JB_script_file>(job)) {
+   if (job.has<JB_script_file>()) {
+      if (const char *file = job.get<JB_script_file>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("script_file:"), left_width, file) << "\n";
       }
    }
@@ -1051,8 +1051,8 @@ void ocs::QStatJobViewPlain::report_script_file(std::ostream &os, const ocs::tom
  */
 void ocs::QStatJobViewPlain::report_script_ptr(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_script_ptr>(job)) {
-      if (const char *file = ocs::tom::get<JB_script_ptr>(job)) {
+   if (job.has<JB_script_ptr>()) {
+      if (const char *file = job.get<JB_script_ptr>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("script_ptr:"), left_width, file) << "\n";
       }
    }
@@ -1066,11 +1066,11 @@ void ocs::QStatJobViewPlain::report_script_ptr(std::ostream &os, const ocs::tom:
  */
 void ocs::QStatJobViewPlain::report_pe(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_pe>(job)) {
-      if (const char *pe = ocs::tom::get<JB_pe>(job)) {
+   if (job.has<JB_pe>()) {
+      if (const char *pe = job.get<JB_pe>()) {
          dstring range_string = DSTRING_INIT;
 
-         range_list_print_to_string(ocs::tom::get<JB_pe_range>(job), &range_string, true, false, false);
+         range_list_print_to_string(job.get<JB_pe_range>(), &range_string, true, false, false);
          std::stringstream ss_pe_details;
          ss_pe_details << pe << " range: " << sge_dstring_get_string(&range_string);
          sge_dstring_free(&range_string);
@@ -1089,8 +1089,8 @@ void ocs::QStatJobViewPlain::report_pe(std::ostream &os, const ocs::tom::ConstEl
  */
 void ocs::QStatJobViewPlain::report_jid_request_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_jid_request_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_jid_request_list>(job)) {
+   if (job.has<JB_jid_request_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::JRE> list = job.get<JB_jid_request_list>()) {
          std::ostringstream ss_list;
          int fields[] = {JRE_job_name, 0};
          delis[0] = "";
@@ -1109,8 +1109,8 @@ void ocs::QStatJobViewPlain::report_jid_request_list(std::ostream &os, const ocs
 void ocs::QStatJobViewPlain::report_jid_predecessor_list(std::ostream &os,
                                                          const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_jid_predecessor_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_jid_predecessor_list>(job)) {
+   if (job.has<JB_jid_predecessor_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::JRE> list = job.get<JB_jid_predecessor_list>()) {
          std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
@@ -1129,8 +1129,8 @@ void ocs::QStatJobViewPlain::report_jid_predecessor_list(std::ostream &os,
 void ocs::QStatJobViewPlain::report_jid_successor_list(std::ostream &os,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_jid_successor_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_jid_successor_list>(job)) {
+   if (job.has<JB_jid_successor_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::JRE> list = job.get<JB_jid_successor_list>()) {
          std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
@@ -1149,8 +1149,8 @@ void ocs::QStatJobViewPlain::report_jid_successor_list(std::ostream &os,
 void ocs::QStatJobViewPlain::report_ja_ad_request_list(std::ostream &os,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ja_ad_request_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_ja_ad_request_list>(job)) {
+   if (job.has<JB_ja_ad_request_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::JRE> list = job.get<JB_ja_ad_request_list>()) {
          std::ostringstream ss_list;
          int fields[] = {JRE_job_name, 0};
          delis[0] = "";
@@ -1169,8 +1169,8 @@ void ocs::QStatJobViewPlain::report_ja_ad_request_list(std::ostream &os,
 void ocs::QStatJobViewPlain::report_ja_ad_predecessor_list(std::ostream &os,
                                                            const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ja_ad_predecessor_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_ja_ad_predecessor_list>(job)) {
+   if (job.has<JB_ja_ad_predecessor_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::JRE> list = job.get<JB_ja_ad_predecessor_list>()) {
          std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
@@ -1189,8 +1189,8 @@ void ocs::QStatJobViewPlain::report_ja_ad_predecessor_list(std::ostream &os,
 void ocs::QStatJobViewPlain::report_ja_ad_successor_list(std::ostream &os,
                                                          const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ja_ad_successor_list>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<JB_ja_ad_successor_list>(job)) {
+   if (job.has<JB_ja_ad_successor_list>()) {
+      if (ocs::tom::ConstList<ocs::tom::JRE> list = job.get<JB_ja_ad_successor_list>()) {
          std::ostringstream ss_list;
          int fields[] = {JRE_job_number, 0};
          delis[0] = "";
@@ -1209,8 +1209,8 @@ void ocs::QStatJobViewPlain::report_ja_ad_successor_list(std::ostream &os,
 void ocs::QStatJobViewPlain::report_verify_suitable_queues(std::ostream &os,
                                                            const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_verify_suitable_queues>(job)) {
-      if (const uint32_t vsq = ocs::tom::get<JB_verify_suitable_queues>(job)) {
+   if (job.has<JB_verify_suitable_queues>()) {
+      if (const uint32_t vsq = job.get<JB_verify_suitable_queues>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("verify_suitable_queues:"), left_width, vsq) << "\n";
       }
    }
@@ -1226,8 +1226,8 @@ void ocs::QStatJobViewPlain::report_soft_wallclock_gmt(std::ostream &os,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
-   if (ocs::tom::has<JB_soft_wallclock_gmt>(job)) {
-      if (const uint64_t time_value = ocs::tom::get<JB_soft_wallclock_gmt>(job)) {
+   if (job.has<JB_soft_wallclock_gmt>()) {
+      if (const uint64_t time_value = job.get<JB_soft_wallclock_gmt>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("soft_wallclock_gmt:"), left_width,
                            sge_ctime64(time_value, &dstr)) << "\n";
       }
@@ -1244,8 +1244,8 @@ void ocs::QStatJobViewPlain::report_hard_wallclock_gmt(std::ostream &os,
                                                        const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    DSTRING_STATIC(dstr, 128);
-   if (ocs::tom::has<JB_hard_wallclock_gmt>(job)) {
-      if (const uint64_t time_value = ocs::tom::get<JB_hard_wallclock_gmt>(job)) {
+   if (job.has<JB_hard_wallclock_gmt>()) {
+      if (const uint64_t time_value = job.get<JB_hard_wallclock_gmt>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("hard_wallclock_gmt:"), left_width,
                            sge_ctime64(time_value, &dstr)) << "\n";
       }
@@ -1260,8 +1260,8 @@ void ocs::QStatJobViewPlain::report_hard_wallclock_gmt(std::ostream &os,
  */
 void ocs::QStatJobViewPlain::report_version(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_version>(job)) {
-      if (uint32_t version = ocs::tom::get<JB_version>(job)) {
+   if (job.has<JB_version>()) {
+      if (uint32_t version = job.get<JB_version>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("version:"), left_width, version) << "\n";
       }
    }
@@ -1275,8 +1275,8 @@ void ocs::QStatJobViewPlain::report_version(std::ostream &os, const ocs::tom::Co
  */
 void ocs::QStatJobViewPlain::report_override_tickets(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_override_tickets>(job)) {
-      if (uint32_t tickets = ocs::tom::get<JB_override_tickets>(job)) {
+   if (job.has<JB_override_tickets>()) {
+      if (uint32_t tickets = job.get<JB_override_tickets>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("override_tickets:"), left_width, tickets) << "\n";
       }
    }
@@ -1290,8 +1290,8 @@ void ocs::QStatJobViewPlain::report_override_tickets(std::ostream &os, const ocs
  */
 void ocs::QStatJobViewPlain::report_ar(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ar>(job)) {
-      if (uint32_t ar_id = ocs::tom::get<JB_ar>(job)) {
+   if (job.has<JB_ar>()) {
+      if (uint32_t ar_id = job.get<JB_ar>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("ar_id:"), left_width, ar_id) << "\n";
       }
    }
@@ -1305,8 +1305,8 @@ void ocs::QStatJobViewPlain::report_ar(std::ostream &os, const ocs::tom::ConstEl
  */
 void ocs::QStatJobViewPlain::report_project(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_project>(job)) {
-      if (const char *project = ocs::tom::get<JB_project>(job)) {
+   if (job.has<JB_project>()) {
+      if (const char *project = job.get<JB_project>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("project:"), left_width, project) << "\n";
       }
    }
@@ -1320,8 +1320,8 @@ void ocs::QStatJobViewPlain::report_project(std::ostream &os, const ocs::tom::Co
  */
 void ocs::QStatJobViewPlain::report_department(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_department>(job)) {
-      if (const char *dept = ocs::tom::get<JB_department>(job)) {
+   if (job.has<JB_department>()) {
+      if (const char *dept = job.get<JB_department>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("department:"), left_width, dept) << "\n";
       }
    }
@@ -1335,8 +1335,8 @@ void ocs::QStatJobViewPlain::report_department(std::ostream &os, const ocs::tom:
  */
 void ocs::QStatJobViewPlain::report_sync_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_sync_options>(job)) {
-      if (ocs::tom::get<JB_sync_options>(job)) {
+   if (job.has<JB_sync_options>()) {
+      if (job.get<JB_sync_options>()) {
          std::string sync_flags = job_get_sync_options_string(job);
          os << std::format("{:<{}} {}", ocs::ascii_width("sync_options:"), left_width, sync_flags) << "\n";
       }
@@ -1351,7 +1351,7 @@ void ocs::QStatJobViewPlain::report_sync_options(std::ostream &os, const ocs::to
  */
 void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ja_structure>(job)) {
+   if (job.has<JB_ja_structure>()) {
       if (job_is_array(job)) {
          const auto [start, end, step] = job_get_submit_task_ids(job);
          std::ostringstream ss_range;
@@ -1369,7 +1369,7 @@ void ocs::QStatJobViewPlain::report_ja_structure(std::ostream &os, const ocs::to
  */
 void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ja_n_h_ids>(job)) {
+   if (job.has<JB_ja_n_h_ids>()) {
       os << std::format("{:<{}} {}", ocs::ascii_width("pending_tasks:"), left_width, count_pending_tasks(job)) << "\n";
    }
    DRETURN_VOID;
@@ -1383,8 +1383,8 @@ void ocs::QStatJobViewPlain::report_pending_tasks(std::ostream &os, const ocs::t
 void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os,
                                                         const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_ja_task_concurrency>(job)) {
-      if (uint32_t tc = ocs::tom::get<JB_ja_task_concurrency>(job)) {
+   if (job.has<JB_ja_task_concurrency>()) {
+      if (uint32_t tc = job.get<JB_ja_task_concurrency>()) {
          os << std::format("{:<{}} {}", ocs::ascii_width("task_concurrency:"), left_width, tc) << "\n";
       }
    }
@@ -1398,8 +1398,8 @@ void ocs::QStatJobViewPlain::report_ja_task_concurrency(std::ostream &os,
  */
 void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_context>(job)) {
-      if (ocs::tom::ConstList<ocs::tom::VA> list = ocs::tom::get<JB_context>(job)) {
+   if (job.has<JB_context>()) {
+      if (ocs::tom::ConstList<ocs::tom::VA> list = job.get<JB_context>()) {
          std::ostringstream ss_list;
          constexpr int fields[] = {VA_variable, VA_value, 0};
          delis[0] = "=";
@@ -1417,8 +1417,8 @@ void ocs::QStatJobViewPlain::report_ctx_list(std::ostream &os, const ocs::tom::C
  */
 void ocs::QStatJobViewPlain::report_binding(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::has<JB_binding>(job)) {
-      const auto binding_elem = ocs::tom::get<JB_binding>(job);
+   if (job.has<JB_binding>()) {
+      const auto binding_elem = job.get<JB_binding>();
       std::string binding_param;;
       BindingIo::binding_print_to_string(binding_elem, binding_param);
       os << std::format("{:<{}} {}", ocs::ascii_width("binding:"), left_width, binding_param) << "\n";
@@ -1493,7 +1493,7 @@ void ocs::QStatJobViewPlain::report_task_id(std::ostream &os, const ocs::tom::Co
 void ocs::QStatJobViewPlain::report_task_state(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
 
    char state_string[8];
    const uint32_t state = jatask_combine_state_and_status_for_output(job, task);
@@ -1516,7 +1516,7 @@ void ocs::QStatJobViewPlain::report_task_usage(std::ostream &os, const ocs::tom:
 
    /* jobs whose job start orders were not processed to the end due to a qmaster/schedd collision appear
     * in the JB_ja_tasks list but are not running - thus we may not print usage for those */
-   if (ocs::tom::get<JAT_status>(task) != JRUNNING && ocs::tom::get<JAT_status>(task) != JTRANSFERING) {
+   if (task.get<JAT_status>() != JRUNNING && task.get<JAT_status>() != JTRANSFERING) {
       DRETURN_VOID;
    }
 
@@ -1566,7 +1566,7 @@ void ocs::QStatJobViewPlain::report_task_usage(std::ostream &os, const ocs::tom:
                               sge_dstring_get_string(&pmem_string), sge_dstring_get_string(&smem_string));
    }
 
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
    os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("usage"), left_width_short, task_number, mid_width,
                      ss_usage.str()) << "\n";
    DRETURN_VOID;
@@ -1582,11 +1582,11 @@ void ocs::QStatJobViewPlain::report_task_exec_binding_list(std::ostream &os,
                                                            const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                            const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
 
    // show binding information
-   if (ocs::tom::get<JAT_status>(task) == JRUNNING || ocs::tom::get<JAT_status>(task) == JTRANSFERING) {
-      ocs::tom::ConstList<ocs::tom::GRU> granted_resources = ocs::tom::get<JAT_granted_resources_list>(task);
+   if (task.get<JAT_status>() == JRUNNING || task.get<JAT_status>() == JTRANSFERING) {
+      ocs::tom::ConstList<ocs::tom::GRU> granted_resources = task.get<JAT_granted_resources_list>();
       os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_binding_list"), left_width_short, task_number,
                         mid_width, GrantedResources::to_string(granted_resources)) << "\n";
    }
@@ -1606,13 +1606,13 @@ void ocs::QStatJobViewPlain::report_task_exec_queue_list(std::ostream &os,
 
    // show granted host list
    // If we do not have the list then skip the output
-   if (ocs::tom::has<JAT_granted_destin_identifier_list>(task)) {
+   if (task.has<JAT_granted_destin_identifier_list>()) {
       delis[0] = "=";
-      ocs::tom::ConstList<ocs::tom::JG> gdil_org = ocs::tom::get<JAT_granted_destin_identifier_list>(task);
+      ocs::tom::ConstList<ocs::tom::JG> gdil_org = task.get<JAT_granted_destin_identifier_list>();
       std::stringstream ss_list;
       int queue_fields[] = {JG_qname, JG_slots, 0};
       uni_print_list(ss_list, gdil_org, queue_fields, delis, 0);
-      uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+      uint32_t task_number = task.get<JAT_task_number>();
       os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("exec_queue_list"), left_width_short, task_number,
                         mid_width, ss_list.str());
    }
@@ -1629,13 +1629,13 @@ void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os,
                                                         const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                         const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
 
    // show granted host list
    // If we do not have the list then skip the output
-   if (ocs::tom::has<JAT_granted_destin_identifier_list>(task)) {
+   if (task.has<JAT_granted_destin_identifier_list>()) {
       delis[0] = "=";
-      ocs::tom::ConstList<ocs::tom::JG> gdil_org = ocs::tom::get<JAT_granted_destin_identifier_list>(task);
+      ocs::tom::ConstList<ocs::tom::JG> gdil_org = task.get<JAT_granted_destin_identifier_list>();
 
       // get the list of granted hosts and make it unique
       // skip tasks that have not been scheduled so far
@@ -1660,10 +1660,10 @@ void ocs::QStatJobViewPlain::report_task_exec_host_list(std::ostream &os,
 void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                     const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
    DSTRING_STATIC(time_ds, 32);
    os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("start_time"), left_width_short, task_number, mid_width,
-                     sge_ctime64(ocs::tom::get<JAT_start_time>(task), &time_ds)) << "\n";
+                     sge_ctime64(task.get<JAT_start_time>(), &time_ds)) << "\n";
    DRETURN_VOID;
 }
 
@@ -1681,13 +1681,13 @@ void ocs::QStatJobViewPlain::report_task_start_time(std::ostream &os, const ocs:
 void ocs::QStatJobViewPlain::report_task_end_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                   const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::get<JAT_status>(task) != JFINISHED) {
+   if (task.get<JAT_status>() != JFINISHED) {
       DRETURN_VOID;
    }
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
    DSTRING_STATIC(time_ds, 32);
    os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("end_time"), left_width_short, task_number, mid_width,
-                     sge_ctime64(ocs::tom::get<JAT_end_time>(task), &time_ds)) << "\n";
+                     sge_ctime64(task.get<JAT_end_time>(), &time_ds)) << "\n";
    DRETURN_VOID;
 }
 
@@ -1704,12 +1704,12 @@ void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const oc
 
    /* go through all RSMAP resources for the particular task and create a string */
    bool is_first_remap = true;
-   for (ocs::tom::ConstElement<ocs::tom::GRU> resu : ocs::tom::get<JAT_granted_resources_list>(task)) {
-      if (static_cast<GrantedResources::Type>(ocs::tom::get<GRU_type>(resu)) ==
+   for (ocs::tom::ConstElement<ocs::tom::GRU> resu : task.get<JAT_granted_resources_list>()) {
+      if (static_cast<GrantedResources::Type>(resu.get<GRU_type>()) ==
           GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
-         const char *name = ocs::tom::get<GRU_name>(resu);
-         const char *host = ocs::tom::get<GRU_host>(resu);
-         ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(resu);
+         const char *name = resu.get<GRU_name>();
+         const char *host = resu.get<GRU_host>();
+         ocs::tom::ConstList<ocs::tom::RESL> ids = resu.get<GRU_resource_map_list>();
 
          if (name != nullptr && ids != nullptr && host != nullptr) {
             if (is_first_remap) {
@@ -1729,7 +1729,7 @@ void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const oc
       }
    }
    /* print out granted resources */
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
+   uint32_t task_number = task.get<JAT_task_number>();
    const char *resource_ids = sge_dstring_get_string(&task_resources);
    os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("resource_map"), left_width_short, task_number, mid_width,
                      resource_ids != nullptr ? resource_ids : "NONE") << "\n";
@@ -1747,9 +1747,9 @@ void ocs::QStatJobViewPlain::report_task_resource_map(std::ostream &os, const oc
 void ocs::QStatJobViewPlain::report_task_error_reason(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                       const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   uint32_t task_number = ocs::tom::get<JAT_task_number>(task);
-   for (ocs::tom::ConstElement<ocs::tom::QIM> mesobj : ocs::tom::get<JAT_message_list>(task)) {
-      if (const char *message = ocs::tom::get<QIM_message>(mesobj)) {
+   uint32_t task_number = task.get<JAT_task_number>();
+   for (ocs::tom::ConstElement<ocs::tom::QIM> mesobj : task.get<JAT_message_list>()) {
+      if (const char *message = mesobj.get<QIM_message>()) {
          os << std::format("{:<{}} {:>{}}: {}", ocs::ascii_width("error_reason"), left_width_short, task_number,
                            mid_width, message) << "\n";
       }
@@ -1779,16 +1779,16 @@ void ocs::QStatJobViewPlain::report_schedd_job_info(std::ostream &os, const ocs:
       };
 
       /* global scheduling info */
-      for (ocs::tom::ConstElement<ocs::tom::MES> mes : ocs::tom::get<SME_global_message_list>(sme)) {
-         print_sched_message(ocs::tom::get<MES_message>(mes));
+      for (ocs::tom::ConstElement<ocs::tom::MES> mes : sme.get<SME_global_message_list>()) {
+         print_sched_message(mes.get<MES_message>());
       }
 
       /* job scheduling info */
-      const uint32_t jid = ocs::tom::get<JB_job_number>(job);
-      for (ocs::tom::ConstElement<ocs::tom::MES> mes : ocs::tom::get<SME_message_list>(sme)) {
-         for (ocs::tom::ConstElement<ocs::tom::ULNG> mes_jid : ocs::tom::get<MES_job_number_list>(mes)) {
-            if (ocs::tom::get<ULNG_value>(mes_jid) == jid) {
-               print_sched_message(ocs::tom::get<MES_message>(mes));
+      const uint32_t jid = job.get<JB_job_number>();
+      for (ocs::tom::ConstElement<ocs::tom::MES> mes : sme.get<SME_message_list>()) {
+         for (ocs::tom::ConstElement<ocs::tom::ULNG> mes_jid : mes.get<MES_job_number_list>()) {
+            if (mes_jid.get<ULNG_value>() == jid) {
+               print_sched_message(mes.get<MES_message>());
             }
          }
       }

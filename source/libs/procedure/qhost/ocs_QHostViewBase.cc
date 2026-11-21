@@ -102,7 +102,7 @@ ocs::QHostViewBase::show_host(std::ostream &os, const ocs::tom::ConstElement<ocs
    dstring rs = DSTRING_INIT;
    uint32_t dominant = 0;
    bool ignore_fqdn = ocs::Bootstrap::get_ignore_fqdn();
-   const char *host = ocs::tom::get<EH_name>(hep);
+   const char *host = hep.get<EH_name>();
 
    /* cut away domain in case of ignore_fqdn */
    sge_strlcpy(host_print, host, CL_MAXHOSTNAMELEN);
@@ -281,7 +281,7 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, const ocs::tom::ConstElem
                                      QHostViewBase &report_handler) {
    DENTER(TOP_LAYER);
    uint32_t interval;
-   const char *ehname = ocs::tom::get<EH_name>(host);
+   const char *ehname = host.get<EH_name>();
    const auto qlp = model.get_queue_list();
    const auto ehl = model.get_exec_host_list();
    const auto cl = model.get_centry_list();
@@ -292,10 +292,10 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, const ocs::tom::ConstElem
    }
 
    for (const auto cqueue : qlp) {
-      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstance_list = cqueue.get<CQ_qinstances>();
 
       if (const auto qep = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(ehname)); qep != nullptr) {
-         const char *qname = ocs::tom::get<QU_qname>(qep);
+         const char *qname = qep.get<QU_qname>();
 
          if (show & QHOST_DISPLAY_QUEUES) {
             report_handler.queue_start(os, "   {:<20} ", qname);
@@ -316,20 +316,20 @@ ocs::QHostViewBase::show_host_queues(std::ostream &os, const ocs::tom::ConstElem
             // show reserved/used/tota slots
             report_handler.queue_value(os, qname, "{}/", "slots_resv", qinstance_slots_reserved(qep));
             report_handler.queue_value(os, qname, "{}/", "slots_used", qinstance_slots_used(qep));
-            report_handler.queue_value(os, qname, "{} ", "slots", ocs::tom::get<QU_job_slots>(qep));
+            report_handler.queue_value(os, qname, "{} ", "slots", qep.get<QU_job_slots>());
 
             /*
             ** state of queue
             */
-            const ocs::tom::ConstList<ocs::tom::CE> load_thresholds = ocs::tom::get<QU_load_thresholds>(qep);
-            const ocs::tom::ConstList<ocs::tom::CE> suspend_thresholds = ocs::tom::get<QU_suspend_thresholds>(qep);
+            const ocs::tom::ConstList<ocs::tom::CE> load_thresholds = qep.get<QU_load_thresholds>();
+            const ocs::tom::ConstList<ocs::tom::CE> suspend_thresholds = qep.get<QU_suspend_thresholds>();
             if (sge_load_alarm(nullptr, 0, qep, load_thresholds, ehl, cl, ocs::tom::ConstList<ocs::tom::CE>(),
                                model.get_job_load_adjustments(), true)) {
                qinstance_state_set_alarm(qep, true);
             }
-            parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, ocs::tom::get<QU_suspend_interval>(qep), nullptr,
+            parse_ulong_val(nullptr, &interval, CEntry::Type::TIME, qep.get<QU_suspend_interval>(), nullptr,
                             0);
-            if (ocs::tom::get<QU_nsuspend>(qep) != 0 && interval != 0
+            if (qep.get<QU_nsuspend>() != 0 && interval != 0
                 && sge_load_alarm(nullptr, 0, qep, suspend_thresholds, ehl, cl, ocs::tom::ConstList<ocs::tom::CE>(),
                                   model.get_job_load_adjustments(), false)) {
                qinstance_state_set_suspend_alarm(qep, true);
@@ -396,8 +396,8 @@ ocs::QHostViewBase::show_host_resources(std::ostream &os, const ocs::tom::ConstE
       if (resl != nullptr) {
          int found = 0;
          for (const auto r1 : resl) {
-            if (!strcmp(ocs::tom::get<ST_name>(r1), ocs::tom::get<CE_name>(rep)) ||
-                !strcmp(ocs::tom::get<ST_name>(r1), ocs::tom::get<CE_shortcut>(rep))) {
+            if (!strcmp(r1.get<ST_name>(), rep.get<CE_name>()) ||
+                !strcmp(r1.get<ST_name>(), rep.get<CE_shortcut>())) {
                found = 1;
                if (first) {
                   first = 0;
@@ -424,27 +424,27 @@ ocs::QHostViewBase::show_host_resources(std::ostream &os, const ocs::tom::ConstE
 
       // find current usage for m_topology
       std::string details;
-      if (strcmp(ocs::tom::get<CE_name>(rep), LOAD_ATTR_TOPOLOGY) == 0) {
+      if (strcmp(rep.get<CE_name>(), LOAD_ATTR_TOPOLOGY) == 0) {
          details = host_get_topology_in_use(host);
       }
 
       monitor_dominance(dom, dominant);
 
-      const auto type = static_cast<CEntry::Type>(ocs::tom::get<CE_valtype>(rep));
+      const auto type = static_cast<CEntry::Type>(rep.get<CE_valtype>());
       const bool as_string = type == CEntry::Type::STR || type == CEntry::Type::CSTR || type == CEntry::Type::HOST ||
                              type == CEntry::Type::RESTR || type == CEntry::Type::HOST;
       const bool as_double = type == CEntry::Type::DOUBLE;
       const bool as_bool = type == CEntry::Type::BOOL;
       const char *details_str = details.empty() ? nullptr : details.c_str();
       if (as_string) {
-         report_handler.resource_value(os, dom, ocs::tom::get<CE_name>(rep), s, details_str, as_string);
+         report_handler.resource_value(os, dom, rep.get<CE_name>(), s, details_str, as_string);
       } else if (as_double) {
-         report_handler.resource_value(os, dom, ocs::tom::get<CE_name>(rep), double_value, details_str, as_string);
+         report_handler.resource_value(os, dom, rep.get<CE_name>(), double_value, details_str, as_string);
       } else if (as_bool) {
-         report_handler.resource_value(os, dom, ocs::tom::get<CE_name>(rep), uint64_value ? "true" : "false",
+         report_handler.resource_value(os, dom, rep.get<CE_name>(), uint64_value ? "true" : "false",
                                        details_str, false);
       } else {
-         report_handler.resource_value(os, dom, ocs::tom::get<CE_name>(rep), uint64_value, details_str, as_string);
+         report_handler.resource_value(os, dom, rep.get<CE_name>(), uint64_value, details_str, as_string);
       }
    }
    sge_dstring_free(&resource_string);
@@ -535,7 +535,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
    dstring ds;
    char buffer[128];
    dstring queue_name_buffer = DSTRING_INIT;
-   uint32_t jid = ocs::tom::get<JB_job_number>(job);
+   uint32_t jid = job.get<JB_job_number>();
    const auto pe_list = model.get_pe_list();
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
@@ -642,14 +642,14 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
    /* per job priority information */
    {
       if (typeid(report_handler) == typeid(ocs::QHostViewXML) || print_jobid) {
-         report_handler.job_value(os, jid, "{:<7.5f} ", "priority", ocs::tom::get<JAT_prio>(jatep));
+         report_handler.job_value(os, jid, "{:<7.5f} ", "priority", jatep.get<JAT_prio>());
       } else {
          report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
       }
 
       if (sge_pri || sge_urg) {
          if (print_jobid) {
-            report_handler.job_value(os, jid, "{:<7.5f} ", "nurg", ocs::tom::get<JB_nurg>(job));
+            report_handler.job_value(os, jid, "{:<7.5f} ", "nurg", job.get<JB_nurg>());
          } else {
             report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
          }
@@ -657,7 +657,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
 
       if (sge_pri) {
          if (print_jobid) {
-            report_handler.job_value(os, jid, "{:<7.5f} ", "nppri", ocs::tom::get<JB_nppri>(job));
+            report_handler.job_value(os, jid, "{:<7.5f} ", "nppri", job.get<JB_nppri>());
          } else {
             report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
          }
@@ -678,13 +678,13 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
          if (print_jobid) {
             constexpr double max = 99999999;
 
-            double value = ocs::tom::get<JB_urg>(job);
+            double value = job.get<JB_urg>();
             report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "urg", value);
-            value = ocs::tom::get<JB_rrcontr>(job);
+            value = job.get<JB_rrcontr>();
             report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "rrcontr", value);
-            value = ocs::tom::get<JB_wtcontr>(job);
+            value = job.get<JB_wtcontr>();
             report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "wtcontr", value);
-            value = ocs::tom::get<JB_dlcontr>(job);
+            value = job.get<JB_dlcontr>();
             report_handler.job_value(os, jid, value > max ? "{:<8.3g} " : "{:<8.0f ", "dlcontr", value);
          } else {
             report_handler.job_value(os, jid, std::string(4 * (8 + 1), ' ').c_str(), nullptr, nullptr);
@@ -695,7 +695,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
          if (print_jobid) {
             // @todo avoid the cast - use template method
             report_handler.job_value(os, jid, "{:<5d} ", "priority",
-                                     (uint64_t)ocs::tom::get<JB_priority>(job) - BASE_PRIORITY);
+                                     (uint64_t)job.get<JB_priority>() - BASE_PRIORITY);
          } else {
             // @todo we had a gap for 2*6 character before - why?
             report_handler.job_value(os, jid, std::string(5 + 1, ' ').c_str(), nullptr, nullptr);
@@ -711,8 +711,8 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
    // XML and Plain with jobid: show job name, owner
    // or in Plain without jobid: just fill the gap
    if (typeid(report_handler) == typeid(ocs::QHostViewXML) || print_jobid) {
-      report_handler.job_value(os, jid, "{:<10.10} ", "job_name", ocs::tom::get<JB_job_name>(job));
-      report_handler.job_value(os, jid, "{:<12.12} ", "job_owner", ocs::tom::get<JB_owner>(job));
+      report_handler.job_value(os, jid, "{:<10.10} ", "job_name", job.get<JB_job_name>());
+      report_handler.job_value(os, jid, "{:<12.12} ", "job_owner", job.get<JB_owner>());
    } else {
       report_handler.job_value(os, jid, std::string(10 + 1, ' ').c_str(), nullptr, nullptr);
       report_handler.job_value(os, jid, std::string(12 + 1, ' ').c_str(), nullptr, nullptr);
@@ -720,9 +720,9 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
 
    if (sge_ext) {
       if (print_jobid) {
-         const char *value = ocs::tom::get<JB_project>(job);
+         const char *value = job.get<JB_project>();
          report_handler.job_value(os, jid, "{:<16.16} ", "project", value != nullptr ? value : "NA");
-         value = ocs::tom::get<JB_department>(job);
+         value = job.get<JB_department>();
          report_handler.job_value(os, jid, "{:<10.10} ", "department", value != nullptr? value : "NA");
       } else {
          report_handler.job_value(os, jid, std::string(16 + 1, ' ').c_str(), nullptr, nullptr);
@@ -731,17 +731,17 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
    }
 
    /* move status info into state info */
-   jstate = ocs::tom::get<JAT_state>(jatep);
-   if (ocs::tom::get<JAT_status>(jatep) == JTRANSFERING) {
+   jstate = jatep.get<JAT_state>();
+   if (jatep.get<JAT_status>() == JTRANSFERING) {
       jstate |= JTRANSFERING;
       jstate &= ~JRUNNING;
    }
 
-   if (ocs::tom::get<JB_jid_predecessor_list>(job) || ocs::tom::get<JAT_hold>(jatep)) {
+   if (job.get<JB_jid_predecessor_list>() || jatep.get<JAT_hold>()) {
       jstate |= JHELD;
    }
 
-   if (ocs::tom::get<JAT_job_restarted>(jatep)) {
+   if (jatep.get<JAT_job_restarted>()) {
       jstate &= ~JWAITING;
       jstate |= JMIGRATING;
    }
@@ -759,12 +759,12 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
       if (print_jobid) {
          const char *name;
          uint64_t value;
-         if (uint64_t jat_start_time = ocs::tom::get<JAT_start_time>(jatep); jat_start_time != 0) {
+         if (uint64_t jat_start_time = jatep.get<JAT_start_time>(); jat_start_time != 0) {
             name = "start_time";
             value = jat_start_time;
          } else {
             name = "submit_time";
-            value = ocs::tom::get<JB_submission_time>(job);
+            value = job.get<JB_submission_time>();
          }
          if (typeid(report_handler) == typeid(QHostViewPlain)) {
             const char *time_string = sge_ctime64_short(value, &ds);
@@ -778,11 +778,11 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
    }
 
    /* is job logically running */
-   running = ocs::tom::get<JAT_status>(jatep) == JRUNNING || ocs::tom::get<JAT_status>(jatep) == JTRANSFERING;
+   running = jatep.get<JAT_status>() == JRUNNING || jatep.get<JAT_status>() == JTRANSFERING;
 
    /* deadline time */
    if (sge_urg) {
-      uint64_t deadline = ocs::tom::get<JB_deadline>(job);
+      uint64_t deadline = job.get<JB_deadline>();
       if (print_jobid && deadline != 0) {
          report_handler.job_value(os, jid, "{} ", "deadline", sge_ctime64_short(deadline, &ds));
       } else {
@@ -796,7 +796,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
 
       ocs::tom::ListPtr<ocs::tom::UA> job_usage_list;
       if (!master || !strcmp(master, "MASTER")) {
-         job_usage_list = ocs::tom::get<JAT_scaled_usage_list>(jatep).clone();
+         job_usage_list = jatep.get<JAT_scaled_usage_list>().clone();
       } else {
          job_usage_list = ocs::tom::ListPtr<ocs::tom::UA>::create("");
       }
@@ -804,17 +804,17 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
       /* sum pe-task usage based on queue slots */
       if (job_usage_list != nullptr) {
          int subtask_ndx = 1;
-         for (const auto task : ocs::tom::get<JAT_task_list>(jatep)) {
+         for (const auto task : jatep.get<JAT_task_list>()) {
             ocs::tom::ConstElement<ocs::tom::JG> ep;
             const char *qname;
 
-            if (!slots || (queue_name && ((ep = ocs::tom::get<PET_granted_destin_identifier_list>(task).front())) &&
-                           ((qname = ocs::tom::get<JG_qname>(ep))) && !strcmp(qname, queue_name) &&
+            if (!slots || (queue_name && ((ep = task.get<PET_granted_destin_identifier_list>().front())) &&
+                           ((qname = ep.get<JG_qname>())) && !strcmp(qname, queue_name) &&
                            ((subtask_ndx++ % slots) == slot))) {
-               for (const auto src : ocs::tom::get<PET_scaled_usage>(task)) {
-                  if (const auto dst = job_usage_list->find_first<UA_name>(ocs::tom::get<UA_name>(src));
+               for (const auto src : task.get<PET_scaled_usage>()) {
+                  if (const auto dst = job_usage_list->find_first<UA_name>(src.get<UA_name>());
                       dst != nullptr) {
-                     ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
+                     dst.set<UA_value>(dst.get<UA_value>() + src.get<UA_value>());
                   } else {
                      job_usage_list->push_back(src.clone());
                   }
@@ -826,7 +826,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
       /* scaled cpu usage */
       const auto up = job_usage_list->find_first<UA_name>(USAGE_ATTR_CPU);
       if (up != nullptr) {
-         int secs = ocs::tom::get<UA_value>(up);
+         int secs = up.get<UA_value>();
          int days = secs / (60 * 60 * 24);
          secs -= days * (60 * 60 * 24);
          int hours = secs / (60 * 60);
@@ -843,7 +843,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
       /* scaled mem usage */
       const auto up_ua = job_usage_list->find_first<UA_name>(USAGE_ATTR_MEM);
       if (up_ua != nullptr) {
-         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, ocs::tom::get<UA_value>(up_ua));
+         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, up_ua.get<UA_value>());
       } else {
          report_handler.job_value(os, jid, "{:<7.7}", nullptr, running ? "NA" : "");
       }
@@ -851,7 +851,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
       /* scaled io usage */
       const auto up_ua_2 = job_usage_list->find_first<UA_name>(USAGE_ATTR_IO);
       if (up_ua_2 != nullptr) {
-         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, ocs::tom::get<UA_value>(up_ua_2));
+         report_handler.job_value(os, jid, "{:<5.5f}", nullptr, up_ua_2.get<UA_value>());
       } else {
          report_handler.job_value(os, jid, "{:<7.7}", nullptr, running ? "NA" : "");
       }
@@ -860,42 +860,42 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
 
       /* get tickets for job/slot */
       /* braces needed to suppress compiler warnings */
-      if ((pe_name = ocs::tom::get<JAT_granted_pe>(jatep)) && (pe = pe_list.find_first<PE_name>(pe_name)) &&
-          ocs::tom::get<PE_control_slaves>(pe) && slots &&
-          (gdil_ep = ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(jatep, queue_name))) {
+      if ((pe_name = jatep.get<JAT_granted_pe>()) && (pe = pe_list.find_first<PE_name>(pe_name)) &&
+          pe.get<PE_control_slaves>() && slots &&
+          (gdil_ep = jatep.find_first_in<JAT_granted_destin_identifier_list, JG_qname>(queue_name))) {
          if (slot == 0) {
-            tickets = (u_long)ocs::tom::get<JG_ticket>(gdil_ep);
-            otickets = (u_long)ocs::tom::get<JG_oticket>(gdil_ep);
-            ftickets = (u_long)ocs::tom::get<JG_fticket>(gdil_ep);
-            stickets = (u_long)ocs::tom::get<JG_sticket>(gdil_ep);
+            tickets = (u_long)gdil_ep.get<JG_ticket>();
+            otickets = (u_long)gdil_ep.get<JG_oticket>();
+            ftickets = (u_long)gdil_ep.get<JG_fticket>();
+            stickets = (u_long)gdil_ep.get<JG_sticket>();
          } else {
             if (slots) {
-               tickets = (u_long)(ocs::tom::get<JG_ticket>(gdil_ep) / slots);
-               otickets = (u_long)(ocs::tom::get<JG_oticket>(gdil_ep) / slots);
-               ftickets = (u_long)(ocs::tom::get<JG_fticket>(gdil_ep) / slots);
-               stickets = (u_long)(ocs::tom::get<JG_sticket>(gdil_ep) / slots);
+               tickets = (u_long)(gdil_ep.get<JG_ticket>() / slots);
+               otickets = (u_long)(gdil_ep.get<JG_oticket>() / slots);
+               ftickets = (u_long)(gdil_ep.get<JG_fticket>() / slots);
+               stickets = (u_long)(gdil_ep.get<JG_sticket>() / slots);
             } else {
                tickets = otickets = ftickets = stickets = 0;
             }
          }
       } else {
-         tickets = (u_long)ocs::tom::get<JAT_tix>(jatep);
-         otickets = (u_long)ocs::tom::get<JAT_oticket>(jatep);
-         ftickets = (u_long)ocs::tom::get<JAT_fticket>(jatep);
-         stickets = (u_long)ocs::tom::get<JAT_sticket>(jatep);
+         tickets = (u_long)jatep.get<JAT_tix>();
+         otickets = (u_long)jatep.get<JAT_oticket>();
+         ftickets = (u_long)jatep.get<JAT_fticket>();
+         stickets = (u_long)jatep.get<JAT_sticket>();
       }
 
       /* report jobs dynamic scheduling attributes */
       /* only scheduled have these attribute */
       /* Pending jobs can also have tickets */
-      if (sge_ext || ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
+      if (sge_ext || jatep.get<JAT_granted_destin_identifier_list>()) {
          report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, tickets);
          report_handler.job_value(os, jid, "{:<5.5d} ", nullptr,
-                                  (uint64_t)ocs::tom::get<JB_override_tickets>(job));
+                                  (uint64_t)job.get<JB_override_tickets>());
          report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, otickets);
          report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, ftickets);
          report_handler.job_value(os, jid, "{:<5.5d} ", nullptr, stickets);
-         report_handler.job_value(os, jid, "{:<5.2f} ", nullptr, ocs::tom::get<JAT_share>(jatep));
+         report_handler.job_value(os, jid, "{:<5.2f} ", nullptr, jatep.get<JAT_share>());
       } else {
          report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
          report_handler.job_value(os, jid, "{:5s} ", nullptr, "NA");
@@ -974,7 +974,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
    const char *qnm;
    dstring dyn_task_str = DSTRING_INIT;
 
-   qnm = ocs::tom::get<QU_full_name>(qep);
+   qnm = qep.get<QU_full_name>();
 
    const auto job_list = model.get_job_list();
    const auto pe_list = model.get_pe_list();
@@ -984,35 +984,35 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
    for (const auto jlep : job_list) {
       int master, i;
 
-      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jlep)) {
-         uint32_t jstate = ocs::tom::get<JAT_state>(jatep);
+      for (const auto jatep : jlep.get<JB_ja_tasks>()) {
+         uint32_t jstate = jatep.get<JAT_state>();
 
          //if (shut_me_down) {
          //   DRETURN(1);
          //}
 
          if (ISSET(jstate, JSUSPENDED_ON_SUBORDINATE) || ISSET(jstate, JSUSPENDED_ON_SLOTWISE_SUBORDINATE)) {
-            ocs::tom::set<JAT_state>(jatep, jstate & ~JRUNNING);
+            jatep.set<JAT_state>(jstate & ~JRUNNING);
          }
 
-         const auto gdilep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).find_first<JG_qname>(qnm);
+         const auto gdilep = jatep.get<JAT_granted_destin_identifier_list>().find_first<JG_qname>(qnm);
          if (gdilep != nullptr) {
             int slot_adjust = 0;
             int lines_to_print;
-            int slots_per_line, slots_in_queue = ocs::tom::get<JG_slots>(gdilep);
+            int slots_per_line, slots_in_queue = gdilep.get<JG_slots>();
 
-            job_tag = ocs::tom::get<JAT_suitable>(jatep);
+            job_tag = jatep.get<JAT_suitable>();
             job_tag |= TAG_FOUND_IT;
-            ocs::tom::set<JAT_suitable>(jatep, job_tag);
+            jatep.set<JAT_suitable>(job_tag);
 
             master = !strcmp(qnm,
-                             ocs::tom::get<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front()));
+                             jatep.get<JAT_granted_destin_identifier_list>().front().get<JG_qname>());
 
             if (master) {
                const char *pe_name;
                ocs::tom::ConstElement<ocs::tom::PE> pe;
-               if (((pe_name = ocs::tom::get<JAT_granted_pe>(jatep))) &&
-                   ((pe = pe_list.find_first<PE_name>(pe_name))) && !ocs::tom::get<PE_job_is_first_task>(pe)) {
+               if (((pe_name = jatep.get<JAT_granted_pe>())) &&
+                   ((pe = pe_list.find_first<PE_name>(pe_name))) && !pe.get<PE_job_is_first_task>()) {
                   slot_adjust = 1;
                }
             }
@@ -1032,7 +1032,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                if ((full_listing & QSTAT_DISPLAY_FULL)) {
                   slots_per_line = slots_in_queue;
                } else {
-                  slots_per_line = sge_granted_slots(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep));
+                  slots_per_line = sge_granted_slots(jatep.get<JAT_granted_destin_identifier_list>());
                }
             } else {
                /* yes */
@@ -1044,14 +1044,14 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                int already_printed = 0;
 
                if (user_list.empty() ||
-                   (!user_list.empty() && (ocs::tom::get<JAT_suitable>(jatep) & TAG_SELECT_IT))) {
+                   (!user_list.empty() && (jatep.get<JAT_suitable>() & TAG_SELECT_IT))) {
                   if (print_jobs_of_queue && (job_tag & TAG_SHOW_IT)) {
                      int different, print_jobid;
 
                      old_jid = jid;
-                     jid = ocs::tom::get<JB_job_number>(jlep);
+                     jid = jlep.get<JB_job_number>();
                      old_jataskid = jataskid;
-                     jataskid = ocs::tom::get<JAT_task_number>(jatep);
+                     jataskid = jatep.get<JAT_task_number>();
                      sge_dstring_sprintf(&dyn_task_str, sge_u32, jataskid);
                      different = (jid != old_jid) || (jataskid != old_jataskid);
 
@@ -1066,7 +1066,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_RUNNING) &&
-                         (ocs::tom::get<JAT_state>(jatep) & JRUNNING)) {
+                         (jatep.get<JAT_state>() & JRUNNING)) {
                         report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, indent,
@@ -1074,10 +1074,10 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                         already_printed = 1;
                      }
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_SUSPENDED) &&
-                         ((ocs::tom::get<JAT_state>(jatep) & JSUSPENDED) ||
-                          (ocs::tom::get<JAT_state>(jatep) & JSUSPENDED_ON_THRESHOLD) ||
-                          (ocs::tom::get<JAT_state>(jatep) & JSUSPENDED_ON_SUBORDINATE) ||
-                          (ocs::tom::get<JAT_state>(jatep) & JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
+                         ((jatep.get<JAT_state>() & JSUSPENDED) ||
+                          (jatep.get<JAT_state>() & JSUSPENDED_ON_THRESHOLD) ||
+                          (jatep.get<JAT_state>() & JSUSPENDED_ON_SUBORDINATE) ||
+                          (jatep.get<JAT_state>() & JSUSPENDED_ON_SLOTWISE_SUBORDINATE))) {
                         report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, indent,
@@ -1086,7 +1086,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_USERHOLD) &&
-                         (ocs::tom::get<JAT_hold>(jatep) & MINUS_H_TGT_USER)) {
+                         (jatep.get<JAT_hold>() & MINUS_H_TGT_USER)) {
                         report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, indent,
@@ -1095,7 +1095,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_OPERATORHOLD) &&
-                         (ocs::tom::get<JAT_hold>(jatep) & MINUS_H_TGT_OPERATOR)) {
+                         (jatep.get<JAT_hold>() & MINUS_H_TGT_OPERATOR)) {
                         report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, indent,
@@ -1104,7 +1104,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_SYSTEMHOLD) &&
-                         (ocs::tom::get<JAT_hold>(jatep) & MINUS_H_TGT_SYSTEM)) {
+                         (jatep.get<JAT_hold>() & MINUS_H_TGT_SYSTEM)) {
                         report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, indent,
@@ -1113,7 +1113,7 @@ ocs::QHostViewBase::show_jobs_per_queue(std::ostream &os, const ocs::tom::ConstE
                      }
 
                      if (!already_printed && (full_listing & QSTAT_DISPLAY_JOBARRAYHOLD) &&
-                         (ocs::tom::get<JAT_hold>(jatep) & MINUS_H_TGT_JA_AD)) {
+                         (jatep.get<JAT_hold>() & MINUS_H_TGT_JA_AD)) {
                         report_handler.show_job(os, jlep, jatep, qep, print_jobid,
                                       (master && different && (i == 0)) ? "MASTER" : "SLAVE", &dyn_task_str,
                                       full_listing, slots_in_queue + slot_adjust, i, indent, group_opt,

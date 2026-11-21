@@ -46,7 +46,7 @@ ocs::QConfWriteParameter::add_item(const char *label, const std::string &text) {
       items_ = ocs::tom::ListPtr<ocs::tom::VA>::create("");
    }
    const auto item = items_->emplace_back<VA_variable>(label != nullptr ? label : "");
-   ocs::tom::set<VA_value>(item, text.c_str());
+   item.set<VA_value>(text.c_str());
 
    DRETURN_VOID;
 }
@@ -122,23 +122,23 @@ ocs::QConfWriteParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
    const auto mode_param = bundle.find_first<SPP_name>(WRITE_MODE);
    if (mode_param != nullptr) {
       const auto value_list = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
-            ocs::tom::get<SPP_value_list>(mode_param));
-      mode_ = static_cast<uint32_t>(ocs::tom::get<ULNG_value>(value_list.front()));
+            mode_param.get<SPP_value_list>());
+      mode_ = value_list.front().get<ULNG_value>();
    }
 
    const auto select_param = bundle.find_first<SPP_name>(OBJECT_SELECT);
    if (select_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
-            ocs::tom::get<SPP_value_list>(select_param)).front();
-      const char *names = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
+            select_param.get<SPP_value_list>()).front();
+      const char *names = (value != nullptr) ? value.get<ST_name>() : nullptr;
       select_ = (names != nullptr) ? names : "";
    }
 
    const auto name_param = bundle.find_first<SPP_name>(OBJECT_NAME);
    if (name_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
-            ocs::tom::get<SPP_value_list>(name_param)).front();
-      const char *name = (value != nullptr) ? ocs::tom::get<ST_name>(value) : nullptr;
+            name_param.get<SPP_value_list>()).front();
+      const char *name = (value != nullptr) ? value.get<ST_name>() : nullptr;
       name_ = (name != nullptr) ? name : "";
    }
 

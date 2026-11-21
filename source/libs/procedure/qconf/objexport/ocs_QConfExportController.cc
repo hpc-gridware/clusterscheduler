@@ -58,7 +58,7 @@ ocs_qconf_export_one(const ocs::tom::List<ocs::tom::VA> objects, ocs::QConfViewB
    }
 
    const auto pair = objects.emplace_back<VA_variable>((name != nullptr) ? name : "");
-   ocs::tom::set<VA_value>(pair, text.str().c_str());
+   pair.set<VA_value>(text.str().c_str());
    DRETURN_VOID;
 }
 

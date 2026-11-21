@@ -95,10 +95,10 @@ namespace ocs {
          os << "--------------------------------------------------\n";
 
          for (const auto ep : list) {
-            const char *name = ocs::tom::get<EV_name>(ep);
-            const char *host = ocs::tom::get<EV_host>(ep);
+            const char *name = ep.get<EV_name>();
+            const char *host = ep.get<EV_host>();
 
-            os << std::format("{:>8} ", static_cast<int>(ocs::tom::get<EV_id>(ep)));
+            os << std::format("{:>8} ", static_cast<int>(ep.get<EV_id>()));
             os << std::format("{:<15} ", (name != nullptr) ? name : "(null)");
             os << std::format("{:<25}\n", (host != nullptr) ? host : "-");
          }

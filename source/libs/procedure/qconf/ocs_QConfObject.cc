@@ -147,7 +147,7 @@ qconf_eh_resolve(const ocs::tom::Element<ocs::tom::EH> ep, ocs::tom::ListPtr<ocs
    DENTER(TOP_LAYER);
    if (ocs_resolve_host<EH_name>(ep) != CL_RETVAL_OK) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(ep)));
+                              MSG_SGETEXT_CANTRESOLVEHOST_S, ep.get<EH_name>().c_str());
       DRETURN(STATUS_ESEMANTIC);
    }
    DRETURN(STATUS_OK);
@@ -284,7 +284,7 @@ static ocs::tom::ElementPtr<ocs::tom::RL>
 qconf_template_RL([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = ocs::Role::create_template();
-   ocs::tom::set<RL_name>(ep, name);
+   ep->set<RL_name>(name);
    DRETURN(ep);
 }
 
@@ -297,7 +297,7 @@ static ocs::tom::ElementPtr<ocs::tom::UU>
 qconf_template_UU([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = getUserTemplate();
-   ocs::tom::set<UU_name>(ep, name);
+   ep->set<UU_name>(name);
    DRETURN(ep);
 }
 
@@ -310,7 +310,7 @@ static ocs::tom::ElementPtr<ocs::tom::PR>
 qconf_template_PR([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = getPrjTemplate();
-   ocs::tom::set<PR_name>(ep, name);
+   ep->set<PR_name>(name);
    DRETURN(ep);
 }
 
@@ -328,7 +328,7 @@ static ocs::tom::ElementPtr<ocs::tom::RQS>
 qconf_template_RQS([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
    DENTER(TOP_LAYER);
    auto ep = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
-   ocs::tom::set<RQS_name>(ep, name);
+   ep->set<RQS_name>(name);
    rqs_set_defaults(*ep);
    DRETURN(ep);
 }
@@ -451,7 +451,7 @@ qconf_template_CONF([[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
    DENTER(TOP_LAYER);
    auto ep = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
    if (name != nullptr) {
-      ocs::tom::set<CONF_name>(ep, name);
+      ep->set<CONF_name>(ocs::tom::Host(name));
    }
    DRETURN(ep);
 }
@@ -472,12 +472,12 @@ static int
 qconf_rqs_verify_list(const ocs::tom::ConstList<ocs::tom::RQS> rule_sets, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    for (auto a = rule_sets.front(); a != nullptr; a = a.next()) {
-      const char *name_a = ocs::tom::get<RQS_name>(a);
+      const char *name_a = a.get<RQS_name>();
       if (name_a == nullptr) {
          continue;         // a nameless rule set is qconf_rqs_validate()'s to refuse
       }
       for (auto b = a.next(); b != nullptr; b = b.next()) {
-         const char *name_b = ocs::tom::get<RQS_name>(b);
+         const char *name_b = b.get<RQS_name>();
          if (name_b != nullptr && strcmp(name_a, name_b) == 0) {
             answer_list_add_sprintf(alpp, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                                     MSG_RQS_REQUEST_DUPLICATE_NAME_S, name_a);
@@ -517,8 +517,8 @@ static int
 qconf_ce_verify_list(const ocs::tom::ConstList<ocs::tom::CE> entries, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
    for (auto a = entries.front(); a != nullptr; a = a.next()) {
-      const char *name_a = ocs::tom::get<CE_name>(a);
-      const char *shortcut_a = ocs::tom::get<CE_shortcut>(a);
+      const char *name_a = a.get<CE_name>();
+      const char *shortcut_a = a.get<CE_shortcut>();
 
       if (name_a == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
@@ -530,15 +530,15 @@ qconf_ce_verify_list(const ocs::tom::ConstList<ocs::tom::CE> entries, ocs::tom::
                                  MSG_CENTRY_NULL_SHORTCUT_S, name_a);
          DRETURN(STATUS_EUNKNOWN);
       }
-      if (ocs::tom::get<CE_urgency_weight>(a) == nullptr) {
+      if (a.get<CE_urgency_weight>() == nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                  MSG_CENTRY_NULL_URGENCY);
          DRETURN(STATUS_EUNKNOWN);
       }
 
       for (auto b = a.next(); b != nullptr; b = b.next()) {
-         const char *name_b = ocs::tom::get<CE_name>(b);
-         const char *shortcut_b = ocs::tom::get<CE_shortcut>(b);
+         const char *name_b = b.get<CE_name>();
+         const char *shortcut_b = b.get<CE_shortcut>();
          if (name_b == nullptr || shortcut_b == nullptr) {
             continue;      // reported when the loop above reaches that element
          }
@@ -572,7 +572,7 @@ qconf_ce_verify_list(const ocs::tom::ConstList<ocs::tom::CE> entries, ocs::tom::
 static bool
 qconf_ce_retain_builtin(const ocs::tom::ConstElement<ocs::tom::CE> ep) {
    DENTER(TOP_LAYER);
-   const char *name = ocs::tom::get<CE_name>(ep);
+   const char *name = ep.get<CE_name>();
    if (name == nullptr) {
       DRETURN(false);
    }
@@ -593,8 +593,8 @@ qconf_ce_retain_builtin(const ocs::tom::ConstElement<ocs::tom::CE> ep) {
  */
 static bool
 qconf_stn_has_ids(const ocs::tom::ConstElement<ocs::tom::STN> ep) {
-   for (const auto child : ocs::tom::get<STN_children>(ep)) {
-      if (ocs::tom::get<STN_id>(child) != 0 || qconf_stn_has_ids(child)) {
+   for (const auto child : ep.get<STN_children>()) {
+      if (child.get<STN_id>() != 0 || qconf_stn_has_ids(child)) {
          return true;
       }
    }
@@ -934,7 +934,7 @@ qconf_json_type_load_values(const ocs::tom::Element<ocs::tom::EH> host,
    if (!host || !master_centry_list) {
       DRETURN_VOID;
    }
-   const auto hl = ocs::tom::get<EH_load_list>(host);
+   const auto hl = host.get<EH_load_list>();
    if (hl.empty()) {
       DRETURN_VOID;
    }
@@ -942,8 +942,8 @@ qconf_json_type_load_values(const ocs::tom::Element<ocs::tom::EH> host,
    auto ce_list = ocs::tom::ListPtr<ocs::tom::CE>::create("load_values");
    for (const auto hlep : hl) {
       auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-      ocs::tom::set<CE_name>(ce, ocs::tom::get<HL_name>(hlep));
-      ocs::tom::set<CE_stringval>(ce, ocs::tom::get<HL_value>(hlep));
+      ce->set<CE_name>(hlep.get<HL_name>());
+      ce->set<CE_stringval>(hlep.get<HL_value>());
       ce_list->push_back(std::move(ce));
    }
 
@@ -952,8 +952,8 @@ qconf_json_type_load_values(const ocs::tom::Element<ocs::tom::EH> host,
 
    /* parse numeric values into CE_doubleval so the writer emits native numbers */
    for (const auto ce : *ce_list) {
-      const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
-      const char *s = ocs::tom::get<CE_stringval>(ce);
+      const auto type = static_cast<ocs::CEntry::Type>(ce.get<CE_valtype>());
+      const char *s = ce.get<CE_stringval>();
       double dval = 0.0;
       switch (type) {
          case ocs::CEntry::Type::INT:
@@ -962,7 +962,7 @@ qconf_json_type_load_values(const ocs::tom::Element<ocs::tom::EH> host,
          case ocs::CEntry::Type::DOUBLE:
          case ocs::CEntry::Type::BOOL:
             if (s != nullptr && parse_ulong_val(&dval, nullptr, type, s, nullptr, 0)) {
-               ocs::tom::set<CE_doubleval>(ce, dval);
+               ce.set<CE_doubleval>(dval);
             }
             break;
          default:

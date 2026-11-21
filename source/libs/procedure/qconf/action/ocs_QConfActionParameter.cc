@@ -47,7 +47,7 @@ ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
    if (arg == nullptr) {
       arg = args_->emplace_back<VA_variable>(name);
    }
-   ocs::tom::set<VA_value>(arg, value.c_str());
+   arg.set<VA_value>(value.c_str());
 
    DRETURN_VOID;
 }
@@ -63,7 +63,7 @@ ocs::QConfActionParameter::set_arg(const char *name, const std::string &value) {
 std::string
 ocs::QConfActionParameter::get_arg(const char *name) const {
    const ocs::tom::ConstElement<ocs::tom::VA> arg = args_->find_first<VA_variable>(name);
-   const char *value = (arg != nullptr) ? ocs::tom::get<VA_value>(arg) : nullptr;
+   const char *value = (arg != nullptr) ? arg.get<VA_value>() : nullptr;
    return (value != nullptr) ? value : "";
 }
 

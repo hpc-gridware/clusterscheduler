@@ -107,33 +107,33 @@ int correct_load(const ocs::tom::ConstList<ocs::tom::JB> running_jobs,
    uint64_t now = sge_get_gmt64();
 
    for (const auto job : running_jobs) {
-      uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+      uint32_t job_id = job.get<JB_job_number>();
       double global_lcf = 0.0;
 
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
-         uint64_t running_time = now - ocs::tom::get<JAT_start_time>(ja_task);
+      for (const auto ja_task : job.get<JB_ja_tasks>()) {
+         uint32_t ja_task_id = ja_task.get<JAT_task_number>();
+         uint64_t running_time = now - ja_task.get<JAT_start_time>();
          double host_lcf = 0.0;
 
 #if 1
          DPRINTF("JOB " sge_u32 "." sge_u32 " start_time = " sge_u64" running_time " sge_u64 " decay_time = " sge_u64"\n",
-                 job_id, ja_task_id, ocs::tom::get<JAT_start_time>(ja_task), running_time, decay_time);
+                 job_id, ja_task_id, ja_task.get<JAT_start_time>(), running_time, decay_time);
 #endif
          if (running_time > decay_time) {
             continue;
          }
-         for (const auto granted_queue : ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task)) {
+         for (const auto granted_queue : ja_task.get<JAT_granted_destin_identifier_list>()) {
             const char *hnm = nullptr;
             uint32_t slots;
             
-            const char *qnm = ocs::tom::get<JG_qname>(granted_queue);
+            const char *qnm = granted_queue.get<JG_qname>();
             if (qinstance_list_locate2(queue_list, qnm) == nullptr) {
                DPRINTF("Unable to find queue \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", qnm, job_id, ja_task_id);
                continue;
             }
            
-            hnm=ocs::tom::get<JG_qhostname>(granted_queue); 
-            const auto hep = ocs::tom::find_first_rw<EH_name>(host_list, hnm);
+            hnm=granted_queue.get<JG_qhostname>(); 
+            const auto hep = host_list.find_first<EH_name>(ocs::tom::Host(hnm));
             if (hep == nullptr) {
                DPRINTF("Unable to find host \"%s\" from gdil " "list of job " sge_u32 "." sge_u32"\n", hnm, job_id, ja_task_id);
                continue;
@@ -156,33 +156,33 @@ int correct_load(const ocs::tom::ConstList<ocs::tom::JB> running_jobs,
             global_lcf += host_lcf;
 
             /* multiply it for each slot on this host */
-            slots = ocs::tom::get<JG_slots>(granted_queue);
+            slots = granted_queue.get<JG_slots>();
             host_lcf *= slots;
             
             /* add this factor (multiplied with 100 for being able to use 
                uint32_t) */
-            ocs::tom::set<EH_load_correction_factor>(hep, 
+            hep.set<EH_load_correction_factor>(
                       host_lcf * 100 + 
-                      ocs::tom::get<EH_load_correction_factor>(hep));
+                      hep.get<EH_load_correction_factor>());
 
 #if 1
             DPRINTF("JOB " sge_u32 "." sge_u32 " [" sge_u32" slots] in queue %s increased lc of host "
                     "%s by " sge_u32" to " sge_u32"\n", job_id, ja_task_id, slots, qnm, hnm,
-                    (uint32_t)(100*host_lcf), ocs::tom::get<EH_load_correction_factor>(hep));
+                    (uint32_t)(100*host_lcf), hep.get<EH_load_correction_factor>());
 #endif
             if (monitor_next_run) {
                char log_string[2048 + 1];
                snprintf(log_string, sizeof(log_string), "JOB " sge_u32"." sge_u32" [" sge_u32"] in queue " SFN
                           " increased absolute lc of host " SFN " by " sge_u32" to "
                           sge_u32"", job_id, ja_task_id, slots, qnm, hnm,
-                          (uint32_t)(host_lcf*100), ocs::tom::get<EH_load_correction_factor>(hep));
+                          (uint32_t)(host_lcf*100), hep.get<EH_load_correction_factor>());
                schedd_log(log_string, nullptr, true);
             }
          }
       }
-      ocs::tom::set<EH_load_correction_factor>(global_host, 
+      global_host.set<EH_load_correction_factor>(
                 global_lcf * 100 + 
-                ocs::tom::get<EH_load_correction_factor>(global_host));
+                global_host.get<EH_load_correction_factor>());
    }
 
    DRETURN(0);
@@ -226,10 +226,10 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
    }
  
    for (const auto hep : host_list) {
-      const char *host_name = ocs::tom::get<EH_name>(hep);
+      const char *host_name = hep.get<EH_name>();
 
-      for (const auto ep : ocs::tom::get<EH_load_list>(hep)) {
-         const char *attr_name = ocs::tom::get<HL_name>(ep);
+      for (const auto ep : hep.get<EH_load_list>()) {
+         const char *attr_name = ep.get<HL_name>();
  
          /* seach for appropriate complex attribute */
          const auto cep = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, attr_name));
@@ -237,7 +237,7 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
             continue;
          }
 
-         type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cep));
+         type = static_cast<ocs::CEntry::Type>(cep.get<CE_valtype>());
          if (type != ocs::CEntry::Type::INT &&
              type != ocs::CEntry::Type::TIME &&
              type != ocs::CEntry::Type::MEM &&
@@ -246,26 +246,26 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
             continue;
          }
         
-         if (!parse_ulong_val(&dval, nullptr, type, ocs::tom::get<HL_value>(ep), nullptr, 0))
+         if (!parse_ulong_val(&dval, nullptr, type, ep.get<HL_value>(), nullptr, 0))
             continue;
 
          /* do load scaling */
-         if ((scaling=ocs::tom::find_first_in<EH_scaling_list, HS_name>(hep, attr_name))) {
+         if ((scaling=hep.find_first_in<EH_scaling_list, HS_name>(attr_name))) {
             char sval[20];
-            sc_factor = ocs::tom::get<HS_value>(scaling);
+            sc_factor = scaling.get<HS_value>();
             dval *= sc_factor;
             snprintf(sval, sizeof(sval), "%8.3f", dval);
-            ocs::tom::set<HL_value>(ep, sval);
+            ep.set<HL_value>(sval);
          }
 
-         if (ocs::tom::get<CE_consumable>(cep) == CONSUMABLE_NO)
+         if (cep.get<CE_consumable>() == CONSUMABLE_NO)
             continue;
-         if (!(total=ocs::tom::find_first_in_rw<EH_consumable_config_list, CE_name>(hep, attr_name)))
+         if (!(total=hep.find_first_in_rw<EH_consumable_config_list, CE_name>(attr_name)))
             continue;
-         if (!(inuse_rms=ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(hep, attr_name)))
+         if (!(inuse_rms=hep.find_first_in<EH_resource_utilization, RUE_name>(attr_name)))
             continue;
 
-         relop = ocs::tom::get<CE_relop>(cep);
+         relop = cep.get<CE_relop>();
          if (relop != CMPLXEQ_OP &&
              relop != CMPLXLT_OP &&
              relop != CMPLXLE_OP &&
@@ -274,12 +274,12 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
 
          /* do load correction */
          load_correction = 0;
-         if ((job_load=ocs::tom::find_first<CE_name>(job_load_adj_list, attr_name))) {
+         if ((job_load=job_load_adj_list.find_first<CE_name>(attr_name))) {
             double lc_factor;
-            const char *s = ocs::tom::get<CE_stringval>(job_load);
+            const char *s = job_load.get<CE_stringval>();
 
             if (parse_ulong_val(&load_correction, nullptr, type, s, nullptr, 0)) {
-               lc_factor = ((double)ocs::tom::get<EH_load_correction_factor>(hep))/100.0;
+               lc_factor = ((double)hep.get<EH_load_correction_factor>())/100.0;
                load_correction *= lc_factor;
                DPRINTF("%s:%s %s %8.3f %8.3f\n", host_name, attr_name, s, load_correction, lc_factor);
                dval -= load_correction;
@@ -287,15 +287,15 @@ int correct_capacities(const ocs::tom::List<ocs::tom::EH> host_list,
          }
 
          /* use scaled load value to deduce the amount */
-         full_capacity = ocs::tom::get<CE_doubleval>(total);
-         inuse_ext = full_capacity - ocs::tom::get<RUE_utilized_now>(inuse_rms) - dval;
+         full_capacity = total.get<CE_doubleval>();
+         inuse_ext = full_capacity - inuse_rms.get<RUE_utilized_now>() - dval;
 
          if (inuse_ext > 0.0) {
-            ocs::tom::set<CE_doubleval>(total, full_capacity - inuse_ext);
+            total.set<CE_doubleval>(full_capacity - inuse_ext);
 
             DPRINTF("%s:%s %8.3f --> %8.3f (ext: %8.3f = all %8.3f - ubC %8.3f - load %8.3f) lc = %8.3f\n",
-                    host_name, attr_name, full_capacity, ocs::tom::get<CE_doubleval>(total),
-                    inuse_ext, full_capacity, ocs::tom::get<RUE_utilized_now>(inuse_rms), dval, load_correction);
+                    host_name, attr_name, full_capacity, total.get<CE_doubleval>(),
+                    inuse_ext, full_capacity, inuse_rms.get<RUE_utilized_now>(), dval, load_correction);
          } else {
             DPRINTF("ext: %8.3f <= 0\n", inuse_ext);
          }

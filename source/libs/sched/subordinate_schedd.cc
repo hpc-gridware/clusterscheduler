@@ -71,7 +71,7 @@ int sos_schedd(const char *qname, const ocs::tom::List<ocs::tom::QU> qlist) {
 
    int ret = 0;
 
-   auto q = ocs::tom::find_first_rw<QU_full_name>(qlist, qname);
+   auto q = qlist.find_first<QU_full_name>(qname);
    if (!q) {
       /* 
          In the qlist we got is only a subset of all
@@ -83,8 +83,8 @@ int sos_schedd(const char *qname, const ocs::tom::List<ocs::tom::QU> qlist) {
    }
 
    /* increment sos counter */
-   auto sos = ocs::tom::get<QU_suspended_on_subordinate>(q);
-   ocs::tom::set<QU_suspended_on_subordinate>(q, ++sos);
+   auto sos = q.get<QU_suspended_on_subordinate>();
+   q.set<QU_suspended_on_subordinate>(++sos);
 
    /* first sos ? */
    if (sos==1) {

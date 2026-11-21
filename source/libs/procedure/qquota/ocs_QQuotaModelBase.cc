@@ -113,7 +113,7 @@ ocs::tom::Where<ocs::tom::EH> ocs::QQuotaModelBase::get_host_where(const ocs::to
    ocs::tom::Where<ocs::tom::EH> where;
 
    for (const auto ep : host_list) {
-      where |= ocs::tom::field<EH_name>().same_host(ocs::tom::get<ST_name>(ep));
+      where |= ocs::tom::field<EH_name>().same_host(ep.get<ST_name>());
    }
    if (where) {
       where |= ocs::tom::field<EH_name>() == SGE_GLOBAL_NAME;

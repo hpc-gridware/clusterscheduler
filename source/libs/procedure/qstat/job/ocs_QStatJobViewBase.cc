@@ -65,7 +65,7 @@ void ocs::QStatJobViewBase::show_jobs_and_reasons(std::ostream &os, QStatParamet
    for (const ocs::tom::ConstElement<ocs::tom::JB> job : *model.jlp) {
 #if 0
       // Do not show jobs that should not be visible
-      if (!job_is_visible(packet, ocs::tom::get<JB_owner>(job), model.is_manager())) {
+      if (!job_is_visible(packet, job.get<JB_owner>(), model.is_manager())) {
          continue;
       }
 #endif
@@ -170,14 +170,14 @@ void ocs::QStatJobViewBase::show_job(std::ostream &os, const ocs::tom::ConstList
 
    // start task specific output
    report_task_list_started(os, job);
-   if (ocs::tom::has<JB_ja_tasks>(job)) {
+   if (job.has<JB_ja_tasks>()) {
       // the tasks in the order of their numbers; the job is the caller's and is not sorted itself
       std::vector<ocs::tom::ConstElement<ocs::tom::JAT>> ja_tasks;
-      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : job.get<JB_ja_tasks>()) {
          ja_tasks.push_back(ja_task);
       }
       std::ranges::sort(ja_tasks, {}, [](const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
-         return ocs::tom::get<JAT_task_number>(ja_task);
+         return ja_task.get<JAT_task_number>();
       });
 
       for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ja_tasks) {
@@ -220,7 +220,7 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement
    uint32_t pending = 0;
    // the ids of one hold list, nothing if the (reduced) job does not hold it
    const auto hold_ids = [job]<auto F>() -> uint32_t {
-      return ocs::tom::has<F>(job) ? range_list_get_number_of_ids(ocs::tom::get<F>(job)) : 0;
+      return job.has<F>() ? range_list_get_number_of_ids(job.get<F>()) : 0;
    };
    pending += hold_ids.template operator()<JB_ja_n_h_ids>();
    pending += hold_ids.template operator()<JB_ja_u_h_ids>();
@@ -228,9 +228,9 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement
    pending += hold_ids.template operator()<JB_ja_o_h_ids>();
    pending += hold_ids.template operator()<JB_ja_a_h_ids>();
 
-   if (ocs::tom::has<JB_ja_tasks>(job)) {
-      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-         if (ocs::tom::get<JAT_status>(ja_task) == JIDLE && !ISSET(ocs::tom::get<JAT_state>(ja_task), JERROR)) {
+   if (job.has<JB_ja_tasks>()) {
+      for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : job.get<JB_ja_tasks>()) {
+         if (ja_task.get<JAT_status>() == JIDLE && !ISSET(ja_task.get<JAT_state>(), JERROR)) {
             pending++;
          }
       }
@@ -246,18 +246,18 @@ uint32_t ocs::QStatJobViewBase::count_pending_tasks(const ocs::tom::ConstElement
 void ocs::QStatJobViewBase::accumulate_usage(const ocs::tom::ConstElement<ocs::tom::JAT> task, Usage &usage) {
    DENTER(TOP_LAYER);
    usage.have_mem_details =
-      static_cast<bool>(ocs::tom::find_first_in<JAT_scaled_usage_list, UA_name>(task, USAGE_ATTR_PSS));
+      static_cast<bool>(task.find_first_in<JAT_scaled_usage_list, UA_name>(USAGE_ATTR_PSS));
 
    /* display online job usage separately for each array job but summarized over all pe_tasks */
    // adds one value of a scaled usage list to a total; an attribute the list does not hold adds nothing
    const auto sum_up = [](const ocs::tom::ConstList<ocs::tom::UA> usage_list, double &dst, const char *attr) {
-      if (ocs::tom::ConstElement<ocs::tom::UA> uep = ocs::tom::find_first<UA_name>(usage_list, attr)) {
-         dst += ocs::tom::get<UA_value>(uep);
+      if (ocs::tom::ConstElement<ocs::tom::UA> uep = usage_list.find_first<UA_name>(attr)) {
+         dst += uep.get<UA_value>();
       }
    };
 
    /* master task */
-   const auto ja_task_usage = ocs::tom::get<JAT_scaled_usage_list>(task);
+   const auto ja_task_usage = task.get<JAT_scaled_usage_list>();
    sum_up(ja_task_usage, usage.wallclock, USAGE_ATTR_WALLCLOCK);
    sum_up(ja_task_usage, usage.cpu, USAGE_ATTR_CPU);
    sum_up(ja_task_usage, usage.mem, USAGE_ATTR_MEM);
@@ -276,9 +276,9 @@ void ocs::QStatJobViewBase::accumulate_usage(const ocs::tom::ConstElement<ocs::t
    }
 
    /* slave tasks */
-   for (const ocs::tom::ConstElement<ocs::tom::PET> pe_task_ep : ocs::tom::get<JAT_task_list>(task)) {
+   for (const ocs::tom::ConstElement<ocs::tom::PET> pe_task_ep : task.get<JAT_task_list>()) {
       // we do not sum up wallclock usage per pe task; a PE task keeps its usage in its own list
-      const auto pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task_ep);
+      const auto pe_task_usage = pe_task_ep.get<PET_scaled_usage>();
       sum_up(pe_task_usage, usage.cpu, USAGE_ATTR_CPU);
       sum_up(pe_task_usage, usage.mem, USAGE_ATTR_MEM);
       sum_up(pe_task_usage, usage.io, USAGE_ATTR_IO);

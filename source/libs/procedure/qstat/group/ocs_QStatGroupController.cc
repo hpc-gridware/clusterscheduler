@@ -89,7 +89,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const ocs::tom::ConstEl
    bool ret = true;
 
    if (cqueue != nullptr) {
-      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstance_list = cqueue.get<CQ_qinstances>();
       double host_load_avg = 0.0;
       uint32_t load_slots = 0;
       uint32_t used_available = 0;
@@ -105,7 +105,7 @@ bool ocs::QStatGroupController::cqueue_calculate_summary(const ocs::tom::ConstEl
       *disabled_manual = *disabled_calendar = *ambiguous = 0;
       *orphaned = *error = 0;
       for (ocs::tom::ConstElement<ocs::tom::QU> qinstance : qinstance_list) {
-         uint32_t slots = ocs::tom::get<QU_job_slots>(qinstance);
+         uint32_t slots = qinstance.get<QU_job_slots>();
          bool has_value_from_object;
 
          used_slots = qinstance_slots_used(qinstance);
@@ -200,7 +200,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
    view.report_started(out_, parameter);
 
    for (const auto cqueue : model.get_cqueue_list()) {
-      if (ocs::tom::get<CQ_tag>(cqueue) != TAG_DEFAULT) {
+      if (cqueue.get<CQ_tag>() != TAG_DEFAULT) {
          QStatGroupViewBase::Summary summary{};
 
          cqueue_calculate_summary(cqueue,
@@ -227,7 +227,7 @@ void ocs::QStatGroupController::process_request(QStatParameter &parameter, QStat
                                   &(summary.temp_disabled),
                                   &(summary.manual_intervention));
 
-         const char *cq_name = ocs::tom::get<CQ_name>(cqueue);
+         const char *cq_name = cqueue.get<CQ_name>();
          if (cq_name != nullptr) {
             view.report_cqueue(out_, cq_name, &summary, parameter);
          }

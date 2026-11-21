@@ -80,17 +80,17 @@ void ocs::QRStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> b
    // -explain
    const auto explain_param = bundle.find_first<SPP_name>(EXPLAIN);
    const auto explain_list = value_list<ocs::tom::ULNG>(explain_param);
-   is_explain_ = ocs::tom::get<ULNG_value>(explain_list.front());
+   is_explain_ = explain_list.front().get<ULNG_value>();
 
    // show summary or individual AR
    const auto summary_param = bundle.find_first<SPP_name>(SUMMARY);
    const auto summary_list = value_list<ocs::tom::ULNG>(summary_param);
-   is_summary_ = ocs::tom::get<ULNG_value>(summary_list.front());
+   is_summary_ = summary_list.front().get<ULNG_value>();
 
    // clients username
    const auto username_param = bundle.find_first<SPP_name>(USERNAME);
    const auto username_list = value_list<ocs::tom::ST>(username_param);
-   strncpy(user_, ocs::tom::get<ST_name>(username_list.front()), sizeof(user_) - 1);
+   strncpy(user_, username_list.front().get<ST_name>(), sizeof(user_) - 1);
 
    // -u
    user_list_ =

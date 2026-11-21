@@ -82,31 +82,35 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const ocs::to
    // If we have no binding utilization from a resource schedule as input, then we will try to find
    // the utilization from the host itself. This might still be uninitialized.
    if (in_reservation_mode) {
-      DPRINTF("Host's %s reservation binding util. is:  %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), host_in_use.to_product_topology_string().c_str());
+      DPRINTF("Host's %s reservation binding util. is:  %s\n", host.get<EH_name>().c_str(),
+              host_in_use.to_product_topology_string().c_str());
       found_now_utilization = true;
    } else {
-      ocs::tom::ConstElement<ocs::tom::RUE> utilization_slots = ocs::tom::find_first_in<EH_resource_utilization, RUE_name>(host, SGE_ATTR_SLOTS);
+      ocs::tom::ConstElement<ocs::tom::RUE> utilization_slots =
+         host.find_first_in<EH_resource_utilization, RUE_name>(SGE_ATTR_SLOTS);
       if (utilization_slots != nullptr) {
-         const char *src = ocs::tom::get<RUE_utilized_now_binding_inuse>(utilization_slots);
+         const char *src = utilization_slots.get<RUE_utilized_now_binding_inuse>();
          if (src != nullptr) {
             host_in_use.reset_topology(src);
             found_now_utilization = true;
-            DPRINTF("Host's %s binding now utilization is:    %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), host_in_use.to_product_topology_string().c_str());
+            DPRINTF("Host's %s binding now utilization is:    %s\n", host.get<EH_name>().c_str(),
+                    host_in_use.to_product_topology_string().c_str());
          } else {
-            DPRINTF("Host %s has still no binding now utilization\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+            DPRINTF("Host %s has still no binding now utilization\n", host.get<EH_name>().c_str());
          }
       } else {
-         DPRINTF("Host %s has still no binding now utilization\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+         DPRINTF("Host %s has still no binding now utilization\n", host.get<EH_name>().c_str());
       }
    }
 
    // now assigment + now utilization not initialized + no AR scheduling => use the topology string as a starting point for binding
    if (!in_reservation_mode && !found_now_utilization) {
-      const char *internal_topo = ocs::tom::get<EH_internal_topology>(host);
+      const char *internal_topo = host.get<EH_internal_topology>();
       if (internal_topo != nullptr) {
          host_in_use.reset_topology(internal_topo);
          found_now_utilization = true;
-         DPRINTF("Internal topology of host %s:            %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), host_in_use.to_product_topology_string().c_str());
+         DPRINTF("Internal topology of host %s:            %s\n", host.get<EH_name>().c_str(),
+                 host_in_use.to_product_topology_string().c_str());
       }
    }
 
@@ -115,7 +119,7 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const ocs::to
       if (found_now_utilization) {
          DRETURN(true);
       } else {
-         DPRINTF("Host %s has no initial now utilization (should not be possible)\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+         DPRINTF("Host %s has no initial now utilization (should not be possible)\n", host.get<EH_name>().c_str());
          DRETURN(false);
       }
    }
@@ -123,21 +127,22 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const ocs::to
    // For AR scheduling we have to mask those parts of the topology that where not granted to the AR
    // this is independent of reservation or now scheduling
    TopologyString ar_in_use;
-   const char *hostname = ocs::tom::get<EH_name>(host);
+   const char *hostname = host.get<EH_name>();
    bool first_entry = true;
-   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource : ocs::tom::get<AR_granted_resources_list>(a->ar)) {
+   for (ocs::tom::ConstElement<ocs::tom::GRU> granted_resource : a->ar.get<AR_granted_resources_list>()) {
       // skip resources that do not contain binding information
-      if (static_cast<GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) != GrantedResources::Type::GRU_BINDING_TYPE) {
+      if (static_cast<GrantedResources::Type>(granted_resource.get<GRU_type>()) !=
+          GrantedResources::Type::GRU_BINDING_TYPE) {
          continue;
       }
       // skip resources that do not belong to the host
-      if (sge_hostcmp(hostname, ocs::tom::get<GRU_host>(granted_resource)) != 0) {
+      if (sge_hostcmp(hostname, granted_resource.get<GRU_host>()) != 0) {
          continue;
       }
 
       // accumulate binding information of the AR
-      for (ocs::tom::ConstElement<ocs::tom::ST> binding_in_use_elem : ocs::tom::get<GRU_binding_inuse>(granted_resource)) {
-         const char *bind_str = ocs::tom::get<ST_name>(binding_in_use_elem);
+      for (ocs::tom::ConstElement<ocs::tom::ST> binding_in_use_elem : granted_resource.get<GRU_binding_inuse>()) {
+         const char *bind_str = binding_in_use_elem.get<ST_name>();
          if (bind_str != nullptr) {
             if (first_entry) {
                ar_in_use.reset_topology(bind_str);
@@ -150,11 +155,13 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const ocs::to
          }
       }
    }
-   DPRINTF("Granted binding for AR on %s:            %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), ar_in_use.to_product_topology_string().c_str());
+   DPRINTF("Granted binding for AR on %s:            %s\n", host.get<EH_name>().c_str(),
+           ar_in_use.to_product_topology_string().c_str());
 
    // Invert the binding string. The AR binds what can be used by jobs.
    ar_in_use.invert_binding();
-   DPRINTF("Inverted granted binding for AR on %s:   %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), ar_in_use.to_product_topology_string().c_str());
+   DPRINTF("Inverted granted binding for AR on %s:   %s\n", host.get<EH_name>().c_str(),
+           ar_in_use.to_product_topology_string().c_str());
 
    // Remove the non-granted parts from the binding mask
    if (found_now_utilization) {
@@ -162,7 +169,8 @@ ocs::BindingSchedd::find_initial_in_use(const sge_assignment_t *a, const ocs::to
    } else {
       host_in_use.reset_topology(ar_in_use.to_string(true, true, true, false, false, false));
    }
-   DPRINTF("Final binding used for AR scheduling %s: %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)), host_in_use.to_product_topology_string().c_str());
+   DPRINTF("Final binding used for AR scheduling %s: %s\n", host.get<EH_name>().c_str(),
+           host_in_use.to_product_topology_string().c_str());
 
    DRETURN(true);
 }
@@ -239,12 +247,12 @@ ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const ocs::tom::Co
 
    if (a == nullptr || host == nullptr || !a->is_binding_enabled
       || host == nullptr
-      || a->job == nullptr || static_cast<lObject>(ocs::tom::get<JB_binding>(a->job)) == nullptr) {
+      || a->job == nullptr || static_cast<lObject>(a->job.get<JB_binding>()) == nullptr) {
       DRETURN(true);
    }
 
    // We have a binding request + host does not report topology + admin wants to allow binding job on such hosts
-   if (a->do_binding_on_any_host && ocs::tom::get<EH_internal_topology>(host) == nullptr) {
+   if (a->do_binding_on_any_host && host.get<EH_internal_topology>() == nullptr) {
       DRETURN(true);
    }
 
@@ -332,7 +340,7 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const ocs::tom::Con
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
    if (ignore_binding(a, host)) {
-      DPRINTF("max_binding_idleness: binding ignored for host %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+      DPRINTF("max_binding_idleness: binding ignored for host %s\n", host.get<EH_name>().c_str());
       DRETURN(slots);
    }
 
@@ -399,7 +407,7 @@ ocs::BindingSchedd::test_strategy(const sge_assignment_t *a, const ocs::tom::Con
       }
    }
 
-   DPRINTF("max_binding_idleness: no binding found for %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(host)));
+   DPRINTF("max_binding_idleness: no binding found for %s\n", host.get<EH_name>().c_str());
    DRETURN(0.0);
 }
 
@@ -445,12 +453,12 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
 
    // We can handle all slots (with respect to binding) if binding can or has to be ignored
    if (ignore_binding(a, host)) {
-      DPRINTF("find_binding: binding ignored for host %s\n", host != nullptr ? static_cast<const char *>(ocs::tom::get<EH_name>(host)) : "unknown");
+      DPRINTF("find_binding: binding ignored for host %s\n", host != nullptr ? host.get<EH_name>().c_str() : "unknown");
       DRETURN(slots);
    }
 
    // No units requested?
-   const char *hostname = ocs::tom::get<EH_name>(host);
+   const char *hostname = host.get<EH_name>();
    unsigned binding_amount = Job::binding_get_amount(a->job);
    if (binding_amount == 0) {
       DPRINTF("find_binding: no binding amount requested\n");
@@ -461,7 +469,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
    // handle all slots if the host binding was done once.
    BindingType::Type binding_type= Job::binding_get_type(a->job);
    ocs::tom::Element<ocs::tom::BN> binding_done =
-         ocs::tom::find_first_rw<BN_specific_hostname>(*a->binding_to_use, hostname);
+         a->binding_to_use->find_first<BN_specific_hostname>(ocs::tom::Host(hostname));
    if (binding_type == BindingType::HOST && binding_done != nullptr) {
       DPRINTF("find_binding: host binding already done for host %s\n", hostname);
       DRETURN(slots);
@@ -517,8 +525,8 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
          a->binding_to_use = ocs::tom::ListPtr<ocs::tom::BN>::create("");
       }
       auto binding_done = a->binding_to_use->emplace_back<BN_specific_hostname>(ocs::tom::Host(hostname));
-      ocs::tom::set<BN_specific_binding>(binding_done, binding_to_use.to_string(true, true, true, false, false, false).c_str());
-      ocs::tom::set<BN_specific_binding_list>(binding_done, nullptr);
+      binding_done.set<BN_specific_binding>(binding_to_use.to_string(true, true, true, false, false, false).c_str());
+      binding_done.set<BN_specific_binding_list>(nullptr);
       DRETURN(slots);
    } else if (binding_type == BindingType::SLOT) {
 
@@ -528,7 +536,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
       uint32_t next_binding_id_for_task = 0;
       if (binding_done != nullptr) {
          next_binding_id_for_task =
-               static_cast<uint32_t>(ocs::tom::get<BN_specific_binding_list>(binding_done).size());
+               static_cast<uint32_t>(binding_done.get<BN_specific_binding_list>().size());
       }
 
       // ignore characteristics when handling binding masks.
@@ -540,7 +548,7 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
       if (binding_done == nullptr) {
          host_binding_to_use.reset_topology(topo_in_use.to_string(true, true, handle_characteristics, false, false, false));
       } else {
-         host_binding_to_use.reset_topology(ocs::tom::get<BN_specific_binding>(binding_done));
+         host_binding_to_use.reset_topology(binding_done.get<BN_specific_binding>());
       }
 
       // find binding for each slot
@@ -566,8 +574,10 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
             }
             binding_done = a->binding_to_use->emplace_back<BN_specific_hostname>(ocs::tom::Host(hostname));
          }
-         ocs::tom::Element<ocs::tom::ST> binding_for_task = ocs::tom::emplace_back_in<BN_specific_binding_list, ST_id>(binding_done, next_binding_id_for_task++);
-         ocs::tom::set<ST_name>(binding_for_task, task_binding_to_use.to_string(true, true, handle_characteristics, false, false, false).c_str());
+         ocs::tom::Element<ocs::tom::ST> binding_for_task =
+            binding_done.emplace_back_in<BN_specific_binding_list, ST_id>(next_binding_id_for_task++);
+         binding_for_task.set<ST_name>(task_binding_to_use.to_string(true, true, handle_characteristics, false, false,
+                                                                     false).c_str());
 
          // add the task binding to the host binding mask
          host_binding_to_use.mark_units_as_used_or_unused(ids, binding_unit, true, handle_characteristics);
@@ -585,7 +595,8 @@ ocs::BindingSchedd::apply_strategy(sge_assignment_t *a, int slots, const ocs::to
 
       // store the combined host binding decision in the assignment structure
       if (binding_done) {
-         ocs::tom::set<BN_specific_binding>(binding_done, host_binding_to_use.to_string(true, true, handle_characteristics, false, false, false).c_str());
+         binding_done.set<BN_specific_binding>(host_binding_to_use.to_string(true, true, handle_characteristics, false,
+                                                                             false, false).c_str());
          DPRINTF("find_binding: slot binding for all tasks on will give us binding %s\n", host_binding_to_use.to_product_topology_string().c_str());
       }
 
@@ -618,18 +629,18 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
 
    // copy the host specific binding from the assignment to the gdil element
    for (auto jg_elem : *a->gdil) {
-      const char *hostname = ocs::tom::get<JG_qhostname>(jg_elem);
+      const char *hostname = jg_elem.get<JG_qhostname>();
 
       // try to find a binding for the host
       ocs::tom::Element<ocs::tom::BN> binding_elem =
-            ocs::tom::find_first_rw<BN_specific_hostname>(*a->binding_to_use, hostname);
+            a->binding_to_use->find_first<BN_specific_hostname>(ocs::tom::Host(hostname));
       if (binding_elem == nullptr) {
          DPRINTF("copy_binding: no binding found for host %s\n", hostname);
          DRETURN(true);
       }
 
       // check if the binding list for tasks is available
-      ocs::tom::List<ocs::tom::ST> task_binding_list = ocs::tom::get<BN_specific_binding_list>(binding_elem);
+      ocs::tom::List<ocs::tom::ST> task_binding_list = binding_elem.get<BN_specific_binding_list>();
       if (task_binding_list == nullptr) {
          host_specific_binding = true;
       } else {
@@ -640,20 +651,20 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
          DPRINTF("copy_binding: host specific binding for host %s\n", hostname);
 
          // copy the binding decision for the host (either for one task or for all tasks share the same binding)
-         const char *binding_str = ocs::tom::get<BN_specific_binding>(binding_elem);
-         ocs::tom::Element<ocs::tom::ST> jg_to_use = ocs::tom::emplace_back_in<JG_binding_to_use, ST_id>(jg_elem, 0);
-         ocs::tom::set<ST_name>(jg_to_use, binding_str);
+         const char *binding_str = binding_elem.get<BN_specific_binding>();
+         ocs::tom::Element<ocs::tom::ST> jg_to_use = jg_elem.emplace_back_in<JG_binding_to_use, ST_id>(0);
+         jg_to_use.set<ST_name>(binding_str);
       } else if (task_specific_binding) {
          DPRINTF("copy_binding: task specific binding for host %s\n", hostname);
 
-         uint32_t slots = ocs::tom::get<JG_slots>(jg_elem);
+         uint32_t slots = jg_elem.get<JG_slots>();
 
          // create the binding list in the granted element that will hold all task bindings
-         ocs::tom::List<ocs::tom::ST> jg_binding_list = ocs::tom::get<JG_binding_to_use>(jg_elem);
+         ocs::tom::List<ocs::tom::ST> jg_binding_list = jg_elem.get<JG_binding_to_use>();
          if (jg_binding_list == nullptr) {
             auto new_binding_list = ocs::tom::ListPtr<ocs::tom::ST>::create("binding_touse");
             jg_binding_list = *new_binding_list;
-            ocs::tom::set<JG_binding_to_use>(jg_elem, std::move(new_binding_list));
+            jg_elem.set<JG_binding_to_use>(std::move(new_binding_list));
          }
 
          // copy the binding decision for the amount of tasks that where granted
@@ -667,7 +678,7 @@ ocs::BindingSchedd::copy_strategy(const sge_assignment_t *a) {
             }
 
             // move the element from the task binding list to the granted element
-            ocs::TopologyString task_binding(ocs::tom::get<ST_name>(task_binding_elem));
+            ocs::TopologyString task_binding(task_binding_elem.get<ST_name>());
             DPRINTF("copy_binding: moved task binding %s for slot %d\n", task_binding.to_product_topology_string().c_str(), slots);
             jg_binding_list.push_back(task_binding_list.extract(task_binding_elem));
 

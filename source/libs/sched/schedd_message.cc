@@ -93,9 +93,9 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
        * MES_job_number_list containes only one id.
        * We have to find the other jobs (jids) which have the same category.
        */
-      for (auto message_elem : ocs::tom::get<SME_message_list>(tmp_sme)) {
-         auto jid_list = ocs::tom::get<MES_job_number_list>(message_elem);
-         auto jid = ocs::tom::get<ULNG_value>(jid_list.front());
+      for (auto message_elem : tmp_sme.get<SME_message_list>()) {
+         auto jid_list = message_elem.get<MES_job_number_list>();
+         auto jid = jid_list.front().get<ULNG_value>();
          auto jid_category = schedd_mes_get_category(jid, job_list);
 
          /*
@@ -106,9 +106,9 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
             auto new_cat_list = schedd_mes_get_same_category_jids(jid_category, job_list, ignore_category);
             jid_cat_list = new_cat_list.get();
             category = jid_category;
-            ocs::tom::set<MES_job_number_list>(message_elem, std::move(new_cat_list));
+            message_elem.set<MES_job_number_list>(std::move(new_cat_list));
          } else {
-            ocs::tom::set<MES_job_number_list>(message_elem, jid_cat_list.clone(""));
+            message_elem.set<MES_job_number_list>(jid_cat_list.clone(""));
          }
       }
    }
@@ -127,9 +127,9 @@ static lRef schedd_mes_get_category(const uint32_t job_id, const ocs::tom::Const
      /* JB */
    lRef ret = nullptr;        /* Category pointer (void*) */
 
-   auto job = ocs::tom::find_first<JB_job_number>(job_list, job_id);
+   auto job = job_list.find_first<JB_job_number>(job_id);
    if (job) {
-      ret = ocs::tom::get<JB_category>(job);
+      ret = job.get<JB_category>();
    }
    DRETURN(ret);
 }
@@ -149,11 +149,11 @@ schedd_mes_get_same_category_jids(const lRef category, const ocs::tom::ConstList
 
    if (job_list && category != nullptr) {
       for (auto job : job_list) {
-         if (ignore_category || ocs::tom::get<JB_category>(job) == category) {
+         if (ignore_category || job.get<JB_category>() == category) {
             if (!ret) {
                ret = ocs::tom::ListPtr<ocs::tom::ULNG>::create("job ids");
             }
-            ret->emplace_back<ULNG_value>(ocs::tom::get<JB_job_number>(job));
+            ret->emplace_back<ULNG_value>(job.get<JB_job_number>());
          }
       }
    }
@@ -168,15 +168,15 @@ void schedd_mes_initialize() {
 
    if (sconf_get_sme() == nullptr) {
       auto sme = ocs::tom::ElementPtr<ocs::tom::SME>::create();
-      ocs::tom::set<SME_message_list>(sme, ocs::tom::ListPtr<ocs::tom::MES>::create(""));
-      ocs::tom::set<SME_global_message_list>(sme, ocs::tom::ListPtr<ocs::tom::MES>::create(""));
+      sme->set<SME_message_list>(ocs::tom::ListPtr<ocs::tom::MES>::create(""));
+      sme->set<SME_global_message_list>(ocs::tom::ListPtr<ocs::tom::MES>::create(""));
       sconf_set_sme(std::move(sme));
    }
 
    /* prepare tmp_sme for collecting messages */
    if (sconf_get_tmp_sme() == nullptr) {
       auto tmp_sme = ocs::tom::ElementPtr<ocs::tom::SME>::create();
-      ocs::tom::set<SME_message_list>(tmp_sme, ocs::tom::ListPtr<ocs::tom::MES>::create(""));
+      tmp_sme->set<SME_message_list>(ocs::tom::ListPtr<ocs::tom::MES>::create(""));
       sconf_set_tmp_sme(std::move(tmp_sme));
    }
 
@@ -212,10 +212,10 @@ void schedd_mes_commit(const ocs::tom::ConstList<ocs::tom::JB> job_list, const i
 
    if (sme && tmp_sme) {
       if (jid_category) {
-         if (ocs::tom::get<CT_messages_added>(jid_category)) {
+         if (jid_category.get<CT_messages_added>()) {
             return;
          }
-         ocs::tom::set<CT_messages_added>(jid_category, true);
+         jid_category.set<CT_messages_added>(true);
       }
 
       /*
@@ -230,7 +230,7 @@ void schedd_mes_commit(const ocs::tom::ConstList<ocs::tom::JB> job_list, const i
        */
       auto tmp_sme_list =
          tmp_sme.exchange<SME_message_list>(ocs::tom::ListPtr<ocs::tom::MES>::create("job info messages"));
-      ocs::tom::get<SME_message_list>(sme).splice(std::move(tmp_sme_list));
+      sme.get<SME_message_list>().splice(std::move(tmp_sme_list));
    }
 }
 
@@ -243,7 +243,7 @@ void schedd_mes_rollback() {
    const auto tmp_sme = sconf_get_tmp_sme();
 
    if (tmp_sme) {
-      ocs::tom::set<SME_message_list>(tmp_sme, ocs::tom::ListPtr<ocs::tom::MES>::create("job info messages"));
+      tmp_sme.set<SME_message_list>(ocs::tom::ListPtr<ocs::tom::MES>::create("job info messages"));
    }
 }
 
@@ -273,16 +273,16 @@ ocs::tom::ElementPtr<ocs::tom::SME> schedd_mes_obtain_package(int *global_mes_co
       sconf_disable_schedd_job_info();
    } else if (schedd_job_info == SCHEDD_JOB_INFO_JOB_LIST) {
       schedd_mes_add_global(nullptr, false, SCHEDD_INFO_JOBLIST);
-   } else if (ocs::tom::get<SME_message_list>(sme).empty() && ocs::tom::get<SME_global_message_list>(sme).empty()) {
+   } else if (sme.get<SME_message_list>().empty() && sme.get<SME_global_message_list>().empty()) {
       schedd_mes_add_global(nullptr, false, SCHEDD_INFO_NOMESSAGE);
    }
 
    if (global_mes_count != nullptr) {
-      *global_mes_count = static_cast<int>(ocs::tom::get<SME_global_message_list>(sme).size());
+      *global_mes_count = static_cast<int>(sme.get<SME_global_message_list>().size());
    }
 
    if (job_mes_count != nullptr) {
-      *job_mes_count = static_cast<int>(ocs::tom::get<SME_message_list>(sme).size());
+      *job_mes_count = static_cast<int>(sme.get<SME_message_list>().size());
    }
 
    // the caller takes the messages over, the temporary ones are freed
@@ -373,11 +373,11 @@ void schedd_mes_add(ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_
                }
 
                auto mes = ocs::tom::ElementPtr<ocs::tom::MES>::create();
-               ocs::tom::set<MES_job_number_list>(mes, ocs::tom::ListPtr<ocs::tom::ULNG>::create("job ids"));
-               ocs::tom::set<MES_message_number>(mes, message_number);
-               ocs::tom::set<MES_message>(mes, msg_str);
-               ocs::tom::emplace_back_in<MES_job_number_list, ULNG_value>(mes, job_id);
-               ocs::tom::get<SME_message_list>(tmp_sme).push_back(std::move(mes));
+               mes->set<MES_job_number_list>(ocs::tom::ListPtr<ocs::tom::ULNG>::create("job ids"));
+               mes->set<MES_message_number>(message_number);
+               mes->set<MES_message>(msg_str);
+               mes->emplace_back_in<MES_job_number_list, ULNG_value>(job_id);
+               tmp_sme.get<SME_message_list>().push_back(std::move(mes));
             }
          }
       }
@@ -442,17 +442,17 @@ void schedd_mes_add_join(bool monitor_next_run, uint32_t job_number, uint32_t me
                }
             }
 
-            auto mes_list = ocs::tom::get<SME_message_list>(tmp_sme);
-            auto mes_mes = ocs::tom::find_first_rw<MES_message_number>(mes_list, message_number);
+            auto mes_list = tmp_sme.get<SME_message_list>();
+            auto mes_mes = mes_list.find_first<MES_message_number>(message_number);
             if (mes_mes == nullptr) {
                auto mes = ocs::tom::ElementPtr<ocs::tom::MES>::create();
-               ocs::tom::set<MES_job_number_list>(mes, ocs::tom::ListPtr<ocs::tom::ULNG>::create("job ids"));
-               ocs::tom::set<MES_message_number>(mes, message_number);
-               ocs::tom::set<MES_message>(mes, msg_str);
+               mes->set<MES_job_number_list>(ocs::tom::ListPtr<ocs::tom::ULNG>::create("job ids"));
+               mes->set<MES_message_number>(message_number);
+               mes->set<MES_message>(msg_str);
                mes_mes = mes_list.push_back(std::move(mes));
             }
 
-            ocs::tom::emplace_back_in<MES_job_number_list, ULNG_value>(mes_mes, job_number);
+            mes_mes.emplace_back_in<MES_job_number_list, ULNG_value>(job_number);
          }
 
          if (do_logging) {
@@ -515,9 +515,9 @@ void schedd_mes_add_global(ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool m
 
          if (sme) {
             auto mes = ocs::tom::ElementPtr<ocs::tom::MES>::create();
-            ocs::tom::set<MES_message_number>(mes, message_number);
-            ocs::tom::set<MES_message>(mes, msg_str);
-            ocs::tom::get<SME_global_message_list>(sme).push_back(std::move(mes));
+            mes->set<MES_message_number>(message_number);
+            mes->set<MES_message>(msg_str);
+            sme.get<SME_global_message_list>().push_back(std::move(mes));
          }
       }
 
@@ -543,7 +543,7 @@ ocs::tom::ConstList<ocs::tom::MES> schedd_mes_get_tmp_list() {
    const ocs::tom::ConstElement<ocs::tom::SME> tmp_sme = sconf_get_tmp_sme();
 
    if (tmp_sme) {
-      ret = ocs::tom::get<SME_message_list>(tmp_sme);
+      ret = tmp_sme.get<SME_message_list>();
    }
    DRETURN(ret);
 }
@@ -563,12 +563,12 @@ void schedd_mes_set_tmp_list(const ocs::tom::Element<ocs::tom::CCT> category, co
    auto tmp_list = category.exchange<CCT_job_messages>(ocs::tom::ListPtr<ocs::tom::MES>());
 
    for (auto tmp_elem : tmp_list.get()) {
-      ocs::tom::emplace_back_in<MES_job_number_list, ULNG_value>(tmp_elem, job_number);
+      tmp_elem.emplace_back_in<MES_job_number_list, ULNG_value>(job_number);
    }
 
    if (tmp_sme && tmp_list) {
       tmp_list->splice(tmp_sme.exchange<SME_message_list>(ocs::tom::ListPtr<ocs::tom::MES>()));
-      ocs::tom::set<SME_message_list>(tmp_sme, std::move(tmp_list));
+      tmp_sme.set<SME_message_list>(std::move(tmp_list));
    }
 
    DRETURN_VOID;

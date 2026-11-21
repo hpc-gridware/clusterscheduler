@@ -81,12 +81,12 @@ static bool
 write_QU_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::QU> qu, dstring *buffer,
                                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
-   const auto lp = ocs::tom::get<QU_consumable_config_list>(qu);
+   const auto lp = qu.get<QU_consumable_config_list>();
    bool first = true;
    bool has_elems = false;
 
    for (const auto vep : lp) {
-      const char *name = ocs::tom::get<CE_name>(vep);
+      const char *name = vep.get<CE_name>();
 
       if (strcmp(name, "slots") != 0) {
          /* whether any element of the list was printed decides the NONE below */
@@ -102,11 +102,11 @@ write_QU_consumable_config_list(const ocs::tom::ConstElement<ocs::tom::QU> qu, d
          sge_dstring_append(buffer, name);
          sge_dstring_append(buffer, "=");
 
-         const char *strval = ocs::tom::get<CE_stringval>(vep);
+         const char *strval = vep.get<CE_stringval>();
          if (strval != nullptr) {
             sge_dstring_append(buffer, strval);
          } else {
-            sge_dstring_sprintf_append(buffer, "%f", ocs::tom::get<CE_doubleval>(vep));
+            sge_dstring_sprintf_append(buffer, "%f", vep.get<CE_doubleval>());
          }
       }
    }

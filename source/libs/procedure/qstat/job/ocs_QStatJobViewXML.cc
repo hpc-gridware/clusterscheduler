@@ -72,18 +72,18 @@ ocs::QStatJobViewXML::show_jobs_and_reasons(std::ostream &os, QStatParameter &pa
    /* add job infos */
    auto xmlElem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attrElem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   ocs::tom::set<XMLA_Name>(attrElem, "djob_info");
+   attrElem->set<XMLA_Name>("djob_info");
    ocs::tom::set<XMLE_Element>(xmlElem, std::move(attrElem));
-   ocs::tom::set<XMLE_Print>(xmlElem, true);
+   xmlElem->set<XMLE_Print>(true);
    ocs::tom::set<XMLE_List>(xmlElem, std::move(model.jlp));
    XML_out->push_back(std::move(xmlElem));
 
    /* add messages */
    auto xmlElem_xmle = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attrElem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   ocs::tom::set<XMLA_Name>(attrElem_xmla, "messages");
+   attrElem_xmla->set<XMLA_Name>("messages");
    ocs::tom::set<XMLE_Element>(xmlElem_xmle, std::move(attrElem_xmla));
-   ocs::tom::set<XMLE_Print>(xmlElem_xmle, true);
+   xmlElem_xmle->set<XMLE_Print>(true);
    ocs::tom::set<XMLE_List>(xmlElem_xmle, std::move(model.ilp));
    XML_out->push_back(std::move(xmlElem_xmle));
 
@@ -111,11 +111,11 @@ void ocs::QStatJobViewXML::show_reasons(std::ostream &os, QStatParameter &parame
 
    // each message gets the text that summarizes its jobs, as the plain view prints it above their ids
    if (const auto sme = model.ilp->front(); sme != nullptr) {
-      for (const auto mes : ocs::tom::get<SME_message_list>(sme)) {
+      for (const auto mes : sme.get<SME_message_list>()) {
          // the job ids keep their stored order: the lPSortList(..., "I+", ULNG_value) that stood here lacked the
          // '%' and sorted by no key; a real sort would change the output
-         const uint32_t mid = ocs::tom::get<MES_message_number>(mes);
-         ocs::tom::set<MES_message>(mes, sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
+         const uint32_t mid = mes.get<MES_message_number>();
+         mes.set<MES_message>(sge_schedd_text(mid + SCHEDD_INFO_OFFSET));
       }
    }
 

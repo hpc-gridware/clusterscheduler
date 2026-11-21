@@ -294,7 +294,7 @@ namespace ocs {
        */
       template <ocs::tom::ObjectType T>
       [[nodiscard]] static ocs::tom::ConstList<T> value_list(const ocs::tom::ConstElement<ocs::tom::SPP> entry) {
-         return ocs::tom::ConstList<T>::from_typed(ocs::tom::get<SPP_value_list>(entry));
+         return ocs::tom::ConstList<T>::from_typed(entry.get<SPP_value_list>());
       }
 
       /** @brief Move the value list out of a bundle entry

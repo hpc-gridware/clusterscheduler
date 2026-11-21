@@ -131,27 +131,27 @@ calculate_share_percents(const ocs::tom::Element<ocs::tom::STN> node, const doub
    DENTER(TOP_LAYER);
    double sum_shares=0;
 
-   for (auto child : ocs::tom::get<STN_children>(node)) {
-      sum_shares += ocs::tom::get<STN_shares>(child);
+   for (auto child : node.get<STN_children>()) {
+      sum_shares += child.get<STN_shares>();
    }
 
    if (sibling_shares > 0) {
-      ocs::tom::set<STN_proportion>(node,
-		 (double)ocs::tom::get<STN_shares>(node) / (double)sibling_shares);
+      node.set<STN_proportion>(
+		 (double)node.get<STN_shares>() / (double)sibling_shares);
    } else {
-      ocs::tom::set<STN_proportion>(node, 0);
+      node.set<STN_proportion>(0);
    }
 
    if (sibling_shares > 0) {
-      ocs::tom::set<STN_adjusted_proportion>(node,
+      node.set<STN_adjusted_proportion>(
 		 parent_percent *
-		 (double)ocs::tom::get<STN_shares>(node) / (double)sibling_shares);
+		 (double)node.get<STN_shares>() / (double)sibling_shares);
    } else {
-      ocs::tom::set<STN_adjusted_proportion>(node, 0);
+      node.set<STN_adjusted_proportion>(0);
    }
 
-   for (auto child : ocs::tom::get<STN_children>(node)) {
-      calculate_share_percents(child, ocs::tom::get<STN_adjusted_proportion>(node), sum_shares);
+   for (auto child : node.get<STN_children>()) {
+      calculate_share_percents(child, node.get<STN_adjusted_proportion>(), sum_shares);
    }
    DRETURN_VOID;
 }
@@ -167,9 +167,9 @@ get_usage_value(const ocs::tom::ConstList<ocs::tom::UA> usage, const char *name)
    DENTER(TOP_LAYER);
    double value = 0;
 
-   auto ue = ocs::tom::find_first<UA_name>(usage, name);
+   auto ue = usage.find_first<UA_name>(name);
    if (ue) {
-      value = ocs::tom::get<UA_value>(ue);
+      value = ue.get<UA_value>();
    }
 
    DRETURN(value);
@@ -279,8 +279,8 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::Co
        * of whether the node is a user, a project, or a UPP leaf (where the
        * user UU stamp wins because it's set by worker booking on every
        * project-job finish too). */
-      time_stamp = user ? ocs::tom::get<UU_usage_time_stamp>(user) :
-                   project ? ocs::tom::get<PR_usage_time_stamp>(project) : 0;
+      time_stamp = user ? user.get<UU_usage_time_stamp>() :
+                   project ? project.get<PR_usage_time_stamp>() : 0;
 
       /*
        * we want to name the Root node simply /, instead of /Root 
@@ -289,38 +289,38 @@ print_node(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::Co
       if (!parent) {
          sge_dstring_sprintf(&node_name_dstring, "/");
       } else {
-         sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, ocs::tom::get<STN_name>(node));
+         sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, node.get<STN_name>());
       }
       node_name = sge_dstring_get_string(&node_name_dstring);
 
-      user_name = user ? ocs::tom::get<UU_name>(user) : "";
-      project_name = project ? ocs::tom::get<PR_name>(project) : "";
-      shares = ocs::tom::get<STN_shares>(node);
-      job_count = ocs::tom::get<STN_job_ref_count>(node);
-      level = ocs::tom::get<STN_proportion>(node);
-      total = ocs::tom::get<STN_adjusted_proportion>(node);
-      lt_share = ocs::tom::get<STN_m_share>(node);
-      st_share = ocs::tom::get<STN_adjusted_current_proportion>(node);
-      actual_share = ocs::tom::get<STN_actual_proportion>(node);
-      combined_usage = ocs::tom::get<STN_combined_usage>(node);
+      user_name = user ? user.get<UU_name>() : "";
+      project_name = project ? project.get<PR_name>() : "";
+      shares = node.get<STN_shares>();
+      job_count = node.get<STN_job_ref_count>();
+      level = node.get<STN_proportion>();
+      total = node.get<STN_adjusted_proportion>();
+      lt_share = node.get<STN_m_share>();
+      st_share = node.get<STN_adjusted_current_proportion>();
+      actual_share = node.get<STN_actual_proportion>();
+      combined_usage = node.get<STN_combined_usage>();
 
-      if (!ocs::tom::get<STN_children>(node) && user && project) {
-         auto projl = ocs::tom::get<UU_project>(user);
+      if (!node.get<STN_children>() && user && project) {
+         auto projl = user.get<UU_project>();
          if (projl) {
-            auto upp = ocs::tom::find_first<UPP_name>(projl, ocs::tom::get<PR_name>(project));
+            auto upp = projl.find_first<UPP_name>(project.get<PR_name>());
             if (upp) {
-               usage = ocs::tom::get<UPP_usage>(upp);
-               ltusage = ocs::tom::get<UPP_long_term_usage>(upp);
+               usage = upp.get<UPP_usage>();
+               ltusage = upp.get<UPP_long_term_usage>();
             }
          }
-      } else if (user && strcmp(ocs::tom::get<UU_name>(user), 
-                                ocs::tom::get<STN_name>(node))==0) {
-         usage = ocs::tom::get<UU_usage>(user);
-         ltusage = ocs::tom::get<UU_long_term_usage>(user);
-      } else if (project && strcmp(ocs::tom::get<PR_name>(project), 
-                                   ocs::tom::get<STN_name>(node))==0) {
-         usage = ocs::tom::get<PR_usage>(project);
-         ltusage = ocs::tom::get<PR_long_term_usage>(project);
+      } else if (user && strcmp(user.get<UU_name>(), 
+                                node.get<STN_name>())==0) {
+         usage = user.get<UU_usage>();
+         ltusage = user.get<UU_long_term_usage>();
+      } else if (project && strcmp(project.get<PR_name>(), 
+                                   node.get<STN_name>())==0) {
+         usage = project.get<PR_usage>();
+         ltusage = project.get<PR_long_term_usage>();
       }
 
       if (usage) {
@@ -432,15 +432,15 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::C
             const bool group_nodes, const char **names, const format_t *format, const char *parent_node_names) {
    DENTER(TOP_LAYER);
    ocs::tom::ConstElement<ocs::tom::UU> user;
-   auto children = ocs::tom::get<STN_children>(node);
+   auto children = node.get<STN_children>();
    dstring node_name_dstring = DSTRING_INIT;
 
    if (!project) {
-      project = ocs::tom::ConstElement<ocs::tom::PR>(prj_list_locate(projects, ocs::tom::get<STN_name>(node)));
+      project = ocs::tom::ConstElement<ocs::tom::PR>(prj_list_locate(projects, node.get<STN_name>()));
    }
 
    if (!children) {
-      user = ocs::tom::ConstElement<ocs::tom::UU>(user_list_locate(users, ocs::tom::get<STN_name>(node)));
+      user = ocs::tom::ConstElement<ocs::tom::UU>(user_list_locate(users, node.get<STN_name>()));
    }
 
    if (group_nodes || !children) {
@@ -452,7 +452,7 @@ print_nodes(dstring *out, rapidjson::StringBuffer *jsonBuffer, const ocs::tom::C
       if (!parent) {
          sge_dstring_sprintf(&node_name_dstring, "");
       } else {
-         sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, ocs::tom::get<STN_name>(node));
+         sge_dstring_sprintf(&node_name_dstring, "%s/%s", parent_node_names, node.get<STN_name>());
       }
       print_nodes(out, jsonBuffer, child, node, project, users, projects,
                   group_nodes, names, format, sge_dstring_get_string(&node_name_dstring));
@@ -571,7 +571,7 @@ void sge_sharetree_print(dstring *out, rapidjson::StringBuffer *jsonBuffer,
 
    auto root = sharetree->front();
 
-   calculate_share_percents(root, 1.0, ocs::tom::get<STN_shares>(root));
+   calculate_share_percents(root, 1.0, root.get<STN_shares>());
 
    if (decay_usage) {
       curr_time = sge_get_gmt64();

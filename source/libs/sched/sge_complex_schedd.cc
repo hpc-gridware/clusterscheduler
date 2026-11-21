@@ -123,7 +123,7 @@ get_attribute_list(ocs::tom::ConstElement<ocs::tom::EH> global, ocs::tom::ConstE
  */
 static ocs::tom::ElementPtr<ocs::tom::CE>
 copy_centry(const ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *attrname) {
-   const auto centry = ocs::tom::find_first<CE_name>(centry_list, attrname);
+   const auto centry = centry_list.find_first<CE_name>(attrname);
    return centry != nullptr ? centry.clone() : ocs::tom::ElementPtr<ocs::tom::CE>();
 }
 
@@ -235,7 +235,7 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
 
    /* resource_attr is a complex_entry (CE) */
    if (config_attr != nullptr) {
-      const auto temp = ocs::tom::find_first<CE_name>(config_attr, attrname);
+      const auto temp = config_attr.find_first<CE_name>(attrname);
       if (temp != nullptr) {
          cplx_el = copy_centry(centry_list, attrname);
          if (cplx_el == nullptr) {
@@ -243,19 +243,19 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
             DPRINTF("==> ERROR in get_attribute(): didn't find centry for %s\n", attrname);
             DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
          }
-         ocs::tom::set<CE_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
-         ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);  /* default, no value set */ 
-         ocs::tom::set<CE_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(temp));
-         ocs::tom::set<CE_stringval>(cplx_el, ocs::tom::get<CE_stringval>(temp));
+         cplx_el->set<CE_dominant>(layer | DOMINANT_TYPE_FIXED);
+         cplx_el->set<CE_pj_dominant>(DOMINANT_TYPE_VALUE);  /* default, no value set */ 
+         cplx_el->set<CE_doubleval>(temp.get<CE_doubleval>());
+         cplx_el->set<CE_stringval>(temp.get<CE_stringval>());
       }
    }
 
-   if (cplx_el != nullptr && ocs::tom::get<CE_consumable>(cplx_el) != CONSUMABLE_NO) {
-      ocs::tom::set<CE_pj_dominant>(cplx_el, layer | DOMINANT_TYPE_CONSUMABLE);
-      ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
+   if (cplx_el != nullptr && cplx_el->get<CE_consumable>() != CONSUMABLE_NO) {
+      cplx_el->set<CE_pj_dominant>(layer | DOMINANT_TYPE_CONSUMABLE);
+      cplx_el->set<CE_dominant>(DOMINANT_TYPE_VALUE);
       /* treat also consumables as fixed attributes when assuming an empty queuing system */
       if (sconf_get_qs_state() == QS_STATE_FULL) {
-         const auto actual_el = actual_attr != nullptr ? ocs::tom::find_first<RUE_name>(actual_attr, attrname)
+         const auto actual_el = actual_attr != nullptr ? actual_attr.find_first<RUE_name>(attrname)
                                                        : ocs::tom::ConstElement<ocs::tom::RUE>();
          if (actual_el != nullptr) {
             DSTRING_STATIC(ds, 20);
@@ -265,7 +265,7 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
                                                                      false, binding_inuse);
             double pj_doubleval;
 
-            switch (ocs::tom::get<CE_relop>(cplx_el)) {
+            switch (cplx_el->get<CE_relop>()) {
                case CMPLXGE_OP:
                case CMPLXGT_OP:
                      pj_doubleval = utilized;
@@ -276,26 +276,26 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
                case CMPLXLE_OP:
                case CMPLXNE_OP:
                default:
-                  pj_doubleval = ocs::tom::get<CE_doubleval>(cplx_el) - utilized;
+                  pj_doubleval = cplx_el->get<CE_doubleval>() - utilized;
                   break;
             }
-            ocs::tom::set<CE_pj_doubleval>(cplx_el, pj_doubleval);
-            ocs::tom::set<CE_pj_stringval>(cplx_el, sge_dstring_sprintf(&ds, "%8.3f", pj_doubleval));
+            cplx_el->set<CE_pj_doubleval>(pj_doubleval);
+            cplx_el->set<CE_pj_stringval>(sge_dstring_sprintf(&ds, "%8.3f", pj_doubleval));
          } else {
             sge_dstring_sprintf(reason, MSG_ATTRIB_ACTUALELEMENTTOATTRIBXMISSING_S, attrname);
             DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
          }
       } else {
-         ocs::tom::set<CE_pj_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(cplx_el)); 
-         ocs::tom::set<CE_pj_stringval>(cplx_el, ocs::tom::get<CE_stringval>(cplx_el));
+         cplx_el->set<CE_pj_doubleval>(cplx_el->get<CE_doubleval>()); 
+         cplx_el->set<CE_pj_stringval>(cplx_el->get<CE_stringval>());
       }
    }
 
    /** check for a load value */
-   const auto load_el = load_attr != nullptr ? ocs::tom::find_first<HL_name>(load_attr, attrname)
+   const auto load_el = load_attr != nullptr ? load_attr.find_first<HL_name>(attrname)
                                              : ocs::tom::ConstElement<ocs::tom::HL>();
    if (load_el != nullptr &&
-       (sconf_get_qs_state()==QS_STATE_FULL || ocs::tom::get<HL_is_static>(load_el)) &&
+       (sconf_get_qs_state()==QS_STATE_FULL || load_el.get<HL_is_static>()) &&
        !is_attr_prior(cplx_el.get(), cplx_el.get())) {
          if (cplx_el == nullptr) {
             cplx_el = copy_centry(centry_list, attrname);
@@ -303,20 +303,20 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
                /* error */
                DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
             }
-            ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
-            ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
+            cplx_el->set<CE_dominant>(DOMINANT_TYPE_VALUE);
+            cplx_el->set<CE_pj_dominant>(DOMINANT_TYPE_VALUE);
          }
 
          {
             double dval;
-            const char *load_value = ocs::tom::get<HL_value>(load_el);
+            const char *load_value = load_el.get<HL_value>();
 
             /* are we working on string values? if though, then it is easy */
-            auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(cplx_el));
+            auto type = static_cast<ocs::CEntry::Type>(cplx_el->get<CE_valtype>());
             if (type == ocs::CEntry::Type::STR || type == ocs::CEntry::Type::CSTR
                 || type == ocs::CEntry::Type::HOST || type == ocs::CEntry::Type::RESTR) {
-               ocs::tom::set<CE_stringval>(cplx_el, load_value);
-               ocs::tom::set<CE_dominant>(cplx_el, layer | DOMINANT_TYPE_LOAD);
+               cplx_el->set<CE_stringval>(load_value);
+               cplx_el->set<CE_dominant>(layer | DOMINANT_TYPE_LOAD);
             } else { /* working on numerical values */
                char err_str[256];
                uint32_t dom_type = DOMINANT_TYPE_LOAD;
@@ -339,12 +339,12 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
                }
 #endif
                // look for 'name' in our load_adjustments list
-               const auto job_load = ocs::tom::find_first<CE_name>(load_adjustments, attrname);
+               const auto job_load = load_adjustments.find_first<CE_name>(attrname);
                if (job_load != nullptr) {
                   const char *s;
                   double load_correction;
 
-                  s = ocs::tom::get<CE_stringval>(job_load);
+                  s = job_load.get<CE_stringval>();
                   if (!parse_ulong_val(&load_correction, nullptr, type, s, err_str, 255)) {
                      ERROR(MSG_SCHEDD_LOADADJUSTMENTSVALUEXNOTNUMERIC_S , attrname);
                   } else if (lc_factor) {
@@ -360,7 +360,7 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
                      load_correction *= lc_factor;
 
                      /* it depends on relop in complex config whether load_correction is pos/neg */
-                     if ( (relop = ocs::tom::get<CE_relop>(cplx_el)) == CMPLXGE_OP || relop == CMPLXGT_OP){
+                     if ( (relop = cplx_el->get<CE_relop>()) == CMPLXGE_OP || relop == CMPLXGT_OP){
                         old_dval = dval;
                         dval += load_correction;
                      } else {
@@ -380,18 +380,18 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
    
                   This code changes a fixed custom value from a per slot to a per job value!!
                */
-               if ( !(ocs::tom::get<CE_dominant>(cplx_el) == DOMINANT_TYPE_VALUE) &&
-                     (ocs::tom::get<CE_pj_dominant>(cplx_el) == DOMINANT_TYPE_VALUE)){
-                  ocs::tom::set<CE_pj_doubleval>(cplx_el, ocs::tom::get<CE_doubleval>(cplx_el));
-                  ocs::tom::set<CE_pj_stringval>(cplx_el, ocs::tom::get<CE_stringval>(cplx_el));
-                  ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
-                  ocs::tom::set<CE_pj_dominant>(cplx_el, layer | DOMINANT_TYPE_FIXED);
+               if ( !(cplx_el->get<CE_dominant>() == DOMINANT_TYPE_VALUE) &&
+                     (cplx_el->get<CE_pj_dominant>() == DOMINANT_TYPE_VALUE)){
+                  cplx_el->set<CE_pj_doubleval>(cplx_el->get<CE_doubleval>());
+                  cplx_el->set<CE_pj_stringval>(cplx_el->get<CE_stringval>());
+                  cplx_el->set<CE_dominant>(DOMINANT_TYPE_VALUE);
+                  cplx_el->set<CE_pj_dominant>(layer | DOMINANT_TYPE_FIXED);
                } 
  
                if (!is_attr_prior2<CE_pj_doubleval, CE_pj_dominant>(cplx_el.get(), dval)){
-                  ocs::tom::set<CE_pj_stringval>(cplx_el, load_value);
-                  ocs::tom::set<CE_pj_dominant>(cplx_el, layer | dom_type);
-                  ocs::tom::set<CE_pj_doubleval>(cplx_el, dval );
+                  cplx_el->set<CE_pj_stringval>(load_value);
+                  cplx_el->set<CE_pj_dominant>(layer | dom_type);
+                  cplx_el->set<CE_pj_doubleval>(dval );
                }
             } /* end numerical load value */
          }/* end block */
@@ -407,8 +407,8 @@ get_attribute(const char *attrname, const ocs::tom::ConstList<ocs::tom::CE> conf
             /* error */
             DRETURN(ocs::tom::ElementPtr<ocs::tom::CE>());
          }         
-         ocs::tom::set<CE_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
-         ocs::tom::set<CE_pj_dominant>(cplx_el, DOMINANT_TYPE_VALUE);
+         cplx_el->set<CE_dominant>(DOMINANT_TYPE_VALUE);
+         cplx_el->set<CE_pj_dominant>(DOMINANT_TYPE_VALUE);
          created = true;
       }
       if (!get_queue_resource(cplx_el.get(), queue, attrname) && created) {
@@ -492,14 +492,14 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
   
 
    if (!is_attr_prior2<CE_doubleval, CE_dominant>(queue_elem, dval)){
-      ocs::tom::set<CE_dominant>(queue_elem , DOMINANT_LAYER_QUEUE|DOMINANT_TYPE_FIXED);
-      ocs::tom::set<CE_doubleval>(queue_elem , dval);
+      queue_elem.set<CE_dominant>(DOMINANT_LAYER_QUEUE|DOMINANT_TYPE_FIXED);
+      queue_elem.set<CE_doubleval>(dval);
 
       if(value){
-         ocs::tom::set<CE_stringval>(queue_elem, value);
+         queue_elem.set<CE_stringval>(value);
       } 
       else{
-         ocs::tom::set<CE_stringval>(queue_elem , as_str);
+         queue_elem.set<CE_stringval>(as_str);
       }
    }
 
@@ -528,16 +528,16 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
 template <auto UsedVal, auto UsedStr, auto UsedDom, auto UnusedVal, auto UnusedStr, auto UnusedDom>
 static bool ocs_attr_prior_by(const ocs::tom::Element<ocs::tom::CE> upper_el,
                               const ocs::tom::Element<ocs::tom::CE> lower_el, const uint32_t relop) {
-   const uint32_t dom = ocs::tom::get<UsedDom>(lower_el);
+   const uint32_t dom = lower_el.get<UsedDom>();
    if (dom == 0 || (dom & DOMINANT_TYPE_VALUE)) {
-      ocs::tom::set<UsedVal>(lower_el, ocs::tom::get<UnusedVal>(lower_el));
-      ocs::tom::set<UsedStr>(lower_el, ocs::tom::get<UnusedStr>(lower_el));
-      ocs::tom::set<UsedDom>(lower_el, ocs::tom::get<UnusedDom>(lower_el));
-      ocs::tom::set<UnusedDom>(lower_el, static_cast<uint32_t>(DOMINANT_TYPE_VALUE));
+      lower_el.set<UsedVal>(lower_el.get<UnusedVal>());
+      lower_el.set<UsedStr>(lower_el.get<UnusedStr>());
+      lower_el.set<UsedDom>(lower_el.get<UnusedDom>());
+      lower_el.set<UnusedDom>(static_cast<uint32_t>(DOMINANT_TYPE_VALUE));
    }
 
-   const double upper_value = ocs::tom::get<UsedVal>(upper_el);
-   const double lower_value = ocs::tom::get<UsedVal>(lower_el);
+   const double upper_value = upper_el.get<UsedVal>();
+   const double lower_value = lower_el.get<UsedVal>();
 
    if (relop == CMPLXGE_OP || relop == CMPLXGT_OP) {
       return upper_value >= lower_value;
@@ -577,7 +577,7 @@ static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el,
       DRETURN(true);
    }
 
-   relop = ocs::tom::get<CE_relop>(upper_el);
+   relop = upper_el.get<CE_relop>();
    if ((relop == CMPLXEQ_OP || relop == CMPLXNE_OP)) {
       DRETURN(true);
   }
@@ -587,7 +587,7 @@ static bool is_attr_prior(const ocs::tom::Element<ocs::tom::CE> upper_el,
       DRETURN(false);
    }   
 
-   if ((dom = ocs::tom::get<CE_pj_dominant>(upper_el)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
+   if ((dom = upper_el.get<CE_pj_dominant>()) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
       ret = ocs_attr_prior_by<CE_doubleval, CE_stringval, CE_dominant,
                               CE_pj_doubleval, CE_pj_stringval, CE_pj_dominant>(upper_el, lower_el, relop);
    }
@@ -627,16 +627,16 @@ static bool is_attr_prior2(const ocs::tom::Element<ocs::tom::CE> upper_el, const
    bool ret;
    double upper_value;
 
-   if ((dom = ocs::tom::get<D>(upper_el)) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
+   if ((dom = upper_el.get<D>()) == 0 || (dom & DOMINANT_TYPE_VALUE) ){
       DRETURN(false);
    }
 
-   relop = ocs::tom::get<CE_relop>(upper_el);
+   relop = upper_el.get<CE_relop>();
    if ((relop == CMPLXEQ_OP || relop == CMPLXNE_OP)) {
       DRETURN(true);
    }
 
-   upper_value = ocs::tom::get<V>(upper_el);
+   upper_value = upper_el.get<V>();
 
    if (relop == CMPLXGE_OP || relop == CMPLXGT_OP ){
       ret = upper_value >= lower_value ? true : false;
@@ -705,7 +705,7 @@ queue_complexes2scheduler(const ocs::tom::ConstElement<ocs::tom::QU> queue,
    DENTER(BASIS_LAYER);
 
    const auto host = queue != nullptr
-                     ? exechost_list.find_first<EH_name>(ocs::tom::get<QU_qhostname>(queue))
+                     ? exechost_list.find_first<EH_name>(queue.get<QU_qhostname>())
                      : ocs::tom::ConstElement<ocs::tom::EH>();
    DRETURN(get_attribute_list(exechost_list.find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME)), host, queue, centry_list,
                               load_adjustments));
@@ -737,7 +737,7 @@ get_attribute_list_by_names(const ocs::tom::ConstElement<ocs::tom::EH> global, c
    ocs::tom::ListPtr<ocs::tom::CE> list;
 
    for (const auto elem : attrnames) {
-      auto attr = get_attribute_by_name(global, host, queue, ocs::tom::get<ST_name>(elem), centry_list,
+      auto attr = get_attribute_by_name(global, host, queue, elem.get<ST_name>(), centry_list,
                                         load_adjustments, DISPATCH_TIME_NOW, 0);
       if (attr != nullptr) {
          if (list == nullptr) {
@@ -773,12 +773,12 @@ get_attribute_list(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs:
    auto filter = ocs::tom::ListPtr<ocs::tom::ST>::create("");
 
    if (global != nullptr) {
-      build_name_filter<HL_name>(filter.get(), ocs::tom::get<EH_load_list>(global));
-      build_name_filter<CE_name>(filter.get(), ocs::tom::get<EH_consumable_config_list>(global));
+      build_name_filter<HL_name>(filter.get(), global.get<EH_load_list>());
+      build_name_filter<CE_name>(filter.get(), global.get<EH_consumable_config_list>());
    }    
    if (host != nullptr) {
-      build_name_filter<HL_name>(filter.get(), ocs::tom::get<EH_load_list>(host));
-      build_name_filter<CE_name>(filter.get(), ocs::tom::get<EH_consumable_config_list>(host));
+      build_name_filter<HL_name>(filter.get(), host.get<EH_load_list>());
+      build_name_filter<CE_name>(filter.get(), host.get<EH_consumable_config_list>());
    } 
 
    if (queue != nullptr) {
@@ -787,7 +787,7 @@ get_attribute_list(const ocs::tom::ConstElement<ocs::tom::EH> global, const ocs:
             filter->emplace_back<ST_name>(queue_resource[x].name);
          }
       }
-      build_name_filter<CE_name>(filter.get(), ocs::tom::get<QU_consumable_config_list>(queue));
+      build_name_filter<CE_name>(filter.get(), queue.get<QU_consumable_config_list>());
    }
 
    DRETURN(get_attribute_list_by_names(global, host, queue, centry_list, load_adjustments, filter.get()));
@@ -807,7 +807,7 @@ static void build_name_filter(const ocs::tom::List<ocs::tom::ST> filter,
    DENTER(BASIS_LAYER);
 
    for (const auto current : list) {
-      const char *name = ocs::tom::get<F>(current);
+      const char *name = current.template get<F>();
 
       if (filter.find_first<ST_name>(name) == nullptr) {
          filter.emplace_back<ST_name>(name);
@@ -972,9 +972,9 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
    char availability_text2[STR_LEN_AVAIL_TEXT]; 
    dstring resource_string = DSTRING_INIT;
 
-   const char *name = ocs::tom::get<CE_name>(src_cplx);
-   auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(src_cplx));
-   uint32_t relop = ocs::tom::get<CE_relop>(src_cplx);
+   const char *name = src_cplx.get<CE_name>();
+   auto type = static_cast<ocs::CEntry::Type>(src_cplx.get<CE_valtype>());
+   uint32_t relop = src_cplx.get<CE_relop>();
 
    if (is_threshold) {
       switch (relop) {
@@ -1007,10 +1007,10 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
    case ocs::CEntry::Type::CSTR:
    case ocs::CEntry::Type::HOST:
    case ocs::CEntry::Type::RESTR:
-      request = ocs::tom::get<CE_stringval>(req_cplx);
+      request = req_cplx.get<CE_stringval>();
 
-      offer = ocs::tom::get<CE_stringval>(src_cplx);
-      monitor_dominance(dom_str, ocs::tom::get<CE_dominant>(src_cplx));
+      offer = src_cplx.get<CE_stringval>();
+      monitor_dominance(dom_str, src_cplx.get<CE_dominant>());
 #if 0
       DPRINTF("%s(\"%s\", \"%s\")\n", type==ocs::CEntry::Type::STR?"strcmp":"strcasecmp", request, offer);
 #endif
@@ -1030,7 +1030,7 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
       // CE_doubleval carries the parsed amount; see the comment in ri_time_by_slots().
       // The previous code re-parsed CE_stringval here and silently substituted 0 when the
       // parse failed, which turned a malformed request into a request for nothing.
-      req_dl = ocs::tom::get<CE_doubleval>(req_cplx);
+      req_dl = req_cplx.get<CE_doubleval>();
 
       if (is_threshold) {
          m1 = m2 = 0; /* nothing exceeded per default */
@@ -1039,7 +1039,7 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
       }
 
       /* is there a per job limit */
-      if (!(ocs::tom::get<CE_pj_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE))) {
+      if (!(src_cplx.get<CE_pj_dominant>() & (DOMINANT_TYPE_VALUE))) {
          /* Actually request matching for utilization attributes 
             fails if request is higher than what we get as per job 
             limit also for attributes marked as consumable.
@@ -1048,13 +1048,13 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
             value or a consumable resource value) plus the jobs request 
             may not exceed the maximal utilization from (global) host 
             or queue - but only if the attributes marked as consumable. */
-         src_dl = ocs::tom::get<CE_pj_doubleval>(src_cplx);
+         src_dl = src_cplx.get<CE_pj_doubleval>();
          
          req_all_slots = req_dl*slots;
 
          m1 = resource_cmp(used_relop, req_all_slots, src_dl);
 
-         monitor_dominance(dom_str, ocs::tom::get<CE_pj_dominant>(src_cplx));
+         monitor_dominance(dom_str, src_cplx.get<CE_pj_dominant>());
 
          switch (type) {
          case ocs::CEntry::Type::BOOL:
@@ -1106,16 +1106,16 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
       }
 
       /* is there a per slot limit */
-      if (!(ocs::tom::get<CE_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE)) ||     /* per slot set || */
-              ((ocs::tom::get<CE_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE)) && /* (per slot not set && */
-           (ocs::tom::get<CE_pj_dominant>(src_cplx) & (DOMINANT_TYPE_VALUE)) &&  /* and per job not set) */
+      if (!(src_cplx.get<CE_dominant>() & (DOMINANT_TYPE_VALUE)) ||     /* per slot set || */
+              ((src_cplx.get<CE_dominant>() & (DOMINANT_TYPE_VALUE)) && /* (per slot not set && */
+           (src_cplx.get<CE_pj_dominant>() & (DOMINANT_TYPE_VALUE)) &&  /* and per job not set) */
             force_existence)) {
 
-         src_dl = ocs::tom::get<CE_doubleval>(src_cplx);
+         src_dl = src_cplx.get<CE_doubleval>();
          req_all_slots = req_dl;
          m2 = resource_cmp(used_relop, req_all_slots, src_dl);
 
-         monitor_dominance(dom_str, ocs::tom::get<CE_dominant>(src_cplx));
+         monitor_dominance(dom_str, src_cplx.get<CE_dominant>());
 
          switch (type) {
          case ocs::CEntry::Type::BOOL:
@@ -1218,13 +1218,13 @@ get_attribute_by_name(const ocs::tom::ConstElement<ocs::tom::EH> global, const o
 
    if (global != nullptr) {
       double lc_factor = 0;
-      const auto load_attr = ocs::tom::get<EH_load_list>(global);
-      const auto config_attr = ocs::tom::get<EH_consumable_config_list>(global);
-      const auto actual_attr = ocs::tom::get<EH_resource_utilization>(global);
+      const auto load_attr = global.get<EH_load_list>();
+      const auto config_attr = global.get<EH_consumable_config_list>();
+      const auto actual_attr = global.get<EH_resource_utilization>();
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
-      if (ocs::tom::has<EH_load_correction_factor>(global)) {
-         if ((lc_factor=ocs::tom::get<EH_load_correction_factor>(global)) != 0) {
+      if (global.has<EH_load_correction_factor>()) {
+         if ((lc_factor=global.get<EH_load_correction_factor>()) != 0) {
             lc_factor = ((double)lc_factor)/100;
          }   
       }
@@ -1235,13 +1235,13 @@ get_attribute_by_name(const ocs::tom::ConstElement<ocs::tom::EH> global, const o
 
    if (host != nullptr) {   
       double lc_factor = 0;
-      const auto load_attr = ocs::tom::get<EH_load_list>(host);
-      const auto config_attr = ocs::tom::get<EH_consumable_config_list>(host);
-      const auto actual_attr = ocs::tom::get<EH_resource_utilization>(host);
+      const auto load_attr = host.get<EH_load_list>();
+      const auto config_attr = host.get<EH_consumable_config_list>();
+      const auto actual_attr = host.get<EH_resource_utilization>();
 
       /* is there a multiplier for load correction (may be not in qstat, qmon etc) */
-      if (ocs::tom::has<EH_load_correction_factor>(host)) {
-         if ((lc_factor=ocs::tom::get<EH_load_correction_factor>(host)) != 0) {
+      if (host.has<EH_load_correction_factor>()) {
+         if ((lc_factor=host.get<EH_load_correction_factor>()) != 0) {
             lc_factor = ((double)lc_factor)/100;
          }
       }
@@ -1255,8 +1255,8 @@ get_attribute_by_name(const ocs::tom::ConstElement<ocs::tom::EH> global, const o
    }
 
    if (queue != nullptr) {
-      const auto config_attr = ocs::tom::get<QU_consumable_config_list>(queue);
-      const auto actual_attr = ocs::tom::get<QU_resource_utilization>(queue);
+      const auto config_attr = queue.get<QU_consumable_config_list>();
+      const auto actual_attr = queue.get<QU_resource_utilization>();
       
       auto queue_el = get_attribute(attrname, config_attr, actual_attr, ocs::tom::ConstList<ocs::tom::HL>(), centry_list,
                                     load_adjustments, queue, DOMINANT_LAYER_QUEUE, 0.0, nullptr, false, start_time,
@@ -1345,23 +1345,23 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
 
    for (const auto req : hard_resource_list) {
       int cqfld, valfld;
-      name = ocs::tom::get<CE_name>(req);
+      name = req.get<CE_name>();
 
-      const auto ce = ocs::tom::find_first<CE_name>(centry_list, name);
+      const auto ce = centry_list.find_first<CE_name>(name);
       if (ce == nullptr) {
          sge_dstring_sprintf(unsatisfied, "unknown: " SFN, name);
          DRETURN(true);
       }
 
-      request = ocs::tom::get<CE_stringval>(req);
-      relop = ocs::tom::get<CE_relop>(ce);
+      request = req.get<CE_stringval>();
+      relop = ce.get<CE_relop>();
 
       if (get_rsrc(name, true, nullptr, &cqfld, &valfld, &type)==0) {
          if (cqfld == 0) {
             continue;
          } 
       } else {
-         type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(ce));
+         type = static_cast<ocs::CEntry::Type>(ce.get<CE_valtype>());
          cqfld = CQ_consumable_config_list;
          valfld = ACELIST_value;
       }
@@ -1377,13 +1377,13 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
          if (valfld == ACELIST_value) {
             /* complex_values upper limit */
             // the list is a CQ_consumable_config_list here; the checked constructor confirms it is an ACELIST
-            const auto val_ce = ocs::tom::find_first_in<ACELIST_value, CE_name>(
-               ocs::tom::ConstElement<ocs::tom::ACELIST>(alist.raw()), name);
+            const auto val_ce =
+               ocs::tom::ConstElement<ocs::tom::ACELIST>(alist.raw()).find_first_in<ACELIST_value, CE_name>(name);
             if (!val_ce) {
                rejected = false;
                break;
             }
-            offer = ocs::tom::get<CE_stringval>(val_ce);
+            offer = val_ce.get<CE_stringval>();
          } else {
             /* queue resource upper limit */ 
             offer = alist.get<const char *>(valfld);
@@ -1405,7 +1405,7 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
             {
                // the request side is already parsed (CE_doubleval); only the offer, which
                // comes from a queue or host configuration value, still needs parsing
-               double req_dl = ocs::tom::get<CE_doubleval>(req);
+               double req_dl = req.get<CE_doubleval>();
                double off_dl;
                if (!parse_ulong_val(&off_dl, nullptr, type, offer, nullptr, 0)) {
                   DPRINTF("%s is not of type %s\n", offer, map_type2str(type));
@@ -1427,12 +1427,12 @@ bool request_cq_rejected(const ocs::tom::ConstList<ocs::tom::CE> hard_resource_l
       }
 
       if (rejected) {
-         DPRINTF("cluster queue \"%s\" will never match due to -l %s=%s\n", ocs::tom::get<CQ_name>(cq), name, request);
+         DPRINTF("cluster queue \"%s\" will never match due to -l %s=%s\n", cq.get<CQ_name>(), name, request);
          sge_dstring_sprintf(unsatisfied, SFN "=" SFN, name, request);
          DRETURN(true);
       }
 
-      DPRINTF("cluster queue \"%s\" might be suited according -l %s=%s\n", ocs::tom::get<CQ_name>(cq), name, request);
+      DPRINTF("cluster queue \"%s\" might be suited according -l %s=%s\n", cq.get<CQ_name>(), name, request);
    }
 
    DRETURN(false);

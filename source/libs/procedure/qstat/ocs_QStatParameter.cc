@@ -78,19 +78,19 @@ void ocs::QStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
    // flags for used switches: -F -q -q ...
    const auto show_param = bundle.find_first<SPP_name>(SHOW);
    const auto show_list = value_list<ocs::tom::ULNG>(show_param);
-   show_ = ocs::tom::get<ULNG_value>(show_list.front());
+   show_ = show_list.front().get<ULNG_value>();
    DPRINTF("show_: " sge_u32 "\n", show_);
 
    // -explain bits
    const auto explain_param = bundle.find_first<SPP_name>(EXPLAIN_BITS);
    const auto explain_list = value_list<ocs::tom::ULNG>(explain_param);
-   explain_bits_ = ocs::tom::get<ULNG_value>(explain_list.front());
+   explain_bits_ = explain_list.front().get<ULNG_value>();
    DPRINTF("explain_bits_: " sge_u32 "\n", explain_bits_);
 
    // output mode
    const auto output_param = bundle.find_first<SPP_name>(OUTPUT_MODE);
    const auto output_list = value_list<ocs::tom::ULNG>(output_param);
-   const auto raw_output_mode = ocs::tom::get<ULNG_value>(output_list.front());
+   const auto raw_output_mode = output_list.front().get<ULNG_value>();
    output_mode_ = raw_output_mode <= static_cast<uint32_t>(OutputMode::JOB_INFO)
                   ? static_cast<OutputMode>(raw_output_mode)
                   : OutputMode::QSTAT_DEFAULT;
@@ -99,39 +99,39 @@ void ocs::QStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
    // need queues
    const auto need_queues_param = bundle.find_first<SPP_name>(NEED_QUEUES);
    const auto need_queues_list = value_list<ocs::tom::ULNG>(need_queues_param);
-   need_queues_ = ocs::tom::get<ULNG_value>(need_queues_list.front()) > 0;
+   need_queues_ = need_queues_list.front().get<ULNG_value>() > 0;
    DPRINTF("need_queues_: " sge_u32 "\n", need_queues_);
 
    // need jobs
    const auto need_jobs_param = bundle.find_first<SPP_name>(NEED_JOBS);
    const auto need_jobs_list = value_list<ocs::tom::ULNG>(need_jobs_param);
-   need_job_list_ = ocs::tom::get<ULNG_value>(need_jobs_list.front()) > 0;
+   need_job_list_ = need_jobs_list.front().get<ULNG_value>() > 0;
    DPRINTF("need_jobs_: " sge_u32 "\n", need_job_list_);
 
    // state filter
    const auto state_filter_param = bundle.find_first<SPP_name>(STATE_FILTER);
    const auto state_filter_list = value_list<ocs::tom::ULNG>(state_filter_param);
-   state_filter_ = ocs::tom::get<ULNG_value>(state_filter_list.front());
+   state_filter_ = state_filter_list.front().get<ULNG_value>();
    DPRINTF("state_filter_: " sge_u32 "\n", state_filter_);
 
    // state string
    const auto state_string_param = bundle.find_first<SPP_name>(STATE_STRING);
    const auto state_string_list = value_list<ocs::tom::ST>(state_string_param);
 
-   const char *value = ocs::tom::get<ST_name>(state_string_list.front());
+   const char *value = state_string_list.front().get<ST_name>();
    state_filter_value_ = value != nullptr ? value : "";
    DPRINTF("state_filter_value_: %s\n", state_filter_value_.c_str());
 
    // queue state
    const auto queue_state_param = bundle.find_first<SPP_name>(QUEUE_STATE);
    const auto queue_state_list = value_list<ocs::tom::ULNG>(queue_state_param);
-   queue_state_ = ocs::tom::get<ULNG_value>(queue_state_list.front());
+   queue_state_ = queue_state_list.front().get<ULNG_value>();
    DPRINTF("queue_state_: " sge_u32 "\n", queue_state_);
 
    // group opt
    const auto group_opt_param = bundle.find_first<SPP_name>(GROUP_OPT);
    const auto group_opt_list = value_list<ocs::tom::ULNG>(group_opt_param);
-   group_opt_ = ocs::tom::get<ULNG_value>(group_opt_list.front());
+   group_opt_ = group_opt_list.front().get<ULNG_value>();
    DPRINTF("group_opt_: " sge_u32 "\n", group_opt_);
 
    // SGE_QSTAT_LOAD_AVG (CS-2387) — resolved on the client, marshalled here.
@@ -139,7 +139,7 @@ void ocs::QStatParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
    const auto load_avg_variable_param = bundle.find_first<SPP_name>(LOAD_AVG_VARIABLE);
    if (load_avg_variable_param != nullptr) {
       const auto load_avg_variable_list = value_list<ocs::tom::ST>(load_avg_variable_param);
-      const char *value = ocs::tom::get<ST_name>(load_avg_variable_list.front());
+      const char *value = load_avg_variable_list.front().get<ST_name>();
       if (value != nullptr && *value != '\0') {
          load_avg_variable_ = value;
       }

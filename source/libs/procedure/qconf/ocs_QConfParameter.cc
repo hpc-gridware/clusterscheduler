@@ -153,27 +153,27 @@ ocs::QConfParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle)
    const auto operation_param = bundle.find_first<SPP_name>(OPERATION);
    if (operation_param != nullptr) {
       const auto token = ocs::tom::ConstList<ocs::tom::ST>::from_typed(
-            ocs::tom::get<SPP_value_list>(operation_param)).front();
+            operation_param.get<SPP_value_list>()).front();
       if (token != nullptr) {
-         operation_.token = bundle_string(ocs::tom::get<ST_name>(token));
+         operation_.token = bundle_string(token.get<ST_name>());
       }
    }
 
    const auto args_param = bundle.find_first<SPP_name>(OPERATION_ARGS);
    if (args_param != nullptr) {
-      for (const auto arg : ocs::tom::ConstList<ocs::tom::ST>::from_typed(ocs::tom::get<SPP_value_list>(args_param))) {
+      for (const auto arg : ocs::tom::ConstList<ocs::tom::ST>::from_typed(args_param.get<SPP_value_list>())) {
          /* an argument that was empty in the client arrives as a null pointer,
           * see bundle_string() - this is the spot that took qmaster down (CS-2840) */
-         operation_.args.emplace_back(bundle_string(ocs::tom::get<ST_name>(arg)));
+         operation_.args.emplace_back(bundle_string(arg.get<ST_name>()));
       }
    }
 
    const auto flags_param = bundle.find_first<SPP_name>(INVOCATION_FLAGS);
    if (flags_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
-            ocs::tom::get<SPP_value_list>(flags_param)).front();
+            flags_param.get<SPP_value_list>()).front();
       if (value != nullptr) {
-         const uint32_t flags = ocs::tom::get<ULNG_value>(value);
+         const uint32_t flags = value.get<ULNG_value>();
          binding_ = (flags & FLAG_BINDING) != 0;
          dry_run_ = (flags & FLAG_DRY_RUN) != 0;
          force_ = (flags & FLAG_FORCE) != 0;
@@ -188,9 +188,9 @@ ocs::QConfParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bundle)
    const auto value_format_param = bundle.find_first<SPP_name>(VALUE_FORMAT);
    if (value_format_param != nullptr) {
       const auto value = ocs::tom::ConstList<ocs::tom::ULNG>::from_typed(
-            ocs::tom::get<SPP_value_list>(value_format_param)).front();
+            value_format_param.get<SPP_value_list>()).front();
       if (value != nullptr) {
-         value_format_ = static_cast<ValueFormat>(ocs::tom::get<ULNG_value>(value));
+         value_format_ = static_cast<ValueFormat>(value.get<ULNG_value>());
       }
    }
 

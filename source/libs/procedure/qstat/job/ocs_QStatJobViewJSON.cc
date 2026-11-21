@@ -146,7 +146,7 @@ template <auto F>
 void ocs::QStatJobViewJSON::report_X_uint32(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                             const char *name) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<F>(job)) {
+   if (!job.has<F>()) {
       DRETURN_VOID;
    }
    if (first_attribute) {
@@ -155,7 +155,7 @@ void ocs::QStatJobViewJSON::report_X_uint32(std::ostream &os, const ocs::tom::Co
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"" << name << "\": " << ocs::tom::get<F>(job);
+   os << std::string(indent * 3, ' ') << "\"" << name << "\": " << job.get<F>();
    DRETURN_VOID;
 }
 
@@ -198,7 +198,7 @@ void ocs::QStatJobViewJSON::report_X_string(std::ostream &os,
                                             const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> elem,
                                             const char *name) {
    DENTER(TOP_LAYER);
-   if (const char *value = ocs::tom::get<F>(elem); value != nullptr) {
+   if (const char *value = elem.template get<F>(); value != nullptr) {
       if (first_attribute) {
          os << "\n";
          first_attribute = false;
@@ -236,7 +236,7 @@ void ocs::QStatJobViewJSON::report_X_ISO_8601_timestamp(std::ostream &os,
                                                         const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                         const char *name) {
    DENTER(TOP_LAYER);
-   const uint64_t sec = ocs::tom::get<F>(job);
+   const uint64_t sec = job.get<F>();
    if (sec == 0) {
       DRETURN_VOID;
    }
@@ -268,7 +268,7 @@ void ocs::QStatJobViewJSON::report_X_task_ISO_8601_timestamp(std::ostream &os,
                                                              const ocs::tom::ConstElement<ocs::tom::JAT> task,
                                                              const char *name) {
    DENTER(TOP_LAYER);
-   const uint64_t sec = ocs::tom::get<F>(task);
+   const uint64_t sec = task.get<F>();
    if (sec == 0) {
       DRETURN_VOID;
    }
@@ -326,7 +326,7 @@ void ocs::QStatJobViewJSON::report_submit_cmd_line(std::ostream &os, const ocs::
 void ocs::QStatJobViewJSON::report_effective_submit_cmd_line(std::ostream &os,
                                                              const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   const char *str = ocs::tom::get<JB_submission_command_line>(job);
+   const char *str = job.get<JB_submission_command_line>();
    if (str == nullptr) {
       DRETURN_VOID;
    }
@@ -367,17 +367,17 @@ void ocs::QStatJobViewJSON::report_ownership(std::ostream &os, const ocs::tom::C
    os << std::string(indent * 3, ' ') << "\"primary\": {\n";
    indent++;
    os << std::string(indent * 3, ' ') << "\"owner\": " << raw2quotedJSON(
-      ocs::tom::get<JB_owner>(job) ? ocs::tom::get<JB_owner>(job) : "") << ",\n";
-   os << std::string(indent * 3, ' ') << "\"uid\": " << ocs::tom::get<JB_uid>(job) << ",\n";
+      job.get<JB_owner>() ? job.get<JB_owner>() : "") << ",\n";
+   os << std::string(indent * 3, ' ') << "\"uid\": " << job.get<JB_uid>() << ",\n";
    os << std::string(indent * 3, ' ') << "\"group\": " << raw2quotedJSON(
-      ocs::tom::get<JB_group>(job) ? ocs::tom::get<JB_group>(job) : "") << ",\n";
-   os << std::string(indent * 3, ' ') << "\"gid\": " << ocs::tom::get<JB_gid>(job) << "\n";
+      job.get<JB_group>() ? job.get<JB_group>() : "") << ",\n";
+   os << std::string(indent * 3, ' ') << "\"gid\": " << job.get<JB_gid>() << "\n";
    indent--;
    os << std::string(indent * 3, ' ') << "},\n";
    os << std::string(indent * 3, ' ') << "\"supplementary\": [\n";
    indent++;
 #if defined(WITH_EXTENSIONS)
-   ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
+   ocs::tom::ConstList<ocs::tom::ST> grp_list = job.get<JB_grp_list>();
    bool first = true;
    for (ocs::tom::ConstElement<ocs::tom::ST> grp_elem : grp_list) {
       if (first) {
@@ -388,8 +388,8 @@ void ocs::QStatJobViewJSON::report_ownership(std::ostream &os, const ocs::tom::C
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
       os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(
-         ocs::tom::get<ST_name>(grp_elem) ? ocs::tom::get<ST_name>(grp_elem) : "") << ",\n";
-      os << std::string(indent * 3, ' ') << "\"id\": " << ocs::tom::get<ST_id>(grp_elem) << "\n";
+         grp_elem.get<ST_name>() ? grp_elem.get<ST_name>() : "") << ",\n";
+      os << std::string(indent * 3, ' ') << "\"id\": " << grp_elem.get<ST_id>() << "\n";
       indent--;
       os << std::string(indent * 3, ' ') << "}";
    }
@@ -478,9 +478,9 @@ void ocs::QStatJobViewJSON::report_account(std::ostream &os, const ocs::tom::Con
  */
 void ocs::QStatJobViewJSON::report_checkpoint(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   const char *ckpt_name = ocs::tom::get<JB_checkpoint_name>(job);
-   const uint32_t ckpt_attr = ocs::tom::get<JB_checkpoint_attr>(job);
-   const uint32_t ckpt_int = ocs::tom::get<JB_checkpoint_interval>(job);
+   const char *ckpt_name = job.get<JB_checkpoint_name>();
+   const uint32_t ckpt_attr = job.get<JB_checkpoint_attr>();
+   const uint32_t ckpt_int = job.get<JB_checkpoint_interval>();
 
    if (ckpt_name == nullptr && ckpt_attr == 0 && ckpt_int == 0) {
       DRETURN_VOID;
@@ -526,7 +526,7 @@ void ocs::QStatJobViewJSON::report_cwd(std::ostream &os, const ocs::tom::ConstEl
  */
 void ocs::QStatJobViewJSON::report_path_aliases(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::ConstList<ocs::tom::PA> path_aliases = ocs::tom::get<JB_path_aliases>(job)) {
+   if (ocs::tom::ConstList<ocs::tom::PA> path_aliases = job.get<JB_path_aliases>()) {
       if (first_attribute) {
          os << "\n";
          first_attribute = false;
@@ -546,14 +546,14 @@ void ocs::QStatJobViewJSON::report_path_aliases(std::ostream &os, const ocs::tom
          }
          os << std::string(indent * 3, ' ') << "{\n";
          indent++;
-         const char *src_path = ocs::tom::get<PA_origin>(pa);
+         const char *src_path = pa.get<PA_origin>();
          os << std::string(indent * 3, ' ') << "\"src_path\": " << raw2quotedJSON(src_path ? src_path : "") << ",\n";
-         const char *submit_host = ocs::tom::get<PA_submit_host>(pa);
+         const char *submit_host = pa.get<PA_submit_host>();
          os << std::string(indent * 3, ' ') << "\"submit_host\": " << raw2quotedJSON(submit_host ? submit_host : "") <<
                ",\n";
-         const char *exec_host = ocs::tom::get<PA_exec_host>(pa);
+         const char *exec_host = pa.get<PA_exec_host>();
          os << std::string(indent * 3, ' ') << "\"exec_host\": " << raw2quotedJSON(exec_host ? exec_host : "") << ",\n";
-         const char *dst_path = ocs::tom::get<PA_translation>(pa);
+         const char *dst_path = pa.get<PA_translation>();
          os << std::string(indent * 3, ' ') << "\"dst_path\": " << raw2quotedJSON(dst_path ? dst_path : "") << "\n";
          indent--;
          os << std::string(indent * 3, ' ') << "}";
@@ -590,7 +590,7 @@ template <auto F>
 void ocs::QStatJobViewJSON::report_X_path_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                const char *name) {
    DENTER(TOP_LAYER);
-   if (const ocs::tom::ConstList<ocs::tom::PN> list = ocs::tom::get<F>(job); list != nullptr) {
+   if (const ocs::tom::ConstList<ocs::tom::PN> list = job.get<F>(); list != nullptr) {
       if (first_attribute) {
          os << "\n";
          first_attribute = false;
@@ -611,16 +611,16 @@ void ocs::QStatJobViewJSON::report_X_path_list(std::ostream &os, const ocs::tom:
          os << std::string(indent * 3, ' ') << "{\n";
          indent++;
 
-         const char *host = ocs::tom::get<PN_host>(elem);
+         const char *host = elem.get<PN_host>();
          os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << ",\n";
 
-         const char *file_host = ocs::tom::get<PN_file_host>(elem);
+         const char *file_host = elem.get<PN_file_host>();
          os << std::string(indent * 3, ' ') << "\"file_host\": " << raw2quotedJSON(file_host ? file_host : "") << ",\n";
 
-         const char *path = ocs::tom::get<PN_path>(elem);
+         const char *path = elem.get<PN_path>();
          os << std::string(indent * 3, ' ') << "\"path\": " << raw2quotedJSON(path ? path : "") << ",\n";
 
-         const bool file_staging = ocs::tom::get<PN_file_staging>(elem);
+         const bool file_staging = elem.get<PN_file_staging>();
          os << std::string(indent * 3, ' ') << "\"file_staging\": " << (file_staging ? "true" : "false") << "\n";
 
          indent--;
@@ -683,7 +683,7 @@ void ocs::QStatJobViewJSON::report_X_boolean(std::ostream &os, const ocs::tom::C
    } else {
       os << ",\n";
    }
-   const bool value = ocs::tom::get<F>(job);
+   const bool value = job.get<F>();
    os << std::string(indent * 3, ' ') << "\"" << name << "\": " << (value ? "true" : "false");
    DRETURN_VOID;
 }
@@ -732,7 +732,7 @@ void ocs::QStatJobViewJSON::report_X_resource_list(std::ostream &os, const ocs::
    indent++;
 
    bool is_first = true;
-   for (const ocs::tom::ConstElement<ocs::tom::CE> elem : ocs::tom::ConstList<ocs::tom::CE>(ocs::tom::get<F>(jrs))) {
+   for (const ocs::tom::ConstElement<ocs::tom::CE> elem : ocs::tom::ConstList<ocs::tom::CE>(jrs.get<F>())) {
       if (is_first) {
          os << "\n";
          is_first = false;
@@ -742,7 +742,7 @@ void ocs::QStatJobViewJSON::report_X_resource_list(std::ostream &os, const ocs::
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *resource_name = ocs::tom::get<CE_name>(elem);
+      const char *resource_name = elem.get<CE_name>();
       os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(resource_name ? resource_name : "") << ",\n";
       os << std::string(indent * 3, ' ') << "\"value\": ",
             show_resource_as_JSON_type(os, elem);
@@ -778,14 +778,14 @@ void ocs::QStatJobViewJSON::report_X_queue_list(std::ostream &os, const ocs::tom
    indent++;
 
    bool is_first = true;
-   for (const ocs::tom::ConstElement<ocs::tom::QR> elem : ocs::tom::ConstList<ocs::tom::QR>(ocs::tom::get<F>(jrs))) {
+   for (const ocs::tom::ConstElement<ocs::tom::QR> elem : ocs::tom::ConstList<ocs::tom::QR>(jrs.get<F>())) {
       if (is_first) {
          os << "\n";
          is_first = false;
       } else {
          os << ",\n";
       }
-      const char *qname = ocs::tom::get<QR_name>(elem);
+      const char *qname = elem.get<QR_name>();
       os << std::string(indent * 3, ' ') << raw2quotedJSON(qname ? qname : "");
    }
 
@@ -801,30 +801,30 @@ void ocs::QStatJobViewJSON::report_X_queue_list(std::ostream &os, const ocs::tom
  */
 void ocs::QStatJobViewJSON::report_request_set_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      const uint32_t scope = ocs::tom::get<JRS_scope>(jrs);
+   for (ocs::tom::ConstElement<ocs::tom::JRS> jrs : job.get<JB_request_set_list>()) {
+      const uint32_t scope = jrs.get<JRS_scope>();
 
-      if (ocs::tom::get<JRS_hard_resource_list>(jrs)) {
+      if (jrs.get<JRS_hard_resource_list>()) {
          std::string list_name = get_scope_list_name(scope, JRS_hard_resource_list);
          report_X_resource_list<JRS_hard_resource_list>(os, jrs, list_name.c_str());
       }
 
-      if (ocs::tom::get<JRS_soft_resource_list>(jrs)) {
+      if (jrs.get<JRS_soft_resource_list>()) {
          std::string list_name = get_scope_list_name(scope, JRS_soft_resource_list);
          report_X_resource_list<JRS_soft_resource_list>(os, jrs, list_name.c_str());
       }
 
-      if (ocs::tom::get<JRS_hard_queue_list>(jrs)) {
+      if (jrs.get<JRS_hard_queue_list>()) {
          std::string list_name = get_scope_list_name(scope, JRS_hard_queue_list);
          report_X_queue_list<JRS_hard_queue_list>(os, jrs, list_name.c_str());
       }
 
-      if (ocs::tom::get<JRS_soft_queue_list>(jrs)) {
+      if (jrs.get<JRS_soft_queue_list>()) {
          std::string list_name = get_scope_list_name(scope, JRS_soft_queue_list);
          report_X_queue_list<JRS_soft_queue_list>(os, jrs, list_name.c_str());
       }
 
-      if (ocs::tom::get<JRS_allocation_rule>(jrs) != nullptr) {
+      if (jrs.get<JRS_allocation_rule>() != nullptr) {
          std::string name = get_scope_list_name(scope, JRS_allocation_rule);
          report_X_string<JRS_allocation_rule>(os, jrs, name.c_str());
       }
@@ -839,7 +839,7 @@ void ocs::QStatJobViewJSON::report_request_set_list(std::ostream &os, const ocs:
  */
 void ocs::QStatJobViewJSON::report_mail_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (const uint32_t mail_options = ocs::tom::get<JB_mail_options>(job)) {
+   if (const uint32_t mail_options = job.get<JB_mail_options>()) {
       dstring mailopt = DSTRING_INIT;
       sge_dstring_append_mailopt(&mailopt, mail_options);
 
@@ -862,7 +862,7 @@ void ocs::QStatJobViewJSON::report_mail_options(std::ostream &os, const ocs::tom
  */
 void ocs::QStatJobViewJSON::report_mail_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   ocs::tom::ConstList<ocs::tom::MR> mail_list = ocs::tom::get<JB_mail_list>(job);
+   ocs::tom::ConstList<ocs::tom::MR> mail_list = job.get<JB_mail_list>();
    if (mail_list == nullptr) {
       DRETURN_VOID;
    }
@@ -887,9 +887,9 @@ void ocs::QStatJobViewJSON::report_mail_list(std::ostream &os, const ocs::tom::C
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *user = ocs::tom::get<MR_user>(elem);
+      const char *user = elem.get<MR_user>();
       os << std::string(indent * 3, ' ') << "\"user\": " << raw2quotedJSON(user ? user : "") << ",\n";
-      const char *host = ocs::tom::get<MR_host>(elem);
+      const char *host = elem.get<MR_host>();
       os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << "\n";
 
       indent--;
@@ -937,7 +937,7 @@ void ocs::QStatJobViewJSON::report_priority(std::ostream &os, const ocs::tom::Co
       os << ",\n";
    }
    os << std::string(indent * 3, ' ') << "\"priority\": " << (
-      static_cast<int>(ocs::tom::get<JB_priority>(job)) - BASE_PRIORITY);
+      static_cast<int>(job.get<JB_priority>()) - BASE_PRIORITY);
    DRETURN_VOID;
 }
 
@@ -965,7 +965,7 @@ void ocs::QStatJobViewJSON::report_restart(std::ostream &os, const ocs::tom::Con
    } else {
       os << ",\n";
    }
-   os << std::string(indent * 3, ' ') << "\"restart\": " << (ocs::tom::get<JB_restart>(job) == 2 ? "false" : "true");
+   os << std::string(indent * 3, ' ') << "\"restart\": " << (job.get<JB_restart>() == 2 ? "false" : "true");
    DRETURN_VOID;
 }
 
@@ -977,7 +977,7 @@ void ocs::QStatJobViewJSON::report_restart(std::ostream &os, const ocs::tom::Con
 void ocs::QStatJobViewJSON::report_shell_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstList<ocs::tom::PN> shell_list = ocs::tom::get<JB_shell_list>(job);
+   ocs::tom::ConstList<ocs::tom::PN> shell_list = job.get<JB_shell_list>();
    if (shell_list == nullptr) {
       DRETURN_VOID;
    }
@@ -1002,9 +1002,9 @@ void ocs::QStatJobViewJSON::report_shell_list(std::ostream &os, const ocs::tom::
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *user = ocs::tom::get<PN_path>(elem);
+      const char *user = elem.get<PN_path>();
       os << std::string(indent * 3, ' ') << "\"path\": " << raw2quotedJSON(user ? user : "") << ",\n";
-      const char *host = ocs::tom::get<PN_host>(elem);
+      const char *host = elem.get<PN_host>();
       os << std::string(indent * 3, ' ') << "\"host\": " << raw2quotedJSON(host ? host : "") << "\n";
 
       indent--;
@@ -1035,7 +1035,7 @@ void ocs::QStatJobViewJSON::report_verify(std::ostream &os, const ocs::tom::Cons
 void ocs::QStatJobViewJSON::report_job_args(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstList<ocs::tom::ST> list = ocs::tom::get<JB_job_args>(job);
+   ocs::tom::ConstList<ocs::tom::ST> list = job.get<JB_job_args>();
    if (list == nullptr) {
       DRETURN_VOID;
    }
@@ -1057,7 +1057,7 @@ void ocs::QStatJobViewJSON::report_job_args(std::ostream &os, const ocs::tom::Co
       } else {
          os << ",\n";
       }
-      const char *arg = ocs::tom::get<ST_name>(elem);
+      const char *arg = elem.get<ST_name>();
       os << std::string(indent * 3, ' ') << raw2quotedJSON(arg ? arg : "");
    }
 
@@ -1083,11 +1083,11 @@ void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const ocs::to
                                                  const char *name) {
    DENTER(TOP_LAYER);
    using Elem = typename ocs::tom::FieldTraits<VF>::Type;
-   if (!ocs::tom::has<LF>(job)) {
+   if (!job.has<LF>()) {
       DRETURN_VOID;
    }
    // the list field gives a handle of its sub-type; the checked handle confirms it is the element type of VF
-   const auto list = ocs::tom::ConstList<Elem>(ocs::tom::get<LF>(job));
+   const auto list = ocs::tom::ConstList<Elem>(job.get<LF>());
    if (list == nullptr) {
       DRETURN_VOID;
    }
@@ -1109,7 +1109,7 @@ void ocs::QStatJobViewJSON::report_X_string_list(std::ostream &os, const ocs::to
       } else {
          os << ",\n";
       }
-      const char *value = ocs::tom::get<VF>(elem);
+      const char *value = elem.template get<VF>();
       os << std::string(indent * 3, ' ') << raw2quotedJSON(value ? value : "");
    }
 
@@ -1134,10 +1134,10 @@ template <auto LF, auto VF>
 void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                  const char *name) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<LF>(job)) {
+   if (!job.has<LF>()) {
       DRETURN_VOID;
    }
-   const ocs::tom::ConstList<ocs::tom::JRE> list = ocs::tom::get<LF>(job);
+   const ocs::tom::ConstList<ocs::tom::JRE> list = job.get<LF>();
    if (list == nullptr) {
       DRETURN_VOID;
    }
@@ -1159,7 +1159,7 @@ void ocs::QStatJobViewJSON::report_X_uint32_list(std::ostream &os, const ocs::to
       } else {
          os << ",\n";
       }
-      const uint32_t value = ocs::tom::get<VF>(elem);
+      const uint32_t value = elem.get<VF>();
       os << std::string(indent * 3, ' ') << value;
    }
 
@@ -1221,15 +1221,15 @@ void ocs::QStatJobViewJSON::report_script_ptr(std::ostream &os, const ocs::tom::
  */
 void ocs::QStatJobViewJSON::report_pe(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<JB_pe>(job)) {
+   if (!job.has<JB_pe>()) {
       DRETURN_VOID;
    }
-   const char *pe_name = ocs::tom::get<JB_pe>(job);
+   const char *pe_name = job.get<JB_pe>();
    if (pe_name == nullptr) {
       DRETURN_VOID;
    }
    dstring range_string = DSTRING_INIT;
-   range_list_print_to_string(ocs::tom::get<JB_pe_range>(job), &range_string, true, false, false);
+   range_list_print_to_string(job.get<JB_pe_range>(), &range_string, true, false, false);
 
    if (first_attribute) {
       os << "\n";
@@ -1419,7 +1419,7 @@ void ocs::QStatJobViewJSON::report_department(std::ostream &os, const ocs::tom::
  */
 void ocs::QStatJobViewJSON::report_sync_options(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<JB_sync_options>(job)) {
+   if (!job.has<JB_sync_options>()) {
       DRETURN_VOID;
    }
    if (first_attribute) {
@@ -1440,7 +1440,7 @@ void ocs::QStatJobViewJSON::report_sync_options(std::ostream &os, const ocs::tom
  */
 void ocs::QStatJobViewJSON::report_ja_structure(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<JB_ja_structure>(job)) {
+   if (!job.has<JB_ja_structure>()) {
       DRETURN_VOID;
    }
    const auto [start, end, step] = job_get_submit_task_ids(job);
@@ -1482,7 +1482,7 @@ void ocs::QStatJobViewJSON::report_ja_task_concurrency(std::ostream &os,
  */
 void ocs::QStatJobViewJSON::report_pending_tasks(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<JB_ja_n_h_ids>(job)) {
+   if (!job.has<JB_ja_n_h_ids>()) {
       DRETURN_VOID;
    }
    if (first_attribute) {
@@ -1517,7 +1517,7 @@ void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const ocs::tom::
                                               const char *name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::ConstList<ocs::tom::VA> job_env_list = ocs::tom::get<F>(job);
+   const ocs::tom::ConstList<ocs::tom::VA> job_env_list = job.get<F>();
    if (!job_env_list) {
       DRETURN_VOID;
    }
@@ -1547,9 +1547,9 @@ void ocs::QStatJobViewJSON::report_X_env_list(std::ostream &os, const ocs::tom::
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *user = ocs::tom::get<VA_variable>(elem);
+      const char *user = elem.get<VA_variable>();
       os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(user ? user : "");
-      if (const char *host = ocs::tom::get<VA_value>(elem); host != nullptr) {
+      if (const char *host = elem.get<VA_value>(); host != nullptr) {
          os << ",\n" << std::string(indent * 3, ' ') << "\"value\": " << raw2quotedJSON(host ? host : "") << "\n";
       } else {
          os << "\n";
@@ -1599,22 +1599,22 @@ void ocs::QStatJobViewJSON::report_ctx_list(std::ostream &os, const ocs::tom::Co
  */
 void ocs::QStatJobViewJSON::report_binding(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   if (!ocs::tom::has<JB_binding>(job)) {
+   if (!job.has<JB_binding>()) {
       DRETURN_VOID;
    }
-   ocs::tom::ConstElement<ocs::tom::BN> binding_elem = ocs::tom::get<JB_binding>(job);
+   ocs::tom::ConstElement<ocs::tom::BN> binding_elem = job.get<JB_binding>();
    if (binding_elem == nullptr) {
       DRETURN_VOID;
    }
-   const uint32_t amount = ocs::tom::get<BN_amount>(binding_elem);
-   const auto instance = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
-   const char *sort = ocs::tom::get<BN_sort>(binding_elem);
-   const auto start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
-   const auto stop = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
-   const auto strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
-   const auto type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
-   const auto unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
-   const auto filter = ocs::tom::get<BN_filter>(binding_elem);
+   const uint32_t amount = binding_elem.get<BN_amount>();
+   const auto instance = static_cast<BindingInstance::Instance>(binding_elem.get<BN_instance>());
+   const char *sort = binding_elem.get<BN_sort>();
+   const auto start = static_cast<BindingStart::Start>(binding_elem.get<BN_start>());
+   const auto stop = static_cast<BindingStop::Stop>(binding_elem.get<BN_stop>());
+   const auto strategy = static_cast<BindingStrategy::Strategy>(binding_elem.get<BN_strategy>());
+   const auto type = static_cast<BindingType::Type>(binding_elem.get<BN_new_type>());
+   const auto unit = static_cast<BindingUnit::Unit>(binding_elem.get<BN_unit>());
+   const auto filter = binding_elem.get<BN_filter>();
 
    if (first_attribute) {
       os << "\n";
@@ -1722,7 +1722,7 @@ void ocs::QStatJobViewJSON::report_task_id(std::ostream &os, const ocs::tom::Con
    } else {
       os << ",\n";
    }
-   const uint32_t task_id = ocs::tom::get<JAT_task_number>(task);
+   const uint32_t task_id = task.get<JAT_task_number>();
    os << std::string(indent * 3, ' ') << "\"task_id\": " << task_id;
    DRETURN_VOID;
 }
@@ -1762,7 +1762,7 @@ void ocs::QStatJobViewJSON::report_task_usage(std::ostream &os, const ocs::tom::
    DENTER(TOP_LAYER);
    /* jobs whose job start orders were not processed to the end due to a qmaster/schedd collision appear
     * in the JB_ja_tasks list but are not running - thus we may not print usage for those */
-   if (ocs::tom::get<JAT_status>(task) != JRUNNING && ocs::tom::get<JAT_status>(task) != JTRANSFERING) {
+   if (task.get<JAT_status>() != JRUNNING && task.get<JAT_status>() != JTRANSFERING) {
       DRETURN_VOID;
    }
 
@@ -1813,7 +1813,7 @@ void ocs::QStatJobViewJSON::report_task_exec_binding_list(std::ostream &os,
                                                           const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::ConstList<ocs::tom::GRU> list = ocs::tom::get<JAT_granted_resources_list>(task);
+   ocs::tom::ConstList<ocs::tom::GRU> list = task.get<JAT_granted_resources_list>();
    if (list == nullptr) {
       DRETURN_VOID;
    }
@@ -1829,7 +1829,7 @@ void ocs::QStatJobViewJSON::report_task_exec_binding_list(std::ostream &os,
 
    bool is_first = true;
    for (ocs::tom::ConstElement<ocs::tom::GRU> elem : list) {
-      if (const char *name = ocs::tom::get<GRU_name>(elem); name == nullptr || strcmp(name, SGE_ATTR_SLOTS) != 0) {
+      if (const char *name = elem.get<GRU_name>(); name == nullptr || strcmp(name, SGE_ATTR_SLOTS) != 0) {
          continue;
       }
 
@@ -1842,11 +1842,11 @@ void ocs::QStatJobViewJSON::report_task_exec_binding_list(std::ostream &os,
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *hostname = ocs::tom::get<GRU_host>(elem);
+      const char *hostname = elem.get<GRU_host>();
       os << std::string(indent * 3, ' ') << "\"name\": " << raw2quotedJSON(hostname ? hostname : "") << ",\n";
       os << std::string(indent * 3, ' ') << "\"binding\": [\n";
       indent++;
-      ocs::tom::ConstList<ocs::tom::ST> binding_in_use_list = ocs::tom::get<GRU_binding_inuse>(elem);
+      ocs::tom::ConstList<ocs::tom::ST> binding_in_use_list = elem.get<GRU_binding_inuse>();
       bool first_binding = true;
       for (ocs::tom::ConstElement<ocs::tom::ST> binding_in_use : binding_in_use_list) {
          if (first_binding) {
@@ -1854,7 +1854,7 @@ void ocs::QStatJobViewJSON::report_task_exec_binding_list(std::ostream &os,
          } else {
             os << ",\n";
          }
-         TopologyString topo_in_use(ocs::tom::get<ST_name>(binding_in_use));
+         TopologyString topo_in_use(binding_in_use.get<ST_name>());
          os << std::string(indent * 3, ' ') << "\"" << topo_in_use.to_product_topology_string() << "\"";
       }
       indent--;
@@ -1895,7 +1895,7 @@ void ocs::QStatJobViewJSON::report_X_task_str_uint32_list(std::ostream &os,
    indent++;
 
    bool is_first = true;
-   for (const ocs::tom::ConstElement<ocs::tom::JG> elem : ocs::tom::ConstList<ocs::tom::JG>(ocs::tom::get<F>(task))) {
+   for (const ocs::tom::ConstElement<ocs::tom::JG> elem : ocs::tom::ConstList<ocs::tom::JG>(task.get<F>())) {
       if (is_first) {
          os << "\n";
          is_first = false;
@@ -1905,9 +1905,9 @@ void ocs::QStatJobViewJSON::report_X_task_str_uint32_list(std::ostream &os,
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *string = ocs::tom::get<SF>(elem);
+      const char *string = elem.get<SF>();
       os << std::string(indent * 3, ' ') << "\"" << str_name << "\": " << raw2quotedJSON(string ? string : "") << ",\n";
-      const uint32_t value = ocs::tom::get<UF>(elem);
+      const uint32_t value = elem.get<UF>();
       os << std::string(indent * 3, ' ') << "\"" << uint32_name << "\": " << value << "\n";
 
       indent--;
@@ -1944,11 +1944,11 @@ void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const o
                                                        const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
 
-   if (!ocs::tom::has<JAT_granted_destin_identifier_list>(task)) {
+   if (!task.has<JAT_granted_destin_identifier_list>()) {
       DRETURN_VOID;
    }
 
-   ocs::tom::ConstList<ocs::tom::JG> gdil_org = ocs::tom::get<JAT_granted_destin_identifier_list>(task);
+   ocs::tom::ConstList<ocs::tom::JG> gdil_org = task.get<JAT_granted_destin_identifier_list>();
    const auto gdil_unique = gdil_make_host_unique(gdil_org);
 
    if (first_task_attribute) {
@@ -1971,9 +1971,9 @@ void ocs::QStatJobViewJSON::report_task_exec_host_list(std::ostream &os, const o
       os << std::string(indent * 3, ' ') << "{\n";
       indent++;
 
-      const char *string = ocs::tom::get<JG_qhostname>(elem);
+      const char *string = elem.get<JG_qhostname>();
       os << std::string(indent * 3, ' ') << "\"hostname\": " << raw2quotedJSON(string ? string : "") << ",\n";
-      const uint32_t value = ocs::tom::get<JG_slots>(elem);
+      const uint32_t value = elem.get<JG_slots>();
       os << std::string(indent * 3, ' ') << "\"slots\": " << value << "\n";
 
       indent--;
@@ -2011,7 +2011,7 @@ void ocs::QStatJobViewJSON::report_task_start_time(std::ostream &os, const ocs::
 void ocs::QStatJobViewJSON::report_task_end_time(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::JB> job,
                                                  const ocs::tom::ConstElement<ocs::tom::JAT> task) {
    DENTER(TOP_LAYER);
-   if (ocs::tom::get<JAT_status>(task) != JFINISHED) {
+   if (task.get<JAT_status>() != JFINISHED) {
       DRETURN_VOID;
    }
    report_X_task_ISO_8601_timestamp<JAT_end_time>(os, task, "end_time");
@@ -2038,12 +2038,12 @@ void ocs::QStatJobViewJSON::report_task_resource_map(std::ostream &os, const ocs
 
    /* go through all RSMAP resources for the particular task and create a string */
    bool is_first_remap = true;
-   for (ocs::tom::ConstElement<ocs::tom::GRU> resu : ocs::tom::get<JAT_granted_resources_list>(task)) {
-      if (static_cast<GrantedResources::Type>(ocs::tom::get<GRU_type>(resu)) ==
+   for (ocs::tom::ConstElement<ocs::tom::GRU> resu : task.get<JAT_granted_resources_list>()) {
+      if (static_cast<GrantedResources::Type>(resu.get<GRU_type>()) ==
           GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
-         const char *name = ocs::tom::get<GRU_name>(resu);
-         const char *host = ocs::tom::get<GRU_host>(resu);
-         ocs::tom::ConstList<ocs::tom::RESL> ids = ocs::tom::get<GRU_resource_map_list>(resu);
+         const char *name = resu.get<GRU_name>();
+         const char *host = resu.get<GRU_host>();
+         ocs::tom::ConstList<ocs::tom::RESL> ids = resu.get<GRU_resource_map_list>();
 
          if (name != nullptr && ids != nullptr && host != nullptr) {
             if (is_first_remap) {
@@ -2062,8 +2062,8 @@ void ocs::QStatJobViewJSON::report_task_resource_map(std::ostream &os, const ocs
             u_int32_t total_amount = 0;
             bool first_id = true;
             for (ocs::tom::ConstElement<ocs::tom::RESL> id : ids) {
-               const char *id_string = ocs::tom::get<RESL_value>(id);
-               const uint32_t amount = ocs::tom::get<RESL_amount>(id);
+               const char *id_string = id.get<RESL_value>();
+               const uint32_t amount = id.get<RESL_amount>();
 
                total_amount += amount;
                for (uint32_t i = 0; i < amount; i++) {
@@ -2109,8 +2109,8 @@ void ocs::QStatJobViewJSON::report_task_error_reason(std::ostream &os, const ocs
    indent++;
 
    bool is_first = true;
-   for (ocs::tom::ConstElement<ocs::tom::QIM> elem : ocs::tom::get<JAT_message_list>(task)) {
-      if (const char *message = ocs::tom::get<QIM_message>(elem)) {
+   for (ocs::tom::ConstElement<ocs::tom::QIM> elem : task.get<JAT_message_list>()) {
+      if (const char *message = elem.get<QIM_message>()) {
          if (is_first) {
             os << "\n";
             is_first = false;
@@ -2150,16 +2150,16 @@ void ocs::QStatJobViewJSON::report_schedd_job_info(std::ostream &os, const ocs::
       };
 
       /* global scheduling info */
-      for (ocs::tom::ConstElement<ocs::tom::MES> mes : ocs::tom::get<SME_global_message_list>(sme)) {
-         print_sched_message(ocs::tom::get<MES_message>(mes));
+      for (ocs::tom::ConstElement<ocs::tom::MES> mes : sme.get<SME_global_message_list>()) {
+         print_sched_message(mes.get<MES_message>());
       }
 
       /* job scheduling info */
-      const uint32_t jid = ocs::tom::get<JB_job_number>(job);
-      for (ocs::tom::ConstElement<ocs::tom::MES> mes : ocs::tom::get<SME_message_list>(sme)) {
-         for (ocs::tom::ConstElement<ocs::tom::ULNG> mes_jid : ocs::tom::get<MES_job_number_list>(mes)) {
-            if (ocs::tom::get<ULNG_value>(mes_jid) == jid) {
-               print_sched_message(ocs::tom::get<MES_message>(mes));
+      const uint32_t jid = job.get<JB_job_number>();
+      for (ocs::tom::ConstElement<ocs::tom::MES> mes : sme.get<SME_message_list>()) {
+         for (ocs::tom::ConstElement<ocs::tom::ULNG> mes_jid : mes.get<MES_job_number_list>()) {
+            if (mes_jid.get<ULNG_value>() == jid) {
+               print_sched_message(mes.get<MES_message>());
             }
          }
       }

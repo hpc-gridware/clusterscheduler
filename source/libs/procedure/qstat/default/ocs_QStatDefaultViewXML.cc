@@ -80,8 +80,8 @@ void ocs::QStatDefaultViewXML::qstat_xml_finish_job_list(const char *state,
    for (const auto l_job_elem : *job_list) {
       const auto attributes = ocs::tom::get_or_create<XMLE_Attribute>(l_job_elem, "attributes");
       auto state_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-      ocs::tom::set<XMLA_Name>(state_elem, "state");
-      ocs::tom::set<XMLA_Value>(state_elem, state);
+      state_elem->set<XMLA_Name>("state");
+      state_elem->set<XMLA_Value>(state);
       attributes.push_back(std::move(state_elem));
    }
 
@@ -100,15 +100,15 @@ void ocs::QStatDefaultViewXML::report_started(std::ostream &os, QStatParameter &
 
    queue_list_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   ocs::tom::set<XMLA_Name>(attr_elem, "queue_info");
+   attr_elem->set<XMLA_Name>("queue_info");
    ocs::tom::set<XMLE_Element>(queue_list_elem, std::move(attr_elem));
-   ocs::tom::set<XMLE_Print>(queue_list_elem, true);
+   queue_list_elem->set<XMLE_Print>(true);
 
    job_list_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    auto attr_elem_xmla = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   ocs::tom::set<XMLA_Name>(attr_elem_xmla, "job_info");
+   attr_elem_xmla->set<XMLA_Name>("job_info");
    ocs::tom::set<XMLE_Element>(job_list_elem, std::move(attr_elem_xmla));
-   ocs::tom::set<XMLE_Print>(job_list_elem, true);
+   job_list_elem->set<XMLE_Print>(true);
    ocs::tom::set<XMLE_List>(job_list_elem, ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list"));
 
    DRETURN_VOID;
@@ -164,7 +164,7 @@ void ocs::QStatDefaultViewXML::report_queue_finished(std::ostream &os, const cha
       }
       DPRINTF("add queue_info for queue %s to queue_list\n", qname );
 
-      auto queue_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(queue_list_elem));
+      auto queue_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(queue_list_elem->get<XMLE_List>());
       if (queue_list == nullptr) {
          DPRINTF("Had empty queue list, create new one\n");
          auto created = ocs::tom::ListPtr<ocs::tom::XMLE>::create("Queue-List");
@@ -199,7 +199,7 @@ void ocs::QStatDefaultViewXML::report_queue_started(std::ostream &os, const char
       DPRINTF("Create ctx->queue_elem for queue %s\n", qname);
 
       auto temp = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
-      ocs::tom::set<XMLE_Print>(temp, false);
+      temp->set<XMLE_Print>(false);
       queue_elem = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
       auto attribute_list = ocs::tom::ListPtr<ocs::tom::XMLE>::create("attributes");
       ocs::tom::set<XMLE_List>(temp, std::move(attribute_list));
@@ -225,7 +225,7 @@ void ocs::QStatDefaultViewXML::report_queue_summary(std::ostream &os, const char
    }
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(ocs::tom::get<XMLE_Element>(queue_elem)));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
 
    xml_append_Attr_S(attribute_list, "name", qname);
    xml_append_Attr_S(attribute_list, "qtype", summary->queue_type.c_str());
@@ -261,7 +261,7 @@ void ocs::QStatDefaultViewXML::report_queue_load_alarm(std::ostream &os, const c
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(ocs::tom::get<XMLE_Element>(queue_elem)));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
    xml_append_Attr_S(attribute_list, "load-alarm-reason", reason);
 
    DRETURN_VOID;
@@ -278,7 +278,7 @@ void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(std::ostream &os, cons
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(ocs::tom::get<XMLE_Element>(queue_elem)));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
    xml_append_Attr_S(attribute_list, "suspend-alarm-reason", reason);
 
    DRETURN_VOID;
@@ -295,7 +295,7 @@ void ocs::QStatDefaultViewXML::report_queue_message(std::ostream &os, const char
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(ocs::tom::get<XMLE_Element>(queue_elem)));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
 
    xml_append_Attr_S(attribute_list, "message", message);
 
@@ -329,7 +329,7 @@ void ocs::QStatDefaultViewXML::report_queue_resource(std::ostream &os,
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(ocs::tom::get<XMLE_Element>(queue_elem)));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
 
    DPRINTF("queue resource: %s, %s, %s, %s\n", dom, name, value, details);
    const auto xml_elem = xml_append_Attr_S(attribute_list, "resource", value);
@@ -361,7 +361,7 @@ void ocs::QStatDefaultViewXML::report_queue_jobs_finished(std::ostream &os, cons
    if (job_list->front() != nullptr) {
       // the element whose list takes the jobs
       const auto &owner = (parameter.show_ & QSTAT_DISPLAY_FULL) ? queue_elem : queue_list_elem;
-      auto l_job_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(owner));
+      auto l_job_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(owner->get<XMLE_List>());
       if (l_job_list == nullptr) {
          auto created = ocs::tom::ListPtr<ocs::tom::XMLE>::create("job_list");
          l_job_list = *created;
@@ -388,7 +388,7 @@ void ocs::QStatDefaultViewXML::report_pending_jobs_started(std::ostream &os, QSt
  */
 void ocs::QStatDefaultViewXML::report_pending_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(job_list_elem));
+   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(job_list_elem->get<XMLE_List>());
    qstat_xml_finish_job_list("pending", target_list);
 
    DRETURN_VOID;
@@ -408,7 +408,7 @@ void ocs::QStatDefaultViewXML::report_finished_jobs_started(std::ostream &os, QS
  */
 void ocs::QStatDefaultViewXML::report_finished_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(job_list_elem));
+   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(job_list_elem->get<XMLE_List>());
    /* CS-1908 U7: renamed from "finished" — under retention this tag holds the
     * ja_tasks currently retained in the finished-history window (not the
     * transient JOBS-WAITING-FOR-ACCOUNTING queue it modeled before). */
@@ -431,7 +431,7 @@ void ocs::QStatDefaultViewXML::report_error_jobs_started(std::ostream &os, QStat
  */
 void ocs::QStatDefaultViewXML::report_error_jobs_finished(std::ostream &os) {
    DENTER(TOP_LAYER);
-   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(ocs::tom::get<XMLE_List>(job_list_elem));
+   const auto target_list = ocs::tom::List<ocs::tom::XMLE>::from_typed(job_list_elem->get<XMLE_List>());
    qstat_xml_finish_job_list("error", target_list);
 
    DRETURN_VOID;
@@ -597,7 +597,7 @@ void ocs::QStatDefaultViewXML::report_job_finished(std::ostream &os, uint32_t ji
 void ocs::QStatDefaultViewXML::report_sub_task(std::ostream &os, task_summary_t *summary) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    if (summary->task_id) {
       xml_append_Attr_S(attribute_list, "task-id", summary->task_id);
@@ -638,7 +638,7 @@ void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const jo
       default:
          {
             /*lListElem *xml_elem = nullptr;*/
-            const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+            const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
             DPRINTF("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);
             xml_append_Attr_S(attribute_list, ADDITIONAL_TAG_NAMES[name], value);
@@ -656,7 +656,7 @@ void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const jo
 void ocs::QStatDefaultViewXML::report_requested_pe(std::ostream &os, const char* pe_name, const char* pe_range) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const auto xml_elem = xml_append_Attr_S(attribute_list, "requested_pe", pe_range);
    xml_addAttribute(xml_elem, "name", pe_name);
@@ -673,7 +673,7 @@ void ocs::QStatDefaultViewXML::report_requested_pe(std::ostream &os, const char*
 void ocs::QStatDefaultViewXML::report_granted_pe(std::ostream &os, const char* pe_name, int pe_slots) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const auto xml_elem = xml_append_Attr_I(attribute_list, "granted_pe", pe_slots);
    xml_addAttribute(xml_elem, "name", pe_name);
@@ -700,7 +700,7 @@ void ocs::QStatDefaultViewXML::report_default_request_finished(std::ostream &os)
 void ocs::QStatDefaultViewXML::report_default_request(std::ostream &os, const char* name, const char* value) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const auto xml_elem = xml_append_Attr_S(attribute_list, "def_hard_request", value);
    xml_addAttribute(xml_elem, "name", name);
@@ -736,7 +736,7 @@ void ocs::QStatDefaultViewXML::report_hard_resource(std::ostream &os, const int 
          break;
    }
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const auto xml_elem = xml_append_Attr_S(attribute_list, attrib_name, value);
    xml_addAttribute(xml_elem, "name", name);
@@ -773,7 +773,7 @@ void ocs::QStatDefaultViewXML::report_soft_resource(std::ostream &os, const int 
          break;
    }
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const auto xml_elem = xml_append_Attr_S(attribute_list, attrib_name, value);
    xml_addAttribute(xml_elem, "name", name);
@@ -790,7 +790,7 @@ void ocs::QStatDefaultViewXML::report_soft_resource(std::ostream &os, const int 
 void ocs::QStatDefaultViewXML::report_hard_requested_queue(std::ostream &os, int scope, const char* name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const char *attrib_name;
    switch(scope) {
@@ -819,7 +819,7 @@ void ocs::QStatDefaultViewXML::report_hard_requested_queue(std::ostream &os, int
 void ocs::QStatDefaultViewXML::report_soft_requested_queue(std::ostream &os, int scope, const char* name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    const char *attrib_name;
    switch(scope) {
@@ -847,7 +847,7 @@ void ocs::QStatDefaultViewXML::report_soft_requested_queue(std::ostream &os, int
 void ocs::QStatDefaultViewXML::report_predecessor_requested(std::ostream &os, const char* name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    xml_append_Attr_S(attribute_list, "predecessor_jobs_req", name);
 
@@ -862,7 +862,7 @@ void ocs::QStatDefaultViewXML::report_predecessor_requested(std::ostream &os, co
 void ocs::QStatDefaultViewXML::report_predecessor(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    xml_append_Attr_U(attribute_list, "predecessor_jobs", jid);
 
@@ -877,7 +877,7 @@ void ocs::QStatDefaultViewXML::report_predecessor(std::ostream &os, uint32_t jid
 void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(std::ostream &os, const char* name) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    xml_append_Attr_S(attribute_list, "ad_predecessor_jobs_req", name);
 
@@ -892,7 +892,7 @@ void ocs::QStatDefaultViewXML::report_ad_predecessor_requested(std::ostream &os,
 void ocs::QStatDefaultViewXML::report_ad_predecessor(std::ostream &os, uint32_t jid) {
    DENTER(TOP_LAYER);
 
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    xml_append_Attr_U(attribute_list, "ad_predecessor_jobs", jid);
 
@@ -958,7 +958,7 @@ void ocs::QStatDefaultViewXML::report_binding_finished(std::ostream &os) {
  */
 void ocs::QStatDefaultViewXML::report_binding(std::ostream &os, const char *binding) {
    DENTER(TOP_LAYER);
-   const ocs::tom::List<ocs::tom::XMLE> attribute_list(ocs::tom::get<XMLE_List>(job_elem));
+   const ocs::tom::List<ocs::tom::XMLE> attribute_list(job_elem->get<XMLE_List>());
 
    xml_append_Attr_S(attribute_list, "binding", binding);
    DRETURN_VOID;

@@ -213,37 +213,38 @@ static int debit_job_from_queues(const ocs::tom::ConstElement<ocs::tom::JB> job,
    /* use each entry in sel_q_list as reference into the global_queue_list */
    const char *last_hostname = nullptr;
    for (const auto gel : granted) {
-      tagged = ocs::tom::get<JG_slots>(gel);
+      tagged = gel.get<JG_slots>();
       if (tagged) {
          /* find queue */
-         qname = ocs::tom::get<JG_qname>(gel);
-         if ((qep = ocs::tom::find_first_rw<QU_full_name>(global_queue_list, qname)) == nullptr) {
+         qname = gel.get<JG_qname>();
+         if ((qep = global_queue_list.find_first<QU_full_name>(qname)) == nullptr) {
             master_task = false;
             continue;
          }
 
-         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gel));
+         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, gel.get<JG_qhostname>());
 
          /* increase used slots */
          qslots = qinstance_slots_used(qep);
 
          /* precompute suspensions for subordinated queues */
-         total = ocs::tom::get<QU_job_slots>(qep);
-         for (ocs::tom::ConstElement<ocs::tom::SO> so : ocs::tom::get<QU_subordinate_list>(qep)) {
+         total = qep.get<QU_job_slots>();
+         for (ocs::tom::ConstElement<ocs::tom::SO> so : qep.get<QU_subordinate_list>()) {
             if (!tst_sos(qslots, total, so) &&  /* not suspended till now */
                 tst_sos(qslots + tagged, total, so)) {   /* but now                */
-               sge_dstring_sprintf(&queue_name, "%s@%s", ocs::tom::get<SO_name>(so), static_cast<const char *>(ocs::tom::get<QU_qhostname>(qep)));
+               sge_dstring_sprintf(&queue_name, "%s@%s", so.get<SO_name>(), qep.get<QU_qhostname>().c_str());
 
                ret |= sos_schedd(sge_dstring_get_string(&queue_name), global_queue_list);
 
                /* warn on jobs that were dispatched into that queue in
                   the same scheduling interval based on the orders list */
                for (const auto order : *orders->jobStartOrderList) {
-                  if (ocs::tom::get<OR_type>(order) != ORT_start_job) {
+                  if (order.get<OR_type>() != ORT_start_job) {
                      continue;
                   }
-                  if (ocs::tom::find_first_in<OR_queuelist, OQ_dest_queue>(order, sge_dstring_get_string(&queue_name))) {
-                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, ocs::tom::get<JB_job_number>(job), ocs::tom::get<OR_job_number>(order), qname, sge_dstring_get_string(&queue_name));
+                  if (order.find_first_in<OR_queuelist, OQ_dest_queue>(sge_dstring_get_string(&queue_name))) {
+                     WARNING(MSG_SUBORDPOLICYCONFLICT_UUSS, job.get<JB_job_number>(), order.get<OR_job_number>(),
+                             qname, sge_dstring_get_string(&queue_name));
                   }
                }
             }
@@ -306,20 +307,20 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
    const char *last_hostname = nullptr;
    for (const auto gdil_ep : granted) {
       uint32_t ulc_factor;
-      int slots = ocs::tom::get<JG_slots>(gdil_ep);
+      int slots = gdil_ep.get<JG_slots>();
 
-      hnm = ocs::tom::get<JG_qhostname>(gdil_ep);
+      hnm = gdil_ep.get<JG_qhostname>();
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, hnm);
       const auto hep = ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(host_list, hnm));
 
       if (load_adjustment_decay_time > 0 && !load_adjustments.empty()) {
          /* increase host load for each scheduled job slot */
-         ulc_factor = ocs::tom::get<EH_load_correction_factor>(hep);
+         ulc_factor = hep.get<EH_load_correction_factor>();
          ulc_factor += 100 * slots;
-         ocs::tom::set<EH_load_correction_factor>(hep, ulc_factor);
+         hep.set<EH_load_correction_factor>(ulc_factor);
       }
 
-      const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+      const auto granted_resources_list = ja_task.get<JAT_granted_resources_list>();
       debit_host_consumable(job, ja_task, granted_resources_list, pe,
                             ocs::tom::Element<ocs::tom::EH>::from_typed(host_list_locate(host_list, SGE_GLOBAL_NAME)),
                             centry_list, slots, is_master_task, do_per_global_host_booking, nullptr);
@@ -328,12 +329,12 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
       do_per_global_host_booking = false;
 
       /* compute new combined load for this host and put it into the host */
-      old_sort_value = ocs::tom::get<EH_sort_value>(hep);
+      old_sort_value = hep.get<EH_sort_value>();
 
       new_sort_value = scaled_mixed_load(load_formula, global, hep, centry_list, ocs::tom::ConstList<ocs::tom::CE>());
 
       if (new_sort_value != old_sort_value) {
-         ocs::tom::set<EH_sort_value>(hep, new_sort_value);
+         hep.set<EH_sort_value>(new_sort_value);
          if (sort_hostlist)
             *sort_hostlist = 1;
          DPRINTF("Increasing sort value of Host %s from %f to %f\n", hnm, old_sort_value, new_sort_value);
@@ -388,7 +389,7 @@ int debit_host_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep,
    DENTER(TOP_LAYER);
    int mods = 0;
    mods += rc_debit_consumable<ocs::tom::EH, EH_consumable_config_list, EH_resource_utilization>(
-      jep, pe, hep, centry_list, slots, ocs::tom::get<EH_name>(hep), is_master_task, do_per_host_booking, just_check);
+      jep, pe, hep, centry_list, slots, hep.get<EH_name>(), is_master_task, do_per_host_booking, just_check);
    if (jep != nullptr && jatep != nullptr) {
       mods += ja_task_debit_host_rsmaps(granted_resources_list, hep, slots, just_check);
       mods += ja_task_debit_host_bindings(granted_resources_list, hep, slots, just_check);
@@ -422,7 +423,7 @@ static int debit_job_from_rqs(const ocs::tom::ConstElement<ocs::tom::JB> job,
                               const ocs::tom::ConstList<ocs::tom::HGRP> hgrp_list) {
    DENTER(TOP_LAYER);
 
-   if (ocs::tom::get<JB_ar>(job) != 0) {
+   if (job.get<JB_ar>() != 0) {
       /* don't debit for AR jobs in resource quotas */
       DRETURN(0);
    }
@@ -431,8 +432,8 @@ static int debit_job_from_rqs(const ocs::tom::ConstElement<ocs::tom::JB> job,
    const char *last_hostname = nullptr;
    bool master_task = true;
    for (const auto gdil_ep : granted) {
-      int slots = ocs::tom::get<JG_slots>(gdil_ep);
-      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gdil_ep));
+      int slots = gdil_ep.get<JG_slots>();
+      bool do_per_host_booking = host_do_per_host_booking(&last_hostname, gdil_ep.get<JG_qhostname>());
       for (const auto rqs : rqs_list) {
          rqs_debit_consumable(rqs, job, gdil_ep, pe, centry_list, acl_list, hgrp_list, slots, master_task, do_per_host_booking);
       }
@@ -465,23 +466,23 @@ static int debit_job_from_ar(const ocs::tom::Element<ocs::tom::AR> ar, const ocs
    DENTER(TOP_LAYER);
 
    if (ar != nullptr) {
-      const auto ar_global_host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, SGE_GLOBAL_NAME);
+      const auto ar_global_host = ar.find_first_in_rw<AR_reserved_hosts, EH_name>(SGE_GLOBAL_NAME);
 
       bool master_task = true;
       bool do_per_global_host_booking = true;
       const char *last_hostname = nullptr;
       for (const auto gel : granted) {
-         int slots = ocs::tom::get<JG_slots>(gel);
-         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, ocs::tom::get<JG_qhostname>(gel));
-         const auto granted_resources_list = ocs::tom::get<JAT_granted_resources_list>(ja_task);
+         int slots = gel.get<JG_slots>();
+         bool do_per_host_booking = host_do_per_host_booking(&last_hostname, gel.get<JG_qhostname>());
+         const auto granted_resources_list = ja_task.get<JAT_granted_resources_list>();
          const auto queue =
-            ocs::tom::find_first_in_rw<AR_reserved_queues, QU_full_name>(ar, ocs::tom::get<JG_qname>(gel));
+            ar.find_first_in_rw<AR_reserved_queues, QU_full_name>(gel.get<JG_qname>());
          qinstance_debit_consumable(queue, job, pe, centry_list, slots, master_task, do_per_host_booking, nullptr);
          if (ar_global_host != nullptr) {
             debit_host_consumable(job, ja_task, granted_resources_list, pe, ar_global_host, centry_list, slots, master_task,
                                   do_per_global_host_booking, nullptr);
          }
-         const auto host = ocs::tom::find_first_in_rw<AR_reserved_hosts, EH_name>(ar, ocs::tom::get<JG_qhostname>(gel));
+         const auto host = ar.find_first_in_rw<AR_reserved_hosts, EH_name>(gel.get<JG_qhostname>());
          if (host != nullptr) {
             debit_host_consumable(job, ja_task, granted_resources_list, pe, host, centry_list, slots, master_task,
                                   do_per_host_booking, nullptr);

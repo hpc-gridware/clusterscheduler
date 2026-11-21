@@ -71,7 +71,7 @@ void ocs::QHostParameter::set_bundle(const ocs::tom::ConstList<ocs::tom::SPP> bu
    // flags for used switches: -F -q -j -u
    const auto show_param = bundle.find_first<SPP_name>(SHOW);
    const auto show_list = value_list<ocs::tom::ULNG>(show_param);
-   show_ = ocs::tom::get<ULNG_value>(show_list.front());
+   show_ = show_list.front().get<ULNG_value>();
 
    // -F
    resource_visible_list_ =

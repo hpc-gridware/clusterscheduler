@@ -82,12 +82,12 @@ bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::
 
    bool ret = true;
 
-   for (auto acl_entry : ocs::tom::get<AR_acl_list>(ar)) {
-      auto user = ocs::tom::get<ARA_name>(acl_entry);
+   for (auto acl_entry : ar.get<AR_acl_list>()) {
+      auto user = acl_entry.get<ARA_name>();
 
       DPRINTF("check permissions for user %s\n", user);
       if (!ocs::is_hgroup_name(user)) {
-         if (sge_has_access_(user, ocs::tom::get<ARA_group>(acl_entry), nullptr,
+         if (sge_has_access_(user, acl_entry.get<ARA_group>(), nullptr,
                              acl_list, xacl_list,master_userset_list) == 0) {
              answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
@@ -100,13 +100,13 @@ bool sge_ar_have_users_access(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::
          DPRINTF("acl :%s", acl_name);
 
          /* at first xacl */
-         if (xacl_list && ocs::tom::find_first<US_name>(xacl_list, acl_name)) {
+         if (xacl_list && xacl_list.find_first<US_name>(acl_name)) {
             ret = false;
             break;
          }
 
          /* at second acl */
-         if (acl_list && !ocs::tom::find_first<US_name>(acl_list, acl_name)) {
+         if (acl_list && !acl_list.find_first<US_name>(acl_name)) {
             answer_list_add_sprintf(alpp, STATUS_OK, ANSWER_QUALITY_INFO, MSG_AR_QUEUEDNOPERMISSIONS, name); 
             ret = false;
             break;

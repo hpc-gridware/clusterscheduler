@@ -90,22 +90,22 @@ void suspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> susp_queues, const
       uint32_t interval;
 
       /* are suspend thresholds enabled? */
-      parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, ocs::tom::get<QU_suspend_interval>(qep), nullptr, 0);
+      parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, qep.get<QU_suspend_interval>(), nullptr, 0);
 
       if (interval == 0
-          || !ocs::tom::get<QU_nsuspend>(qep)
-          || !ocs::tom::get<QU_suspend_thresholds>(qep)) {
+          || !qep.get<QU_nsuspend>()
+          || !qep.get<QU_suspend_thresholds>()) {
          continue;
       } 
 
       /* check time stamp */
-      if (ocs::tom::get<QU_last_suspend_threshold_ckeck>(qep) &&
-         (ocs::tom::get<QU_last_suspend_threshold_ckeck>(qep) + sge_gmt32_to_gmt64(interval) > now)) {
+      if (qep.get<QU_last_suspend_threshold_ckeck>() &&
+         (qep.get<QU_last_suspend_threshold_ckeck>() + sge_gmt32_to_gmt64(interval) > now)) {
          continue;
       }
 
       for (i = 0, found = 1; 
-           i < (int) ocs::tom::get<QU_nsuspend>(qep) && found; 
+           i < (int) qep.get<QU_nsuspend>() && found; 
            i++) {
          found = 0;
          /* find one running job in suspend queue */
@@ -120,15 +120,15 @@ void suspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> susp_queues, const
                            ocs::tom::ConstList<ocs::tom::JG>(), true);
 
          DPRINTF("++++ suspending job " sge_u32 "/" sge_u32 " on threshold\n",
-                 ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task));
+                 jep.get<JB_job_number>(), ja_task.get<JAT_task_number>());
 
          /* prevent multiple selection of this job */
-         ocs::tom::set<JAT_state>(ja_task, 
-                   ocs::tom::get<JAT_state>(ja_task) | JSUSPENDED_ON_THRESHOLD);
+         ja_task.set<JAT_state>(
+                   ja_task.get<JAT_state>() | JSUSPENDED_ON_THRESHOLD);
       }
 
       if (i==0 && !found) {
-         DPRINTF("found no jobs for sot in queue %s\n", ocs::tom::get<QU_full_name>(qep));
+         DPRINTF("found no jobs for sot in queue %s\n", qep.get<QU_full_name>());
       }
    }
    
@@ -156,29 +156,29 @@ void unsuspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> queue_list, cons
       uint32_t interval;
 
       /* are suspend thresholds enabled? */
-      parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, ocs::tom::get<QU_suspend_interval>(qep), nullptr, 0);
+      parse_ulong_val(nullptr, &interval, ocs::CEntry::Type::TIME, qep.get<QU_suspend_interval>(), nullptr, 0);
 
        if (interval == 0
-           || !ocs::tom::get<QU_nsuspend>(qep)
-           || !ocs::tom::get<QU_suspend_thresholds>(qep)) {
+           || !qep.get<QU_nsuspend>()
+           || !qep.get<QU_suspend_thresholds>()) {
           continue;
        } 
 
       /* check time stamp */
-      if (ocs::tom::get<QU_last_suspend_threshold_ckeck>(qep) &&
-         (ocs::tom::get<QU_last_suspend_threshold_ckeck>(qep) + sge_gmt32_to_gmt64(interval) > now)) {
+      if (qep.get<QU_last_suspend_threshold_ckeck>() &&
+         (qep.get<QU_last_suspend_threshold_ckeck>() + sge_gmt32_to_gmt64(interval) > now)) {
          if (DPRINTF_IS_ACTIVE) {
             DSTRING_STATIC(dstr1, 64);
             DSTRING_STATIC(dstr2, 64);
             DPRINTF("queue was last checked at %s (interval = %s, now = %s)\n",
-                    sge_ctime64(ocs::tom::get<QU_last_suspend_threshold_ckeck>(qep), &dstr1),
-                    ocs::tom::get<QU_suspend_interval>(qep), sge_ctime64(now, &dstr2));
+                    sge_ctime64(qep.get<QU_last_suspend_threshold_ckeck>(), &dstr1),
+                    qep.get<QU_suspend_interval>(), sge_ctime64(now, &dstr2));
          }
          continue;
       }
 
       for (i = 0, found = 1; 
-           i < (int) ocs::tom::get<QU_nsuspend>(qep) && found; 
+           i < (int) qep.get<QU_nsuspend>() && found; 
            i++) {
          found = 0;
          /* find one running job in suspend queue */
@@ -193,14 +193,14 @@ void unsuspend_job_in_queues(const ocs::tom::List<ocs::tom::QU> queue_list, cons
                            ocs::tom::ConstList<ocs::tom::JG>(), true);
 
          DPRINTF("---- unsuspending job " sge_u32 "/" sge_u32 " on threshold\n",
-                 ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(ja_task));
+                 jep.get<JB_job_number>(), ja_task.get<JAT_task_number>());
 
          /* prevent multiple selection of this job */
-         ocs::tom::set<JAT_state>(ja_task, ocs::tom::get<JAT_state>(ja_task) & ~JSUSPENDED_ON_THRESHOLD);
+         ja_task.set<JAT_state>(ja_task.get<JAT_state>() & ~JSUSPENDED_ON_THRESHOLD);
       }
       
       if (i==0 && !found) {
-         DPRINTF("found no jobs for usot in queue %s\n", ocs::tom::get<QU_full_name>(qep));
+         DPRINTF("found no jobs for usot in queue %s\n", qep.get<QU_full_name>());
       }
    }
 
@@ -226,7 +226,7 @@ select4suspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::C
    ocs::tom::Element<ocs::tom::JB> jshortest;
    ocs::tom::Element<ocs::tom::JAT> shortest;
 
-   const char *qnm = ocs::tom::get<QU_full_name>(qep);
+   const char *qnm = qep.get<QU_full_name>();
    if (qinstance_state_is_manual_suspended(qep) ||
        qinstance_state_is_susp_on_sub(qep) ||
        qinstance_state_is_cal_suspended(qep)) {
@@ -235,8 +235,8 @@ select4suspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::C
 
    for (const auto jep : job_list) {
       /* job running */ 
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
-         const uint32_t jstate = ocs::tom::get<JAT_state>(ja_task);
+      for (const auto ja_task : jep.get<JB_ja_tasks>()) {
+         const uint32_t jstate = ja_task.get<JAT_state>();
          if (!(jstate & JRUNNING) || 
              (jstate & JSUSPENDED) || (jstate & JSUSPENDED_ON_THRESHOLD)) {
             continue;
@@ -248,14 +248,14 @@ select4suspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom::C
          **    a master-task of a pe-job with sub-tasks in this queue
          ** then it is a potential candidate which we could suspend
          */
-         if (ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qnm) == nullptr) {
+         if (ja_task.find_first_in<JAT_granted_destin_identifier_list, JG_qname>(qnm) == nullptr) {
             continue;
          }
 
          /* select job that runs shortest time for suspension */
          if (shortest == nullptr ||
              // @todo: CS-353 the condition looks incorrect
-             ocs::tom::get<JAT_start_time>(shortest) < ocs::tom::get<JAT_start_time>(ja_task)) {
+             shortest.get<JAT_start_time>() < ja_task.get<JAT_start_time>()) {
             shortest = ja_task;
             jshortest = jep;
          }
@@ -282,25 +282,25 @@ select4unsuspension(const ocs::tom::List<ocs::tom::JB> job_list, const ocs::tom:
 
    ocs::tom::Element<ocs::tom::JB> jlongest;
    ocs::tom::Element<ocs::tom::JAT> longest;
-   const char *qnm = ocs::tom::get<QU_full_name>(qep);
+   const char *qnm = qep.get<QU_full_name>();
 
    for (const auto jep : job_list) {
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(jep)) {
+      for (const auto ja_task : jep.get<JB_ja_tasks>()) {
          /* job must be suspended */ 
-         const uint32_t jstate = ocs::tom::get<JAT_state>(ja_task);
+         const uint32_t jstate = ja_task.get<JAT_state>();
          if (!(jstate & JSUSPENDED_ON_THRESHOLD)) {
             continue;
          }
 
          /* is this the master queue of this job ? */
-         if (strcmp(qnm, ocs::tom::get<JG_qname>(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).front()))) {
+         if (strcmp(qnm, ja_task.get<JAT_granted_destin_identifier_list>().front().get<JG_qname>())) {
             DTRACE;
             continue;
          }
 
          /* select task that runs longest time for unsuspension */
          if (longest == nullptr ||
-             ocs::tom::get<JAT_start_time>(longest) > ocs::tom::get<JAT_start_time>(ja_task)) {
+             longest.get<JAT_start_time>() > ja_task.get<JAT_start_time>()) {
             longest = ja_task;
             jlongest = jep;
          }

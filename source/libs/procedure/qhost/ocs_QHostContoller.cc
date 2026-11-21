@@ -57,7 +57,7 @@ ocs::QHostController::process_request(QHostParameter &parameter, QHostModelBase 
       //}
 
       // start host entry
-      view.host_start(oss, ocs::tom::get<EH_name>(ep));
+      view.host_start(oss, ep.get<EH_name>());
 
       // print host section
       view.show_host(oss, ep, parameter, model, view);

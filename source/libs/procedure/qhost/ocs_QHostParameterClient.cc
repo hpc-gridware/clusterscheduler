@@ -232,7 +232,7 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
          for (const auto ep : *hostname_list_) {
             if (ocs_resolve_host<ST_name>(ep) != CL_RETVAL_OK) {
                char buf[BUFSIZ];
-               snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, ocs::tom::get<ST_name>(ep) );
+               snprintf(buf, sizeof(buf), MSG_SGETEXT_CANTRESOLVEHOST_S, ep.get<ST_name>() );
                answer_list_add(alpp, buf, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
                goto error;
             }
@@ -358,7 +358,7 @@ bool ocs::QHostParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN>
 
    // find duplicates in file and commandline and remove them
    for (const auto switch_cmd : *cmdline_switches) {
-      const char *switch_val = ocs::tom::get<SPA_switch_val>(switch_cmd);
+      const char *switch_val = switch_cmd.get<SPA_switch_val>();
       for (auto switch_default = file_switches->find_first<SPA_switch_val>(switch_val); switch_default != nullptr;
            switch_default = file_switches->find_first<SPA_switch_val>(switch_val)) {
          file_switches->erase(switch_default);

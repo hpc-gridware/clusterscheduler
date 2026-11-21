@@ -85,12 +85,12 @@ hgroup_tree_elem(std::ostream &os, const ocs::tom::ConstList<ocs::tom::HGRP> hgr
    }
    os << hgroup_text(name) << "\n";
 
-   const auto hgroup = ocs::tom::find_first<HGRP_name>(hgroup_list, name);
+   const auto hgroup = hgroup_list.find_first<HGRP_name>(ocs::tom::Host(name));
    if (hgroup != nullptr) {
-      const auto sub_list = ocs::tom::get<HGRP_host_list>(hgroup);
+      const auto sub_list = hgroup.get<HGRP_host_list>();
 
       for (const auto href : sub_list) {
-         hgroup_tree_elem(os, hgroup_list, ocs::tom::get<HR_name>(href), indent + 1);
+         hgroup_tree_elem(os, hgroup_list, href.get<HR_name>(), indent + 1);
       }
    }
 

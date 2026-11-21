@@ -575,7 +575,7 @@ bool ocs::QStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN>
           */
          more = false;
          for (const auto ep_2 : *file_switches) {
-            if (strcmp(ocs::tom::get<SPA_switch_val>(ep_1), ocs::tom::get<SPA_switch_val>(ep_2)) == 0) {
+            if (strcmp(ep_1.get<SPA_switch_val>(), ep_2.get<SPA_switch_val>()) == 0) {
                // remove duplicate options
                file_switches->erase(ep_2);
                more = true;
@@ -596,7 +596,7 @@ bool ocs::QStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN>
    // parsing error => show error and exit
    if (alp != nullptr) {
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s\n", aep.get<AN_text>());
       }
       alp.reset();
       cmdline_switches.reset();
@@ -610,7 +610,7 @@ bool ocs::QStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN>
       ** low level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s\n", aep.get<AN_text>());
       }
       alp.reset();
       cmdline_switches.reset();

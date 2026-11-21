@@ -78,7 +78,7 @@ bool ocs::QHostModelServer::fetch_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
 
    const auto sc = ocs::DataStore::master_list<SGE_TYPE_SCHEDD_CONF>().front();
    if (sc != nullptr) {
-      job_load_adjustments_ = ocs::tom::get<SC_job_load_adjustments>(sc).clone("load_adj_copy");
+      job_load_adjustments_ = sc.get<SC_job_load_adjustments>().clone("load_adj_copy");
    }
    // An empty list, not nullptr, when none are configured: the sched helpers read nullptr as "fetch them
    // from the data store of the calling thread" (LOAD_ADJUSTMENTS_LATE_FETCH in get_attribute()), which

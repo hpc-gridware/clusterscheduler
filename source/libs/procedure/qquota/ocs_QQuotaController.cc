@@ -108,12 +108,12 @@ ocs::QQuotaController::qquota_print_out_filter(std::ostream &os, const ocs::tom:
    if (filter == nullptr) {
       DRETURN_VOID;
    }
-   if (!ocs::tom::get<RQRF_expand>(filter) || value == nullptr) {
-      for (const auto scope : ocs::tom::get<RQRF_scope>(filter)) {
-         view.report_limit_string_value(os, name, ocs::tom::get<ST_name>(scope), false);
+   if (!filter.get<RQRF_expand>() || value == nullptr) {
+      for (const auto scope : filter.get<RQRF_scope>()) {
+         view.report_limit_string_value(os, name, scope.get<ST_name>(), false);
       }
-      for (const auto scope : ocs::tom::get<RQRF_xscope>(filter)) {
-         view.report_limit_string_value(os, name, ocs::tom::get<ST_name>(scope), true);
+      for (const auto scope : filter.get<RQRF_xscope>()) {
+         view.report_limit_string_value(os, name, scope.get<ST_name>(), true);
       }
    } else {
       view.report_limit_string_value(os, name, value, false);
@@ -149,7 +149,7 @@ ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const ocs::tom::C
 
    // create a unique key
    std::ostringstream oss_key;
-   oss_key << ocs::tom::get<RQS_name>(rqs) << "/" << ocs::tom::get<RQR_name>(rule) << "," << limit_name << ","
+   oss_key << rqs.get<RQS_name>() << "/" << rule.get<RQR_name>() << "," << limit_name << ","
            << (qfilter.user? qfilter.user: "") << "," << (qfilter.project? qfilter.project: "") << ","
            << (qfilter.pe? qfilter.pe: "") << "," << (qfilter.queue? qfilter.queue: "") << ","
            << (qfilter.host? qfilter.host: "");
@@ -163,13 +163,13 @@ ocs::QQuotaController::qquota_print_out_rule(std::ostream &os, const ocs::tom::C
    printed_rules.emplace_back<ST_name>(oss_key.str().c_str());
 
    // make the output
-   view.report_limit_rule_begin(os, ocs::tom::get<RQS_name>(rqs), ocs::tom::get<RQR_name>(rule));
+   view.report_limit_rule_begin(os, rqs.get<RQS_name>(), rule.get<RQR_name>());
    view.report_resource_value(os, limit_name, type, limit, usage);
-   qquota_print_out_filter(os, ocs::tom::get<RQR_filter_users>(rule), "users", qfilter.user, view);
-   qquota_print_out_filter(os, ocs::tom::get<RQR_filter_projects>(rule), "projects", qfilter.project, view);
-   qquota_print_out_filter(os, ocs::tom::get<RQR_filter_pes>(rule), "pes", qfilter.pe, view);
-   qquota_print_out_filter(os, ocs::tom::get<RQR_filter_queues>(rule), "queues", qfilter.queue, view);
-   qquota_print_out_filter(os, ocs::tom::get<RQR_filter_hosts>(rule), "hosts", qfilter.host, view);
+   qquota_print_out_filter(os, rule.get<RQR_filter_users>(), "users", qfilter.user, view);
+   qquota_print_out_filter(os, rule.get<RQR_filter_projects>(), "projects", qfilter.project, view);
+   qquota_print_out_filter(os, rule.get<RQR_filter_pes>(), "pes", qfilter.pe, view);
+   qquota_print_out_filter(os, rule.get<RQR_filter_queues>(), "queues", qfilter.queue, view);
+   qquota_print_out_filter(os, rule.get<RQR_filter_hosts>(), "hosts", qfilter.host, view);
    view.report_limit_rule_finished(os);
 
    DRETURN_VOID;
@@ -204,11 +204,11 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
 
       DTRACE;
 
-      if (!ocs::tom::get<RQS_enabled>(rqs)) {
+      if (!rqs.get<RQS_enabled>()) {
          continue;
       }
 
-      for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
+      for (const auto rule : rqs.get<RQS_rule>()) {
          auto user_ep = parameter.get_user_list().front();
          auto project_ep = parameter.get_project_list().front();
          auto pe_ep = parameter.get_pe_list().front();
@@ -216,24 +216,24 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
          auto host_ep = parameter.get_host_list().front();
          do {
             if (user_ep != nullptr) {
-               DPRINTF("filter for user: %s\n", ocs::tom::get<ST_name>(user_ep));
-               qquota_filter.user = ocs::tom::get<ST_name>(user_ep);
+               DPRINTF("filter for user: %s\n", user_ep.get<ST_name>());
+               qquota_filter.user = user_ep.get<ST_name>();
             }
             do {
                if (project_ep != nullptr) {
-                  qquota_filter.project = ocs::tom::get<ST_name>(project_ep);
+                  qquota_filter.project = project_ep.get<ST_name>();
                }
                do {
                   if (pe_ep != nullptr) {
-                     qquota_filter.pe = ocs::tom::get<ST_name>(pe_ep);
+                     qquota_filter.pe = pe_ep.get<ST_name>();
                   }
                   do {
                      if (queue_ep != nullptr) {
-                        qquota_filter.queue = ocs::tom::get<ST_name>(queue_ep);
+                        qquota_filter.queue = queue_ep.get<ST_name>();
                      }
                      do {
                         if (host_ep != nullptr) {
-                           qquota_filter.host = ocs::tom::get<ST_name>(host_ep);
+                           qquota_filter.host = host_ep.get<ST_name>();
                         }
 
                         if (rqs_is_matching_rule(rule, qquota_filter.user, nullptr, ocs::tom::ConstList<ocs::tom::ST>(),
@@ -241,9 +241,9 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                                  qquota_filter.queue, model.get_user_set_list(),
                                                  model.get_hgroup_list())) {
 
-                           for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
-                              const char *limit_name = ocs::tom::get<RQRL_name>(limit);
-                              const auto rue_list = ocs::tom::get<RQRL_usage>(limit);
+                           for (const auto limit : rule.get<RQR_limit>()) {
+                              const char *limit_name = limit.get<RQRL_name>();
+                              const auto rue_list = limit.get<RQRL_usage>();
                               // the centry is changed below: CE_pj_doubleval carries each value to render
                               const auto raw_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(
                                  centry_list_locate(model.get_centry_list(), limit_name));
@@ -256,27 +256,27 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                               // attribute type drives value parsing (RQRL_value) and
                               // human-readable rendering of the limit (CS-2348)
                               const auto centry_type =
-                                 static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(raw_centry));
+                                 static_cast<ocs::CEntry::Type>(raw_centry.get<CE_valtype>());
 
                               if (const auto rml = parameter.get_resource_match_list(); rml != nullptr &&
                                   ((centry_list_locate(rml, limit_name) == nullptr) &&
-                                  (centry_list_locate(rml, ocs::tom::get<CE_shortcut>(raw_centry)) == nullptr))) {
+                                  (centry_list_locate(rml, raw_centry.get<CE_shortcut>()) == nullptr))) {
                                  DPRINTF("centry %s was not requested on CLI -> IGNORING\n", limit_name);
                                  continue;
                               }
 
                               // Set a rule name if it was not manually specified
-                              if (!ocs::tom::get<RQR_name>(rule)) {
-                                 ocs::tom::set<RQR_name>(rule, std::to_string(rule_count).c_str());
+                              if (!rule.get<RQR_name>()) {
+                                 rule.set<RQR_name>(std::to_string(rule_count).c_str());
                               }
 
-                              if (ocs::tom::get<CE_consumable>(raw_centry)) {
+                              if (raw_centry.get<CE_consumable>()) {
                                  // for consumables we need to walk through the utilization and search for
                                  // matching values
                                  DPRINTF("found centry %s - consumable\n", limit_name);
                                  for (const auto rue_elem : rue_list) {
                                     uint32_t dominant = 0;
-                                    const char *rue_name = ocs::tom::get<RUE_name>(rue_elem);
+                                    const char *rue_name = rue_elem.get<RUE_name>();
                                     char *cp = nullptr;
                                     stringT user, project, pe, queue, host;
                                     dstring limit_str = DSTRING_INIT;
@@ -363,24 +363,24 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                        }
                                     }
                                     uint64_t limit_value;
-                                    if (ocs::tom::get<RQRL_dynamic>(limit)) {
+                                    if (limit.get<RQRL_dynamic>()) {
                                        const auto exec_host = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(
                                           host_list_locate(model.get_exec_host_list(), host));
                                        limit_value = static_cast<uint64_t>(
-                                          scaled_mixed_load(ocs::tom::get<RQRL_value>(limit), global_host, exec_host,
+                                          scaled_mixed_load(limit.get<RQRL_value>(), global_host, exec_host,
                                                             model.get_centry_list(),
                                                             model.get_job_load_adjustments()));
                                        sge_dstring_sprintf(&limit_str, "%d", limit_value);
 
                                     } else {
-                                       ocs::tom::set<CE_pj_doubleval>(raw_centry, ocs::tom::get<RQRL_dvalue>(limit));
+                                       raw_centry.set<CE_pj_doubleval>(limit.get<RQRL_dvalue>());
                                        sge_get_dominant_stringval(raw_centry, &dominant, &limit_str, nullptr,
                                                                   &limit_value);
                                     }
 
                                     u_int64_t value_value;
-                                    ocs::tom::set<CE_pj_doubleval>(raw_centry,
-                                                                   ocs::tom::get<RUE_utilized_now>(rue_elem));
+                                    raw_centry.set<CE_pj_doubleval>(
+                                                                   rue_elem.get<RUE_utilized_now>());
                                     sge_get_dominant_stringval(raw_centry, &dominant, &value_str, nullptr,
                                                                &value_value);
 
@@ -409,7 +409,7 @@ void ocs::QQuotaController::process_request(QQuotaParameter &parameter, QQuotaMo
                                  // silently mis-parsed typed values like "4G" (CWE-248, CS-2348).
                                  uint64_t limit_value = 0;
                                  double dval = 0.0;
-                                 if (const char *value_str = ocs::tom::get<RQRL_value>(limit);
+                                 if (const char *value_str = limit.get<RQRL_value>();
                                      value_str != nullptr &&
                                      parse_ulong_val(&dval, nullptr, centry_type, value_str, nullptr, 0)) {
                                     limit_value = static_cast<uint64_t>(dval);
