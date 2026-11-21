@@ -977,10 +977,13 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
  *
  * @param answer_list to return error messages
  * @param context     the context to read from
- * @param list        receives the keys (`STU`)
+ * @param list        receives the keys (`STU`); a list it holds already is taken over, extended and handed back,
+ *                    nullptr drops the keys
  * @param key         the key to list below
  *
  * @return true on success, else false
+ * @throw ocs::tom::FieldException with reason WrongType if `*list` is a list of another type than `STU`; the
+ *        list stays with the caller then
  *
  * @warning A rule without a #spooling_read_keys_func puts a *"corrupt rule"*
  *          error into `answer_list` but does **not** make the function return
@@ -1006,9 +1009,13 @@ spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *c
    } else {
       ocs::tom::ConstList<ocs::tom::SPR> rules = ctx.get<SPC_rules>();
 
-      // the callbacks fill a typed owner; a list the caller passes in is taken over (with a type check) and
-      // handed back below, the caller's slot is cleared meanwhile, so an exception cannot leave it dangling
-      ocs::tom::ListPtr<ocs::tom::STU> keys(list != nullptr ? std::exchange(*list, nullptr) : nullptr);
+      // the callbacks fill a typed owner; a list the caller passes in is taken over and handed back below. The
+      // checked ctor runs first: on a list of another type it throws and the list stays with the caller; once
+      // the owner holds it, the caller's slot is cleared, so a throwing callback cannot leave it dangling
+      ocs::tom::ListPtr<ocs::tom::STU> keys(list != nullptr ? *list : nullptr);
+      if (list != nullptr) {
+         *list = nullptr;
+      }
 
       /* use the default rule to read object */
       for (const ocs::tom::ConstElement<ocs::tom::SPR> rule : rules) {
