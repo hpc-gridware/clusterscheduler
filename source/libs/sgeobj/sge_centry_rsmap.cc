@@ -118,22 +118,22 @@ bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_
       DRETURN(ret);
    }
 
-   const char *rsmap_name = ocs::tom::get<CE_name>(centry);
-   const auto resource_map = ocs::tom::get<CE_resource_map_list>(centry);
+   const char *rsmap_name = centry.get<CE_name>();
+   const auto resource_map = centry.get<CE_resource_map_list>();
    if (!resource_map) {
       DRETURN(ret);
    }
 
    for (const auto resl : resource_map) {
-      const auto props = ocs::tom::get<RESL_properties>(resl);
+      const auto props = resl.get<RESL_properties>();
       if (props.empty()) {
          continue;
       }
-      const char *id = ocs::tom::get<RESL_value>(resl);
+      const char *id = resl.get<RESL_value>();
 
       std::unordered_set<std::string> seen;
       for (const auto prop : props) {
-         const char *pname = ocs::tom::get<CE_name>(prop);
+         const char *pname = prop.get<CE_name>();
          if (pname == nullptr) {
             continue;
          }
@@ -160,19 +160,19 @@ bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_
          // A resource map is an amount plus a list of instances, and the grammar of a
          // characteristic value excludes '(' and ')', so the instances can never be given. What
          // remains would parse as a plain number which means nothing.
-         if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(master_cep)) ==
+         if (static_cast<ocs::CEntry::Type>(master_cep.get<CE_valtype>()) ==
              ocs::CEntry::Type::RSMAP) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                     MSG_RSMAP_CHARACTERISTIC_IS_RSMAP_SSS,
                                     rsmap_name, id != nullptr ? id : "",
-                                    ocs::tom::get<CE_name>(master_cep));
+                                    master_cep.get<CE_name>());
             ret = false;
             continue;
          }
 
          // copy the canonical name (in case the user wrote a shortcut) and the valtype
-         ocs::tom::set<CE_name>(prop, ocs::tom::get<CE_name>(master_cep));
-         ocs::tom::set<CE_valtype>(prop, ocs::tom::get<CE_valtype>(master_cep));
+         prop.set<CE_name>(master_cep.get<CE_name>());
+         prop.set<CE_valtype>(master_cep.get<CE_valtype>());
 
          // type-check the value; centry_fill_and_check populates CE_doubleval for
          // numeric types and returns -1 on parse failure (with its own answer_list
@@ -182,7 +182,7 @@ bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_
          if (centry_fill_and_check(prop, &sub_answers, false, false) != 0) {
             const char *sub_msg = "";
             if (const auto first = sub_answers->front()) {
-               const char *txt = ocs::tom::get<AN_text>(first);
+               const char *txt = first.get<AN_text>();
                if (txt != nullptr) {
                   sub_msg = txt;
                }
@@ -202,8 +202,8 @@ bool centry_check_rsmap_characteristics(ocs::tom::ListPtr<ocs::tom::AN> *answer_
          // specifier - which would make every such job fail to start. Reject it here instead,
          // where an administrator sees it (CS-2924). The value holds one or more devices,
          // "path[:mode];path[:mode];...", see exec_job.cc.
-         if (strcmp(ocs::tom::get<CE_name>(prop), LOAD_ATTR_DEVICES) == 0) {
-            const char *devices = ocs::tom::get<CE_stringval>(prop);
+         if (strcmp(prop.get<CE_name>(), LOAD_ATTR_DEVICES) == 0) {
+            const char *devices = prop.get<CE_stringval>();
             if (devices != nullptr) {
                std::string rest = devices;
                while (!rest.empty()) {
@@ -371,8 +371,8 @@ bool centry_rsmap_check_request_params(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
                                        const ocs::tom::ConstElement<ocs::tom::CE> centry,
                                        const ocs::tom::ConstList<ocs::tom::CE> master_centry_list) {
    DENTER(TOP_LAYER);
-   const char *name = ocs::tom::get<CE_name>(centry);
-   const char *value = ocs::tom::get<CE_stringval>(centry);
+   const char *name = centry.get<CE_name>();
+   const char *value = centry.get<CE_stringval>();
 
    if (value == nullptr) {
       DRETURN(true);
@@ -384,7 +384,7 @@ bool centry_rsmap_check_request_params(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
    // a character class, not a malformed parameter list. The type is known here - the caller
    // fills CE_valtype from the complex before asking - so the question is decided before a
    // bracket is looked for rather than after.
-   if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) != ocs::CEntry::Type::RSMAP) {
+   if (static_cast<ocs::CEntry::Type>(centry.get<CE_valtype>()) != ocs::CEntry::Type::RSMAP) {
       DRETURN(true);
    }
 
@@ -567,14 +567,14 @@ bool centry_rsmap_check_request_params(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_PARAM_UNKNOWN_SS, name, param_name.c_str());
          ret = false;
-      } else if (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(char_cep)) ==
+      } else if (static_cast<ocs::CEntry::Type>(char_cep.get<CE_valtype>()) ==
                  ocs::CEntry::Type::RSMAP) {
          // A resource map cannot be a characteristic of an instance of another one: it has
          // instances of its own and no single value to compare against.
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_PARAM_IS_RSMAP_SS, name, param_name.c_str());
          ret = false;
-      } else if (ocs::tom::get<CE_requestable>(char_cep) == REQU_NO) {
+      } else if (char_cep.get<CE_requestable>() == REQU_NO) {
          // The complex says it may not be requested, and matching an instance against it is
          // requesting it. FORCED is a different matter and is not checked here: it is enforced
          // against the host's and queue's complex_values and the job's request sets, and a
@@ -583,7 +583,7 @@ bool centry_rsmap_check_request_params(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_PARAM_NOT_REQUESTABLE_SS, name, param_name.c_str());
          ret = false;
-      } else if (ocs::tom::get<CE_consumable>(char_cep) != CONSUMABLE_NO) {
+      } else if (char_cep.get<CE_consumable>() != CONSUMABLE_NO) {
          // A consumable characteristic would have to be booked as well as compared, and
          // nothing books one. This also disposes of an EXCL boolean, since EXCL implies
          // consumable. Refused rather than ignored, so that a request which would quietly
@@ -641,7 +641,7 @@ centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::C
 
    const char *open;
    const char *close;
-   if (!centry_rsmap_find_params(ocs::tom::get<CE_stringval>(centry), &open, &close)) {
+   if (!centry_rsmap_find_params(centry.get<CE_stringval>(), &open, &close)) {
       return ocs::tom::ListPtr<ocs::tom::CE>();
    }
 
@@ -668,10 +668,10 @@ centry_rsmap_resolve_request_properties(const ocs::tom::ConstElement<ocs::tom::C
       if (!resolved) {
          resolved = ocs::tom::ListPtr<ocs::tom::CE>::create("resolved request properties");
       }
-      const auto req_ep = resolved->emplace_back<CE_name>(ocs::tom::get<CE_name>(char_cep));
-      ocs::tom::set<CE_valtype>(req_ep, ocs::tom::get<CE_valtype>(char_cep));
-      ocs::tom::set<CE_relop>(req_ep, ocs::tom::get<CE_relop>(char_cep));
-      ocs::tom::set<CE_stringval>(req_ep, param.substr(eq + 1).c_str());
+      const auto req_ep = resolved->emplace_back<CE_name>(char_cep.get<CE_name>());
+      req_ep.set<CE_valtype>(char_cep.get<CE_valtype>());
+      req_ep.set<CE_relop>(char_cep.get<CE_relop>());
+      req_ep.set<CE_stringval>(param.substr(eq + 1).c_str());
 
       // parse the value as the type of the complex, so that a numeric comparison has an amount
       // to work with. A value which does not parse was refused at submission; here it simply
@@ -734,7 +734,7 @@ bool centry_rsmap_request_is_job_scope(const ocs::tom::ConstElement<ocs::tom::CE
  */
 bool centry_rsmap_get_request_param(const ocs::tom::ConstElement<ocs::tom::CE> centry, const char *param,
                                     dstring *value) {
-   const char *s = ocs::tom::get<CE_stringval>(centry);
+   const char *s = centry.get<CE_stringval>();
 
    if (s == nullptr || param == nullptr) {
       return false;
@@ -810,14 +810,14 @@ bool centry_rsmap_get_request_param(const ocs::tom::ConstElement<ocs::tom::CE> c
 static const char *
 centry_rsmap_instance_key(const ocs::tom::ConstElement<ocs::tom::RESL> defined_ep, const char *key_name) {
    if (key_name == nullptr || strcmp(key_name, RSMAP_REQUEST_PARAM_ID) == 0) {
-      return ocs::tom::get<RESL_value>(defined_ep);
+      return defined_ep.get<RESL_value>();
    }
 
-   const auto property = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, key_name);
+   const auto property = defined_ep.find_first_in<RESL_properties, CE_name>(key_name);
    if (!property) {
       return nullptr;
    }
-   return ocs::tom::get<CE_stringval>(property);
+   return property.get<CE_stringval>();
 }
 
 /**
@@ -835,13 +835,13 @@ centry_rsmap_instance_key(const ocs::tom::ConstElement<ocs::tom::RESL> defined_e
 static uint32_t
 centry_rsmap_instance_free(const ocs::tom::ConstElement<ocs::tom::RESL> defined_ep,
                            const ocs::tom::ConstList<ocs::tom::RESL> taken) {
-   uint32_t free = ocs::tom::get<RESL_amount>(defined_ep);
+   uint32_t free = defined_ep.get<RESL_amount>();
 
    if (taken) {
-      const char *id = ocs::tom::get<RESL_value>(defined_ep);
-      const auto used_ep = ocs::tom::find_first<RESL_value>(taken, id);
+      const char *id = defined_ep.get<RESL_value>();
+      const auto used_ep = taken.find_first<RESL_value>(id);
       if (used_ep) {
-         const uint32_t used = ocs::tom::get<RESL_amount>(used_ep);
+         const uint32_t used = used_ep.get<RESL_amount>();
          // RESL_amount is unsigned: an id taken beyond its count must read as full rather
          // than wrap round to an enormous free amount
          free = (used >= free) ? 0 : free - used;
@@ -867,14 +867,14 @@ centry_rsmap_group_keys(const ocs::tom::ConstElement<ocs::tom::CE> resource_defi
    // created with its first element
    ocs::tom::ListPtr<ocs::tom::ST> keys;
 
-   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : resource_definition.get<CE_resource_map_list>()) {
       const char *key = centry_rsmap_instance_key(defined_ep, key_name);
       if (key == nullptr) {
          continue;
       }
       if (!keys) {
          keys = ocs::tom::ListPtr<ocs::tom::ST>::create("resource map group keys");
-      } else if (ocs::tom::find_first<ST_name>(*keys, key)) {
+      } else if (keys->find_first<ST_name>(key)) {
          continue;
       }
       keys->emplace_back<ST_name>(key);
@@ -923,8 +923,8 @@ centry_rsmap_value_matches(const ocs::CEntry::Type type, const uint32_t relop,
       case ocs::CEntry::Type::CSTR:
       case ocs::CEntry::Type::HOST:
       case ocs::CEntry::Type::RESTR: {
-         const char *req_str = ocs::tom::get<CE_stringval>(request);
-         const char *off_str = ocs::tom::get<CE_stringval>(offer);
+         const char *req_str = request.get<CE_stringval>();
+         const char *off_str = offer.get<CE_stringval>();
          if (req_str == nullptr || off_str == nullptr) {
             return false;
          }
@@ -946,8 +946,8 @@ centry_rsmap_value_matches(const ocs::CEntry::Type type, const uint32_t relop,
          break;
       }
       default: {
-         const double req = ocs::tom::get<CE_doubleval>(request);
-         const double off = ocs::tom::get<CE_doubleval>(offer);
+         const double req = request.get<CE_doubleval>();
+         const double off = offer.get<CE_doubleval>();
          cmp = (req < off) ? -1 : ((req > off) ? 1 : 0);
          break;
       }
@@ -987,13 +987,13 @@ centry_rsmap_instance_matches_properties(const ocs::tom::ConstElement<ocs::tom::
    }
 
    for (const auto req_ep : required) {
-      const char *pname = ocs::tom::get<CE_name>(req_ep);
-      const auto offer = ocs::tom::find_first_in<RESL_properties, CE_name>(defined_ep, pname);
+      const char *pname = req_ep.get<CE_name>();
+      const auto offer = defined_ep.find_first_in<RESL_properties, CE_name>(pname);
       if (!offer) {
          return false;
       }
-      const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(req_ep));
-      if (!centry_rsmap_value_matches(type, ocs::tom::get<CE_relop>(req_ep), req_ep, offer)) {
+      const auto type = static_cast<ocs::CEntry::Type>(req_ep.get<CE_valtype>());
+      if (!centry_rsmap_value_matches(type, req_ep.get<CE_relop>(), req_ep, offer)) {
          return false;
       }
    }
@@ -1022,7 +1022,7 @@ centry_rsmap_instance_matches_id(const ocs::tom::ConstElement<ocs::tom::RESL> de
       return true;
    }
 
-   const char *id = ocs::tom::get<RESL_value>(defined_ep);
+   const char *id = defined_ep.get<RESL_value>();
    if (id == nullptr) {
       return false;
    }
@@ -1055,7 +1055,7 @@ uint32_t centry_rsmap_free(const ocs::tom::ConstElement<ocs::tom::CE> resource_d
       return 0;
    }
 
-   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : resource_definition.get<CE_resource_map_list>()) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1094,7 +1094,7 @@ uint32_t centry_rsmap_group_free(const ocs::tom::ConstElement<ocs::tom::CE> reso
       return 0;
    }
 
-   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : resource_definition.get<CE_resource_map_list>()) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1156,7 +1156,7 @@ const char *centry_rsmap_best_free_group(const ocs::tom::ConstElement<ocs::tom::
    // a handful of entries and a linear scan beats hashing and copying the keys into strings
    std::vector<std::pair<const char *, uint32_t>> groups;
 
-   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : resource_definition.get<CE_resource_map_list>()) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
@@ -1232,7 +1232,7 @@ centry_rsmap_take_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_
    ocs::tom::ListPtr<ocs::tom::RESL> chosen;
    uint32_t remaining = amount;
 
-   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : resource_definition.get<CE_resource_map_list>()) {
       if (remaining == 0) {
          break;
       }
@@ -1247,13 +1247,13 @@ centry_rsmap_take_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_
          continue;
       }
 
-      const char *id = ocs::tom::get<RESL_value>(defined_ep);
+      const char *id = defined_ep.get<RESL_value>();
       uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
 
       if (already) {
-         const auto mine = ocs::tom::find_first<RESL_value>(already, id);
+         const auto mine = already.find_first<RESL_value>(id);
          if (mine) {
-            const uint32_t held = ocs::tom::get<RESL_amount>(mine);
+            const uint32_t held = mine.get<RESL_amount>();
             free = (held >= free) ? 0 : free - held;
          }
       }
@@ -1270,7 +1270,7 @@ centry_rsmap_take_instances(const ocs::tom::ConstElement<ocs::tom::CE> resource_
          chosen = ocs::tom::ListPtr<ocs::tom::RESL>::create("chosen resource map instances");
       }
       const auto ep = chosen->emplace_back<RESL_value>(id);
-      ocs::tom::set<RESL_amount>(ep, take);
+      ep.set<RESL_amount>(take);
       remaining -= take;
    }
 
@@ -1366,9 +1366,9 @@ centry_rsmap_select_group_instances(const ocs::tom::ConstElement<ocs::tom::CE> r
    // been granted instances cannot be given different ones now.
    const char *key;
    if (!already.empty()) {
-      const char *chosen_id = ocs::tom::get<RESL_value>(already.front());
+      const char *chosen_id = already.front().get<RESL_value>();
       const auto chosen_ep =
-         ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(resource_definition, chosen_id);
+         resource_definition.find_first_in<CE_resource_map_list, RESL_value>(chosen_id);
       if (!chosen_ep) {
          // the map changed under us between one scope and the next
          return ocs::tom::ListPtr<ocs::tom::RESL>();
@@ -1435,12 +1435,12 @@ const char *centry_rsmap_best_free_id(const ocs::tom::ConstElement<ocs::tom::CE>
       return nullptr;
    }
 
-   for (const auto defined_ep : ocs::tom::get<CE_resource_map_list>(resource_definition)) {
+   for (const auto defined_ep : resource_definition.get<CE_resource_map_list>()) {
       if (!centry_rsmap_instance_matches_id(defined_ep, id_expr) ||
           !centry_rsmap_instance_matches_properties(defined_ep, required_props)) {
          continue;
       }
-      const char *id = ocs::tom::get<RESL_value>(defined_ep);
+      const char *id = defined_ep.get<RESL_value>();
       const uint32_t free = centry_rsmap_instance_free(defined_ep, taken);
 
       if (best_id == nullptr || free > best_free) {
@@ -1490,16 +1490,16 @@ bool centry_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
                                       const ocs::tom::Element<ocs::tom::CE> centry, const uint32_t max_ids) {
    DENTER(TOP_LAYER);
    if (!centry ||
-       static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(centry)) != ocs::CEntry::Type::RSMAP) {
+       static_cast<ocs::CEntry::Type>(centry.get<CE_valtype>()) != ocs::CEntry::Type::RSMAP) {
       DRETURN(true);
    }
 
    // ids have been configured - nothing to do
-   if (ocs::tom::get<CE_resource_map_list>(centry)) {
+   if (centry.get<CE_resource_map_list>()) {
       DRETURN(true);
    }
 
-   const double dval = ocs::tom::get<CE_doubleval>(centry);
+   const double dval = centry.get<CE_doubleval>();
    if (dval <= 0) {
       // "gpu=0" - the host provides no instance, which is a valid configuration
       DRETURN(true);
@@ -1509,21 +1509,21 @@ bool centry_rsmap_expand_implicit_ids(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
    if (max_ids == 0) {
       // the implicit ids are switched off - the instances have to be named explicitly
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                              MSG_CONFIG_CONF_RSMAP_NEEDS_IDS_S, ocs::tom::get<CE_name>(centry));
+                              MSG_CONFIG_CONF_RSMAP_NEEDS_IDS_S, centry.get<CE_name>());
       DRETURN(false);
    }
    if (amount > max_ids) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                               MSG_RSMAP_TOO_MANY_IMPLICIT_IDS_SUU,
-                              ocs::tom::get<CE_name>(centry), amount, max_ids);
+                              centry.get<CE_name>(), amount, max_ids);
       DRETURN(false);
    }
 
    for (uint32_t id = 0; id < amount; id++) {
       std::string id_str{std::to_string(id)};
-      const auto resl = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id_str.c_str());
+      const auto resl = centry.emplace_back_in<CE_resource_map_list, RESL_value>(id_str.c_str());
       if (resl) {
-         ocs::tom::set<RESL_amount>(resl, 1);
+         resl.set<RESL_amount>(1);
       }
    }
 

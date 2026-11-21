@@ -104,7 +104,7 @@ const char *prj_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::PR> t
       bool printed = false;
 
       for (const auto elem : this_list) {
-         sge_dstring_append(string, ocs::tom::get<PR_name>(elem));
+         sge_dstring_append(string, elem.get<PR_name>());
          if (elem.next()) {
             sge_dstring_append(string, " ");
          }
@@ -133,7 +133,7 @@ bool prj_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PR> this_list,
    DENTER(TOP_LAYER);
    bool ret = true;
    for (const auto prj : prj_list) {
-      const char *name = ocs::tom::get<PR_name>(prj);
+      const char *name = prj.get<PR_name>();
 
       if (!prj_list_locate(this_list, name)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
@@ -156,14 +156,14 @@ ocs::tom::ElementPtr<ocs::tom::UU> getUserTemplate() {
    DENTER(TOP_LAYER);
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::UU>::create();
-   ocs::tom::set<UU_name>(ep, "template");
-   ocs::tom::set<UU_default_project>(ep, nullptr);
-   ocs::tom::set<UU_oticket>(ep, 0);
-   ocs::tom::set<UU_fshare>(ep, 0);
-   ocs::tom::set<UU_job_cnt>(ep, 0);
-   ocs::tom::set<UU_project>(ep, nullptr);
-   ocs::tom::set<UU_usage>(ep, nullptr);
-   ocs::tom::set<UU_long_term_usage>(ep, nullptr);
+   ep->set<UU_name>("template");
+   ep->set<UU_default_project>(nullptr);
+   ep->set<UU_oticket>(0);
+   ep->set<UU_fshare>(0);
+   ep->set<UU_job_cnt>(0);
+   ep->set<UU_project>(nullptr);
+   ep->set<UU_usage>(nullptr);
+   ep->set<UU_long_term_usage>(nullptr);
 
    DRETURN(ep);
 }
@@ -177,15 +177,15 @@ ocs::tom::ElementPtr<ocs::tom::PR> getPrjTemplate() {
    DENTER(TOP_LAYER);
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::PR>::create();
-   ocs::tom::set<PR_name>(ep, "template");
-   ocs::tom::set<PR_oticket>(ep, 0);
-   ocs::tom::set<PR_fshare>(ep, 0);
-   ocs::tom::set<PR_job_cnt>(ep, 0);
-   ocs::tom::set<PR_project>(ep, nullptr);
-   ocs::tom::set<PR_usage>(ep, nullptr);
-   ocs::tom::set<PR_long_term_usage>(ep, nullptr);
-   ocs::tom::set<PR_acl>(ep, nullptr);
-   ocs::tom::set<PR_xacl>(ep, nullptr);
+   ep->set<PR_name>("template");
+   ep->set<PR_oticket>(0);
+   ep->set<PR_fshare>(0);
+   ep->set<PR_job_cnt>(0);
+   ep->set<PR_project>(nullptr);
+   ep->set<PR_usage>(nullptr);
+   ep->set<PR_long_term_usage>(nullptr);
+   ep->set<PR_acl>(nullptr);
+   ep->set<PR_xacl>(nullptr);
 
    DRETURN(ep);
 }

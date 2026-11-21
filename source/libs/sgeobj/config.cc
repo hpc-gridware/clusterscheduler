@@ -162,13 +162,13 @@ read_config_list(FILE *fp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool sub
          }
          auto ep = config->emplace_back<CF_name>(name);
          // CF_sublist has no sub-type in the model, so the field takes the raw list
-         ocs::tom::set<CF_sublist>(ep, sub_config.release());
+         ep.set<CF_sublist>(sub_config.release());
       } else {
          if (!config) {
             config = ocs::tom::ListPtr<ocs::tom::CF>::create("");
          }
          auto ep = config->emplace_back<CF_name>(name);
-         ocs::tom::set<CF_value>(ep, value);
+         ep.set<CF_value>(value);
       }
    }
 
@@ -200,7 +200,7 @@ const char *get_conf_value(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
       DRETURN(nullptr);
    }
 
-   const char *value = ocs::tom::get<CF_value>(ep);
+   const char *value = ep.get<CF_value>();
    DPRINTF("%s = %s\n", key, value?value:"<null ptr>");
 
    DRETURN(value);

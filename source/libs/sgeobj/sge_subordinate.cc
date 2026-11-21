@@ -102,7 +102,7 @@ bool tst_sos(const int used, const int total, const ocs::tom::ConstElement<ocs::
     * then check if B's usage meets the threshold
     * for suspension of the subordinated queue C
     */
-   if ((threshold=ocs::tom::get<SO_threshold>(so)) == 0) {
+   if ((threshold=so.get<SO_threshold>()) == 0) {
       /* queue must be full for suspend of queue C */
       DPRINTF("TSTSOS: %sfull -> %ssuspended\n", (used>=total)?"":"not ",
               (used>=total)?"":"not ");
@@ -134,7 +134,7 @@ const char *so_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::SO> th
       uint32_t slots_sum = 0;
 
       if (this_list && (so = this_list.front())) {
-         slots_sum = ocs::tom::get<SO_slots_sum>(so);
+         slots_sum = so.get<SO_slots_sum>();
 
          if (slots_sum > 0) {
             /*
@@ -145,13 +145,13 @@ const char *so_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::SO> th
             for (const auto elem : this_list) {
                const char *action_str = "sr";
 
-               if (ocs::tom::get<SO_action>(elem) == SO_ACTION_LR) {
+               if (elem.get<SO_action>() == SO_ACTION_LR) {
                   action_str = "lr";
                }
 
                sge_dstring_sprintf_append(string, "%s:" sge_u32":%s%s",
-                  ocs::tom::get<SO_name>(elem),
-                  ocs::tom::get<SO_seq_no>(elem),
+                  elem.get<SO_name>(),
+                  elem.get<SO_seq_no>(),
                   action_str,
                   elem.next() ? ", " : "");
             }
@@ -166,10 +166,10 @@ const char *so_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::SO> th
                   sge_dstring_append (string, " ");
                }
                
-               sge_dstring_append(string, ocs::tom::get<SO_name>(elem));
-               if (ocs::tom::get<SO_threshold>(elem)) {
+               sge_dstring_append(string, elem.get<SO_name>());
+               if (elem.get<SO_threshold>()) {
                   sge_dstring_sprintf_append(string, "=" sge_u32"%s",
-                                             ocs::tom::get<SO_threshold>(elem),
+                                             elem.get<SO_threshold>(),
                                              elem.next() ? "," : "");
                }
                printed = true;
@@ -214,26 +214,26 @@ bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list,
       }
 
       if (elem != nullptr) {
-         uint32_t current_threshold = ocs::tom::get<SO_threshold>(elem);
-         uint32_t current_slots_sum = ocs::tom::get<SO_slots_sum>(elem);
-         uint32_t current_seq_no    = ocs::tom::get<SO_seq_no>(elem);
-         uint32_t current_action    = ocs::tom::get<SO_action>(elem);
+         uint32_t current_threshold = elem.get<SO_threshold>();
+         uint32_t current_slots_sum = elem.get<SO_slots_sum>();
+         uint32_t current_seq_no    = elem.get<SO_seq_no>();
+         uint32_t current_action    = elem.get<SO_action>();
 
          if (threshold != 0 && threshold < current_threshold) {
             DPRINTF("Replacing entry with higher threshold: %d => %d\n", current_threshold, threshold);
-            ocs::tom::set<SO_threshold>(elem, threshold);
+            elem.set<SO_threshold>(threshold);
          }
          if (slots_sum != 0 && slots_sum < current_slots_sum) {
             DPRINTF("Replacing entry with higher slots_sum: %d => %d\n", current_slots_sum, slots_sum);
-            ocs::tom::set<SO_slots_sum>(elem, slots_sum);
+            elem.set<SO_slots_sum>(slots_sum);
          }
          if (seq_no != 0 && seq_no > current_seq_no) {
             DPRINTF("Replacing entry with lower seq_no: %d => %d\n", current_seq_no, seq_no);
-            ocs::tom::set<SO_seq_no>(elem, seq_no);
+            elem.set<SO_seq_no>(seq_no);
          }
          if (action != current_action) {
             DPRINTF("Replacing entry with different action: %d => %d\n", current_action, action);
-            ocs::tom::set<SO_action>(elem, action);
+            elem.set<SO_action>(action);
          }
       } else {
          DPRINTF("Adding new entry with threshold: %d, slots_sum: %d, seq_no: %d\n", threshold, slots_sum, seq_no);
@@ -241,10 +241,10 @@ bool so_list_add(ocs::tom::ListPtr<ocs::tom::SO> &this_list,
             this_list = ocs::tom::ListPtr<ocs::tom::SO>::create("");
          }
          ocs::tom::Element<ocs::tom::SO> elem = this_list->emplace_back<SO_name>(so_name);
-         ocs::tom::set<SO_threshold>(elem, threshold);
-         ocs::tom::set<SO_slots_sum>(elem, slots_sum);
-         ocs::tom::set<SO_seq_no>(elem,    seq_no);
-         ocs::tom::set<SO_action>(elem, action);
+         elem.set<SO_threshold>(threshold);
+         elem.set<SO_slots_sum>(slots_sum);
+         elem.set<SO_seq_no>(seq_no);
+         elem.set<SO_action>(action);
       }
    }
    
@@ -286,7 +286,7 @@ bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, ocs::tom::
       /* Get the list of resolved qinstances for each subordinate. */
       for (const auto so : so_list) {
          const char *qinstance_name = nullptr;
-         const char *cq_name_str = ocs::tom::get<SO_name>(so);
+         const char *cq_name_str = so.get<SO_name>();
 
          const auto cqueue = cqueue_list_locate(master_cqueue_list, cq_name_str);
 
@@ -296,11 +296,11 @@ bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, ocs::tom::
             /* If this cqueue doesn't have a qinstance on this host,
              * just skip it. */
             if (qinstance) {
-               uint32_t threshold   = ocs::tom::get<SO_threshold>(so);
-               uint32_t slots_sum   = ocs::tom::get<SO_slots_sum>(so);
-               uint32_t seq_no      = ocs::tom::get<SO_seq_no>(so);
-               uint32_t action      = ocs::tom::get<SO_action>(so);
-               qinstance_name     = ocs::tom::get<QU_full_name>(qinstance);
+               uint32_t threshold   = so.get<SO_threshold>();
+               uint32_t slots_sum   = so.get<SO_slots_sum>();
+               uint32_t seq_no      = so.get<SO_seq_no>();
+               uint32_t action      = so.get<SO_action>();
+               qinstance_name     = qinstance.get<QU_full_name>();
 
                so_list_add(resolved_so_list, answer_list, qinstance_name,
                            threshold, slots_sum, seq_no, action);
@@ -309,10 +309,10 @@ bool so_list_resolve(const ocs::tom::ConstList<ocs::tom::SO> so_list, ocs::tom::
          }
          if (cq_name && strcmp(cq_name, cq_name_str) == 0){
             dstring buffer = DSTRING_INIT;
-            uint32_t threshold     = ocs::tom::get<SO_threshold>(so);
-            uint32_t slots_sum     = ocs::tom::get<SO_slots_sum>(so);
-            uint32_t seq_no        = ocs::tom::get<SO_seq_no>(so);
-            uint32_t action        = ocs::tom::get<SO_action>(so);
+            uint32_t threshold     = so.get<SO_threshold>();
+            uint32_t slots_sum     = so.get<SO_slots_sum>();
+            uint32_t seq_no        = so.get<SO_seq_no>();
+            uint32_t action        = so.get<SO_action>();
             
             qinstance_name = sge_dstring_sprintf(&buffer, "%s@%s", cq_name, hostname);
             so_list_add(resolved_so_list, answer_list, qinstance_name, threshold,

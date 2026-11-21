@@ -130,7 +130,7 @@ void parse_list_append(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *
    using Sub = typename ocs::tom::FieldTraits<F>::Sub;
 
    // ocs_object_list_add_unique() is key generic and works on the raw lists
-   lList *destlist = ocs::tom::get<F>(job).clone("job_sublist").release();
+   lList *destlist = job.template get<F>().clone("job_sublist").release();
    ocs::tom::ListPtr<Sub> list;
    while (ocs::detail::take_list_option(cmdline, option, list)) {
       DPRINTF("OPTION: %s\n", option);
@@ -140,7 +140,7 @@ void parse_list_append(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *
          ocs_object_list_add_unique(&destlist, &lp);
       }
    }
-   ocs::tom::set<F>(job, ocs::tom::ListPtr<Sub>::from_typed(destlist));
+   job.template set<F>(ocs::tom::ListPtr<Sub>::from_typed(destlist));
    DRETURN_VOID;
 }
 
@@ -165,7 +165,7 @@ void parse_list_merge(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
    DENTER(TOP_LAYER);
    using Sub = typename ocs::tom::FieldTraits<F>::Sub;
 
-   auto destlist = ocs::tom::get<F>(job).clone("job_sublist");
+   auto destlist = job.template get<F>().clone("job_sublist");
    ocs::tom::ListPtr<Sub> list;
    while (ocs::detail::take_list_option(cmdline, option, list)) {
       DPRINTF("OPTION: %s\n", option);
@@ -175,11 +175,11 @@ void parse_list_merge(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
       if (!destlist) {
          destlist = std::move(list);
       } else {
-         ocs::tom::merge_by_key<Key, Value>(destlist.get(), list);
+         destlist.get().template merge_by_key<Key, Value>(list);
          list.reset();
       }
    }
-   ocs::tom::set<F>(job, std::move(destlist));
+   job.template set<F>(std::move(destlist));
    DRETURN_VOID;
 }
 

@@ -90,7 +90,7 @@ ocs::ShareTree::foreach_call_func(const ocs::tom::Element<ocs::tom::STN> node, c
       DRETURN(ret);
    }
 
-   for (const auto child_node : ocs::tom::get<STN_children>(node)) {
+   for (const auto child_node : node.get<STN_children>()) {
       ret = foreach_call_func(child_node, func, ptr);
       if (ret > 0) {
          DRETURN(ret);
@@ -118,9 +118,9 @@ ocs::ShareTree::zero_node_fields(lListElem *node_raw, [[maybe_unused]] void *ptr
 
    // the callback is only applied to share tree nodes; called for every node, so no check
    const auto node = ocs::tom::Element<ocs::tom::STN>::from_typed(node_raw);
-   ocs::tom::set<STN_m_share>(node, 0);
-   ocs::tom::set<STN_adjusted_current_proportion>(node, 0);
-   ocs::tom::set<STN_job_ref_count>(node, 0);
+   node.set<STN_m_share>(0);
+   node.set<STN_adjusted_current_proportion>(0);
+   node.set<STN_job_ref_count>(0);
 
    DRETURN(0);
 }
@@ -139,17 +139,17 @@ ocs_sharetree_node_add_usage(const ocs::tom::Element<ocs::tom::STN> node,
    DENTER(BASIS_LAYER);
 
    for (const auto usage_elem : usage_list) {
-      const char *nm = ocs::tom::get<UA_name>(usage_elem);
+      const char *nm = usage_elem.get<UA_name>();
       if (skip_default_attrs &&
           (strcmp(nm, USAGE_ATTR_CPU) == 0 || strcmp(nm, USAGE_ATTR_MEM) == 0 || strcmp(nm, USAGE_ATTR_IO) == 0)) {
          continue;
       }
-      auto u = ocs::tom::find_first_rw<UA_name>(ocs::tom::get<STN_usage_list>(node), nm);
+      auto u = node.get<STN_usage_list>().find_first<UA_name>(nm);
       if (!u) {
-         u = ocs::tom::emplace_back_in<STN_usage_list, UA_name>(node, nm);
+         u = node.emplace_back_in<STN_usage_list, UA_name>(nm);
       }
       if (u) {
-         ocs::tom::set<UA_value>(u, ocs::tom::get<UA_value>(u) + ocs::tom::get<UA_value>(usage_elem));
+         u.set<UA_value>(u.get<UA_value>() + usage_elem.get<UA_value>());
       }
    }
 
@@ -181,8 +181,8 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
    DENTER(TOP_LAYER);
 
    bool is_project = false;
-   const auto children = ocs::tom::get<STN_children>(node);
-   const char *node_name = ocs::tom::get<STN_name>(node);
+   const auto children = node.get<STN_children>();
+   const char *node_name = node.get<STN_name>();
    ocs::tom::ConstList<ocs::tom::UA> usage_list;
    // the node's object: a user or a project, at most one of both
    ocs::tom::Element<ocs::tom::UU> user;
@@ -191,16 +191,16 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
       if (project_name) {
          // Get usage from project usage sub-list in user object
          if ((user = user_list_locate(user_list, node_name))) {
-            if (const auto upp = ocs::tom::find_first<UPP_name>(ocs::tom::get<UU_project>(user), project_name); upp) {
-               usage_list = ocs::tom::get<UPP_usage>(upp);
+            if (const auto upp = user.get<UU_project>().find_first<UPP_name>(project_name); upp) {
+               usage_list = upp.get<UPP_usage>();
             }
          }
       } else {
          // Get usage directly from corresponding user or project object
          if ((user = user_list_locate(user_list, node_name))) {
-            usage_list = ocs::tom::get<UU_usage>(user);
+            usage_list = user.get<UU_usage>();
          } else if ((project = prj_list_locate(project_list, node_name))) {
-            usage_list = ocs::tom::get<PR_usage>(project);
+            usage_list = project.get<PR_usage>();
          }
       }
    } else {
@@ -208,8 +208,8 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
       if (!project_name) {
          if ((project = prj_list_locate(project_list, node_name))) {
             is_project = true;
-            usage_list = ocs::tom::get<PR_usage>(project);
-            project_name = ocs::tom::get<PR_name>(project);
+            usage_list = project.get<PR_usage>();
+            project_name = project.get<PR_name>();
          }
       }
    }
@@ -232,18 +232,18 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
       if (sconf_is()) {
          usage_weight_list = sconf_get_usage_weight_list();
          for (const auto usage_weight : usage_weight_list.get()) {
-            sum_of_usage_weights += ocs::tom::get<UA_value>(usage_weight);
+            sum_of_usage_weights += usage_weight.get<UA_value>();
          }
       }
 
       // Combine user/project usage based on usage weighting factors
       if (usage_weight_list) {
          for (const auto usage_elem : usage_list) {
-            const char *usage_name = ocs::tom::get<UA_name>(usage_elem);
-            const auto usage_weight = ocs::tom::find_first<UA_name>(usage_weight_list.get(), usage_name);
+            const char *usage_name = usage_elem.get<UA_name>();
+            const auto usage_weight = usage_weight_list.get().find_first<UA_name>(usage_name);
             if (usage_weight && sum_of_usage_weights > 0) {
-               usage_value += ocs::tom::get<UA_value>(usage_elem) *
-                              (ocs::tom::get<UA_value>(usage_weight) / sum_of_usage_weights);
+               usage_value += usage_elem.get<UA_value>() *
+                              (usage_weight.get<UA_value>() / sum_of_usage_weights);
             }
          }
       }
@@ -263,7 +263,7 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
 
          // Sum other usage values
          if (!is_project) {
-            ocs_sharetree_node_add_usage(node, ocs::tom::get<STN_usage_list>(child_node), false);
+            ocs_sharetree_node_add_usage(node, child_node.get<STN_usage_list>(), false);
          }
       }
 
@@ -279,8 +279,8 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
          if (search_ancestors(node, DEFAULT_NODE_NAME, &ancestors, 1)) {
             if (const double default_usage = usage_value - child_usage; default_usage > 1.0) {
                for(int i = 1; i < ancestors.depth; i++) {
-                  const double u = ocs::tom::get<STN_combined_usage>(ancestors.nodes[i]);
-                  ocs::tom::set<STN_combined_usage>(ancestors.nodes[i], u + default_usage);
+                  const double u = ancestors.nodes[i].get<STN_combined_usage>();
+                  ancestors.nodes[i].set<STN_combined_usage>(u + default_usage);
                }
             }
             free_ancestors(&ancestors);
@@ -289,7 +289,7 @@ ocs::ShareTree::calc_node_usage(const ocs::tom::Element<ocs::tom::STN> node,
    }
 
    // Set combined usage in the node
-   ocs::tom::set<STN_combined_usage>(node, usage_value);
+   node.set<STN_combined_usage>(usage_value);
 
    DRETURN(usage_value);
 }
@@ -308,13 +308,13 @@ ocs::ShareTree::calc_node_proportion(const ocs::tom::Element<ocs::tom::STN> node
    DENTER(BASIS_LAYER);
 
    // Calculate node proportions for all children
-   for (const auto child_node : ocs::tom::get<STN_children>(node)) {
+   for (const auto child_node : node.get<STN_children>()) {
       calc_node_proportion(child_node, total_usage);
    }
 
    // Set proportion in the node
-   ocs::tom::set<STN_actual_proportion>(node, total_usage == 0 ? 0 :
-                                              ocs::tom::get<STN_combined_usage>(node) / total_usage);
+   node.set<STN_actual_proportion>(total_usage == 0 ? 0 :
+                                              node.get<STN_combined_usage>() / total_usage);
 
    DRETURN_VOID;
 }
@@ -370,12 +370,12 @@ ocs::ShareTree::set_node_project_flag(const ocs::tom::Element<ocs::tom::STN> nod
       DRETURN_VOID;
    }
 
-   if (prj_list_locate(project_list, ocs::tom::get<STN_name>(node))) {
-      ocs::tom::set<STN_project>(node, 1);
+   if (prj_list_locate(project_list, node.get<STN_name>())) {
+      node.set<STN_project>(1);
    } else {
-      ocs::tom::set<STN_project>(node, 0);
+      node.set<STN_project>(0);
    }
-   for (const auto child : ocs::tom::get<STN_children>(node)) {
+   for (const auto child : node.get<STN_children>()) {
       set_node_project_flag(child, project_list);
    }
 
@@ -394,13 +394,13 @@ ocs::ShareTree::add_auto_user(const ocs::tom::Element<ocs::tom::STN> node, const
    DENTER(BASIS_LAYER);
 
    if (const auto default_node = search_user_project_node(node, user_name, proj_name, node).first;
-       default_node && !strcmp(DEFAULT_NODE_NAME, ocs::tom::get<STN_name>(default_node))) {
+       default_node && !strcmp(DEFAULT_NODE_NAME, default_node.get<STN_name>())) {
 
       // Create a new node for the user
       auto tmp_node = default_node.clone();
-      ocs::tom::set<STN_name>(tmp_node, user_name);
-      ocs::tom::set<STN_children>(tmp_node, nullptr);
-      ocs::tom::set<STN_temp>(tmp_node, 1);
+      tmp_node->set<STN_name>(user_name);
+      tmp_node->set<STN_children>(nullptr);
+      tmp_node->set<STN_temp>(1);
 
       // Add the new node as a child of the parent
       ocs::tom::get_or_create<STN_children>(default_node, "display").push_back(std::move(tmp_node));
@@ -430,13 +430,13 @@ ocs::ShareTree::add_all_auto_users(const ocs::tom::Element<ocs::tom::STN> node,
 
    for (const auto project : project_list) {
       // check projects acl/xacl if the users are allowed
-      if (const char *proj_name = ocs::tom::get<PR_name>(project);
+      if (const char *proj_name = project.get<PR_name>();
           search_user_project_node(node, DEFAULT_NODE_NAME, proj_name, node).first) {
-         const auto xacl = ocs::tom::get<PR_xacl>(project);
-         const auto acl = ocs::tom::get<PR_acl>(project);
+         const auto xacl = project.get<PR_xacl>();
+         const auto acl = project.get<PR_acl>();
 
          for (const auto user : user_list) {
-            if (const char *user_name = ocs::tom::get<UU_name>(user);
+            if (const char *user_name = user.get<UU_name>();
                 sge_has_access_(user_name, nullptr, nullptr, acl, xacl, acl_list)) {
 
                add_auto_user(node, user_name, proj_name);
@@ -447,7 +447,7 @@ ocs::ShareTree::add_all_auto_users(const ocs::tom::Element<ocs::tom::STN> node,
 
    if (search_user_project_node(node, DEFAULT_NODE_NAME, nullptr, node).first) {
       for (const auto user : user_list) {
-         const char *user_name = ocs::tom::get<UU_name>(user);
+         const char *user_name = user.get<UU_name>();
 
          add_auto_user(node, user_name, nullptr);
       }
@@ -481,14 +481,14 @@ ocs::ShareTree::search_user_project_node(const ocs::tom::Element<ocs::tom::STN> 
    }
 
    // skip project nodes which don't match
-   const char *node_name = ocs::tom::get<STN_name>(node);
-   if (ocs::tom::get<STN_project>(node) && node != root && (!project_name || strcmp(node_name, project_name))) {
+   const char *node_name = node.get<STN_name>();
+   if (node.get<STN_project>() && node != root && (!project_name || strcmp(node_name, project_name))) {
       DRETURN(Found());
    }
 
    // if project name is supplied, look for the project and a user node below that
    // otherwise look for the user node
-   const auto children = ocs::tom::get<STN_children>(node);
+   const auto children = node.get<STN_children>();
    if (project_name != nullptr) {
       if (strcmp(node_name, project_name) == 0) {
          if (!children) {

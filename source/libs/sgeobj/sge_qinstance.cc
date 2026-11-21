@@ -127,8 +127,8 @@ ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::ConstList<
       ret = ocs::tom::find_first_rw<QU_qhostname>(this_list, hostname);
    } else {
       for (const auto qinstance : this_list) {
-         const char *qname = ocs::tom::get<QU_qname>(qinstance);
-         const char *hname = ocs::tom::get<QU_qhostname>(qinstance);
+         const char *qname = qinstance.get<QU_qname>();
+         const char *hname = qinstance.get<QU_qhostname>();
 
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::CSTR, cqueue_name, qname, nullptr)) {
@@ -175,8 +175,8 @@ const char *qinstance_get_name(const ocs::tom::ConstElement<ocs::tom::QU> this_e
 
    if (this_elem && string_buffer != nullptr) {
       ret = sge_dstring_sprintf(string_buffer, SFN "@" SFN,
-                                ocs::tom::get<QU_qname>(this_elem),
-                                static_cast<const char *>(ocs::tom::get<QU_qhostname>(this_elem)));
+                                this_elem.get<QU_qname>(),
+                                static_cast<const char *>(this_elem.get<QU_qhostname>()));
    }
    return ret;
 }
@@ -193,7 +193,7 @@ const char *qinstance_get_name(const ocs::tom::ConstElement<ocs::tom::QU> this_e
  */
 void qinstance_increase_qversion(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    DENTER(TOP_LAYER);
-   ocs::tom::add<QU_version>(this_elem, 1);
+   this_elem.add<QU_version>(1);
    DRETURN_VOID;
 }
 
@@ -217,8 +217,8 @@ bool qinstance_is_owner(const ocs::gdi::Packet *packet, const ocs::tom::ConstEle
       DRETURN(false);
    }
    if (this_elem) {
-      const auto owner_list = ocs::tom::get<QU_owner_list>(this_elem);
-      if (ocs::tom::find_first<US_name>(owner_list, packet->user)) {
+      const auto owner_list = this_elem.get<QU_owner_list>();
+      if (owner_list.find_first<US_name>(packet->user)) {
          ret = true;
       }
    }
@@ -242,8 +242,8 @@ bool qinstance_is_owner(const ocs::gdi::Packet *packet, const ocs::tom::ConstEle
 bool qinstance_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> this_elem,
                                 const ocs::tom::ConstElement<ocs::tom::PE> pe) {
    DENTER(TOP_LAYER);
-   for (const auto pe_name_elem : ocs::tom::get<QU_pe_list>(this_elem)) {
-      if (strcmp(ocs::tom::get<PE_name>(pe), ocs::tom::get<ST_name>(pe_name_elem)) == 0) {
+   for (const auto pe_name_elem : this_elem.get<QU_pe_list>()) {
+      if (strcmp(pe.get<PE_name>(), pe_name_elem.get<ST_name>()) == 0) {
          DRETURN(true);
       }
    }
@@ -266,7 +266,7 @@ bool qinstance_is_a_pe_referenced(const ocs::tom::ConstElement<ocs::tom::QU> thi
 
    bool ret = false;
 
-   if (!ocs::tom::get<QU_pe_list>(this_elem).empty()) {
+   if (!this_elem.get<QU_pe_list>().empty()) {
       ret = true;
    }
    DRETURN(ret);
@@ -290,9 +290,9 @@ bool qinstance_is_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::QU> thi
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const auto ckpt_list = ocs::tom::get<QU_ckpt_list>(this_elem);
+   const auto ckpt_list = this_elem.get<QU_ckpt_list>();
 
-   if (ocs::tom::find_first<ST_name>(ckpt_list, ocs::tom::get<CK_name>(ckpt))) {
+   if (ckpt_list.find_first<ST_name>(ckpt.get<CK_name>())) {
       ret = true;
    }
    DRETURN(ret);
@@ -314,7 +314,7 @@ bool qinstance_is_a_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::QU> t
 
    bool ret = false;
 
-   if (!ocs::tom::get<QU_ckpt_list>(this_elem).empty()) {
+   if (!this_elem.get<QU_ckpt_list>().empty()) {
       ret = true;
    }
    DRETURN(ret);
@@ -339,9 +339,9 @@ bool qinstance_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::
    bool ret = false;
 
    if (this_elem) {
-      const char *name = ocs::tom::get<CE_name>(centry);
-      const auto centry_list = ocs::tom::get<QU_consumable_config_list>(this_elem);
-      const auto centry_ref = ocs::tom::find_first<CE_name>(centry_list, name);
+      const char *name = centry.get<CE_name>();
+      const auto centry_list = this_elem.get<QU_consumable_config_list>();
+      const auto centry_ref = centry_list.find_first<CE_name>(name);
 
       if (centry_ref || get_rsrc(name, true, nullptr, nullptr, nullptr, nullptr) == 0) {
          ret = true;
@@ -383,12 +383,12 @@ ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(const ocs::tom::Con
 
       const bool hostname_pattern_is_expression = ocs::is_expression(hostname_pattern);
       for (const auto qinstance : this_list) {
-         const char *hostname = ocs::tom::get<QU_qhostname>(qinstance);
+         const char *hostname = qinstance.get<QU_qhostname>();
          /* use qinstance expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, hostname_pattern, hostname, answer_list, true,
                                   hostname_pattern_is_expression)) {
             // a qinstance without a full name is skipped, as the free emplace_back() took the soft path for it
-            const char *full_name = ocs::tom::get<QU_full_name>(qinstance);
+            const char *full_name = qinstance.get<QU_full_name>();
             if (full_name != nullptr) {
                if (!qref_list) {
                   qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("");
@@ -414,16 +414,16 @@ ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(const ocs::tom::Con
  */
 int qinstance_slots_used(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(QINSTANCE_LAYER);
-   const auto slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   const auto slots = this_elem.find_first_in<QU_resource_utilization, RUE_name>(SGE_ATTR_SLOTS);
    int ret = 1000000; /* when slots is unknown */
 
    if (slots) {
-      ret = ocs::tom::get<RUE_utilized_now>(slots);
+      ret = slots.get<RUE_utilized_now>();
    } else {
       /* this happens on qinstance_create when a queue instance is created
          before others queue instances in the subordinate lists
          are created */
-      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, ocs::tom::get<QU_full_name>(this_elem));
+      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, this_elem.get<QU_full_name>());
    }
    DRETURN(ret);
 }
@@ -443,10 +443,10 @@ int qinstance_slots_used(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
 uint32_t qinstance_slots_reserved(const ocs::tom::ConstElement<ocs::tom::QU> this_elem) {
    DENTER(QINSTANCE_LAYER);
    uint32_t ret = 0;
-   const auto slots = ocs::tom::find_first_in<QU_resource_utilization, RUE_name>(this_elem, SGE_ATTR_SLOTS);
+   const auto slots = this_elem.find_first_in<QU_resource_utilization, RUE_name>(SGE_ATTR_SLOTS);
    if (slots) {
-      for (const auto utilized : ocs::tom::get<RUE_utilized>(slots)) {
-         ret = std::max(static_cast<double>(ret), ocs::tom::get<RDE_amount>(utilized));
+      for (const auto utilized : slots.get<RUE_utilized>()) {
+         ret = std::max(static_cast<double>(ret), utilized.get<RDE_amount>());
       }
    }
 
@@ -464,12 +464,12 @@ uint32_t qinstance_slots_reserved(const ocs::tom::ConstElement<ocs::tom::QU> thi
  */
 void qinstance_set_slots_used(const ocs::tom::Element<ocs::tom::QU> this_elem, const int new_slots) {
    DENTER(QINSTANCE_LAYER);
-   const auto slots = ocs::tom::find_first_in_rw<QU_resource_utilization, RUE_name>(this_elem, "slots");
+   const auto slots = this_elem.find_first_in_rw<QU_resource_utilization, RUE_name>("slots");
    if (slots) {
-      ocs::tom::set<RUE_utilized_now>(slots, new_slots);
+      slots.set<RUE_utilized_now>(new_slots);
    } else {
       /* because this should never happen and an critical error */
-      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, ocs::tom::get<QU_full_name>(this_elem));
+      CRITICAL(MSG_QINSTANCE_MISSLOTS_S, this_elem.get<QU_full_name>());
    }
    DRETURN_VOID;
 }
@@ -502,7 +502,7 @@ int qinstance_debit_consumable(const ocs::tom::Element<ocs::tom::QU> qep,
                                const ocs::tom::ConstList<ocs::tom::CE> centry_list, const int slots,
                                const bool is_master_task, const bool do_per_host_booking, bool *just_check) {
    return rc_debit_consumable<ocs::tom::QU, QU_consumable_config_list, QU_resource_utilization>(
-      jep, pe, qep, centry_list, slots, ocs::tom::get<QU_qname>(qep), is_master_task, do_per_host_booking, just_check);
+      jep, pe, qep, centry_list, slots, qep.get<QU_qname>(), is_master_task, do_per_host_booking, just_check);
 }
 
 
@@ -563,11 +563,11 @@ bool qinstance_message_trash_all_of_type_X(const ocs::tom::Element<ocs::tom::QU>
  */
 void qinstance_set_full_name(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    dstring buffer = DSTRING_INIT;
-   const char *cqueue_name = ocs::tom::get<QU_qname>(this_elem);
-   const char *hostname = ocs::tom::get<QU_qhostname>(this_elem);
+   const char *cqueue_name = this_elem.get<QU_qname>();
+   const char *hostname = this_elem.get<QU_qhostname>();
 
    sge_dstring_sprintf(&buffer, "%s@%s", cqueue_name, hostname);
-   ocs::tom::set<QU_full_name>(this_elem, sge_dstring_get_string(&buffer));
+   this_elem.set<QU_full_name>(sge_dstring_get_string(&buffer));
    sge_dstring_free(&buffer);
 }
 
@@ -594,7 +594,7 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
    bool ret = true;
 
    /* QU_full_name isn't spooled, if it is not set, create it */
-   if (ocs::tom::get<QU_full_name>(this_elem) == nullptr) {
+   if (this_elem.get<QU_full_name>() == nullptr) {
       qinstance_set_full_name(this_elem);
    }
 
@@ -610,15 +610,15 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
                               master_centry_list, 0, true, true, nullptr);
 
    /* init double values of consumable configuration */
-   if (centry_list_fill_request(ocs::tom::get<QU_consumable_config_list>(this_elem), answer_list, master_centry_list,
+   if (centry_list_fill_request(this_elem.get<QU_consumable_config_list>(), answer_list, master_centry_list,
                                 true, false, true) != 0) {
       ret = false;
    }
 
    if (ret) {
-      if (ensure_attrib_available(nullptr, ocs::tom::get<QU_load_thresholds>(this_elem), master_centry_list) ||
-          ensure_attrib_available(nullptr, ocs::tom::get<QU_suspend_thresholds>(this_elem), master_centry_list) ||
-          ensure_attrib_available(nullptr, ocs::tom::get<QU_consumable_config_list>(this_elem), master_centry_list)) {
+      if (ensure_attrib_available(nullptr, this_elem.get<QU_load_thresholds>(), master_centry_list) ||
+          ensure_attrib_available(nullptr, this_elem.get<QU_suspend_thresholds>(), master_centry_list) ||
+          ensure_attrib_available(nullptr, this_elem.get<QU_consumable_config_list>(), master_centry_list)) {
          ret = false;
       }
    }
@@ -631,12 +631,12 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
       qinstance_set_slots_used(this_elem, 0);
 
       if (host_list_locate(master_exechost_list,
-                           ocs::tom::get<QU_qhostname>(this_elem)) == nullptr) {
+                           this_elem.get<QU_qhostname>()) == nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_QINSTANCE_HOSTFORQUEUEDOESNOTEXIST_SS,
-                                 ocs::tom::get<QU_qname>(this_elem),
-                                 static_cast<const char *>(ocs::tom::get<QU_qhostname>(this_elem)));
+                                 this_elem.get<QU_qname>(),
+                                 static_cast<const char *>(this_elem.get<QU_qhostname>()));
          ret = false;
       }
    }
@@ -707,9 +707,9 @@ rc_debit_consumable_implicit_exclusive(const char *name, const char *obj_type, c
    if (just_check == nullptr) {
       DPRINTF("debiting (implicit exclusive) %f of %s on %s %s for %d slots\n", request, name,
               obj_type, obj_name, slots);
-      ocs::tom::add<RUE_utilized_now_nonexclusive>(booking_ep, slots * request);
+      booking_ep.add<RUE_utilized_now_nonexclusive>(slots * request);
    } else {
-      double actual_value = !booking_ep ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
+      double actual_value = !booking_ep ? 0 : booking_ep.get<RUE_utilized_now>();
       if (actual_value > 0) {
          ERROR(MSG_EXCLCAPACITYEXCEEDED_FSSSI, request, name, obj_type, obj_name, slots);
          *just_check = false;
@@ -747,12 +747,12 @@ rc_debit_consumable_explicit_request(const char *name, const char *obj_type, con
 
    if (just_check == nullptr) {
       DPRINTF("debiting %f of %s on %s %s for %d slots\n", request, name, obj_type, obj_name, slots);
-      ocs::tom::add<RUE_utilized_now>(booking_ep, slots * request);
+      booking_ep.add<RUE_utilized_now>(slots * request);
    } else {
       DPRINTF("verifying %f of %s on %s %s for %d slots + %f\n", request, name, obj_type, obj_name, slots,
               additional_request);
-      double actual_value = !booking_ep ? 0 : ocs::tom::get<RUE_utilized_now>(booking_ep);
-      double config_value = ocs::tom::get<CE_doubleval>(capacity_ep);
+      double actual_value = !booking_ep ? 0 : booking_ep.get<RUE_utilized_now>();
+      double config_value = capacity_ep.get<CE_doubleval>();
       /* for exclusive consumables ignore the number of slots */
       if (is_exclusive) {
          slots = 1;
@@ -810,9 +810,9 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
    }
 
    // loop over all queue/exechost complex_values (QU_consumable_config_list, EH_consumable_config_list)
-   for (const auto cr_config : ocs::tom::get<CONFIG_NM>(ep)) {
+   for (const auto cr_config : ep.template get<CONFIG_NM>()) {
       ocs::tom::Element<ocs::tom::RUE> cr;
-      const char *name = ocs::tom::get<CE_name>(cr_config);
+      const char *name = cr_config.template get<CE_name>();
 
       // search complex definition (with default request); found in a CE list, so no check is needed
       const auto dcep = ocs::tom::ConstElement<ocs::tom::CE>::from_typed(centry_list_locate(centry_list, name));
@@ -821,14 +821,14 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
          DRETURN(-1);
       }
 
-      uint32_t consumable = ocs::tom::get<CE_consumable>(dcep);
+      uint32_t consumable = dcep.get<CE_consumable>();
 
       // ensure attribute is in actual list
       // @todo we could do this only if jep == nullptr - this is the call to initialize booking
       if (consumable != CONSUMABLE_NO) {
-         cr = ocs::tom::find_first_in_rw<ACTUAL_NM, RUE_name>(ep, name);
+         cr = ep.template find_first_in_rw<ACTUAL_NM, RUE_name>(name);
          if (just_check == nullptr && !cr) {
-            cr = ocs::tom::emplace_back_in<ACTUAL_NM, RUE_name>(ep, name);
+            cr = ep.template emplace_back_in<ACTUAL_NM, RUE_name>(name);
             /* RUE_utilized_now is implicitly set to zero */
          }
       }
@@ -839,7 +839,7 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
          }
 
          bool did_booking = false;
-         bool is_exclusive = ocs::tom::get<CE_relop>(dcep) == CMPLXEXCL_OP;
+         bool is_exclusive = dcep.get<CE_relop>() == CMPLXEXCL_OP;
          const char *obj_type = std::is_same_v<T, ocs::tom::QU> ? "queue" : "host";
 
          int debit_slots = consumable_get_debit_slots(consumable, slots);
@@ -895,7 +895,7 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
             if (slave_debit_slots != 0) {
                double slave_dval = 0.0;
                // if we are on the master host, and we shall ignore slave requests to booking only for slots
-               if (is_master_task && ocs::tom::get<PE_ignore_slave_requests_on_master_host>(pe)) {
+               if (is_master_task && pe.get<PE_ignore_slave_requests_on_master_host>()) {
                   tmp_ret = true;
                   if (sge_strnullcmp(name, SGE_ATTR_SLOTS) == 0) {
                      slave_dval = 1.0;
@@ -957,16 +957,16 @@ template int rc_debit_consumable<ocs::tom::EH, EH_consumable_config_list, EH_res
  */
 void qinstance_set_conf_slots_used(const ocs::tom::Element<ocs::tom::QU> this_elem) {
    DENTER(QINSTANCE_LAYER);
-   auto slots = ocs::tom::find_first_in_rw<QU_consumable_config_list, CE_name>(this_elem, "slots");
+   auto slots = this_elem.find_first_in_rw<QU_consumable_config_list, CE_name>("slots");
    if (!slots) {
-      slots = ocs::tom::emplace_back_in<QU_consumable_config_list, CE_name>(this_elem, "slots");
+      slots = this_elem.emplace_back_in<QU_consumable_config_list, CE_name>("slots");
    }
    if (slots) {
       DSTRING_STATIC(buffer, 32);
-      uint32_t slots_value = ocs::tom::get<QU_job_slots>(this_elem);
+      uint32_t slots_value = this_elem.get<QU_job_slots>();
 
-      ocs::tom::set<CE_doubleval>(slots, slots_value);
-      ocs::tom::set<CE_stringval>(slots, sge_dstring_sprintf(&buffer, sge_u32, slots_value));
+      slots.set<CE_doubleval>(slots_value);
+      slots.set<CE_stringval>(sge_dstring_sprintf(&buffer, sge_u32, slots_value));
    }
    DRETURN_VOID;
 }
@@ -997,22 +997,22 @@ bool qinstance_verify(const ocs::tom::ConstElement<ocs::tom::QU> qep, ocs::tom::
    }
 
    if (ret) {
-      ret = verify_host_name(answer_list, ocs::tom::get<QU_qhostname>(qep));
+      ret = verify_host_name(answer_list, qep.get<QU_qhostname>());
    }
 
    if (ret) {
-      if (verify_obj_name(answer_list, ocs::tom::get<QU_qname>(qep),
+      if (verify_obj_name(answer_list, qep.get<QU_qname>(),
                           MAX_VERIFY_STRING, ocs::tom::FieldTraits<QU_qname>::info.name) != STATUS_OK) {
          ret = false;
       }
    }
 
    if (ret) {
-      ret = qinstance_verify_full_name(answer_list, ocs::tom::get<QU_full_name>(qep));
+      ret = qinstance_verify_full_name(answer_list, qep.get<QU_full_name>());
    }
 
    if (ret) {
-      ret = path_verify(ocs::tom::get<QU_shell>(qep), answer_list, "shell", true);
+      ret = path_verify(qep.get<QU_shell>(), answer_list, "shell", true);
    }
 
    DRETURN(ret);

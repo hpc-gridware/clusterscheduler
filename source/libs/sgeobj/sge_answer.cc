@@ -102,7 +102,7 @@ bool answer_has_quality(const ocs::tom::ConstElement<ocs::tom::AN> answer, answe
 
    bool ret;
 
-   ret = (ocs::tom::get<AN_quality>(answer) ==  quality) ? true : false;
+   ret = (answer.get<AN_quality>() ==  quality) ? true : false;
    DRETURN(ret);
 }
 
@@ -137,7 +137,7 @@ bool answer_is_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
          STATUS_ENOKEY,
          STATUS_NOCONFIG
       };
-      uint32_t status = ocs::tom::get<AN_status>(answer);
+      uint32_t status = answer.get<AN_status>();
       int i;
 
       for (i = 0; i < max_non_recoverable; i++) {
@@ -168,7 +168,7 @@ void answer_exit_if_not_recoverable(const ocs::tom::ConstElement<ocs::tom::AN> a
    DENTER(ANSWER_LAYER);
    if (!answer_is_recoverable(answer)) {
       fprintf(stderr, "%s: %s\n", answer_get_quality_text(answer),
-              ocs::tom::get<AN_text>(answer));
+              answer.get<AN_text>());
       sge_exit(1);
    }
    DRETURN_VOID;
@@ -196,7 +196,7 @@ const char *answer_get_quality_text(const ocs::tom::ConstElement<ocs::tom::AN> a
    };
    uint32_t quality;
 
-   quality = ocs::tom::get<AN_quality>(answer);
+   quality = answer.get<AN_quality>();
    if (quality >= ANSWER_QUALITY_END) {
       quality = ANSWER_QUALITY_CRITICAL;
    }
@@ -219,7 +219,7 @@ uint32_t answer_get_status(const ocs::tom::ConstElement<ocs::tom::AN> answer) {
 
    uint32_t ret;
 
-   ret = ocs::tom::get<AN_status>(answer);
+   ret = answer.get<AN_status>();
    DRETURN(ret);
 }
 
@@ -244,7 +244,7 @@ void answer_print_text(const ocs::tom::ConstElement<ocs::tom::AN> answer,
 
    const char *text = nullptr;
 
-   text = ocs::tom::get<AN_text>(answer);
+   text = answer.get<AN_text>();
 
    if (prefix != nullptr) {
       fprintf(stream, "%s", prefix);
@@ -275,7 +275,7 @@ void answer_to_dstring(const ocs::tom::ConstElement<ocs::tom::AN> answer, dstrin
          sge_dstring_copy_string(diag, MSG_ANSWERWITHOUTDIAG);
       } else {
          const char *s, *t;
-         s = ocs::tom::get<AN_text>(answer);
+         s = answer.get<AN_text>();
          if ((t=strchr(s, '\n'))) {
             sge_dstring_sprintf_append(diag, "%.*s", t-s, s); 
          }
@@ -307,7 +307,7 @@ void answer_list_to_dstring(const ocs::tom::ConstList<ocs::tom::AN> alp, dstring
          sge_dstring_clear(diag);
          
          for (const auto aep : answers) {
-            const char *s = ocs::tom::get<AN_text>(aep);
+            const char *s = aep.get<AN_text>();
             sge_dstring_append(diag, s);
 
             if (strchr(s, '\n') == nullptr) {
@@ -418,7 +418,7 @@ void answer_list_remove_quality(const ocs::tom::List<ocs::tom::AN> answer_list, 
    while (nxt) {
       const auto aep = nxt;
       nxt = aep.next();
-      if (ocs::tom::get<AN_quality>(aep) == quality) {
+      if (aep.get<AN_quality>() == quality) {
          answers.erase(aep);
       }
    }
@@ -587,7 +587,7 @@ int answer_list_handle_request_answer_list(ocs::tom::ListPtr<ocs::tom::AN> *answ
             answer_has_quality(answer, ANSWER_QUALITY_WARNING)) {
             answer_print_text(answer, stream, nullptr, nullptr);
             if(ret == STATUS_OK) {
-               ret = ocs::tom::get<AN_status>(answer);
+               ret = answer.get<AN_status>();
             }
          }
       }
@@ -632,9 +632,9 @@ bool answer_list_add(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *t
       // freed by the handle unless the list takes it over
       auto answer = ocs::tom::ElementPtr<ocs::tom::AN>::create();
 
-      ocs::tom::set<AN_text>(answer, text);
-      ocs::tom::set<AN_status>(answer, status);
-      ocs::tom::set<AN_quality>(answer, quality);
+      answer->set<AN_text>(text);
+      answer->set<AN_status>(status);
+      answer->set<AN_quality>(quality);
 
       if (*answer_list == nullptr) {
          *answer_list = ocs::tom::ListPtr<ocs::tom::AN>::create("");
@@ -784,21 +784,21 @@ static bool answer_log(const ocs::tom::ConstElement<ocs::tom::AN> answer, const 
       DRETURN(ret);
    }
 
-   switch (ocs::tom::get<AN_quality>(answer)) {
+   switch (answer.get<AN_quality>()) {
       case ANSWER_QUALITY_CRITICAL:
-         CRITICAL(SFNMAX, ocs::tom::get<AN_text>(answer));
+         CRITICAL(SFNMAX, answer.get<AN_text>());
          ret = true;
          break;
       case ANSWER_QUALITY_ERROR:
-         ERROR(SFNMAX, ocs::tom::get<AN_text>(answer));
+         ERROR(SFNMAX, answer.get<AN_text>());
          ret = true;
          break;
       case ANSWER_QUALITY_WARNING:
-         WARNING(SFNMAX, ocs::tom::get<AN_text>(answer));
+         WARNING(SFNMAX, answer.get<AN_text>());
          break;
       case ANSWER_QUALITY_INFO:
          if (show_info) {
-            INFO(SFNMAX, ocs::tom::get<AN_text>(answer));
+            INFO(SFNMAX, answer.get<AN_text>());
          }
          break;
       default:
@@ -850,13 +850,13 @@ int show_answer(const ocs::tom::ConstList<ocs::tom::AN> alp) {
     
       for (const auto aep : answers) {
          answer_exit_if_not_recoverable(aep);
-         if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
+         if (aep.get<AN_status>() != STATUS_OK) {
             ret = 1;
          }
       }
       const auto aep = answers.back();
-      if (ocs::tom::get<AN_quality>(aep) != ANSWER_QUALITY_END) {
-         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
+      if (aep.get<AN_quality>() != ANSWER_QUALITY_END) {
+         fprintf(stderr, "%s\n", aep.get<AN_text>());
       }
    }
    
@@ -878,15 +878,15 @@ int show_answer_list(const ocs::tom::ConstList<ocs::tom::AN> alp) {
    
    if (alp != nullptr) {
       for (const auto aep : alp) {
-         if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_END) {
+         if (aep.get<AN_quality>() == ANSWER_QUALITY_END) {
             continue;
          }
 
          answer_exit_if_not_recoverable(aep);
-         if (ocs::tom::get<AN_status> (aep) != STATUS_OK) {
+         if (aep.get<AN_status>() != STATUS_OK) {
             ret = 1;
          }
-         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s\n", aep.get<AN_text>());
       }
    }
    

@@ -121,7 +121,7 @@ void var_list_set_string(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *name
    if (!elem) {
       elem = varl->emplace_back<VA_variable>(name);
    }
-   ocs::tom::set<VA_value>(elem, value);
+   elem.set<VA_value>(value);
    DRETURN_VOID;
 }
 
@@ -202,7 +202,7 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
    const auto sharedlib_elem = varl ? varl->find_first<VA_variable>(sharedlib_path_name)
                                     : ocs::tom::Element<ocs::tom::VA>();
    if (sharedlib_elem) {
-      const char *old_value = ocs::tom::get<VA_value>(sharedlib_elem);
+      const char *old_value = sharedlib_elem.get<VA_value>();
 
       if(old_value && strlen(old_value) > 0) {
          DPRINTF("sharedlib path %s already set:\n", sharedlib_path_name);
@@ -212,11 +212,11 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
          strcpy(sharedlib_path, sge_sharedlib_path);
          strcat(sharedlib_path, ":");
          strcat(sharedlib_path, old_value);
-         ocs::tom::set<VA_value>(sharedlib_elem, sharedlib_path);
+         sharedlib_elem.set<VA_value>(sharedlib_path);
          sge_free(&sharedlib_path);
       } else {
          DPRINTF("overwriting empty sharedlib path %s\n", sharedlib_path_name);
-         ocs::tom::set<VA_value>(sharedlib_elem, sge_sharedlib_path);
+         sharedlib_elem.set<VA_value>(sge_sharedlib_path);
       }
    } else {
       DPRINTF("creating new sharedlib path %s\n", sharedlib_path_name);
@@ -224,7 +224,7 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
          varl = ocs::tom::ListPtr<ocs::tom::VA>::create("");
       }
       const auto new_elem = varl->emplace_back<VA_variable>(sharedlib_path_name);
-      ocs::tom::set<VA_value>(new_elem, sge_sharedlib_path);
+      new_elem.set<VA_value>(sge_sharedlib_path);
    }
 
    sge_free(&sge_sharedlib_path);
@@ -256,8 +256,8 @@ void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *f
        * Replace <LF> by \n sequence for multiline environment
        * variable support.
        */
-      const char *env_name = ocs::tom::get<VA_variable>(elem);
-      const char *env_value = ocs::tom::get<VA_value>(elem);
+      const char *env_name = elem.get<VA_variable>();
+      const char *env_value = elem.get<VA_value>();
       const char *new_env_value = sge_replace_substring(env_value, "\n", "\\n");
 
       if (new_env_value == nullptr) {
@@ -286,10 +286,10 @@ void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *f
  */
 const char *var_list_get_string(const ocs::tom::ConstList<ocs::tom::VA> varl, const char *variable) {
    const char *ret = nullptr;
-   const auto var = ocs::tom::find_first<VA_variable>(varl, variable);
+   const auto var = varl.find_first<VA_variable>(variable);
 
    if (var) {
-      ret = ocs::tom::get<VA_value>(var);
+      ret = var.get<VA_value>();
    }
    return ret;
 }
@@ -321,12 +321,12 @@ void var_list_copy_prefix_vars(ocs::tom::ListPtr<ocs::tom::VA> &varl, const ocs:
    ocs::tom::ListPtr<ocs::tom::VA> var_list2;
 
    for (const auto var_elem : src_varl) {
-      const char *prefix_name = ocs::tom::get<VA_variable>(var_elem);
+      const char *prefix_name = var_elem.get<VA_variable>();
 
       if (strncmp(prefix_name, prefix, prefix_len) == 0) {
          char name[MAX_STRING_SIZE];
          const char *name_without_prefix = &prefix_name[prefix_len];
-         const char *value = ocs::tom::get<VA_value>(var_elem);
+         const char *value = var_elem.get<VA_value>();
 
          snprintf(name, sizeof(name), "%s%s", new_prefix, name_without_prefix);
          var_list_set_string(var_list2, name, value);
@@ -368,15 +368,15 @@ void var_list_copy_prefix_vars_undef(ocs::tom::ListPtr<ocs::tom::VA> &varl,
    ocs::tom::ListPtr<ocs::tom::VA> var_list2;
 
    for (const auto var_elem : src_varl) {
-      const char *prefix_name = ocs::tom::get<VA_variable>(var_elem);
+      const char *prefix_name = var_elem.get<VA_variable>();
 
       if (!strncmp(prefix_name, prefix, prefix_len)) {
          char name[MAX_STRING_SIZE];
-         const char *value = ocs::tom::get<VA_value>(var_elem);
+         const char *value = var_elem.get<VA_value>();
          const char *name_without_prefix = &prefix_name[prefix_len];
 
          snprintf(name, sizeof(name), "%s%s", new_prefix, name_without_prefix);
-         if (!ocs::tom::find_first<VA_variable>(varl.get(), name)) {
+         if (!varl.get().find_first<VA_variable>(name)) {
             var_list_set_string(var_list2, name, value);
          }
       }
@@ -407,8 +407,8 @@ void var_list_copy_env_vars_and_value(ocs::tom::ListPtr<ocs::tom::VA> &varl,
    DENTER(TOP_LAYER);
 
    for (const auto env : src_varl) {
-      const char *name = ocs::tom::get<VA_variable>(env);
-      const char *s = ocs::tom::get<VA_value>(env);
+      const char *name = env.get<VA_variable>();
+      const char *s = env.get<VA_value>();
       var_list_set_string(varl, name, s ? s : "");
    }
 
@@ -419,12 +419,12 @@ void var_list_copy_env_vars_and_value(ocs::tom::ListPtr<ocs::tom::VA> &varl,
 /**
  * @brief Remove vars with certain prefix
  *
- * Remove all entries from "varl" where the name
+ * Remove all entries from "list" where the name
  * beginns with "prefix"
  *
  * The list itself stays, also when it becomes empty.
  *
- * @param varl VA list, may be an empty handle
+ * @param list VA list, may be an empty handle
  * @param prefix prefix string (e.g. VAR_PREFIX)
  *
  * @see #var_list_split_prefix_vars
@@ -436,7 +436,7 @@ void var_list_remove_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, const 
 
    auto var_elem = list.front();
    while (var_elem) {
-      const char *prefix_name = ocs::tom::get<VA_variable>(var_elem);
+      const char *prefix_name = var_elem.get<VA_variable>();
       const auto next_var_elem = var_elem.next();
 
       if (!strncmp(prefix_name, prefix, prefix_len)) {
@@ -471,7 +471,7 @@ void var_list_split_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, ocs::to
 
    auto var_elem = list.front();
    while (var_elem) {
-      const char *prefix_name = ocs::tom::get<VA_variable>(var_elem);
+      const char *prefix_name = var_elem.get<VA_variable>();
       const auto next_var_elem = var_elem.next();
 
       if (!strncmp(prefix_name, prefix, prefix_len)) {
@@ -527,14 +527,14 @@ int var_list_add_as_set(const ocs::tom::List<ocs::tom::VA> lp0, ocs::tom::ListPt
 
       /* Get it's name, and use the name to look for a matching element in the
        * first list. */
-      const char *name = ocs::tom::get<VA_variable>(ep1);
-      const auto ep0 = ocs::tom::find_first_rw<VA_variable>(lp0, name);
+      const char *name = ep1->get<VA_variable>();
+      const auto ep0 = lp0.find_first<VA_variable>(name);
 
       /* If there is a matching element in the first list, set it's value to the
        * value of the element from the second list; the element of the second
        * list is freed when ep1 goes out of scope. */
       if (ep0) {
-         ocs::tom::set<VA_value>(ep0, ocs::tom::get<VA_value>(ep1));
+         ep0.set<VA_value>(ep1->get<VA_value>());
       }
       /* If there is no matching element, add the element from the second list
        * to the first list. */
@@ -564,7 +564,7 @@ int var_list_add_as_set(const ocs::tom::List<ocs::tom::VA> lp0, ocs::tom::ListPt
 bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    bool ret = true;
    for (const auto ep : lp) {
-      const char *variable = ocs::tom::get<VA_variable>(ep);
+      const char *variable = ep.get<VA_variable>();
       if (variable == nullptr || variable[0] == '\0') {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_OBJECT_VARIABLENAME_NOT_EMPTY);
@@ -655,11 +655,11 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
        * to nullptr.
        */
       if (val_str[var_len] == '=') {
-          ocs::tom::set<VA_value>(ep, &val_str[var_len+1]);
+          ep.set<VA_value>(&val_str[var_len+1]);
       } else if (check_environment) {
-         ocs::tom::set<VA_value>(ep, sge_getenv(variable));
+         ep.set<VA_value>(sge_getenv(variable));
       } else {
-         ocs::tom::set<VA_value>(ep, nullptr);
+         ep.set<VA_value>(nullptr);
       }
       sge_free_saved_vars(context);
    }

@@ -99,8 +99,8 @@ void cull_mail(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR> us
 
    if (user_list) {
       for (const auto ep : user_list) {
-         const char *user = ocs::tom::get<MR_user>(ep);
-         const char *host = ocs::tom::get<MR_host>(ep);
+         const char *user = ep.get<MR_user>();
+         const char *host = ep.get<MR_host>();
          if (!user && !host) {
             ERROR(SFNMAX, MSG_MAIL_EMPTYUSERHOST);
             sge_free(&mailer);

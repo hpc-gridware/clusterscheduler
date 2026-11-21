@@ -209,7 +209,7 @@ template <auto F>
 static ocs::tom::Element<ocs::tom::JB>
 ocs_jsv_get_job(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
    DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::Element<ocs::tom::JB>::from_typed(static_cast<lListElem *>(ocs::tom::get<F>(jsv))));
+   DRETURN(ocs::tom::Element<ocs::tom::JB>::from_typed(static_cast<lListElem *>(jsv.get<F>())));
 }
 
 /**
@@ -240,7 +240,7 @@ ocs_jsv_set_path_list_param(const ocs::tom::Element<ocs::tom::JB> new_job, ocs::
       }
    }
    if (ret) {
-      ocs::tom::set<F>(new_job, std::move(path_list));
+      new_job.set<F>(std::move(path_list));
    }
    DRETURN(ret);
 }
@@ -274,7 +274,7 @@ ocs_jsv_parse_jid_request_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
       if (!jref_list) {
          jref_list = ocs::tom::ListPtr<ocs::tom::JRE>::create("");
       }
-      jref_list->emplace_back<JRE_job_name>(ocs::tom::get<ST_name>(jid_str));
+      jref_list->emplace_back<JRE_job_name>(jid_str.get<ST_name>());
    }
    DRETURN(std::make_pair(ret, std::move(jref_list)));
 }
@@ -313,9 +313,9 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
        * modification.
        */
       if (strcmp(param, "__JSV_TEST_RESULT") == 0) {
-         ocs::tom::set<JSV_test>(jsv, true);
-         ocs::tom::set<JSV_test_pos>(jsv, 0);
-         ocs::tom::set<JSV_result>(jsv, value);
+         jsv.set<JSV_test>(true);
+         jsv.set<JSV_test_pos>(0);
+         jsv.set<JSV_result>(value);
          skip_check = true;
       }
 
@@ -372,13 +372,13 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             if (strcmp(param, "b") == 0) {
                job_set_binary(new_job, strcmp(value, "y") == 0 ? true : false);
             } else if (strcmp(param, "j") == 0) {
-               ocs::tom::set<JB_merge_stderr>(new_job, strcmp(value, "y") == 0 ? true : false);
+               new_job.set<JB_merge_stderr>(strcmp(value, "y") == 0 ? true : false);
             } else if (strcmp(param, "notify") == 0) {
-               ocs::tom::set<JB_notify>(new_job, strcmp(value, "y") == 0 ? true : false);
+               new_job.set<JB_notify>(strcmp(value, "y") == 0 ? true : false);
             } else if (strcmp(param, "R") == 0) {
-               ocs::tom::set<JB_reserve>(new_job, strcmp(value, "y") == 0 ? true : false);
+               new_job.set<JB_reserve>(strcmp(value, "y") == 0 ? true : false);
             } else if (strcmp(param, "r") == 0) {
-               ocs::tom::set<JB_restart>(new_job, strcmp(value, "y") == 0 ? 1 : 0);
+               new_job.set<JB_restart>(strcmp(value, "y") == 0 ? 1 : 0);
             } else if (strcmp(param, "shell") == 0) {
                job_set_no_shell(new_job, strcmp(value, "y") == 0 ? true : false);
             } else {
@@ -395,15 +395,15 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
        */
       if (ret) {
          if (strcmp(param, "A") == 0) {
-            ocs::tom::set<JB_account>(new_job, value);
+            new_job.set<JB_account>(value);
          } else if (strcmp(param, "ckpt") == 0) {
             // resetting ckpt name also resets ckpt attribute
             if (value == nullptr) {
-               ocs::tom::set<JB_checkpoint_attr>(new_job, NO_CHECKPOINT);
+               new_job.set<JB_checkpoint_attr>(NO_CHECKPOINT);
             }
-            ocs::tom::set<JB_checkpoint_name>(new_job, value);
+            new_job.set<JB_checkpoint_name>(value);
          } else if (strcmp(param, "cwd") == 0) {
-            ocs::tom::set<JB_cwd>(new_job, value);
+            new_job.set<JB_cwd>(value);
          } else if (strcmp(param, "N") == 0) {
             // jobs without job name are rejected
             if (value == nullptr) {
@@ -411,12 +411,12 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                                        param);
                ret = false;
             } else {
-               ocs::tom::set<JB_job_name>(new_job, value);
+               new_job.set<JB_job_name>(value);
             }
          } else if (strcmp(param, "pe_name") == 0) {
-            ocs::tom::set<JB_pe>(new_job, value);
+            new_job.set<JB_pe>(value);
          } else if (strcmp(param, "P") == 0) {
-            ocs::tom::set<JB_project>(new_job, value);
+            new_job.set<JB_project>(value);
          }
       }
 
@@ -439,7 +439,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
       /* CMDARG<id> */
       {         
          if (ret && strncmp("CMDARG", param, 6) == 0) {
-            auto arg_list = ocs::tom::get<JB_job_args>(new_job);
+            auto arg_list = new_job.get<JB_job_args>();
             // A job without arguments has no list. As before, the arguments then go into a list that is
             // not stored in the job, so they are lost (the list is freed now instead of leaking).
             ocs::tom::ListPtr<ocs::tom::ST> detached_arg_list;
@@ -487,7 +487,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                uint32_t i = 0;
                for (const auto elem : arg_list) {
                   if (i == id) {
-                     ocs::tom::set<ST_name>(elem, (value != nullptr) ? value : "");
+                     elem.set<ST_name>((value != nullptr) ? value : "");
                      break;
                   }
                   i++;
@@ -507,7 +507,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                }
             }
             if (ret) {
-               ocs::tom::set<JB_execution_time>(new_job, sge_gmt32_to_gmt64(timeval));
+               new_job.set<JB_execution_time>(sge_gmt32_to_gmt64(timeval));
             }
          }
       }
@@ -528,8 +528,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             }
             if (ret) {
                // the JSV answers with the whole context, which replaces the instructions (CS-3058)
-               ocs::tom::set<JB_context>(new_job, std::move(context_list));
-               ocs::tom::set<JB_context_change>(new_job, nullptr);
+               new_job.set<JB_context>(std::move(context_list));
+               new_job.set<JB_context_change>(nullptr);
             }
          }
       }
@@ -544,12 +544,12 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                ret &= parsed;
                if (ret) {
                   if (const auto first = ar_id_list->front(); first) {
-                     id = ocs::tom::get<ULNG_value>(first);
+                     id = first.get<ULNG_value>();
                   }
                }
             }
             if (ret) {
-               ocs::tom::set<JB_ar>(new_job, id);
+               new_job.set<JB_ar>(id);
             }
          }
       }
@@ -566,12 +566,12 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                }
             }
             if (ret) {
-               ocs::tom::set<JB_checkpoint_interval>(new_job, timeval);
+               new_job.set<JB_checkpoint_interval>(timeval);
             }
          }
          if (ret && strcmp("c_occasion", param) == 0) {
             if (int local_ret = sge_parse_checkpoint_attr(value); local_ret != 0) {
-               ocs::tom::set<JB_checkpoint_interval>(new_job, local_ret);
+               new_job.set<JB_checkpoint_interval>(local_ret);
             } else {
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
                                        param, value);
@@ -583,14 +583,14 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
       /* -display */
       {
          if (ret && strcmp("display", param) == 0) {
-            const auto env_list = ocs::tom::get<JB_env_list>(new_job);
+            const auto env_list = new_job.get<JB_env_list>();
             auto display = env_list.find_first<VA_variable>("DISPLAY");
 
             if (value != nullptr) {
                if (!display) {
-                  display = ocs::tom::emplace_back_in<JB_env_list, VA_variable>(new_job, "DISPLAY");
+                  display = new_job.emplace_back_in<JB_env_list, VA_variable>("DISPLAY");
                }
-               ocs::tom::set<VA_value>(display, value);
+               display.set<VA_value>(value);
             } else {
                if (display) {
                   env_list.erase(display);
@@ -610,7 +610,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                }
             }
             if (ret) {
-               ocs::tom::set<JB_deadline>(new_job, sge_gmt32_to_gmt64(timeval));
+               new_job.set<JB_deadline>(sge_gmt32_to_gmt64(timeval));
             }
          }
       }
@@ -619,8 +619,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
       {
          if (ret && strcmp("h", param) == 0) {
             int hold_state = MINUS_H_TGT_NONE;
-            const ocs::tom::ConstList<ocs::tom::RN> n_hold = ocs::tom::get<JB_ja_u_h_ids>(new_job);
-            const ocs::tom::ConstList<ocs::tom::RN> u_hold = ocs::tom::get<JB_ja_n_h_ids>(new_job);
+            const ocs::tom::ConstList<ocs::tom::RN> n_hold = new_job.get<JB_ja_u_h_ids>();
+            const ocs::tom::ConstList<ocs::tom::RN> u_hold = new_job.get<JB_ja_n_h_ids>();
             const ocs::tom::ConstList<ocs::tom::RN> id_list = n_hold ? n_hold : u_hold;
 
             if (value != nullptr) {
@@ -632,11 +632,11 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                }
             }
             if (hold_state == MINUS_H_TGT_NONE) {
-               ocs::tom::set<JB_ja_n_h_ids>(new_job, id_list.clone(""));
-               ocs::tom::set<JB_ja_u_h_ids>(new_job, nullptr);
+               new_job.set<JB_ja_n_h_ids>(id_list.clone(""));
+               new_job.set<JB_ja_u_h_ids>(nullptr);
             } else {
-               ocs::tom::set<JB_ja_u_h_ids>(new_job, id_list.clone(""));
-               ocs::tom::set<JB_ja_n_h_ids>(new_job, nullptr);
+               new_job.set<JB_ja_u_h_ids>(id_list.clone(""));
+               new_job.set<JB_ja_n_h_ids>(nullptr);
             }
          }
       }
@@ -646,7 +646,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          if (ret && strcmp("hold_jid", param) == 0) {
             auto [parsed, jref_list] = ocs_jsv_parse_jid_request_list(&local_answer_list, param, value);
             ret = parsed;
-            ocs::tom::set<JB_jid_request_list>(new_job, std::move(jref_list));
+            new_job.set<JB_jid_request_list>(std::move(jref_list));
          }
       }
 
@@ -655,7 +655,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          if (ret && strcmp("hold_jid_ad", param) == 0) {
             auto [parsed, jref_list] = ocs_jsv_parse_jid_request_list(&local_answer_list, param, value);
             ret = parsed;
-            ocs::tom::set<JB_ja_ad_request_list>(new_job, std::move(jref_list));
+            new_job.set<JB_ja_ad_request_list>(std::move(jref_list));
          }
       }
 
@@ -672,7 +672,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                }
             }
             if (ret) {
-               ocs::tom::set<JB_jobshare>(new_job, shares);
+               new_job.set<JB_jobshare>(shares);
             }
          }
       }
@@ -726,9 +726,9 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          }
          if (ret) {
             if (mail_options & NO_MAIL) {
-               ocs::tom::set<JB_mail_options>(new_job, 0);
+               new_job.set<JB_mail_options>(0);
             } else {
-               ocs::tom::set<JB_mail_options>(new_job, mail_options);
+               new_job.set<JB_mail_options>(mail_options);
             }
          }
       }
@@ -786,7 +786,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             }
          }
          if (ret) {
-            ocs::tom::set<JB_mail_list>(new_job, std::move(mail_list));
+            new_job.set<JB_mail_list>(std::move(mail_list));
          }
       }
 
@@ -811,7 +811,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             ret = ulong_parse_task_concurrency(&local_answer_list, &max_tasks, value);
          }
          if (ret) {
-            ocs::tom::set<JB_ja_task_concurrency>(new_job, max_tasks);
+            new_job.set<JB_ja_task_concurrency>(max_tasks);
          }
       }
 
@@ -825,79 +825,79 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          if (binding_elem) {
             if (ret && strcmp("bamount", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_amount>(binding_elem, std::atoi(value));
+                  binding_elem.set<BN_amount>(std::atoi(value));
                } else {
-                  ocs::tom::set<BN_amount>(binding_elem, 0);
+                  binding_elem.set<BN_amount>(0);
                }
             }
 
             if (ret && strcmp("bstrategy", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_strategy>(binding_elem, ocs::BindingStrategy::from_string(value));
+                  binding_elem.set<BN_strategy>(ocs::BindingStrategy::from_string(value));
                } else {
-                  ocs::tom::set<BN_strategy>(binding_elem, ocs::BindingStrategy::Strategy::NONE);
+                  binding_elem.set<BN_strategy>(ocs::BindingStrategy::Strategy::NONE);
                }
             }
 
             if (ret && strcmp("btype", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_new_type>(binding_elem, ocs::BindingType::from_string(value));
+                  binding_elem.set<BN_new_type>(ocs::BindingType::from_string(value));
                } else {
-                  ocs::tom::set<BN_new_type>(binding_elem, ocs::BindingType::Type::NONE);
+                  binding_elem.set<BN_new_type>(ocs::BindingType::Type::NONE);
                }
             }
 
             if (ret && strcmp("bunit", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_unit>(binding_elem, ocs::BindingUnit::from_string(value));
+                  binding_elem.set<BN_unit>(ocs::BindingUnit::from_string(value));
                } else {
-                  ocs::tom::set<BN_unit>(binding_elem, ocs::BindingUnit::Unit::NONE);
+                  binding_elem.set<BN_unit>(ocs::BindingUnit::Unit::NONE);
                }
             }
 
             if (ret && strcmp("bstart", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_start>(binding_elem, ocs::BindingStart::from_string(value));
+                  binding_elem.set<BN_start>(ocs::BindingStart::from_string(value));
                } else {
-                  ocs::tom::set<BN_start>(binding_elem, ocs::BindingStart::Start::NONE);
+                  binding_elem.set<BN_start>(ocs::BindingStart::Start::NONE);
                }
             }
 
             if (ret && strcmp("bstop", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_stop>(binding_elem, ocs::BindingStop::from_string(value));
+                  binding_elem.set<BN_stop>(ocs::BindingStop::from_string(value));
                } else {
-                  ocs::tom::set<BN_stop>(binding_elem, ocs::BindingStop::Stop::NONE);
+                  binding_elem.set<BN_stop>(ocs::BindingStop::Stop::NONE);
                }
             }
 
             if (ret && strcmp("bsort", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_sort>(binding_elem, value);
+                  binding_elem.set<BN_sort>(value);
                } else {
-                  ocs::tom::set<BN_sort>(binding_elem, nullptr);
+                  binding_elem.set<BN_sort>(nullptr);
                }
             }
 
             if (ret && strcmp("bfilter", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_filter>(binding_elem, value);
+                  binding_elem.set<BN_filter>(value);
                } else {
-                  ocs::tom::set<BN_filter>(binding_elem, nullptr);
+                  binding_elem.set<BN_filter>(nullptr);
                }
             }
 
             if (ret && strcmp("binstance", param) == 0) {
                if (value != nullptr) {
-                  ocs::tom::set<BN_instance>(binding_elem, ocs::BindingInstance::from_string(value));
+                  binding_elem.set<BN_instance>(ocs::BindingInstance::from_string(value));
                } else {
-                  ocs::tom::set<BN_instance>(binding_elem, ocs::BindingInstance::Instance::NONE);
+                  binding_elem.set<BN_instance>(ocs::BindingInstance::Instance::NONE);
                }
             }
          }
 
          // If no binding parameters are set, remove the binding element again
-         if (ocs::tom::get<BN_amount>(binding_elem) == 0) {
+         if (binding_elem.get<BN_amount>() == 0) {
             ocs::Binding::clear<JB_binding>(new_job);
          } else {
             ocs::Job::binding_set_missing_defaults(new_job, answer_list);
@@ -909,9 +909,9 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
        */
       if (ret && strcmp("pe_name", param) == 0) {
          if (value) {
-            ocs::tom::set<JB_pe>(new_job, value);
+            new_job.set<JB_pe>(value);
          } else {
-            ocs::tom::set<JB_pe>(new_job, nullptr);
+            new_job.set<JB_pe>(nullptr);
          }
       }
       if (ret && strcmp("pe_min", param) == 0) {
@@ -925,13 +925,13 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             }
          }
          if (ret) {
-            auto range = ocs::tom::get<JB_pe_range>(new_job).front();
+            auto range = new_job.get<JB_pe_range>().front();
 
             if (!range) {
-               range = ocs::tom::emplace_back_in<JB_pe_range, RN_min>(new_job, min);
+               range = new_job.emplace_back_in<JB_pe_range, RN_min>(min);
             }
             if (range) {
-               ocs::tom::set<RN_min>(range, min);
+               range.set<RN_min>(min);
             }
          }
       }
@@ -946,13 +946,13 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             }
          }
          if (ret) {
-            auto range = ocs::tom::get<JB_pe_range>(new_job).front();
+            auto range = new_job.get<JB_pe_range>().front();
 
             if (!range) {
-               range = ocs::tom::emplace_back_in<JB_pe_range, RN_max>(new_job, max);
+               range = new_job.emplace_back_in<JB_pe_range, RN_max>(max);
             }
             if (range) {
-               ocs::tom::set<RN_max>(range, max);
+               range.set<RN_max>(max);
             }
          }
       }
@@ -968,13 +968,13 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                                        "invalid t_min " SFQ " was passed by JSV", value);
                ret = false;
             } else {
-               auto range = ocs::tom::get<JB_ja_structure>(new_job).front();
+               auto range = new_job.get<JB_ja_structure>().front();
 
                if (!range) {
-                  range = ocs::tom::emplace_back_in<JB_ja_structure, RN_min>(new_job, min);
+                  range = new_job.emplace_back_in<JB_ja_structure, RN_min>(min);
                }
                if (range) {
-                  ocs::tom::set<RN_min>(range, min);
+                  range.set<RN_min>(min);
                }
             }
          }
@@ -987,13 +987,13 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                                        param, value);
                ret = false;
             } else {
-               auto range = ocs::tom::get<JB_ja_structure>(new_job).front();
+               auto range = new_job.get<JB_ja_structure>().front();
 
                if (!range) {
-                  range = ocs::tom::emplace_back_in<JB_ja_structure, RN_max>(new_job, max);
+                  range = new_job.emplace_back_in<JB_ja_structure, RN_max>(max);
                }
                if (range) {
-                  ocs::tom::set<RN_max>(range, max);
+                  range.set<RN_max>(max);
                }
             }
          }
@@ -1006,13 +1006,13 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                                        MSG_JSV_PARSE_VAL_SS, param, value);
                ret = false;
             } else {
-               auto range = ocs::tom::get<JB_ja_structure>(new_job).front();
+               auto range = new_job.get<JB_ja_structure>().front();
 
                if (!range) {
-                  range = ocs::tom::emplace_back_in<JB_ja_structure, RN_step>(new_job, step);
+                  range = new_job.emplace_back_in<JB_ja_structure, RN_step>(step);
                }
                if (range) {
-                  ocs::tom::set<RN_step>(range, step);
+                  range.set<RN_step>(step);
                }
             }
          }
@@ -1029,7 +1029,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
 
          }
          if (ret) {
-            ocs::tom::set<JB_verify_suitable_queues>(new_job, level);
+            new_job.set<JB_verify_suitable_queues>(level);
          }
       }
 
@@ -1040,10 +1040,10 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
        * we will accept the job with the ret value set above including
        * the created error messages.
        */
-      if (ocs::tom::get<JSV_test>(jsv) && !skip_check) {
-         const char *result_string = ocs::tom::get<JSV_result>(jsv);
+      if (jsv.get<JSV_test>() && !skip_check) {
+         const char *result_string = jsv.get<JSV_result>();
 
-         if (uint32_t result_pos = ocs::tom::get<JSV_test_pos>(jsv); strlen(result_string) > result_pos) {
+         if (uint32_t result_pos = jsv.get<JSV_test_pos>(); strlen(result_string) > result_pos) {
             char result_char = result_string[result_pos];
 
             if (bool result = (result_char == '1') ? true : false; result != ret) {
@@ -1055,7 +1055,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                ret = true;
             }
          }
-         ocs::tom::set<JSV_test_pos>(jsv, ocs::tom::get<JSV_test_pos>(jsv) + 1);
+         jsv.set<JSV_test_pos>(jsv.get<JSV_test_pos>() + 1);
       }
       answer_list_append_list(answer_list, &local_answer_list);
    }
@@ -1081,7 +1081,7 @@ jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Li
    bool ret = true;
 
    if (const char *subcommand = sge_dstring_get_string(s); strcmp(subcommand, "ENV") == 0) {
-      ocs::tom::set<JSV_send_env>(jsv, true);
+      jsv.set<JSV_send_env>(true);
    } else {
       /*
        * Invalid subcommand. JSV seems to wait for information which
@@ -1090,7 +1090,7 @@ jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Li
       answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_OBJECT_S,
                               sge_dstring_get_string(s));
 
-      ocs::tom::set<JSV_send_env>(jsv, false);
+      jsv.set<JSV_send_env>(false);
       ret = false;
    }
    DRETURN(ret);
@@ -1122,12 +1122,12 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
    if (sub_command != nullptr && strcmp(sub_command, "STATE") == 0 && state != nullptr) {
       if (strcmp(state, "ACCEPT") == 0) {
          DPRINTF("Job is accepted\n");
-         ocs::tom::set<JSV_accept>(jsv, true);
-         ocs::tom::set<JSV_done>(jsv, true);
+         jsv.set<JSV_accept>(true);
+         jsv.set<JSV_done>(true);
       } else if (strcmp(state, "CORRECT") == 0) {
          DPRINTF("Job is corrected\n");
-         ocs::tom::set<JSV_accept>(jsv, true);
-         ocs::tom::set<JSV_done>(jsv, true);
+         jsv.set<JSV_accept>(true);
+         jsv.set<JSV_done>(true);
       } else if (strcmp(state, "REJECT") == 0) {
          DPRINTF("Job is rejected\n");
          if (message != nullptr) {
@@ -1135,8 +1135,8 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
          } else {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_REJECTED);
          }
-         ocs::tom::set<JSV_accept>(jsv, false);
-         ocs::tom::set<JSV_done>(jsv, true);
+         jsv.set<JSV_accept>(false);
+         jsv.set<JSV_done>(true);
       } else if (strcmp(state, "REJECT_WAIT") == 0) {
          DPRINTF("Job is rejected temporarily\n");
          if (message != nullptr) {
@@ -1144,8 +1144,8 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
          } else {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_TMPREJECT);
          }
-         ocs::tom::set<JSV_accept>(jsv, false);
-         ocs::tom::set<JSV_done>(jsv, true);
+         jsv.set<JSV_accept>(false);
+         jsv.set<JSV_done>(true);
       } else {
          answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, a);
          ret = false;
@@ -1156,7 +1156,7 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
    }
    
    /* disable sending of env variables for the next job verification */
-   ocs::tom::set<JSV_send_env>(jsv, false);
+   jsv.set<JSV_send_env>(false);
 
    sge_dstring_free(&m);
    sge_dstring_free(&st);
@@ -1184,7 +1184,7 @@ jsv_send_queue_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPt
 
       bool first = true;
       for (const auto queue : queue_list) {
-         const char *queue_pattern = ocs::tom::get<QR_name>(queue);
+         const char *queue_pattern = queue.get<QR_name>();
 
          sge_dstring_append_char(&buffer, first ? ' ' : ',');
          sge_dstring_sprintf_append(&buffer, "%s", queue_pattern);
@@ -1244,12 +1244,12 @@ jsv_send_path_list(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr
    bool first = true;
    for (const auto shell : path_list) {
       sge_dstring_append_char(&buffer, first ? ' ' : ',');
-      if (const char *hostname = ocs::tom::get<PN_host>(shell);
+      if (const char *hostname = shell.get<PN_host>();
           hostname != nullptr) {
          sge_dstring_append(&buffer, hostname);
          sge_dstring_append_char(&buffer, ':');
       }
-      sge_dstring_append(&buffer, ocs::tom::get<PN_path>(shell));
+      sge_dstring_append(&buffer, shell.get<PN_path>());
       first = false;
    }
    jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1280,8 +1280,8 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    const auto old_job = ocs_jsv_get_job<JSV_old_job>(jsv);
 
    // reset variables which are only used in test cases
-   ocs::tom::set<JSV_test>(jsv, false);
-   ocs::tom::set<JSV_result>(jsv, "");
+   jsv.set<JSV_test>(false);
+   jsv.set<JSV_result>("");
 
    // JSV VERSION <major>.<minor> (read-only)
    sge_dstring_clear(&buffer);
@@ -1291,7 +1291,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    // JSV CONTEXT "client"|"server" (read-only)
    sge_dstring_clear(&buffer);
    sge_dstring_sprintf(&buffer, "%s CONTEXT %s", prefix,
-                       (strcmp(ocs::tom::get<JSV_context>(jsv), JSV_CONTEXT_CLIENT) == 0 ? "client" : "server"));
+                       (strcmp(jsv.get<JSV_context>(), JSV_CONTEXT_CLIENT) == 0 ? "client" : "server"));
    jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    
    // JSV CLIENT <program_name> (read-only)
@@ -1301,16 +1301,16 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
 
    // JSV USER <user_name> (read-only)
    sge_dstring_clear(&buffer);
-   sge_dstring_sprintf(&buffer, "%s USER %s", prefix, ocs::tom::get<JB_owner>(old_job));
+   sge_dstring_sprintf(&buffer, "%s USER %s", prefix, old_job.get<JB_owner>());
    jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
    // JSV GROUP <group_name> (read-only)
    sge_dstring_clear(&buffer);
-   sge_dstring_sprintf(&buffer, "%s GROUP %s", prefix, ocs::tom::get<JB_group>(old_job));
+   sge_dstring_sprintf(&buffer, "%s GROUP %s", prefix, old_job.get<JB_group>());
    jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
    // JSV JOB_ID <jid> (optional; read-only)
-   if (uint32_t jid = ocs::tom::get<JB_job_number>(old_job); jid > 0) {
+   if (uint32_t jid = old_job.get<JB_job_number>(); jid > 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s JOB_ID " sge_u32, prefix, jid);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1321,7 +1321,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    //    -b n ... <job_script>   => format := <file>
    //    -b n                    => format := "STDIN"
    {
-      const char *script_name = ocs::tom::get<JB_script_file>(old_job);
+      const char *script_name = old_job.get<JB_script_file>();
 
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s CMDNAME %s", prefix, (script_name != nullptr) ? script_name : "NONE");
@@ -1330,7 +1330,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
 
    // JSV SCRIPT_ARGS
    {
-      const ocs::tom::ConstList<ocs::tom::ST> list = ocs::tom::get<JB_job_args>(old_job);
+      const ocs::tom::ConstList<ocs::tom::ST> list = old_job.get<JB_job_args>();
       int i = 0;
 
       sge_dstring_clear(&buffer);
@@ -1339,7 +1339,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
 
       for (const auto elem : list) {
          sge_dstring_clear(&buffer);
-         sge_dstring_sprintf(&buffer, "%s CMDARG%d %s", prefix, i, ocs::tom::get<ST_name>(elem));
+         sge_dstring_sprintf(&buffer, "%s CMDARG%d %s", prefix, i, elem.get<ST_name>());
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
          i++;
       }
@@ -1347,7 +1347,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    
    // -a
    // PARAM a <date_time> (optional; <date_time> := CCYYMMDDhhmm.SS)
-   if (time_t clocks = static_cast<time_t>(ocs::tom::get<JB_execution_time>(old_job)) / 1000000; clocks > 0) {
+   if (time_t clocks = static_cast<time_t>(old_job.get<JB_execution_time>()) / 1000000; clocks > 0) {
       struct tm time_struct = {0};
 
       localtime_r(&clocks, &time_struct);
@@ -1365,8 +1365,8 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "PARAM ac");
       for (const auto context : *context_list) {
-         const char *name = ocs::tom::get<VA_variable>(context);
-         const char *value = ocs::tom::get<VA_value>(context);
+         const char *name = context.get<VA_variable>();
+         const char *value = context.get<VA_value>();
 
          sge_dstring_sprintf_append(&buffer, (first) ? " " : ",");
          first = false;
@@ -1380,14 +1380,14 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    // -ar (optional)
-   if (uint32_t ar_id = ocs::tom::get<JB_ar>(old_job); ar_id > 0) {
+   if (uint32_t ar_id = old_job.get<JB_ar>(); ar_id > 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s ar " sge_u32, prefix, ar_id);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
    // -A <account_string> (optional)
-   if (const char *account_string = ocs::tom::get<JB_account>(old_job); account_string != nullptr) {
+   if (const char *account_string = old_job.get<JB_account>(); account_string != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s A %s", prefix, account_string);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1405,13 +1405,13 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    // -c <interval>
    // PARAM c_occasion <occasion_string> (optional; <occasion_string> := ['n']['s']['m']['x']
    // PARAM c_interval <interval> (optional; <interval> := <2_digits>:<2_digits>:<2_digits>)
-   if (uint32_t interval = ocs::tom::get<JB_checkpoint_interval>(old_job); interval > 0) {
+   if (uint32_t interval = old_job.get<JB_checkpoint_interval>(); interval > 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s c_interval ", prefix);
       double_print_time_to_dstring((double)interval, &buffer);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
-   if (uint32_t attr = ocs::tom::get<JB_checkpoint_attr>(old_job); attr > 0) {
+   if (uint32_t attr = old_job.get<JB_checkpoint_attr>(); attr > 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s c_occasion ", prefix);
       job_get_ckpt_attr(attr, &buffer);
@@ -1419,7 +1419,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    // -ckpt name (optional)
-   if (const char *ckpt = ocs::tom::get<JB_checkpoint_name>(old_job); ckpt != nullptr) {
+   if (const char *ckpt = old_job.get<JB_checkpoint_name>(); ckpt != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s ckpt %s", prefix, ckpt);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1428,7 +1428,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    // -cwd
    // Different to commandline. If -cwd was specified it will be exported to the JSV by passing
    // the complete path. To remove the path the JSV has to pass an empty path. (optional)
-   if (const char *cwd = ocs::tom::get<JB_cwd>(old_job); cwd != nullptr) {
+   if (const char *cwd = old_job.get<JB_cwd>(); cwd != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s cwd %s", prefix, cwd);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1439,7 +1439,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    /* -display <display_name> (handled below where -v/-V is handled) */
 
    // -dl <date_time> (optional)
-   if (time_t clocks = static_cast<time_t>(ocs::tom::get<JB_deadline>(old_job)) / 1000000; clocks > 0) {
+   if (time_t clocks = static_cast<time_t>(old_job.get<JB_deadline>()) / 1000000; clocks > 0) {
       struct tm time_struct = {0};
 
       localtime_r(&clocks, &time_struct);
@@ -1453,17 +1453,17 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    /* -hard (handled as [global|master|server]_[l|q]_hard */
 
    // -hold_jid wc_job_list (optional)
-   if (const ocs::tom::ConstList<ocs::tom::JRE> hold_jid_list = ocs::tom::get<JB_jid_request_list>(old_job);
+   if (const ocs::tom::ConstList<ocs::tom::JRE> hold_jid_list = old_job.get<JB_jid_request_list>();
        hold_jid_list) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s hold_jid", prefix);
       bool first = true;
       for (const auto hold_jid : hold_jid_list) {
          sge_dstring_append_char(&buffer, first ? ' ' : ',');
-         if (const char *name = ocs::tom::get<JRE_job_name>(hold_jid); name != nullptr) {
+         if (const char *name = hold_jid.get<JRE_job_name>(); name != nullptr) {
             sge_dstring_sprintf_append(&buffer, "%s", name);
          } else {
-            sge_dstring_sprintf_append(&buffer, sge_u32, ocs::tom::get<JRE_job_number>(hold_jid));
+            sge_dstring_sprintf_append(&buffer, sge_u32, hold_jid.get<JRE_job_number>());
          }
          first = false;
       }
@@ -1471,17 +1471,17 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    // -hold_jid_ad wc_job_list (optional)
-   if (const ocs::tom::ConstList<ocs::tom::JRE> hold_jid_list = ocs::tom::get<JB_ja_ad_request_list>(old_job);
+   if (const ocs::tom::ConstList<ocs::tom::JRE> hold_jid_list = old_job.get<JB_ja_ad_request_list>();
        hold_jid_list) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s hold_jid_ad", prefix);
       bool first = true;
       for (const auto hold_jid : hold_jid_list) {
          sge_dstring_append_char(&buffer, first ? ' ' : ',');
-         if (const char *name = ocs::tom::get<JRE_job_name>(hold_jid); name != nullptr) {
+         if (const char *name = hold_jid.get<JRE_job_name>(); name != nullptr) {
             sge_dstring_sprintf_append(&buffer, "%s", name);
          } else {
-            uint32_t jid = ocs::tom::get<JRE_job_number>(hold_jid);
+            uint32_t jid = hold_jid.get<JRE_job_number>();
             sge_dstring_sprintf_append(&buffer, sge_u32, jid);
          }
          first = false;
@@ -1493,7 +1493,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    //
    // in difference with the qsub -h switch the setting is provided as (PARAM h u) where 'u' means "user hold"
    // 'n' would mean "no hold" but in this case the parameter is not provided to the JSV script
-   if (const ocs::tom::ConstList<ocs::tom::RN> hold_list = ocs::tom::get<JB_ja_u_h_ids>(old_job); hold_list) {
+   if (const ocs::tom::ConstList<ocs::tom::RN> hold_list = old_job.get<JB_ja_u_h_ids>(); hold_list) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s h u", prefix);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1502,14 +1502,14 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    // -inherit (not handled in JSV)
 
    // -j y | n (optional; only available when -j y was specified)
-   if (const bool merge = ocs::tom::get<JB_merge_stderr>(old_job)) {
+   if (const bool merge = old_job.get<JB_merge_stderr>()) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s j %c", prefix, merge ? 'y' : 'n');
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
    // -js job_share (optional)
-   if (uint32_t job_share = ocs::tom::get<JB_jobshare>(old_job); job_share > 0) {
+   if (uint32_t job_share = old_job.get<JB_jobshare>(); job_share > 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s js " sge_u32, prefix, job_share);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1546,7 +1546,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    // -m [b][e][a][s] or n (optional; only provided to JSV script if != 'n'
-   if (uint32_t mail_options = ocs::tom::get<JB_mail_options>(old_job); mail_options > 0) {
+   if (uint32_t mail_options = old_job.get<JB_mail_options>(); mail_options > 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s m ", prefix);
       sge_mailopt_to_dstring(mail_options, &buffer);
@@ -1554,15 +1554,15 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    // -M <mail_addr>, ... (optional)
-   if (const ocs::tom::ConstList<ocs::tom::MR> mail_list = ocs::tom::get<JB_mail_list>(old_job); mail_list) {
+   if (const ocs::tom::ConstList<ocs::tom::MR> mail_list = old_job.get<JB_mail_list>(); mail_list) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s M", prefix);
       bool first = true;
       for (const auto mail : mail_list) {
-         const char *user = ocs::tom::get<MR_user>(mail);
+         const char *user = mail.get<MR_user>();
          sge_dstring_append_char(&buffer, first ? ' ' : ',');
          sge_dstring_append(&buffer, user);
-         if (const char *host = ocs::tom::get<MR_host>(mail); host != nullptr) {
+         if (const char *host = mail.get<MR_host>(); host != nullptr) {
             sge_dstring_sprintf_append(&buffer, "@%s", host);
          }
          first = false;
@@ -1571,7 +1571,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    // -notify y|n (optional; only available when -notify y was specified)
-   if (const bool notify = ocs::tom::get<JB_notify>(old_job); notify) {
+   if (const bool notify = old_job.get<JB_notify>(); notify) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s notify %c", prefix, notify ? 'y' : 'n');
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1581,7 +1581,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
 
    // -N <job_name>
    // optional; only available if specified during job submission
-   if (const char *name = ocs::tom::get<JB_job_name>(old_job); name != nullptr) {
+   if (const char *name = old_job.get<JB_job_name>(); name != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s N %s", prefix, name);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1595,27 +1595,27 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    // -i <input_path_list> (optional)
    // -S <shell_path_list> (optional)
    // path_list := [hostname':']path,...
-   jsv_send_path_list(jsv, answer_list, prefix, "o", ocs::tom::get<JB_stdout_path_list>(old_job));
-   jsv_send_path_list(jsv, answer_list, prefix, "e", ocs::tom::get<JB_stderr_path_list>(old_job));
-   jsv_send_path_list(jsv, answer_list, prefix, "i", ocs::tom::get<JB_stdin_path_list>(old_job));
-   jsv_send_path_list(jsv, answer_list, prefix, "S", ocs::tom::get<JB_shell_list>(old_job));
+   jsv_send_path_list(jsv, answer_list, prefix, "o", old_job.get<JB_stdout_path_list>());
+   jsv_send_path_list(jsv, answer_list, prefix, "e", old_job.get<JB_stderr_path_list>());
+   jsv_send_path_list(jsv, answer_list, prefix, "i", old_job.get<JB_stdin_path_list>());
+   jsv_send_path_list(jsv, answer_list, prefix, "S", old_job.get<JB_shell_list>());
 
    // -P project_name (optional; only available if specified during submission)
-   if (const char *project = ocs::tom::get<JB_project>(old_job); project != nullptr) {
+   if (const char *project = old_job.get<JB_project>(); project != nullptr) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s P %s", prefix, project);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
    // -p priority (optional; only provided if specified during submission and != 0)
-   if (int priority = static_cast<int>(ocs::tom::get<JB_priority>(old_job)) - 1024; priority != 0) {
+   if (int priority = static_cast<int>(old_job.get<JB_priority>()) - 1024; priority != 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s p %d", prefix, priority);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
    // -tc task concurrency (optional; only provided if specified during submission
-   if (int max_tasks = static_cast<int>(ocs::tom::get<JB_ja_task_concurrency>(old_job)); max_tasks != 0) {
+   if (int max_tasks = static_cast<int>(old_job.get<JB_ja_task_concurrency>()); max_tasks != 0) {
       sge_dstring_clear(&buffer);
       sge_dstring_sprintf(&buffer, "%s tc %d", prefix, max_tasks);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1630,7 +1630,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
 
       if (binding_elem) {
          // -bamount
-         uint32_t amount = ocs::tom::get<BN_amount>(binding_elem);
+         uint32_t amount = binding_elem.get<BN_amount>();
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s bamount " sge_u32, prefix, amount);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1672,13 +1672,13 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
          // -bfilter
-         const char *filter = ocs::tom::get<BN_filter>(binding_elem);
+         const char *filter = binding_elem.get<BN_filter>();
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s bfilter %s", prefix, filter != nullptr ? filter : NONE_STR);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
 
          // -bsort
-         const char *sort = ocs::tom::get<BN_sort>(binding_elem);
+         const char *sort = binding_elem.get<BN_sort>();
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s bsort %s", prefix, sort != nullptr ? sort : NONE_STR);
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1699,8 +1699,8 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
     *    -pe pe -8   1           8
     */
    {
-      const char *pe_name = ocs::tom::get<JB_pe>(old_job);
-      const auto range = ocs::tom::get<JB_pe_range>(old_job).front();
+      const char *pe_name = old_job.get<JB_pe>();
+      const auto range = old_job.get<JB_pe_range>().front();
 
       if (pe_name != nullptr) {
          sge_dstring_clear(&buffer);
@@ -1708,8 +1708,8 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
       }
       if (range) {
-         uint32_t min = ocs::tom::get<RN_min>(range);
-         uint32_t max = ocs::tom::get<RN_max>(range);
+         uint32_t min = range.get<RN_min>();
+         uint32_t max = range.get<RN_max>();
 
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s pe_min " sge_u32, prefix, min);
@@ -1766,7 +1766,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
     * optional; only available if specified during submission and value is y
     */
    {
-      if (bool reserve = ocs::tom::get<JB_reserve>(old_job) ? true : false; reserve) {
+      if (bool reserve = old_job.get<JB_reserve>() ? true : false; reserve) {
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s R %c", prefix, reserve ? 'y' : 'n');
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1778,7 +1778,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
     * optional; only available if specified during submission and value is y 
     */
    {
-      if (uint32_t restart = ocs::tom::get<JB_restart>(old_job); restart == 1) {
+      if (uint32_t restart = old_job.get<JB_restart>(); restart == 1) {
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s r %c", prefix, (restart == 1) ? 'y' : 'n');
          jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
@@ -1811,7 +1811,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
     * PARAM t_step <number>
     */
    {
-      if (const auto ja_structure = ocs::tom::get<JB_ja_structure>(old_job).front(); ja_structure) {
+      if (const auto ja_structure = old_job.get<JB_ja_structure>().front(); ja_structure) {
          uint32_t min, max, step;
          range_get_all_ids(ja_structure, &min, &max, &step);
 
@@ -1844,7 +1844,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
     * optional; only sent to JSV if != 'n') 
     */
    {
-      if (uint32_t verify = ocs::tom::get<JB_verify_suitable_queues>(old_job); verify > 0) {
+      if (uint32_t verify = old_job.get<JB_verify_suitable_queues>(); verify > 0) {
          sge_dstring_clear(&buffer);
          sge_dstring_sprintf(&buffer, "%s w ", prefix);
          job_get_verify_attr(verify, &buffer);
@@ -1864,7 +1864,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
       ocs::tom::ListPtr<ocs::tom::VA> env_list;
 
       /* make a copy of the environment */
-      var_list_copy_env_vars_and_value(env_list, ocs::tom::get<JB_env_list>(old_job));
+      var_list_copy_env_vars_and_value(env_list, old_job.get<JB_env_list>());
 
       /* remove certain variables which don't come from the user environment */
       var_list_remove_prefix_vars(env_list, VAR_PREFIX);
@@ -1876,7 +1876,7 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
        * from -display switch.
        */
       if (const auto display = env_list->find_first<VA_variable>("DISPLAY"); display) {
-         const char *value = ocs::tom::get<VA_value>(display);
+         const char *value = display.get<VA_value>();
 
          if (ProgName prog_id = component_get_component_id();
              value != nullptr && (strcmp(to_cstr(prog_id), "qsh") == 0 || strcmp(to_cstr(prog_id), "qrsh") == 0)) {
@@ -1887,10 +1887,10 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
       }
 
       /* send the variables to the JSV but only if it was requested */
-      if (ocs::tom::get<JSV_send_env>(jsv)) {
+      if (jsv.get<JSV_send_env>()) {
          for (const auto env : *env_list) {
-            const char *value = ocs::tom::get<VA_value>(env);
-            const char *name = ocs::tom::get<VA_variable>(env);
+            const char *value = env.get<VA_value>();
+            const char *name = env.get<VA_variable>();
             size_t length, i;
       
             sge_dstring_clear(&buffer);
@@ -1955,7 +1955,7 @@ jsv_handle_log_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
       /* empty message will print an empty line (only newline) */
       args = "";
    }
-   if (strcmp(ocs::tom::get<JSV_context>(jsv), JSV_CONTEXT_CLIENT) != 0) {
+   if (strcmp(jsv.get<JSV_context>(), JSV_CONTEXT_CLIENT) != 0) {
       if (const char *sub_command = sge_dstring_get_string(s); strcmp(sub_command, "INFO") == 0) {
          INFO("%s", args);
       } else if (strcmp(sub_command, "WARNING") == 0) {
@@ -2002,9 +2002,9 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
    DPRINTF("got from JSV \"%s %s %s\"", mod, var, (val != nullptr) ? val : "");
 
    if (strcmp(var, "__JSV_TEST_RESULT") == 0) {
-      ocs::tom::set<JSV_test>(jsv, true);
-      ocs::tom::set<JSV_test_pos>(jsv, 0);
-      ocs::tom::set<JSV_result>(jsv, val);
+      jsv.set<JSV_test>(true);
+      jsv.set<JSV_test_pos>(0);
+      jsv.set<JSV_result>(val);
       skip_check = true;
    }
 
@@ -2012,7 +2012,7 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
       if (mod != nullptr && var != nullptr &&
           (((strcmp(mod, "MOD") == 0 || strcmp(mod, "ADD") == 0) && val != nullptr) ||
            (strcmp(mod, "DEL") == 0 && val == nullptr))) {
-         const auto env_list = ocs::tom::get<JB_env_list>(new_job);
+         const auto env_list = new_job.get<JB_env_list>();
          ocs::tom::Element<ocs::tom::VA> env_variable;
 
          if (var != nullptr) {
@@ -2020,9 +2020,9 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
          }
          if (strcmp("ADD", mod) == 0 || strcmp("MOD", mod) == 0) {
             if (!env_variable) {
-               env_variable = ocs::tom::emplace_back_in<JB_env_list, VA_variable>(new_job, var);
+               env_variable = new_job.emplace_back_in<JB_env_list, VA_variable>(var);
             }
-            ocs::tom::set<VA_value>(env_variable, val);
+            env_variable.set<VA_value>(val);
          } else if (strcmp("DEL", mod) == 0) {
             if (env_variable) {
                env_list.erase(env_variable);
@@ -2048,10 +2048,10 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
     * we will accept the job with the ret value set above including
     * the created error messages.
     */
-   if (ocs::tom::get<JSV_test>(jsv) && !skip_check) {
-      const char *result_string = ocs::tom::get<JSV_result>(jsv);
+   if (jsv.get<JSV_test>() && !skip_check) {
+      const char *result_string = jsv.get<JSV_result>();
 
-      if (const uint32_t result_pos = ocs::tom::get<JSV_test_pos>(jsv);
+      if (const uint32_t result_pos = jsv.get<JSV_test_pos>();
           strlen(result_string) > result_pos) {
          if (const bool result = (result_string[result_pos] == '1') ? true : false;
              result != ret) {
@@ -2064,7 +2064,7 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
             ret = true;
          }
       }
-      ocs::tom::set<JSV_test_pos>(jsv, ocs::tom::get<JSV_test_pos>(jsv) + 1);
+      jsv.set<JSV_test_pos>(jsv.get<JSV_test_pos>() + 1);
    }
    answer_list_append_list(answer_list, &local_answer_list);
 
@@ -2098,7 +2098,7 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
     * to JSV but the initialization code might also cause errors....
     */
    char input[10000];
-   while (fscanf(static_cast<FILE *>(ocs::tom::get<JSV_err>(jsv)), "%[^\n]\n", input) == 1) {
+   while (fscanf(static_cast<FILE *>(jsv.get<JSV_err>()), "%[^\n]\n", input) == 1) {
       ERROR(MSG_JSV_LOGMSG_S, input);
       answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
       ret = false;
@@ -2112,7 +2112,7 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
       bool do_retry = true;
       uint64_t jsv_timeout = sge_gmt32_to_gmt64(10);
       
-      if (strcmp(ocs::tom::get<JSV_context>(jsv), JSV_CONTEXT_CLIENT) == 0 && getenv("SGE_JSV_TIMEOUT") != nullptr) {
+      if (strcmp(jsv.get<JSV_context>(), JSV_CONTEXT_CLIENT) == 0 && getenv("SGE_JSV_TIMEOUT") != nullptr) {
          if (atoi(getenv("SGE_JSV_TIMEOUT")) > 0) {
             jsv_timeout = sge_gmt32_to_gmt64(atoi(getenv("SGE_JSV_TIMEOUT")));
             DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from environment variable\n", jsv_timeout);
@@ -2122,9 +2122,9 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
          DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from qmaster parameter\n", jsv_timeout);
       }
 
-      ocs::tom::set<JSV_done>(jsv, false);
-      ocs::tom::set<JSV_soft_shutdown>(jsv, true);
-      while (!ocs::tom::get<JSV_done>(jsv)) {
+      jsv.set<JSV_done>(false);
+      jsv.set<JSV_soft_shutdown>(true);
+      while (!jsv.get<JSV_done>()) {
          if (sge_get_gmt64() - start_time > jsv_timeout) {
             DPRINTF("JSV - master waited longer than " sge_u64 " µs to get response from JSV\n", jsv_timeout);
             /*
@@ -2135,9 +2135,9 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
              */
             if (do_retry) {
                DPRINTF("JSV - will retry verification\n");
-               ocs::tom::set<JSV_restart>(jsv, false);
-               ocs::tom::set<JSV_accept>(jsv, false);
-               ocs::tom::set<JSV_done>(jsv, false);
+               jsv.set<JSV_restart>(false);
+               jsv.set<JSV_accept>(false);
+               jsv.set<JSV_done>(false);
                DPRINTF("JSV process will be stopped now\n");
                ret &= jsv_stop(jsv, answer_list, false);
                if (ret) {
@@ -2146,7 +2146,7 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
                }
                if (ret) {
                   DPRINTF("JSV process gets START command\n");
-                  while (fscanf(static_cast<FILE *>(ocs::tom::get<JSV_err>(jsv)), "%[^\n]\n", input) == 1) {
+                  while (fscanf(static_cast<FILE *>(jsv.get<JSV_err>()), "%[^\n]\n", input) == 1) {
                      ERROR(MSG_JSV_LOGMSG_S, input);
                   }
                   ret &= jsv_send_command(jsv, answer_list, "START");
@@ -2156,14 +2156,14 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
             } else {
                DPRINTF("JSV - reject due to timeout in communication process\n");
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
-                                       "got no response from JSV script " SFQ, ocs::tom::get<JSV_command>(jsv));
-               ocs::tom::set<JSV_restart>(jsv, true);
-               ocs::tom::set<JSV_soft_shutdown>(jsv, false);
-               ocs::tom::set<JSV_done>(jsv, true);
+                                       "got no response from JSV script " SFQ, jsv.get<JSV_command>());
+               jsv.set<JSV_restart>(true);
+               jsv.set<JSV_soft_shutdown>(false);
+               jsv.set<JSV_done>(true);
             }
          } else {
-            const auto err_stream = static_cast<FILE *>(ocs::tom::get<JSV_err>(jsv));
-            const auto out_stream = static_cast<FILE *>(ocs::tom::get<JSV_out>(jsv));
+            const auto err_stream = static_cast<FILE *>(jsv.get<JSV_err>());
+            const auto out_stream = static_cast<FILE *>(jsv.get<JSV_out>());
 
             /* 
              * read a line from the script or wait some time before you try again
@@ -2196,8 +2196,8 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
                         handled = true;
                         ret &= commands[i].func(jsv, answer_list, &command, &sub_command, &args);
 
-                        if (!ret || ocs::tom::get<JSV_restart>(jsv) || ocs::tom::get<JSV_accept>(jsv)) {
-                           ocs::tom::set<JSV_done>(jsv, true);
+                        if (!ret || jsv.get<JSV_restart>() || jsv.get<JSV_accept>()) {
+                           jsv.set<JSV_done>(true);
                         }
                         break;
                      }
@@ -2206,9 +2206,9 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
                   if (!handled) {
                      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_JCOMMAND_S,
                                              command_str);
-                     ocs::tom::set<JSV_accept>(jsv, false);
-                     ocs::tom::set<JSV_restart>(jsv, true);
-                     ocs::tom::set<JSV_done>(jsv, true);
+                     jsv.set<JSV_accept>(false);
+                     jsv.set<JSV_restart>(true);
+                     jsv.set<JSV_done>(true);
                   }
 
                   /*
@@ -2233,11 +2233,11 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
                ret = false;
             }
-            if (!ret && !ocs::tom::get<JSV_done>(jsv)) {
+            if (!ret && !jsv.get<JSV_done>()) {
                answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, "JSV stderr is - %s", input);
-               ocs::tom::set<JSV_restart>(jsv, true);
-               ocs::tom::set<JSV_soft_shutdown>(jsv, false);
-               ocs::tom::set<JSV_done>(jsv, true);
+               jsv.set<JSV_restart>(true);
+               jsv.set<JSV_soft_shutdown>(false);
+               jsv.set<JSV_done>(true);
             }
          }
       }
@@ -2313,7 +2313,7 @@ jsv_cull_attr2switch_name(const int cull_attr, const ocs::tom::ConstElement<ocs:
       //    qalter -N <string2> <job_name> => qalter with job name instead of
       //                                      job id using -N option to change name
       #define JOB_NAME_DEL ':'
-      if (const char *job_name = ocs::tom::get<JB_job_name>(job); job_name != nullptr) {
+      if (const char *job_name = job.get<JB_job_name>(); job_name != nullptr) {
          if (job_name[0] == JOB_NAME_DEL) {
             if (const char *help_str = strchr(&(job_name[1]), JOB_NAME_DEL);
                 help_str != nullptr && help_str[1] != '\0') {
@@ -2434,7 +2434,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
 
             // Remove the allowed switches from the list of switches which were applied to the job we got.
             for (const auto allowed : *allowed_switches) {
-               const char *name = ocs::tom::get<ST_name>(allowed);
+               const char *name = allowed.get<ST_name>();
                const void *iterator = nullptr;
 
                auto got_next = ocs::tom::find_first_rw<ST_name>(*got_switches, name, &iterator);
@@ -2459,7 +2459,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
                   } else {
                      sge_dstring_append_char(&switches, ',');
                   } 
-                  sge_dstring_append(&switches, ocs::tom::get<ST_name>(not_allowed));
+                  sge_dstring_append(&switches, not_allowed.get<ST_name>());
                }
                ERROR(MSG_JSV_SWITCH_S, sge_dstring_get_string(&switches));
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

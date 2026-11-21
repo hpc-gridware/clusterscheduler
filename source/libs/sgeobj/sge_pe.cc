@@ -97,7 +97,7 @@ bool pe_name_is_matching(const char *pe_name, const char *wildcard) {
  */
 bool pe_is_matching(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *wildcard) {
    // no DENTER: called per job/queue in the scheduler
-   return pe_name_is_matching(ocs::tom::get<PE_name>(pe), wildcard);
+   return pe_name_is_matching(pe.get<PE_name>(), wildcard);
 }
 
 /**
@@ -163,8 +163,8 @@ bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::L
 
    for (const auto job : master_job_list) {
       if (job_is_pe_referenced(job, pe)) {
-         const char *pe_name = ocs::tom::get<PE_name>(pe);
-         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+         const char *pe_name = pe.get<PE_name>();
+         uint32_t job_id = job.get<JB_job_number>();
 
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_INFO, MSG_PEREFINJOB_SU,
@@ -177,15 +177,15 @@ bool pe_is_referenced(const ocs::tom::ConstElement<ocs::tom::PE> pe, ocs::tom::L
       /* fix for bug 6422335
        * check cq configuration for pe references instead of qinstances
        */
-      const char *pe_name = ocs::tom::get<PE_name>(pe);
+      const char *pe_name = pe.get<PE_name>();
 
       for (const auto cqueue : master_cqueue_list) {
-         for (const auto cpl : ocs::tom::get<CQ_pe_list>(cqueue)) {
-            if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(cpl, pe_name))  {
+         for (const auto cpl : cqueue.get<CQ_pe_list>()) {
+            if (cpl.find_first_in<ASTRLIST_value, ST_name>(pe_name))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
                                        MSG_PEREFINQUEUE_SS,
-                                       pe_name, ocs::tom::get<CQ_name>(cqueue));
+                                       pe_name, cqueue.get<CQ_name>());
                ret = true;
                break;
             }
@@ -222,7 +222,7 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs
    const char *s;
    int ret;
 
-   const char *pe_name = ocs::tom::get<PE_name>(pep);
+   const char *pe_name = pep.get<PE_name>();
    if (pe_name != nullptr && verify_obj_name(alpp, pe_name, MAX_VERIFY_STRING, MSG_OBJ_PE) != STATUS_OK) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_INVALIDCHARACTERINPE_S, pe_name);
@@ -238,7 +238,7 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs
 
    /* -------- start_proc_args */
    ocs_null_out_none<PE_start_proc_args>(pep);
-   s = ocs::tom::get<PE_start_proc_args>(pep);
+   s = pep.get<PE_start_proc_args>();
    if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_STARTPROCARGS_SS, pe_name, err_msg);
@@ -251,7 +251,7 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs
 
    /* -------- stop_proc_args */
    ocs_null_out_none<PE_stop_proc_args>(pep);
-   s = ocs::tom::get<PE_stop_proc_args>(pep);
+   s = pep.get<PE_stop_proc_args>();
    if (s != nullptr && replace_params(s, nullptr, 0, pe_variables)) {
       if (alpp == nullptr) {
          ERROR(MSG_PE_STOPPROCARGS_SS, pe_name, err_msg);
@@ -263,12 +263,12 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs
    }
 
    /* -------- slots */
-   if ((ret = pe_validate_slots(alpp, ocs::tom::get<PE_slots>(pep), startup != 0)) != STATUS_OK) {
+   if ((ret = pe_validate_slots(alpp, pep.get<PE_slots>(), startup != 0)) != STATUS_OK) {
       DRETURN(ret);
    }
 
    /* -------- allocation_rule */
-   s = ocs::tom::get<PE_allocation_rule>(pep);
+   s = pep.get<PE_allocation_rule>();
    if (!pe_validate_allocation_rule(alpp, s, alpp == nullptr)) {
       DRETURN(STATUS_EEXIST);
    }
@@ -276,20 +276,20 @@ int pe_validate(const ocs::tom::Element<ocs::tom::PE> pep, ocs::tom::ListPtr<ocs
    /* do this only in qmaster. we don't have the usersets in qconf */
    if (startup) {
       /* -------- PE_user_list */
-      if ((ret = userset_list_validate_acl_list(ocs::tom::get<PE_user_list>(pep), alpp,
+      if ((ret = userset_list_validate_acl_list(pep.get<PE_user_list>(), alpp,
                                                 master_userset_list)) != STATUS_OK) {
          DRETURN(ret);
       }
 
       /* -------- PE_xuser_list */
-      if ((ret = userset_list_validate_acl_list(ocs::tom::get<PE_xuser_list>(pep), alpp,
+      if ((ret = userset_list_validate_acl_list(pep.get<PE_xuser_list>(), alpp,
                                                 master_userset_list)) != STATUS_OK) {
          DRETURN(ret);
       }
    }
 
    /* -------- PE_urgency_slots */
-   if ((ret=pe_validate_urgency_slots(alpp, ocs::tom::get<PE_urgency_slots>(pep)))!=STATUS_OK) {
+   if ((ret=pe_validate_urgency_slots(alpp, pep.get<PE_urgency_slots>()))!=STATUS_OK) {
       DRETURN(ret);
    }
 
@@ -449,7 +449,7 @@ bool pe_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::PE> pe_list, ocs::
    bool ret = true;
 
    for (const auto pe_ref_elem : pe_ref_list) {
-      const char *pe_ref_string = ocs::tom::get<ST_name>(pe_ref_elem);
+      const char *pe_ref_string = pe_ref_elem.get<ST_name>();
 
       if (ignore_make_pe && !strcmp(pe_ref_string, "make")) {
          continue;
@@ -496,18 +496,18 @@ int pe_urgency_slots(const ocs::tom::ConstElement<ocs::tom::PE> pe, const char *
        */
       n = range_list_get_last_id(range_list, nullptr);
       if (n == RANGE_INFINITY) {
-         n = ocs::tom::get<PE_slots>(pe);
+         n = pe.get<PE_slots>();
       }
    } else if (!strcasecmp(urgency_slot_setting, SGE_ATTRVAL_AVG)) {
       /*
        * to handle infinity slot ranges we use the maximum PE
        * slot number as upper bound when determining the average
        */
-      n = range_list_get_average(range_list, ocs::tom::get<PE_slots>(pe));
+      n = range_list_get_average(range_list, pe.get<PE_slots>());
    } else if (isdigit(urgency_slot_setting[0])) {
       n = atoi(urgency_slot_setting);
    } else {
-      CRITICAL(MSG_PE_UNKNOWN_URGENCY_SLOT_SS, urgency_slot_setting, ocs::tom::get<PE_name>(pe));
+      CRITICAL(MSG_PE_UNKNOWN_URGENCY_SLOT_SS, urgency_slot_setting, pe.get<PE_name>());
       n = 1;
    }
    DRETURN(n);
@@ -531,19 +531,19 @@ ocs::tom::ElementPtr<ocs::tom::PE> pe_create_template(const char *pe_name) {
    auto pep = ocs::tom::ElementPtr<ocs::tom::PE>::create();
 
    if (pe_name) {
-      ocs::tom::set<PE_name>(pep, pe_name);
+      pep->set<PE_name>(pe_name);
    } else {
-      ocs::tom::set<PE_name>(pep, "template");
+      pep->set<PE_name>("template");
    }
 
-   ocs::tom::set<PE_allocation_rule>(pep, "$pe_slots");
-   ocs::tom::set<PE_start_proc_args>(pep, "NONE");
-   ocs::tom::set<PE_stop_proc_args>(pep, "NONE");
+   pep->set<PE_allocation_rule>("$pe_slots");
+   pep->set<PE_start_proc_args>("NONE");
+   pep->set<PE_stop_proc_args>("NONE");
 
    /* PE_control_slaves initialized implicitly to false */
-   ocs::tom::set<PE_job_is_first_task>(pep, true);
+   pep->set<PE_job_is_first_task>(true);
 
-   ocs::tom::set<PE_urgency_slots>(pep, SGE_ATTRVAL_MIN);
+   pep->set<PE_urgency_slots>(SGE_ATTRVAL_MIN);
 
    DRETURN(pep);
 }
@@ -562,10 +562,10 @@ ocs::tom::ElementPtr<ocs::tom::PE> pe_create_template(const char *pe_name) {
 int pe_get_slots_used(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
    // no DENTER: called per job/queue in the scheduler
    int ret = -1;
-   const auto actual = ocs::tom::find_first_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
+   const auto actual = pe.find_first_in<PE_resource_utilization, RUE_name>(SGE_ATTR_SLOTS);
 
    if (actual) {
-      ret = ocs::tom::get<RUE_utilized_now>(actual);
+      ret = actual.get<RUE_utilized_now>();
    }
    return ret;
 }
@@ -584,11 +584,11 @@ int pe_get_slots_used(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
  */
 int pe_set_slots_used(const ocs::tom::Element<ocs::tom::PE> pe, const int slots) {
    DENTER(TOP_LAYER);
-   auto actual = ocs::tom::find_first_in_rw<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS);
-   if (!actual && (!(actual = ocs::tom::emplace_back_in<PE_resource_utilization, RUE_name>(pe, SGE_ATTR_SLOTS)))) {
+   auto actual = pe.find_first_in_rw<PE_resource_utilization, RUE_name>(SGE_ATTR_SLOTS);
+   if (!actual && (!(actual = pe.emplace_back_in<PE_resource_utilization, RUE_name>(SGE_ATTR_SLOTS)))) {
       DRETURN(-1);
    }
-   ocs::tom::set<RUE_utilized_now>(actual, slots);
+   actual.set<RUE_utilized_now>(slots);
    DRETURN(0);
 }
 
@@ -613,7 +613,7 @@ void pe_debit_slots(const ocs::tom::Element<ocs::tom::PE> pep, const int slots,
       int n = pe_get_slots_used(pep);
       n += slots;
       if (n < 0) {
-         ERROR(MSG_PE_USEDSLOTSTOOBIG_S, ocs::tom::get<PE_name>(pep));
+         ERROR(MSG_PE_USEDSLOTSTOOBIG_S, pep.get<PE_name>());
       }
       pe_set_slots_used(pep, n);
    }
@@ -643,8 +643,8 @@ bool pe_do_accounting_summary(const ocs::tom::ConstElement<ocs::tom::PE> pe) {
     * the accounting_summary attribute has only a meaning
     * for tightly integrated jobs
     */
-   if (pe && ocs::tom::get<PE_control_slaves>(pe)) {
-      ret = ocs::tom::get<PE_accounting_summary>(pe) ? true : false;
+   if (pe && pe.get<PE_control_slaves>()) {
+      ret = pe.get<PE_accounting_summary>() ? true : false;
    }
 
    return ret;

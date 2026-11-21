@@ -188,25 +188,25 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
       DRETURN_VOID;
    }
 
-   if (!(q=ocs::tom::get<JR_queue_name>(jr))) {
+   if (!(q=jr.get<JR_queue_name>())) {
       q = MSG_MAIL_UNKNOWN_NAME;
    }
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "start_time"))) {
-      sge_strlcpy(sge_mail_start, sge_ctime64(ocs::tom::get<UA_value>(ep), &ds), sizeof(sge_mail_start));
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("start_time"))) {
+      sge_strlcpy(sge_mail_start, sge_ctime64(ep.get<UA_value>(), &ds), sizeof(sge_mail_start));
    } else {
       sge_strlcpy(sge_mail_start, MSG_MAIL_UNKNOWN_NAME, sizeof(sge_mail_start));
    }
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "end_time"))) {
-      sge_strlcpy(sge_mail_end, sge_ctime64(ocs::tom::get<UA_value>(ep), &ds), sizeof(sge_mail_end));
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("end_time"))) {
+      sge_strlcpy(sge_mail_end, sge_ctime64(ep.get<UA_value>(), &ds), sizeof(sge_mail_end));
    } else {
       sge_strlcpy(sge_mail_end, MSG_MAIL_UNKNOWN_NAME, sizeof(sge_mail_end));
    }
 
-   jobid = ocs::tom::get<JR_job_number>(jr);
-   jataskid = ocs::tom::get<JR_ja_task_number>(jr);
+   jobid = jr.get<JR_job_number>();
+   jataskid = jr.get<JR_ja_task_number>();
 
-   failed = ocs::tom::get<JR_failed>(jr);
-   general = ocs::tom::get<JR_general_failure>(jr);
+   failed = jr.get<JR_failed>();
+   general = jr.get<JR_general_failure>();
    now = sge_get_gmt64();
    
    if (failed) {
@@ -241,7 +241,7 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          }
       }
       admail_sent[admail_key] = {now, qversion};
-      if (!(err_str=ocs::tom::get<JR_err_str>(jr))) {
+      if (!(err_str=jr.get<JR_err_str>())) {
          err_str = MSG_MAIL_UNKNOWN_REASON;
       }
 
@@ -254,7 +254,7 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          DRETURN_VOID;
       }
 
-      if (ocs::tom::get<JR_pe_task_id_str>(jr) == nullptr) {
+      if (jr.get<JR_pe_task_id_str>() == nullptr) {
           /* This is a regular job */
           if (general == GFSTATE_QUEUE) {
              snprintf(str_general, sizeof(str_general), MSG_GFSTATE_QUEUE_S, q);

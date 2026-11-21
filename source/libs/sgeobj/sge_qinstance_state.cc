@@ -150,7 +150,7 @@ static const char letters[] = {
  */
 bool qinstance_set_state(const ocs::tom::Element<ocs::tom::QU> this_elem, const bool set_state, const uint32_t bit) {
    bool ret = false;
-   const uint32_t old_state = ocs::tom::get<QU_state>(this_elem);
+   const uint32_t old_state = this_elem.get<QU_state>();
    uint32_t new_state = old_state;
 
    if (set_state) {   
@@ -160,7 +160,7 @@ bool qinstance_set_state(const ocs::tom::Element<ocs::tom::QU> this_elem, const 
    }
 
    if (old_state != new_state) {
-      ocs::tom::set<QU_state>(this_elem, new_state);
+      this_elem.set<QU_state>(new_state);
       ret = true;
    }
 
@@ -185,7 +185,7 @@ bool qinstance_has_state(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, c
    bool ret = true;
 
    if (bit != std::numeric_limits<uint32_t>::max()) {
-      ret = (ocs::tom::get<QU_state>(this_elem) & bit) ? true : false;
+      ret = (this_elem.get<QU_state>() & bit) ? true : false;
    }
    return ret;
 }

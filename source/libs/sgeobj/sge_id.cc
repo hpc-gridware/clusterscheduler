@@ -79,7 +79,7 @@ bool id_list_build_from_str_list(ocs::tom::ListPtr<ocs::tom::ID> &id_list,
        transition_option_is_valid_for_qinstance(option, answer_list) &&
        str_list_is_valid(str_list, answer_list)) {
       for (const auto elem : str_list) {
-         const char *string = ocs::tom::get<ST_name>(elem);
+         const char *string = elem.get<ST_name>();
          ocs::tom::Element<ocs::tom::ID> new_id;
 
          /*
@@ -104,8 +104,8 @@ bool id_list_build_from_str_list(ocs::tom::ListPtr<ocs::tom::ID> &id_list,
             }
          }
          if (new_id) {
-            ocs::tom::set<ID_action>(new_id, transition);
-            ocs::tom::set<ID_force>(new_id, option);
+            new_id.set<ID_action>(transition);
+            new_id.set<ID_force>(option);
          } else {
             answer_list_add(answer_list, MSG_ID_UNABLETOCREATE, 
                             STATUS_EMALLOC, ANSWER_QUALITY_ERROR);

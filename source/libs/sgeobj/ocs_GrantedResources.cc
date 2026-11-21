@@ -80,9 +80,9 @@ ocs::GrantedResources::to_string(const ocs::tom::ConstList<ocs::tom::GRU> grante
       const auto curr = next;
       next = ocs::tom::find_next<GRU_name>(granted_resources, SGE_ATTR_SLOTS, &iterator);
 
-      const char *hostname = ocs::tom::get<GRU_host>(curr);
-      for (const auto binding_in_use : ocs::tom::get<GRU_binding_inuse>(curr)) {
-         TopologyString topo_in_use(ocs::tom::get<ST_name>(binding_in_use));
+      const char *hostname = curr.get<GRU_host>();
+      for (const auto binding_in_use : curr.get<GRU_binding_inuse>()) {
+         TopologyString topo_in_use(binding_in_use.get<ST_name>());
          ss << (add_separator ? "," : "") << hostname << "=" << topo_in_use.to_product_topology_string();
          add_separator = true;
       }
@@ -113,9 +113,9 @@ ocs::GrantedResources::add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &gran
       granted_resources_list = ocs::tom::ListPtr<ocs::tom::GRU>::create("");
    }
    const auto gru = granted_resources_list->emplace_back<GRU_name>(SGE_ATTR_SLOTS);
-   ocs::tom::set<GRU_host>(gru, host_name);
-   ocs::tom::set<GRU_type>(gru, static_cast<lUlong>(Type::GRU_BINDING_TYPE));
-   ocs::tom::set<GRU_binding_inuse>(gru, binding_touse_list.clone("binding_to_use"));
+   gru.set<GRU_host>(ocs::tom::Host(host_name));
+   gru.set<GRU_type>(static_cast<lUlong>(Type::GRU_BINDING_TYPE));
+   gru.set<GRU_binding_inuse>(binding_touse_list.clone("binding_to_use"));
    DRETURN_VOID;
 }
 
@@ -142,15 +142,15 @@ ocs::GrantedResources::get_combined_binding_for_host(const ocs::tom::ConstList<o
       const auto gr = next_gr;
       next_gr = ocs::tom::find_next<GRU_host>(gr_list, hostname, &iterator);
 
-      if (const uint32_t type = ocs::tom::get<GRU_type>(gr); static_cast<Type>(type) != Type::GRU_BINDING_TYPE) {
+      if (const uint32_t type = gr.get<GRU_type>(); static_cast<Type>(type) != Type::GRU_BINDING_TYPE) {
          continue; // we are only interested in binding resources
       }
 
-      for (const auto be : ocs::tom::get<GRU_binding_inuse>(gr)) {
+      for (const auto be : gr.get<GRU_binding_inuse>()) {
          if (binding_to_use.is_empty()) {
-            binding_to_use.reset_topology(ocs::tom::get<ST_name>(be));
+            binding_to_use.reset_topology(be.get<ST_name>());
          } else {
-            TopologyString binding_to_add(ocs::tom::get<ST_name>(be));
+            TopologyString binding_to_add(be.get<ST_name>());
             binding_to_use.mark_nodes_as_used_or_unused(binding_to_add, true);
          }
       }

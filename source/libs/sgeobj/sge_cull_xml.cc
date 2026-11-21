@@ -97,9 +97,9 @@ ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
    auto attribute_list = std::move(attributes);
    auto xml_head = ocs::tom::ElementPtr<ocs::tom::XMLH>::create();
 
-   ocs::tom::set<XMLH_Version>(xml_head, "<?xml version='1.0'?>");
-   ocs::tom::set<XMLH_Name>(xml_head, name);
-   ocs::tom::set<XMLH_Attribute>(xml_head, std::move(attribute_list));
+   xml_head->set<XMLH_Version>("<?xml version='1.0'?>");
+   xml_head->set<XMLH_Name>(name);
+   xml_head->set<XMLH_Attribute>(std::move(attribute_list));
    xml_addAttribute(*xml_head, "xmlns:xsd",
                     "https://github.com/hpc-gridware/clusterscheduler/raw/master/source/dist/util/resources/"
                     "schemas/qstat/qstat.xsd");
@@ -149,8 +149,8 @@ static void ocs_xml_add_attribute(const ocs::tom::Element<T> xml_elem, const cha
    const bool is_mod_value = escape_string(value, &mod_value);
 
    auto attr_elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   ocs::tom::set<XMLA_Name>(attr_elem, name);
-   ocs::tom::set<XMLA_Value>(attr_elem, (is_mod_value ? sge_dstring_get_string(&mod_value) : ""));
+   attr_elem->set<XMLA_Name>(name);
+   attr_elem->set<XMLA_Value>((is_mod_value ? sge_dstring_get_string(&mod_value) : ""));
    ocs::tom::get_or_create<F>(xml_elem, "Attributes").push_back(std::move(attr_elem));
 
    sge_dstring_free(&mod_value);
@@ -232,24 +232,24 @@ static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_le
       if (ocs::tom::has<XMLE_Attribute>(ep.raw())) {
          xml_elem = ocs::tom::ConstElement<ocs::tom::XMLE>(ep.raw());
          sge_dstring_clear(&attr);
-         is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(xml_elem), &attr);
+         is_attr = lAttributesToString_(xml_elem.get<XMLE_Attribute>(), &attr);
          is_XML_elem = true;
       }
       
-      if (is_XML_elem && (ocs::tom::get<XMLE_Print>(xml_elem)))  {
+      if (is_XML_elem && (xml_elem.get<XMLE_Print>()))  {
          // an element to be printed holds the name and the value of its tag
-         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(ocs::tom::get<XMLE_Element>(xml_elem));
-         if (ocs::tom::get<XMLA_Value>(elem) != nullptr){
-            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "")
+         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(xml_elem.get<XMLE_Element>());
+         if (elem.get<XMLA_Value>() != nullptr){
+            os << indent << "<" << elem.get<XMLA_Name>() << (is_attr ? sge_dstring_get_string(&attr) : "")
                << ">";
-            os << ocs::tom::get<XMLA_Value>(elem);
-            lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level + 1, os);
-            os << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
+            os << elem.get<XMLA_Value>();
+            lWriteListXML_(xml_elem.get<XMLE_List>(), nesting_level + 1, os);
+            os << "</" << elem.get<XMLA_Name>() << ">\n";
          } else {
-            os << indent << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "")
+            os << indent << "<" << elem.get<XMLA_Name>() << (is_attr ? sge_dstring_get_string(&attr) : "")
                << ">\n";
-            lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level + 1, os);
-            os << indent << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
+            lWriteListXML_(xml_elem.get<XMLE_List>(), nesting_level + 1, os);
+            os << indent << "</" << elem.get<XMLA_Name>() << ">\n";
          }
       }
       else {
@@ -425,21 +425,21 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
       lWriteXMLHead_(ocs::tom::ConstElement<ocs::tom::XMLH>(ep.raw()), nesting_level, os);
    } else if (ocs::tom::has<XMLE_Attribute>(ep.raw())) {
       const ocs::tom::ConstElement<ocs::tom::XMLE> xml_elem(ep.raw());
-      if (ocs::tom::get<XMLE_Print>(xml_elem)) {
+      if (xml_elem.get<XMLE_Print>()) {
          dstring attr = DSTRING_INIT;
          // an element to be printed holds the name and the value of its tag
-         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(ocs::tom::get<XMLE_Element>(xml_elem));
-         const bool is_attr = lAttributesToString_(ocs::tom::get<XMLE_Attribute>(xml_elem), &attr);
+         const ocs::tom::ConstElement<ocs::tom::XMLA> elem(xml_elem.get<XMLE_Element>());
+         const bool is_attr = lAttributesToString_(xml_elem.get<XMLE_Attribute>(), &attr);
 
-         os << space << "<" << ocs::tom::get<XMLA_Name>(elem) << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
-         os << ocs::tom::get<XMLA_Value>(elem);
-         lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level + 1, os);
-         os << "</" << ocs::tom::get<XMLA_Name>(elem) << ">\n";
+         os << space << "<" << elem.get<XMLA_Name>() << (is_attr ? sge_dstring_get_string(&attr) : "") << ">";
+         os << elem.get<XMLA_Value>();
+         lWriteListXML_(xml_elem.get<XMLE_List>(), nesting_level + 1, os);
+         os << "</" << elem.get<XMLA_Name>() << ">\n";
 
          sge_dstring_free(&attr);
       } else{
-         lWriteElemXML_(ocs::tom::get<XMLE_Element>(xml_elem), nesting_level, os);
-         lWriteListXML_(ocs::tom::get<XMLE_List>(xml_elem), nesting_level, os);
+         lWriteElemXML_(xml_elem.get<XMLE_Element>(), nesting_level, os);
+         lWriteListXML_(xml_elem.get<XMLE_List>(), nesting_level, os);
       }
    } else {
       const lDescr *descr = ep.descr();
@@ -573,8 +573,8 @@ static bool lAttributesToString_(const ocs::tom::ConstList<ocs::tom::XMLA> attr_
       DRETURN(false);
    }
    for (const auto attr_elem : attr_list) {
-      const char *name = ocs::tom::get<XMLA_Name>(attr_elem);
-      const char *value = ocs::tom::get<XMLA_Value>(attr_elem);
+      const char *name = attr_elem.get<XMLA_Name>();
+      const char *value = attr_elem.get<XMLA_Value>();
 
       sge_dstring_sprintf_append(attr, " %s=\"%s\"", name, value);
    }
@@ -597,18 +597,18 @@ static void lWriteXMLHead_(const ocs::tom::ConstElement<ocs::tom::XMLH> ep, cons
    }
 
    dstring attr = DSTRING_INIT;
-   const bool is_attr = lAttributesToString_(ocs::tom::get<XMLH_Attribute>(ep), &attr);
+   const bool is_attr = lAttributesToString_(ep.get<XMLH_Attribute>(), &attr);
 
-   os << ocs::tom::get<XMLH_Version>(ep) << "\n";
+   os << ep.get<XMLH_Version>() << "\n";
 
-   for (const auto elem : ocs::tom::get<XMLH_Stylesheet>(ep)) {
-      os << "<xsl:stylesheet " << ocs::tom::get<XMLS_Name>(elem) << "=\"" << ocs::tom::get<XMLS_Value>(elem)
-         << "\" version=\"" << ocs::tom::get<XMLS_Version>(elem) << "\">\n";
+   for (const auto elem : ep.get<XMLH_Stylesheet>()) {
+      os << "<xsl:stylesheet " << elem.get<XMLS_Name>() << "=\"" << elem.get<XMLS_Value>()
+         << "\" version=\"" << elem.get<XMLS_Version>() << "\">\n";
    }
 
-   const char *name = ocs::tom::get<XMLH_Name>(ep);
+   const char *name = ep.get<XMLH_Name>();
    os << "<" << name << " " << (is_attr ? sge_dstring_get_string(&attr) : "") << ">\n";
-   lWriteListXML_(ocs::tom::get<XMLH_Element>(ep), nesting_level +1, os);
+   lWriteListXML_(ep.get<XMLH_Element>(), nesting_level +1, os);
    os << "</" << name << ">\n";
 
    sge_dstring_free(&attr);
@@ -630,12 +630,12 @@ static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(const ocs::tom::List<ocs:
       DRETURN(nullptr);
    }
    auto elem = ocs::tom::ElementPtr<ocs::tom::XMLA>::create();
-   ocs::tom::set<XMLA_Name>(elem, name);
-   ocs::tom::set<XMLA_Value>(elem, value);
+   elem->set<XMLA_Name>(name);
+   elem->set<XMLA_Value>(value);
 
    auto parent = ocs::tom::ElementPtr<ocs::tom::XMLE>::create();
    ocs::tom::set<XMLE_Element>(parent, std::move(elem));
-   ocs::tom::set<XMLE_Print>(parent, true);
+   parent->set<XMLE_Print>(true);
    DRETURN(attributeList.push_back(std::move(parent)));
 }
 

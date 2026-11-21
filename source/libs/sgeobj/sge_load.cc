@@ -86,7 +86,7 @@ load_list_get_nproc(const lList *load_list) {
 
    ocs::tom::ConstElement<ocs::tom::HL> ep_nproc = ocs::tom::find_first<HL_name>(load_list, LOAD_ATTR_NUM_PROC);
    if (ep_nproc != nullptr) {
-      const char *cp = ocs::tom::get<HL_value>(ep_nproc);
+      const char *cp = ep_nproc.get<HL_value>();
       if (cp != nullptr) {
          nproc = std::max(1, atoi(cp));
       }

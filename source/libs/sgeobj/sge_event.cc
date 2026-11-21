@@ -73,14 +73,14 @@ const char *event_text(const ocs::tom::ConstElement<ocs::tom::ET> event, dstring
    int n=0;
    dstring id_dstring = DSTRING_INIT;
 
-   const uint32_t number = ocs::tom::get<ET_number>(event);
-   const uint32_t type = ocs::tom::get<ET_type>(event);
-   const uint32_t intkey = ocs::tom::get<ET_intkey>(event);
-   const uint32_t intkey2 = ocs::tom::get<ET_intkey2>(event);
-   const char *strkey = ocs::tom::get<ET_strkey>(event);
-   const char *strkey2 = ocs::tom::get<ET_strkey2>(event);
+   const uint32_t number = event.get<ET_number>();
+   const uint32_t type = event.get<ET_type>();
+   const uint32_t intkey = event.get<ET_intkey>();
+   const uint32_t intkey2 = event.get<ET_intkey2>();
+   const char *strkey = event.get<ET_strkey>();
+   const char *strkey2 = event.get<ET_strkey2>();
    // the objects of the event; their type depends on the event type, so the list is untyped
-   const ocs::tom::ConstRawList lp = ocs::tom::get<ET_new_version>(event);
+   const ocs::tom::ConstRawList lp = event.get<ET_new_version>();
    n = static_cast<int>(lp.size());
 
    switch (type) {
@@ -436,7 +436,7 @@ const char *event_text(const ocs::tom::ConstElement<ocs::tom::ET> event, dstring
       break;
    }
 
-   uint64_t unique_id = ocs::tom::get<ET_unique_id>(event);
+   uint64_t unique_id = event.get<ET_unique_id>();
    sge_dstring_sprintf_append(buffer, " (# " sge_u64 ")", unique_id);
 
    sge_dstring_free(&id_dstring);
@@ -459,8 +459,8 @@ static bool event_client_verify_subscription(const ocs::tom::ConstElement<ocs::t
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   for (const auto ep : ocs::tom::get<EV_subscribed>(event_client)) {
-      const uint32_t id = ocs::tom::get<EVS_id>(ep);
+   for (const auto ep : event_client.get<EV_subscribed>()) {
+      const uint32_t id = ep.get<EVS_id>();
       if (id <= sgeE_ALL_EVENTS || id >= sgeE_EVENTSIZE) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDEVENT);
@@ -539,13 +539,13 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
 
    if (ret) {
       /* get the event delivery time - we'll need it in later checks */
-      d_time = ocs::tom::get<EV_d_time>(event_client);
+      d_time = event_client.get<EV_d_time>();
 
       /* 
        * EV_name has to be a valid string.
        * TODO: Is verify_str_key too restrictive? Does drmaa allow to set the name?
        */
-      str = ocs::tom::get<EV_name>(event_client);
+      str = event_client.get<EV_name>();
       if (str == nullptr ||
          verify_str_key(
             answer_list, str, MAX_VERIFY_STRING,
@@ -566,7 +566,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
    if (ret) {
 #if 1      
       /* TODO: jgdi does not work with the check fix needed */
-      uint32_t id = ocs::tom::get<EV_id>(event_client);
+      uint32_t id = event_client.get<EV_id>();
       if (add && id >= EV_ID_FIRST_DYNAMIC) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_EVENT_INVALIDID);
@@ -595,7 +595,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
 
    /* busy handling comes from an enum with defined set of values */
    if (ret) {
-      uint32_t busy = ocs::tom::get<EV_busy_handling>(event_client);
+      uint32_t busy = event_client.get<EV_busy_handling>();
       if (busy != EV_BUSY_NO_HANDLING && busy != EV_BUSY_UNTIL_ACK &&
           busy != EV_BUSY_UNTIL_RELEASED) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
@@ -606,7 +606,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
 
    /* verify session key. TODO: verify_str_key too restrictive? */
    if (ret) {
-      const char *session = ocs::tom::get<EV_session>(event_client);
+      const char *session = event_client.get<EV_session>();
       if (session != nullptr) {
          if (verify_str_key(
          answer_list, session, MAX_VERIFY_STRING,
@@ -619,7 +619,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
 
    /* disallow an EV_update_function from event_client request */
    if (ret) {
-      if (ocs::tom::get<EV_update_function>(event_client) != nullptr) {
+      if (event_client.get<EV_update_function>() != nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_EVENT_INVALIDUPDATEFUNCTION);
          ret = false;
       }

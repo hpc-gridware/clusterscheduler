@@ -135,7 +135,7 @@ user_is_X_user(const ocs::gdi::Packet *packet, const ocs::tom::ConstList<ocs::to
    }
 
    // text if it has enntries
-   const auto user_entries_list = ocs::tom::get<US_entries>(userset);
+   const auto user_entries_list = userset.get<US_entries>();
    if (!user_entries_list) {
       DRETURN(false);
    }

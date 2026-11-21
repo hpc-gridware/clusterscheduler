@@ -73,32 +73,32 @@ void job_report_init_from_job(const ocs::tom::Element<ocs::tom::JR> job_report,
                               const ocs::tom::ConstElement<ocs::tom::PET> pe_task) {
    DENTER(TOP_LAYER);
 
-   const uint32_t job_id = ocs::tom::get<JB_job_number>(job);
-   const uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+   const uint32_t job_id = job.get<JB_job_number>();
+   const uint32_t ja_task_id = ja_task.get<JAT_task_number>();
    ocs::tom::ConstElement<ocs::tom::JG> queue;
 
-   ocs::tom::set<JR_job_number>(job_report, job_id);
-   ocs::tom::set<JR_ja_task_number>(job_report, ja_task_id);
+   job_report.set<JR_job_number>(job_id);
+   job_report.set<JR_ja_task_number>(ja_task_id);
 
    if (pe_task) {
-      ocs::tom::set<JR_pe_task_id_str>(job_report, ocs::tom::get<PET_id>(pe_task));
-      queue = ocs::tom::get<PET_granted_destin_identifier_list>(pe_task).front();
+      job_report.set<JR_pe_task_id_str>(pe_task.get<PET_id>());
+      queue = pe_task.get<PET_granted_destin_identifier_list>().front();
    } else {
-      queue = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).front();
+      queue = ja_task.get<JAT_granted_destin_identifier_list>().front();
    }
 
-   if (ocs::tom::get<JAT_status>(ja_task) == JSLAVE){
+   if (ja_task.get<JAT_status>() == JSLAVE){
       if (!pe_task) {
-         ocs::tom::set<JR_state>(job_report, JSLAVE);
+         job_report.set<JR_state>(JSLAVE);
       } else {
-         ocs::tom::set<JR_state>(job_report, JWRITTEN);
+         job_report.set<JR_state>(JWRITTEN);
       }
    } else {
-      ocs::tom::set<JR_state>(job_report, JWRITTEN);
+      job_report.set<JR_state>(JWRITTEN);
    }
 
    if (queue) {
-      ocs::tom::set<JR_queue_name>(job_report, ocs::tom::get<JG_qname>(queue));
+      job_report.set<JR_queue_name>(queue.get<JG_qname>());
    }
 
    DRETURN_VOID;
@@ -131,8 +131,8 @@ void job_report_init_from_job_with_usage(const ocs::tom::Element<ocs::tom::JR> j
    /*
     * ... and now add the online usage plus some fileds which are needed for the accounting
     */
-   ocs::tom::set<JR_wait_status>(job_report, SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0));
-   ocs::tom::set<JR_failed>(job_report, SSTATE_QMASTER_ENFORCED_LIMIT);
+   job_report.set<JR_wait_status>(SGE_SET_WEXITSTATUS(SGE_WEXITED_BIT, 0));
+   job_report.set<JR_failed>(SSTATE_QMASTER_ENFORCED_LIMIT);
 
    // the qmaster may enforce a limit on the same task more than once, so the usage can hold these entries already
    ocs::tom::List<ocs::tom::UA> usage;
@@ -141,14 +141,14 @@ void job_report_init_from_job_with_usage(const ocs::tom::Element<ocs::tom::JR> j
    } else {
       usage = pe_task.get_or_create<PET_scaled_usage>("scaled");
 
-      ocs::tom::set<JR_pe_task_id_str>(job_report, ocs::tom::get<PET_id>(pe_task));
+      job_report.set<JR_pe_task_id_str>(pe_task.get<PET_id>());
    }
 
-   usage_list_set_double_usage(usage, "submission_time", ocs::tom::get<JB_submission_time>(job));
-   usage_list_set_double_usage(usage, "start_time", ocs::tom::get<JAT_start_time>(ja_task));
+   usage_list_set_double_usage(usage, "submission_time", job.get<JB_submission_time>());
+   usage_list_set_double_usage(usage, "start_time", ja_task.get<JAT_start_time>());
    usage_list_set_double_usage(usage, "end_time", time_stamp);
    usage_list_set_double_usage(usage, "ru_wallclock", 0.0);
 
-   ocs::tom::set<JR_usage>(job_report, usage.clone(""));
+   job_report.set<JR_usage>(usage.clone(""));
    DRETURN_VOID;
 }

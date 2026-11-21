@@ -60,7 +60,7 @@ ocs::Role::validate(const ocs::tom::ConstElement<ocs::tom::RL> role, ocs::tom::L
                     [[maybe_unused]] const bool startup) {
    DENTER(TOP_LAYER);
 
-   if (const char *name = ocs::tom::get<RL_name>(role);
+   if (const char *name = role.get<RL_name>();
        verify_obj_name(answer_list, name, MAX_VERIFY_STRING, MSG_OBJ_ROLE) != STATUS_OK) {
       DRETURN(false);
    }
@@ -87,21 +87,21 @@ ocs::Role::check_integrity(const ocs::tom::ConstList<ocs::tom::RL> role_list,
    DENTER(TOP_LAYER);
 
    for (const auto role : role_list) {
-      const char *role_name = ocs::tom::get<RL_name>(role);
+      const char *role_name = role.get<RL_name>();
 
       // check each user_list entry against the master userset list
-      for (ocs::tom::ConstElement<ocs::tom::US> user_ep : ocs::tom::get<RL_user_list>(role)) {
-         const char *userset_name = ocs::tom::get<US_name>(user_ep);
-         if (!ocs::tom::find_first<US_name>(userset_list, userset_name)) {
+      for (ocs::tom::ConstElement<ocs::tom::US> user_ep : role.get<RL_user_list>()) {
+         const char *userset_name = user_ep.get<US_name>();
+         if (!userset_list.find_first<US_name>(userset_name)) {
             WARNING(MSG_ROLE_INTEGRITY_USERSET_SS, role_name, userset_name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING);
          }
       }
 
       // check each parent_role_list entry against the master role list
-      for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(role)) {
-         const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
-         if (!ocs::tom::find_first<RL_name>(role_list, parent_name)) {
+      for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : role.get<RL_parent_role_list>()) {
+         const char *parent_name = parent_ep.get<ST_name>();
+         if (!role_list.find_first<RL_name>(parent_name)) {
             WARNING(MSG_ROLE_INTEGRITY_PARENT_SS, role_name, parent_name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING);
          }
@@ -500,12 +500,12 @@ static bool reachable(const char *from, const char *target, const ocs::tom::Cons
    if (!visited.insert(from).second) {
       DRETURN(false);
    }
-   ocs::tom::ConstElement<ocs::tom::RL> role = ocs::tom::find_first<RL_name>(role_list, from);
+   ocs::tom::ConstElement<ocs::tom::RL> role = role_list.find_first<RL_name>(from);
    if (role == nullptr) {
       DRETURN(false);
    }
-   for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(role)) {
-      const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
+   for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : role.get<RL_parent_role_list>()) {
+      const char *parent_name = parent_ep.get<ST_name>();
       if (reachable(parent_name, target, role_list, visited)) {
          DRETURN(true);
       }
@@ -530,13 +530,13 @@ static void collect_recursive(const char *role_name, const ocs::tom::ConstList<o
    if (role_name == nullptr || !visited.insert(role_name).second) {
       DRETURN_VOID;
    }
-   ocs::tom::ConstElement<ocs::tom::RL> role = ocs::tom::find_first<RL_name>(role_list, role_name);
+   ocs::tom::ConstElement<ocs::tom::RL> role = role_list.find_first<RL_name>(role_name);
    if (role == nullptr) {
       DRETURN_VOID;
    }
 
    // append this role's own rules first
-   const char *perm_str = ocs::tom::get<RL_perm_list>(role);
+   const char *perm_str = role.get<RL_perm_list>();
    if (perm_str != nullptr && strcmp(perm_str, "NONE") != 0) {
       ocs::tom::ListPtr<ocs::tom::AN> dummy_al;
       ocs::Role::PermRuleList own_rules;
@@ -546,8 +546,8 @@ static void collect_recursive(const char *role_name, const ocs::tom::ConstList<o
    }
 
    // then recurse into parents in order
-   for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : ocs::tom::get<RL_parent_role_list>(role)) {
-      const char *parent_name = ocs::tom::get<ST_name>(parent_ep);
+   for (ocs::tom::ConstElement<ocs::tom::ST> parent_ep : role.get<RL_parent_role_list>()) {
+      const char *parent_name = parent_ep.get<ST_name>();
       collect_recursive(parent_name, role_list, rules, visited);
    }
    DRETURN_VOID;
@@ -570,9 +570,9 @@ ocs::Role::create_template() {
 
    auto role = ocs::tom::ElementPtr<ocs::tom::RL>::create();
 
-   ocs::tom::set<RL_name>(role, "template");
-   ocs::tom::set<RL_enabled>(role, true);
-   ocs::tom::set<RL_perm_list>(role, "NONE");
+   role->set<RL_name>("template");
+   role->set<RL_enabled>(true);
+   role->set<RL_perm_list>("NONE");
 
    DRETURN(role);
 }
@@ -656,14 +656,14 @@ ocs::Role::is_authorized(const ocs::tom::ConstList<ocs::tom::RL> role_list,
    DENTER(TOP_LAYER);
    for (const auto role_ep : role_list) {
       // skip disabled roles
-      if (!ocs::tom::get<RL_enabled>(role_ep)) {
+      if (!role_ep.get<RL_enabled>()) {
          continue;
       }
       // check whether the requesting user is a member of this role's user_list
       bool user_in_role = false;
-      for (ocs::tom::ConstElement<ocs::tom::US> acl_ep : ocs::tom::get<RL_user_list>(role_ep)) {
-         const char *userset_name = ocs::tom::get<US_name>(acl_ep);
-         const auto userset_ep = ocs::tom::find_first<US_name>(userset_list, userset_name);
+      for (ocs::tom::ConstElement<ocs::tom::US> acl_ep : role_ep.get<RL_user_list>()) {
+         const char *userset_name = acl_ep.get<US_name>();
+         const auto userset_ep = userset_list.find_first<US_name>(userset_name);
          if (userset_ep == nullptr) {
             continue;
          }
@@ -680,7 +680,7 @@ ocs::Role::is_authorized(const ocs::tom::ConstList<ocs::tom::RL> role_list,
       }
       // user is in this role — collect effective rules and evaluate
       PermRuleList rules;
-      collect_perm_rules(ocs::tom::get<RL_name>(role_ep), role_list, rules);
+      collect_perm_rules(role_ep.get<RL_name>(), role_list, rules);
       for (const auto &rule : rules) {
          if (match_rule(rule, ctx)) {
             DRETURN(true);

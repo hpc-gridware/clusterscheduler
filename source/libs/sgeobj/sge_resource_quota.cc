@@ -111,14 +111,14 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
 
    if (buffer[0] == '{') {
       /* We have a expanded list */
-      ocs::tom::set<RQRF_expand>(filter, true);
+      filter->set<RQRF_expand>(true);
       if (buffer[strlen(buffer) - 1] != '}') {
          ERROR(SFNMAX, MSG_RESOURCEQUOTA_NOVALIDEXPANDEDLIST);
          answer_list_add(alp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          DRETURN(nullptr);
       }
    } else {
-      ocs::tom::set<RQRF_expand>(filter, false);
+      filter->set<RQRF_expand>(false);
    }
 
    const auto names = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(buffer, delims);
@@ -126,7 +126,7 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
    ocs::tom::ListPtr<ocs::tom::ST> xscope_list;
 
    for (const auto scope : *names) {
-      const char *name = ocs::tom::get<ST_name>(scope);
+      const char *name = scope.get<ST_name>();
       if (name[0] == '!') {
          /* The '!' prefixes a name, so a name has to follow it. Without this
           * check "!{a,b}" parses into an exclusion of the empty name plus the
@@ -155,8 +155,8 @@ ocs::tom::ElementPtr<ocs::tom::RQRF> rqs_parse_filter_from_string(const char *bu
       }
    }
 
-   ocs::tom::set<RQRF_scope>(filter, std::move(scope_list));
-   ocs::tom::set<RQRF_xscope>(filter, std::move(xscope_list));
+   filter->set<RQRF_scope>(std::move(scope_list));
+   filter->set<RQRF_xscope>(std::move(xscope_list));
 
    DRETURN(filter);
 }
@@ -186,23 +186,23 @@ bool rqs_append_filter_to_dstring(const ocs::tom::ConstElement<ocs::tom::RQRF> f
       DRETURN(ret);
    }
 
-   const bool expand = ocs::tom::get<RQRF_expand>(filter);
+   const bool expand = filter.get<RQRF_expand>();
 
    if (expand) {
       sge_dstring_append_char(buffer, '{');
    }
 
-   for (const auto scope : ocs::tom::get<RQRF_scope>(filter)) {
+   for (const auto scope : filter.get<RQRF_scope>()) {
       ret = true;
       if (!first) {
          sge_dstring_append_char(buffer, ',');
       } else {
          first = false;
       }
-      sge_dstring_append(buffer, ocs::tom::get<ST_name>(scope));
+      sge_dstring_append(buffer, scope.get<ST_name>());
    }
 
-   for (const auto scope : ocs::tom::get<RQRF_xscope>(filter)) {
+   for (const auto scope : filter.get<RQRF_xscope>()) {
       ret = true;
       if (!first) {
          sge_dstring_append_char(buffer, ',');
@@ -210,7 +210,7 @@ bool rqs_append_filter_to_dstring(const ocs::tom::ConstElement<ocs::tom::RQRF> f
          first = false;
       }
       sge_dstring_append_char(buffer, '!');
-      sge_dstring_append(buffer, ocs::tom::get<ST_name>(scope));
+      sge_dstring_append(buffer, scope.get<ST_name>());
    }
 
    if (expand) {
@@ -249,17 +249,17 @@ ocs::tom::Element<ocs::tom::RQS> rqs_set_defaults(const ocs::tom::Element<ocs::t
       auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
       auto limit_list = ocs::tom::ListPtr<ocs::tom::RQRL>::create("Limit_List");
       auto limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
-      ocs::tom::set<RQRL_name>(limit, "slots");
-      ocs::tom::set<RQRL_value>(limit, "0");
+      limit->set<RQRL_name>("slots");
+      limit->set<RQRL_value>("0");
       limit_list->push_back(std::move(limit));
-      ocs::tom::set<RQR_limit>(rule, std::move(limit_list));
+      rule->set<RQR_limit>(std::move(limit_list));
       rule_list->push_back(std::move(rule));
 
       /* Set RQS_enabled */
-      ocs::tom::set<RQS_enabled>(rqs, false);
+      rqs.set<RQS_enabled>(false);
 
       /* Set RQS_rule; the setter frees the rule list the set had */
-      ocs::tom::set<RQS_rule>(rqs, std::move(rule_list));
+      rqs.set<RQS_rule>(std::move(rule_list));
    }
    DRETURN(rqs);
 }
@@ -299,17 +299,17 @@ static bool rqs_verify_filter(const ocs::tom::ConstElement<ocs::tom::RQR> rule,
 
    if (!rule) {
       ret = false;
-   } else if (const auto filter = ocs::tom::get<F>(rule)) {
-      for (const auto ep : ocs::tom::get<RQRF_scope>(filter)) {
-         const char *name = ocs::tom::get<ST_name>(ep);
+   } else if (const auto filter = rule.get<F>()) {
+      for (const auto ep : filter.template get<RQRF_scope>()) {
+         const char *name = ep.template get<ST_name>();
          if (name == nullptr || *name == '\0') {
             answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false;
             break;
          }
       }
-      for (const auto ep : ocs::tom::get<RQRF_xscope>(filter)) {
-         const char *name = ocs::tom::get<ST_name>(ep);
+      for (const auto ep : filter.template get<RQRF_xscope>()) {
+         const char *name = ep.template get<ST_name>();
          if (name == nullptr || *name == '\0') {
             answer_list_add(answer_list, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
             ret = false;
@@ -360,7 +360,7 @@ static bool rqs_verify_host_scope(const ocs::tom::List<ocs::tom::ST> scope,
    bool ret = true;
 
    for (const auto host : scope) {
-      const char *name = ocs::tom::get<ST_name>(host);
+      const char *name = host.get<ST_name>();
 
       switch (ocs::classify_member(name)) {
          case ocs::MemberClass::GROUP_REFERENCE:
@@ -416,13 +416,13 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
    bool ret = true;
 
    /* every rule set needs a RQS_name */
-   if (ocs::tom::get<RQS_name>(rqs) == nullptr) {
+   if (rqs.get<RQS_name>() == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_RESOURCEQUOTA_NONAME);
       ret = false;
    }
 
    /* every rule set needs at least one rule */
-   const auto rules = ocs::tom::get<RQS_rule>(rqs);
+   const auto rules = rqs.get<RQS_rule>();
    if (ret && rules.empty()) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_RESOURCEQUOTA_NORULES);
       ret = false;
@@ -432,7 +432,7 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
       for (const auto rule : rules) {
          bool host_expand = false;
          bool queue_expand = false;
-         const auto limit_list = ocs::tom::get<RQR_limit>(rule);
+         const auto limit_list = rule.get<RQR_limit>();
 
          /* check user, project and pe filters */
          if (!rqs_verify_filter<RQR_filter_users>(rule, answer_list, MSG_RESOURCEQUOTA_INVALIDUSERFILTER)) {
@@ -451,29 +451,29 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
          }
 
          /* check host and queue filters, set rule level. Needed by schedd */
-         if (const auto filter = ocs::tom::get<RQR_filter_hosts>(rule)) {
-            host_expand = ocs::tom::get<RQRF_expand>(filter);
+         if (const auto filter = rule.get<RQR_filter_hosts>()) {
+            host_expand = filter.get<RQRF_expand>();
 
-            if (!rqs_verify_host_scope(ocs::tom::get<RQRF_xscope>(filter), answer_list) ||
-                !rqs_verify_host_scope(ocs::tom::get<RQRF_scope>(filter), answer_list)) {
+            if (!rqs_verify_host_scope(filter.get<RQRF_xscope>(), answer_list) ||
+                !rqs_verify_host_scope(filter.get<RQRF_scope>(), answer_list)) {
                ret = false;
                break;
             }
          }
-         if (const auto filter = ocs::tom::get<RQR_filter_queues>(rule)) {
-            queue_expand = ocs::tom::get<RQRF_expand>(filter);
+         if (const auto filter = rule.get<RQR_filter_queues>()) {
+            queue_expand = filter.get<RQRF_expand>();
          }
 
          if (!host_expand && !queue_expand) {
-            ocs::tom::set<RQR_level>(rule, RQR_GLOBAL);
+            rule.set<RQR_level>(RQR_GLOBAL);
          } else if (host_expand && !queue_expand) {
             /* per host */
-            ocs::tom::set<RQR_level>(rule, RQR_HOST);
+            rule.set<RQR_level>(RQR_HOST);
          } else if (!host_expand && queue_expand) {
             /* per queue */
-            ocs::tom::set<RQR_level>(rule, RQR_CQUEUE);
+            rule.set<RQR_level>(RQR_CQUEUE);
          } else {
-            ocs::tom::set<RQR_level>(rule, RQR_QUEUEI);
+            rule.set<RQR_level>(RQR_QUEUEI);
          }
 
          // check for duplicate limits in the to-section of a limits rule
@@ -483,8 +483,8 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
          }
 
          for (const auto limit : limit_list) {
-            const char *name = ocs::tom::get<RQRL_name>(limit);
-            const char *strval = ocs::tom::get<RQRL_value>(limit);
+            const char *name = limit.get<RQRL_name>();
+            const char *strval = limit.get<RQRL_value>();
             const auto centry = centry_list_locate(master_centry_list, name);
 
             if (!centry) {
@@ -494,7 +494,7 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
                break;
             }
 
-            ocs::tom::set<RQRL_name>(limit, ocs::tom::get<CE_name>(centry));
+            limit.set<RQRL_name>(centry.get<CE_name>());
 
             if (strval == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_RESOURCEQUOTA_NORULES);
@@ -503,16 +503,16 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
             }
 
             if (strchr(strval, '$') != nullptr) {
-               if (ocs::tom::get<RQR_level>(rule) == RQR_HOST || ocs::tom::get<RQR_level>(rule) == RQR_QUEUEI) {
+               if (rule.get<RQR_level>() == RQR_HOST || rule.get<RQR_level>() == RQR_QUEUEI) {
                   /* the value is a dynamical limit */
-                  if (!validate_load_formula(ocs::tom::get<RQRL_value>(limit), answer_list,
+                  if (!validate_load_formula(limit.get<RQRL_value>(), answer_list,
                                              master_centry_list, SGE_ATTR_DYNAMICAL_LIMIT)) {
                      ret = false;
                      break;
                   }
 
-                  ocs::tom::set<RQRL_type>(limit, ocs::tom::get<CE_valtype>(centry));
-                  ocs::tom::set<RQRL_dynamic>(limit, true);
+                  limit.set<RQRL_type>(centry.get<CE_valtype>());
+                  limit.set<RQRL_dynamic>(true);
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                           MSG_RESOURCEQUOTA_DYNAMICLIMITNOTSUPPORTED);
@@ -523,17 +523,17 @@ bool rqs_verify_attributes(const ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom:
             } else {
                const auto tmp_ce = centry.clone();
                /* fix limit, fill up missing attributes */
-               ocs::tom::set<RQRL_dynamic>(limit, false);
+               limit.set<RQRL_dynamic>(false);
 
-               ocs::tom::set<CE_stringval>(tmp_ce, strval);
+               tmp_ce->set<CE_stringval>(strval);
                if (centry_fill_and_check(*tmp_ce, answer_list, false, false)) {
                   ret = false;
                   break;
                }
 
-               ocs::tom::set<RQRL_value>(limit, ocs::tom::get<CE_stringval>(tmp_ce));
-               ocs::tom::set<RQRL_dvalue>(limit, ocs::tom::get<CE_doubleval>(tmp_ce));
-               ocs::tom::set<RQRL_type>(limit, ocs::tom::get<CE_valtype>(tmp_ce));
+               limit.set<RQRL_value>(tmp_ce->get<CE_stringval>());
+               limit.set<RQRL_dvalue>(tmp_ce->get<CE_doubleval>());
+               limit.set<RQRL_type>(tmp_ce->get<CE_valtype>());
             }
          }
          if (!ret) {
@@ -595,7 +595,7 @@ ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(const ocs::tom::List<ocs::tom::
    int act_pos = 1;
 
    for (const auto ep : lp) {
-      const char *rule_name = ocs::tom::get<RQR_name>(ep);
+      const char *rule_name = ep.get<RQR_name>();
       if (get_pos != -1 && act_pos == get_pos) {
          DRETURN(ep);
       } else if (rule_name != nullptr && !strcasecmp(name, rule_name)) {
@@ -633,14 +633,14 @@ bool rqs_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer
    const char delim[] = "/";
 
    for (const auto rqs : ocs::tom::List<ocs::tom::RQS>(this_list)) {
-      const auto names = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(ocs::tom::get<RQS_name>(rqs), delim);
+      const auto names = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(rqs.get<RQS_name>(), delim);
       if (names->size() == 2) {
          const auto set_name = names->front();
          const auto rule_name = set_name.next();
 
-         ocs::tom::set<RQS_name>(rqs, ocs::tom::get<ST_name>(set_name));
-         for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
-            ocs::tom::set<RQR_name>(rule, ocs::tom::get<ST_name>(rule_name));
+         rqs.set<RQS_name>(set_name.get<ST_name>());
+         for (const auto rule : rqs.get<RQS_rule>()) {
+            rule.set<RQR_name>(rule_name.get<ST_name>());
          }
       }
    }
@@ -682,36 +682,36 @@ bool rqs_get_rue_string(dstring *name, const ocs::tom::ConstElement<ocs::tom::RQ
 
    sge_dstring_clear(name);
 
-   if (const auto filter = ocs::tom::get<RQR_filter_users>(rule)) {
-      if (user != nullptr && ocs::tom::get<RQRF_expand>(filter)) {
+   if (const auto filter = rule.get<RQR_filter_users>()) {
+      if (user != nullptr && filter.get<RQRF_expand>()) {
          sge_dstring_append(name, user);
       }
    }
    sge_dstring_append(name, "/");
 
-   if (const auto filter = ocs::tom::get<RQR_filter_projects>(rule)) {
-      if (project != nullptr && ocs::tom::get<RQRF_expand>(filter)) {
+   if (const auto filter = rule.get<RQR_filter_projects>()) {
+      if (project != nullptr && filter.get<RQRF_expand>()) {
          sge_dstring_append(name, project);
       }
    }
    sge_dstring_append(name, "/");
 
-   if (const auto filter = ocs::tom::get<RQR_filter_pes>(rule)) {
-      if (pe != nullptr && ocs::tom::get<RQRF_expand>(filter)) {
+   if (const auto filter = rule.get<RQR_filter_pes>()) {
+      if (pe != nullptr && filter.get<RQRF_expand>()) {
          sge_dstring_append(name, pe);
       }
    }
    sge_dstring_append(name, "/");
 
-   if (const auto filter = ocs::tom::get<RQR_filter_queues>(rule)) {
-      if (queue != nullptr && ocs::tom::get<RQRF_expand>(filter)) {
+   if (const auto filter = rule.get<RQR_filter_queues>()) {
+      if (queue != nullptr && filter.get<RQRF_expand>()) {
          sge_dstring_append(name, queue);
       }
    }
    sge_dstring_append(name, "/");
 
-   if (const auto filter = ocs::tom::get<RQR_filter_hosts>(rule)) {
-      if (host != nullptr && ocs::tom::get<RQRF_expand>(filter)) {
+   if (const auto filter = rule.get<RQR_filter_hosts>()) {
+      if (host != nullptr && filter.get<RQRF_expand>()) {
          char buffer[10240];
          sge_hostcpy(buffer, host);
          sge_dstring_append(name, buffer);
@@ -755,14 +755,14 @@ int rqs_debit_consumable(const ocs::tom::Element<ocs::tom::RQS> rqs, const ocs::
    DENTER(TOP_LAYER);
 
    int mods = 0;
-   const char *hostname = ocs::tom::get<JG_qhostname>(granted);
-   const char *username = ocs::tom::get<JB_owner>(job);
-   const char *groupname = ocs::tom::get<JB_group>(job);
-   const auto grp_list = ocs::tom::get<JB_grp_list>(job);
-   const char *queue_instance = ocs::tom::get<JG_qname>(granted);
-   const char *project = ocs::tom::get<JB_project>(job);
+   const char *hostname = granted.get<JG_qhostname>();
+   const char *username = job.get<JB_owner>();
+   const char *groupname = job.get<JB_group>();
+   const auto grp_list = job.get<JB_grp_list>();
+   const char *queue_instance = granted.get<JG_qname>();
+   const char *project = job.get<JB_project>();
 
-   if (!ocs::tom::get<RQS_enabled>(rqs)) {
+   if (!rqs.get<RQS_enabled>()) {
       DRETURN(0);
    }
 
@@ -771,7 +771,7 @@ int rqs_debit_consumable(const ocs::tom::Element<ocs::tom::RQS> rqs, const ocs::
 
    const char *pe_name = nullptr;
    if (pe) {
-      pe_name = ocs::tom::get<PE_name>(pe);
+      pe_name = pe.get<PE_name>();
    }
 
    const auto rule = rqs_get_matching_rule(rqs, username, groupname, grp_list, project, pe_name, hostname, qname,
@@ -783,7 +783,7 @@ int rqs_debit_consumable(const ocs::tom::Element<ocs::tom::RQS> rqs, const ocs::
 
       rqs_get_rue_string(&rue_name, rule, username, project, hostname, qname, pe_name);
 
-      mods = rqs_debit_rule_usage(job, pe, rule, &rue_name, slots, centry_list, ocs::tom::get<RQS_name>(rqs),
+      mods = rqs_debit_rule_usage(job, pe, rule, &rue_name, slots, centry_list, rqs.get<RQS_name>(),
                                   is_master_task, do_per_host_booking);
 
       sge_dstring_free(&rue_name);
@@ -831,18 +831,18 @@ ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(const ocs::tom::ConstElem
 
    int i = 0;
 
-   for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
+   for (const auto rule : rqs.get<RQS_rule>()) {
       i++;
 
       if (!rqs_is_matching_rule(rule, user, group, grp_list, project, pe, host, queue, userset_list, hgroup_list)) {
          continue;
       }
-      if (ocs::tom::get<RQR_name>(rule)) {
-         DPRINTF("Using resource quota %s\n", ocs::tom::get<RQR_name>(rule));
-         sge_dstring_sprintf(rule_name, "%s/%s", ocs::tom::get<RQS_name>(rqs), ocs::tom::get<RQR_name>(rule));
+      if (rule.get<RQR_name>()) {
+         DPRINTF("Using resource quota %s\n", rule.get<RQR_name>());
+         sge_dstring_sprintf(rule_name, "%s/%s", rqs.get<RQS_name>(), rule.get<RQR_name>());
       } else {
          DPRINTF("Using resource quota %d\n", i);
-         sge_dstring_sprintf(rule_name, "%s/%d", ocs::tom::get<RQS_name>(rqs), i);
+         sge_dstring_sprintf(rule_name, "%s/%d", rqs.get<RQS_name>(), i);
       }
       /* if all filter object matches this is our rule */
       DRETURN(ocs::tom::Element<ocs::tom::RQR>::from_typed(const_cast<lListElem *>(rule.raw())));
@@ -877,9 +877,9 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
    DENTER(TOP_LAYER);
    int mods = 0;
 
-   for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
+   for (const auto limit : rule.get<RQR_limit>()) {
 
-      const char *centry_name = ocs::tom::get<RQRL_name>(limit);
+      const char *centry_name = limit.get<RQRL_name>();
 
       const auto centry = centry_list_locate(centry_list, centry_name);
       if (!centry) {
@@ -887,14 +887,14 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
          continue;
       }
 
-      uint32_t consumable = ocs::tom::get<CE_consumable>(centry);
+      uint32_t consumable = centry.get<CE_consumable>();
       if (!consumable_do_booking(consumable, is_master_task, do_per_host_booking)) {
          continue;
       }
 
-      auto rue_elem = ocs::tom::find_first_in_rw<RQRL_usage, RUE_name>(limit, sge_dstring_get_string(rue_name));
+      auto rue_elem = limit.find_first_in_rw<RQRL_usage, RUE_name>(sge_dstring_get_string(rue_name));
       if (!rue_elem) {
-         rue_elem = ocs::tom::emplace_back_in<RQRL_usage, RUE_name>(limit, sge_dstring_get_string(rue_name));
+         rue_elem = limit.emplace_back_in<RQRL_usage, RUE_name>(sge_dstring_get_string(rue_name));
          /* RUE_utilized_now is implicitly set to zero */
       }
 
@@ -910,7 +910,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
             DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                     obj_name, sge_dstring_get_string(rue_name), debit_slots);
             if (dval != 0.0) {
-               ocs::tom::add<RUE_utilized_now>(rue_elem, debit_slots * dval);
+               rue_elem.add<RUE_utilized_now>(debit_slots * dval);
                mods++;
                did_booking = true;
             }
@@ -929,7 +929,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
                           obj_name, sge_dstring_get_string(rue_name), slot_signum(debit_slots));
                   if (dval != 0.0) {
                      // book it for one slot (the master task)
-                     ocs::tom::add<RUE_utilized_now>(rue_elem, slot_signum(debit_slots) * dval);
+                     rue_elem.add<RUE_utilized_now>(slot_signum(debit_slots) * dval);
                      mods++;
                      did_booking = true;
                   }
@@ -943,7 +943,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
             if (slave_debit_slots != 0) {
                dval = 0.0;
                // if we are on the master host, and we shall ignore slave requests to booking only for slots
-               if (is_master_task && ocs::tom::get<PE_ignore_slave_requests_on_master_host>(pe)) {
+               if (is_master_task && pe.get<PE_ignore_slave_requests_on_master_host>()) {
                   tmp_ret = true;
                   if (sge_strnullcmp(centry_name, SGE_ATTR_SLOTS) == 0) {
                      dval = 1.0;
@@ -957,7 +957,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
                            obj_name, sge_dstring_get_string(rue_name), slave_debit_slots);
                   // book it for the remaining slave tasks
                   slave_debit_slots = consumable_get_debit_slots(consumable, slave_debit_slots);
-                  ocs::tom::add<RUE_utilized_now>(rue_elem, slave_debit_slots * dval);
+                  rue_elem.add<RUE_utilized_now>(slave_debit_slots * dval);
                   mods++;
                   did_booking = true;
                }
@@ -965,11 +965,11 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
          }
 
          // We didn't have any explicit request for this variable, but it is an exclusive - do implicit booking
-         if (!did_booking && ocs::tom::get<CE_relop>(centry) == CMPLXEXCL_OP) {
+         if (!did_booking && centry.get<CE_relop>() == CMPLXEXCL_OP) {
             dval = 1.0;
             DPRINTF("debiting (non-exclusive) %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                     obj_name, sge_dstring_get_string(rue_name), debit_slots);
-            ocs::tom::add<RUE_utilized_now_nonexclusive>(rue_elem, debit_slots * dval);
+            rue_elem.add<RUE_utilized_now_nonexclusive>(debit_slots * dval);
             mods++;
          }
 
@@ -977,10 +977,10 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
          // @todo: is non-existance of the booking element important for some RQS algorithm? If not, keep it
          //        as we do in the other places where we do booking (rc_debit_consumable, rc_|rqs_add_job_utilization)
          //        This can spare us a significant number of malloc and free calls.
-         if (ocs::tom::get<RUE_utilized_now>(rue_elem) == 0
-             && ocs::tom::get<RUE_utilized_now_nonexclusive>(rue_elem) == 0
-             && !ocs::tom::get<RUE_utilized>(rue_elem) && !ocs::tom::get<RUE_utilized_nonexclusive>(rue_elem)) {
-            ocs::tom::get<RQRL_usage>(limit).erase(rue_elem);
+         if (rue_elem.get<RUE_utilized_now>() == 0
+             && rue_elem.get<RUE_utilized_now_nonexclusive>() == 0
+             && !rue_elem.get<RUE_utilized>() && !rue_elem.get<RUE_utilized_nonexclusive>()) {
+            limit.get<RQRL_usage>().erase(rue_elem);
          }
       }
    }
@@ -1019,7 +1019,7 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
 
    if (!ocs::is_pattern(value)) {
       /* used in scheduler/qmaster and qquota */
-      if (ocs::tom::find_first<ST_name>(scope, value)) {
+      if (scope.find_first<ST_name>(value)) {
          found = true;
       } else {
          for (const auto ep : scope) {
@@ -1031,8 +1031,8 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
              * user named "host:x" is a user.
              */
             const char *cp = filter_type == FILTER_HOSTS
-                             ? ocs::reference_pattern(ocs::tom::get<ST_name>(ep))
-                             : ocs::tom::get<ST_name>(ep);
+                             ? ocs::reference_pattern(ep.get<ST_name>())
+                             : ep.get<ST_name>();
             const char *group_name = nullptr;
             const char *query = nullptr;
 
@@ -1057,7 +1057,7 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                   /* the userset name does not contain the preattached \@ sign */
                   group_name++;
                   if (!ocs::is_pattern(group_name)) {
-                     if (const auto userset = ocs::tom::find_first<US_name>(master_userset_list, group_name)) {
+                     if (const auto userset = master_userset_list.find_first<US_name>(group_name)) {
                         if (sge_contained_in_access_list(query, group, grp_list, userset) == 1) {
                            found = true;
                            break;
@@ -1065,7 +1065,7 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                      }
                   } else {
                      for (const auto userset : master_userset_list) {
-                        if (fnmatch(group_name, ocs::tom::get<US_name>(userset), 0) == 0) {
+                        if (fnmatch(group_name, userset.get<US_name>(), 0) == 0) {
                            if (sge_contained_in_access_list(query, group, grp_list, userset) == 1) {
                               found = true;
                               break;
@@ -1081,12 +1081,12 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                      if (const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name)) {
                         ocs::tom::ListPtr<ocs::tom::HR> host_list;
                         hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
-                        if (host_list && ocs::tom::find_first<HR_name>(*host_list, query)) {
+                        if (host_list && host_list->find_first<HR_name>(ocs::tom::Host(query))) {
                            found = true;
                            break;
                         } else if (ocs::is_pattern(query)) {
                            for (const auto host_ep : *host_list) {
-                              if (fnmatch(query, ocs::tom::get<HR_name>(host_ep), 0) == 0) {
+                              if (fnmatch(query, host_ep.get<HR_name>(), 0) == 0) {
                                  found = true;
                                  break;
                               }
@@ -1098,15 +1098,15 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                      }
                   } else {
                      for (const auto hgroup : master_hgroup_list) {
-                        if (fnmatch(group_name, ocs::tom::get<HGRP_name>(hgroup), 0) == 0) {
+                        if (fnmatch(group_name, hgroup.get<HGRP_name>(), 0) == 0) {
                            ocs::tom::ListPtr<ocs::tom::HR> host_list;
                            hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
-                           if (host_list && ocs::tom::find_first<HR_name>(*host_list, query)) {
+                           if (host_list && host_list->find_first<HR_name>(ocs::tom::Host(query))) {
                               found = true;
                               break;
                            } else if (ocs::is_pattern(query)) {
                               for (const auto host_ep : *host_list) {
-                                 if (fnmatch(query, ocs::tom::get<HR_name>(host_ep), 0) == 0) {
+                                 if (fnmatch(query, host_ep.get<HR_name>(), 0) == 0) {
                                     found = true;
                                     break;
                                  }
@@ -1128,8 +1128,8 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
          // see the note in the branch above: the prefix is spelling, and only
          // the host filter has it
          const char *cp = filter_type == FILTER_HOSTS
-                          ? ocs::reference_pattern(ocs::tom::get<ST_name>(ep))
-                          : ocs::tom::get<ST_name>(ep);
+                          ? ocs::reference_pattern(ep.get<ST_name>())
+                          : ep.get<ST_name>();
          const char *group_name = nullptr;
          const char *query = nullptr;
 
@@ -1170,7 +1170,7 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                /* the userset name does not contain the preattached \@ sign */
                group_name++;
                for (const auto userset : master_userset_list) {
-                  if (fnmatch(group_name, ocs::tom::get<US_name>(userset), 0) == 0) {
+                  if (fnmatch(group_name, userset.get<US_name>(), 0) == 0) {
                      if (sge_contained_in_access_list(query, group, grp_list, userset) == 1) {
                         found = true;
                         break;
@@ -1182,11 +1182,11 @@ static bool rqs_match_user_host_scope(const ocs::tom::ConstList<ocs::tom::ST> sc
                }
             } else {
                for (const auto hgroup : master_hgroup_list) {
-                  if (fnmatch(group_name, ocs::tom::get<HGRP_name>(hgroup), 0) == 0) {
+                  if (fnmatch(group_name, hgroup.get<HGRP_name>(), 0) == 0) {
                      ocs::tom::ListPtr<ocs::tom::HR> host_list;
                      hgroup_find_all_references(hgroup, nullptr, master_hgroup_list, &host_list, nullptr);
                      for (const auto host_ep : *host_list) {
-                        if (fnmatch(query, ocs::tom::get<HR_name>(host_ep), 0) == 0) {
+                        if (fnmatch(query, host_ep.get<HR_name>(), 0) == 0) {
                            found = true;
                            break;
                         }
@@ -1240,23 +1240,23 @@ bool rqs_is_matching_rule(const ocs::tom::ConstElement<ocs::tom::RQR> rule, cons
    const ocs::tom::ConstList<ocs::tom::HGRP> no_hgroups;
    const ocs::tom::ConstList<ocs::tom::ST> no_groups;
 
-   if (!rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, master_userset_list, no_hgroups,
+   if (!rqs_filter_match(rule.get<RQR_filter_users>(), FILTER_USERS, user, master_userset_list, no_hgroups,
                          group, grp_list)) {
       DRETURN(false);
    }
-   if (!rqs_filter_match(ocs::tom::get<RQR_filter_projects>(rule), FILTER_PROJECTS, project, no_usersets, no_hgroups,
+   if (!rqs_filter_match(rule.get<RQR_filter_projects>(), FILTER_PROJECTS, project, no_usersets, no_hgroups,
                          nullptr, no_groups)) {
       DRETURN(false);
    }
-   if (!rqs_filter_match(ocs::tom::get<RQR_filter_pes>(rule), FILTER_PES, pe, no_usersets, no_hgroups, nullptr,
+   if (!rqs_filter_match(rule.get<RQR_filter_pes>(), FILTER_PES, pe, no_usersets, no_hgroups, nullptr,
                          no_groups)) {
       DRETURN(false);
    }
-   if (!rqs_filter_match(ocs::tom::get<RQR_filter_queues>(rule), FILTER_QUEUES, queue, no_usersets, no_hgroups,
+   if (!rqs_filter_match(rule.get<RQR_filter_queues>(), FILTER_QUEUES, queue, no_usersets, no_hgroups,
                          nullptr, no_groups)) {
       DRETURN(false);
    }
-   if (!rqs_filter_match(ocs::tom::get<RQR_filter_hosts>(rule), FILTER_HOSTS, host, no_usersets, master_hgroup_list,
+   if (!rqs_filter_match(rule.get<RQR_filter_hosts>(), FILTER_HOSTS, host, no_usersets, master_hgroup_list,
                          nullptr, no_groups)) {
       DRETURN(false);
    }
@@ -1288,7 +1288,7 @@ static bool rqs_match_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, 
                                  const ocs::tom::ConstList<ocs::tom::ST> grp_list) {
    DENTER(TOP_LAYER);
 
-   if (ocs::tom::find_first<ST_name>(scope, "*")) {
+   if (scope.find_first<ST_name>("*")) {
       DRETURN(true);
    }
 
@@ -1304,7 +1304,7 @@ static bool rqs_match_host_scope(const ocs::tom::ConstList<ocs::tom::ST> scope, 
        * notation still carries its prefix here; on this side the prefix is
        * spelling and the pattern behind it is what the entry denotes.
        */
-      const char *pattern = ocs::reference_pattern(ocs::tom::get<ST_name>(ep));
+      const char *pattern = ocs::reference_pattern(ep.get<ST_name>());
 
       if (!qref_list_host_rejected(pattern, name, master_hgroup_list)) {
          DRETURN(true);
@@ -1343,8 +1343,8 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
    bool ret = true;
 
    if (filter) {
-      const auto scope = ocs::tom::get<RQRF_scope>(filter);
-      const auto xscope = ocs::tom::get<RQRF_xscope>(filter);
+      const auto scope = filter.get<RQRF_scope>();
+      const auto xscope = filter.get<RQRF_xscope>();
 
       switch (filter_type) {
          case FILTER_HOSTS:
@@ -1376,11 +1376,11 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
          case FILTER_PES:
          case FILTER_QUEUES:
             DPRINTF("matching projects, pes or queues with %s\n", value? value: "nullptr");
-            if (ocs::tom::find_first<ST_name>(xscope, value)) {
+            if (xscope.find_first<ST_name>(value)) {
                ret = false;
             } else {
                for (const auto ep : xscope) {
-                  const char *cp = ocs::tom::get<ST_name>(ep);
+                  const char *cp = ep.get<ST_name>();
                   if (value == nullptr || (strcmp(value, "*") == 0)) {
                      break;
                   }
@@ -1395,11 +1395,11 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
             }
             if (ret != false) {
                bool found = false;
-               if (ocs::tom::find_first<ST_name>(scope, value)) {
+               if (scope.find_first<ST_name>(value)) {
                   found = true;
                } else {
                   for (const auto ep : scope) {
-                     const char *cp = ocs::tom::get<ST_name>(ep);
+                     const char *cp = ep.get<ST_name>();
 
                      if (value == nullptr) {
                         break;
@@ -1440,11 +1440,11 @@ bool sge_centry_referenced_in_rqs(const ocs::tom::ConstElement<ocs::tom::RQS> rq
    DENTER(TOP_LAYER);
 
    bool ret = false;
-   const char *centry_name = ocs::tom::get<CE_name>(centry);
+   const char *centry_name = centry.get<CE_name>();
 
-   for (const auto rule : ocs::tom::get<RQS_rule>(rqs)) {
-      for (const auto limit : ocs::tom::get<RQR_limit>(rule)) {
-         const char *limit_name = ocs::tom::get<RQRL_name>(limit);
+   for (const auto rule : rqs.get<RQS_rule>()) {
+      for (const auto limit : rule.get<RQR_limit>()) {
+         const char *limit_name = limit.get<RQRL_name>();
          DPRINTF("limit name %s\n", limit_name);
          if (strchr(limit_name, '$') != nullptr) {
             /* dynamical limit */

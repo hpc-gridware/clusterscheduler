@@ -119,7 +119,7 @@ void suser_increase_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
    DENTER(TOP_LAYER);
 
    if (suser) {
-      ocs::tom::add<SU_jobs>(suser, 1);
+      suser.add<SU_jobs>(1);
    }
    DRETURN_VOID;
 }
@@ -135,12 +135,12 @@ void suser_decrease_job_counter(const ocs::tom::Element<ocs::tom::SU> suser) {
    DENTER(TOP_LAYER);
 
    if (suser) {
-      const uint32_t jobs = ocs::tom::get<SU_jobs>(suser);
+      const uint32_t jobs = suser.get<SU_jobs>();
 
       if (jobs == 0) {
-         ERROR(MSG_SUSERCNTISALREADYZERO_S, ocs::tom::get<SU_name>(suser));
+         ERROR(MSG_SUSERCNTISALREADYZERO_S, suser.get<SU_name>());
       } else {
-         ocs::tom::add<SU_jobs>(suser, -1);
+         suser.add<SU_jobs>(-1);
       }
    }
    DRETURN_VOID;
@@ -161,7 +161,7 @@ uint32_t suser_get_job_counter(const ocs::tom::ConstElement<ocs::tom::SU> suser)
    uint32_t ret = 0;
 
    if (suser) {
-      ret = ocs::tom::get<SU_jobs>(suser);
+      ret = suser.get<SU_jobs>();
    }
    DRETURN(ret);
 }
@@ -207,7 +207,7 @@ int suser_check_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const ui
    DENTER(TOP_LAYER);
 
    int ret = 1;
-   const char *submit_user = ocs::tom::get<JB_owner>(job);
+   const char *submit_user = job.get<JB_owner>();
 
    if (submit_user != nullptr) {
       uint32_t jobs = 0;
@@ -257,7 +257,7 @@ int suser_register_new_job(const ocs::tom::ConstElement<ocs::tom::JB> job, const
       ret = suser_check_new_job(job, max_u_jobs, master_suser_list);
    }
    if (ret == 0) {
-      const char *submit_user = ocs::tom::get<JB_owner>(job);
+      const char *submit_user = job.get<JB_owner>();
       if (master_suser_list && submit_user != nullptr) {
          suser_increase_job_counter(ocs_suser_list_find_or_add(master_suser_list, submit_user));
       }
@@ -281,7 +281,7 @@ uint32_t suser_job_count(const ocs::tom::ConstElement<ocs::tom::JB> job,
                          const ocs::tom::ConstList<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
-   const char *submit_user = ocs::tom::get<JB_owner>(job);
+   const char *submit_user = job.get<JB_owner>();
    const uint32_t ret = suser_get_job_counter(suser_list_find(master_suser_list, submit_user));
 
    DRETURN(ret);
@@ -300,7 +300,7 @@ void suser_unregister_job(const ocs::tom::ConstElement<ocs::tom::JB> job,
                           const ocs::tom::ConstList<ocs::tom::SU> master_suser_list) {
    DENTER(TOP_LAYER);
 
-   const char *submit_user = ocs::tom::get<JB_owner>(job);
+   const char *submit_user = job.get<JB_owner>();
    suser_decrease_job_counter(suser_list_find(master_suser_list, submit_user));
 
    DRETURN_VOID;

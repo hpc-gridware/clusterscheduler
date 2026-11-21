@@ -87,9 +87,9 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
    DENTER(TOP_LAYER);
 
    // owner (user, UNIX group, and ACLs)
-   const char *owner = ocs::tom::get<JB_owner>(job);
-   const char *group = ocs::tom::get<JB_group>(job);
-   const ocs::tom::ConstList<ocs::tom::ST> grp_list = ocs::tom::get<JB_grp_list>(job);
+   const char *owner = job.get<JB_owner>();
+   const char *group = job.get<JB_group>();
+   const ocs::tom::ConstList<ocs::tom::ST> grp_list = job.get<JB_grp_list>();
    sge_unparse_acl_dstring(category_str, owner, group, grp_list, acl_list, "-U");
 
    // -u if referenced in resource quota sets
@@ -128,10 +128,10 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
                                      "-scope slave -hard -l");
 
    // -scope global|master|slave -hard -par <allocation_rule>
-   for (const auto request_set : ocs::tom::get<JB_request_set_list>(job)) {
+   for (const auto request_set : job.get<JB_request_set_list>()) {
       // Add the -par switch(es) to the category string.
-      const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(request_set);
-      switch (ocs::tom::get<JRS_scope>(request_set)) {
+      const char *allocation_rule = request_set.get<JRS_allocation_rule>();
+      switch (request_set.get<JRS_scope>()) {
          case JRS_SCOPE_GLOBAL:
             sge_unparse_string_option_dstring(category_str, allocation_rule, "-scope global -par");
             break;
@@ -156,33 +156,33 @@ ocs::Category::build_string(dstring *category_str, const ocs::tom::Element<ocs::
 #endif
 
    // -btype -bunit -bamount -bsort -bstart -bstop
-   sge_unparse_binding_dstring(category_str, ocs::tom::get<JB_binding>(job));
+   sge_unparse_binding_dstring(category_str, job.get<JB_binding>());
 
    // -pe pe_name pe_range
    sge_unparse_pe_dstring(category_str, job, "-pe");
 
    // -ckpt ckpt_name
-   sge_unparse_string_option_dstring(category_str, ocs::tom::get<JB_checkpoint_name>(job), "-ckpt");
+   sge_unparse_string_option_dstring(category_str, job.get<JB_checkpoint_name>(), "-ckpt");
 
    // interactive job type
-   const uint32_t job_type = ocs::tom::get<JB_type>(job);
+   const uint32_t job_type = job.get<JB_type>();
    if (JOB_TYPE_IS_IMMEDIATE(job_type)) {
       sge_dstring_append(category_str, "-I y ");
    }
 
    // -P project
-   const char *project = ocs::tom::get<JB_project>(job);
+   const char *project = job.get<JB_project>();
 
    if (project != nullptr) {
       const auto prj = prj_list.find_first<PR_name>(project);
 
-      if (prj && ocs::tom::get<PR_consider_with_categories>(prj)) {
+      if (prj && prj.get<PR_consider_with_categories>()) {
          sge_unparse_string_option_dstring(category_str, project, "-P");
       }
    }
 
    // -ar ar_id
-   sge_unparse_ulong_option_dstring(category_str, ocs::tom::get<JB_ar>(job), "-ar");
+   sge_unparse_ulong_option_dstring(category_str, job.get<JB_ar>(), "-ar");
 
    // remove the last white space that the last unparse function has written
    sge_dstring_strip_trailing_blanks(category_str);

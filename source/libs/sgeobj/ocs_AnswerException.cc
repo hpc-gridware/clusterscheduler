@@ -49,7 +49,7 @@ ocs::AnswerException::get_last_error_message(const ocs::tom::ConstList<ocs::tom:
    DENTER(TOP_LAYER);
    for (auto answer = answer_list.back(); answer; answer = answer.prev()) {
       if (answer_has_quality(answer, ANSWER_QUALITY_ERROR) || answer_has_quality(answer, ANSWER_QUALITY_CRITICAL)) {
-         const char *message = ocs::tom::get<AN_text>(answer);
+         const char *message = answer.get<AN_text>();
          if (message != nullptr) {
             DRETURN(message);
          }

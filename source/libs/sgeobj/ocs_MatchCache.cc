@@ -119,7 +119,7 @@ match_cache_reclaim(const ocs::tom::List<ocs::tom::HM> cache, const uint64_t now
    for (int examined = 0; entry && examined < MATCH_CACHE_RECLAIM_BOUND; examined++) {
       const auto next = entry.next();
 
-      if (now > ocs::tom::get_atomic<HM_last_used>(entry) + ttl) {
+      if (now > entry.get_atomic<HM_last_used>() + ttl) {
          cache.erase(entry);
       }
       entry = next;
@@ -153,13 +153,13 @@ ocs::MatchCache::lookup(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ch
       DRETURN(false);
    }
 
-   const auto entry = ocs::tom::find_first_rw<HM_name>(ocs::tom::get<HGRP_match_cache>(hgroup), hostname);
+   const auto entry = hgroup.get<HGRP_match_cache>().find_first<HM_name>(ocs::tom::Host(hostname));
 
    if (!entry) {
       DRETURN(false);
    }
 
-   ocs::tom::set_atomic<HM_last_used>(entry, sge_get_gmt64());
+   entry.set_atomic<HM_last_used>(sge_get_gmt64());
 
    DRETURN(true);
 }
@@ -189,7 +189,7 @@ ocs::MatchCache::insert(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ch
    const uint64_t now = sge_get_gmt64();
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   auto cache = ocs::tom::get<HGRP_match_cache>(hgroup);
+   auto cache = hgroup.get<HGRP_match_cache>();
    ocs::tom::ListPtr<ocs::tom::HM> created;
 
    if (!cache) {
@@ -202,13 +202,13 @@ ocs::MatchCache::insert(const ocs::tom::Element<ocs::tom::HGRP> hgroup, const ch
    // unique and hashed, and a list that ever holds two entries under one key
    // cannot be repaired: removing either drops the key from the hash and leaves
    // the other present but unfindable.
-   if (!ocs::tom::find_first<HM_name>(cache, hostname)) {
+   if (!cache.find_first<HM_name>(ocs::tom::Host(hostname))) {
       const auto fresh = cache.emplace_back<HM_name>(ocs::tom::Host(hostname));
 
-      ocs::tom::set<HM_last_used>(fresh, now);
+      fresh.set<HM_last_used>(now);
    }
    if (created) {
-      ocs::tom::set<HGRP_match_cache>(hgroup, std::move(created));
+      hgroup.set<HGRP_match_cache>(std::move(created));
    }
 
    DRETURN_VOID;
@@ -283,13 +283,13 @@ ocs::MatchCache::adopt(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::tom:
    }
 
    std::lock_guard<std::mutex> guard(match_cache_mutex);
-   const ocs::tom::ConstList<ocs::tom::HR> resolved = ocs::tom::get<HGRP_cached_hosts>(hgroup);
+   const ocs::tom::ConstList<ocs::tom::HR> resolved = hgroup.get<HGRP_cached_hosts>();
    auto entry = list->front();
 
    for (int examined = 0; entry && examined < MATCH_CACHE_PRUNE_BOUND; examined++) {
       const auto next = entry.next();
 
-      if (ocs::tom::find_first<HR_name>(resolved, ocs::tom::get<HM_name>(entry))) {
+      if (resolved.find_first<HR_name>(entry.get<HM_name>())) {
          list->erase(entry);
       }
       entry = next;

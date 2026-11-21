@@ -71,7 +71,7 @@ static bool
 qinstance_has_type(const ocs::tom::ConstElement<ocs::tom::QU> this_elem, const uint32_t type) {
    bool ret = false;
 
-   if (ocs::tom::get<QU_qtype>(this_elem) & type) {
+   if (this_elem.get<QU_qtype>() & type) {
       ret = true;
    }
    return ret;

@@ -283,8 +283,8 @@ namespace {
                                  string);
          DRETURN(false);
       }
-      if (strcasecmp(NONE_STR, ocs::tom::get<KEY>(list->front())) != 0) {
-         ocs::tom::set<F>(ep, std::move(list));
+      if (strcasecmp(NONE_STR, list->front().template get<KEY>()) != 0) {
+         ep.template set<F>(std::move(list));
       }
       DRETURN(true);
    }
@@ -320,7 +320,7 @@ namespace {
                                  string);
          DRETURN(false);
       }
-      ocs::tom::set<ACELIST_value>(ep, std::move(list));
+      ep.set<ACELIST_value>(std::move(list));
       DRETURN(true);
    }
 
@@ -396,7 +396,7 @@ namespace {
             /* split up the original string from the first subordinated queue on */
             tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(sub_queues_text, ",) \t");
             for (const auto tmp_elem : *tmp_list) {
-               const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
+               const char *queue_value = tmp_elem.get<SO_name>();
                char *queuename = sge_strtok(queue_value, ":");
                char *value_str = sge_strtok(nullptr, ":");
                char *action_str = sge_strtok(nullptr, ":");
@@ -406,7 +406,7 @@ namespace {
                sge_strip_blanks(action_str);
 
                if (queuename != nullptr) {
-                  ocs::tom::set<SO_name>(tmp_elem, queuename);
+                  tmp_elem.set<SO_name>(queuename);
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -415,7 +415,7 @@ namespace {
                }
 
                if (slots_sum_value > 0) {
-                  ocs::tom::set<SO_slots_sum>(tmp_elem, slots_sum_value);
+                  tmp_elem.set<SO_slots_sum>(slots_sum_value);
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                           MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -428,7 +428,7 @@ namespace {
                   const uint32_t value = strtol(value_str, &value_end, 10);
 
                   if (value_end != nullptr && *value_end == '\0') {
-                     ocs::tom::set<SO_seq_no>(tmp_elem, value);
+                     tmp_elem.set<SO_seq_no>(value);
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                              MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -436,14 +436,14 @@ namespace {
                      break;
                   }
                } else {
-                  ocs::tom::set<SO_seq_no>(tmp_elem, 0);
+                  tmp_elem.set<SO_seq_no>(0);
                }
 
                if (action_str != nullptr) {
                   if (strcmp(action_str, "lr") == 0) {
-                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_LR);
+                     tmp_elem.set<SO_action>(SO_ACTION_LR);
                   } else if (strcmp(action_str, "sr") == 0) {
-                     ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
+                     tmp_elem.set<SO_action>(SO_ACTION_SR);
                   } else {
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                              MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -452,36 +452,36 @@ namespace {
                   }
                } else {
                   /* default is "sr" */
-                  ocs::tom::set<SO_action>(tmp_elem, SO_ACTION_SR);
+                  tmp_elem.set<SO_action>(SO_ACTION_SR);
                }
             }
             // a failed entry drops the whole list, and the field is cleared, as it always was
             if (!ret) {
                tmp_list.reset();
             }
-            ocs::tom::set<ASOLIST_value>(ep, std::move(tmp_list));
+            ep.set<ASOLIST_value>(std::move(tmp_list));
          }
       } else {
          tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(string, ", \t");
          if (tmp_list) {
-            if (!strcasecmp("NONE", ocs::tom::get<SO_name>(tmp_list->front()))) {
+            if (!strcasecmp("NONE", tmp_list->front().get<SO_name>())) {
                tmp_list.reset();
             } else {
                /*
                 * queue instance-wise suspend on subordinate
                 */
                for (const auto tmp_elem : *tmp_list) {
-                  const char *queue_value = ocs::tom::get<SO_name>(tmp_elem);
+                  const char *queue_value = tmp_elem.get<SO_name>();
                   const char *queuename = sge_strtok(queue_value, ":=");
                   const char *value_str = sge_strtok(nullptr, ":=");
 
-                  ocs::tom::set<SO_name>(tmp_elem, queuename);
+                  tmp_elem.set<SO_name>(queuename);
                   if (value_str != nullptr) {
                      char *endptr = nullptr;
                      const uint32_t value = strtol(value_str, &endptr, 10);
 
                      if (endptr != nullptr && *endptr == '\0') {
-                        ocs::tom::set<SO_threshold>(tmp_elem, value);
+                        tmp_elem.set<SO_threshold>(value);
                      } else {
                         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                                 MSG_ERRORPARSINGVALUEFORNM_S, string);
@@ -495,7 +495,7 @@ namespace {
                   }
                }
                if (ret) {
-                  ocs::tom::set<ASOLIST_value>(ep, std::move(tmp_list));
+                  ep.set<ASOLIST_value>(std::move(tmp_list));
                }
             }
          }
@@ -885,32 +885,32 @@ ocs_object_append_field(const ocs::tom::ConstElement<typename ocs::tom::FieldTra
    const char *ret = nullptr;
    if (ep) {
       if constexpr (kind != ocs_object_symbolic::none) {
-         ret = ocs_object_append_symbolic(buffer, kind, ocs::tom::get<F>(ep));
+         ret = ocs_object_append_symbolic(buffer, kind, ep.template get<F>());
       } else if constexpr (nm == ASTRLIST_value) {
-         ret = str_list_append_to_dstring(ocs::tom::get<F>(ep), buffer, ' ');
+         ret = str_list_append_to_dstring(ep.template get<F>(), buffer, ' ');
       } else if constexpr (nm == AUSRLIST_value) {
-         ret = userset_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+         ret = userset_list_append_to_dstring(ep.template get<F>(), buffer);
       } else if constexpr (nm == APRJLIST_value) {
-         ret = prj_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+         ret = prj_list_append_to_dstring(ep.template get<F>(), buffer);
       } else if constexpr (nm == ACELIST_value) {
-         ret = centry_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+         ret = centry_list_append_to_dstring(ep.template get<F>(), buffer);
       } else if constexpr (nm == ASOLIST_value) {
-         ret = so_list_append_to_dstring(ocs::tom::get<F>(ep), buffer);
+         ret = so_list_append_to_dstring(ep.template get<F>(), buffer);
       } else if constexpr (type == FieldType::Uint32) {
-         ret = sge_dstring_sprintf_append(buffer, sge_u32, ocs::tom::get<F>(ep));
+         ret = sge_dstring_sprintf_append(buffer, sge_u32, ep.template get<F>());
       } else if constexpr (type == FieldType::Uint64) {
-         ret = sge_dstring_sprintf_append(buffer, sge_u64, ocs::tom::get<F>(ep));
+         ret = sge_dstring_sprintf_append(buffer, sge_u64, ep.template get<F>());
       } else if constexpr (type == FieldType::Int32) {
-         ret = sge_dstring_sprintf_append(buffer, "%d", ocs::tom::get<F>(ep));
+         ret = sge_dstring_sprintf_append(buffer, "%d", ep.template get<F>());
       } else if constexpr (type == FieldType::Int64) {
-         ret = sge_dstring_sprintf_append(buffer, "%ld", static_cast<long>(ocs::tom::get<F>(ep)));
+         ret = sge_dstring_sprintf_append(buffer, "%ld", static_cast<long>(ep.template get<F>()));
       } else if constexpr (type == FieldType::Double) {
-         ret = sge_dstring_sprintf_append(buffer, "%lf", ocs::tom::get<F>(ep));
+         ret = sge_dstring_sprintf_append(buffer, "%lf", ep.template get<F>());
       } else if constexpr (type == FieldType::Bool) {
-         ret = sge_dstring_append(buffer, ocs::tom::get<F>(ep) ? TRUE_STR : FALSE_STR);
+         ret = sge_dstring_append(buffer, ep.template get<F>() ? TRUE_STR : FALSE_STR);
       } else {
          static_assert(type == FieldType::String, "a field of the cluster queue attributes has no other type");
-         const char *str = ocs::tom::get<F>(ep);
+         const char *str = ep.template get<F>();
          ret = sge_dstring_append(buffer, str != nullptr ? str : NONE_STR);
       }
    }
@@ -956,14 +956,14 @@ ocs_object_parse_field(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>
    if constexpr (kind != ocs_object_symbolic::none) {
       const ocs_object_parsed_symbol parsed = ocs_object_parse_symbolic(answer_list, kind, value);
       if (parsed.store) {
-         ocs::tom::set<F>(ep, parsed.value);
+         ep.template set<F>(parsed.value);
       }
       ret = parsed.ok;
    } else if constexpr (nm == ATIME_value || nm == AINTER_value || nm == AMEM_value) {
       constexpr ocs::CEntry::Type value_type = nm == AMEM_value ? ocs::CEntry::Type::MEM : ocs::CEntry::Type::TIME;
       ret = ocs_object_check_value_string(answer_list, value_type, value);
       if (ret) {
-         ocs::tom::set<F>(ep, value);
+         ep.template set<F>(value);
       }
    } else if constexpr (nm == ASTRLIST_value) {
       ret = parse_name_list<F, ST_name>(ep, answer_list, value);
@@ -976,7 +976,7 @@ ocs_object_parse_field(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>
    } else if constexpr (nm == ASOLIST_value) {
       ret = parse_solist(ep, answer_list, value);
    } else if constexpr (type == FieldType::String) {
-      ocs::tom::set<F>(ep, value);
+      ep.template set<F>(value);
    } else {
       std::optional<typename ocs::tom::ValueOf<type>::type> parsed;
       if constexpr (type == FieldType::Uint32) {
@@ -994,7 +994,7 @@ ocs_object_parse_field(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>
          parsed = ocs_object_parse_bool(answer_list, value);
       }
       if (parsed) {
-         ocs::tom::set<F>(ep, *parsed);
+         ep.template set<F>(*parsed);
       } else {
          ret = false;
       }
@@ -1343,15 +1343,15 @@ object_set_range_id(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::T
                     const uint32_t end, const uint32_t step) {
    DENTER(OBJECT_LAYER);
 
-   auto range_elem = ocs::tom::get<F>(object).front();
+   auto range_elem = object.template get<F>().front();
    if (!range_elem) {
       auto range_list = ocs::tom::ListPtr<ocs::tom::RN>::create("task_id_range");
       range_elem = range_list->push_back(ocs::tom::ElementPtr<ocs::tom::RN>::create());
-      ocs::tom::set<F>(object, std::move(range_list));
+      object.template set<F>(std::move(range_list));
    }
-   ocs::tom::set<RN_min>(range_elem, start);
-   ocs::tom::set<RN_max>(range_elem, end);
-   ocs::tom::set<RN_step>(range_elem, step);
+   range_elem.template set<RN_min>(start);
+   range_elem.template set<RN_max>(end);
+   range_elem.template set<RN_step>(step);
    DRETURN(0);
 }
 
@@ -2332,7 +2332,7 @@ object_verify_ulong_not_null(const ocs::tom::ConstElement<typename ocs::tom::Fie
    static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Uint32, "a 32 bit field");
    bool ret = true;
 
-   if (ocs::tom::get<F>(ep) == 0) {
+   if (ep.template get<F>() == 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NOT_NULL_S,
                               ocs::tom::FieldTraits<F>::info.name);
       ret = false;
@@ -2376,7 +2376,7 @@ object_verify_ulong_null(const ocs::tom::ConstElement<typename ocs::tom::FieldTr
    static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Uint32, "a 32 bit field");
    bool ret = true;
 
-   if (const uint32_t value = ocs::tom::get<F>(ep); value != 0) {
+   if (const uint32_t value = ep.template get<F>(); value != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG_NULL_SU,
                               ocs::tom::FieldTraits<F>::info.name, value);
       ret = false;
@@ -2413,7 +2413,7 @@ object_verify_ulong64_null(const ocs::tom::ConstElement<typename ocs::tom::Field
    static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Uint64, "a 64 bit field");
    bool ret = true;
 
-   if (const uint64_t value = ocs::tom::get<F>(ep); value != 0) {
+   if (const uint64_t value = ep.template get<F>(); value != 0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_ULONG64_NULL_SU,
                               ocs::tom::FieldTraits<F>::info.name, value);
       ret = false;
@@ -2451,7 +2451,7 @@ object_verify_double_null(const ocs::tom::ConstElement<typename ocs::tom::FieldT
    static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::Double, "a double field");
    bool ret = true;
 
-   if (const double value = ocs::tom::get<F>(ep); value != 0.0) {
+   if (const double value = ep.template get<F>(); value != 0.0) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_DOUBLE_NULL_SD,
                               ocs::tom::FieldTraits<F>::info.name, value);
       ret = false;
@@ -2495,7 +2495,7 @@ object_verify_string_not_null(const ocs::tom::ConstElement<typename ocs::tom::Fi
    static_assert(ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::String, "a string field");
    bool ret = true;
 
-   if (ocs::tom::get<F>(ep) == nullptr) {
+   if (ep.template get<F>() == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRING_NOT_NULL_S,
                               ocs::tom::FieldTraits<F>::info.name);
       ret = false;
@@ -2531,12 +2531,12 @@ object_verify_expression_syntax(const ocs::tom::ConstElement<ocs::tom::CE> elem,
                                 ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(OBJECT_LAYER);
    bool ret = true;
-   switch (const auto type = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(elem))) {
+   switch (const auto type = static_cast<ocs::CEntry::Type>(elem.get<CE_valtype>())) {
       case ocs::CEntry::Type::STR:
       case ocs::CEntry::Type::CSTR:
       case ocs::CEntry::Type::RESTR:
       case ocs::CEntry::Type::HOST:
-         if (sge_eval_expression(type, ocs::tom::get<CE_stringval>(elem), "*", answer_list) == -1) {
+         if (sge_eval_expression(type, elem.get<CE_stringval>(), "*", answer_list) == -1) {
             ret = false;
          }
          break;
@@ -2613,8 +2613,8 @@ object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_nam
    range_list_sort_uniq_compress(pe_range, nullptr, true);
 
    for (const auto range_elem : pe_range) {
-      const unsigned long pe_range_min = ocs::tom::get<RN_min>(range_elem);
-      const unsigned long pe_range_max = ocs::tom::get<RN_max>(range_elem);
+      const unsigned long pe_range_min = range_elem.get<RN_min>();
+      const unsigned long pe_range_max = range_elem.get<RN_max>();
       DPRINTF("pe max = %ld, pe min = %ld\n", pe_range_max, pe_range_min);
       if (pe_range_max == 0 || pe_range_min == 0) {
          ERROR(MSG_OBJECT_PERANGEMUSTBEGRZERO_S, object_descr);
@@ -2630,10 +2630,10 @@ object_verify_pe_range(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *pe_nam
       // the master list of the data store is a process-lifetime global; it holds parallel environments
       const auto master_pe_list = ocs::DataStore::master_list<SGE_TYPE_PE>();
       const ocs::tom::ConstElement<ocs::tom::PE> reference_pe(pe_list_find_matching(master_pe_list, pe_name));
-      const int nslots = pe_urgency_slots(reference_pe, ocs::tom::get<PE_urgency_slots>(reference_pe), pe_range);
+      const int nslots = pe_urgency_slots(reference_pe, reference_pe.get<PE_urgency_slots>(), pe_range);
       for (const auto pe : master_pe_list) {
          if (pe_is_matching(pe, pe_name) &&
-             nslots != pe_urgency_slots(pe, ocs::tom::get<PE_urgency_slots>(pe), pe_range)) {
+             nslots != pe_urgency_slots(pe, pe.get<PE_urgency_slots>(), pe_range)) {
             ERROR(MSG_OBJECT_WILD_RANGE_AMBIGUOUS_S, object_descr);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
@@ -2665,7 +2665,7 @@ int compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::L
    DENTER(TOP_LAYER);
 
    for (auto ep = rl.back(); ep; ep = ep.prev()) {
-      const char *attr_name = ocs::tom::get<CE_name>(ep);
+      const char *attr_name = ep.get<CE_name>();
 
       /* ensure 'slots' is not requested explicitly */
       if (!strcmp(attr_name, "slots")) {
@@ -2678,9 +2678,9 @@ int compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::L
       auto prev = ep.prev();
       while (const auto rm_ep = prev) {
          prev = rm_ep.prev();
-         if (!strcmp(ocs::tom::get<CE_name>(rm_ep), attr_name)) {
+         if (!strcmp(rm_ep.get<CE_name>(), attr_name)) {
             DPRINTF("resource request -l " SFN "=" SFN " overrides previous -l " SFN "=" SFN "\n",
-                    attr_name, ocs::tom::get<CE_stringval>(ep), attr_name, ocs::tom::get<CE_stringval>(rm_ep));
+                    attr_name, ep.get<CE_stringval>(), attr_name, rm_ep.get<CE_stringval>());
             rl.erase(rm_ep);
          }
       }

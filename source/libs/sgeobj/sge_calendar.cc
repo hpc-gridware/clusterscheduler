@@ -410,20 +410,20 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
 
 
    /* compute state */
-   if ((in_wday_range=in_range_list(tm, ocs::tom::get<CA_wday_range_list>(week_entry), tm_wday_cmp))
-     && (in_daytime_range=in_range_list(tm, ocs::tom::get<CA_daytime_range_list>(week_entry), tm_daytime_cmp))) {
-      state = ocs::tom::get<CA_state>(week_entry);
+   if ((in_wday_range=in_range_list(tm, week_entry.get<CA_wday_range_list>(), tm_wday_cmp))
+     && (in_daytime_range=in_range_list(tm, week_entry.get<CA_daytime_range_list>(), tm_daytime_cmp))) {
+      state = week_entry.get<CA_state>();
       next_state = 0;
    } else {
       /* DPRINTF("in_range_list(wday) = %d in_range_list(daytime) = %d\n", in_wday_range, in_daytime_range); */
       state = 0;
-      next_state = ocs::tom::get<CA_state>(week_entry);
+      next_state = week_entry.get<CA_state>();
 
    }
 
    auto [limit, is_end_of_the_day_reached] =
-      compute_limit(in_wday_range, in_daytime_range, nullptr, ocs::tom::get<CA_wday_range_list>(week_entry),
-                    ocs::tom::get<CA_daytime_range_list>(week_entry), tm);
+      compute_limit(in_wday_range, in_daytime_range, nullptr, week_entry.get<CA_wday_range_list>(),
+                    week_entry.get<CA_daytime_range_list>(), tm);
 
    if (is_end_of_the_day_reached) {
       struct tm *tm_now;
@@ -489,19 +489,19 @@ is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
    bool in_yday_range, in_daytime_range = false;
 
    /* compute state */
-   if ((in_yday_range=in_range_list(tm, ocs::tom::get<CA_yday_range_list>(year_entry), tm_yday_cmp))
-     && (in_daytime_range=in_range_list(tm, ocs::tom::get<CA_daytime_range_list>(year_entry), tm_daytime_cmp))) {
+   if ((in_yday_range=in_range_list(tm, year_entry.get<CA_yday_range_list>(), tm_yday_cmp))
+     && (in_daytime_range=in_range_list(tm, year_entry.get<CA_daytime_range_list>(), tm_daytime_cmp))) {
       DPRINTF("in_range_list(yday) = %d in_range_list(daytime) = %d state = %d\n",
-            in_yday_range, in_daytime_range, ocs::tom::get<CA_state>(year_entry));
-      state = ocs::tom::get<CA_state>(year_entry);
+            in_yday_range, in_daytime_range, year_entry.get<CA_state>());
+      state = year_entry.get<CA_state>();
    } else {
       DPRINTF("in_range_list(yday) = %d in_range_list(daytime) = %d\n", in_yday_range, in_daytime_range);
       state = in_daytime_range?QI_DO_ENABLE:0;
    }
 
    auto [limit, is_end_of_the_day_reached] =
-      compute_limit(in_yday_range, in_daytime_range, ocs::tom::get<CA_yday_range_list>(year_entry), nullptr,
-                    ocs::tom::get<CA_daytime_range_list>(year_entry), tm);
+      compute_limit(in_yday_range, in_daytime_range, year_entry.get<CA_yday_range_list>(), nullptr,
+                    year_entry.get<CA_daytime_range_list>(), tm);
 
    if (is_end_of_the_day_reached) {
       struct tm *tm_now;
@@ -625,15 +625,15 @@ calender_state_changes(const ocs::tom::ConstElement<ocs::tom::CAL> cep, const ui
    auto state_changes_list = ocs::tom::ListPtr<ocs::tom::CQU>::create("state_changes");
    auto state_change = ocs::tom::ElementPtr<ocs::tom::CQU>::create();
 
-   ocs::tom::set<CQU_state>(state_change, state0);
-   ocs::tom::set<CQU_till>(state_change, when64);
+   state_change->set<CQU_state>(state0);
+   state_change->set<CQU_till>(when64);
    state_changes_list->push_back(std::move(state_change));
 
    /* extend queue state change list */
    if (when64 != 0) {
       auto state_change = ocs::tom::ElementPtr<ocs::tom::CQU>::create();
-      ocs::tom::set<CQU_state>(state_change,state1);
-      ocs::tom::set<CQU_till>(state_change, sge_time_t_to_gmt64(when1));
+      state_change->set<CQU_state>(state1);
+      state_change->set<CQU_till>(sge_time_t_to_gmt64(when1));
       state_changes_list->push_back(std::move(state_change));
    }
 
@@ -708,15 +708,15 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
 
    { /* should only be one entry in case that the calendar is valid for whole days*/
       const auto first_range = day_time.front();
-      const auto end = ocs::tom::get<TMR_end>(first_range).front();
-      const auto begin = ocs::tom::get<TMR_begin>(first_range).front();
+      const auto end = first_range.get<TMR_end>().front();
+      const auto begin = first_range.get<TMR_begin>().front();
 
-      if ( (ocs::tom::get<TM_sec>(end) == 0)   &&
-           (ocs::tom::get<TM_min>(end) == 0)   &&
-           (ocs::tom::get<TM_hour>(end) == 24) &&
-           (ocs::tom::get<TM_sec>(begin) == 0) &&
-           (ocs::tom::get<TM_min>(begin) == 0) &&
-           (ocs::tom::get<TM_hour>(begin) == 0)) {
+      if ( (end.get<TM_sec>() == 0)   &&
+           (end.get<TM_min>() == 0)   &&
+           (end.get<TM_hour>() == 24) &&
+           (begin.get<TM_sec>() == 0) &&
+           (begin.get<TM_min>() == 0) &&
+           (begin.get<TM_hour>() == 0)) {
          is_full_day = true;
       }
    }
@@ -728,9 +728,9 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          if (year_time != nullptr) {
             for (const auto range : year_time) {
                if (in_range(now, range, tm_yday_cmp)) {
-                  lep = ocs::tom::get<TMR_end>(range).front().clone();
+                  lep = range.get<TMR_end>().front().clone();
                   if (lep == nullptr) {
-                      lep = ocs::tom::get<TMR_begin>(range).front().clone();
+                      lep = range.get<TMR_begin>().front().clone();
                   }
                   break;
                }
@@ -740,10 +740,10 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
             bool is_allways_inactive = true;
 
             for (const auto range : week_time) {
-               const auto endList = ocs::tom::get<TMR_end>(range);
-               const auto beginList = ocs::tom::get<TMR_begin>(range);
+               const auto endList = range.get<TMR_end>();
+               const auto beginList = range.get<TMR_begin>();
                if (is_full_day && (endList != nullptr) && (beginList != nullptr)
-                   && (ocs::tom::get<TM_wday>(endList.front()) - ocs::tom::get<TM_wday>(beginList.front()) == 6)) {
+                   && (endList.front().get<TM_wday>() - beginList.front().get<TM_wday>() == 6)) {
                    is_allways_inactive &= true; /* the calendar is disabled for the whole week. */
                }
                else {
@@ -759,11 +759,11 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
                      end = beginList.front();
                   }
 
-                  day = ocs::tom::get<TM_mday>(now);
+                  day = now.get<TM_mday>();
 
-                  day += (ocs::tom::get<TM_wday>(end) - ocs::tom::get<TM_wday>(now));
+                  day += (end.get<TM_wday>() - now.get<TM_wday>());
                   lep = now.clone();
-                  ocs::tom::set<TM_mday>(lep, day);
+                  lep->set<TM_mday>(day);
                   break;
                }
             }
@@ -775,15 +775,15 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          else {
             DPRINTF("year_time and week_time calendar are set, this should not be. ");
          }
-         ocs::tom::set<TM_sec>(lep, 59); /* we cannot have 24:0:0. That would be equal to 0:0:0 and therefor be the */
-         ocs::tom::set<TM_min>(lep, 59); /* beginning of the day and not its end */
-         ocs::tom::set<TM_hour>(lep, 23);
+         lep->set<TM_sec>(59); /* we cannot have 24:0:0. That would be equal to 0:0:0 and therefor be the */
+         lep->set<TM_min>(59); /* beginning of the day and not its end */
+         lep->set<TM_hour>(23);
          end_of_day=true;
       }
       else { /* a calendar is inactive */
          if (year_time != nullptr) {   /* year calenar */
             for (const auto range : year_time) {
-               const auto begin = ocs::tom::get<TMR_begin>(range).front();
+               const auto begin = range.get<TMR_begin>().front();
                if (tm_yday_cmp(now, begin) < 0 &&
                   (!lep || tm_yday_cmp(*lep, begin) > 0)) {
                   lep = begin.clone();
@@ -796,7 +796,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          else if (week_time != nullptr) { /* week calendar */
             bool is_next_week = false;
             for (const auto range : week_time) {
-               const auto begin = ocs::tom::get<TMR_begin>(range).front();
+               const auto begin = range.get<TMR_begin>().front();
                if (tm_wday_cmp(now, begin) < 0 &&
                   (!lep || tm_wday_cmp(*lep, begin) > 0)) {
                   lep = begin.clone();
@@ -805,23 +805,23 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
             if (lep == nullptr) {
                is_next_week = true;
                for (const auto range : week_time) {
-                  const auto begin = ocs::tom::get<TMR_begin>(range).front();
+                  const auto begin = range.get<TMR_begin>().front();
                   if (!lep || tm_wday_cmp(*lep, begin) > 0) {
                      lep = begin.clone();
                   }
                }
             }
             if (is_next_week) {
-               int days = ocs::tom::get<TM_mday>(now);
-               days += (7 - ocs::tom::get<TM_wday>(now)) + ocs::tom::get<TM_wday>(lep);
-               ocs::tom::set<TM_mday>(lep, days);
+               int days = now.get<TM_mday>();
+               days += (7 - now.get<TM_wday>()) + lep->get<TM_wday>();
+               lep->set<TM_mday>(days);
             }
             else {
-               ocs::tom::set<TM_mday>(lep, ocs::tom::get<TM_mday>(now) +
-                                           (ocs::tom::get<TM_wday>(lep) - ocs::tom::get<TM_wday>(now)));
+               lep->set<TM_mday>(now.get<TM_mday>() +
+                                           (lep->get<TM_wday>() - now.get<TM_wday>()));
             }
-            ocs::tom::set<TM_mon>(lep, ocs::tom::get<TM_mon>(now));
-            ocs::tom::set<TM_year>(lep, ocs::tom::get<TM_year>(now));
+            lep->set<TM_mon>(now.get<TM_mon>());
+            lep->set<TM_year>(now.get<TM_year>());
          }
          else {      /* error in the data structure. should not happen */
             DPRINTF("year_time and week_time calendar are not set");
@@ -829,7 +829,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
       }
 
       if (lep != nullptr) { /* we do not know about summer or winter time, let the system choose */
-         ocs::tom::set<TM_isdst>(lep, -1);
+         lep->set<TM_isdst>(-1);
       }
 
       if (is_new_cal_entry) {
@@ -855,7 +855,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          /* seek end of active daytime range */
          for (const auto range : day_time) {
             if (in_range(new_now, range, tm_daytime_cmp)) {
-               lep = ocs::tom::get<TMR_end>(range).front().clone();
+               lep = range.get<TMR_end>().front().clone();
                break;
             }
          }
@@ -870,7 +870,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
             in_range() includes both ends of a range - we would be inside of it and "active" would
             be set. */
          for (const auto range : day_time) {
-            const auto begin = ocs::tom::get<TMR_begin>(range).front();
+            const auto begin = range.get<TMR_begin>().front();
             if (tm_daytime_cmp(new_now, begin) <= 0 &&
                (!lep || tm_daytime_cmp(*lep, begin) > 0)) {
                lep = begin.clone();
@@ -886,22 +886,22 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          DPRINTF("reached end of the day\n");
          is_end_of_day_reached = true;
          lep = new_now.clone();
-         ocs::tom::set<TM_hour>(lep, 24);
-         ocs::tom::set<TM_min>(lep, 0);
-         ocs::tom::set<TM_sec>(lep, 0);
+         lep->set<TM_hour>(24);
+         lep->set<TM_min>(0);
+         lep->set<TM_sec>(0);
       }
 
       /* convert from cull struct tm into time_t */
-      end_of_day = (ocs::tom::get<TM_hour>(lep)==24) ? true : false;
+      end_of_day = (lep->get<TM_hour>()==24) ? true : false;
       if (end_of_day) {
-         ocs::tom::set<TM_hour>(lep, 23);
-         ocs::tom::set<TM_min>(lep, 59);
-         ocs::tom::set<TM_sec>(lep, 59);
+         lep->set<TM_hour>(23);
+         lep->set<TM_min>(59);
+         lep->set<TM_sec>(59);
       }
       uncullify_tm(new_now, &tm_limit);
-      tm_limit.tm_hour = ocs::tom::get<TM_hour>(lep);
-      tm_limit.tm_min = ocs::tom::get<TM_min>(lep);
-      tm_limit.tm_sec = ocs::tom::get<TM_sec>(lep);
+      tm_limit.tm_hour = lep->get<TM_hour>();
+      tm_limit.tm_min = lep->get<TM_min>();
+      tm_limit.tm_sec = lep->get<TM_sec>();
       lep.reset();
       is_new_cal_entry = true;
    }
@@ -940,13 +940,13 @@ static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cm
 
    for (const auto r : rl) {
 
-      auto r1 = ocs::tom::get<TMR_begin>(r).front();
-      auto r2 = ocs::tom::get<TMR_end>(r).front();
+      auto r1 = r.get<TMR_begin>().front();
+      auto r2 = r.get<TMR_end>().front();
 
       for (auto q = r.next(); q; q = q.next()) {
 
-         const auto q1 = ocs::tom::get<TMR_begin>(q).front();
-         const auto q2 = ocs::tom::get<TMR_end>(q).front();
+         const auto q1 = q.get<TMR_begin>().front();
+         const auto q2 = q.get<TMR_end>().front();
 
          /* overlapping ranges ? */
          if (in_range(r1, q, cmp_func)         || /* r1 in q */
@@ -980,12 +980,12 @@ static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cm
             /* combine both overlapping ranges */
             /* r1 = min(r1, q1) */
             if (cmp_func(r1, q1) > 0) {
-               ocs::tom::swap<TMR_begin, TMR_begin>(r, q);
+               r.swap<TMR_begin, TMR_begin>(q);
             }
 
             /* r2 = max(r2, q2) */
             if ( (q2 && !r2) || cmp_func(r2, q2)<0) {
-               ocs::tom::swap<TMR_end, TMR_end>(r, q);
+               r.swap<TMR_end, TMR_end>(q);
             }
 
 /*             t1=ocs::tom::get<TMR_begin>(r).front(); */
@@ -1007,8 +1007,8 @@ static int normalize_range_list(const ocs::tom::List<ocs::tom::TMR> rl, const cm
             q = r;
 
             /* r1, r2 are no longer valid after swapping */
-            r1 = ocs::tom::get<TMR_begin>(r).front();
-            r2 = ocs::tom::get<TMR_end>(r).front();
+            r1 = r.get<TMR_begin>().front();
+            r2 = r.get<TMR_end>().front();
          }
       }
    }
@@ -1055,8 +1055,8 @@ static int in_range(const ocs::tom::ConstElement<ocs::tom::TM> tm, const ocs::to
                     const cmp_func_t cmp_func) {
    DENTER(TOP_LAYER);
 
-   const auto t1 = ocs::tom::get<TMR_begin>(r).front();
-   const auto t2 = ocs::tom::get<TMR_end>(r).front();
+   const auto t1 = r.get<TMR_begin>().front();
+   const auto t2 = r.get<TMR_end>().front();
 
    if (t2) {
       if (cmp_func(t1, tm)<=0 && cmp_func(tm, t2) <= 0) { /* mon-fri */
@@ -1190,12 +1190,12 @@ static ocs::tom::ElementPtr<ocs::tom::CA> disabled_year_entry() {
 SUCCESS:
    {
       auto cal = ocs::tom::ElementPtr<ocs::tom::CA>::create();
-      ocs::tom::set<CA_yday_range_list>(cal, std::move(ydrl));
+      cal->set<CA_yday_range_list>(std::move(ydrl));
       if (!dtrl)
          dtrl = full_daytime_range();
-      ocs::tom::set<CA_daytime_range_list>(cal, std::move(dtrl));
+      cal->set<CA_daytime_range_list>(std::move(dtrl));
       DPRINTF("state = %d\n", state);
-      ocs::tom::set<CA_state>(cal, state);
+      cal->set<CA_state>(state);
       DRETURN(cal);
    }
 
@@ -1216,8 +1216,8 @@ static ocs::tom::ListPtr<ocs::tom::TMR> full_daytime_range() {
 /*    DPRINTF("FULL_DAYTIME_RANGE\n"); */
 
    auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
-   ocs::tom::emplace_back_in<TMR_begin, TM_hour>(tmr, 0);
-   ocs::tom::emplace_back_in<TMR_end, TM_hour>(tmr, 24);
+   tmr->emplace_back_in<TMR_begin, TM_hour>(0);
+   tmr->emplace_back_in<TMR_end, TM_hour>(24);
 
    dtrl->push_back(std::move(tmr));
 
@@ -1237,8 +1237,8 @@ static ocs::tom::ListPtr<ocs::tom::TMR> full_weekday_range() {
 /*    DPRINTF("FULL_WEEKDAY_RANGE\n"); */
 
    auto tmr = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
-   ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr, 0);
-   ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr, 6);
+   tmr->emplace_back_in<TMR_begin, TM_wday>(0);
+   tmr->emplace_back_in<TMR_end, TM_wday>(6);
 
    dtrl->push_back(std::move(tmr));
 
@@ -1310,12 +1310,12 @@ static ocs::tom::ElementPtr<ocs::tom::TMR> year_day_range() {
 
    auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
    tmlp->push_back(std::move(t1));
-   ocs::tom::set<TMR_begin>(tmr, std::move(tmlp));
+   tmr->set<TMR_begin>(std::move(tmlp));
 
    if (t2) {
       auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
       tmlp->push_back(std::move(t2));
-      ocs::tom::set<TMR_end>(tmr, std::move(tmlp));
+      tmr->set<TMR_end>(std::move(tmlp));
    }
 
    DRETURN(tmr);
@@ -1358,9 +1358,9 @@ static ocs::tom::ElementPtr<ocs::tom::TM> year_day() {
    }
 
    auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
-   ocs::tom::set<TM_year>(tm, y - 1900);
-   ocs::tom::set<TM_mon>(tm, m);
-   ocs::tom::set<TM_mday>(tm, d);
+   tm->set<TM_year>(y - 1900);
+   tm->set<TM_mon>(m);
+   tm->set<TM_mday>(d);
 
    DRETURN(tm);
 }
@@ -1477,46 +1477,46 @@ static ocs::tom::ListPtr<ocs::tom::TMR> daytime_range_list() {
 static void split_daytime_range(const ocs::tom::List<ocs::tom::TMR> dtrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
 
-   if (const auto t2 = ocs::tom::get<TMR_end>(tmr).front()) {
-      const auto t1 = ocs::tom::get<TMR_begin>(tmr).front();
+   if (const auto t2 = tmr.get<TMR_end>().front()) {
+      const auto t1 = tmr.get<TMR_begin>().front();
 
       if (tm_daytime_cmp(t1, t2)>0) {
          /* split it into two ranges */
          auto new_range = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
-         ocs::tom::emplace_back_in<TMR_begin, TM_hour>(new_range, 0);
-         ocs::tom::emplace_back_in<TMR_end, TM_hour>(new_range, 24);
-         ocs::tom::swap<TMR_end, TMR_end>(tmr, *new_range);
+         new_range->emplace_back_in<TMR_begin, TM_hour>(0);
+         new_range->emplace_back_in<TMR_end, TM_hour>(24);
+         tmr.swap<TMR_end, TMR_end>(*new_range);
          const auto tmr2 = dtrl.push_back(std::move(new_range));
 
-         const auto begin1 = ocs::tom::get<TMR_begin>(tmr).front();
-         const auto end1 = ocs::tom::get<TMR_end>(tmr).front();
-         const auto begin2 = ocs::tom::get<TMR_begin>(tmr2).front();
-         const auto end2 = ocs::tom::get<TMR_end>(tmr2).front();
+         const auto begin1 = tmr.get<TMR_begin>().front();
+         const auto end1 = tmr.get<TMR_end>().front();
+         const auto begin2 = tmr2.get<TMR_begin>().front();
+         const auto end2 = tmr2.get<TMR_end>().front();
 
          DPRINTF("splitted %d:%d:%d-%d:%d:%d into %d:%d:%d-%d:%d:%d and %d:%d:%d-%d:%d:%d\n",
-            ocs::tom::get<TM_hour>(begin1),
-            ocs::tom::get<TM_min>(begin1),
-            ocs::tom::get<TM_sec>(begin1),
+            begin1.get<TM_hour>(),
+            begin1.get<TM_min>(),
+            begin1.get<TM_sec>(),
 
-            ocs::tom::get<TM_hour>(end2),
-            ocs::tom::get<TM_min>(end2),
-            ocs::tom::get<TM_sec>(end2),
+            end2.get<TM_hour>(),
+            end2.get<TM_min>(),
+            end2.get<TM_sec>(),
 
-            ocs::tom::get<TM_hour>(begin1),
-            ocs::tom::get<TM_min>(begin1),
-            ocs::tom::get<TM_sec>(begin1),
+            begin1.get<TM_hour>(),
+            begin1.get<TM_min>(),
+            begin1.get<TM_sec>(),
 
-            ocs::tom::get<TM_hour>(end1),
-            ocs::tom::get<TM_min>(end1),
-            ocs::tom::get<TM_sec>(end1),
+            end1.get<TM_hour>(),
+            end1.get<TM_min>(),
+            end1.get<TM_sec>(),
 
-            ocs::tom::get<TM_hour>(begin2),
-            ocs::tom::get<TM_min>(begin2),
-            ocs::tom::get<TM_sec>(begin2),
+            begin2.get<TM_hour>(),
+            begin2.get<TM_min>(),
+            begin2.get<TM_sec>(),
 
-            ocs::tom::get<TM_hour>(end2),
-            ocs::tom::get<TM_min>(end2),
-            ocs::tom::get<TM_sec>(end2));
+            end2.get<TM_hour>(),
+            end2.get<TM_min>(),
+            end2.get<TM_sec>());
       }
    }
 
@@ -1555,11 +1555,11 @@ static ocs::tom::ElementPtr<ocs::tom::TMR> daytime_range() {
 
    auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
    tmlp->push_back(std::move(t1));
-   ocs::tom::set<TMR_begin>(tmr, std::move(tmlp));
+   tmr->set<TMR_begin>(std::move(tmlp));
 
    tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
    tmlp->push_back(std::move(t2));
-   ocs::tom::set<TMR_end>(tmr, std::move(tmlp));
+   tmr->set<TMR_end>(std::move(tmlp));
 
    DRETURN(tmr);
 }
@@ -1606,9 +1606,9 @@ SUCCESS:
    }
 
    auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
-   ocs::tom::set<TM_hour>(tm, h);
-   ocs::tom::set<TM_min>(tm, m);
-   ocs::tom::set<TM_sec>(tm, s);
+   tm->set<TM_hour>(h);
+   tm->set<TM_min>(m);
+   tm->set<TM_sec>(s);
 
    DRETURN(tm);
 }
@@ -1779,13 +1779,13 @@ SUCCESS:
          wdrl = full_weekday_range();
       }
 
-      ocs::tom::set<CA_wday_range_list>(cal, std::move(wdrl));
+      cal->set<CA_wday_range_list>(std::move(wdrl));
 
       if (!dtrl) {
          dtrl = full_daytime_range();
       }
-      ocs::tom::set<CA_daytime_range_list>(cal, std::move(dtrl));
-      ocs::tom::set<CA_state>(cal, state);
+      cal->set<CA_daytime_range_list>(std::move(dtrl));
+      cal->set<CA_state>(state);
       DRETURN(cal);
    }
 
@@ -1858,12 +1858,12 @@ static void join_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
 
       next1 = next1.next();
 
-      const auto beginList1 = ocs::tom::get<TMR_begin>(day_range1);
-      const auto endList1 = ocs::tom::get<TMR_end>(day_range1);
+      const auto beginList1 = day_range1.get<TMR_begin>();
+      const auto endList1 = day_range1.get<TMR_end>();
 
-      begin1 = ocs::tom::get<TM_wday>(beginList1.front());
+      begin1 = beginList1.front().get<TM_wday>();
       if (endList1 != nullptr) {
-         end1 = ocs::tom::get<TM_wday>(endList1.front());
+         end1 = endList1.front().get<TM_wday>();
       }
       else {
          end1 = begin1;
@@ -1880,12 +1880,12 @@ static void join_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
             continue;
          }
 
-         const auto beginList2 = ocs::tom::get<TMR_begin>(day_range2);
-         const auto endList2 = ocs::tom::get<TMR_end>(day_range2);
+         const auto beginList2 = day_range2.get<TMR_begin>();
+         const auto endList2 = day_range2.get<TMR_end>();
 
-         begin2 = ocs::tom::get<TM_wday>(beginList2.front());
+         begin2 = beginList2.front().get<TM_wday>();
          if (endList2 != nullptr) {
-            end2 = ocs::tom::get<TM_wday>(endList2.front());
+            end2 = endList2.front().get<TM_wday>();
          }
          else {
             end2 = begin2;
@@ -1894,10 +1894,10 @@ static void join_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
          if (begin2 <= (end1 +1) && (begin1 <= begin2)) {
             if (end1 < end2) {
                if (endList1) {
-                  ocs::tom::set<TM_wday>(endList1.front(), end2);
+                  endList1.front().set<TM_wday>(end2);
                }
                else {
-                  ocs::tom::set<TMR_end>(day_range1, endList2.clone(""));
+                  day_range1.set<TMR_end>(endList2.clone(""));
                }
             }
 
@@ -1935,12 +1935,12 @@ static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
 
       next1 = next1.next();
 
-      const auto beginList1 = ocs::tom::get<TMR_begin>(day_range1);
-      auto endList1 = ocs::tom::get<TMR_end>(day_range1);
+      const auto beginList1 = day_range1.get<TMR_begin>();
+      auto endList1 = day_range1.get<TMR_end>();
 
-      begin1 = ocs::tom::get<TM_wday>(beginList1.front());
+      begin1 = beginList1.front().get<TM_wday>();
       if (endList1 != nullptr) {
-         end1 = ocs::tom::get<TM_wday>(endList1.front());
+         end1 = endList1.front().get<TM_wday>();
       }
       else {
          end1 = begin1;
@@ -1958,12 +1958,12 @@ static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
             continue;
          }
 
-         const auto beginList2 = ocs::tom::get<TMR_begin>(day_range2);
-         const auto endList2 = ocs::tom::get<TMR_end>(day_range2);
+         const auto beginList2 = day_range2.get<TMR_begin>();
+         const auto endList2 = day_range2.get<TMR_end>();
 
-         begin2 = ocs::tom::get<TM_wday>(beginList2.front());
+         begin2 = beginList2.front().get<TM_wday>();
          if (endList2 != nullptr) {
-            end2 = ocs::tom::get<TM_wday>(endList2.front());
+            end2 = endList2.front().get<TM_wday>();
          }
          else {
             end2 = begin2;
@@ -1974,9 +1974,9 @@ static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
             if (endList1 == nullptr) {
                auto copy = beginList1.clone("");
                endList1 = *copy;
-               ocs::tom::set<TMR_end>(day_range1, std::move(copy));
+               day_range1.set<TMR_end>(std::move(copy));
             }
-            ocs::tom::set<TM_wday>(endList1.front(), tempEnd);
+            endList1.front().set<TM_wday>(tempEnd);
          }
       }
    }
@@ -1997,15 +1997,15 @@ static void extend_wday_range(const ocs::tom::List<ocs::tom::TMR> week_day) {
 static void split_wday_range(const ocs::tom::List<ocs::tom::TMR> wdrl, const ocs::tom::Element<ocs::tom::TMR> tmr) {
    DENTER(TOP_LAYER);
 
-   if (const auto t2 = ocs::tom::get<TMR_end>(tmr).front()) {
-      const auto t1 = ocs::tom::get<TMR_begin>(tmr).front();
+   if (const auto t2 = tmr.get<TMR_end>().front()) {
+      const auto t1 = tmr.get<TMR_begin>().front();
 
       if (tm_wday_cmp(t1, t2) > 0) {
          /* split it into two ranges */
          auto tmr2 = ocs::tom::ElementPtr<ocs::tom::TMR>::create();
-         ocs::tom::emplace_back_in<TMR_begin, TM_wday>(tmr2, 0);
-         ocs::tom::emplace_back_in<TMR_end, TM_wday>(tmr2, 6);
-         ocs::tom::swap<TMR_end, TMR_end>(tmr, *tmr2);
+         tmr2->emplace_back_in<TMR_begin, TM_wday>(0);
+         tmr2->emplace_back_in<TMR_end, TM_wday>(6);
+         tmr.swap<TMR_end, TMR_end>(*tmr2);
          wdrl.push_back(std::move(tmr2));
       }
    }
@@ -2049,12 +2049,12 @@ static ocs::tom::ElementPtr<ocs::tom::TMR> week_day_range() {
 
    auto tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
    tmlp->push_back(std::move(t1));
-   ocs::tom::set<TMR_begin>(tmr, std::move(tmlp));
+   tmr->set<TMR_begin>(std::move(tmlp));
 
    if (t2) {
       tmlp = ocs::tom::ListPtr<ocs::tom::TM>::create("tm_list");
       tmlp->push_back(std::move(t2));
-      ocs::tom::set<TMR_end>(tmr, std::move(tmlp));
+      tmr->set<TMR_end>(std::move(tmlp));
    }
 
    DRETURN(tmr);
@@ -2094,7 +2094,7 @@ static ocs::tom::ElementPtr<ocs::tom::TM> week_day() {
    eat_token();
 
    auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
-   ocs::tom::set<TM_wday>(tm, wday);
+   tm->set<TM_wday>(wday);
 
    DRETURN(tm);
 }
@@ -2255,13 +2255,13 @@ static int tm_yday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs:
 
    int t;
 
-   if ((t=(ocs::tom::get<TM_year>(t1) - ocs::tom::get<TM_year>(t2)))) {
+   if ((t=(t1.get<TM_year>() - t2.get<TM_year>()))) {
       DRETURN(t);
    }
-   if ((t=(ocs::tom::get<TM_mon>(t1) - ocs::tom::get<TM_mon>(t2)))) {
+   if ((t=(t1.get<TM_mon>() - t2.get<TM_mon>()))) {
       DRETURN(t);
    }
-   DRETURN(ocs::tom::get<TM_mday>(t1) - ocs::tom::get<TM_mday>(t2));
+   DRETURN(t1.get<TM_mday>() - t2.get<TM_mday>());
 }
 
 /**
@@ -2273,7 +2273,7 @@ static int tm_yday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs:
  */
 static int tm_wday_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1, const ocs::tom::ConstElement<ocs::tom::TM> t2) {
    DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::get<TM_wday>(t1) - ocs::tom::get<TM_wday>(t2));
+   DRETURN(t1.get<TM_wday>() - t2.get<TM_wday>());
 }
 
 /**
@@ -2289,13 +2289,13 @@ static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
 
    int t;
 
-   if ((t=(ocs::tom::get<TM_hour>(t1) - ocs::tom::get<TM_hour>(t2)))) {
+   if ((t=(t1.get<TM_hour>() - t2.get<TM_hour>()))) {
       DRETURN(t);
    }
-   if ((t=(ocs::tom::get<TM_min>(t1) - ocs::tom::get<TM_min>(t2)))) {
+   if ((t=(t1.get<TM_min>() - t2.get<TM_min>()))) {
       DRETURN(t);
    }
-   DRETURN(ocs::tom::get<TM_sec>(t1) - ocs::tom::get<TM_sec>(t2));
+   DRETURN(t1.get<TM_sec>() - t2.get<TM_sec>());
 }
 
 /**
@@ -2310,15 +2310,15 @@ static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
 void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now) {
    DENTER(TOP_LAYER);
 
-   ocs::tom::set<TM_mday>(tm_ep,  tm_now->tm_mday);
-   ocs::tom::set<TM_mon>(tm_ep,   tm_now->tm_mon);
-   ocs::tom::set<TM_year>(tm_ep,  tm_now->tm_year);
-   ocs::tom::set<TM_sec>(tm_ep,   tm_now->tm_sec);
-   ocs::tom::set<TM_min>(tm_ep,   tm_now->tm_min);
-   ocs::tom::set<TM_hour>(tm_ep,  tm_now->tm_hour);
-   ocs::tom::set<TM_wday>(tm_ep,  tm_now->tm_wday);
-   ocs::tom::set<TM_yday>(tm_ep,  tm_now->tm_yday);
-   ocs::tom::set<TM_isdst>(tm_ep, tm_now->tm_isdst);
+   tm_ep.set<TM_mday>(tm_now->tm_mday);
+   tm_ep.set<TM_mon>(tm_now->tm_mon);
+   tm_ep.set<TM_year>(tm_now->tm_year);
+   tm_ep.set<TM_sec>(tm_now->tm_sec);
+   tm_ep.set<TM_min>(tm_now->tm_min);
+   tm_ep.set<TM_hour>(tm_now->tm_hour);
+   tm_ep.set<TM_wday>(tm_now->tm_wday);
+   tm_ep.set<TM_yday>(tm_now->tm_yday);
+   tm_ep.set<TM_isdst>(tm_now->tm_isdst);
 
    DRETURN_VOID;
 }
@@ -2332,15 +2332,15 @@ void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm
 void uncullify_tm(const ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now) {
    DENTER(TOP_LAYER);
 
-   tm_now->tm_mday =  ocs::tom::get<TM_mday>(tm_ep);
-   tm_now->tm_mon  =  ocs::tom::get<TM_mon>(tm_ep);
-   tm_now->tm_year =  ocs::tom::get<TM_year>(tm_ep);
-   tm_now->tm_sec  =  ocs::tom::get<TM_sec>(tm_ep);
-   tm_now->tm_min  =  ocs::tom::get<TM_min>(tm_ep);
-   tm_now->tm_hour =  ocs::tom::get<TM_hour>(tm_ep);
-   tm_now->tm_wday =  ocs::tom::get<TM_wday>(tm_ep);
-   tm_now->tm_yday =  ocs::tom::get<TM_yday>(tm_ep);
-   tm_now->tm_isdst = ocs::tom::get<TM_isdst>(tm_ep);
+   tm_now->tm_mday =  tm_ep.get<TM_mday>();
+   tm_now->tm_mon  =  tm_ep.get<TM_mon>();
+   tm_now->tm_year =  tm_ep.get<TM_year>();
+   tm_now->tm_sec  =  tm_ep.get<TM_sec>();
+   tm_now->tm_min  =  tm_ep.get<TM_min>();
+   tm_now->tm_hour =  tm_ep.get<TM_hour>();
+   tm_now->tm_wday =  tm_ep.get<TM_wday>();
+   tm_now->tm_yday =  tm_ep.get<TM_yday>();
+   tm_now->tm_isdst = tm_ep.get<TM_isdst>();
 
    DRETURN_VOID;
 }
@@ -2357,11 +2357,11 @@ bool calendar_parse_year(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::L
 
    bool ret = true;
 
-   auto yc = disabled_year_list(answer_list, ocs::tom::get<CAL_year_calendar>(cal), ocs::tom::get<CAL_name>(cal));
+   auto yc = disabled_year_list(answer_list, cal.get<CAL_year_calendar>(), cal.get<CAL_name>());
    if (!yc) {
       ret = false;
    } else {
-      ocs::tom::set<CAL_parsed_year_calendar>(cal, std::move(*yc));
+      cal.set<CAL_parsed_year_calendar>(std::move(*yc));
    }
 
    DRETURN(ret);
@@ -2380,11 +2380,11 @@ bool calendar_parse_week(const ocs::tom::Element<ocs::tom::CAL> cal, ocs::tom::L
 
    bool ret = true;
 
-   auto wc = disabled_week_list(answer_list, ocs::tom::get<CAL_week_calendar>(cal), ocs::tom::get<CAL_name>(cal));
+   auto wc = disabled_week_list(answer_list, cal.get<CAL_week_calendar>(), cal.get<CAL_name>());
    if (!wc) {
       ret = false;
    } else {
-      ocs::tom::set<CAL_parsed_week_calendar>(cal, std::move(*wc));
+      cal.set<CAL_parsed_week_calendar>(std::move(*wc));
    }
    DRETURN(ret);
 }
@@ -2410,11 +2410,11 @@ calendar_get_current_state_and_end(const ocs::tom::ConstElement<ocs::tom::CAL> c
    ocs::tom::ConstList<ocs::tom::CA> year_list = nullptr;
    ocs::tom::ConstList<ocs::tom::CA> week_list = nullptr;
 
-   DPRINTF("cal: %s\n", ocs::tom::get<CAL_name>(cep));
+   DPRINTF("cal: %s\n", cep.get<CAL_name>());
 
    if (cep != nullptr) {
-      year_list = ocs::tom::get<CAL_parsed_year_calendar>(cep);
-      week_list = ocs::tom::get<CAL_parsed_week_calendar>(cep);
+      year_list = cep.get<CAL_parsed_year_calendar>();
+      week_list = cep.get<CAL_parsed_week_calendar>();
    }
 
    const auto [state, then] = state_at(now, year_list, week_list);
@@ -2456,17 +2456,17 @@ bool calendar_is_referenced(const ocs::tom::ConstElement<ocs::tom::CAL> calendar
     * fix for bug 6422335
     * check the cq configuration for calendar references instead of qinstances
     */
-   const char *calendar_name = ocs::tom::get<CAL_name>(calendar);
+   const char *calendar_name = calendar.get<CAL_name>();
    if (calendar_name != nullptr) {
       for (const auto cqueue : master_cqueue_list) {
-         for (const auto cal : ocs::tom::get<CQ_calendar>(cqueue)) {
-            const char *qcal_name = ocs::tom::get<ASTR_value>(cal);
+         for (const auto cal : cqueue.get<CQ_calendar>()) {
+            const char *qcal_name = cal.get<ASTR_value>();
             if (qcal_name && !strcmp(qcal_name, calendar_name)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO,
                                        MSG_CALENDAR_REFINQUEUE_SS,
                                        calendar_name,
-                                       ocs::tom::get<CQ_name>(cqueue));
+                                       cqueue.get<CQ_name>());
                ret = true;
                break;
             }
@@ -2489,7 +2489,7 @@ ocs::tom::ElementPtr<ocs::tom::CAL> sge_generic_cal(const char *cal_name) {
 
    auto calp = ocs::tom::ElementPtr<ocs::tom::CAL>::create();
 
-   ocs::tom::set<CAL_name>(calp, cal_name?cal_name:"template");
+   calp->set<CAL_name>(cal_name?cal_name:"template");
 
    DRETURN(calp);
 }
@@ -2521,8 +2521,8 @@ bool calendar_open_in_time_frame(const ocs::tom::ConstElement<ocs::tom::CAL> cep
    time_t end = sge_gmt64_to_time_t(duration_add_offset(start_time, duration));
 
    if (cep != nullptr) {
-      year_list = ocs::tom::get<CAL_parsed_year_calendar>(cep);
-      week_list = ocs::tom::get<CAL_parsed_week_calendar>(cep);
+      year_list = cep.get<CAL_parsed_year_calendar>();
+      week_list = cep.get<CAL_parsed_week_calendar>();
    }
 
    std::tie(state, next_change) = state_at(start, year_list, week_list);

@@ -82,9 +82,9 @@ int
 usage_list_get_int_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, const char *name, const int def) {
    DENTER(BASIS_LAYER);
    int ret = def;
-   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   const auto ep = usage_list.find_first<UA_name>(name);
    if (ep) {
-      ret = static_cast<int>(ocs::tom::get<UA_value>(ep));
+      ret = static_cast<int>(ep.get<UA_value>());
    }
    DRETURN(ret);
 }
@@ -107,9 +107,9 @@ usage_list_get_ulong_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, c
                            const uint32_t def) {
    DENTER(BASIS_LAYER);
    uint32_t ret = def;
-   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   const auto ep = usage_list.find_first<UA_name>(name);
    if (ep) {
-      ret = static_cast<uint32_t>(ocs::tom::get<UA_value>(ep));
+      ret = static_cast<uint32_t>(ep.get<UA_value>());
    }
    DRETURN(ret);
 }
@@ -130,9 +130,9 @@ usage_list_get_ulong64_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list,
                              const uint64_t def) {
    DENTER(BASIS_LAYER);
    uint64_t ret = def;
-   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   const auto ep = usage_list.find_first<UA_name>(name);
    if (ep) {
-      ret = static_cast<uint64_t>(ocs::tom::get<UA_value>(ep));
+      ret = static_cast<uint64_t>(ep.get<UA_value>());
    }
    DRETURN(ret);
 }
@@ -159,9 +159,9 @@ usage_list_get_double_usage(const ocs::tom::ConstList<ocs::tom::UA> usage_list, 
                             const double def) {
    DENTER(BASIS_LAYER);
    double ret = def;
-   const auto ep = ocs::tom::find_first<UA_name>(usage_list, name);
+   const auto ep = usage_list.find_first<UA_name>(name);
    if (ep) {
-      ret = ocs::tom::get<UA_value>(ep);
+      ret = ep.get<UA_value>();
    }
    DRETURN(ret);
 }
@@ -222,7 +222,7 @@ static ocs::tom::Element<ocs::tom::UA>
 ocs_usage_list_find_or_add(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name,
                            const bool create_usage) {
    DENTER(BASIS_LAYER);
-   auto ep = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+   auto ep = usage_list.find_first<UA_name>(name);
    if (!ep && create_usage && usage_list && name != nullptr) {
       ep = usage_list.emplace_back<UA_name>(name);
    }
@@ -250,7 +250,7 @@ usage_list_set_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const
    DENTER(BASIS_LAYER);
    const auto ep = ocs_usage_list_find_or_add(usage_list, name, create_usage);
    if (ep) {
-      ocs::tom::set<UA_value>(ep, value);
+      ep.set<UA_value>(value);
    }
    DRETURN_VOID;
 }
@@ -274,7 +274,7 @@ usage_list_max_double_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const
    DENTER(BASIS_LAYER);
    const auto ep = ocs_usage_list_find_or_add(usage_list, name, create_usage);
    if (ep) {
-      ocs::tom::set<UA_value>(ep, std::max(value, ocs::tom::get<UA_value>(ep)));
+      ep.set<UA_value>(std::max(value, ep.get<UA_value>()));
    }
    DRETURN_VOID;
 }
@@ -302,7 +302,7 @@ void
 usage_list_sum(const ocs::tom::List<ocs::tom::UA> usage_list, const ocs::tom::ConstList<ocs::tom::UA> add_usage_list) {
    DENTER(BASIS_LAYER);
    for (const auto usage : add_usage_list) {
-      const char *name = ocs::tom::get<UA_name>(usage);
+      const char *name = usage.get<UA_name>();
       /* Sum up all usage attributes. */
       if (strcmp(name, USAGE_ATTR_CPU) == 0 ||
           strcmp(name, USAGE_ATTR_IO) == 0 ||
@@ -315,11 +315,11 @@ usage_list_sum(const ocs::tom::List<ocs::tom::UA> usage_list, const ocs::tom::Co
           strcmp(name, USAGE_ATTR_SMEM) == 0 ||
           strncmp(name, "acct_", 5) == 0 ||
           strncmp(name, "ru_", 3) == 0) {
-         const auto sum = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+         const auto sum = usage_list.find_first<UA_name>(name);
          if (!sum) {
             usage_list.push_back(usage.clone());
          } else {
-            ocs::tom::add<UA_value>(sum, ocs::tom::get<UA_value>(usage));
+            sum.add<UA_value>(usage.get<UA_value>());
          }
       }
    }
@@ -350,9 +350,9 @@ scale_usage(const ocs::tom::ConstList<ocs::tom::HS> scaling, const ocs::tom::Con
    }
 
    for (const auto ep : scaled_usage) {
-      const auto sep = ocs::tom::find_first<HS_name>(scaling, ocs::tom::get<UA_name>(ep));
+      const auto sep = scaling.find_first<HS_name>(ep.get<UA_name>());
       if (sep) {
-         ocs::tom::set<UA_value>(ep, ocs::tom::get<UA_value>(ep) * ocs::tom::get<HS_value>(sep));
+         ep.set<UA_value>(ep.get<UA_value>() * sep.get<HS_value>());
       }
    }
 
@@ -362,11 +362,11 @@ scale_usage(const ocs::tom::ConstList<ocs::tom::HS> scaling, const ocs::tom::Con
       USAGE_ATTR_MAXRSS, USAGE_ATTR_MEM, USAGE_ATTR_PSS, USAGE_ATTR_MAXPSS, USAGE_ATTR_PMEM, USAGE_ATTR_SMEM
    };
    for (const char *attr : summed) {
-      const auto prev = ocs::tom::find_first<UA_name>(prev_usage, attr);
+      const auto prev = prev_usage.find_first<UA_name>(attr);
       if (prev) {
-         const auto ep = ocs::tom::find_first_rw<UA_name>(scaled_usage, attr);
+         const auto ep = scaled_usage.find_first<UA_name>(attr);
          if (ep) {
-            ocs::tom::add<UA_value>(ep, ocs::tom::get<UA_value>(prev));
+            ep.add<UA_value>(prev.get<UA_value>());
          } else {
             scaled_usage.push_back(prev.clone());
          }
@@ -455,7 +455,7 @@ usage_parse_value(const char *name, const char *value) {
    }
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(ep, name);
+   ep->set<UA_name>(name);
 
    // (1) quote-prefix rule — matched pair strips.
    // Empty quoted pair ("" or '') is a special case: CULL's wire format
@@ -473,28 +473,28 @@ usage_parse_value(const char *name, const char *value) {
          DRETURN(nullptr);
       }
       std::string interior(value + 1, len - 2);
-      ocs::tom::set<UA_svalue>(ep, interior.c_str());
+      ep->set<UA_svalue>(interior.c_str());
       DRETURN(ep);
    }
 
    // (2) full-double parse.
    double d = 0.0;
    if (parse_full_double(value, d)) {
-      ocs::tom::set<UA_value>(ep, d);
+      ep->set<UA_value>(d);
       DRETURN(ep);
    }
 
    // (3) case-insensitive bool coercion.
    if (str_iequal(value, "true")) {
-      ocs::tom::set<UA_value>(ep, 1.0);
+      ep->set<UA_value>(1.0);
       DRETURN(ep);
    }
    if (str_iequal(value, "false")) {
-      ocs::tom::set<UA_value>(ep, 0.0);
+      ep->set<UA_value>(0.0);
       DRETURN(ep);
    }
 
    // (4) raw string.
-   ocs::tom::set<UA_svalue>(ep, value);
+   ep->set<UA_svalue>(value);
    DRETURN(ep);
 }

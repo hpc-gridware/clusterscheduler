@@ -80,22 +80,22 @@ ocs_decay_userprj_usage(const ocs::tom::Element<T> userprj, const ocs::tom::Cons
                         const u_long seqno, const uint64_t curr_time) {
    DENTER(BASIS_LAYER);
 
-   if (userprj && seqno != ocs::tom::get<USAGE_SEQNO>(userprj)) {
-      const uint64_t usage_time_stamp = ocs::tom::get<USAGE_TIME_STAMP>(userprj);
+   if (userprj && seqno != userprj.template get<USAGE_SEQNO>()) {
+      const uint64_t usage_time_stamp = userprj.template get<USAGE_TIME_STAMP>();
 
       if (usage_time_stamp > 0 && (curr_time > usage_time_stamp)) {
          const double interval = sge_gmt64_to_gmt32_double(curr_time - usage_time_stamp);
 
-         ocs::Usage::decay_usage(ocs::tom::get<USAGE>(userprj), decay_list, interval);
+         ocs::Usage::decay_usage(userprj.template get<USAGE>(), decay_list, interval);
 
-         for (const auto upp : ocs::tom::get<PROJECT>(userprj)) {
-            ocs::Usage::decay_usage(ocs::tom::get<UPP_usage>(upp), decay_list, interval);
+         for (const auto upp : userprj.template get<PROJECT>()) {
+            ocs::Usage::decay_usage(upp.template get<UPP_usage>(), decay_list, interval);
          }
       }
 
-      ocs::tom::set<USAGE_TIME_STAMP>(userprj, curr_time);
+      userprj.template set<USAGE_TIME_STAMP>(curr_time);
       if (seqno != (u_long) -1) {
-         ocs::tom::set<USAGE_SEQNO>(userprj, seqno);
+         userprj.template set<USAGE_SEQNO>(seqno);
       }
    }
 

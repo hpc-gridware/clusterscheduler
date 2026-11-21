@@ -825,8 +825,8 @@ static ocs::tom::ListPtr<ocs::tom::CF> sge_set_defined_defaults(const char *cell
    auto config = ocs::tom::ListPtr<ocs::tom::CF>::create("");
    while (conf_entries[i].name) {
       auto ep = config->emplace_back<CF_name>(conf_entries[i].name);
-      ocs::tom::set<CF_value>(ep, conf_entries[i].value);
-      ocs::tom::set<CF_local>(ep, conf_entries[i].local);
+      ep.set<CF_value>(conf_entries[i].value);
+      ep.set<CF_local>(conf_entries[i].local);
 
       i++;
    }
@@ -853,7 +853,7 @@ void
 conf_sort_entries(const ocs::tom::Element<ocs::tom::CONF> conf) {
    DENTER(BASIS_LAYER);
 
-   const ocs::tom::List<ocs::tom::CF> entries = ocs::tom::get<CONF_entries>(conf);
+   const ocs::tom::List<ocs::tom::CF> entries = conf.get<CONF_entries>();
    if (entries == nullptr) {
       DRETURN_VOID;
    }
@@ -872,7 +872,7 @@ conf_sort_entries(const ocs::tom::Element<ocs::tom::CONF> conf) {
       sorted->push_back(entries.extract(ep));
    }
 
-   ocs::tom::set<CONF_entries>(conf, std::move(sorted));
+   conf.set<CONF_entries>(std::move(sorted));
 
    DRETURN_VOID;
 }
@@ -896,7 +896,7 @@ chg_conf_val(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, c
    DENTER(BASIS_LAYER);
 
    if (const auto ep = lp_cfg.find_first<CF_name>(name)) {
-      const char *s = ocs::tom::get<CF_value>(ep);
+      const char *s = ep.get<CF_value>();
       if (cpp)
          *cpp = sge_strdup(*cpp, s);
       else
@@ -924,7 +924,7 @@ chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, 
    DENTER(BASIS_LAYER);
 
    const auto ep = lp_cfg.find_first<CF_name>(name);
-   const char *value = ep ? ocs::tom::get<CF_value>(ep) : nullptr;
+   const char *value = ep ? ep.get<CF_value>() : nullptr;
    if (value != nullptr) {
       try {
          auto names = ocs::tom::ListPtr<T>::template from_string<F>(value, " \t,", ocs::tom::NoneName::Empty);
@@ -1072,10 +1072,10 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
    ** handled later
    */
    if (global) {
-      for (const auto elem : ocs::tom::get<CONF_entries>(global)) {
-         const auto ep2 = merged->find_first_nocase<CF_name>(ocs::tom::get<CF_name>(elem));
+      for (const auto elem : global.get<CONF_entries>()) {
+         const auto ep2 = merged->find_first_nocase<CF_name>(elem.get<CF_name>());
          if (ep2) {
-            ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
+            ep2.set<CF_value>(elem.get<CF_value>());
          }
       }
    }
@@ -1083,10 +1083,10 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
 
    /* Merge in local configuration */
    if (local) {
-      for (const auto elem : ocs::tom::get<CONF_entries>(local)) {
-         const auto ep2 = merged->find_first_nocase<CF_name>(ocs::tom::get<CF_name>(elem));
-         if (ep2 && ocs::tom::get<CF_local>(ep2)) {
-            ocs::tom::set<CF_value>(ep2, ocs::tom::get<CF_value>(elem));
+      for (const auto elem : local.get<CONF_entries>()) {
+         const auto ep2 = merged->find_first_nocase<CF_name>(elem.get<CF_name>());
+         if (ep2 && ep2.get<CF_local>()) {
+            ep2.set<CF_value>(elem.get<CF_value>());
          }
       }
    }

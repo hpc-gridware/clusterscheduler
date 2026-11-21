@@ -80,7 +80,7 @@ str_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::ST> this_list, ds
       bool printed = false;
 
       for (const auto elem : this_list) {
-         sge_dstring_append(string, ocs::tom::get<ST_name>(elem));
+         sge_dstring_append(string, elem.get<ST_name>());
          if (elem.next() != nullptr) {
             sge_dstring_sprintf_append(string, "%c", delimiter);
          }
@@ -148,7 +148,7 @@ bool str_list_is_valid(const ocs::tom::ConstList<ocs::tom::ST> this_list,
    bool ret = true;
 
    for (const auto elem : this_list) {
-      if (ocs::tom::get<ST_name>(elem) == nullptr) {
+      if (elem.get<ST_name>() == nullptr) {
          answer_list_add(answer_list, MSG_STR_INVALIDSTR, STATUS_ENOKEY, ANSWER_QUALITY_ERROR);
          break;
       }
@@ -175,7 +175,7 @@ bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list,
 
    if (this_list) {
       for (const auto elem : *this_list) {
-         const char *string = ocs::tom::get<ST_name>(elem);
+         const char *string = elem.get<ST_name>();
 
          if (string != nullptr) {
             /*
@@ -183,7 +183,7 @@ bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list,
              * '*'     empties the list
              */
             if (strcasecmp(string, "$user") == 0) {
-               ocs::tom::set<ST_name>(elem, username);
+               elem.set<ST_name>(username);
             } else if (strcmp(string, "*") == 0) {
                this_list.reset();
                break;
@@ -215,7 +215,7 @@ grp_list_array2list(const int amount, const ocs_grp_elem_t *grp_array) {
       }
       auto new_grp = grp_list->emplace_back<ST_name>(grp_array[i].name);
 
-      ocs::tom::set<ST_id>(new_grp, grp_array[i].id);
+      new_grp.set<ST_id>(grp_array[i].id);
    }
    DRETURN(grp_list);
 }

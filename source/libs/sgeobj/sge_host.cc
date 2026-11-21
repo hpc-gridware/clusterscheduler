@@ -315,7 +315,7 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
    bool reaches = false;
 
    for (const auto href : cq_hostlist) {
-      const char *entry = ocs::tom::get<HR_name>(href);
+      const char *entry = href.get<HR_name>();
 
       if (entry == nullptr || strcmp(entry, EXEC_HOSTGROUP) == 0) {
          continue;
@@ -328,7 +328,7 @@ cqueue_reaches_host_without_exec_hosts(const ocs::tom::ConstElement<ocs::tom::CQ
       const bool found = href_list_find_all_references(*filtered, nullptr, hgrp_list, &resolved, nullptr);
 
       if (found) {
-         reaches = static_cast<bool>(ocs::tom::find_first<HR_name>(*resolved, hostname));
+         reaches = static_cast<bool>(resolved->find_first<HR_name>(ocs::tom::Host(hostname)));
       }
    }
 
@@ -358,15 +358,15 @@ bool host_is_referenced(const ocs::tom::ConstElement<ocs::tom::EH> host, ocs::to
    bool ret = false;
 
    if (host) {
-      const char *hostname = ocs::tom::get<EH_name>(host).c_str();
+      const char *hostname = host.get<EH_name>().c_str();
 
       /* look at all the queue instances and figure out, if one still references
          the host we are looking for */
       for (const auto cqueue : queue_list) {
-         const auto queue = ocs::tom::find_first_in<CQ_qinstances, QU_qhostname>(cqueue, hostname);
+         const auto queue = cqueue.find_first_in<CQ_qinstances, QU_qhostname>(hostname);
 
          if (queue) {
-            const char *queuename = ocs::tom::get<CQ_name>(cqueue);
+            const char *queuename = cqueue.get<CQ_name>();
 
             /*
              * CS-2438: a queue instance that exists only because the queue names
@@ -388,7 +388,7 @@ bool host_is_referenced(const ocs::tom::ConstElement<ocs::tom::EH> host, ocs::to
       /* if we have not found a reference yet, we keep looking in the host groups */
       if (!ret) {
          for (const auto hgrp_elem : hgrp_list) {
-            const char *hgrp_name = ocs::tom::get<HGRP_name>(hgrp_elem);
+            const char *hgrp_name = hgrp_elem.get<HGRP_name>();
 
             /*
              * CS-2438: the reserved host groups do not count as a reference.
@@ -444,7 +444,7 @@ bool host_is_referenced(const ocs::tom::ConstElement<ocs::tom::EH> host, ocs::to
              */
             ocs::tom::ListPtr<ocs::tom::HR> host_list;
             hgroup_find_all_references(hgrp_elem, nullptr, hgrp_list, &host_list, nullptr, nullptr, false);
-            if (ocs::tom::find_first<HR_name>(*host_list, hostname)) {
+            if (host_list->find_first<HR_name>(ocs::tom::Host(hostname))) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_HOSTREFINHGRP_SS, hostname, hgrp_name);
                answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
 
@@ -572,10 +572,10 @@ bool host_is_centry_referenced(const ocs::tom::ConstElement<ocs::tom::EH> this_e
    bool ret = false;
 
    if (this_elem) {
-      const char *name = ocs::tom::get<CE_name>(centry);
-      const auto ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
-      const auto load_list = ocs::tom::get<EH_load_list>(this_elem);
-      const auto rep_vars = ocs::tom::get<EH_report_variables>(this_elem);
+      const char *name = centry.get<CE_name>();
+      const auto ce_values = this_elem.get<EH_consumable_config_list>();
+      const auto load_list = this_elem.get<EH_load_list>();
+      const auto rep_vars = this_elem.get<EH_report_variables>();
 
       /* 
        * centry may be referenced in 
@@ -583,8 +583,8 @@ bool host_is_centry_referenced(const ocs::tom::ConstElement<ocs::tom::EH> this_e
        *    - load_list
        *    - report_variables
        */
-      if (ocs::tom::find_first<CE_name>(ce_values, name) || ocs::tom::find_first<HL_name>(load_list, name) ||
-          ocs::tom::find_first<STU_name>(rep_vars, name)) {
+      if (ce_values.find_first<CE_name>(name) || load_list.find_first<HL_name>(name) ||
+          rep_vars.find_first<STU_name>(name)) {
          ret = true;
       }
    }
@@ -609,16 +609,16 @@ bool host_is_centry_a_complex_value(const ocs::tom::ConstElement<ocs::tom::EH> t
    bool ret = false;
 
    if (this_elem) {
-      const char *name = ocs::tom::get<CE_name>(centry);
-      const auto ce_values = ocs::tom::get<EH_consumable_config_list>(this_elem);
-      const auto load_list = ocs::tom::get<EH_load_list>(this_elem);
+      const char *name = centry.get<CE_name>();
+      const auto ce_values = this_elem.get<EH_consumable_config_list>();
+      const auto load_list = this_elem.get<EH_load_list>();
 
       /* 
        * centry may be referenced in 
        *    - complex_values
        *    - load_list
        */
-      if (ocs::tom::find_first<CE_name>(ce_values, name) || ocs::tom::find_first<HL_name>(load_list, name)) {
+      if (ce_values.find_first<CE_name>(name) || load_list.find_first<HL_name>(name)) {
          ret = true;
       }
    }
@@ -645,13 +645,13 @@ bool host_list_merge(const ocs::tom::List<ocs::tom::EH> this_list) {
    bool ret = true;
 
    if (this_list) {
-      const auto global_host = ocs::tom::find_first_rw<EH_name>(this_list, SGE_GLOBAL_NAME);
+      const auto global_host = this_list.find_first<EH_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
 
       /* we merge global settings into host settings */
       if (global_host) {
          /* for the global host, merged_report_variables == report_variables */
-         ocs::tom::set<EH_merged_report_variables>(global_host,
-                                                   ocs::tom::get<EH_report_variables>(global_host).clone(""));
+         global_host.set<EH_merged_report_variables>(
+                                                   global_host.get<EH_report_variables>().clone(""));
 
          /* do merge for all hosts except global */
          for (const auto host : this_list) {
@@ -691,22 +691,22 @@ bool host_merge(const ocs::tom::Element<ocs::tom::EH> host, const ocs::tom::Cons
    bool ret = true;
 
    if (host && global_host) {
-      const auto local_list = ocs::tom::get<EH_report_variables>(host);
+      const auto local_list = host.get<EH_report_variables>();
 
       /* if we have a local list: use this one */
       if (!local_list.empty()) {
-         ocs::tom::set<EH_merged_report_variables>(host, local_list.clone(""));
+         host.set<EH_merged_report_variables>(local_list.clone(""));
       } else {
 
-         const auto global_list = ocs::tom::get<EH_report_variables>(global_host);
+         const auto global_list = global_host.get<EH_report_variables>();
          /* if we have no local list, but a global one, use this one */
          if (!global_list.empty()) {
-            ocs::tom::set<EH_merged_report_variables>(host, global_list.clone(""));
+            host.set<EH_merged_report_variables>(global_list.clone(""));
          } else {
             /* if no report variables are configured in local and global object,
              * delete the merged list.
              */
-            ocs::tom::set<EH_merged_report_variables>(host, nullptr);
+            host.set<EH_merged_report_variables>(nullptr);
          }
       }
    }
@@ -731,11 +731,11 @@ int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_
                      const ocs::tom::ConstElement<ocs::tom::RESL> resl, const int slots, bool *just_check) {
    int mods = 0;
 
-   const auto resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   const auto resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
+   const auto resource_utilization = host.get<EH_resource_utilization>();
+   const auto resource = resource_utilization.find_first<RUE_name>(ce_name);
 
-   const char *id = ocs::tom::get<RESL_value>(resl);
-   const uint32_t amount = ocs::tom::get<RESL_amount>(resl);
+   const char *id = resl.get<RESL_value>();
+   const uint32_t amount = resl.get<RESL_amount>();
 
    if (just_check != nullptr) {
       // only check if there is enough resources free, no booking - the host is not modified: an id
@@ -744,14 +744,14 @@ int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_
       if (!resource) {
          return mods;
       }
-      const auto utilized_id = ocs::tom::find_first_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
-      const uint32_t utilized_amount = utilized_id ? ocs::tom::get<RESL_amount>(utilized_id) : 0;
-      const auto complex_value = ocs::tom::find_first_in<EH_consumable_config_list, CE_name>(host, ce_name);
-      const auto configured_id = ocs::tom::find_first_in<CE_resource_map_list, RESL_value>(complex_value, id);
+      const auto utilized_id = resource.find_first_in<RUE_utilized_now_resource_map_list, RESL_value>(id);
+      const uint32_t utilized_amount = utilized_id ? utilized_id.get<RESL_amount>() : 0;
+      const auto complex_value = host.find_first_in<EH_consumable_config_list, CE_name>(ce_name);
+      const auto configured_id = complex_value.find_first_in<CE_resource_map_list, RESL_value>(id);
       // an id the host does not configure is not judged here, as before; for a configured one the amounts
       // are compared without the unsigned subtraction, which never became negative (CS-3124)
       if (configured_id &&
-          static_cast<uint64_t>(utilized_amount) + amount > ocs::tom::get<RESL_amount>(configured_id)) {
+          static_cast<uint64_t>(utilized_amount) + amount > configured_id.get<RESL_amount>()) {
          // not enough available of this id
          *just_check = false;
       }
@@ -759,17 +759,17 @@ int host_debit_rsmap(const ocs::tom::Element<ocs::tom::EH> host, const char *ce_
       return mods;
    }
 
-   auto utilized_id = ocs::tom::find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
+   auto utilized_id = resource.find_first_in_rw<RUE_utilized_now_resource_map_list, RESL_value>(id);
    if (!utilized_id) {
-      utilized_id = ocs::tom::emplace_back_in<RUE_utilized_now_resource_map_list, RESL_value>(resource, id);
+      utilized_id = resource.emplace_back_in<RUE_utilized_now_resource_map_list, RESL_value>(id);
    }
    if (utilized_id) {
       if (slots < 0) {
          // undebit
-         ocs::tom::add<RESL_amount>(utilized_id, -amount);
+         utilized_id.add<RESL_amount>(-amount);
       } else {
          // debit
-         ocs::tom::add<RESL_amount>(utilized_id, amount);
+         utilized_id.add<RESL_amount>(amount);
       }
       mods++;
    }
@@ -796,18 +796,18 @@ int host_debit_binding(const ocs::tom::Element<ocs::tom::EH> host, const char *c
    DENTER(TOP_LAYER);
 
    // we book cores/threads in the resource utilization of slots
-   const auto resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
-   auto resource = ocs::tom::find_first_rw<RUE_name>(resource_utilization, ce_name);
+   const auto resource_utilization = host.get<EH_resource_utilization>();
+   auto resource = resource_utilization.find_first<RUE_name>(ce_name);
 
    // add resource utilization entry if it does not exist yet
    if (!resource) {
-      resource = ocs::tom::emplace_back_in<EH_resource_utilization, RUE_name>(host, ce_name);
-      ocs::tom::set<RUE_utilized_now_binding_inuse>(resource, nullptr);
+      resource = host.emplace_back_in<EH_resource_utilization, RUE_name>(ce_name);
+      resource.set<RUE_utilized_now_binding_inuse>(nullptr);
    }
 
    // what is currently booked and what should be booked additionally
-   const char *binding_to_use = ocs::tom::get<ST_name>(resl);
-   const char *binding_in_use = ocs::tom::get<RUE_utilized_now_binding_inuse>(resource);
+   const char *binding_to_use = resl.get<ST_name>();
+   const char *binding_in_use = resource.get<RUE_utilized_now_binding_inuse>();
 
 #if 1
    const char *action = slots > 0 ? "add" : "del";
@@ -837,7 +837,7 @@ int host_debit_binding(const ocs::tom::Element<ocs::tom::EH> host, const char *c
 
    // add/remove all cores/threads that are set in binding_to_use to binding_in_use
    ocs::TopologyString topo_now;
-   const char *now_str = ocs::tom::get<RUE_utilized_now_binding_inuse>(resource);
+   const char *now_str = resource.get<RUE_utilized_now_binding_inuse>();
    if (now_str) {
       topo_now = ocs::TopologyString(now_str);
       ocs::TopologyString topo_to_use(binding_to_use);
@@ -898,19 +898,19 @@ std::string host_get_topology_in_use(const ocs::tom::ConstElement<ocs::tom::EH> 
    }
 
    // get the resource utilization of the host, if there is none, return empty string
-   const auto resource_utilization = ocs::tom::get<EH_resource_utilization>(host);
+   const auto resource_utilization = host.get<EH_resource_utilization>();
    if (!resource_utilization) {
       DRETURN({});
    }
 
    // get the slots resource utilization of the host, if there is none, return empty string
-   const auto slots_utilization = ocs::tom::find_first<RUE_name>(resource_utilization, SGE_ATTR_SLOTS);
+   const auto slots_utilization = resource_utilization.find_first<RUE_name>(SGE_ATTR_SLOTS);
    if (!slots_utilization) {
       DRETURN({});
    }
 
    // get the currently in use binding for slots, if there is none, return empty string
-   const char *binding_inuse = ocs::tom::get<RUE_utilized_now_binding_inuse>(slots_utilization);
+   const char *binding_inuse = slots_utilization.get<RUE_utilized_now_binding_inuse>();
    if (binding_inuse == nullptr) {
       DRETURN({});
    }

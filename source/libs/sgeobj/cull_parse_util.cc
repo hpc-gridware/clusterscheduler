@@ -684,9 +684,9 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
 
    auto jrs = job_get_request_setRW(job, scope);
    if (jrs != nullptr) {
-      hard_list = ocs::tom::get<Hard>(jrs).clone().release();
+      hard_list = jrs.get<Hard>().clone().release();
       if constexpr (has_soft) {
-         soft_list = ocs::tom::get<Soft>(jrs).clone().release();
+         soft_list = jrs.get<Soft>().clone().release();
       }
    }
 
@@ -696,13 +696,13 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
    while ((ep = next_ep) != nullptr) {
       next_ep = ocs::tom::find_next_rw<SPA_switch_val>(cmdline, option, &iterator);
 
-      if (int(ocs::tom::get<SPA_argval_lLongT>(ep)) == int(scope)) {
+      if (int(ep.get<SPA_argval_lLongT>()) == int(scope)) {
          // the argument list is of the type of the request field, so it stays untyped
          lList *lp = nullptr;
          ocs::tom::exchange<SPA_argval_lListT>(ep, &lp);
          if (lp != nullptr) {
             // merged without ever holding a key twice (N-H-18)
-            if (!has_soft || ocs::tom::get<SPA_argval_lIntT>(ep) < 2) {
+            if (!has_soft || ep.get<SPA_argval_lIntT>() < 2) {
                ocs_object_list_add_unique(&hard_list, &lp);
             } else {
                ocs_object_list_add_unique(&soft_list, &lp);
@@ -719,9 +719,9 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
       if (jrs == nullptr) {
          jrs = job_get_or_create_request_setRW(job, scope);
       }
-      ocs::tom::set<Hard>(jrs, ocs::tom::ListPtr<T>::from_typed(hard_list));
+      jrs.set<Hard>(ocs::tom::ListPtr<T>::from_typed(hard_list));
       if constexpr (has_soft) {
-         ocs::tom::set<Soft>(jrs, ocs::tom::ListPtr<T>::from_typed(soft_list));
+         jrs.set<Soft>(ocs::tom::ListPtr<T>::from_typed(soft_list));
       }
    }
 
@@ -794,9 +794,9 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char 
          }
 
          const auto ep = list->push_back(ocs::tom::ElementPtr<ocs::tom::PN>::create());
-         ocs::tom::set<PN_path>(ep, path);
+         ep.set<PN_path>(path);
          if (cell) {
-            ocs::tom::set<PN_host>(ep, cell);
+            ep.set<PN_host>(ocs::tom::Host(cell));
             sge_free(&cell);
          }
       }

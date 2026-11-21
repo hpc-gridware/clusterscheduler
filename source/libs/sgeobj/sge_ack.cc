@@ -69,10 +69,10 @@ int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, cons
    int ret = PACK_SUCCESS;
    auto ack = ocs::tom::ElementPtr<ocs::tom::ACK>::create();
 
-   ocs::tom::set<ACK_type>(ack, type);
-   ocs::tom::set<ACK_id>(ack, id);
-   ocs::tom::set<ACK_id2>(ack, id2);
-   ocs::tom::set<ACK_str>(ack, str);
+   ack->set<ACK_type>(type);
+   ack->set<ACK_id>(id);
+   ack->set<ACK_id2>(id2);
+   ack->set<ACK_str>(str);
 
    try {
       ack->pack(*pb);

@@ -92,8 +92,8 @@ userset_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
 
    if (name != nullptr) {
       ret = ocs::tom::ElementPtr<ocs::tom::US>::create();
-      ocs::tom::set<US_name>(ret, name);
-      ocs::tom::set<US_type>(ret, US_ACL | US_DEPT);
+      ret->set<US_name>(name);
+      ret->set<US_type>(US_ACL | US_DEPT);
    } else {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_INAVLID_PARAMETER_IN_S, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
@@ -120,8 +120,8 @@ int userset_list_validate_acl_list(const ocs::tom::ConstList<ocs::tom::US> acl_l
    DENTER(TOP_LAYER);
 
    for (const auto usp : acl_list) {
-      const char *name = ocs::tom::get<US_name>(usp);
-      if (!ocs::tom::find_first<US_name>(master_userset_list, name)) {
+      const char *name = usp.get<US_name>();
+      if (!master_userset_list.find_first<US_name>(name)) {
          ERROR(MSG_CQUEUE_UNKNOWNUSERSET_S, name ? name : "<nullptr>");
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EUNKNOWN);
@@ -153,10 +153,10 @@ int userset_list_validate_access(const ocs::tom::ConstList<ocs::tom::ARA> acl_li
    DENTER(TOP_LAYER);
 
    for (const auto usp : acl_list) {
-      const char *user = ocs::tom::get<ARA_name>(usp);
+      const char *user = usp.get<ARA_name>();
       if (ocs::is_hgroup_name(user)){
          user++;  /* jump ower the @ sign */
-         if (!ocs::tom::find_first<US_name>(master_userset_list, user)) {
+         if (!master_userset_list.find_first<US_name>(user)) {
             ERROR(MSG_CQUEUE_UNKNOWNUSERSET_S, user ? user : "<nullptr>");
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             DRETURN(STATUS_EUNKNOWN);
@@ -182,8 +182,8 @@ int userset_validate_entries(const ocs::tom::ConstElement<ocs::tom::US> userset,
                              ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
-   for (const auto ep : ocs::tom::get<US_entries>(userset)) {
-      if (!ocs::tom::get<UE_name>(ep)) {
+   for (const auto ep : userset.get<US_entries>()) {
+      if (!ep.get<UE_name>()) {
          ERROR(SFNMAX, MSG_US_INVALIDUSERNAME);
          answer_list_add(alpp, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_ESEMANTIC);
@@ -276,7 +276,7 @@ const char *userset_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::U
       bool printed = false;
 
       for (const auto elem : this_list) {
-         sge_dstring_append(string, ocs::tom::get<US_name>(elem));
+         sge_dstring_append(string, elem.get<US_name>());
          if (elem.next()) {
             sge_dstring_append(string, " ");
          }
@@ -308,11 +308,11 @@ static bool find_name_as_group(const char *group_name_without_prefix,
 
    dstring group_entry = DSTRING_INIT;
    const char *group = sge_dstring_sprintf(&group_entry, "@%s", group_name_without_prefix);
-   if (ocs::tom::find_first<UE_name>(user_group_list, group)) {
+   if (user_group_list.find_first<UE_name>(group)) {
       found = true;
    } else if (ocs::is_pattern(group_name_without_prefix)) {
       for (const auto acl_entry : user_group_list) {
-         const char *entry_name = ocs::tom::get<UE_name>(acl_entry);
+         const char *entry_name = acl_entry.get<UE_name>();
          if (entry_name != nullptr && fnmatch(group, entry_name, 0) == 0) {
             found = true;
             break;
@@ -333,11 +333,11 @@ static bool find_name_as_group(const char *group_name_without_prefix,
 static bool find_name_as_user(const char *user_name, const ocs::tom::ConstList<ocs::tom::UE> user_group_list) {
    DENTER(TOP_LAYER);
    bool found = false;
-   if (ocs::tom::find_first<UE_name>(user_group_list, user_name)) {
+   if (user_group_list.find_first<UE_name>(user_name)) {
       found = true;
    } else if (ocs::is_pattern(user_name)) {
       for (const auto acl_entry : user_group_list) {
-         const char *entry_name = ocs::tom::get<UE_name>(acl_entry);
+         const char *entry_name = acl_entry.get<UE_name>();
          if (entry_name != nullptr && fnmatch(user_name, entry_name, 0) == 0) {
             found = true;
             break;
@@ -366,7 +366,7 @@ int sge_contained_in_access_list(const char *user, const char *group, const lLis
                                  const ocs::tom::ConstElement<ocs::tom::US> acl) {
    DENTER(TOP_LAYER);
    bool found = false;
-   const auto user_list = ocs::tom::get<US_entries>(acl);
+   const auto user_list = acl.get<US_entries>();
 
    // user name
    if (user != nullptr) {
@@ -381,7 +381,7 @@ int sge_contained_in_access_list(const char *user, const char *group, const lLis
    // supplementary groups
    if (!found && grp_list != nullptr && mconf_get_enable_sup_grp_eval()) {
       for (const auto grp_elem : ocs::tom::ConstList<ocs::tom::ST>(grp_list)) {
-         found = find_name_as_group(ocs::tom::get<ST_name>(grp_elem), user_list);
+         found = find_name_as_group(grp_elem.get<ST_name>(), user_list);
          if (found) {
             break;
          }
@@ -409,14 +409,14 @@ int sge_contained_in_access_list_(const char *user, const char *group, const lLi
    DENTER(TOP_LAYER);
 
    for (const auto acl_search : acl) {
-      const auto acl_found = ocs::tom::find_first<US_name>(acl_list, ocs::tom::get<US_name>(acl_search));
+      const auto acl_found = acl_list.find_first<US_name>(acl_search.get<US_name>());
       if (acl_found) {
          /* ok - there is such an access list */
          if (sge_contained_in_access_list(user, group, grp_list, acl_found)) {
             DRETURN(1);
          }
       } else {
-         DPRINTF("cannot find userset list entry \"%s\"\n", ocs::tom::get<US_name>(acl_search));
+         DPRINTF("cannot find userset list entry \"%s\"\n", acl_search.get<US_name>());
       }
    }
    DRETURN(0);
@@ -435,7 +435,7 @@ int sge_contained_in_access_list_(const char *user, const char *group, const lLi
  */
 int sge_has_access(const char *user, const char *group, const lList *grp_list,
                    const ocs::tom::ConstElement<ocs::tom::QU> q, const ocs::tom::ConstList<ocs::tom::US> acl_list) {
-   return sge_has_access_(user, group, grp_list, ocs::tom::get<QU_acl>(q), ocs::tom::get<QU_xacl>(q), acl_list);
+   return sge_has_access_(user, group, grp_list, q.get<QU_acl>(), q.get<QU_xacl>(), acl_list);
 }
 
 

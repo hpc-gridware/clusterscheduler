@@ -99,7 +99,7 @@
 ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task,
                                                         const char *pe_task_id) {
    if (ja_task) {
-      const auto pe_tasks = ocs::tom::get<JAT_task_list>(ja_task);
+      const auto pe_tasks = ja_task.get<JAT_task_list>();
 
       if (pe_tasks) {
          return ocs::tom::find_first_rw<PET_id>(pe_tasks, pe_task_id);
@@ -124,7 +124,7 @@ void ja_task_list_print_to_string(const ocs::tom::ConstList<ocs::tom::JAT> ja_ta
    ocs::tom::ListPtr<ocs::tom::RN> range_list;
 
    for (const auto ja_task : ja_task_list) {
-      const uint32_t tid = ocs::tom::get<JAT_task_number>(ja_task);
+      const uint32_t tid = ja_task.get<JAT_task_number>();
 
       range_list_insert_id(range_list, nullptr, tid);
    }
@@ -157,9 +157,9 @@ ocs::tom::ListPtr<ocs::tom::JAT> ja_task_list_split_group(ocs::tom::ListPtr<ocs:
       const auto first_task = list.front();
 
       if (first_task) {
-         const uint32_t status = ocs::tom::get<JAT_status>(first_task);
-         const uint32_t state = ocs::tom::get<JAT_state>(first_task);
-         const uint32_t hold = ocs::tom::get<JAT_hold>(first_task);
+         const uint32_t status = first_task.get<JAT_status>();
+         const uint32_t state = first_task.get<JAT_state>();
+         const uint32_t hold = first_task.get<JAT_hold>();
 
          // the tasks that differ stay, the group of equal ones is taken out
          ret_list = list.split_off(ocs::tom::field<JAT_status>() != status ||
@@ -197,13 +197,13 @@ ocs::tom::ListPtr<ocs::tom::JAT> ja_task_list_split_group(ocs::tom::ListPtr<ocs:
 bool ja_task_add_finished_pe_task(const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *pe_task_id) {
    DENTER(TOP_LAYER);
 
-   if (ocs::tom::find_first_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id)) {
+   if (ja_task.find_first_in<JAT_finished_task_list, FPET_id>(pe_task_id)) {
       INFO("already handled exit of pe task " SFQ " in ja_task " sge_u32"\n", pe_task_id,
-           ocs::tom::get<JAT_task_number>(ja_task));
+           ja_task.get<JAT_task_number>());
       DRETURN(false);
    }
 
-   ocs::tom::emplace_back_in<JAT_finished_task_list, FPET_id>(ja_task, pe_task_id);
+   ja_task.emplace_back_in<JAT_finished_task_list, FPET_id>(pe_task_id);
 
    DRETURN(true);
 }
@@ -228,16 +228,16 @@ bool ja_task_clear_finished_pe_tasks(const ocs::tom::Element<ocs::tom::JAT> ja_t
    DENTER(TOP_LAYER);
 
    /* get list of finished pe tasks */
-   const auto pe_task_list = ocs::tom::get<JAT_finished_task_list>(ja_task);
+   const auto pe_task_list = ja_task.get<JAT_finished_task_list>();
    if (!pe_task_list) {
-      DPRINTF("no finished pe task list to clear in ja_task " sge_u32 "\n", ocs::tom::get<JAT_task_number>(ja_task));
+      DPRINTF("no finished pe task list to clear in ja_task " sge_u32 "\n", ja_task.get<JAT_task_number>());
       DRETURN(false);
    }
 
    /* if we have such a list, delete it (lSetList will free the list) */
-   ocs::tom::set<JAT_finished_task_list>(ja_task, nullptr);
+   ja_task.set<JAT_finished_task_list>(nullptr);
 
-   DPRINTF("cleared finished pe task list in ja_task " sge_u32 "\n", ocs::tom::get<JAT_task_number>(ja_task));
+   DPRINTF("cleared finished pe task list in ja_task " sge_u32 "\n", ja_task.get<JAT_task_number>());
 
    DRETURN(true);
 }
@@ -338,7 +338,7 @@ sge_parse_jobtasks(ocs::tom::ListPtr<ocs::tom::ID> &id_list, const char *str_job
 
          if (idp) {
             range_list_sort_uniq_compress(*task_id_range_list, alpp, true);
-            ocs::tom::set<ID_ja_structure>(idp, std::move(task_id_range_list));
+            idp.set<ID_ja_structure>(std::move(task_id_range_list));
          }
       }
    }
@@ -479,7 +479,7 @@ bool ja_task_verify_execd_job(const ocs::tom::ConstElement<ocs::tom::JAT> ja_tas
    bool ret = ja_task_verify(ja_task, answer_list);
 
    if (ret) {
-      ret = ja_task_verify_granted_destin_identifier_list(ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task),
+      ret = ja_task_verify_granted_destin_identifier_list(ja_task.get<JAT_granted_destin_identifier_list>(),
                                                           answer_list);
    }
 
@@ -553,11 +553,11 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
    }
 
    if (ret) {
-      ret = qinstance_verify_full_name(answer_list, ocs::tom::get<JG_qname>(ep));
+      ret = qinstance_verify_full_name(answer_list, ep.get<JG_qname>());
    }
 
    if (ret) {
-      ret = verify_host_name(answer_list, ocs::tom::get<JG_qhostname>(ep));
+      ret = verify_host_name(answer_list, ep.get<JG_qhostname>());
    }
 
    if (ret) {
@@ -566,7 +566,7 @@ bool ja_task_verify_granted_destin_identifier(const ocs::tom::ConstElement<ocs::
 
    if (ret) {
       // JG_queue names no sub-type, it holds a QU object
-      const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(ep));
+      const ocs::tom::ConstElement<ocs::tom::QU> queue(ep.get<JG_queue>());
 
       if (queue) {
          ret = qinstance_verify(queue, answer_list);
@@ -595,11 +595,11 @@ bool ja_task_is_tightly_integrated(const ocs::tom::ConstElement<ocs::tom::JAT> j
    bool ret = false;
 
    if (ja_task) {
-      const char *pe_name = ocs::tom::get<JAT_granted_pe>(ja_task);
+      const char *pe_name = ja_task.get<JAT_granted_pe>();
       if (pe_name != nullptr) {
          const auto pe = ocs::tom::ConstElement<ocs::tom::PE>::from_typed(pe_list_locate(master_pe_list, pe_name));
          if (pe) {
-            if (ocs::tom::get<PE_control_slaves>(pe)) {
+            if (pe.get<PE_control_slaves>()) {
                ret = true;
             }
          }
@@ -623,8 +623,8 @@ static int
 ja_task_debit_host_rsmap(const ocs::tom::ConstElement<ocs::tom::GRU> granted_resource,
                          const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
-   const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
-   for (const auto resl : ocs::tom::get<GRU_resource_map_list>(granted_resource)) {
+   const char *ce_name = granted_resource.get<GRU_name>();
+   for (const auto resl : granted_resource.get<GRU_resource_map_list>()) {
       mods += host_debit_rsmap(host, ce_name, resl, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -647,7 +647,7 @@ ja_task_debit_host_rsmap(const ocs::tom::ConstElement<ocs::tom::GRU> granted_res
 int ja_task_debit_host_rsmaps(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
                               const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
-   const char *host_name = ocs::tom::get<EH_name>(host);
+   const char *host_name = host.get<EH_name>();
    const void *iterator = nullptr;
 
    for (auto granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
@@ -655,7 +655,7 @@ int ja_task_debit_host_rsmaps(const ocs::tom::ConstList<ocs::tom::GRU> granted_r
         granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
       // only debit RSMAPs here
-      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) !=
+      if (static_cast<ocs::GrantedResources::Type>(granted_resource.get<GRU_type>()) !=
           ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE) {
          continue;
       }
@@ -683,8 +683,8 @@ ja_task_debit_host_binding(const ocs::tom::ConstElement<ocs::tom::GRU> granted_r
                            const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    DENTER(TOP_LAYER);
    int mods = 0;
-   const char *ce_name = ocs::tom::get<GRU_name>(granted_resource);
-   for (const auto binding_st_elem : ocs::tom::get<GRU_binding_inuse>(granted_resource)) {
+   const char *ce_name = granted_resource.get<GRU_name>();
+   for (const auto binding_st_elem : granted_resource.get<GRU_binding_inuse>()) {
       mods += host_debit_binding(host, ce_name, binding_st_elem, slots, just_check);
       if (just_check != nullptr && !*just_check) {
          break;
@@ -708,14 +708,14 @@ ja_task_debit_host_binding(const ocs::tom::ConstElement<ocs::tom::GRU> granted_r
 int ja_task_debit_host_bindings(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
                                 const ocs::tom::Element<ocs::tom::EH> host, const int slots, bool *just_check) {
    int mods = 0;
-   const char *host_name = ocs::tom::get<EH_name>(host);
+   const char *host_name = host.get<EH_name>();
    const void *iterator = nullptr;
    for (auto granted_resource = ocs::tom::find_first<GRU_host>(granted_resources_list, host_name, &iterator);
         granted_resource;
         granted_resource = ocs::tom::find_next<GRU_host>(granted_resources_list, host_name, &iterator)) {
 
       // only debit binding information here
-      if (static_cast<ocs::GrantedResources::Type>(ocs::tom::get<GRU_type>(granted_resource)) !=
+      if (static_cast<ocs::GrantedResources::Type>(granted_resource.get<GRU_type>()) !=
           ocs::GrantedResources::Type::GRU_BINDING_TYPE) {
          continue;
       }
@@ -748,8 +748,8 @@ int ja_task_debit_host_bindings(const ocs::tom::ConstList<ocs::tom::GRU> granted
  */
 bool ja_task_is_running(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
    bool is_running = false;
-   if (ocs::tom::get<JAT_status>(ja_task) & JTRANSFERING ||
-       ocs::tom::get<JAT_status>(ja_task) & JRUNNING) {
+   if (ja_task.get<JAT_status>() & JTRANSFERING ||
+       ja_task.get<JAT_status>() & JRUNNING) {
       is_running = true;
    }
    return is_running;
@@ -766,7 +766,7 @@ bool ja_task_is_running(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
  * @param deleted_by the name to record
  */
 void ja_task_set_deleted_by(const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *deleted_by) {
-   ocs::tom::set<JAT_deleted_by>(ja_task, deleted_by);
+   ja_task.set<JAT_deleted_by>(deleted_by);
 }
 
 
@@ -778,6 +778,6 @@ void ja_task_set_deleted_by(const ocs::tom::Element<ocs::tom::JAT> ja_task, cons
  *         this mechanism
  */
 const char *ja_task_get_deleted_by(const ocs::tom::ConstElement<ocs::tom::JAT> ja_task) {
-   return ocs::tom::get<JAT_deleted_by>(ja_task);
+   return ja_task.get<JAT_deleted_by>();
 }
 

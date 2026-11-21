@@ -113,16 +113,16 @@ bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::to
    const bool ret = hgroup_find_all_references(hgroup, answer_list, master_hgroup_list, &used_hosts, nullptr);
 
    if (ret) {
-      ocs::tom::set<HGRP_cached_hosts>(hgroup, std::move(used_hosts));   // takes ownership
+      hgroup.set<HGRP_cached_hosts>(std::move(used_hosts));   // takes ownership
       if (++next_version == 0) {
          next_version = 1;                               // 0 means "not computed"
       }
-      ocs::tom::set<HGRP_cache_version>(hgroup, next_version);
+      hgroup.set<HGRP_cache_version>(next_version);
    } else {
       // Leave no half-resolved cache behind: an invalid cache must look
       // uncomputed, never plausible-but-wrong. used_hosts is freed on return.
-      ocs::tom::set<HGRP_cached_hosts>(hgroup, nullptr);
-      ocs::tom::set<HGRP_cache_version>(hgroup, 0);
+      hgroup.set<HGRP_cached_hosts>(nullptr);
+      hgroup.set<HGRP_cache_version>(0);
    }
 
    DRETURN(ret);
@@ -182,7 +182,7 @@ bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgrou
  *       it must take both fields or neither.
  */
 bool hgroup_has_host_cache(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
-   return hgroup && ocs::tom::get<HGRP_cache_version>(hgroup) != 0;
+   return hgroup && hgroup.get<HGRP_cache_version>() != 0;
 }
 
 
@@ -215,7 +215,7 @@ bool hgroup_cache_contains_host(const ocs::tom::ConstElement<ocs::tom::HGRP> hgr
    if (!hgroup || hostname == nullptr) {
       return false;
    }
-   return ocs::tom::get<HGRP_cached_hosts>(hgroup).find_first<HR_name>(ocs::tom::Host(hostname)) != nullptr;
+   return hgroup.get<HGRP_cached_hosts>().find_first<HR_name>(ocs::tom::Host(hostname)) != nullptr;
 }
 
 /**
@@ -295,22 +295,22 @@ hgroup_why_named(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char
       return false;
    }
 
-   const auto member_list = ocs::tom::get<HGRP_host_list>(hgroup);
+   const auto member_list = hgroup.get<HGRP_host_list>();
 
    // the names of this group before those of the groups it references, so that
    // the nearest explanation is the one reported
    for (const auto member : member_list) {
-      const char *name = ocs::tom::get<HR_name>(member);
+      const char *name = member.get<HR_name>();
 
       if (ocs::classify_member(name) == ocs::MemberClass::LITERAL_HOST &&
           sge_hostcmp(name, hostname) == 0) {
-         sge_dstring_copy_string(group, ocs::tom::get<HGRP_name>(hgroup));
+         sge_dstring_copy_string(group, hgroup.get<HGRP_name>());
          return true;
       }
    }
 
    for (const auto member : member_list) {
-      const char *name = ocs::tom::get<HR_name>(member);
+      const char *name = member.get<HR_name>();
 
       if (ocs::classify_member(name) == ocs::MemberClass::GROUP_REFERENCE &&
           hgroup_why_named(hgroup_list_locate(master_hgroup_list, name), hostname,
@@ -350,7 +350,7 @@ hgroup_why(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *host
 
    if (hgroup_why_named(hgroup, hostname, master_hgroup_list, 0, group)) {
       const char *found_in = sge_dstring_get_string(group);
-      const char *asked = ocs::tom::get<HGRP_name>(hgroup);
+      const char *asked = hgroup.get<HGRP_name>();
 
       // the group is reported only when it is not the one that was asked
       if (found_in != nullptr && asked != nullptr && strcmp(found_in, asked) == 0) {
@@ -368,7 +368,7 @@ hgroup_why(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *host
 
    if (route == ocs::Matcher::Route::MATCHER) {
       const char *found_in = sge_dstring_get_string(group);
-      const char *asked = ocs::tom::get<HGRP_name>(hgroup);
+      const char *asked = hgroup.get<HGRP_name>();
 
       if (found_in != nullptr && asked != nullptr && strcmp(found_in, asked) == 0) {
          sge_dstring_clear(group);
@@ -400,8 +400,8 @@ hgroup_split_members(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) {
    ocs::tom::ListPtr<ocs::tom::HR> matchers;
 
    if (hgroup) {
-      for (const auto member : ocs::tom::get<HGRP_host_list>(hgroup)) {
-         const char *name = ocs::tom::get<HR_name>(member);
+      for (const auto member : hgroup.get<HGRP_host_list>()) {
+         const char *name = member.get<HR_name>();
 
          switch (ocs::classify_member(name)) {
             case ocs::MemberClass::LITERAL_HOST:
@@ -628,8 +628,8 @@ hgroup_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
       if (!is_name_validate || hgroup_check_name(answer_list, name)) {
          ret = ocs::tom::ElementPtr<ocs::tom::HGRP>::create();
          if (ret) {
-            ocs::tom::set<HGRP_name>(ret, name);
-            ocs::tom::set<HGRP_host_list>(ret, std::move(href_or_groupref));
+            ret->set<HGRP_name>(ocs::tom::Host(name));
+            ret->set<HGRP_host_list>(std::move(href_or_groupref));
          } else {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_MEM_MEMORYALLOCFAILED_S, __func__);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EMALLOC, ANSWER_QUALITY_ERROR);
@@ -666,7 +666,7 @@ bool hgroup_add_references(const ocs::tom::Element<ocs::tom::HGRP> this_elem,
       auto href_list = this_elem.exchange<HGRP_host_list>(nullptr);
 
       for (const auto href : href_or_groupref) {
-         const char *name = ocs::tom::get<HR_name>(href);
+         const char *name = href.get<HR_name>();
 
          ret &= href_list_add(href_list, answer_list, name);
          if (!ret) {
@@ -715,7 +715,7 @@ bool hgroup_find_all_references(const ocs::tom::ConstElement<ocs::tom::HGRP> thi
    if (this_elem && master_list) {
       ocs::tom::ListPtr<ocs::tom::HR> href_list;   // created by href_list_add()
 
-      const char *name = ocs::tom::get<HGRP_name>(this_elem);
+      const char *name = this_elem.get<HGRP_name>();
       ret &= href_list_add(href_list, answer_list, name);
 
       if (ret) {
@@ -753,7 +753,7 @@ bool hgroup_find_all_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> th
 
    if (this_elem && occupants_groups != nullptr) {
       ocs::tom::ListPtr<ocs::tom::HR> href_list;   // created by href_list_add()
-      const char *name = ocs::tom::get<HGRP_name>(this_elem);
+      const char *name = this_elem.get<HGRP_name>();
 
       ret &= href_list_add(href_list, answer_list, name);
 
@@ -797,7 +797,7 @@ bool hgroup_find_referencees(const ocs::tom::ConstElement<ocs::tom::HGRP> this_e
 
    if (this_elem) {
       if (occupants_groups != nullptr) {
-         const char *name = ocs::tom::get<HGRP_name>(this_elem);
+         const char *name = this_elem.get<HGRP_name>();
          ocs::tom::ListPtr<ocs::tom::HR> href_list;   // created by href_list_add()
 
          ret &= href_list_add(href_list, answer_list, name);
@@ -845,7 +845,7 @@ bool hgroup_list_exists(const ocs::tom::ConstList<ocs::tom::HGRP> this_list,
 
    if (href_list && this_list) {
       for (const auto href : href_list) {
-         const char *name = ocs::tom::get<HR_name>(href);
+         const char *name = href.get<HR_name>();
 
          if (ocs::is_hgroup_name(name)) {
             if (!hgroup_list_locate(this_list, name)) {
@@ -887,7 +887,7 @@ bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::H
       const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
       for (const auto hgroup : this_list) {
-         const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
+         const char *hgroup_name = hgroup.get<HGRP_name>();
 
          /* use hostgroup expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, hgroup_pattern, hgroup_name, nullptr, true,
@@ -899,7 +899,7 @@ bool hgroup_list_find_matching_and_resolve(const ocs::tom::ConstList<ocs::tom::H
             // a host may belong to several of the matching groups; it is collected once
             for (const auto tmp_href : *tmp_used_hosts) {
                if (used_hosts != nullptr) {
-                  href_list_add(*used_hosts, answer_list, ocs::tom::get<HR_name>(tmp_href));
+                  href_list_add(*used_hosts, answer_list, tmp_href.get<HR_name>());
                }
             }
          }
@@ -933,7 +933,7 @@ bool hgroup_list_find_matching(const ocs::tom::ConstList<ocs::tom::HGRP> this_li
       const bool hgroup_pattern_is_expression = ocs::is_expression(hgroup_pattern);
 
       for (const auto hgroup : this_list) {
-         const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
+         const char *hgroup_name = hgroup.get<HGRP_name>();
 
          /* use hostgroup expression */
          if (!sge_eval_expression(ocs::CEntry::Type::HOST, hgroup_pattern, hgroup_name, nullptr, true,

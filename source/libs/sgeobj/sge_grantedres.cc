@@ -50,8 +50,8 @@ granted_res_get_id_string(std::string &buffer, const ocs::tom::ConstList<ocs::to
    DENTER(TOP_LAYER);
 
    for (const auto resl : resource_map_list) {
-      const char *value = ocs::tom::get<RESL_value>(resl);
-      const uint32_t amount = ocs::tom::get<RESL_amount>(resl);
+      const char *value = resl.get<RESL_value>();
+      const uint32_t amount = resl.get<RESL_amount>();
       for (uint32_t i = 0; i < amount; ++i) {
          if (!buffer.empty()) {
             buffer += ' ';
@@ -83,8 +83,8 @@ gru_list_search(const ocs::tom::ConstList<ocs::tom::GRU> granted_resources_list,
                 const char *host_name) {
    // no DENTER: called per job/queue in the scheduler
    for (const auto gru : granted_resources_list) {
-      if (sge_strnullcmp(ocs::tom::get<GRU_name>(gru), name) == 0 &&
-          sge_hostcmp(ocs::tom::get<GRU_host>(gru), host_name) == 0) {
+      if (sge_strnullcmp(gru.get<GRU_name>(), name) == 0 &&
+          sge_hostcmp(gru.get<GRU_host>(), host_name) == 0) {
          return gru;
       }
    }

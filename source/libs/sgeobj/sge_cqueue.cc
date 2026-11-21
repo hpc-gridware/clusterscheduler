@@ -267,7 +267,7 @@ ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(const ocs::tom::ConstEleme
       return nullptr;
    }
    dstring name_buffer = DSTRING_INIT;
-   const char *group_name = hgroup_queue_group_name(ocs::tom::get<CQ_name>(cqueue), &name_buffer);
+   const char *group_name = hgroup_queue_group_name(cqueue.get<CQ_name>(), &name_buffer);
    const auto hgroup = hgroup_list_locate(master_hgroup_list, group_name);
 
    sge_dstring_free(&name_buffer);
@@ -275,7 +275,7 @@ ocs::tom::ConstList<ocs::tom::HR> cqueue_get_hostlist(const ocs::tom::ConstEleme
    if (!hgroup) {
       return nullptr;
    }
-   return ocs::tom::get<HGRP_host_list>(hgroup);
+   return hgroup.get<HGRP_host_list>();
 }
 
 
@@ -304,7 +304,7 @@ void cqueue_fill_hostlist(const ocs::tom::Element<ocs::tom::CQ> cqueue,
 
    if (cqueue) {
       // a copy named "", or nullptr for a queue without a group, as lCopyList() gave
-      ocs::tom::set<CQ_hostlist>(cqueue, href_list.clone(""));
+      cqueue.set<CQ_hostlist>(href_list.clone(""));
    }
 }
 
@@ -345,7 +345,7 @@ bool cqueue_is_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_e
    bool ret = false;
 
    if (this_elem && href) {
-      const char *href_name = ocs::tom::get<HR_name>(href);
+      const char *href_name = href.get<HR_name>();
       
       if (href_name != nullptr) {
          /*
@@ -357,7 +357,7 @@ bool cqueue_is_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_e
           * The relation is carried by the name, so the name is what is asked.
           */
          dstring group_buffer = DSTRING_INIT;
-         const char *own_group = hgroup_queue_group_name(ocs::tom::get<CQ_name>(this_elem),
+         const char *own_group = hgroup_queue_group_name(this_elem.get<CQ_name>(),
                                                          &group_buffer);
 
          if (own_group != nullptr && strcmp(own_group, href_name) == 0) {
@@ -371,7 +371,7 @@ bool cqueue_is_href_referenced(const ocs::tom::ConstElement<ocs::tom::CQ> this_e
          if (!only_hostlist && !ret) {
             ret = !ocs_for_each_cqueue_attr_while([this_elem, href_name](const auto &attr) {
                using E = ocs_cqueue_attr_t<decltype(attr)>;
-               return !ocs::tom::get<E::cqueue_field>(this_elem).template find_first<E::href_field>(
+               return !this_elem.get<E::cqueue_field>().template find_first<E::href_field>(
                   ocs::tom::Host(href_name));
             });
          }
@@ -398,7 +398,7 @@ static bool cqueue_is_hgroup_referenced(const ocs::tom::ConstElement<ocs::tom::C
    bool ret = false;
 
    if (this_elem && hgroup) {
-      const char *name = ocs::tom::get<HGRP_name>(hgroup);
+      const char *name = hgroup.get<HGRP_name>();
       
       if (name != nullptr) {
          /*
@@ -406,7 +406,7 @@ static bool cqueue_is_hgroup_referenced(const ocs::tom::ConstElement<ocs::tom::C
           * see cqueue_is_href_referenced() for why this is a name comparison)
           */
          dstring group_buffer = DSTRING_INIT;
-         const char *own_group = hgroup_queue_group_name(ocs::tom::get<CQ_name>(this_elem),
+         const char *own_group = hgroup_queue_group_name(this_elem.get<CQ_name>(),
                                                          &group_buffer);
          const bool is_own_group = (own_group != nullptr && strcmp(own_group, name) == 0);
 
@@ -420,7 +420,7 @@ static bool cqueue_is_hgroup_referenced(const ocs::tom::ConstElement<ocs::tom::C
              */
             ret = !ocs_for_each_cqueue_attr_while([this_elem, name](const auto &attr) {
                using E = ocs_cqueue_attr_t<decltype(attr)>;
-               return !ocs::tom::get<E::cqueue_field>(this_elem).template find_first<E::href_field>(
+               return !this_elem.get<E::cqueue_field>().template find_first<E::href_field>(
                   ocs::tom::Host(name));
             });
          }
@@ -484,7 +484,7 @@ static void ocs_cqueue_set_default_attr(const ocs::tom::Element<ocs::tom::CQ> cq
    const auto attr_elem = attr_list->template emplace_back<HREF>(ocs::tom::Host(HOSTREF_DEFAULT));
 
    attr_elem.template set<VALUE>(std::move(value));
-   ocs::tom::set<LF>(cqueue, std::move(attr_list));
+   cqueue.set<LF>(std::move(attr_list));
    DRETURN_VOID;
 }
 
@@ -654,7 +654,7 @@ ocs::tom::Element<ocs::tom::CQ> cqueue_list_locate(const ocs::tom::ConstList<ocs
  */
 ocs::tom::Element<ocs::tom::QU> cqueue_locate_qinstance(const ocs::tom::ConstElement<ocs::tom::CQ> this_elem,
                                                         const char *hostname) {
-   const auto qinstance_list = ocs::tom::get<CQ_qinstances>(this_elem);
+   const auto qinstance_list = this_elem.get<CQ_qinstances>();
 
    return qinstance_list_locate(qinstance_list, hostname, nullptr);
 }
@@ -701,7 +701,7 @@ ocs_cqueue_verify_hrefs(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::tom
     */
    if (ret) {
       for (const auto elem : list) {
-         const char *hostname = ocs::tom::get<href_f>(elem);
+         const char *hostname = elem.template get<href_f>();
          const auto first_elem = list.template find_first<href_f>(ocs::tom::Host(hostname));
 
          if (elem != first_elem) {
@@ -739,7 +739,7 @@ ocs_cqueue_verify_hrefs(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::tom
             int back = getuniquehostname(hostname, resolved_name, 0);
 
             if (back == CL_RETVAL_OK) {
-               ocs::tom::set<href_f>(elem, static_cast<const char *>(resolved_name));
+               elem.template set<href_f>(ocs::tom::Host(resolved_name));
             } else {
                /*
                 * Due to CR 6319231, IZ 1760 this is allowed
@@ -802,8 +802,8 @@ bool cqueue_verify_attributes(const ocs::tom::Element<ocs::tom::CQ> cqueue,
          using E = ocs_cqueue_attr_t<decltype(attr)>;
          using M = typename E::master_type;
 
-         if (ocs::tom::has<E::cqueue_field>(reduced_elem)) {
-            const auto list = ocs::tom::get<E::cqueue_field>(cqueue);
+         if (reduced_elem.has<E::cqueue_field>()) {
+            const auto list = cqueue.get<E::cqueue_field>();
 
             ret = ocs_cqueue_verify_hrefs(list, answer_list, attr.name, in_master, master_hgroup_list);
 
@@ -854,7 +854,7 @@ cqueue_list_find_all_matching_references(const ocs::tom::ConstList<ocs::tom::CQ>
       const bool cqueue_pattern_is_expression = ocs::is_expression(cqueue_pattern);
 
       for (const auto cqueue : this_list) {
-         const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
+         const char *cqueue_name = cqueue.get<CQ_name>();
          /* use cqueue expression */
          if (!sge_eval_expression(ocs::CEntry::Type::STR, cqueue_pattern, cqueue_name, nullptr, true,
                                   cqueue_pattern_is_expression)) {
@@ -888,11 +888,11 @@ ocs_cqueue_xattr_merge_attr(const ocs::tom::Element<ocs::tom::CQ> target,
    using A = typename ocs::tom::FieldTraits<CqF>::Sub;
    constexpr auto href_f = ocs_attr_traits<A>::href;
 
-   const auto src = ocs::tom::get<CqF>(source);
+   const auto src = source.get<CqF>();
    if (!src || src.empty()) {
       DRETURN_VOID;
    }
-   const auto dst = ocs::tom::get<CqF>(target);
+   const auto dst = target.get<CqF>();
    if (!dst) {
       auto moved = source.template exchange<CqF>(ocs::tom::ListPtr<A>());
       static_cast<void>(target.template exchange<CqF>(std::move(moved)));
@@ -900,7 +900,7 @@ ocs_cqueue_xattr_merge_attr(const ocs::tom::Element<ocs::tom::CQ> target,
    }
    while (const auto value = src.front()) {
       auto owned = src.extract(value);
-      if (!dst.template find_first<href_f>(ocs::tom::get<href_f>(owned))) {
+      if (!dst.template find_first<href_f>(owned->template get<href_f>())) {
          dst.push_back(std::move(owned));
       }
    }
@@ -947,14 +947,14 @@ ocs_cqueue_xattr_set_href(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::t
    bool ret = true;
 
    for (const auto elem : list) {
-      const char *attr_hostname = ocs::tom::get<href_f>(elem);
+      const char *attr_hostname = elem.template get<href_f>();
 
       if (strcmp(HOSTREF_DEFAULT, attr_hostname)) {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_CQUEUE_NONDEFNOTALLOWED);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       } else {
-         ocs::tom::set<href_f>(elem, host_domain);
+         elem.template set<href_f>(ocs::tom::Host(host_domain));
       }
    }
    DRETURN(ret);
@@ -1026,8 +1026,8 @@ bool cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *ans
                using E = ocs_cqueue_attr_t<decltype(attr)>;
 
                // a request holds the attributes the administrator gave
-               return !ocs::tom::has<E::cqueue_field>(request) ||
-                      ocs_cqueue_xattr_set_href(ocs::tom::get<E::cqueue_field>(request), answer_list, domain);
+               return !request.has<E::cqueue_field>() ||
+                      ocs_cqueue_xattr_set_href(request.get<E::cqueue_field>(), answer_list, domain);
             });
          }
 
@@ -1065,8 +1065,8 @@ bool cqueue_is_used_in_subordinate(const char *cqueue_name, const ocs::tom::Cons
    bool ret = false;
 
    if (cqueue && cqueue_name != nullptr) {
-      for (const auto sub_el : ocs::tom::get<CQ_subordinate_list>(cqueue)) {
-         const auto so = ocs::tom::find_first_in<ASOLIST_value, SO_name>(sub_el, cqueue_name);
+      for (const auto sub_el : cqueue.get<CQ_subordinate_list>()) {
+         const auto so = sub_el.find_first_in<ASOLIST_value, SO_name>(cqueue_name);
 
          if (so) { /* we found a reference */
             ret = true;
@@ -1104,7 +1104,7 @@ cqueue_list_find_hgroup_references(const ocs::tom::ConstList<ocs::tom::CQ> this_
    if (this_list && hgroup) {
       for (const auto cqueue : this_list) {
          // a cqueue without a name is skipped, as the free emplace_back() took the soft path for it
-         const char *name = ocs::tom::get<CQ_name>(cqueue);
+         const char *name = cqueue.get<CQ_name>();
          if (name != nullptr && cqueue_is_hgroup_referenced(cqueue, hgroup)) {
             if (!string_list) {
                string_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
@@ -1134,9 +1134,9 @@ void cqueue_list_set_tag(const ocs::tom::List<ocs::tom::CQ> this_list, const uin
                          const bool tag_qinstances) {
    DENTER(TOP_LAYER);
    for (const auto cqueue : this_list) {
-      ocs::tom::set<CQ_tag>(cqueue, tag_value);
+      cqueue.set<CQ_tag>(tag_value);
       if (tag_qinstances) {
-         const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         const auto qinstance_list = cqueue.get<CQ_qinstances>();
 
          qinstance_list_set_tag(qinstance_list, tag_value);
       }
@@ -1192,9 +1192,9 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
       cqueue_name_split(full_name, &cqueue_name_buffer, &host_domain_buffer, &has_hostname, &has_domain);
       const char *cqueue_name = sge_dstring_get_string(&cqueue_name_buffer);
       const char *hostname = sge_dstring_get_string(&host_domain_buffer);
-      const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      const auto cqueue = cqueue_list.find_first<CQ_name>(cqueue_name);
       if (cqueue) {
-         const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         const auto qinstance_list = cqueue.get<CQ_qinstances>();
 
          ret = ocs::tom::find_first_rw<QU_qhostname>(qinstance_list, hostname);
       } else {
@@ -1238,7 +1238,7 @@ bool cqueue_purge_host(const ocs::tom::Element<ocs::tom::CQ> this_elem, ocs::tom
 
    if (this_elem) {
       for (const auto ep : attr_list) {
-         const char *attr_name = ocs::tom::get<US_name>(ep);
+         const char *attr_name = ep.get<US_name>();
          DPRINTF(SFQ "\n", attr_name);
       
          /* purge hostlist */         
@@ -1314,7 +1314,7 @@ ocs_cqueue_sick_attr(const ocs::tom::ConstList<A> attr_list, const char *attr_na
     * current configuration
     */
    for (const auto attr : attr_list) {
-      const char *name = ocs::tom::get<ocs_attr_traits<A>::href>(attr);
+      const char *name = attr.template get<ocs_attr_traits<A>::href>();
 
       if (ocs::is_hgroup_name(name)) {
          if (strcmp(name, HOSTREF_DEFAULT)) {
@@ -1388,7 +1388,7 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::Li
     *    - hgroup settings were not all hosts are contained in hostlist
     */
    {
-      const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
+      const char *cqueue_name = cqueue.get<CQ_name>();
       ocs::tom::ListPtr<ocs::tom::HR> used_hosts;
       ocs::tom::ListPtr<ocs::tom::HR> used_groups;
       ocs::tom::ListPtr<ocs::tom::AN> *answer_list = nullptr;
@@ -1396,13 +1396,13 @@ bool cqueue_sick(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue, ocs::tom::Li
       /*
        * resolve href list of cqueue
        */
-      href_list_find_all_references(ocs::tom::get<CQ_hostlist>(cqueue), answer_list,
+      href_list_find_all_references(cqueue.get<CQ_hostlist>(), answer_list,
                                     master_hgroup_list, &used_hosts,
                                     &used_groups);
 
       const ocs::tom::ConstList<ocs::tom::HR> resolved_hosts = *used_hosts;
       ocs_for_each_cqueue_attr([&](const auto &attr) {
-         ocs_cqueue_sick_attr(ocs::tom::get<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>(cqueue), attr.name,
+         ocs_cqueue_sick_attr(cqueue.get<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>(), attr.name,
                               cqueue_name, resolved_hosts, answer_list, master_hgroup_list, ds);
       });
    }

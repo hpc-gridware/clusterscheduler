@@ -172,7 +172,7 @@ href_list_merge(ocs::tom::ListPtr<ocs::tom::HR> *this_list, ocs::tom::ListPtr<oc
       DRETURN(ret);
    }
    for (const auto href : other) {
-      ret = href_list_add(*this_list, answer_list, ocs::tom::get<HR_name>(href));
+      ret = href_list_add(*this_list, answer_list, href.get<HR_name>());
       if (!ret) {
          break;
       }
@@ -244,7 +244,7 @@ bool href_list_compare(const ocs::tom::ConstList<ocs::tom::HR> this_list, ocs::t
    bool ret = true;
 
    for (const auto this_elem : this_list) {
-      const char *host_or_group = ocs::tom::get<HR_name>(this_elem);
+      const char *host_or_group = this_elem.get<HR_name>();
 
       // Three classes, not two. A matcher belongs in neither output: the host
       // side of this difference is what missing execution host objects are
@@ -442,14 +442,14 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
       ocs::tom::ConstList<ocs::tom::HR> candidates = nullptr;
 
       if (exec_hgroup) {
-         candidates = ocs::tom::get<HGRP_host_list>(exec_hgroup);
+         candidates = exec_hgroup.get<HGRP_host_list>();
       }
 
       /*
        * Handle each reference which was given by the calling context
        */
       for (const auto href : this_list) {
-         const char *name = ocs::tom::get<HR_name>(href);
+         const char *name = href.get<HR_name>();
          ocs::tom::ConstElement<ocs::tom::HGRP> hgroup = nullptr;
 
          /*
@@ -475,14 +475,14 @@ bool href_list_find_references(const ocs::tom::ConstList<ocs::tom::HR> this_list
          }
 
          if (hgroup) {
-            const auto href_list2 = ocs::tom::get<HGRP_host_list>(hgroup);
+            const auto href_list2 = hgroup.get<HGRP_host_list>();
 
             /*
              * Add each element contained in the sublist of the hostgroup
              * we found previously to one of the result lists.
              */
             for (const auto href2 : href_list2) {
-               const char *name2 = ocs::tom::get<HR_name>(href2);
+               const char *name2 = href2.get<HR_name>();
 
                switch (ocs::classify_member(name2)) {
                   case ocs::MemberClass::GROUP_REFERENCE:
@@ -659,14 +659,14 @@ bool href_list_find_referencees(const ocs::tom::ConstList<ocs::tom::HR> this_lis
 
    if (this_list && occupant_groups != nullptr) {
       for (const auto href : this_list) {
-         const char *name = ocs::tom::get<HR_name>(href);
+         const char *name = href.get<HR_name>();
 
          if (ocs::is_hgroup_name(name)) {
             for (const auto hgroup : master_list) {
-               const auto href_list = ocs::tom::get<HGRP_host_list>(hgroup);
+               const auto href_list = hgroup.get<HGRP_host_list>();
 
                if (href_list_locate(href_list, name)) {
-                  const char *group_name = ocs::tom::get<HGRP_name>(hgroup);
+                  const char *group_name = hgroup.get<HGRP_name>();
 
                   href_list_add(*occupant_groups, answer_list, group_name);
                }
@@ -790,7 +790,7 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list,
 
    if (this_list) {
       for (const auto href : this_list) {
-         const char *name = ocs::tom::get<HR_name>(href);
+         const char *name = href.get<HR_name>();
 
          switch (ocs::classify_member(name)) {
             case ocs::MemberClass::GROUP_REFERENCE:
@@ -803,7 +803,7 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list,
                   const char *stored = sge_dstring_get_string(&prepared);
 
                   if (stored != nullptr) {
-                     ocs::tom::set<HR_name>(href, stored);
+                     href.set<HR_name>(ocs::tom::Host(stored));
                   }
                } else {
                   ret = false;
@@ -817,7 +817,7 @@ bool href_list_resolve_hostnames(const ocs::tom::List<ocs::tom::HR> this_list,
                const int back = getuniquehostname(name, resolved_name, 0);
 
                if (back == CL_RETVAL_OK) {
-                  ocs::tom::set<HR_name>(href, resolved_name);
+                  href.set<HR_name>(ocs::tom::Host(resolved_name));
                } else {
                   if (!ignore_errors) {
                      INFO(MSG_HGRP_UNKNOWNHOST, name);
@@ -855,7 +855,7 @@ bool href_list_append_to_dstring(const ocs::tom::ConstList<ocs::tom::HR> this_li
       bool is_first = true;
 
       for (const auto href : this_list) {
-         const char *name = ocs::tom::get<HR_name>(href);
+         const char *name = href.get<HR_name>();
 
          if (!is_first) {
             sge_dstring_append(string, delim);
@@ -890,7 +890,7 @@ bool href_list_remove_existing(ocs::tom::ListPtr<ocs::tom::HR> &this_list, ocs::
 
    if (this_list && list) {
       for (const auto href : list) {
-         const char *hostname = ocs::tom::get<HR_name>(href);
+         const char *hostname = href.get<HR_name>();
 
          if (const auto existing_href = this_list->find_first<HR_name>(ocs::tom::Host(hostname))) {
             this_list->erase(existing_href);
@@ -920,7 +920,7 @@ void href_list_debug_print(const ocs::tom::ConstList<ocs::tom::HR> this_list, co
    bool is_first_hostname = true;
 
    for (const auto href : this_list) {
-      const char *hostname = ocs::tom::get<HR_name>(href);
+      const char *hostname = href.get<HR_name>();
 
       if (is_first_hostname) {
          sge_dstring_copy_string(&message, prefix);
@@ -960,7 +960,7 @@ void href_list_make_uniq(const ocs::tom::List<ocs::tom::HR> this_list, ocs::tom:
       const auto elem = next_elem;
 
       next_elem = elem.next();
-      const char *name = ocs::tom::get<HR_name>(elem);
+      const char *name = elem.get<HR_name>();
       if (name == nullptr) {
          continue;
       }

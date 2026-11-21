@@ -124,14 +124,14 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
    uint64_t now64 = sge_get_gmt64();
 
    /*   AR_start_time, SGE_ULONG        */
-   if ((start_time = ocs::tom::get<AR_start_time>(ar)) == 0) {
+   if ((start_time = ar.get<AR_start_time>()) == 0) {
       start_time = now64;
-      ocs::tom::set<AR_start_time>(ar, start_time);
+      ar.set<AR_start_time>(start_time);
    }
 
    /*   AR_end_time, SGE_ULONG        */
-   end_time = ocs::tom::get<AR_end_time>(ar);
-   duration = ocs::tom::get<AR_duration>(ar);
+   end_time = ar.get<AR_end_time>();
+   duration = ar.get<AR_duration>();
    
    if (end_time == 0 && duration == 0) {
       answer_list_add_sprintf(alpp, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
@@ -140,11 +140,11 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
    } else if (end_time == 0) {
       end_time = duration_add_offset(start_time, duration);
       duration = end_time  - start_time;
-      ocs::tom::set<AR_end_time>(ar, end_time);
-      ocs::tom::set<AR_duration>(ar, duration);
+      ar.set<AR_end_time>(end_time);
+      ar.set<AR_duration>(duration);
    } else if (duration == 0) {
       duration = end_time - start_time;
-      ocs::tom::set<AR_duration>(ar, duration);
+      ar.set<AR_duration>(duration);
    }
 
    if ((end_time - start_time) != duration) {
@@ -176,10 +176,10 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
       }
       /*   AR_account, SGE_STRING */
       ocs_null_out_none<AR_account>(ar);
-      if (!ocs::tom::get<AR_account>(ar)) {
-         ocs::tom::set<AR_account>(ar, DEFAULT_ACCOUNT);
+      if (!ar.get<AR_account>()) {
+         ar.set<AR_account>(DEFAULT_ACCOUNT);
       } else {
-         if (verify_str_key(alpp, ocs::tom::get<AR_account>(ar), MAX_VERIFY_STRING,
+         if (verify_str_key(alpp, ar.get<AR_account>(), MAX_VERIFY_STRING,
          "account string", QSUB_TABLE) != STATUS_OK) {
             goto ERROR;
          }
@@ -194,7 +194,7 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
          /* request for non existing ckpt object will be refused */
          const char *ckpt_name = nullptr;
 
-         ckpt_name = ocs::tom::get<AR_checkpoint_name>(ar);
+         ckpt_name = ar.get<AR_checkpoint_name>();
          if (ckpt_name != nullptr) {
             const auto ckpt_ep = ckpt_list_locate(master_ckpt_list, ckpt_name);
             if (!ckpt_ep) {
@@ -206,20 +206,20 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
       }
       /*   AR_resource_list, SGE_LIST */
       {
-         if (centry_list_fill_request(ocs::tom::get<AR_resource_list>(ar),
+         if (centry_list_fill_request(ar.get<AR_resource_list>(),
                                       alpp, master_centry_list, false, true, false)) {
             goto ERROR;
          }
-         if (compress_ressources(alpp, ocs::tom::get<AR_resource_list>(ar), SGE_OBJ_AR)) {
+         if (compress_ressources(alpp, ar.get<AR_resource_list>(), SGE_OBJ_AR)) {
             goto ERROR;
          }
          
-         if (!centry_list_is_correct(ocs::tom::get<AR_resource_list>(ar), alpp)) {
+         if (!centry_list_is_correct(ar.get<AR_resource_list>(), alpp)) {
             goto ERROR;
          }
       }
       /*   AR_queue_list, SGE_LIST */
-      if (!qref_list_is_valid(ocs::tom::get<AR_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list,
+      if (!qref_list_is_valid(ar.get<AR_queue_list>(), alpp, master_cqueue_list, master_hgroup_list,
                               master_centry_list)) {
          goto ERROR;
       }
@@ -227,7 +227,7 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
       /*   AR_mail_list, SGE_LIST */
       
       /*   AR_master_queue_list  -masterq wc_queue_list, SGE_LIST bind master task to queue(s) */
-      if (!qref_list_is_valid(ocs::tom::get<AR_master_queue_list>(ar), alpp, master_cqueue_list, master_hgroup_list,
+      if (!qref_list_is_valid(ar.get<AR_master_queue_list>(), alpp, master_cqueue_list, master_hgroup_list,
                               master_centry_list)) {
          goto ERROR;
       }
@@ -239,7 +239,7 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
          const char *pe_name = nullptr;
          ocs::tom::List<ocs::tom::RN> pe_range = nullptr;
          
-         pe_name = ocs::tom::get<AR_pe>(ar);
+         pe_name = ar.get<AR_pe>();
          if (pe_name) {
             const auto pep = pe_list_find_matching(master_pe_list, pe_name);
             if (!pep) {
@@ -248,7 +248,7 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
                goto ERROR;
             }
             /* check pe_range */
-            pe_range = ocs::tom::get<AR_pe_range>(ar);
+            pe_range = ar.get<AR_pe_range>();
             if (object_verify_pe_range(alpp, pe_name, pe_range, SGE_OBJ_AR)!=STATUS_OK) {
                goto ERROR;
             }
@@ -257,13 +257,13 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
 
       /*   AR_allocation_rule, SGE_STRING - from qrsub -par */
       {
-         const char *allocation_rule = ocs::tom::get<AR_allocation_rule>(ar);
+         const char *allocation_rule = ar.get<AR_allocation_rule>();
          if (allocation_rule != nullptr) {
             /* The rule overrides the allocation_rule of the requested PE, so there has to be one.
              * Unlike a job, which can still be given a PE with qalter -pe, an AR keeps the PE it was
              * submitted with, and a rule which can never apply would only mislead the reader of
              * qrstat output. */
-            if (ocs::tom::get<AR_pe>(ar) == nullptr) {
+            if (ar.get<AR_pe>() == nullptr) {
                answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, SFNMAX,
                                        MSG_AR_PAR_WITHOUT_PE);
                goto ERROR;
@@ -276,36 +276,36 @@ bool ar_validate(const ocs::tom::Element<ocs::tom::AR> ar, ocs::tom::ListPtr<ocs
       }
 
       /*   AR_acl_list, SGE_LIST */
-      if (userset_list_validate_access(ocs::tom::get<AR_acl_list>(ar), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ar.get<AR_acl_list>(), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
       
       /*   AR_xacl_list, SGE_LIST */
-      if (userset_list_validate_access(ocs::tom::get<AR_xacl_list>(ar), alpp, master_userset_list) != STATUS_OK) {
+      if (userset_list_validate_access(ar.get<AR_xacl_list>(), alpp, master_userset_list) != STATUS_OK) {
          goto ERROR;
       }
 
       if (is_spool) {
          dstring cqueue_buffer = DSTRING_INIT;
          dstring hostname_buffer = DSTRING_INIT;
-         for (ocs::tom::Element<ocs::tom::JG> jg : ocs::tom::get<AR_granted_slots>(ar)){
+         for (ocs::tom::Element<ocs::tom::JG> jg : ar.get<AR_granted_slots>()){
             const char *hostname = nullptr;
-            const char *qname = ocs::tom::get<JG_qname>(jg);
+            const char *qname = jg.get<JG_qname>();
             bool has_hostname = false;
             bool has_domain = false;
 
             cqueue_name_split(qname, &cqueue_buffer, &hostname_buffer,
                               &has_hostname, &has_domain);
             hostname = sge_dstring_get_string(&hostname_buffer);
-            ocs::tom::set<JG_qhostname>(jg, hostname);
+            jg.set<JG_qhostname>(ocs::tom::Host(hostname));
          }
          sge_dstring_free(&cqueue_buffer);
          sge_dstring_free(&hostname_buffer);
       }
       /*   AR_type,  SGE_ULONG     */
       /*   AR_state, SGE_ULONG               state of the AR */
-      if(ocs::tom::get<AR_state>(ar) == ARL_UNKNOWN){
-         ocs::tom::set<AR_state>(ar, ARL_CREATION);  
+      if(ar.get<AR_state>() == ARL_UNKNOWN){
+         ar.set<AR_state>(ARL_CREATION);  
       }
    }
    DRETURN(true);
@@ -457,7 +457,7 @@ bool sge_ar_has_errors(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
 
    bool ret = false;
 
-   if (ocs::tom::get<AR_qi_errors>(ar) != 0) {
+   if (ar.get<AR_qi_errors>() != 0) {
       ret = true;
    }
 

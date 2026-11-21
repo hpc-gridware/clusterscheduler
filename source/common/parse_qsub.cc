@@ -154,7 +154,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       if (!strcmp("-a", *sp)) {
          uint32_t timeval;
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, 
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -175,7 +175,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, a_OPT, lUlong64T, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lUlong64T>(ep_opt, sge_gmt32_to_gmt64(timeval));
+         ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -186,7 +186,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
       if (!strcmp("-A", *sp)) {
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, 
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -202,7 +202,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-A %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, A_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -269,7 +269,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
             ar_id = ar_id_d;
             
             ep_opt = sge_add_arg(pcmdline, ar_OPT, lUlongT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lUlongT>(ep_opt, ar_id);
+            ep_opt.set<SPA_argval_lUlongT>(ar_id);
 
             sp++;
             continue;
@@ -296,7 +296,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
          ep_opt = sge_add_arg(pcmdline, ac_OPT, lListT, *(sp - 1), *sp);
          auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
-         ocs::tom::set<VA_variable>(lep, "+");
+         lep->set<VA_variable>("+");
          variable_list->push_front(std::move(lep));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
 
@@ -309,7 +309,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /* "-b y|n" */
 
       if (!is_qalter && !strcmp("-b", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -335,7 +335,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*----------------------------------------------------------------------------*/
       // -bstrategy linear | pack
       if (strcmp("-bstrategy", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -350,7 +350,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-bstrategy %s\"\n", *sp);
          if (strcmp(ocs::BindingStrategy::to_string(ocs::BindingStrategy::PACKED).c_str(), *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, bstrategy_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingStrategy::PACKED);
+            ep_opt.set<SPA_argval_lIntT>(ocs::BindingStrategy::PACKED);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                     MSG_PARSE_BSTRATEGY_INVALID_S, *sp);
@@ -364,7 +364,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*----------------------------------------------------------------------------*/
       // -binstance set | env | pe
       if (strcmp("-binstance", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -379,13 +379,13 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-binstance %s\"\n", *sp);
          if (strcmp("set", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingInstance::SET);
+            ep_opt.set<SPA_argval_lIntT>(ocs::BindingInstance::SET);
          } else if (strcmp("env", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingInstance::ENV);
+            ep_opt.set<SPA_argval_lIntT>(ocs::BindingInstance::ENV);
          } else if (strcmp("pe", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, binstance_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingInstance::PE);
+            ep_opt.set<SPA_argval_lIntT>(ocs::BindingInstance::PE);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                     MSG_PARSE_BINSTANCE_INVALID_S, *sp);
@@ -413,7 +413,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, amount);
+         ep_opt.set<SPA_argval_lIntT>(amount);
 
          sp++;
          continue;
@@ -422,7 +422,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*----------------------------------------------------------------------------*/
       // -bfilter <filter_string>
       if (strcmp("-bfilter", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -436,7 +436,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-bfilter %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, bfilter_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -445,7 +445,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*----------------------------------------------------------------------------*/
       // -bstart S | s | C | c | E | e
       if (strcmp("-bstart", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -461,7 +461,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          ocs::BindingStart::Start bstart = ocs::BindingStart::from_string(*sp);
          if (bstart != ocs::BindingStart::UNINITIALIZED) {
             ep_opt = sge_add_arg(pcmdline, bstart_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, bstart);
+            ep_opt.set<SPA_argval_lIntT>(bstart);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTART_INVALID_S, *sp);
             DRETURN(answer);
@@ -474,7 +474,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*----------------------------------------------------------------------------*/
       // -bstop s | c | e ...
       if (strcmp("-bstop", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -490,7 +490,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          ocs::BindingStop::Stop bstop = ocs::BindingStop::from_string(*sp);
          if (bstop != ocs::BindingStop::UNINITIALIZED) {
             ep_opt = sge_add_arg(pcmdline, bstop_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, bstop);
+            ep_opt.set<SPA_argval_lIntT>(bstop);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BSTOP_INVALID_S, *sp);
             DRETURN(answer);
@@ -504,7 +504,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*----------------------------------------------------------------------------*/
       // -bsort S | s | C | c | E | e
       if (strcmp("-bsort", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -527,7 +527,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
             DRETURN(answer);
          }
          ep_opt = sge_add_arg(pcmdline, bsort_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
          sp++;
          continue;
       }
@@ -535,7 +535,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 /*----------------------------------------------------------------------------*/
       // -btype host | task
       if (strcmp("-btype", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -551,10 +551,10 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          if (strcmp("host", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, btype_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingType::HOST);
+            ep_opt.set<SPA_argval_lIntT>(ocs::BindingType::HOST);
          } else if (strcmp("slot", *sp) == 0) {
             ep_opt = sge_add_arg(pcmdline, btype_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, ocs::BindingType::SLOT);
+            ep_opt.set<SPA_argval_lIntT>(ocs::BindingType::SLOT);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BTYPE_INVALID_S, *sp);
             DRETURN(answer);
@@ -567,7 +567,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 /*----------------------------------------------------------------------------*/
       // -bunit T|CT|ET|C|E|CS|ES
       if (strcmp("-bunit", *sp) == 0) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -584,7 +584,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          if (bunit != ocs::BindingUnit::UNINITIALIZED && bunit != ocs::BindingUnit::NONE) {
             ep_opt = sge_add_arg(pcmdline, bunit_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, bunit);
+            ep_opt.set<SPA_argval_lIntT>(bunit);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_PARSE_BUNIT_INVALID_S, *sp);
             DRETURN(answer);
@@ -620,7 +620,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
                DRETURN(answer);
             }
             ep_opt = sge_add_arg(pcmdline, c_OPT, lLongT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lLongT>(ep_opt, (long) interval);
+            ep_opt.set<SPA_argval_lLongT>((long) interval);
          }
          else if (attr == -1) {
             answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
@@ -629,7 +629,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
          else {
             ep_opt = sge_add_arg(pcmdline, c_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, attr);
+            ep_opt.set<SPA_argval_lIntT>(attr);
          }
 
          sp++;
@@ -657,7 +657,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"%s %s\"\n", *(sp - 1), *sp);
 
          ep_opt = sge_add_arg(pcmdline, 0, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -690,7 +690,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*-----------------------------------------------------------------------------*/
       /* -ectx */
       if (!strcmp("-ectx", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -704,7 +704,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-ectx %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, ectx_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -713,7 +713,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /*-----------------------------------------------------------------------------*/
       /* -fmt */
       if (!strcmp("-fmt", *sp)) {
-          if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+          if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -727,7 +727,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-fmt %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, fmt_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -760,7 +760,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /* "-C directive_prefix" */
       if (!strcmp("-C", *sp)) {
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -778,7 +778,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          ep_opt = sge_add_arg(pcmdline, C_OPT, lStringT, *(sp - 1), *sp);
 
          if (strlen(*sp) > 0) {
-            ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+            ep_opt.set<SPA_argval_lStringT>(*sp);
          }
 
          sp++;
@@ -791,7 +791,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          uint32_t timeval;
          char tmp[1000];
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -813,7 +813,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, d_OPT, lUlong64T, *(sp-1), *sp);
-         ocs::tom::set<SPA_argval_lUlong64T>(ep_opt, sge_gmt32_to_gmt64(timeval));
+         ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -841,7 +841,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
          ep_opt = sge_add_arg(pcmdline, dc_OPT, lListT, *(sp - 1), *sp);
          auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
-         ocs::tom::set<VA_variable>(lep, "-");
+         lep->set<VA_variable>("-");
          variable_list->push_front(std::move(lep));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
 
@@ -855,7 +855,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       if (!strcmp("-dept", *sp)) {
          DTRACE;
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             answer_list_add(&answer, str, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
          }
@@ -870,7 +870,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-dept %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, dept_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -880,7 +880,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       /* "-display -- only for qsh " */
 
       if (!strcmp("-display", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -896,7 +896,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-display %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, display_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -909,7 +909,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       if (!strcmp("-dl", *sp)) {
          uint32_t timeval;
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING, 
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -929,7 +929,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, dl_OPT, lUlongT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lUlong64T>(ep_opt, sge_gmt32_to_gmt64(timeval));
+         ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
 
          sp++;
          continue;
@@ -941,7 +941,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
       if (!strcmp("-e", *sp)) {
          if (prog_number == QRSUB) {
-            if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+            if (pcmdline->find_first<SPA_switch_val>(*sp)) {
                answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                        MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             }
@@ -964,7 +964,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
                DRETURN(answer);
             }
             ep_opt = sge_add_arg(pcmdline, e_OPT, lUlong64T, *(sp-1), *sp);
-            ocs::tom::set<SPA_argval_lUlong64T>(ep_opt, sge_gmt32_to_gmt64(timeval));
+            ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
          } else {
             /* next field is path_name */
             auto [path_list_ret, path_list] = cull_parse_path_list(*sp);
@@ -1021,7 +1021,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          is_hold_option = true;
          cmd_switch = *sp;
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1048,7 +1048,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          DPRINTF("\"-h %s\"\n", *sp);
 
          ep_opt = sge_add_arg(pcmdline, h_OPT, lIntT, cmd_switch, cmd_arg);
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, hold);
+         ep_opt.set<SPA_argval_lIntT>(hold);
 
          sp++;
          continue;
@@ -1072,7 +1072,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
      /*  -he y[es]|n[o] */
 
       if(!strcmp("-he", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             answer_list_add(&answer, str, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
          }
@@ -1165,7 +1165,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
       if (!strcmp("-j", *sp)) {
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                    MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1218,7 +1218,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          jobshare = jobshare_d;
          
          ep_opt = sge_add_arg(pcmdline, js_OPT, lUlongT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lUlongT>(ep_opt, jobshare);
+         ep_opt.set<SPA_argval_lUlongT>(jobshare);
 
          sp++;
          continue;
@@ -1294,8 +1294,8 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          ep_opt = sge_add_arg(pcmdline, l_OPT, lListT, *(sp - 1), *sp);
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(resource_list));
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, hard_soft_flag);
-         ocs::tom::set<SPA_argval_lLongT>(ep_opt, scope_flag);
+         ep_opt.set<SPA_argval_lIntT>(hard_soft_flag);
+         ep_opt.set<SPA_argval_lLongT>(scope_flag);
 
          sp++;
          continue;
@@ -1325,7 +1325,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, m_OPT, lIntT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, mail_options);
+         ep_opt.set<SPA_argval_lIntT>(mail_options);
 
          sp++;
          continue;
@@ -1355,8 +1355,8 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
          ep_opt = sge_add_arg(pcmdline, masterq_OPT, lListT, *(sp - 1), *sp);
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(id_list));
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, 0);
-         ocs::tom::set<SPA_argval_lLongT>(ep_opt, JRS_SCOPE_MASTER);
+         ep_opt.set<SPA_argval_lIntT>(0);
+         ep_opt.set<SPA_argval_lLongT>(JRS_SCOPE_MASTER);
 
          sp++;
          continue;
@@ -1395,7 +1395,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
       if (!strcmp("-N", *sp)) {
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                   MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1421,7 +1421,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-N %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, N_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -1444,7 +1444,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
      /*  -now y[es]|n[o] */
 
       if(!strcmp("-now", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                      MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1524,7 +1524,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          otickets = otickets_d;
          
          ep_opt = sge_add_arg(pcmdline, ot_OPT, lIntT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lUlongT>(ep_opt, otickets);
+         ep_opt.set<SPA_argval_lUlongT>(otickets);
 
          sp++;
          continue;
@@ -1548,7 +1548,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, p_OPT, lIntT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, priority);
+         ep_opt.set<SPA_argval_lIntT>(priority);
 
          sp++;
          continue;
@@ -1560,7 +1560,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
       if (!strcmp("-P", *sp)) {
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             snprintf(str, sizeof(str), MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
             answer_list_add(&answer, str, STATUS_EEXIST, ANSWER_QUALITY_WARNING);
          }
@@ -1575,7 +1575,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-P %s\"\n", *sp);
          ep_opt = sge_add_arg(pcmdline, P_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -1603,7 +1603,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          ep_opt = sge_add_arg(pcmdline, par_OPT, lStringT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lLongT>(ep_opt, scope_flag);
+         ep_opt.set<SPA_argval_lLongT>(scope_flag);
 
          sp++;
          continue;
@@ -1613,7 +1613,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
       if (!strcmp("-pe", *sp)) {
          dstring d_arg = DSTRING_INIT;
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1647,7 +1647,7 @@ DTRACE;
          sge_dstring_append(&d_arg, " ");
          sge_dstring_append(&d_arg, *sp);
          ep_opt = sge_add_arg(pcmdline, pe_OPT, lStringT, *(sp - 2), sge_dstring_get_string(&d_arg));
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *(sp - 1));
+         ep_opt.set<SPA_argval_lStringT>(*(sp - 1));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(pe_range));
 
          sp++;
@@ -1680,8 +1680,8 @@ DTRACE;
          }
          ep_opt = sge_add_arg(pcmdline, q_OPT, lListT, *(sp - 1), *sp);
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(id_list));
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, hard_soft_flag);
-         ocs::tom::set<SPA_argval_lLongT>(ep_opt, scope_flag);
+         ep_opt.set<SPA_argval_lIntT>(hard_soft_flag);
+         ep_opt.set<SPA_argval_lLongT>(scope_flag);
 
          sp++;
          continue;
@@ -1693,7 +1693,7 @@ DTRACE;
       if (!strcmp("-r", *sp)) {
 
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1710,10 +1710,10 @@ DTRACE;
 
          if ((strcasecmp("y", *sp) == 0) || (strcasecmp("yes", *sp) == 0)) {
             ep_opt = sge_add_arg(pcmdline, r_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, 1);
+            ep_opt.set<SPA_argval_lIntT>(1);
          } else if ((strcasecmp ("n", *sp) == 0) || (strcasecmp ("no", *sp) == 0)) {
             ep_opt = sge_add_arg(pcmdline, r_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, 2);
+            ep_opt.set<SPA_argval_lIntT>(2);
          } else {
             answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                     MSG_PARSE_INVALIDOPTIONARGUMENTRX_S, *sp );
@@ -1730,7 +1730,7 @@ DTRACE;
 
       if (!strcmp("-R", *sp)) {
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                  MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1776,7 +1776,7 @@ DTRACE;
          }
          ep_opt = sge_add_arg(pcmdline, sc_OPT, lListT, *(sp - 1), *sp);
          auto lep = ocs::tom::ElementPtr<ocs::tom::VA>::create();
-         ocs::tom::set<VA_variable>(lep, "=");
+         lep->set<VA_variable>("=");
          variable_list->push_front(std::move(lep));
          ocs::tom::set<SPA_argval_lListT>(ep_opt, std::move(variable_list));
 
@@ -1827,7 +1827,7 @@ DTRACE;
       /* "-shell y|n" */
 
       if (!is_qalter && !strcmp("-shell", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp );
          }
@@ -1856,7 +1856,7 @@ DTRACE;
      /*  -sync r|x|n */
 
       if (!strcmp("-sync", *sp)) {
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer, STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S, *sp);
          }
@@ -1958,7 +1958,7 @@ DTRACE;
          }
 
          ep_opt = sge_add_arg(pcmdline, tc_OPT, lUlongT, *(sp - 1), *sp);
-         ocs::tom::set<SPA_argval_lUlongT>(ep_opt, number);
+         ep_opt.set<SPA_argval_lUlongT>(number);
 
          sp++;
          continue;
@@ -1999,7 +1999,7 @@ DTRACE;
             sge_free(&tmp);
             sge_free(&dest);
             ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lListT>(ep_opt, user_list);
+            ep_opt.set<SPA_argval_lListT>(user_list);
          } else {
             auto user_list = str_list_parse_from_string(*sp, ",");
             ep_opt = sge_add_arg(pcmdline, u_OPT, lListT, *(sp - 1), *sp);
@@ -2085,7 +2085,7 @@ DTRACE;
          int level;
          int lret;
 
-         if (ocs::tom::find_first<SPA_switch_val>(*pcmdline, *sp)) {
+         if (pcmdline->find_first<SPA_switch_val>(*sp)) {
             answer_list_add_sprintf(&answer,STATUS_EEXIST, ANSWER_QUALITY_WARNING,
                                     MSG_PARSE_XOPTIONALREADYSETOVERWRITINGSETING_S,
                                     *sp);
@@ -2105,7 +2105,7 @@ DTRACE;
             DRETURN(answer);
          } else {
             ep_opt = sge_add_arg(pcmdline, w_OPT, lIntT, *(sp - 1), *sp);
-            ocs::tom::set<SPA_argval_lIntT>(ep_opt, level);
+            ep_opt.set<SPA_argval_lIntT>(level);
          }
 
          sp++;
@@ -2125,7 +2125,7 @@ DTRACE;
          }
 
          ep_opt = sge_add_arg(pcmdline, wd_OPT, lStringT, "-wd", *sp);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
 
          sp++;
          continue;
@@ -2148,7 +2148,7 @@ DTRACE;
             DRETURN(answer);
          } else {
             ep_opt = sge_add_arg(pcmdline, when_OPT, lUlongT, "-when", *sp);
-            ocs::tom::set<SPA_argval_lUlongT>(ep_opt, when);
+            ep_opt.set<SPA_argval_lUlongT>(when);
          }
 
          sp++;
@@ -2287,10 +2287,10 @@ DTRACE;
          if ((flags & FLG_USE_PSEUDOS)) {
             if (!is_qalter) {
                ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
-               ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+               ep_opt.set<SPA_argval_lStringT>(*sp);
                for (sp++; *sp; sp++) {
                   ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
-                  ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+                  ep_opt.set<SPA_argval_lStringT>(*sp);
                }
             } else {
                answer_list_add_sprintf(&answer, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
@@ -2322,7 +2322,7 @@ DTRACE;
             }
             for (; *sp; sp++) {
                ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
-               ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+               ep_opt.set<SPA_argval_lStringT>(*sp);
             }
             continue;
          }
@@ -2346,10 +2346,10 @@ DTRACE;
       if ((flags & FLG_USE_PSEUDOS)) {
          if (!is_qalter) {
             ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
-            ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+            ep_opt.set<SPA_argval_lStringT>(*sp);
             for (sp++; *sp; sp++) {
                ep_opt = sge_add_arg(pcmdline, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
-               ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+               ep_opt.set<SPA_argval_lStringT>(*sp);
             }
          } else {
             if (!strcmp(*sp, "--")) {
@@ -2371,7 +2371,7 @@ DTRACE;
          continue;
       } else {
          ep_opt = sge_add_arg(pcmdline, 0, lStringT, "", nullptr);
-         ocs::tom::set<SPA_argval_lStringT>(ep_opt, *sp);
+         ep_opt.set<SPA_argval_lStringT>(*sp);
       }
 
       sp++;
@@ -2380,11 +2380,11 @@ DTRACE;
    if (!is_hold_option) {
       if (prog_number == QHOLD) { 
          ep_opt = sge_add_arg(pcmdline, h_OPT, lIntT, "-h", "u");
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, MINUS_H_TGT_USER);
+         ep_opt.set<SPA_argval_lIntT>(MINUS_H_TGT_USER);
 
       } else if (prog_number == QRLS) {
          ep_opt = sge_add_arg(pcmdline, h_OPT, lIntT, "-h", "u");
-         ocs::tom::set<SPA_argval_lIntT>(ep_opt, MINUS_H_CMD_SUB | MINUS_H_TGT_USER);
+         ep_opt.set<SPA_argval_lIntT>(MINUS_H_CMD_SUB | MINUS_H_TGT_USER);
       }
    }
 
@@ -2453,7 +2453,7 @@ static ocs::tom::ListPtr<ocs::tom::VA> var_list_parse_from_environment(char **en
       }
 
       char *env_description = sge_strtok_r((char *) 0, "\0", &context);
-      ocs::tom::set<VA_value>(ep, env_description);
+      ep.set<VA_value>(env_description);
       sge_free(&env_entry);
       sge_free_saved_vars(context);
    }
@@ -2483,13 +2483,13 @@ static int set_yn_option(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t 
    
    if ((strcasecmp("y", value) == 0) || (strcasecmp("yes", value) == 0)) {
       ep_opt = sge_add_arg(opts, opt, lIntT, arg, value);
-      ocs::tom::set<SPA_argval_lIntT>(ep_opt, true);
-      ocs::tom::set<SPA_argval_lUlongT>(ep_opt, true);
+      ep_opt.set<SPA_argval_lIntT>(true);
+      ep_opt.set<SPA_argval_lUlongT>(true);
    }
    else if ((strcasecmp ("n", value) == 0) || (strcasecmp ("no", value) == 0)) {
       ep_opt = sge_add_arg(opts, opt, lIntT, arg, value);
-      ocs::tom::set<SPA_argval_lIntT>(ep_opt, false);
-      ocs::tom::set<SPA_argval_lUlongT>(ep_opt, false);
+      ep_opt.set<SPA_argval_lIntT>(false);
+      ep_opt.set<SPA_argval_lUlongT>(false);
     }
    else {
        snprintf(SGE_EVENT, SGE_EVENT_SIZE,  MSG_PARSE_INVALIDOPTIONARGUMENT_SS, arg, value);
@@ -2564,7 +2564,7 @@ ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const uint32_t opt
 
    // transport bits via opts list
    auto ep_opt = sge_add_arg(opts, opt, lUlongT, arg, value);
-   ocs::tom::set<SPA_argval_lUlongT>(ep_opt, sync_bits);
+   ep_opt.set<SPA_argval_lUlongT>(sync_bits);
 
    DRETURN(STATUS_OK);
 }

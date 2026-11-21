@@ -79,7 +79,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // no amount or strategy also causes to hide all other binding parameters because binding will not be done
-   const auto amount = ocs::tom::get<BN_amount>(binding_elem);
+   const auto amount = binding_elem.get<BN_amount>();
    if (amount == 0) {
       if (!as_switches) {
          binding_string = NONE_STR;
@@ -98,7 +98,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -bstop s|c|...
-   auto bstop = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
+   auto bstop = static_cast<BindingStop::Stop>(binding_elem.get<BN_stop>());
    if (bstop != BindingStop::Stop::UNINITIALIZED && bstop != BindingStop::Stop::NONE) {
       if (as_switches) {
          binding_string += " -bstop ";
@@ -109,7 +109,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -binstance set|pe|env
-   auto instance_type = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
+   auto instance_type = static_cast<BindingInstance::Instance>(binding_elem.get<BN_instance>());
    if (instance_type != BindingInstance::Instance::UNINITIALIZED && instance_type != BindingInstance::Instance::NONE) {
       if (as_switches) {
          binding_string += " -binstance ";
@@ -120,7 +120,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -bsort S|C|...
-   const char *sort = ocs::tom::get<BN_sort>(binding_elem);
+   const char *sort = binding_elem.get<BN_sort>();
    if (sort != nullptr && strcmp(sort, NONE_STR) != 0) {
       if (as_switches) {
          binding_string += " -bsort ";
@@ -132,7 +132,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -bstart S|C|...
-   auto start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
+   auto start = static_cast<BindingStart::Start>(binding_elem.get<BN_start>());
    if (start != BindingStart::Start::UNINITIALIZED && start != BindingStart::Start::NONE) {
       if (as_switches) {
          binding_string += " -bstart ";
@@ -143,7 +143,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -bstrategy pack|linear
-   auto strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
+   auto strategy = static_cast<BindingStrategy::Strategy>(binding_elem.get<BN_strategy>());
    if (strategy != BindingStrategy::Strategy::UNINITIALIZED && strategy != BindingStrategy::Strategy::NONE) {
       if (as_switches) {
          binding_string += " -bstrategy ";
@@ -154,7 +154,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -btype host|slot
-   auto type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
+   auto type = static_cast<BindingType::Type>(binding_elem.get<BN_new_type>());
    if (type != BindingType::Type::UNINITIALIZED && type != BindingType::Type::NONE) {
       if (as_switches) {
          binding_string += " -btype ";
@@ -165,7 +165,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -bunit S|C|T|...
-   auto unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
+   auto unit = static_cast<BindingUnit::Unit>(binding_elem.get<BN_unit>());
    if (unit != BindingUnit::Unit::UNINITIALIZED && unit != BindingUnit::Unit::NONE) {
       if (as_switches) {
          binding_string += " -bunit ";
@@ -176,7 +176,7 @@ ocs::BindingIo::binding_print_to_string(const ocs::tom::ConstElement<ocs::tom::B
    }
 
    // -bfilter <topo_string>
-   auto filter = ocs::tom::get<BN_filter>(binding_elem);
+   auto filter = binding_elem.get<BN_filter>();
    if (filter != nullptr && strcasecmp(filter, NONE_STR) != 0) {
       if (as_switches) {
          binding_string += " -bfilter ";

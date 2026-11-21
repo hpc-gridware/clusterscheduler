@@ -244,7 +244,7 @@ concept OcsHostAttrKeyedList = OcsHostAttr<A> && requires { ocs_attr_traits<A>::
 template <OcsHostAttr A>
 struct ocs_attr_lookup {
    /// the entry whose value was read last, empty if none was; read its value with
-   /// `ocs::tom::get<ocs_attr_traits<A>::value>(entry)`
+   /// `entry.get<ocs_attr_traits<A>::value>()`
    ocs::tom::ConstElement<A> entry;
    /// whether the lookup succeeded; false with an entry only when two host groups gave the host a value
    /// and there is no default entry

@@ -926,7 +926,7 @@ ocs::TopologyString::elem_mark_nodes_as_used_or_unused(
    } else {
       binding_now.mark_nodes_as_used_or_unused(binding_to_use, mark_used);
    }
-   ocs::tom::set<F>(elem, binding_now.to_string(true, true, true, false, false, false).c_str());
+   elem.template set<F>(binding_now.to_string(true, true, true, false, false, false).c_str());
 
    DRETURN_VOID;
 }

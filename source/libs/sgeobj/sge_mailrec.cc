@@ -91,7 +91,7 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
       const char *user = sge_strtok_r(*pstr, "@", &context);
       const char *host = sge_strtok_r(nullptr, "@", &context);
       if (const auto tmp = list->find_first<MR_user>(user)) {
-         if (!sge_strnullcmp(host, ocs::tom::get<MR_host>(tmp))) {
+         if (!sge_strnullcmp(host, tmp.get<MR_host>())) {
             /* got this mail adress twice */
             sge_free_saved_vars(context);
             continue;
@@ -100,9 +100,9 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
 
       /* got a new adress - add it */
       auto ep = ocs::tom::ElementPtr<ocs::tom::MR>::create();
-      ocs::tom::set<MR_user>(ep, user);
+      ep->set<MR_user>(user);
       if (host) 
-         ocs::tom::set<MR_host>(ep, host);
+         ep->set<MR_host>(host);
       list->push_back(std::move(ep));
 
       sge_free_saved_vars(context);
@@ -161,11 +161,11 @@ int mailrec_unparse(const ocs::tom::ConstList<ocs::tom::MR> head, char *mail_str
    *mail_str = '\0';
 
    for (const auto elem : head) {
-      const char *u = ocs::tom::get<MR_user>(elem);
+      const char *u = elem.get<MR_user>();
       if (!u)
          u = MSG_SMALLNULL;
 
-      const char *h = ocs::tom::get<MR_host>(elem);
+      const char *h = elem.get<MR_host>();
       if (!h)
          snprintf(tmpstr, sizeof(tmpstr), "%s", u);
       else

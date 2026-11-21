@@ -104,13 +104,13 @@ qref_list_resolve_cqueue_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_l
    bool ret = true;
 
    for (const auto cq_qref : cq_qref_list) {
-      const char *cq_name = ocs::tom::get<QR_name>(cq_qref);
+      const char *cq_name = cq_qref.get<QR_name>();
 
       if (resolve_cqueue) {
-         const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cq_name);
-         const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+         const auto cqueue = cqueue_list.find_first<CQ_name>(cq_name);
+         const auto qinstance_list = cqueue.get<CQ_qinstances>();
          for (const auto qinstance : qinstance_list) {
-            ocs::tom::emplace_back<QR_name>(qref_list, ocs::tom::get<QU_full_name>(qinstance));
+            ocs::tom::emplace_back<QR_name>(qref_list, qinstance.get<QU_full_name>());
             *found_something = true;
          }
       } else {
@@ -142,14 +142,14 @@ qref_list_resolve_qinstance_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qre
    bool ret = true;
 
    for (const auto cq_qref : cq_qref_list) {
-      const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
-      const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
+      const char *cqueue_name = cq_qref.get<QR_name>();
+      const auto cqueue = cqueue_list.find_first<CQ_name>(cqueue_name);
       const char *hostname_pattern = sge_dstring_get_string(host_or_hgroup);
-      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstance_list = cqueue.get<CQ_qinstances>();
       const auto qi_ref_list = qinstance_list_find_matching(qinstance_list, answer_list, hostname_pattern);
 
       for (const auto qi_qref : *qi_ref_list) {
-         const char *qi_name = ocs::tom::get<QR_name>(qi_qref);
+         const char *qi_name = qi_qref.get<QR_name>();
 
          ocs::tom::emplace_back<QR_name>(qref_list, qi_name);
          *found_something = true;
@@ -203,14 +203,14 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
       hgroup_list_find_matching(hgroup_list, answer_list, hgroup_pattern, &href_list);
    }
    for (const auto cq_qref : cq_qref_list) {
-      const char *cqueue_name = ocs::tom::get<QR_name>(cq_qref);
+      const char *cqueue_name = cq_qref.get<QR_name>();
 
-      const auto cqueue = ocs::tom::find_first<CQ_name>(cqueue_list, cqueue_name);
-      const auto qinstance_list = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto cqueue = cqueue_list.find_first<CQ_name>(cqueue_name);
+      const auto qinstance_list = cqueue.get<CQ_qinstances>();
       for (const auto href : *href_list) {
          if (resolve_qdomain) {
-            const char *hostname = ocs::tom::get<HR_name>(href);
-            const auto qinstance = ocs::tom::find_first<QU_qhostname>(qinstance_list, hostname);
+            const char *hostname = href.get<HR_name>();
+            const auto qinstance = qinstance_list.find_first<QU_qhostname>(ocs::tom::Host(hostname));
 
             if (qinstance) {
                const char *qinstance_name = qinstance_get_name(qinstance, &buffer);
@@ -219,7 +219,7 @@ qref_list_resolve_qdomain_names(const ocs::tom::ConstList<ocs::tom::QR> cq_qref_
                *found_something = true;
             }
          } else {
-            const char *hgroup_name = ocs::tom::get<HR_name>(href);
+            const char *hgroup_name = href.get<HR_name>();
             const char *qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN, cqueue_name, hgroup_name);
 
             ocs::tom::emplace_back<QR_name>(qref_list, qinstance_name);
@@ -328,7 +328,7 @@ bool qref_list_resolve(const ocs::tom::ConstList<ocs::tom::QR> src_qref_list,
          /*
           * Find all existing parts of the qref-pattern
           */
-         const char *name = ocs::tom::get<QR_name>(qref_pattern);
+         const char *name = qref_pattern.get<QR_name>();
          if (!cqueue_name_split(name, &cqueue_name, &host_or_hgroup,
                            &has_hostname, &has_domain)) {
             /* we've got an syntax error */
@@ -475,7 +475,7 @@ bool qref_list_eh_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
    }
 
    for (const auto qref_pattern : qref_list) {
-      const char *name = ocs::tom::get<QR_name>(qref_pattern);
+      const char *name = qref_pattern.get<QR_name>();
       if (!qref_eh_rejected(name, hostname, hgroup_list)) {
          DRETURN(false);
       }
@@ -507,7 +507,7 @@ bool qref_list_cq_rejected(const ocs::tom::ConstList<ocs::tom::QR> qref_list, co
    }
 
    for (const auto qref_pattern : qref_list) {
-      const char *name = ocs::tom::get<QR_name>(qref_pattern);
+      const char *name = qref_pattern.get<QR_name>();
       if (!qref_cq_rejected(name, cqname, hostname, hgroup_list)) {
          DRETURN(false);
       }
@@ -569,8 +569,8 @@ qref_hgroup_rejected(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const 
       DRETURN(!hgroup_cache_contains_host(hgroup, hostname));
    }
 
-   for (const auto href : ocs::tom::get<HGRP_host_list>(hgroup)) {
-      const char *member = ocs::tom::get<HR_name>(href);
+   for (const auto href : hgroup.get<HGRP_host_list>()) {
+      const char *member = href.get<HR_name>();
 
       if (ocs::is_hgroup_name(member)) {
          /* nested hostgroup - look it up by name, do not match it as a pattern */
@@ -623,7 +623,7 @@ bool qref_list_host_rejected(const char *href, const char *hostname,
       if (ocs::is_expression(wc_hostgroup)) {
          /* the reference is an expression - evaluate it against every hostgroup name */
          for (const auto hgroup : hgroup_list) {
-            const char *hgroup_name = ocs::tom::get<HGRP_name>(hgroup);
+            const char *hgroup_name = hgroup.get<HGRP_name>();
 
             DPRINTF("found hostgroup \"%s\" wc_hostgroup: \"%s\"\n", hgroup_name, wc_hostgroup);
 
@@ -700,7 +700,7 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::
          for (const auto qref_elem : this_list) {
             bool found_something = false;
             bool found_matching_qinstance = false;
-            const char *qref_pattern = ocs::tom::get<QR_name>(qref_elem);
+            const char *qref_pattern = qref_elem.get<QR_name>();
 
             auto qref_list = ocs::tom::ListPtr<ocs::tom::QR>::create("qref list");
             qref_list->emplace_back<QR_name>(qref_pattern);
@@ -711,7 +711,7 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::
                               &found_something, master_cqueue_list, master_hgroup_list, true, true);
             const auto resolved_qref_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(resolved_qref_list_raw);
             for (const auto resolved_qref : *resolved_qref_list) {
-               const char *resolved_qref_name = ocs::tom::get<QR_name>(resolved_qref);
+               const char *resolved_qref_name = resolved_qref.get<QR_name>();
 
                if (cqueue_list_locate_qinstance(master_cqueue_list, resolved_qref_name) != nullptr) {
                   found_matching_qinstance = true;
@@ -747,15 +747,15 @@ void qref_list_resolve_hostname(const ocs::tom::List<ocs::tom::QR> this_list) {
    auto next = this_list.front();
    while (const auto qref = next) {
       next = qref.next();
-      const std::string resolved = ocs_qref_resolved_name(ocs::tom::get<QR_name>(qref));
-      if (resolved == ocs::tom::get<QR_name>(qref)) {
+      const std::string resolved = ocs_qref_resolved_name(qref.get<QR_name>());
+      if (resolved == qref.get<QR_name>()) {
          continue;
       }
-      const auto held = ocs::tom::find_first<QR_name>(this_list, resolved.c_str());
+      const auto held = this_list.find_first<QR_name>(resolved.c_str());
       if (held && held.raw() != qref.raw()) {
          this_list.erase(qref);
       } else {
-         ocs::tom::set<QR_name>(qref, resolved.c_str());
+         qref.set<QR_name>(resolved.c_str());
       }
    }
    DRETURN_VOID;

@@ -90,8 +90,8 @@ namespace ocs {
  */
 template <auto F>
 inline void ocs_null_out_none(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> ep) {
-   if (const char *value = ocs::tom::get<F>(ep); value != nullptr && strcasecmp(value, "none") == 0) {
-      ocs::tom::set<F>(ep, nullptr);
+   if (const char *value = ep.template get<F>(); value != nullptr && strcasecmp(value, "none") == 0) {
+      ep.template set<F>(nullptr);
    }
 }
 
@@ -440,7 +440,7 @@ template <auto F>
 int
 object_verify_name(const ocs::tom::ConstElement<typename ocs::tom::FieldTraits<F>::Type> object,
                    ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   return ocs_object_verify_name_value(answer_list, ocs::tom::get<F>(object), ocs::tom::FieldTraits<F>::info.name);
+   return ocs_object_verify_name_value(answer_list, object.template get<F>(), ocs::tom::FieldTraits<F>::info.name);
 }
 
 int

@@ -84,9 +84,9 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
    if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (ocs_pack_soft(&pb, [where](sge_pack_buffer *buffer) { ocs::tom::pack_where(buffer, where); })) {
          where_elem = ocs::tom::ElementPtr<ocs::tom::PACK>::create();
-         ocs::tom::set<PACK_id>(where_elem, SGE_WHERE);
+         where_elem->set<PACK_id>(SGE_WHERE);
          const std::string hex = ocs::tom::bytes_to_hex(pb.head_ptr, static_cast<int>(pb.bytes_used));
-         ocs::tom::set<PACK_string>(where_elem, hex.c_str());
+         where_elem->set<PACK_string>(hex.c_str());
       }
    }
    ocs::tom::clear_buffer(&pb);
@@ -105,11 +105,11 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
 
    lCondition *cond = nullptr;
 
-   if (ocs::tom::get<PACK_id>(where) == SGE_WHERE) {
+   if (where.get<PACK_id>() == SGE_WHERE) {
       sge_pack_buffer pb;
       char *buffer = nullptr;
       int ret = 0;
-      const char *hex = ocs::tom::get<PACK_string>(where);
+      const char *hex = where.get<PACK_string>();
       const int size = hex != nullptr ? ocs::tom::hex_to_bytes(hex, &buffer) : 0;
       if (size <= 0) {
          // the bytes of a bad digit belong to the caller as well
@@ -127,7 +127,7 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
          ERROR(MSG_PACK_ERRORUNPACKING_S, ocs::tom::pack_error_text(ret));
       }
    } else {
-      ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(where), SGE_WHERE);
+      ERROR(MSG_PACK_WRONGPACKTYPE_UI, where.get<PACK_id>(), SGE_WHERE);
    }
 
    DRETURN(cond);
@@ -148,9 +148,9 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
    if (ocs::tom::try_init_buffer(&pb, 1024, false, false) == PACK_SUCCESS) {
       if (ocs_pack_soft(&pb, [what](sge_pack_buffer *buffer) { ocs::tom::pack_what(buffer, what); })) {
          what_elem = ocs::tom::ElementPtr<ocs::tom::PACK>::create();
-         ocs::tom::set<PACK_id>(what_elem, SGE_WHAT);
+         what_elem->set<PACK_id>(SGE_WHAT);
          const std::string hex = ocs::tom::bytes_to_hex(pb.head_ptr, static_cast<int>(pb.bytes_used));
-         ocs::tom::set<PACK_string>(what_elem, hex.c_str());
+         what_elem->set<PACK_string>(hex.c_str());
       }
    }
    ocs::tom::clear_buffer(&pb);
@@ -169,11 +169,11 @@ lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> wh
 
    lEnumeration *cond = nullptr;
 
-   if (ocs::tom::get<PACK_id>(what) == SGE_WHAT) {
+   if (what.get<PACK_id>() == SGE_WHAT) {
       sge_pack_buffer pb;
       char *buffer = nullptr;
       int ret = 0;
-      const char *hex = ocs::tom::get<PACK_string>(what);
+      const char *hex = what.get<PACK_string>();
       const int size = hex != nullptr ? ocs::tom::hex_to_bytes(hex, &buffer) : 0;
       if (size <= 0) {
          // the bytes of a bad digit belong to the caller as well
@@ -191,7 +191,7 @@ lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> wh
          ERROR(MSG_PACK_ERRORUNPACKING_S, ocs::tom::pack_error_text(ret));
       }
    } else {
-      ERROR(MSG_PACK_WRONGPACKTYPE_UI, ocs::tom::get<PACK_id>(what), SGE_WHAT);
+      ERROR(MSG_PACK_WRONGPACKTYPE_UI, what.get<PACK_id>(), SGE_WHAT);
    }
    DRETURN(cond);
 }

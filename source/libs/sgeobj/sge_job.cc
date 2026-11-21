@@ -149,13 +149,13 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(const ocs::tom
 
    // the template list of a read only job hands out a writable element
    const auto template_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(
-      const_cast<lListElem *>(ocs::tom::get<JB_ja_template>(job).front().raw()));
+      const_cast<lListElem *>(job.get<JB_ja_template>().front().raw()));
 
    if (!template_task) {
       ERROR("unable to retrieve template task");
    } else {
-      ocs::tom::set<JAT_state>(template_task, JQUEUED | JWAITING);
-      ocs::tom::set<JAT_task_number>(template_task, ja_task_id);
+      template_task.set<JAT_state>(JQUEUED | JWAITING);
+      template_task.set<JAT_task_number>(ja_task_id);
    }
    DRETURN(template_task);
 }
@@ -186,14 +186,14 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_hold(const ocs::tom::C
 
    const auto template_task = job_get_ja_task_template_pending(job, ja_task_id);
    if (template_task) {
-      ocs::tom::set<JAT_task_number>(template_task, ja_task_id);
-      ocs::tom::set<JAT_hold>(template_task, hold_state);
-      ocs::tom::set<JAT_status>(template_task, JIDLE);
+      template_task.set<JAT_task_number>(ja_task_id);
+      template_task.set<JAT_hold>(hold_state);
+      template_task.set<JAT_status>(JIDLE);
       uint32_t state = JQUEUED | JWAITING;
-      if (ocs::tom::get<JAT_hold>(template_task)) {
+      if (template_task.get<JAT_hold>()) {
          state |= JHELD;
       }
-      ocs::tom::set<JAT_state>(template_task, state);
+      template_task.set<JAT_state>(state);
    }
    DRETURN(template_task);
 }
@@ -213,16 +213,16 @@ static uint32_t job_accumulate_hold_flags(const ocs::tom::ConstElement<ocs::tom:
    DENTER(TOP_LAYER);
    uint32_t ret = 0;
 
-   if (range_list_is_id_within(ocs::tom::get<JB_ja_u_h_ids>(job), ja_task_id)) {
+   if (range_list_is_id_within(job.get<JB_ja_u_h_ids>(), ja_task_id)) {
       ret |= MINUS_H_TGT_USER;
    }
-   if (range_list_is_id_within(ocs::tom::get<JB_ja_o_h_ids>(job), ja_task_id)) {
+   if (range_list_is_id_within(job.get<JB_ja_o_h_ids>(), ja_task_id)) {
       ret |= MINUS_H_TGT_OPERATOR;
    }
-   if (range_list_is_id_within(ocs::tom::get<JB_ja_s_h_ids>(job), ja_task_id)) {
+   if (range_list_is_id_within(job.get<JB_ja_s_h_ids>(), ja_task_id)) {
       ret |= MINUS_H_TGT_SYSTEM;
    }
-   if (range_list_is_id_within(ocs::tom::get<JB_ja_a_h_ids>(job), ja_task_id)) {
+   if (range_list_is_id_within(job.get<JB_ja_a_h_ids>(), ja_task_id)) {
       ret |= MINUS_H_TGT_JA_AD;
    }
    DRETURN(ret);
@@ -291,10 +291,10 @@ job_create_hold_id_lists(const ocs::tom::ConstElement<ocs::tom::JB> job) {
       ret[i].first = hold_state[i];
    }
 
-   const auto u_ids = ocs::tom::get<JB_ja_u_h_ids>(job);
-   const auto o_ids = ocs::tom::get<JB_ja_o_h_ids>(job);
-   const auto s_ids = ocs::tom::get<JB_ja_s_h_ids>(job);
-   const auto a_ids = ocs::tom::get<JB_ja_a_h_ids>(job);
+   const auto u_ids = job.get<JB_ja_u_h_ids>();
+   const auto o_ids = job.get<JB_ja_o_h_ids>();
+   const auto s_ids = job.get<JB_ja_s_h_ids>();
+   const auto a_ids = job.get<JB_ja_a_h_ids>();
    const auto intersection = ocs_range_list_intersection;
    const auto difference = ocs_range_list_difference;
 
@@ -359,7 +359,7 @@ job_create_hold_id_lists(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    ret[1].second = difference(*difference(*difference(u_ids, *uo), *us_o), *ret[7].second);
 
    /* UOSA -> 0 */
-   ret[0].second = ocs::tom::get<JB_ja_n_h_ids>(job).clone("task_id_range");
+   ret[0].second = job.get<JB_ja_n_h_ids>().clone("task_id_range");
 
    DRETURN(ret);
 }
@@ -383,11 +383,11 @@ bool job_is_enrolled(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint3
 
    bool ret = true;
 
-   if (range_list_is_id_within(ocs::tom::get<JB_ja_n_h_ids>(job), task_number) ||
-       range_list_is_id_within(ocs::tom::get<JB_ja_u_h_ids>(job), task_number) ||
-       range_list_is_id_within(ocs::tom::get<JB_ja_o_h_ids>(job), task_number) ||
-       range_list_is_id_within(ocs::tom::get<JB_ja_s_h_ids>(job), task_number) ||
-       range_list_is_id_within(ocs::tom::get<JB_ja_a_h_ids>(job), task_number)) {
+   if (range_list_is_id_within(job.get<JB_ja_n_h_ids>(), task_number) ||
+       range_list_is_id_within(job.get<JB_ja_u_h_ids>(), task_number) ||
+       range_list_is_id_within(job.get<JB_ja_o_h_ids>(), task_number) ||
+       range_list_is_id_within(job.get<JB_ja_s_h_ids>(), task_number) ||
+       range_list_is_id_within(job.get<JB_ja_a_h_ids>(), task_number)) {
       ret = false;
    }
    DRETURN(ret);
@@ -410,7 +410,7 @@ bool job_is_enrolled(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint3
  * @note MT-NOTE: job_is_ja_task_defined() is MT safe
  */
 bool job_is_ja_task_defined(const ocs::tom::ConstElement<ocs::tom::JB> job, const uint32_t ja_task_number) {
-   return range_list_is_id_within(ocs::tom::get<JB_ja_structure>(job), ja_task_number);
+   return range_list_is_id_within(job.get<JB_ja_structure>(), ja_task_number);
 }
 
 
@@ -462,12 +462,12 @@ uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB
    uint32_t ret = 0;
 
    range_list_calculate_union_set(uo_ids, &answer_list,
-                                  ocs::tom::get<JB_ja_u_h_ids>(job),
-                                  ocs::tom::get<JB_ja_o_h_ids>(job));
-   range_list_calculate_union_set(uos_ids, &answer_list, uo_ids, ocs::tom::get<JB_ja_s_h_ids>(job));
-   range_list_calculate_union_set(uosa_ids, &answer_list, uos_ids, ocs::tom::get<JB_ja_a_h_ids>(job));
+                                  job.get<JB_ja_u_h_ids>(),
+                                  job.get<JB_ja_o_h_ids>());
+   range_list_calculate_union_set(uos_ids, &answer_list, uo_ids, job.get<JB_ja_s_h_ids>());
+   range_list_calculate_union_set(uosa_ids, &answer_list, uos_ids, job.get<JB_ja_a_h_ids>());
 
-   ret += range_list_get_number_of_ids(ocs::tom::get<JB_ja_n_h_ids>(job));
+   ret += range_list_get_number_of_ids(job.get<JB_ja_n_h_ids>());
    ret += range_list_get_number_of_ids(uosa_ids.get());
 
    // the answer list was never freed before
@@ -489,7 +489,7 @@ uint32_t job_get_not_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB
  * @see #job_get_ja_tasks, #job_get_enrolled_ja_tasks, #job_get_not_enrolled_ja_tasks, #job_get_submit_ja_tasks
  */
 uint32_t job_get_enrolled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   return static_cast<uint32_t>(ocs::tom::get<JB_ja_tasks>(job).size());
+   return static_cast<uint32_t>(job.get<JB_ja_tasks>().size());
 }
 
 
@@ -525,9 +525,9 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
    DENTER(TOP_LAYER);
 
    object_delete_range_id<JB_ja_n_h_ids>(job, answer_list, ja_task_number);
-   auto ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_number);
+   auto ja_task = job.find_first_in_rw<JB_ja_tasks, JAT_task_number>(ja_task_number);
    if (!ja_task) {
-      auto ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+      auto ja_task_list = job.get<JB_ja_tasks>();
       const auto template_task = job_get_ja_task_template_pending(job, ja_task_number);
       if (!template_task) {
          // nothing to enroll from: the old code ended up with nullptr here as well
@@ -538,7 +538,7 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
          // the list gets the layout of the (possibly reduced) template task
          auto created = ocs::tom::ListPtr<ocs::tom::JAT>::create_like("ulong_sublist", template_task);
          ja_task_list = created.get();
-         ocs::tom::set<JB_ja_tasks>(job, std::move(created));
+         job.set<JB_ja_tasks>(std::move(created));
       }
       ja_task = ja_task_list.push_back(template_task.clone());
    }
@@ -566,14 +566,14 @@ void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<o
       DRETURN_VOID;
    }
 
-   const auto ja_task_list = ocs::tom::get<JB_ja_tasks>(job);
+   const auto ja_task_list = job.get<JB_ja_tasks>();
    if (!ja_task_list) {
       // no enrolled task - should never happen
       DRETURN_VOID;
    }
 
    // add the task id to the list of unenrolled tasks; the list is taken out of the job and put back
-   const uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ocs::tom::ConstElement<ocs::tom::JAT>(*ja_task));
+   const uint32_t ja_task_id = ocs::tom::ConstElement<ocs::tom::JAT>(*ja_task).get<JAT_task_number>();
    auto ids = job.exchange<JB_ja_n_h_ids>(nullptr);
    range_list_insert_id(ids, answer_list, ja_task_id);
    range_list_compress(ids);
@@ -585,7 +585,7 @@ void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<o
 
    // trash the list if it was the last task
    if (ja_task_list.empty()) {
-      ocs::tom::set<JB_ja_tasks>(job, nullptr);
+      job.set<JB_ja_tasks>(nullptr);
    }
    DRETURN_VOID;
 }
@@ -607,9 +607,9 @@ void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<o
 static int job_count_rescheduled_ja_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job, const bool count_all) {
    int n = 0;
 
-   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-      const uint32_t state = ocs::tom::get<JAT_state>(ja_task);
-      if ((ocs::tom::get<JAT_status>(ja_task) == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
+   for (const auto ja_task : job.get<JB_ja_tasks>()) {
+      const uint32_t state = ja_task.get<JAT_state>();
+      if ((ja_task.get<JAT_status>() == JIDLE) && ((state & JQUEUED) != 0) && ((state & JWAITING) != 0)) {
          n++;
          if (!count_all)
             break;
@@ -633,12 +633,12 @@ uint32_t job_count_pending_tasks(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DENTER(TOP_LAYER);
 
    if (count_all) {
-      uint32_t n = range_list_get_number_of_ids(ocs::tom::get<JB_ja_n_h_ids>(job));
+      uint32_t n = range_list_get_number_of_ids(job.get<JB_ja_n_h_ids>());
       n += job_count_rescheduled_ja_tasks(job, true);
       DRETURN(n);
    }
 
-   if (ocs::tom::get<JB_ja_n_h_ids>(job) || job_count_rescheduled_ja_tasks(job, false)) {
+   if (job.get<JB_ja_n_h_ids>() || job_count_rescheduled_ja_tasks(job, false)) {
       DRETURN(1);
    }
 
@@ -681,8 +681,8 @@ void job_delete_not_enrolled_ja_task(const ocs::tom::Element<ocs::tom::JB> job,
  */
 bool job_has_soft_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    bool ret = false;
-   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      if (ocs::tom::get<JRS_soft_resource_list>(jrs) || ocs::tom::get<JRS_soft_queue_list>(jrs)) {
+   for (const auto jrs : job.get<JB_request_set_list>()) {
+      if (jrs.get<JRS_soft_resource_list>() || jrs.get<JRS_soft_queue_list>()) {
          ret = true;
          break;
       }
@@ -751,11 +751,11 @@ void job_set_hold_state(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
       const auto ja_task = job_search_task(job, nullptr, ja_task_id);
 
       if (ja_task) {
-         ocs::tom::set<JAT_hold>(ja_task, new_hold_state);
+         ja_task.set<JAT_hold>(new_hold_state);
          if (new_hold_state) {
-            ocs::tom::set<JAT_state>(ja_task, ocs::tom::get<JAT_state>(ja_task) | JHELD);
+            ja_task.set<JAT_state>(ja_task.get<JAT_state>() | JHELD);
          } else {
-            ocs::tom::set<JAT_state>(ja_task, ocs::tom::get<JAT_state>(ja_task) & ~JHELD);
+            ja_task.set<JAT_state>(ja_task.get<JAT_state>() & ~JHELD);
          }
       }
    }
@@ -781,7 +781,7 @@ uint32_t job_get_hold_state(const ocs::tom::ConstElement<ocs::tom::JB> job, cons
       const auto ja_task = job_search_task(job, nullptr, ja_task_id);
 
       if (ja_task) {
-         ret = ocs::tom::get<JAT_hold>(ja_task) & MINUS_H_TGT_ALL;
+         ret = ja_task.get<JAT_hold>() & MINUS_H_TGT_ALL;
       } else {
          ret = 0;
       }
@@ -818,7 +818,7 @@ ocs::tom::Element<ocs::tom::JAT> job_search_task(const ocs::tom::ConstElement<oc
    ocs::tom::Element<ocs::tom::JAT> ja_task = nullptr;
 
    if (job) {
-      ja_task = ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, ja_task_id);
+      ja_task = job.find_first_in_rw<JB_ja_tasks, JAT_task_number>(ja_task_id);
    }
    DRETURN(ja_task);
 }
@@ -869,7 +869,7 @@ ocs::tom::Element<ocs::tom::JAT> job_create_task(const ocs::tom::Element<ocs::to
 const char *job_get_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::QU> queue,
                                      const char *conf_shell_start_mode) {
    DENTER(TOP_LAYER);
-   if (const char *queue_start_mode = ocs::tom::get<QU_shell_start_mode>(queue);
+   if (const char *queue_start_mode = queue.get<QU_shell_start_mode>();
        queue_start_mode && strcasecmp(queue_start_mode, "none") != 0) {
       DRETURN(queue_start_mode);
    }
@@ -917,10 +917,10 @@ int job_list_add_job(lList **job_list, const char *name, const ocs::tom::Element
 
    // the slot holds a job list; the master list and the spooling lists are not checked again
    const auto list = ocs::tom::List<ocs::tom::JB>::from_typed(*job_list);
-   if (check && list && list.find_first<JB_job_number>(ocs::tom::get<JB_job_number>(job))) {
+   if (check && list && list.find_first<JB_job_number>(job.get<JB_job_number>())) {
       dstring id_dstring = DSTRING_INIT;
       ERROR(MSG_JOB_JOBALREADYEXISTS_S,
-            job_get_id_string(ocs::tom::get<JB_job_number>(job), 0, nullptr, &id_dstring));
+            job_get_id_string(job.get<JB_job_number>(), 0, nullptr, &id_dstring));
       sge_dstring_free(&id_dstring);
       DRETURN(-1);
    }
@@ -946,7 +946,7 @@ int job_list_add_job(lList **job_list, const char *name, const ocs::tom::Element
  * @see #job_is_tight_parallel
  */
 bool job_is_array(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   const uint32_t job_type = ocs::tom::get<JB_type>(job);
+   const uint32_t job_type = job.get<JB_type>();
 
    return JOB_TYPE_IS_ARRAY(job_type) ? true : false;
 }
@@ -971,7 +971,7 @@ bool job_is_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
    bool ret = false;
 
-   const char *pe_name = ocs::tom::get<JB_pe>(job);
+   const char *pe_name = job.get<JB_pe>();
    if (pe_name != nullptr) {
       int found_pe = 0;
       int all_are_tight = 1;
@@ -979,7 +979,7 @@ bool job_is_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
       for (const auto pe : pe_list) {
          if (pe_is_matching(pe, pe_name)) {
             found_pe = 1;
-            all_are_tight &= ocs::tom::get<PE_control_slaves>(pe);
+            all_are_tight &= pe.get<PE_control_slaves>();
          }
       }
 
@@ -1012,10 +1012,10 @@ bool job_might_be_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
    bool ret = false;
 
-   const char *pe_name = ocs::tom::get<JB_pe>(job);
+   const char *pe_name = job.get<JB_pe>();
    if (pe_name != nullptr) {
       for (const auto pe : pe_list) {
-         if (pe_is_matching(pe, pe_name) && ocs::tom::get<PE_control_slaves>(pe)) {
+         if (pe_is_matching(pe, pe_name) && pe.get<PE_control_slaves>()) {
             ret = true;
             break;
          }
@@ -1038,11 +1038,11 @@ bool job_might_be_tight_parallel(const ocs::tom::ConstElement<ocs::tom::JB> job,
  * @return first id, last id and step size (>=1); 1, 1, 1 if the job has no task range
  */
 std::tuple<uint32_t, uint32_t, uint32_t> job_get_submit_task_ids(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   const auto range_elem = ocs::tom::get<JB_ja_structure>(job).front();
+   const auto range_elem = job.get<JB_ja_structure>().front();
    if (range_elem) {
-      const uint32_t tmp_step = ocs::tom::get<RN_step>(range_elem);
+      const uint32_t tmp_step = range_elem.get<RN_step>();
 
-      return {ocs::tom::get<RN_min>(range_elem), ocs::tom::get<RN_max>(range_elem), tmp_step ? tmp_step : 1};
+      return {range_elem.get<RN_min>(), range_elem.get<RN_max>(), tmp_step ? tmp_step : 1};
    }
    return {1, 1, 1};
 }
@@ -1086,8 +1086,8 @@ static uint32_t job_get_extreme_unenrolled_task_id(const ocs::tom::ConstElement<
                                                    const bool find_min) {
    DENTER(TOP_LAYER);
    const ocs::tom::ConstList<ocs::tom::RN> lists[5] = {
-      ocs::tom::get<JB_ja_n_h_ids>(job), ocs::tom::get<JB_ja_u_h_ids>(job), ocs::tom::get<JB_ja_o_h_ids>(job),
-      ocs::tom::get<JB_ja_s_h_ids>(job), ocs::tom::get<JB_ja_a_h_ids>(job)};
+      job.get<JB_ja_n_h_ids>(), job.get<JB_ja_u_h_ids>(), job.get<JB_ja_o_h_ids>(),
+      job.get<JB_ja_s_h_ids>(), job.get<JB_ja_a_h_ids>()};
    uint32_t ids[5];
 
    for (int i = 0; i < 5; i++) {
@@ -1137,8 +1137,8 @@ uint32_t job_get_smallest_enrolled_task_id(const ocs::tom::ConstElement<ocs::tom
 
    // initialize ret with the first task, then try to find a smaller task id
    bool first = true;
-   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-      const uint32_t task_number = ocs::tom::get<JAT_task_number>(ja_task);
+   for (const auto ja_task : job.get<JB_ja_tasks>()) {
+      const uint32_t task_number = ja_task.get<JAT_task_number>();
       ret = first ? task_number : std::min(ret, task_number);
       first = false;
    }
@@ -1177,8 +1177,8 @@ uint32_t job_get_biggest_enrolled_task_id(const ocs::tom::ConstElement<ocs::tom:
    uint32_t ret = 0;
 
    // every task number is > 0, so the maximum does not depend on the direction of the walk
-   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-      ret = std::max(ret, ocs::tom::get<JAT_task_number>(ja_task));
+   for (const auto ja_task : job.get<JB_ja_tasks>()) {
+      ret = std::max(ret, ja_task.get<JAT_task_number>());
    }
    return ret;
 }
@@ -1235,17 +1235,17 @@ int job_list_register_new_job(const ocs::tom::ConstList<ocs::tom::JB> job_list, 
 int job_initialize_id_lists(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   auto n_h_list = ocs::tom::get<JB_ja_structure>(job).clone("task_id_range");
+   auto n_h_list = job.get<JB_ja_structure>().clone("task_id_range");
    if (n_h_list == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EMALLOC, ANSWER_QUALITY_ERROR,
                               MSG_MEM_MEMORYALLOCFAILED_S, __func__);
       DRETURN(-1);
    } else {
-      ocs::tom::set<JB_ja_n_h_ids>(job, std::move(n_h_list));
-      ocs::tom::set<JB_ja_u_h_ids>(job, nullptr);
-      ocs::tom::set<JB_ja_o_h_ids>(job, nullptr);
-      ocs::tom::set<JB_ja_s_h_ids>(job, nullptr);
-      ocs::tom::set<JB_ja_a_h_ids>(job, nullptr);
+      job.set<JB_ja_n_h_ids>(std::move(n_h_list));
+      job.set<JB_ja_u_h_ids>(nullptr);
+      job.set<JB_ja_o_h_ids>(nullptr);
+      job.set<JB_ja_s_h_ids>(nullptr);
+      job.set<JB_ja_a_h_ids>(nullptr);
    }
    DRETURN(0);
 }
@@ -1303,7 +1303,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
 
    // Add TERM to the job environment.
    // If TERM is not set, it will be inherited from sge_execd's environment (unless execd_param INHERIT_ENV=FALSE).
-   const uint32_t job_type = ocs::tom::get<JB_type>(job);
+   const uint32_t job_type = job.get<JB_type>();
    if (JOB_TYPE_IS_QLOGIN(job_type) || JOB_TYPE_IS_QRLOGIN(job_type) || JOB_TYPE_IS_QRSH(job_type)) {
       const char *term = sge_getenv("TERM");
       if (term != nullptr) {
@@ -1354,7 +1354,7 @@ void job_initialize_env(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
 const char *job_get_env_string(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *variable) {
    DENTER(TOP_LAYER);
 
-   const char *ret = var_list_get_string(ocs::tom::get<JB_env_list>(job), variable);
+   const char *ret = var_list_get_string(job.get<JB_env_list>(), variable);
    DRETURN(ret);
 }
 
@@ -1379,12 +1379,12 @@ void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job,
    {
       // the first list, JB_ja_structure, is not corrected
       const ocs::tom::List<ocs::tom::RN> range_lists[] = {
-         ocs::tom::get<JB_ja_structure>(job),
-         ocs::tom::get<JB_ja_n_h_ids>(job),
-         ocs::tom::get<JB_ja_u_h_ids>(job),
-         ocs::tom::get<JB_ja_s_h_ids>(job),
-         ocs::tom::get<JB_ja_o_h_ids>(job),
-         ocs::tom::get<JB_ja_a_h_ids>(job)
+         job.get<JB_ja_structure>(),
+         job.get<JB_ja_n_h_ids>(),
+         job.get<JB_ja_u_h_ids>(),
+         job.get<JB_ja_s_h_ids>(),
+         job.get<JB_ja_o_h_ids>(),
+         job.get<JB_ja_a_h_ids>()
       };
       bool is_structure = true;
 
@@ -1408,11 +1408,11 @@ void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job,
     */
    {
       const ocs::tom::ConstList<ocs::tom::RN> range_lists[] = {
-         ocs::tom::get<JB_ja_n_h_ids>(job),
-         ocs::tom::get<JB_ja_u_h_ids>(job),
-         ocs::tom::get<JB_ja_s_h_ids>(job),
-         ocs::tom::get<JB_ja_o_h_ids>(job),
-         ocs::tom::get<JB_ja_a_h_ids>(job)
+         job.get<JB_ja_n_h_ids>(),
+         job.get<JB_ja_u_h_ids>(),
+         job.get<JB_ja_s_h_ids>(),
+         job.get<JB_ja_o_h_ids>(),
+         job.get<JB_ja_a_h_ids>()
       };
       int has_structure = 0;
       int has_x_ids = 0;
@@ -1422,7 +1422,7 @@ void job_check_correct_id_sublists(const ocs::tom::Element<ocs::tom::JB> job,
             has_x_ids = 1;
          }
       }
-      has_structure = !range_list_is_empty(ocs::tom::get<JB_ja_structure>(job));
+      has_structure = !range_list_is_empty(job.get<JB_ja_structure>());
       if (!has_structure) {
          ERROR(SFNMAX, MSG_JOB_NOIDNOTALLOWED);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN,
@@ -1489,7 +1489,7 @@ const char *job_get_id_string(uint32_t job_id, uint32_t ja_task_id,
  */
 bool job_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
                           const ocs::tom::ConstElement<ocs::tom::PE> pe) {
-   const char *ref_pe_name = ocs::tom::get<JB_pe>(job);
+   const char *ref_pe_name = job.get<JB_pe>();
    bool ret = false;
 
    if(ref_pe_name != nullptr) {
@@ -1513,8 +1513,8 @@ bool job_is_pe_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
  */
 bool job_is_ckpt_referenced(const ocs::tom::ConstElement<ocs::tom::JB> job,
                             const ocs::tom::ConstElement<ocs::tom::CK> ckpt) {
-   const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
-   const char *ref_ckpt_name = ocs::tom::get<JB_checkpoint_name>(job);
+   const char *ckpt_name = ckpt.get<CK_name>();
+   const char *ref_ckpt_name = job.get<JB_checkpoint_name>();
    bool ret = false;
 
    if(ckpt_name != nullptr && ref_ckpt_name != nullptr) {
@@ -1619,11 +1619,11 @@ void job_get_state_string(char *str, uint32_t op) {
 void job_add_parent_id_to_context(const ocs::tom::Element<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    const char *job_id_string = sge_getenv("JOB_ID");
-   if (job_id_string != nullptr && !ocs::tom::find_first_in<JB_context_change, CX_variable>(job, CONTEXT_PARENT)) {
+   if (job_id_string != nullptr && !job.find_first_in<JB_context_change, CX_variable>(CONTEXT_PARENT)) {
       // emplace_back_in() creates the list if the job has none yet
-      ocs::tom::emplace_back_in<JB_context_change, CX_variable>(job, "+");
-      const auto parent = ocs::tom::emplace_back_in<JB_context_change, CX_variable>(job, CONTEXT_PARENT);
-      ocs::tom::set<CX_value>(parent, job_id_string);
+      job.emplace_back_in<JB_context_change, CX_variable>("+");
+      const auto parent = job.emplace_back_in<JB_context_change, CX_variable>(CONTEXT_PARENT);
+      parent.set<CX_value>(job_id_string);
    }
    DRETURN_VOID;
 }
@@ -1655,11 +1655,11 @@ int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::t
    DENTER(TOP_LAYER);
 
    dstring id_dstring = DSTRING_INIT;
-   const char *id_str = job_get_id_string(ocs::tom::get<JB_job_number>(job), 0, nullptr, &id_dstring);
+   const char *id_str = job_get_id_string(job.get<JB_job_number>(), 0, nullptr, &id_dstring);
    int ret = STATUS_OK;
 
    /* check for existence of DISPLAY */
-   if (const auto display_ep = ocs::tom::get<JB_env_list>(job).find_first<VA_variable>("DISPLAY"); !display_ep) {
+   if (const auto display_ep = job.get<JB_env_list>().find_first<VA_variable>("DISPLAY"); !display_ep) {
       if (output_warning) {
          WARNING(MSG_JOB_NODISPLAY_S, id_str);
       } else {
@@ -1671,7 +1671,7 @@ int job_check_qsh_display(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::t
       /* check value of display variable, if it is an empty string,
        * it is useless in a grid environment.
        */
-      if (const char *display = ocs::tom::get<VA_value>(display_ep); display == nullptr || strlen(display) == 0) {
+      if (const char *display = display_ep.get<VA_value>(); display == nullptr || strlen(display) == 0) {
          if (output_warning) {
             WARNING(MSG_JOB_EMPTYDISPLAY_S, id_str);
          } else {
@@ -1723,7 +1723,7 @@ int job_check_owner(const ocs::gdi::Packet *packet, const uint32_t job_id,
       DRETURN(-1);
    }
 
-   if (strcmp(packet->user, ocs::tom::get<JB_owner>(job)) != 0) {
+   if (strcmp(packet->user, job.get<JB_owner>()) != 0) {
       DRETURN(1);
    }
 
@@ -1865,7 +1865,7 @@ const char *jobscript_get_key(const ocs::tom::ConstElement<ocs::tom::JB> jep, ds
    if (buffer != nullptr) {
       ret = sge_dstring_sprintf(buffer, "%s:" sge_u32 ".%s",
                                 object_type_get_name(SGE_TYPE_JOBSCRIPT),
-                                ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JB_exec_file>(jep));
+                                jep.get<JB_job_number>(), jep.get<JB_exec_file>());
    }
    DRETURN(ret);
 }
@@ -1916,7 +1916,7 @@ int job_resolve_host_for_path_list(const ocs::tom::List<ocs::tom::PN> path_list,
       int res = ocs_resolve_host<PN_host>(ep);
       DPRINTF("after ocs_resolve_host() which returned %s\n", cl_get_error_text(res));
       if (res != CL_RETVAL_OK) {
-         const char *hostname = ocs::tom::get<PN_host>(ep);
+         const char *hostname = ep.get<PN_host>();
          if (hostname != nullptr) {
             ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, hostname);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -1931,10 +1931,10 @@ int job_resolve_host_for_path_list(const ocs::tom::List<ocs::tom::PN> path_list,
 
       /* ensure, that each hostname is only specified once */
       if( !ret_error ){
-         const char *hostname = ocs::tom::get<PN_host>(ep);
+         const char *hostname = ep.get<PN_host>();
 
          for (auto temp = ep.prev(); temp; temp = temp.prev()) {
-            const char *temp_hostname = ocs::tom::get<PN_host>(temp);
+            const char *temp_hostname = temp.get<PN_host>();
 
             if(hostname == nullptr){
                if(temp_hostname == nullptr){
@@ -2052,13 +2052,13 @@ job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
       // CS-537: the amount was parsed when the request was built and is kept in CE_doubleval.
       // Parsing CE_stringval again would also be wrong for a resource map, whose string carries
       // a bracketed parameter list after the amount.
-      *value = ocs::tom::get<CE_doubleval>(centry);
+      *value = centry.get<CE_doubleval>();
    } else {
       // if the job did not request the consumable, there might still be a default request
       // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
-      value_string = ocs::tom::get<CE_defaultval>(complex_definition);
+      value_string = complex_definition.get<CE_defaultval>();
       is_default_request = true;
-      const auto valtype = static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(complex_definition));
+      const auto valtype = static_cast<ocs::CEntry::Type>(complex_definition.get<CE_valtype>());
       if (!(parse_ulong_val(value, nullptr, valtype, value_string, error_str, sizeof(error_str)-1))) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
                                  MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
@@ -2100,7 +2100,7 @@ void
 adjust_slave_task_debit_slots(const ocs::tom::ConstElement<ocs::tom::PE> pe, int &slave_debit_slots) {
    bool job_is_first_task = true;
    if (pe) {
-      job_is_first_task = ocs::tom::get<PE_job_is_first_task>(pe);
+      job_is_first_task = pe.get<PE_job_is_first_task>();
    }
 
    if (job_is_first_task /* || abs(slave_debit_slots) == 1 */) {
@@ -2134,7 +2134,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
    bool first = true;
 
    for (const auto elem : acl_list) {
-      if (ocs::tom::get<US_consider_with_categories>(elem) &&
+      if (elem.get<US_consider_with_categories>() &&
           sge_contained_in_access_list(owner, group, grp_list, elem)) {
          if (first) {
             sge_dstring_append(category_str, option);
@@ -2143,7 +2143,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
          } else {
             sge_dstring_append_char(category_str, ',');
          }
-         sge_dstring_append(category_str, ocs::tom::get<US_name>(elem));
+         sge_dstring_append(category_str, elem.get<US_name>());
       }
    }
    if (!first) {
@@ -2184,7 +2184,7 @@ bool sge_unparse_queue_list_dstring(dstring *category_str, const ocs::tom::List<
          } else {
             sge_dstring_append_char(category_str, ',');
          }
-         sge_dstring_append(category_str, ocs::tom::get<QR_name>(sub_elem));
+         sge_dstring_append(category_str, sub_elem.get<QR_name>());
       }
       sge_dstring_append_char(category_str, ' ');
    }
@@ -2229,17 +2229,17 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, const ocs::tom::Li
           * CE_stringval, the stored value, and plain client output has to show
           * the value as the user wrote it.
           */
-         switch (static_cast<ocs::CEntry::Type>(ocs::tom::get<CE_valtype>(sub_elem))) {
+         switch (static_cast<ocs::CEntry::Type>(sub_elem.get<CE_valtype>())) {
             case ocs::CEntry::Type::MEM:
             case ocs::CEntry::Type::TIME:
                sge_dstring_sprintf_append(category_str, "%s=%.0f",
-                                          ocs::tom::get<CE_name>(sub_elem),
-                                          ocs::tom::get<CE_doubleval>(sub_elem));
+                                          sub_elem.get<CE_name>(),
+                                          sub_elem.get<CE_doubleval>());
                break;
             default:
-               sge_dstring_append(category_str, ocs::tom::get<CE_name>(sub_elem));
+               sge_dstring_append(category_str, sub_elem.get<CE_name>());
                sge_dstring_append(category_str, "=");
-               sge_dstring_append(category_str, ocs::tom::get<CE_stringval>(sub_elem));
+               sge_dstring_append(category_str, sub_elem.get<CE_stringval>());
                break;
          }
       }
@@ -2263,8 +2263,8 @@ bool sge_unparse_resource_list_dstring(dstring *category_str, const ocs::tom::Li
 bool sge_unparse_pe_dstring(dstring *category_str, const ocs::tom::ConstElement<ocs::tom::JB> job, const char *option) {
    DENTER(TOP_LAYER);
 
-   if (const char *pe_name = ocs::tom::get<JB_pe>(job); pe_name != nullptr) {
-      const auto range_list = ocs::tom::get<JB_pe_range>(job);
+   if (const char *pe_name = job.get<JB_pe>(); pe_name != nullptr) {
+      const auto range_list = job.get<JB_pe_range>();
       if (!range_list) {
          DPRINTF("Job has parallel environment with no ranges\n");
          DRETURN(false);
@@ -2402,7 +2402,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
       DRETURN(false);
    }
 
-   if (const char *name = ocs::tom::get<JB_job_name>(job); name != nullptr) {
+   if (const char *name = job.get<JB_job_name>(); name != nullptr) {
       if (strlen(name) >= MAX_VERIFY_STRING) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JOB_NAMETOOLONG_I,
                                  MAX_VERIFY_STRING);
@@ -2413,7 +2413,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
       DRETURN(false);
    }
 
-   if (const char *cwd = ocs::tom::get<JB_cwd>(job); cwd != nullptr) {
+   if (const char *cwd = job.get<JB_cwd>(); cwd != nullptr) {
       /*
        * cwd needn't be an absolute path, we also accept
        * relative paths, e.g. via -wd switch,
@@ -2425,21 +2425,21 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
       }
    }
 
-   if (const auto path_aliases = ocs::tom::get<JB_path_aliases>(job); path_aliases) {
+   if (const auto path_aliases = job.get<JB_path_aliases>(); path_aliases) {
       ret = path_alias_verify(path_aliases, answer_list);
       if (!ret) {
          DRETURN(false);
       }
    }
 
-   if (const auto env_list = ocs::tom::get<JB_env_list>(job); env_list) {
+   if (const auto env_list = job.get<JB_env_list>(); env_list) {
       ret = var_list_verify(env_list, answer_list);
       if (!ret) {
          DRETURN(false);
       }
    }
 
-   if (const auto context_list = ocs::tom::get<JB_context>(job); context_list) {
+   if (const auto context_list = job.get<JB_context>(); context_list) {
       ret = var_list_verify(context_list, answer_list);
       if (!ret) {
          DRETURN(false);
@@ -2448,7 +2448,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
 
    // the names of the context instructions, markers included, must not be empty either
    for (const auto change_ep : job_get_context_change(job)) {
-      const char *variable = ocs::tom::get<CX_variable>(change_ep);
+      const char *variable = change_ep.get<CX_variable>();
       if (variable == nullptr || variable[0] == '\0') {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, SFNMAX,
                                  MSG_OBJECT_VARIABLENAME_NOT_EMPTY);
@@ -2457,9 +2457,9 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
    }
 
    const struct { ocs::tom::ConstList<ocs::tom::PN> list; const char *name; } path_lists[] = {
-      {ocs::tom::get<JB_stdout_path_list>(job), "stdout path"},
-      {ocs::tom::get<JB_stderr_path_list>(job), "stderr path"},
-      {ocs::tom::get<JB_stdin_path_list>(job),  "stdin path"},
+      {job.get<JB_stdout_path_list>(), "stdout path"},
+      {job.get<JB_stderr_path_list>(), "stderr path"},
+      {job.get<JB_stdin_path_list>(),  "stdin path"},
    };
    for (const auto &[list, name] : path_lists) {
       ret = path_list_verify(list, answer_list, name);
@@ -2512,7 +2512,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_session must be a valid string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_session>(job);
+      const char *name = job.get<JB_session>();
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2524,7 +2524,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_project must be a valid string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_project>(job);
+      const char *name = job.get<JB_project>();
       if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
@@ -2536,7 +2536,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_department must be a valid string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_department>(job);
+      const char *name = job.get<JB_department>();
       if (name != nullptr) {
          if (verify_str_key(
             answer_list, name, MAX_VERIFY_STRING,
@@ -2550,7 +2550,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_exec_file must be a valid directory string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_exec_file>(job);
+      const char *name = job.get<JB_exec_file>();
       if (name != nullptr) {
          ret = path_verify(name, answer_list, "exec_file", false);
       }
@@ -2558,7 +2558,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_script_file must be a string and a valid directory string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_script_file>(job);
+      const char *name = job.get<JB_script_file>();
       if (name != nullptr) {
          ret = path_verify(name, answer_list, "script_file", false);
       }
@@ -2566,14 +2566,14 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_script_ptr must be any string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_script_ptr>(job);
+      const char *name = job.get<JB_script_ptr>();
       if (name == nullptr) {
          /* JB_script_size must not 0 */
          ret = object_verify_ulong_null<JB_script_size>(job, answer_list);
       } else {
          /* JB_script_size must be size of JB_script_ptr */
          /* TODO: define a max script size */
-         if (strlen(name) != ocs::tom::get<JB_script_size>(job)) {
+         if (strlen(name) != job.get<JB_script_size>()) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                     MSG_JOB_SCRIPTLENGTHDOESNOTMATCH);
             ret = false;
@@ -2597,7 +2597,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_account must be a valid string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_account>(job);
+      const char *name = job.get<JB_account>();
       if (name != nullptr) {
          if(verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2618,7 +2618,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
     * Therefore a valid range is from 1 to 2 * BASE_PRIORITY.
     */
    if (ret) {
-      uint32_t priority = ocs::tom::get<JB_priority>(job);
+      uint32_t priority = job.get<JB_priority>();
       if (priority < 1 || priority > 2 * BASE_PRIORITY) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDPRIORITYMUSTBEINNEG1023TO1024);
@@ -2636,7 +2636,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_checkpoint_name */
    if (ret) {
-      const char *name = ocs::tom::get<JB_checkpoint_name>(job);
+      const char *name = job.get<JB_checkpoint_name>();
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2648,7 +2648,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_checkpoint_object */
    if (ret) {
-      if (ocs::tom::get<JB_checkpoint_object>(job) != nullptr) {
+      if (job.get<JB_checkpoint_object>() != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "checkpoint object");
             ret = false;
@@ -2659,7 +2659,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_restart can be 0, 1 or 2 */
    if (ret) {
-      uint32_t value = ocs::tom::get<JB_restart>(job);
+      uint32_t value = job.get<JB_restart>();
       if (value != 0 && value != 1 && value != 2) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "restart");
@@ -2680,7 +2680,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_pe must be a valid string */
    if (ret) {
-      const char *name = ocs::tom::get<JB_pe>(job );
+      const char *name = job.get<JB_pe>();
       if (name != nullptr) {
          if (verify_str_key(
                answer_list, name, MAX_VERIFY_STRING,
@@ -2708,7 +2708,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_host must be nullptr */
    if (ret) {
-      if (static_cast<const char *>(ocs::tom::get<JB_host>(job)) != nullptr) {
+      if (static_cast<const char *>(job.get<JB_host>()) != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "host");
             ret = false;
@@ -2721,7 +2721,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_verify_suitable_queues must be in range of OPTION_VERIFY_STR */
    if (ret) {
-      if (ocs::tom::get<JB_verify_suitable_queues>(job) >= (sizeof(OPTION_VERIFY_STR)/sizeof(char)-1)) {
+      if (job.get<JB_verify_suitable_queues>() >= (sizeof(OPTION_VERIFY_STR)/sizeof(char)-1)) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "verify");
             ret = false;
@@ -2765,7 +2765,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
     }
    // JB_ja_task_concurrency may only be given for array jobs
    if (ret) {
-      uint32_t task_concurrency = ocs::tom::get<JB_ja_task_concurrency>(job);
+      uint32_t task_concurrency = job.get<JB_ja_task_concurrency>();
       if (task_concurrency > 0 && !job_is_array(job)) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "task concurrency");
@@ -2808,7 +2808,7 @@ bool job_get_wallclock_limit(uint64_t *limit, const ocs::tom::ConstElement<ocs::
 
    const auto hard_resource_list = job_get_hard_resource_list(jep);
    if ((ep = hard_resource_list.find_first<CE_name>(SGE_ATTR_H_RT))) {
-      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str,
+      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ep.get<CE_stringval>()), error_str,
                           sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
@@ -2818,7 +2818,7 @@ bool job_get_wallclock_limit(uint64_t *limit, const ocs::tom::ConstElement<ocs::
    }
 
    if ((ep = hard_resource_list.find_first<CE_name>(SGE_ATTR_S_RT))) {
-      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ocs::tom::get<CE_stringval>(ep)), error_str,
+      if (parse_ulong_val(&d_tmp, nullptr, ocs::CEntry::Type::TIME, (s=ep.get<CE_stringval>()), error_str,
                           sizeof(error_str)-1)==0) {
          ERROR(MSG_CPLX_WRONGTYPE_SSS, SGE_ATTR_H_RT, s, error_str);
          DRETURN(false);
@@ -2860,7 +2860,7 @@ bool job_get_wallclock_limit(uint64_t *limit, const ocs::tom::ConstElement<ocs::
  */
 bool
 job_is_binary(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   return (JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job)) ? true : false);
+   return (JOB_TYPE_IS_BINARY(job.get<JB_type>()) ? true : false);
 }
 
 /**
@@ -2873,14 +2873,14 @@ job_is_binary(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 bool
 job_set_binary(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary) {
    bool ret = true;
-   uint32_t type = ocs::tom::get<JB_type>(job);
+   uint32_t type = job.get<JB_type>();
 
    if (is_binary) {
       JOB_TYPE_SET_BINARY(type);
    } else {
       JOB_TYPE_CLEAR_BINARY(type);
    }
-   ocs::tom::set<JB_type>(job, type);
+   job.set<JB_type>(type);
    return ret;
 }
 
@@ -2892,7 +2892,7 @@ job_set_binary(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary) 
  */
 bool
 job_is_no_shell(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   return (JOB_TYPE_IS_NO_SHELL(ocs::tom::get<JB_type>(job)) ? true : false);
+   return (JOB_TYPE_IS_NO_SHELL(job.get<JB_type>()) ? true : false);
 }
 
 /**
@@ -2908,14 +2908,14 @@ job_is_no_shell(const ocs::tom::ConstElement<ocs::tom::JB> job) {
 bool
 job_set_no_shell(const ocs::tom::Element<ocs::tom::JB> job, const bool is_binary) {
    bool ret = true;
-   uint32_t type = ocs::tom::get<JB_type>(job);
+   uint32_t type = job.get<JB_type>();
 
    if (is_binary) {
       JOB_TYPE_SET_NO_SHELL(type);
    } else {
       JOB_TYPE_CLEAR_NO_SHELL(type);
    }
-   ocs::tom::set<JB_type>(job, type);
+   job.set<JB_type>(type);
    return ret;
 }
 
@@ -2939,11 +2939,11 @@ job_set_owner_and_group(const ocs::tom::Element<ocs::tom::JB> job, const uint32_
 
    bool ret = true;
 
-   ocs::tom::set<JB_owner>(job, user);
-   ocs::tom::set<JB_uid>(job, uid);
-   ocs::tom::set<JB_group>(job, group);
-   ocs::tom::set<JB_gid>(job, gid);
-   ocs::tom::set<JB_grp_list>(job, grp_list_array2list(amount, grp_array));
+   job.set<JB_owner>(user);
+   job.set<JB_uid>(uid);
+   job.set<JB_group>(group);
+   job.set<JB_gid>(gid);
+   job.set<JB_grp_list>(grp_list_array2list(amount, grp_array));
 
    DRETURN(ret);
 }
@@ -2972,17 +2972,17 @@ job_set_owner_and_group(const ocs::tom::Element<ocs::tom::JB> job, const uint32_
 void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom::Element<ocs::tom::JB> job) {
    // if the incoming list is empty, or it starts without a marker, the context is replaced
    if (change.empty()) {
-      ocs::tom::set<JB_context>(job, nullptr);
+      job.set<JB_context>(nullptr);
       return;
    }
-   const char *first = ocs::tom::get<CX_variable>(change.front());
+   const char *first = change.front().get<CX_variable>();
    if (first == nullptr || (*first != '+' && *first != '-' && *first != '=')) {
-      ocs::tom::set<JB_context>(job, nullptr);
+      job.set<JB_context>(nullptr);
    }
 
    char mode = '+';
    for (const auto change_ep : change) {
-      const char *name = ocs::tom::get<CX_variable>(change_ep);
+      const char *name = change_ep.get<CX_variable>();
       if (name == nullptr) {
          continue;
       }
@@ -2994,25 +2994,25 @@ void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom:
             mode = '-';
             break;
          case '=':
-            ocs::tom::set<JB_context>(job, nullptr);
+            job.set<JB_context>(nullptr);
             mode = '+';
             break;
          default:
             if (mode == '+') {
-               auto context = ocs::tom::get<JB_context>(job);
+               auto context = job.get<JB_context>();
                if (!context) {
                   auto created = ocs::tom::ListPtr<ocs::tom::VA>::create("context_list");
                   context = created.get();
-                  ocs::tom::set<JB_context>(job, std::move(created));
+                  job.set<JB_context>(std::move(created));
                }
                auto var = context.find_first<VA_variable>(name);
                if (!var) {
                   var = context.emplace_back<VA_variable>(name);
                }
-               ocs::tom::set<VA_value>(var, ocs::tom::get<CX_value>(change_ep));
+               var.set<VA_value>(change_ep.get<CX_value>());
             } else {
                // frees JB_context when its last variable goes, so the list is looked up again above
-               ocs::tom::erase_in<JB_context, VA_variable>(job, name);
+               job.erase_in<JB_context, VA_variable>(name);
             }
             break;
       }
@@ -3035,8 +3035,8 @@ void set_context(const ocs::tom::ConstList<ocs::tom::CX> change, const ocs::tom:
  */
 void ocs_context_change_add(lList **change, const ocs::tom::ConstList<ocs::tom::VA> option_list) {
    for (const auto var : option_list) {
-      const auto ep = ocs::tom::emplace_back<CX_variable>(change, ocs::tom::get<VA_variable>(var));
-      ocs::tom::set<CX_value>(ep, ocs::tom::get<VA_value>(var));
+      const auto ep = ocs::tom::emplace_back<CX_variable>(change, var.get<VA_variable>());
+      ep.set<CX_value>(var.get<VA_value>());
    }
 }
 
@@ -3052,10 +3052,10 @@ void ocs_context_change_add(lList **change, const ocs::tom::ConstList<ocs::tom::
  */
 static ocs::tom::ConstList<ocs::tom::CX>
 job_get_context_change(const ocs::tom::ConstElement<ocs::tom::JB> job) {
-   if (!ocs::tom::has<JB_context_change>(job)) {
+   if (!job.has<JB_context_change>()) {
       return nullptr;
    }
-   return ocs::tom::get<JB_context_change>(job);
+   return job.get<JB_context_change>();
 }
 
 /**
@@ -3071,8 +3071,8 @@ job_get_context_change(const ocs::tom::ConstElement<ocs::tom::JB> job) {
  */
 ocs::tom::ListPtr<ocs::tom::VA> ocs_context_get_effective(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    auto tmp_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   if (ocs::tom::has<JB_context>(job) && ocs::tom::get<JB_context>(job)) {
-      ocs::tom::set<JB_context>(*tmp_job, ocs::tom::get<JB_context>(job).clone("context_list"));
+   if (job.has<JB_context>() && job.get<JB_context>()) {
+      tmp_job->set<JB_context>(job.get<JB_context>().clone("context_list"));
    }
    if (const auto change = job_get_context_change(job); change) {
       set_context(change, *tmp_job);
@@ -3226,7 +3226,7 @@ bool job_is_requesting_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep
    if (request_list) {
       const auto cep = centry_list_locate(request_list, resource_name);
       if (cep) {
-         const uint32_t consumable = ocs::tom::get<CE_consumable>(cep);
+         const uint32_t consumable = cep.get<CE_consumable>();
          if (consumable == CONSUMABLE_JOB) {
             return true;
          }
@@ -3275,7 +3275,7 @@ ocs::tom::ConstElement<ocs::tom::JRS> job_get_request_set(const ocs::tom::ConstE
    if (!job || !job.has<JB_request_set_list>()) {
       return nullptr;
    }
-   return ocs::tom::find_first_in<JB_request_set_list, JRS_scope>(job, scope);
+   return job.find_first_in<JB_request_set_list, JRS_scope>(scope);
 }
 
 /**
@@ -3291,7 +3291,7 @@ ocs::tom::Element<ocs::tom::JRS> job_get_request_setRW(const ocs::tom::Element<o
    if (!job || !job.has<JB_request_set_list>()) {
       return nullptr;
    }
-   return ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, scope);
+   return job.find_first_in_rw<JB_request_set_list, JRS_scope>(scope);
 }
 
 /**
@@ -3303,9 +3303,9 @@ ocs::tom::Element<ocs::tom::JRS> job_get_request_setRW(const ocs::tom::Element<o
  */
 ocs::tom::Element<ocs::tom::JRS> job_get_or_create_request_setRW(const ocs::tom::Element<ocs::tom::JB> job,
                                                                  const uint32_t scope) {
-   auto jrs = ocs::tom::find_first_in_rw<JB_request_set_list, JRS_scope>(job, scope);
+   auto jrs = job.find_first_in_rw<JB_request_set_list, JRS_scope>(scope);
    if (!jrs) {
-      jrs = ocs::tom::emplace_back_in<JB_request_set_list, JRS_scope>(job, scope);
+      jrs = job.emplace_back_in<JB_request_set_list, JRS_scope>(scope);
    }
 
    return jrs;
@@ -3321,12 +3321,12 @@ ocs::tom::Element<ocs::tom::JRS> job_get_or_create_request_setRW(const ocs::tom:
 bool job_request_set_remove_duplicates(const ocs::tom::Element<ocs::tom::JB> job) {
    bool requests_found = false;
 
-   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      if (const auto lp = ocs::tom::get<JRS_hard_resource_list>(jrs); lp) {
+   for (const auto jrs : job.get<JB_request_set_list>()) {
+      if (const auto lp = jrs.get<JRS_hard_resource_list>(); lp) {
          requests_found = true;
          centry_list_remove_duplicates(lp);
       }
-      if (const auto lp_ce = ocs::tom::get<JRS_soft_resource_list>(jrs); lp_ce) {
+      if (const auto lp_ce = jrs.get<JRS_soft_resource_list>(); lp_ce) {
          requests_found = true;
          centry_list_remove_duplicates(lp_ce);
       }
@@ -3344,8 +3344,8 @@ bool job_request_set_remove_duplicates(const ocs::tom::Element<ocs::tom::JB> job
  */
 bool job_request_set_has_queue_requests(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    bool ret = false;
-   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      if (ocs::tom::get<JRS_hard_queue_list>(jrs) || ocs::tom::get<JRS_soft_queue_list>(jrs)) {
+   for (const auto jrs : job.get<JB_request_set_list>()) {
+      if (jrs.get<JRS_hard_queue_list>() || jrs.get<JRS_soft_queue_list>()) {
          ret = true;
          break;
       }
@@ -3366,10 +3366,10 @@ ocs::tom::ConstElement<ocs::tom::CE> job_get_highest_hard_request(const ocs::tom
    ocs::tom::ConstElement<ocs::tom::CE> ret = nullptr;
    double max_request = 0.0;
 
-   for (const auto jrs : ocs::tom::get<JB_request_set_list>(job)) {
-      const auto request = ocs::tom::find_first_in<JRS_hard_resource_list, CE_name>(jrs, request_name);
+   for (const auto jrs : job.get<JB_request_set_list>()) {
+      const auto request = jrs.find_first_in<JRS_hard_resource_list, CE_name>(request_name);
       if (request) {
-         const double request_value = ocs::tom::get<CE_doubleval>(request);
+         const double request_value = request.get<CE_doubleval>();
          if (request_value > max_request) {
             ret = request;
             max_request = request_value;
@@ -3396,7 +3396,7 @@ ocs::tom::ConstList<ocs::tom::CE> job_get_resource_list(const ocs::tom::ConstEle
    ocs::tom::ConstList<ocs::tom::CE> ret = nullptr;
    const auto jrs = job_get_request_set(job, scope);
    if (jrs) {
-      ret = hard ? ocs::tom::get<JRS_hard_resource_list>(jrs) : ocs::tom::get<JRS_soft_resource_list>(jrs);
+      ret = hard ? jrs.get<JRS_hard_resource_list>() : jrs.get<JRS_soft_resource_list>();
    }
    return ret;
 }
@@ -3472,7 +3472,7 @@ ocs::tom::ConstList<ocs::tom::QR> job_get_queue_list(const ocs::tom::ConstElemen
    const auto jrs = job_get_request_set(job, scope);
 
    if (jrs) {
-      ret = hard ? ocs::tom::get<JRS_hard_queue_list>(jrs) : ocs::tom::get<JRS_soft_queue_list>(jrs);
+      ret = hard ? jrs.get<JRS_hard_queue_list>() : jrs.get<JRS_soft_queue_list>();
    }
    return ret;
 }
@@ -3544,7 +3544,7 @@ ocs::tom::List<ocs::tom::CE> job_get_resource_listRW(const ocs::tom::Element<ocs
    ocs::tom::List<ocs::tom::CE> ret = nullptr;
    const auto jrs = job_get_request_setRW(job, scope);
    if (jrs) {
-      ret = hard ? ocs::tom::get<JRS_hard_resource_list>(jrs) : ocs::tom::get<JRS_soft_resource_list>(jrs);
+      ret = hard ? jrs.get<JRS_hard_resource_list>() : jrs.get<JRS_soft_resource_list>();
    }
    return ret;
 }
@@ -3590,7 +3590,7 @@ ocs::tom::List<ocs::tom::QR> job_get_queue_listRW(const ocs::tom::Element<ocs::t
    ocs::tom::List<ocs::tom::QR> ret = nullptr;
    const auto jrs = job_get_request_setRW(job, scope);
    if (jrs) {
-      ret = hard ? ocs::tom::get<JRS_hard_queue_list>(jrs) : ocs::tom::get<JRS_soft_queue_list>(jrs);
+      ret = hard ? jrs.get<JRS_hard_queue_list>() : jrs.get<JRS_soft_queue_list>();
    }
    return ret;
 }
@@ -3612,9 +3612,9 @@ void job_set_resource_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::
    const auto jrs = job_get_or_create_request_setRW(job, scope);
    if (jrs) {
       if (hard) {
-         ocs::tom::set<JRS_hard_resource_list>(jrs, std::move(list));
+         jrs.set<JRS_hard_resource_list>(std::move(list));
       } else {
-         ocs::tom::set<JRS_soft_resource_list>(jrs, std::move(list));
+         jrs.set<JRS_soft_resource_list>(std::move(list));
       }
    }
 }
@@ -3695,9 +3695,9 @@ void job_set_queue_list(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::Lis
    const auto jrs = job_get_or_create_request_setRW(job, scope);
    if (jrs) {
       if (hard) {
-         ocs::tom::set<JRS_hard_queue_list>(jrs, std::move(list));
+         jrs.set<JRS_hard_queue_list>(std::move(list));
       } else {
-         ocs::tom::set<JRS_soft_queue_list>(jrs, std::move(list));
+         jrs.set<JRS_soft_queue_list>(std::move(list));
       }
    }
 }
@@ -3771,7 +3771,7 @@ void job_set_allocation_rule(const ocs::tom::Element<ocs::tom::JB> job, const ch
                              const uint32_t scope) {
    const auto jrs = job_get_or_create_request_setRW(job, scope);
    if (jrs) {
-      ocs::tom::set<JRS_allocation_rule>(jrs, allocation_rule);
+      jrs.set<JRS_allocation_rule>(allocation_rule);
    }
 }
 
@@ -3787,7 +3787,7 @@ const char *job_get_allocation_rule(const ocs::tom::ConstElement<ocs::tom::JB> j
    const char *ret = nullptr;
    const auto jrs = job_get_request_set(job, scope);
    if (jrs) {
-      ret = ocs::tom::get<JRS_allocation_rule>(jrs);
+      ret = jrs.get<JRS_allocation_rule>();
    }
    return ret;
 }
@@ -3835,7 +3835,7 @@ job_add_bool_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job,
                                  const bool print_value) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   const bool b = ocs::tom::get<F>(job);
+   const bool b = job.get<F>();
    if (b == print_value) {
       ret = true;
       sge_dstring_append_char(dstr, ' ');
@@ -3863,7 +3863,7 @@ job_add_ulong_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job
                                   const long offset) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   const long l = ocs::tom::get<F>(job) + offset;
+   const long l = job.get<F>() + offset;
    if (l != 0) {
       ret = true;
       if (opt != nullptr) {
@@ -3890,7 +3890,7 @@ static bool
 job_add_time_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, dstring *dstr, const char *opt) {
    DENTER(TOP_LAYER);
    bool ret = true;
-   const uint64_t time64 = ocs::tom::get<F>(job);
+   const uint64_t time64 = job.get<F>();
    if (time64 != 0) {
       ret = true;
       if (opt != nullptr) {
@@ -3919,7 +3919,7 @@ static bool
 job_add_str_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, dstring *dstr, const char *opt) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   const char *str = ocs::tom::get<F>(job);
+   const char *str = job.get<F>();
    if (str != nullptr) {
       ret = true;
       if (opt != nullptr) {
@@ -3948,7 +3948,7 @@ job_add_ce_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom::JRS> 
                                     const char *opt) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   if (const auto ce_list = ocs::tom::get<F>(scope_ep); ce_list) {
+   if (const auto ce_list = scope_ep.get<F>(); ce_list) {
       ret = true;
       sge_dstring_append_char(dstr, ' ');
       sge_dstring_append(dstr, opt);
@@ -3977,7 +3977,7 @@ job_add_list_opt_to_command_line(const ocs::tom::ConstElement<typename ocs::tom:
                                  dstring *dstr, const char *opt) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   if (const auto lp = ocs::tom::get<F>(ep); lp) {
+   if (const auto lp = ep.template get<F>(); lp) {
       ret = true;
       sge_dstring_append_char(dstr, ' ');
       sge_dstring_append(dstr, opt);
@@ -3989,7 +3989,7 @@ job_add_list_opt_to_command_line(const ocs::tom::ConstElement<typename ocs::tom:
          } else {
             sge_dstring_append_char(dstr, ',');
          }
-         sge_dstring_append(dstr, ocs::tom::get<LF>(list_ep));
+         sge_dstring_append(dstr, list_ep.template get<LF>());
       }
    }
 
@@ -4011,7 +4011,7 @@ job_add_host_str_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom:
                                           const char *opt) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   if (const auto lp = ocs::tom::get<F>(job); lp) {
+   if (const auto lp = job.get<F>(); lp) {
       ret = true;
       sge_dstring_append_char(dstr, ' ');
       sge_dstring_append(dstr, opt);
@@ -4023,8 +4023,8 @@ job_add_host_str_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::tom:
          } else {
             sge_dstring_append_char(dstr, ',');
          }
-         const char *host = ocs::tom::get<PN_host>(ep);
-         const char *str = ocs::tom::get<PN_path>(ep);
+         const char *host = ep.template get<PN_host>();
+         const char *str = ep.template get<PN_path>();
          if (str != nullptr) {
             if (host != nullptr) {
                sge_dstring_append(dstr, host);
@@ -4054,10 +4054,10 @@ job_add_name_value_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::to
                                             const char *opt, const char *filter = nullptr) {
    DENTER(TOP_LAYER);
    bool ret = false;
-   if (const auto lp = ocs::tom::get<F>(job); lp) {
+   if (const auto lp = job.get<F>(); lp) {
       bool first = true;
       for (const auto ep : lp) {
-         const char *name = ocs::tom::get<VA_variable>(ep);
+         const char *name = ep.template get<VA_variable>();
          // apply filter to name, if name starts with filter, then skip this entry
          if (filter != nullptr && strstr(name, filter) == name) {
             continue;
@@ -4077,7 +4077,7 @@ job_add_name_value_list_opt_to_command_line(const ocs::tom::ConstElement<ocs::to
             sge_dstring_append(dstr, name);
             sge_dstring_append_char(dstr, '=');
 
-            const char *value = ocs::tom::get<VA_value>(ep);
+            const char *value = ep.template get<VA_value>();
             if (value != nullptr) {
                sge_dstring_append(dstr, value);
             }
@@ -4186,7 +4186,7 @@ job_scope_name(const ocs::tom::ConstElement<ocs::tom::JRS> scope_ep) {
    const char *ret = "unknown";
 
    if (scope_ep) {
-      ret = job_scope_name(ocs::tom::get<JRS_scope>(scope_ep));
+      ret = job_scope_name(scope_ep.get<JRS_scope>());
    }
 
    return ret;
@@ -4200,11 +4200,11 @@ job_scope_name(const ocs::tom::ConstElement<ocs::tom::JRS> scope_ep) {
  */
 static void
 job_add_resource_set_list_to_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, dstring *dstr) {
-   const auto request_set_list = ocs::tom::get<JB_request_set_list>(job);
+   const auto request_set_list = job.get<JB_request_set_list>();
    if (request_set_list) {
       for (const auto scope_ep : request_set_list) {
          job_add_opt_to_comand_line(dstr, "-scope", job_scope_name(scope_ep));
-         const char *allocation_rule = ocs::tom::get<JRS_allocation_rule>(scope_ep);
+         const char *allocation_rule = scope_ep.get<JRS_allocation_rule>();
          if (allocation_rule != nullptr) {
             job_add_opt_to_comand_line(dstr, "-par", allocation_rule);
          }
@@ -4236,12 +4236,12 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
    job_add_time_opt_to_command_line<JB_execution_time>(job, dstr, "-a");
    // -ac is covered by -sc
    job_add_ulong_opt_to_command_line<JB_ar>(job, dstr, "-ar", 0);
-   if (JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job))) {
+   if (JOB_TYPE_IS_BINARY(job.get<JB_type>())) {
       job_add_opt_to_comand_line(dstr, "-b", "yes");
    }
 
    // -btype, -bunit, -bstrategy, -bstart, -bstop, -bamount ...
-   if (const auto binding = ocs::tom::get<JB_binding>(job); binding) {
+   if (const auto binding = job.get<JB_binding>(); binding) {
       std::string binding_str;
       ocs::BindingIo::binding_print_to_string(binding, binding_str, true);
       sge_dstring_append_char(dstr, ' ');
@@ -4252,8 +4252,8 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
 
    // checkpointing
    if (job_add_str_opt_to_command_line<JB_checkpoint_name>(job, dstr, "-ckpt")) {
-      u_long ckpt_attr = ocs::tom::get<JB_checkpoint_attr>(job);
-      u_long ckpt_interval = ocs::tom::get<JB_checkpoint_interval>(job);
+      u_long ckpt_attr = job.get<JB_checkpoint_attr>();
+      u_long ckpt_interval = job.get<JB_checkpoint_interval>();
       if (ckpt_attr != 0 || ckpt_interval != 0) {
          sge_dstring_append(dstr, " -c ");
          if (ckpt_attr != 0) {
@@ -4278,12 +4278,12 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
    job_add_ulong_opt_to_command_line<JB_jobshare>(job, dstr, "-js", 0);
    // -jsv is not reflected in the job object
 
-   uint32_t mailopt = ocs::tom::get<JB_mail_options>(job);
+   uint32_t mailopt = job.get<JB_mail_options>();
    if (mailopt > 0) {
       sge_dstring_sprintf_append(dstr, " -m ");
       sge_dstring_append_mailopt(dstr, mailopt);
    }
-   if (const auto mail_list = ocs::tom::get<JB_mail_list>(job); mail_list) {
+   if (const auto mail_list = job.get<JB_mail_list>(); mail_list) {
       sge_dstring_append_char(dstr, ' ');
       sge_dstring_append(dstr, "-M");
       sge_dstring_append_char(dstr, ' ');
@@ -4294,14 +4294,14 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
          } else {
             sge_dstring_append_char(dstr, ',');
          }
-         sge_dstring_sprintf_append(dstr, "%s@%s", ocs::tom::get<MR_user>(ep), ocs::tom::get<MR_host>(ep));
+         sge_dstring_sprintf_append(dstr, "%s@%s", ep.get<MR_user>(), ep.get<MR_host>());
       }
    }
 
-   if (ocs::tom::get<JB_notify>(job)) {
+   if (job.get<JB_notify>()) {
       job_add_opt_to_comand_line(dstr, "-notify", nullptr);
    }
-   if (JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job))) {
+   if (JOB_TYPE_IS_IMMEDIATE(job.get<JB_type>())) {
       job_add_opt_to_comand_line(dstr, "-now", "yes");
    }
    job_add_str_opt_to_command_line<JB_job_name>(job, dstr, "-N");
@@ -4310,24 +4310,24 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
    if (job_add_str_opt_to_command_line<JB_pe>(job, dstr, "-pe")) {
       sge_dstring_append_char(dstr, ' ');
       DSTRING_STATIC(dstr_pe, 64);
-      range_list_print_to_string(ocs::tom::get<JB_pe_range>(job), &dstr_pe, true, false, false);
+      range_list_print_to_string(job.get<JB_pe_range>(), &dstr_pe, true, false, false);
       sge_dstring_append_dstring(dstr, &dstr_pe);
    }
-   uint32_t pty = ocs::tom::get<JB_pty>(job);
+   uint32_t pty = job.get<JB_pty>();
    if (pty < 2) { // 2 means: do not specify it but use the default for the client
       job_add_opt_to_comand_line(dstr, "-pty", pty == 0 ? "no" : "yes");
    }
 
    // -sync <options_flags>
    // -sync n which is the default will be silently ignored
-   uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
+   uint32_t sync_options = job.get<JB_sync_options>();
    if (sync_options != SYNC_NO) {
       std::string sync_flags = job_get_sync_options_string(job);
       job_add_opt_to_comand_line(dstr, "-sync", sync_flags.c_str());
    }
 
    job_add_bool_opt_to_command_line<JB_reserve>(job, dstr, "-R", true);
-   if (ocs::tom::get<JB_restart>(job) == 2) {
+   if (job.get<JB_restart>() == 2) {
       job_add_opt_to_comand_line(dstr, "-r", "no");
    } else {
       job_add_opt_to_comand_line(dstr, "-r", "yes");
@@ -4337,7 +4337,7 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
       job_add_name_value_list_opt_to_command_line<JB_context>(job, dstr, "-sc");
    } else {
       auto context_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-      ocs::tom::set<JB_context>(*context_job, ocs_context_get_effective(job));
+      context_job->set<JB_context>(ocs_context_get_effective(job));
       job_add_name_value_list_opt_to_command_line<JB_context>(*context_job, dstr, "-sc");
    }
    job_add_host_str_list_opt_to_command_line<JB_shell_list>(job, dstr, "-shell");
@@ -4358,9 +4358,9 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
 
    // command line to execute
    job_add_str_opt_to_command_line<JB_script_file>(job, dstr, nullptr);
-   for (const auto ep : ocs::tom::get<JB_job_args>(job)) {
+   for (const auto ep : job.get<JB_job_args>()) {
       sge_dstring_append_char(dstr, ' ');
-      job_add_str_to_command_line(dstr, ocs::tom::get<ST_name>(ep));
+      job_add_str_to_command_line(dstr, ep.get<ST_name>());
    }
 
    DRETURN(sge_dstring_get_string(dstr));
@@ -4377,7 +4377,7 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
  */
 void job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const char *client) {
    dstring dstr = DSTRING_INIT;
-   ocs::tom::set<JB_submission_command_line>(job, job_get_effective_command_line(job, &dstr, client));
+   job.set<JB_submission_command_line>(job_get_effective_command_line(job, &dstr, client));
    sge_dstring_free(&dstr);
 }
 
@@ -4395,7 +4395,7 @@ void job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const char 
 void
 job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const int argc, const char *argv[]) {
    dstring dstr = DSTRING_INIT;
-   ocs::tom::set<JB_submission_command_line>(job, sge_dstring_from_argv(&dstr, argc, argv, true, true));
+   job.set<JB_submission_command_line>(sge_dstring_from_argv(&dstr, argc, argv, true, true));
    sge_dstring_free(&dstr);
 }
 
@@ -4408,7 +4408,7 @@ job_set_command_line(const ocs::tom::Element<ocs::tom::JB> job, const int argc, 
  */
 void
 job_set_sync_options(const ocs::tom::Element<ocs::tom::JB> job, const uint32_t sync_options) {
-   ocs::tom::set<JB_sync_options>(job, sync_options);
+   job.set<JB_sync_options>(sync_options);
 }
 
 
@@ -4422,7 +4422,7 @@ std::string
 job_get_sync_options_string(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
 
-   uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
+   uint32_t sync_options = job.get<JB_sync_options>();
    if (sync_options == SYNC_NO) {
       DRETURN("n");
    }
@@ -4486,8 +4486,8 @@ void job_normalize_priority(const ocs::tom::Element<ocs::tom::JB> jep, const uin
    constexpr double min_priority = 0.0;
    constexpr double max_priority = 2048.0;
 
-   ocs::tom::set<JB_priority>(jep, priority);
-   ocs::tom::set<JB_nppri>(jep, sge_normalize_value(priority, min_priority, max_priority));
+   jep.set<JB_priority>(priority);
+   jep.set<JB_nppri>(sge_normalize_value(priority, min_priority, max_priority));
 }
 
 
@@ -4517,7 +4517,7 @@ gdil_make_host_unique(const ocs::tom::ConstList<ocs::tom::JG> gdil_list) {
 
    // first gdil that we will use to summarize the slots and the hostname
    auto first_gdil = gdil_out->front();
-   const char *first_hostname = ocs::tom::get<JG_qhostname>(first_gdil);
+   const char *first_hostname = first_gdil.get<JG_qhostname>();
 
    // iterate over the rest of the list and summarize the slots for entries with the same hostname
    auto next_gdil = first_gdil.next();
@@ -4527,12 +4527,12 @@ gdil_make_host_unique(const ocs::tom::ConstList<ocs::tom::JG> gdil_list) {
 
       // if the next gdil has a different hostname then it is the first gdil for this new hostname
       // otherwise we summarize the slots of the current gdil into the first gdil
-      if (const char *next_gdil_hostname = ocs::tom::get<JG_qhostname>(gdil);
+      if (const char *next_gdil_hostname = gdil.get<JG_qhostname>();
           sge_hostcmp(first_hostname, next_gdil_hostname) != 0) {
          first_gdil = gdil;
          first_hostname = next_gdil_hostname;
       } else {
-         ocs::tom::add<JG_slots>(first_gdil, ocs::tom::get<JG_slots>(gdil));
+         first_gdil.add<JG_slots>(gdil.get<JG_slots>());
          gdil_out->erase(gdil);
       }
    }
@@ -4558,8 +4558,8 @@ jatask_combine_state_and_status_for_output(const ocs::tom::ConstElement<ocs::tom
                                            const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
 
-   uint32_t status = ocs::tom::get<JAT_status>(jatep);
-   uint32_t state = ocs::tom::get<JAT_state>(jatep);
+   uint32_t status = jatep.get<JAT_status>();
+   uint32_t state = jatep.get<JAT_state>();
    if (status == JRUNNING) {
       state |= JRUNNING;
       state &= ~JTRANSFERING;
@@ -4589,13 +4589,13 @@ jatask_combine_state_and_status_for_output(const ocs::tom::ConstElement<ocs::tom
    }
 
    // show hold state if the job is held or has predecessors
-   if (ocs::tom::get<JB_jid_predecessor_list>(job) ||
-       ocs::tom::get<JAT_hold>(jatep)) {
+   if (job.get<JB_jid_predecessor_list>() ||
+       jatep.get<JAT_hold>()) {
       state |= JHELD;
    }
 
    // show 'R' state if the job is restarted
-   if (ocs::tom::get<JAT_job_restarted>(jatep)) {
+   if (jatep.get<JAT_job_restarted>()) {
       state &= ~JWAITING;
       state |= JMIGRATING;
    }
@@ -4644,8 +4644,8 @@ bool job_parse_when_string(const char *input, qalter_when_t &when) {
 bool
 job_is_when_now(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    bool ret = false;
-   if (ocs::tom::has<JB_when>(job)) {
-      ret = ocs::tom::get<JB_when>(job) == QALTER_WHEN_NOW;
+   if (job.has<JB_when>()) {
+      ret = job.get<JB_when>() == QALTER_WHEN_NOW;
    }
    return ret;
 }

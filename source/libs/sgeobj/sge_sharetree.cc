@@ -75,10 +75,10 @@ ocs_id_sharetree_subtree(const ocs::tom::Element<ocs::tom::STN> ep, const int id
    DENTER(TOP_LAYER);
 
    int my_id = id;
-   ocs::tom::set<STN_id>(ep, my_id++);
+   ep.set<STN_id>(my_id++);
 
    /* handle the children */
-   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+   for (const auto cep : ep.get<STN_children>()) {
       my_id = ocs_id_sharetree_subtree(cep, my_id);
    }
 
@@ -151,8 +151,8 @@ int show_sharetree(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::STN>
    for (int i = 0; i < level; i++) {
       os << (indent != nullptr ? indent : "");
    }
-   os << std::format("{}={}\n", stn_cstr(ocs::tom::get<STN_name>(ep)), ocs::tom::get<STN_shares>(ep));
-   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+   os << std::format("{}={}\n", stn_cstr(ep.get<STN_name>()), ep.get<STN_shares>());
+   for (const auto cep : ep.get<STN_children>()) {
       show_sharetree(os, cep, "   ", level + 1);
    }
 
@@ -196,19 +196,19 @@ int show_sharetree_path(std::ostream &os, const ocs::tom::Element<ocs::tom::STN>
  
    if (node) {
       for(i=0; i<ancestors.depth; i++)
-         os << "/" << stn_cstr(ocs::tom::get<STN_name>(ancestors.nodes[i]));
+         os << "/" << stn_cstr(ancestors.nodes[i].get<STN_name>());
       if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-         os << std::format("/={}\n", ocs::tom::get<STN_shares>(node));
+         os << std::format("/={}\n", node.get<STN_shares>());
       else
-         os << std::format("={}\n", ocs::tom::get<STN_shares>(node));
+         os << std::format("={}\n", node.get<STN_shares>());
       free_ancestors(&ancestors);
-      for (const auto cep : ocs::tom::get<STN_children>(node)) {
+      for (const auto cep : node.get<STN_children>()) {
 
          if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-            sge_dstring_sprintf(&sb, "/%s", ocs::tom::get<STN_name>(cep));
+            sge_dstring_sprintf(&sb, "/%s", cep.get<STN_name>());
          else
             sge_dstring_sprintf(&sb, "%s/%s", path,
-                                 ocs::tom::get<STN_name>(cep));
+                                 cep.get<STN_name>());
          show_sharetree_path(os, root, sge_dstring_get_string(&sb));
       }
    }
@@ -238,11 +238,11 @@ ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate() {
     * acceptable sharetree as-is: a single leaf named "template" would be rejected
     * (it is not a known user/project), whereas "default" matches all users. */
    auto ep = ocs::tom::ElementPtr<ocs::tom::STN>::create();
-   ocs::tom::set<STN_name>(ep, "default");
-   ocs::tom::set<STN_type>(ep, 0);
-   ocs::tom::set<STN_id>(ep, 0);
-   ocs::tom::set<STN_shares>(ep, 0);
-   ocs::tom::set<STN_children>(ep, nullptr);
+   ep->set<STN_name>("default");
+   ep->set<STN_type>(0);
+   ep->set<STN_id>(0);
+   ep->set<STN_shares>(0);
+   ep->set<STN_children>(nullptr);
 
    DRETURN(ep);
 }
@@ -305,7 +305,7 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
       delim = '.';
 
    if (name == nullptr || !strcmp(name, "*") ||
-       !strcmp(name, ocs::tom::get<STN_name>(ep))) {
+       !strcmp(name, ep.get<STN_name>())) {
       if (*path == 0) {
          if (name) {
             ret = ep;
@@ -330,7 +330,7 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
       DRETURN(nullptr);
    }
 
-   for (auto child = ocs::tom::get<STN_children>(ep).front(); child && !ret; child = child.next()) {
+   for (auto child = ep.get<STN_children>().front(); child && !ret; child = child.next()) {
       ret = search_by_path(child, name, path, delim, ancestors, depth+1);
    }
 
@@ -386,13 +386,13 @@ search_ancestors(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, an
       DRETURN(nullptr);
    }
 
-   if (strcmp(ocs::tom::get<STN_name>(ep), name) == 0) {
+   if (strcmp(ep.get<STN_name>(), name) == 0) {
       ocs_ancestors_alloc(ancestors, depth);
       ancestors->nodes[depth-1] = ep;
       DRETURN(ep);
    }
 
-   for (const auto cep : ocs::tom::get<STN_children>(ep)) {
+   for (const auto cep : ep.get<STN_children>()) {
       if (const auto fep = search_ancestors(cep, name, ancestors, depth+1); fep) {
          ancestors->nodes[depth-1] = ep;
          DRETURN(fep);

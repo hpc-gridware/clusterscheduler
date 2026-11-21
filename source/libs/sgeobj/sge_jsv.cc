@@ -116,20 +116,20 @@ jsv_create(const char *name, const char *context, ocs::tom::ListPtr<ocs::tom::AN
          char pid_buffer[256];
 
          snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, (pid_t)-1);
-         ocs::tom::set<JSV_name>(new_jsv, name);
-         ocs::tom::set<JSV_context>(new_jsv, context);
-         ocs::tom::set<JSV_url>(new_jsv, jsv_url);
-         ocs::tom::set<JSV_type>(new_jsv, type);
-         ocs::tom::set<JSV_user>(new_jsv, user);
-         ocs::tom::set<JSV_command>(new_jsv, scriptfile);
-         ocs::tom::set<JSV_pid>(new_jsv, pid_buffer);
-         ocs::tom::set<JSV_send_env>(new_jsv, false);
-         ocs::tom::set<JSV_in>(new_jsv, nullptr);
-         ocs::tom::set<JSV_out>(new_jsv, nullptr);
-         ocs::tom::set<JSV_err>(new_jsv, nullptr);
-         ocs::tom::set<JSV_has_to_restart>(new_jsv, false);
-         ocs::tom::set<JSV_last_mod>(new_jsv, st.st_mtime);
-         ocs::tom::set<JSV_test>(new_jsv, false);
+         new_jsv->set<JSV_name>(name);
+         new_jsv->set<JSV_context>(context);
+         new_jsv->set<JSV_url>(jsv_url);
+         new_jsv->set<JSV_type>(type);
+         new_jsv->set<JSV_user>(user);
+         new_jsv->set<JSV_command>(scriptfile);
+         new_jsv->set<JSV_pid>(pid_buffer);
+         new_jsv->set<JSV_send_env>(false);
+         new_jsv->set<JSV_in>(nullptr);
+         new_jsv->set<JSV_out>(nullptr);
+         new_jsv->set<JSV_err>(nullptr);
+         new_jsv->set<JSV_has_to_restart>(false);
+         new_jsv->set<JSV_last_mod>(st.st_mtime);
+         new_jsv->set<JSV_test>(false);
 
          sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
 
@@ -161,7 +161,7 @@ jsv_get_pid(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
    pid_t pid = -1;
    const char *pid_string = nullptr;
 
-   pid_string = ocs::tom::get<JSV_pid>(jsv);
+   pid_string = jsv.get<JSV_pid>();
    if (pid_string != nullptr) {
       sscanf(pid_string, pid_t_fmt, &pid);
    }
@@ -181,7 +181,7 @@ jsv_set_pid(const ocs::tom::Element<ocs::tom::JSV> jsv, const pid_t pid) {
    char pid_buffer[256]; /* it is sure that pid is smaller than 256 characters */
 
    snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
-   ocs::tom::set<JSV_pid>(jsv, pid_buffer);
+   jsv.set<JSV_pid>(pid_buffer);
    DRETURN_VOID;
 }
 
@@ -213,7 +213,7 @@ jsv_is_send_ready(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, ocs::tom::Lis
    int fd;
    int lret;
 
-   fd = fileno((FILE *) ocs::tom::get<JSV_in>(jsv));
+   fd = fileno((FILE *) jsv.get<JSV_in>());
 
    {
       struct pollfd pfds;
@@ -255,8 +255,8 @@ jsv_send_data(const ocs::tom::ConstElement<ocs::tom::JSV> jsv, ocs::tom::ListPtr
    if (jsv_is_send_ready(jsv, answer_list)) {
       int lret;
 
-      lret = fprintf((FILE *)ocs::tom::get<JSV_in>(jsv), "%s", buffer);
-      fflush((FILE *)ocs::tom::get<JSV_in>(jsv));
+      lret = fprintf((FILE *)jsv.get<JSV_in>(), "%s", buffer);
+      fflush((FILE *)jsv.get<JSV_in>());
       if ((size_t)lret != size) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_JSV_SEND_S);
@@ -291,8 +291,8 @@ bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs
    bool ret = true;
 
    if (jsv != nullptr && !jsv_is_started(jsv)) {
-      const char *scriptfile = ocs::tom::get<JSV_command>(jsv);
-      const char *user = ocs::tom::get<JSV_user>(jsv);
+      const char *scriptfile = jsv.get<JSV_command>();
+      const char *user = jsv.get<JSV_user>();
       pid_t pid = -1;
       FILE *fp_in = nullptr;
       FILE *fp_out = nullptr;
@@ -301,7 +301,7 @@ bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs
 
       if (SGE_STAT(scriptfile, &st) == 0) {
          /* set the last modification time of the script */
-         ocs::tom::set<JSV_last_mod>(jsv, st.st_mtime);
+         jsv.set<JSV_last_mod>(st.st_mtime);
 
          pid = sge_peopen_r("/bin/sh", 0, scriptfile, 
                             (user != nullptr ? user : get_admin_user_name()), nullptr,
@@ -316,9 +316,9 @@ bool jsv_start(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs
             ret = false;
          } else {
             jsv_set_pid(jsv, pid);
-            ocs::tom::set<JSV_in>(jsv, fp_in);
-            ocs::tom::set<JSV_out>(jsv, fp_out);
-            ocs::tom::set<JSV_err>(jsv, fp_err);
+            jsv.set<JSV_in>(fp_in);
+            jsv.set<JSV_out>(fp_out);
+            jsv.set<JSV_err>(fp_err);
 
             /* we need it non blocking */
             fcntl(fileno(fp_out), F_SETFL, O_NONBLOCK);
@@ -366,7 +366,7 @@ jsv_stop(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom:
    /* stop is only possible if it was started before */
    pid = jsv_get_pid(jsv);
    if (pid != -1) {
-      const char *scriptfile = ocs::tom::get<JSV_command>(jsv);
+      const char *scriptfile = jsv.get<JSV_command>();
       struct timeval t;
 
       /* 
@@ -384,12 +384,12 @@ jsv_stop(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::ListPtr<ocs::tom:
       /*
        * kill the JSV process
        */ 
-      sge_peclose(pid, (FILE *)ocs::tom::get<JSV_in>(jsv), 
-                  (FILE *)ocs::tom::get<JSV_out>(jsv), (FILE *)ocs::tom::get<JSV_err>(jsv), &t);
+      sge_peclose(pid, (FILE *)jsv.get<JSV_in>(), 
+                  (FILE *)jsv.get<JSV_out>(), (FILE *)jsv.get<JSV_err>(), &t);
 
-      ocs::tom::set<JSV_in>(jsv, nullptr);
-      ocs::tom::set<JSV_out>(jsv, nullptr);
-      ocs::tom::set<JSV_err>(jsv, nullptr);
+      jsv.set<JSV_in>(nullptr);
+      jsv.set<JSV_out>(nullptr);
+      jsv.set<JSV_err>(nullptr);
 
       INFO(MSG_JSV_STOPPED_S, scriptfile);
 
@@ -532,7 +532,7 @@ bool jsv_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::List
 
    sge_dstring_sprintf(&buffer, "%s\n", message);
    new_message = sge_dstring_get_string(&buffer);
-   DPRINTF("JSV(%s) >> %s\n", ocs::tom::get<JSV_context>(jsv), message);
+   DPRINTF("JSV(%s) >> %s\n", jsv.get<JSV_context>(), message);
    ret = jsv_send_data(jsv, answer_list, new_message, strlen(new_message));
    sge_dstring_free(&buffer);
    DRETURN(ret);
@@ -622,8 +622,8 @@ bool jsv_list_remove(const char *name, const char *context) {
          const auto jsv = jsv_next;
          jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
 
-         if ((strcmp(ocs::tom::get<JSV_name>(jsv), name) == 0) &&
-             (strcmp(ocs::tom::get<JSV_context>(jsv), context) == 0)) {
+         if ((strcmp(jsv.get<JSV_name>(), name) == 0) &&
+             (strcmp(jsv.get<JSV_context>(), context) == 0)) {
             list.erase(jsv);
          }
       }
@@ -751,7 +751,7 @@ bool jsv_list_update(const char *name, const char *context,
             /* position pointer to the next element */
             jsv_next = ocs::tom::find_next_rw<JSV_context>(list, context, &iterator);
 
-            old_jsv_url = ocs::tom::get<JSV_url>(jsv);
+            old_jsv_url = jsv.get<JSV_url>();
             if (use_old_url) {
                jsv_url = old_jsv_url;
             }
@@ -775,10 +775,10 @@ bool jsv_list_update(const char *name, const char *context,
                      not_parsed = false;
                   }
 
-                  ocs::tom::set<JSV_type>(jsv, sge_dstring_get_string(&type));
-                  ocs::tom::set<JSV_user>(jsv, sge_dstring_get_string(&user));
-                  ocs::tom::set<JSV_command>(jsv, sge_dstring_get_string(&path));
-                  ocs::tom::set<JSV_url>(jsv, jsv_url);
+                  jsv.set<JSV_type>(sge_dstring_get_string(&type));
+                  jsv.set<JSV_user>(sge_dstring_get_string(&user));
+                  jsv.set<JSV_command>(sge_dstring_get_string(&path));
+                  jsv.set<JSV_url>(jsv_url);
                   INFO(MSG_JSV_SETTING_S, context);
                   jsv_stop(jsv, answer_list, true);
                } else {
@@ -791,8 +791,8 @@ bool jsv_list_update(const char *name, const char *context,
 
                DTRACE;
    
-               if (SGE_STAT(ocs::tom::get<JSV_command>(jsv), &st) == 0 && 
-                   ocs::tom::get<JSV_last_mod>(jsv) != (uint32_t)st.st_mtime) {
+               if (SGE_STAT(jsv.get<JSV_command>(), &st) == 0 && 
+                   jsv.get<JSV_last_mod>() != (uint32_t)st.st_mtime) {
                   INFO(MSG_JSV_TIME_S, context);
                   jsv_stop(jsv, answer_list, true);    
                }
@@ -919,13 +919,13 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
          if (ret) {
             auto new_job = job.get().clone();
 
-            ocs::tom::set<JSV_restart>(jsv, false);
-            ocs::tom::set<JSV_accept>(jsv, false);
-            ocs::tom::set<JSV_done>(jsv, false);
+            jsv.set<JSV_restart>(false);
+            jsv.set<JSV_accept>(false);
+            jsv.set<JSV_done>(false);
 
             // JSV_old_job and JSV_new_job are references: the JSV does not own the jobs
-            ocs::tom::set<JSV_old_job>(jsv, job.get().raw());
-            ocs::tom::set<JSV_new_job>(jsv, new_job.get().raw());
+            jsv.set<JSV_old_job>(job.get().raw());
+            jsv.set<JSV_new_job>(new_job.get().raw());
 
             DPRINTF("JSVs local variables initialized for verification run\n");
 
@@ -975,15 +975,15 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
                ret &= jsv_do_communication(jsv, answer_list);
             }
 
-            ocs::tom::set<JSV_old_job>(jsv, nullptr);
-            ocs::tom::set<JSV_new_job>(jsv, nullptr);
+            jsv.set<JSV_old_job>(nullptr);
+            jsv.set<JSV_new_job>(nullptr);
 
-            if (ocs::tom::get<JSV_accept>(jsv)) {
+            if (jsv.get<JSV_accept>()) {
                DPRINTF("JSV accepts job");
                job = std::move(new_job);
                ret = true;
             } else {
-               uint32_t jid = ocs::tom::get<JB_job_number>(new_job);
+               uint32_t jid = new_job->get<JB_job_number>();
 
                DPRINTF("JSV rejects job\n");
                if (jid == 0) {
@@ -994,8 +994,8 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
                ret = false;
                new_job.reset();
             }
-            if (ocs::tom::get<JSV_restart>(jsv)) {
-               bool soft_shutdown = ocs::tom::get<JSV_soft_shutdown>(jsv) ? true : false;
+            if (jsv.get<JSV_restart>()) {
+               bool soft_shutdown = jsv.get<JSV_soft_shutdown>() ? true : false;
 
                DPRINTF("JSV has to be restarted\n");
                INFO(MSG_JSV_RESTART_S, context);

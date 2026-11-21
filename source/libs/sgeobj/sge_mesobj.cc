@@ -70,7 +70,7 @@ bool object_message_add(const ocs::tom::Element<typename ocs::tom::FieldTraits<F
       // "ulong_sublist" is the name the list library gives a list it creates for a uint32_t key
       auto new_elem = this_elem.template get_or_create<F>("ulong_sublist").template emplace_back<QIM_type>(type);
 
-      ocs::tom::set<QIM_message>(new_elem, message);
+      new_elem.template set<QIM_message>(message);
    }
    DRETURN(ret);
 }
@@ -98,18 +98,18 @@ bool object_message_trash_all_of_type_X(const ocs::tom::Element<typename ocs::to
    bool ret = true;
 
    if (this_elem) {
-      const auto qim_list = ocs::tom::get<F>(this_elem);
+      const auto qim_list = this_elem.template get<F>();
       auto next_elem = qim_list.front();
 
       while (next_elem) {
          const auto elem = next_elem;
          next_elem = elem.next();
-         if ((ocs::tom::get<QIM_type>(elem) & type) != 0) {
+         if ((elem.template get<QIM_type>() & type) != 0) {
             qim_list.erase(elem);
          }
       }
       if (qim_list.empty()) {
-         ocs::tom::set<F>(this_elem, ocs::tom::ListPtr<ocs::tom::QIM>());
+         this_elem.template set<F>(ocs::tom::ListPtr<ocs::tom::QIM>());
       }
    }
    DRETURN(ret);

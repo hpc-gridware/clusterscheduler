@@ -96,17 +96,17 @@ void ocs::Job::sgeee_sort_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
 
       // First try to find an enrolled task. Those will have the highest priority
       // If there is no enrolled task then take the template element
-      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = ocs::tom::get<JB_ja_tasks>(job).front();
+      ocs::tom::ConstElement<ocs::tom::JAT> tmp_task = job.get<JB_ja_tasks>().front();
       if (!tmp_task) {
-         tmp_task = ocs::tom::get<JB_ja_template>(job).front();
+         tmp_task = job.get<JB_ja_template>().front();
       }
 
       // Store sort-criteria and job reference in the temporary list
       auto tmp_sge_job = ocs::tom::ElementPtr<ocs::tom::SGEJ>::create();
-      ocs::tom::set<SGEJ_priority>(tmp_sge_job, ocs::tom::get<JAT_prio>(tmp_task));
-      ocs::tom::set<SGEJ_submission_time>(tmp_sge_job, ocs::tom::get<JB_submission_time>(job));
-      ocs::tom::set<SGEJ_job_number>(tmp_sge_job, ocs::tom::get<JB_job_number>(job));
-      ocs::tom::set<SGEJ_job_reference>(tmp_sge_job, job.raw());
+      tmp_sge_job->set<SGEJ_priority>(tmp_task.get<JAT_prio>());
+      tmp_sge_job->set<SGEJ_submission_time>(job.get<JB_submission_time>());
+      tmp_sge_job->set<SGEJ_job_number>(job.get<JB_job_number>());
+      tmp_sge_job->set<SGEJ_job_reference>(job.raw());
       tmp_list->push_back(std::move(tmp_sge_job));
 
       // Remove the job from the original list; the temporary list holds the only reference now
@@ -120,7 +120,7 @@ void ocs::Job::sgeee_sort_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
    // The job list is empty at this point, so we can just append the sorted jobs
    for (const auto tmp_sge_job : *tmp_list) {
       job_list.push_back(ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(
-         static_cast<lListElem *>(ocs::tom::get<SGEJ_job_reference>(tmp_sge_job))));
+         static_cast<lListElem *>(tmp_sge_job.get<SGEJ_job_reference>())));
    }
 
    // we need to free the tmp list, but not the job references
@@ -163,8 +163,8 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
       const bool is_array = job_is_array(job);
       bool is_tightly_integrated = false;
       if (ja_task) {
-         if (const auto pe = ocs::tom::get<JAT_pe_object>(ja_task); pe) {
-            is_tightly_integrated = ocs::tom::get<PE_control_slaves>(pe);
+         if (const auto pe = ja_task.get<JAT_pe_object>(); pe) {
+            is_tightly_integrated = pe.get<PE_control_slaves>();
          }
       }
 
@@ -172,8 +172,8 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
       slice = toplevel_slice + "-jobs";
       scope = toplevel_slice + ".";
       if (is_array) {
-         std::string jobtask_id = std::to_string(ocs::tom::get<JB_job_number>(job)) + "." +
-                                  std::to_string(ocs::tom::get<JAT_task_number>(ja_task));
+         std::string jobtask_id = std::to_string(job.get<JB_job_number>()) + "." +
+                                  std::to_string(ja_task.get<JAT_task_number>());
          // array job
          if (is_tightly_integrated) {
             // array PE job, we have master and slave tasks
@@ -182,7 +182,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
             if (!pe_task) {
                scope += jobtask_id + ".master";
             } else {
-               scope += jobtask_id + '.' + ocs::tom::get<PET_id>(pe_task);
+               scope += jobtask_id + '.' + pe_task.get<PET_id>();
             }
          } else {
             // just an array job
@@ -190,7 +190,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
             scope += jobtask_id;
          }
       } else {
-         std::string job_id = std::to_string(ocs::tom::get<JB_job_number>(job));
+         std::string job_id = std::to_string(job.get<JB_job_number>());
          if (is_tightly_integrated) {
             // sequential PE job, we have master and slave tasks
             // ocs8012-jobs-1234.slice, ocs8012.master.scope or ocs8012.<num>.<hostname>.scope
@@ -198,7 +198,7 @@ ocs::Job::job_get_systemd_slice_and_scope(const ocs::tom::ConstElement<ocs::tom:
             if (!pe_task) {
                scope += job_id + ".master";
             } else {
-               scope += job_id + '-' + ocs::tom::get<PET_id>(pe_task);
+               scope += job_id + '-' + pe_task.get<PET_id>();
             }
          } else {
             // just a sequential job

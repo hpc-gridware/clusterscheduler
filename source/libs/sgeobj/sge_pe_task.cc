@@ -95,7 +95,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<
 
    /* we sum up the scaled_usage */
    const auto container_usage = ocs::tom::get_or_create<PET_scaled_usage>(container, "reported_usage");
-   if (const auto pe_task_usage = ocs::tom::get<PET_scaled_usage>(pe_task); pe_task_usage) {
+   if (const auto pe_task_usage = pe_task.get<PET_scaled_usage>(); pe_task_usage) {
       usage_list_sum(container_usage, pe_task_usage);
    }
 
@@ -104,7 +104,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage(const ocs::tom::Element<
     * (for long running jobs having intermediate usage records)
     */
    const auto container_reported_usage = ocs::tom::get_or_create<PET_reported_usage>(container, "reported_usage");
-   if (const auto pe_task_reported_usage = ocs::tom::get<PET_reported_usage>(pe_task); pe_task_reported_usage) {
+   if (const auto pe_task_reported_usage = pe_task.get<PET_reported_usage>(); pe_task_reported_usage) {
       usage_list_sum(container_reported_usage, pe_task_reported_usage);
    }
 
@@ -171,11 +171,11 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(const ocs::tom::Lis
    }
 
    /* get container - if it does not yet exist, create it as first element in pe task list */
-   auto container = ocs::tom::find_first_rw<PET_id>(pe_task_list, PE_TASK_PAST_USAGE_CONTAINER);
+   auto container = pe_task_list.find_first<PET_id>(PE_TASK_PAST_USAGE_CONTAINER);
    if (!container) {
       auto created = ocs::tom::ElementPtr<ocs::tom::PET>::create();
-      ocs::tom::set<PET_id>(*created, PE_TASK_PAST_USAGE_CONTAINER);
-      ocs::tom::set<PET_do_contact>(*created, true);
+      created->set<PET_id>(PE_TASK_PAST_USAGE_CONTAINER);
+      created->set<PET_do_contact>(true);
       container = pe_task_list.push_front(std::move(created));
    }
 
@@ -242,7 +242,7 @@ pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
    }
 
    if (ret) {
-      const char *queue_name = ocs::tom::get<PETR_queuename>(petr);
+      const char *queue_name = petr.get<PETR_queuename>();
 
       if (queue_name != nullptr) {
          if (verify_str_key(
@@ -254,7 +254,7 @@ pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
    }
 
    if (ret) {
-      const char *cwd = ocs::tom::get<PETR_cwd>(petr);
+      const char *cwd = petr.get<PETR_cwd>();
 
       if (cwd != nullptr) {
          ret = path_verify(cwd, answer_list, "cwd", true);
@@ -262,7 +262,7 @@ pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
    }
 
    if (ret) {
-      ocs::tom::ConstList<ocs::tom::PA> path_aliases = ocs::tom::get<PETR_path_aliases>(petr);
+      ocs::tom::ConstList<ocs::tom::PA> path_aliases = petr.get<PETR_path_aliases>();
 
       if (path_aliases != nullptr) {
          ret = path_alias_verify(path_aliases, answer_list);
@@ -270,7 +270,7 @@ pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,
    } 
 
    if (ret) {
-      ocs::tom::ConstList<ocs::tom::VA> env_list = ocs::tom::get<PETR_environment>(petr);
+      ocs::tom::ConstList<ocs::tom::VA> env_list = petr.get<PETR_environment>();
 
       if (env_list != nullptr) {
          ret = var_list_verify(env_list, answer_list);

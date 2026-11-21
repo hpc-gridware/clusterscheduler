@@ -74,11 +74,11 @@
 template <auto F>
 static bool is_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
    // no DENTER: called per job/queue in the scheduler
-   const auto filter = ocs::tom::get<F>(rule);
+   const auto filter = rule.get<F>();
    if (!filter) {
       return true;
    }
-   if (ocs::tom::find_first_in<RQRF_scope, ST_name>(filter, "*") && ocs::tom::get<RQRF_xscope>(filter).empty()) {
+   if (filter.template find_first_in<RQRF_scope, ST_name>("*") && filter.template get<RQRF_xscope>().empty()) {
       return true;
    }
    return false;
@@ -125,8 +125,8 @@ bool is_host_global(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
 template <auto F>
 static bool is_expand(const ocs::tom::ConstElement<ocs::tom::RQR> rule) {
    // no DENTER: called per job/queue in the scheduler
-   const auto filter = ocs::tom::get<F>(rule);
-   return filter && ocs::tom::get<RQRF_expand>(filter);
+   const auto filter = rule.get<F>();
+   return filter && filter.template get<RQRF_expand>();
 }
 
 
@@ -197,10 +197,10 @@ bool sge_user_is_referenced_in_rqs(const ocs::tom::ConstList<ocs::tom::RQS> rqs,
    bool ret = false;
 
    for (const auto ep : rqs) {
-      for (const auto rule : ocs::tom::get<RQS_rule>(ep)) {
+      for (const auto rule : ep.get<RQS_rule>()) {
          /* there may be no per-user limitation and also not limitation that is special for this user */
          if ((is_expand<RQR_filter_users>(rule) || !is_global<RQR_filter_users>(rule)) &&
-             rqs_filter_match(ocs::tom::get<RQR_filter_users>(rule), FILTER_USERS, user, acl_list, no_hgroups, group,
+             rqs_filter_match(rule.get<RQR_filter_users>(), FILTER_USERS, user, acl_list, no_hgroups, group,
                               grp_list)) {
             ret = true;
             break;

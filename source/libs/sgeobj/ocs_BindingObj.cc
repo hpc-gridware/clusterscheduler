@@ -73,7 +73,7 @@ template <auto F>
 void
 ocs::Binding::clear(const ocs::tom::Element<Parent<F>> parent) {
    DENTER(TOP_LAYER);
-   ocs::tom::set<F>(parent, nullptr);
+   parent.template set<F>(nullptr);
    DRETURN_VOID;
 }
 
@@ -98,25 +98,25 @@ ocs::Binding::binding_get_or_create_elem(const ocs::tom::Element<Parent<F>> pare
    }
 
    // Check if the binding element already exists
-   if (const auto binding_elem = ocs::tom::get<F>(parent)) {
+   if (const auto binding_elem = parent.template get<F>()) {
       DRETURN(binding_elem);
    }
 
    auto new_elem = ocs::tom::ElementPtr<ocs::tom::BN>::create();
 
    // Set defaults. If not changed job-modify (qalter)  will be able to detect what was not set.
-   ocs::tom::set<BN_new_type>(new_elem, BindingType::UNINITIALIZED);
-   ocs::tom::set<BN_instance>(new_elem, BindingInstance::UNINITIALIZED);
-   ocs::tom::set<BN_amount>(new_elem, 0);
-   ocs::tom::set<BN_unit>(new_elem, BindingUnit::UNINITIALIZED);
-   ocs::tom::set<BN_filter>(new_elem, nullptr);
-   ocs::tom::set<BN_sort>(new_elem, nullptr);
-   ocs::tom::set<BN_start>(new_elem, BindingStart::UNINITIALIZED);
-   ocs::tom::set<BN_stop>(new_elem, BindingStop::UNINITIALIZED);
-   ocs::tom::set<BN_strategy>(new_elem, BindingStrategy::UNINITIALIZED);
+   new_elem->set<BN_new_type>(BindingType::UNINITIALIZED);
+   new_elem->set<BN_instance>(BindingInstance::UNINITIALIZED);
+   new_elem->set<BN_amount>(0);
+   new_elem->set<BN_unit>(BindingUnit::UNINITIALIZED);
+   new_elem->set<BN_filter>(nullptr);
+   new_elem->set<BN_sort>(nullptr);
+   new_elem->set<BN_start>(BindingStart::UNINITIALIZED);
+   new_elem->set<BN_stop>(BindingStop::UNINITIALIZED);
+   new_elem->set<BN_strategy>(BindingStrategy::UNINITIALIZED);
 
    const auto binding_elem = new_elem.get();
-   ocs::tom::set<F>(parent, std::move(new_elem));
+   parent.template set<F>(std::move(new_elem));
    DRETURN(binding_elem);
 }
 
@@ -134,12 +134,12 @@ ocs::Binding::binding_get_type(const ocs::tom::ConstElement<Parent<F>> parent) {
    DENTER(TOP_LAYER);
 
    constexpr BindingType::Type default_type = BindingType::SLOT; // default binding type is slot
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(default_type);
    }
 
-   const auto binding_type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
+   const auto binding_type = static_cast<BindingType::Type>(binding_elem.template get<BN_new_type>());
    if (binding_type == BindingType::NONE || binding_type == BindingType::UNINITIALIZED) {
       DRETURN(default_type);
    }
@@ -161,12 +161,12 @@ ocs::Binding::binding_get_unit(const ocs::tom::ConstElement<Parent<F>> parent) {
    DENTER(TOP_LAYER);
 
    const BindingUnit::Unit default_binding_unit = mconf_get_default_binding_unit();
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(default_binding_unit);
    }
 
-   const auto binding_unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
+   const auto binding_unit = static_cast<BindingUnit::Unit>(binding_elem.template get<BN_unit>());
    if (binding_unit == BindingUnit::NONE || binding_unit == BindingUnit::UNINITIALIZED) {
       DRETURN(default_binding_unit);
    }
@@ -188,12 +188,12 @@ ocs::Binding::binding_get_start(const ocs::tom::ConstElement<Parent<F>> parent) 
    DENTER(TOP_LAYER);
 
    constexpr BindingStart::Start default_start = BindingStart::NONE;
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(default_start);
    }
 
-   const auto binding_start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
+   const auto binding_start = static_cast<BindingStart::Start>(binding_elem.template get<BN_start>());
    if (binding_start == BindingStart::NONE || binding_start == BindingStart::UNINITIALIZED) {
       DRETURN(default_start);
    }
@@ -215,12 +215,12 @@ ocs::Binding::binding_get_end(const ocs::tom::ConstElement<Parent<F>> parent) {
    DENTER(TOP_LAYER);
 
    constexpr BindingStop::Stop default_end = BindingStop::NONE;
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(default_end);
    }
 
-   const auto binding_end = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
+   const auto binding_end = static_cast<BindingStop::Stop>(binding_elem.template get<BN_stop>());
    if (binding_end == BindingStop::NONE || binding_end == BindingStop::UNINITIALIZED) {
       DRETURN(default_end);
    }
@@ -242,12 +242,12 @@ ocs::Binding::binding_get_strategy(const ocs::tom::ConstElement<Parent<F>> paren
    DENTER(TOP_LAYER);
 
    constexpr BindingStrategy::Strategy default_strategy = BindingStrategy::PACKED; // default binding strategy is packed
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(default_strategy);
    }
 
-   const auto binding_strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
+   const auto binding_strategy = static_cast<BindingStrategy::Strategy>(binding_elem.template get<BN_strategy>());
    if (binding_strategy == BindingStrategy::NONE || binding_strategy == BindingStrategy::UNINITIALIZED) {
       DRETURN(default_strategy);
    }
@@ -269,12 +269,12 @@ ocs::Binding::binding_get_instance(const ocs::tom::ConstElement<Parent<F>> paren
    DENTER(TOP_LAYER);
 
    constexpr BindingInstance::Instance default_instance = BindingInstance::SET; // default binding instance is SET
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(default_instance);
    }
 
-   const auto binding_instance = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
+   const auto binding_instance = static_cast<BindingInstance::Instance>(binding_elem.template get<BN_instance>());
    if (binding_instance == BindingInstance::NONE || binding_instance == BindingInstance::UNINITIALIZED) {
       DRETURN(default_instance);
    }
@@ -295,12 +295,12 @@ std::string
 ocs::Binding::binding_get_sort(const ocs::tom::ConstElement<Parent<F>> parent) {
    DENTER(TOP_LAYER);
 
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(NONE_STR);
    }
 
-   const char *binding_sort = ocs::tom::get<BN_sort>(binding_elem);
+   const char *binding_sort = binding_elem.template get<BN_sort>();
    if (binding_sort == nullptr) {
       DRETURN(NONE_STR);
    }
@@ -321,11 +321,11 @@ std::string
 ocs::Binding::binding_get_filter(const ocs::tom::ConstElement<Parent<F>> parent) {
    DENTER(TOP_LAYER);
 
-   const auto binding_elem = ocs::tom::get<F>(parent);
+   const auto binding_elem = parent.template get<F>();
    if (!binding_elem) {
       DRETURN(NONE_STR);
    }
-   DRETURN(ocs::tom::get<BN_filter>(binding_elem));
+   DRETURN(binding_elem.template get<BN_filter>());
 }
 
 /**
@@ -341,8 +341,8 @@ uint32_t
 ocs::Binding::binding_get_amount(const ocs::tom::ConstElement<Parent<F>> parent) {
    DENTER(TOP_LAYER);
 
-   const auto binding_elem = ocs::tom::get<F>(parent);
-   uint32_t amount = ocs::tom::get<BN_amount>(binding_elem);
+   const auto binding_elem = parent.template get<F>();
+   uint32_t amount = binding_elem.template get<BN_amount>();
    if (amount == static_cast<uint32_t>(-1)) {
       amount = 0;
    }
@@ -368,7 +368,7 @@ ocs::Binding::binding_set_missing_defaults(const ocs::tom::Element<Parent<F>> pa
    }
 
    // no binding element, so we do not need to set defaults for binding (unless implicit binding is enabled)
-   auto binding_elem = ocs::tom::get<F>(parent);
+   auto binding_elem = parent.template get<F>();
    if (!binding_elem && !mconf_do_implicit_binding()) {
       DRETURN_VOID;
    }
@@ -380,52 +380,52 @@ ocs::Binding::binding_set_missing_defaults(const ocs::tom::Element<Parent<F>> pa
       if (!binding_elem) {
          DRETURN_VOID;
       }
-      ocs::tom::set<BN_amount>(binding_elem, 1);
+      binding_elem.template set<BN_amount>(1);
    }
 
    // ensure that the binding element is set to nullptr if the amount is 0
-   if (ocs::tom::get<BN_amount>(binding_elem) == 0) {
-      ocs::tom::set<F>(parent, nullptr);
+   if (binding_elem.template get<BN_amount>() == 0) {
+      parent.template set<F>(nullptr);
       DRETURN_VOID;
    }
 
    // ensure that the binding element is initialized with default values
-   const auto instance = static_cast<BindingInstance::Instance>(ocs::tom::get<BN_instance>(binding_elem));
+   const auto instance = static_cast<BindingInstance::Instance>(binding_elem.template get<BN_instance>());
    if (instance == BindingInstance::Instance::UNINITIALIZED ||
        instance == BindingInstance::Instance::NONE) {
-      ocs::tom::set<BN_instance>(binding_elem, BindingInstance::Instance::SET);
+      binding_elem.template set<BN_instance>(BindingInstance::Instance::SET);
    }
-   const auto unit = static_cast<BindingUnit::Unit>(ocs::tom::get<BN_unit>(binding_elem));
+   const auto unit = static_cast<BindingUnit::Unit>(binding_elem.template get<BN_unit>());
    if (unit == BindingUnit::Unit::UNINITIALIZED ||
        unit == BindingUnit::Unit::NONE) {
       const BindingUnit::Unit default_binding_unit = mconf_get_default_binding_unit();
-      ocs::tom::set<BN_unit>(binding_elem, default_binding_unit);
+      binding_elem.template set<BN_unit>(default_binding_unit);
    }
-   const auto type = static_cast<BindingType::Type>(ocs::tom::get<BN_new_type>(binding_elem));
+   const auto type = static_cast<BindingType::Type>(binding_elem.template get<BN_new_type>());
    if (type == BindingType::Type::UNINITIALIZED ||
        type == BindingType::Type::NONE) {
-      ocs::tom::set<BN_new_type>(binding_elem, BindingType::Type::SLOT);
+      binding_elem.template set<BN_new_type>(BindingType::Type::SLOT);
    }
-   const char *filter = ocs::tom::get<BN_filter>(binding_elem);
+   const char *filter = binding_elem.template get<BN_filter>();
    if (filter == nullptr) {
-      ocs::tom::set<BN_filter>(binding_elem, NONE_STR);
+      binding_elem.template set<BN_filter>(NONE_STR);
    }
-   const char *sort = ocs::tom::get<BN_sort>(binding_elem);
+   const char *sort = binding_elem.template get<BN_sort>();
    if (sort == nullptr) {
-      ocs::tom::set<BN_sort>(binding_elem, NONE_STR);
+      binding_elem.template set<BN_sort>(NONE_STR);
    }
-   const auto start = static_cast<BindingStart::Start>(ocs::tom::get<BN_start>(binding_elem));
+   const auto start = static_cast<BindingStart::Start>(binding_elem.template get<BN_start>());
    if (start == BindingStart::Start::UNINITIALIZED) {
-      ocs::tom::set<BN_start>(binding_elem, BindingStart::Start::NONE);
+      binding_elem.template set<BN_start>(BindingStart::Start::NONE);
    }
-   const auto end = static_cast<BindingStop::Stop>(ocs::tom::get<BN_stop>(binding_elem));
+   const auto end = static_cast<BindingStop::Stop>(binding_elem.template get<BN_stop>());
    if (end == BindingStop::Stop::UNINITIALIZED) {
-      ocs::tom::set<BN_stop>(binding_elem, BindingStop::Stop::NONE);
+      binding_elem.template set<BN_stop>(BindingStop::Stop::NONE);
    }
-   const auto strategy = static_cast<BindingStrategy::Strategy>(ocs::tom::get<BN_strategy>(binding_elem));
+   const auto strategy = static_cast<BindingStrategy::Strategy>(binding_elem.template get<BN_strategy>());
    if (strategy == BindingStrategy::Strategy::UNINITIALIZED ||
        strategy == BindingStrategy::Strategy::NONE) {
-      ocs::tom::set<BN_strategy>(binding_elem, BindingStrategy::Strategy::PACKED);
+      binding_elem.template set<BN_strategy>(BindingStrategy::Strategy::PACKED);
    }
 
    DRETURN_VOID;

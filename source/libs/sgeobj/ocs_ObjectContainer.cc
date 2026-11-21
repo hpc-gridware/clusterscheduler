@@ -63,7 +63,7 @@ ocs::ObjectContainer::has_duplicates(const ocs::tom::ConstList<typename ocs::tom
    // if an element is already in the hash table we have found a duplicate
    std::unordered_set<std::string> centry_names;
    for (const auto obj : obj_list) {
-      const char *name = ocs::tom::get<F>(obj);
+      const char *name = obj.template get<F>();
       if (name == nullptr) {
          continue;
       }

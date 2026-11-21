@@ -147,10 +147,10 @@ ocs::tom::Element<ocs::tom::SPA> sge_add_noarg(ocs::tom::ListPtr<ocs::tom::SPA> 
    }
 
    auto new_ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
-   ocs::tom::set<SPA_number>(new_ep, opt_number);
-   ocs::tom::set<SPA_switch_val>(new_ep, opt_switch);
-   ocs::tom::set<SPA_switch_arg>(new_ep, opt_switch_arg);
-   ocs::tom::set<SPA_occurrence>(new_ep, BIT_SPA_OCC_NOARG);
+   new_ep->set<SPA_number>(opt_number);
+   new_ep->set<SPA_switch_val>(opt_switch);
+   new_ep->set<SPA_switch_arg>(opt_switch_arg);
+   new_ep->set<SPA_occurrence>(BIT_SPA_OCC_NOARG);
    auto ep = opt_list->push_back(std::move(new_ep));
 
    DRETURN(ep);
@@ -181,10 +181,10 @@ ocs::tom::Element<ocs::tom::SPA> sge_add_arg(ocs::tom::ListPtr<ocs::tom::SPA> &o
          opt_list = ocs::tom::ListPtr<ocs::tom::SPA>::create("");
       }
       ep = opt_list->emplace_back<SPA_switch_val>(opt_switch);
-      ocs::tom::set<SPA_number>(ep, opt_number);
-      ocs::tom::set<SPA_argtype>(ep, opt_type);
-      ocs::tom::set<SPA_switch_arg>(ep, opt_switch_arg);
-      ocs::tom::set<SPA_occurrence>(ep, BIT_SPA_OCC_ARG);
+      ep.set<SPA_number>(opt_number);
+      ep.set<SPA_argtype>(opt_type);
+      ep.set<SPA_switch_arg>(opt_switch_arg);
+      ep.set<SPA_occurrence>(BIT_SPA_OCC_ARG);
    }
 
    DRETURN(ep);
@@ -251,7 +251,7 @@ char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt
       const auto ep = sge_add_arg(cmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
-         ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
+         ocs::tom::emplace_back<ST_name>(ep.list_ref<SPA_argval_lListT>(), *rp);
          rp++;
       }
    }
@@ -284,7 +284,7 @@ char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longop
       const auto ep = sge_add_arg(cmdline, 0, lListT, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
-         ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
+         ocs::tom::emplace_back<ST_name>(ep.list_ref<SPA_argval_lListT>(), *rp);
          rp++;
       }
    }
@@ -314,7 +314,7 @@ char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> 
       if (ep == nullptr) {
          ep = sge_add_arg(cmdline, 0, lListT, opt, nullptr);
       }
-      ocs::tom::emplace_back<ST_name>(ocs::tom::list_ref<SPA_argval_lListT>(ep), *rp);
+      ocs::tom::emplace_back<ST_name>(ep.list_ref<SPA_argval_lListT>(), *rp);
       rp++;
    }
    DRETURN(rp);
@@ -340,7 +340,7 @@ bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
 
    auto ep = cmdline.find_first_like<SPA_switch_val>(opt);
    if (ep != nullptr) {
-      char *actual_opt = sge_strdup(nullptr, ocs::tom::get<SPA_switch_val>(ep));
+      char *actual_opt = sge_strdup(nullptr, ep.get<SPA_switch_val>());
       while (ep != nullptr) {
          /* remove _all_ flags of same type */
          cmdline.erase(ep);
@@ -379,8 +379,8 @@ bool parse_multi_stringlist(const ocs::tom::List<ocs::tom::SPA> cmdline, const c
    if (ep != nullptr) {
       while (ep != nullptr) {
          /* collect all opts of same type, this is what 'multi' means in funcname!  */
-         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ocs::tom::get<SPA_argval_lListT>(ep))) {
-            sge_parse_string_list<F>(dest, ocs::tom::get<ST_name>(sep));
+         for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ep.get<SPA_argval_lListT>())) {
+            sge_parse_string_list<F>(dest, sep.get<ST_name>());
          }
          cmdline.erase(ep);
          ep = cmdline.find_first<SPA_switch_val>(opt);
@@ -429,25 +429,25 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
 
       ret = true;
       is_run_once = true;
-      if (array_def != nullptr && ocs::tom::get<SPA_number>(array_def) == t_OPT) {
-         array_def_list = ocs::tom::ConstList<ocs::tom::RN>(ocs::tom::get<SPA_argval_lListT>(array_def));
+      if (array_def != nullptr && array_def.get<SPA_number>() == t_OPT) {
+         array_def_list = ocs::tom::ConstList<ocs::tom::RN>(array_def.get<SPA_argval_lListT>());
       }
-      for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ocs::tom::get<SPA_argval_lListT>(ep))) {
+      for (const auto sep : ocs::tom::ConstList<ocs::tom::ST>(ep.get<SPA_argval_lListT>())) {
          ocs::tom::ConstList<ocs::tom::RN> temp_array_list;
 
          if (array_def_list && sep.next() == nullptr) {
             temp_array_list = array_def_list;
          }
-         const auto [parse_ret, idp] = sge_parse_jobtasks(destlist, ocs::tom::get<ST_name>(sep), nullptr,
+         const auto [parse_ret, idp] = sge_parse_jobtasks(destlist, sep.get<ST_name>(), nullptr,
                                                           include_names, temp_array_list);
          if (parse_ret == -1) {
             answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                    MSG_JOB_XISINVALIDJOBTASKID_S, ocs::tom::get<ST_name>(sep));
+                                    MSG_JOB_XISINVALIDJOBTASKID_S, sep.get<ST_name>());
 
             cmdline.erase(ep);
             DRETURN(false);
          }
-         ocs::tom::set<ID_action>(idp, action);
+         idp.set<ID_action>(action);
       }
       if (array_def_list) {
          cmdline.erase(array_def);
@@ -457,7 +457,7 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
 
    if (is_run_once && (ep = cmdline.find_first<SPA_number>(t_OPT)) != nullptr) {
       answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                              MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
+                              MSG_JOB_LONELY_TOPTION_S, ep.get<SPA_switch_arg>());
       while ((ep = cmdline.find_first<SPA_number>(t_OPT)) != nullptr) {
          cmdline.erase(ep);
       }
@@ -487,10 +487,10 @@ int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
 
    const auto ep = cmdline.find_first<SPA_switch_val>(opt);
    if (ep != nullptr) {
-      const auto args = ocs::tom::List<ocs::tom::ST>(ocs::tom::get<SPA_argval_lListT>(ep));
+      const auto args = ocs::tom::List<ocs::tom::ST>(ep.get<SPA_argval_lListT>());
       const auto ep2 = args.front();
       if (ep2 != nullptr) {
-         *str = sge_strdup(nullptr, ocs::tom::get<ST_name>(ep2));
+         *str = sge_strdup(nullptr, ep2.get<ST_name>());
       } else {
          *str = nullptr;
       }
@@ -522,7 +522,7 @@ int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *op
    bool ret = false;
 
    if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
-      *value = sge_strdup(nullptr, ocs::tom::get<SPA_argval_lStringT>(ep));
+      *value = sge_strdup(nullptr, ep.get<SPA_argval_lStringT>());
 
       cmdline.erase(ep);
       ret = true;
@@ -573,7 +573,7 @@ parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, ocs::to
    uint32_t group_opt = GROUP_DEFAULT;
 
    for (const auto str_elem : string_list) {
-      const char *letter_string = ocs::tom::get<ST_name>(str_elem);
+      const char *letter_string = str_elem.get<ST_name>();
       size_t i, len;
       len = strlen(letter_string);
 

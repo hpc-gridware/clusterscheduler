@@ -96,7 +96,7 @@ ocs_attr_list_add(ocs::tom::ListPtr<A> &this_list, ocs::tom::ListPtr<ocs::tom::A
    bool ret = false;
 
    if (attr) {
-      const ocs::tom::Host href = ocs::tom::get<href_f>(attr);
+      const ocs::tom::Host href = attr->template get<href_f>();
       bool created_list = false;
       ocs::tom::Element<A> attr_elem;
 
@@ -110,7 +110,7 @@ ocs_attr_list_add(ocs::tom::ListPtr<A> &this_list, ocs::tom::ListPtr<ocs::tom::A
       if (attr_elem) {
          if (flags & HOSTATTR_OVERWRITE) {
             // a list value is copied, as the old untyped setter copied it
-            static_cast<void>(ocs::tom::copy_if_present<ocs_attr_traits<A>::value>(attr_elem, *attr));
+            static_cast<void>(attr_elem.template copy_if_present<ocs_attr_traits<A>::value>(*attr));
             ret = true;
          } else {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_VALUEMULDEFINED_S, static_cast<const char *>(href));
@@ -175,7 +175,7 @@ ocs_attr_list_ops<A>::find(const ocs::tom::ConstList<A> this_list, ocs::tom::Lis
           * an ambiguous value for the concerned host will be found.
           */
          for (const auto entry : this_list) {
-            const char *href_name = ocs::tom::get<href_f>(entry);
+            const char *href_name = entry.template get<href_f>();
 
             if (strcmp(href_name, HOSTREF_DEFAULT) && ocs::is_hgroup_name(href_name)) {
                ocs::tom::ListPtr<ocs::tom::HR> tmp_href_list;
@@ -304,7 +304,7 @@ ocs_attr_list_ops<A>::append_to_dstring(const ocs::tom::ConstList<A> this_list, 
    }
 
    for (const auto attr : this_list) {
-      const char *href = ocs::tom::get<href_f>(attr);
+      const char *href = attr.template get<href_f>();
 
       if (href == nullptr || (found_default && !strcmp(href, HOSTREF_DEFAULT))) {
          continue;
@@ -500,7 +500,7 @@ ocs_attr_list_ops<A>::parse_from_string(ocs::tom::ListPtr<A> &this_list, ocs::to
             if (ret) {
                auto attr_elem = ocs::tom::ElementPtr<A>::create();
 
-               ocs::tom::set<ocs_attr_traits<A>::href>(attr_elem, href_name);
+               attr_elem->template set<ocs_attr_traits<A>::href>(ocs::tom::Host(href_name));
                ret &= ocs_object_parse_field<ocs_attr_traits<A>::value>(*attr_elem, answer_list, value);
                if (ret) {
                   ret &= ocs_attr_list_add(this_list, answer_list, std::move(attr_elem), flags);

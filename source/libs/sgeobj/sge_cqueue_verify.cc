@@ -104,10 +104,10 @@ bool cqueue_verify_calendar(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      const char *name = ocs::tom::get<ASTR_value>(attr_elem);
+      const char *name = attr_elem.get<ASTR_value>();
 
       if (name != nullptr && strcasecmp("none", name)) {
-         const auto calendar = ocs::tom::find_first<CAL_name>(master_calendar_list, name);
+         const auto calendar = master_calendar_list.find_first<CAL_name>(name);
          if (!calendar) {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_CQUEUE_UNKNOWNCALENDAR_S, name);
             answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
@@ -139,7 +139,7 @@ bool cqueue_verify_ckpt_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      ocs::tom::ConstList<ocs::tom::ST> ckpt_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::ST> ckpt_list = attr_elem.get<ASTRLIST_value>();
 
       if (ckpt_list != nullptr) {
          if (!ckpt_list_do_all_exist(master_ckpt_list, answer_list, ckpt_list)) {
@@ -174,7 +174,7 @@ bool cqueue_verify_consumable_config_list(const ocs::tom::ConstElement<ocs::tom:
    }
 
    // consumable list empty, then all is fine
-   ocs::tom::ConstList<ocs::tom::CE> centry_list = ocs::tom::get<ACELIST_value>(attr_elem);
+   ocs::tom::ConstList<ocs::tom::CE> centry_list = attr_elem.get<ACELIST_value>();
    if (centry_list == nullptr) {
       DRETURN(true);
    }
@@ -211,7 +211,7 @@ bool cqueue_verify_initial_state(const ocs::tom::ConstElement<ocs::tom::CQ> cque
 
    if (cqueue && attr_elem) {
       const char *names[] = {"default", "enabled", "disabled", nullptr};
-      const char *name = ocs::tom::get<ASTR_value>(attr_elem);
+      const char *name = attr_elem.get<ASTR_value>();
       bool found = false;
       int i = 0;
 
@@ -252,7 +252,7 @@ bool cqueue_verify_pe_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      ocs::tom::ConstList<ocs::tom::ST> pe_list = ocs::tom::get<ASTRLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::ST> pe_list = attr_elem.get<ASTRLIST_value>();
 
       if (pe_list != nullptr) {
          if (!pe_list_do_all_exist(master_pe_list, answer_list, pe_list, true)) {
@@ -282,7 +282,7 @@ bool cqueue_verify_priority(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      const char *priority_string = ocs::tom::get<ASTR_value>(attr_elem);
+      const char *priority_string = attr_elem.get<ASTR_value>();
 
       if (priority_string != nullptr) {
          const int priority = atoi(priority_string);
@@ -318,7 +318,7 @@ bool cqueue_verify_processors(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      const char *processors_string = ocs::tom::get<ASTR_value>(attr_elem);
+      const char *processors_string = attr_elem.get<ASTR_value>();
 
       if (processors_string != nullptr) {
          ocs::tom::ListPtr<ocs::tom::RN> range_list;   // stays empty: the string is only parsed
@@ -353,7 +353,7 @@ bool cqueue_verify_project_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      ocs::tom::ConstList<ocs::tom::PR> project_list = ocs::tom::get<APRJLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::PR> project_list = attr_elem.get<APRJLIST_value>();
 
       if (project_list != nullptr) {
          if (!prj_list_do_all_exist(master_project_list, answer_list,
@@ -388,7 +388,7 @@ bool cqueue_verify_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::CQ> c
          "unix_behavior", "posix_compliant", "script_from_stdin",
          nullptr
       };
-      const char *name = ocs::tom::get<ASTR_value>(attr_elem);
+      const char *name = attr_elem.get<ASTR_value>();
       bool found = false;
       int i = 0;
 
@@ -426,7 +426,7 @@ bool cqueue_verify_shell(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
    bool path_found = true;
 
-   const char *name = ocs::tom::get<ASTR_value>(attr_elem);
+   const char *name = attr_elem.get<ASTR_value>();
 
    /* Check also if it is an absolute valid path */
    path_found = path_verify(name, answer_list, "shell", true);
@@ -462,11 +462,11 @@ bool cqueue_verify_subordinate_list(const ocs::tom::ConstElement<ocs::tom::CQ> c
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      const char *cqueue_name = ocs::tom::get<CQ_name>(cqueue);
-      const auto so_list = ocs::tom::get<ASOLIST_value>(attr_elem);
+      const char *cqueue_name = cqueue.get<CQ_name>();
+      const auto so_list = attr_elem.get<ASOLIST_value>();
 
       for (const auto so : so_list) {
-         const char *so_name = ocs::tom::get<SO_name>(so);
+         const char *so_name = so.get<SO_name>();
  
          /*
           * Check for recursions to ourself
@@ -519,7 +519,7 @@ bool cqueue_verify_user_list(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      ocs::tom::ConstList<ocs::tom::US> user_list = ocs::tom::get<AUSRLIST_value>(attr_elem);
+      ocs::tom::ConstList<ocs::tom::US> user_list = attr_elem.get<AUSRLIST_value>();
 
       if (user_list != nullptr) {
          if (userset_list_validate_acl_list(user_list, answer_list,
@@ -556,7 +556,7 @@ bool cqueue_verify_job_slots(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      uint32_t slots = ocs::tom::get<AULNG_value>(attr_elem);
+      uint32_t slots = attr_elem.get<AULNG_value>();
 
       if (slots > OCS_MAX_SLOTS) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -591,7 +591,7 @@ bool cqueue_verify_memory_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueu
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      const char *memory_string = ocs::tom::get<AMEM_value>(attr_elem);
+      const char *memory_string = attr_elem.get<AMEM_value>();
 
       // the check parsing AMEM_value does, without storing the text
       if (!ocs_object_check_value_string(answer_list, ocs::CEntry::Type::MEM, memory_string)) {
@@ -623,7 +623,7 @@ bool cqueue_verify_time_value(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue,
    bool ret = true;
 
    if (cqueue && attr_elem) {
-      const char *time_string = ocs::tom::get<ATIME_value>(attr_elem);
+      const char *time_string = attr_elem.get<ATIME_value>();
 
       if (time_string == nullptr || !strcasecmp(time_string, "none")) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,

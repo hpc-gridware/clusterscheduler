@@ -85,9 +85,9 @@ static void ocs_range_list_insert_id(ocs::tom::List<ocs::tom::RN> list, uint32_t
 static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::ListPtr<ocs::tom::RN> &rl) {
    DENTER(TOP_LAYER);
 
-   const auto rmin = ocs::tom::get<RN_min>(*r);
-   const auto rmax = ocs::tom::get<RN_max>(*r);
-   const auto rstep = ocs::tom::get<RN_step>(*r);
+   const auto rmin = r->get<RN_min>();
+   const auto rmax = r->get<RN_max>();
+   const auto rstep = r->get<RN_step>();
 
    /* create list */
    if (!rl) {
@@ -99,10 +99,10 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
       auto ep = list.front();
       while (ep) {
 
-         if (rstep != ocs::tom::get<RN_step>(ep) || rstep > 1 || ocs::tom::get<RN_step>(ep) > 1) {
+         if (rstep != ep.get<RN_step>() || rstep > 1 || ep.get<RN_step>() > 1) {
             list.push_front(std::move(r));
             break;
-         } else if (rmin > ocs::tom::get<RN_max>(ep)) {
+         } else if (rmin > ep.get<RN_max>()) {
 
             /*
              ** r and ep are non-overlapping and r is to be
@@ -111,7 +111,7 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
             list.push_front(std::move(r));
             break;
 
-         } else if (rmax < ocs::tom::get<RN_min>(ep)) {
+         } else if (rmax < ep.get<RN_min>()) {
             /*
              ** r and ep are non-overlapping and r is to be
              ** sorted after ep ==> go for the next iteration
@@ -124,8 +124,8 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
 
             continue;
 
-         } else if ((rmax <= ocs::tom::get<RN_max>(ep)) &&
-                    (rmin >= ocs::tom::get<RN_min>(ep))) {
+         } else if ((rmax <= ep.get<RN_max>()) &&
+                    (rmin >= ep.get<RN_min>())) {
 
             /*
              ** r is fully contained within ep ==> delete it
@@ -133,7 +133,7 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
             r.reset();
             break;
 
-         } else if (rmin < ocs::tom::get<RN_min>(ep)) {
+         } else if (rmin < ep.get<RN_min>()) {
 
             /*
              ** ep is either fully contained within r
@@ -141,28 +141,28 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
              ** overwrite ep and see if further list elements
              ** are covered also;
              */
-            if (rmax > ocs::tom::get<RN_max>(ep)) {
+            if (rmax > ep.get<RN_max>()) {
                /* r contains ep */
-               ocs::tom::set<RN_max>(ep, rmax);
+               ep.set<RN_max>(rmax);
             }
-            ocs::tom::set<RN_min>(ep, rmin);
+            ep.set<RN_min>(rmin);
 
             /* we're already sure we can free r */
             r.reset();
             const auto rr = ep;
             ep = ep.next();
             while (ep) {
-               if (rmin < ocs::tom::get<RN_min>(ep)) {
+               if (rmin < ep.get<RN_min>()) {
 
                   /* it also contains this one */
                   const auto covered = ep;
                   ep = ep.next();
                   list.erase(covered);
 
-               } else if (rmin <= ocs::tom::get<RN_max>(ep)) {
+               } else if (rmin <= ep.get<RN_max>()) {
 
                   /* these overlap ==> glue them */
-                  ocs::tom::set<RN_min>(rr, ocs::tom::get<RN_min>(ep));
+                  rr.set<RN_min>(ep.get<RN_min>());
 
                   const auto glued = ep;
                   ep = ep.next();
@@ -179,12 +179,12 @@ static void expand_range_list(ocs::tom::ElementPtr<ocs::tom::RN> &&r, ocs::tom::
 
             /* we're now sure we inserted it */
             break;
-         } else if (rmax > ocs::tom::get<RN_max>(ep)) {
+         } else if (rmax > ep.get<RN_max>()) {
             /*
              ** r and ep overlap and r starts above ep
              ** ==> glue them
              */
-            ocs::tom::set<RN_max>(ep, rmax);
+            ep.set<RN_max>(rmax);
             r.reset();
             break;
          }
@@ -869,9 +869,9 @@ void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
    DENTER(RANGE_LAYER);
    if (range_list) {
       for (const auto range : *range_list) {
-         for (uint32_t id = ocs::tom::get<RN_min>(range);
-              id <= ocs::tom::get<RN_max>(range);
-              id += ocs::tom::get<RN_step>(range)) {
+         for (uint32_t id = range.get<RN_min>();
+              id <= range.get<RN_max>();
+              id += range.get<RN_step>()) {
             range_list_insert_id(range_list2, answer_list, id);
             range_list_compress(*range_list2);
             n--;
@@ -881,9 +881,9 @@ void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
          }
       }
       for (const auto range : *range_list2) {
-         for (uint32_t id = ocs::tom::get<RN_min>(range);
-              id <= ocs::tom::get<RN_max>(range);
-              id += ocs::tom::get<RN_step>(range)) {
+         for (uint32_t id = range.get<RN_min>();
+              id <= range.get<RN_max>();
+              id += range.get<RN_step>()) {
             range_list_remove_id(range_list, answer_list, id);
          }
       }
@@ -1053,9 +1053,9 @@ void range_get_all_ids(const ocs::tom::ConstElement<ocs::tom::RN> range, uint32_
    DENTER(RANGE_LAYER);
    if (min != nullptr && max != nullptr && step != nullptr) {
       if (range) {
-         *min = ocs::tom::get<RN_min>(range);
-         *max = ocs::tom::get<RN_max>(range);
-         *step = ocs::tom::get<RN_step>(range);
+         *min = range.get<RN_min>();
+         *max = range.get<RN_max>();
+         *step = range.get<RN_step>();
       } else {
          *min = *max = *step = 0;
       }
@@ -1086,12 +1086,12 @@ void range_set_all_ids(const ocs::tom::Element<ocs::tom::RN> range, const uint32
                        const uint32_t step) {
    DENTER(RANGE_LAYER);
    if (range) {
-      ocs::tom::set<RN_min>(range, min);
-      ocs::tom::set<RN_max>(range, max);
+      range.set<RN_min>(min);
+      range.set<RN_max>(max);
       if (min != max) {
-         ocs::tom::set<RN_step>(range, step);
+         range.set<RN_step>(step);
       } else {
-         ocs::tom::set<RN_step>(range, 1);
+         range.set<RN_step>(1);
       }
    }
    DRETURN_VOID;
@@ -1327,8 +1327,8 @@ range_parse_from_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char
       if (*rstr == '\0') {
          if (inf_allowed) {
             /* rstr is just "-" <==> "1-inf" */
-            ocs::tom::set<RN_min>(r, rmin);
-            ocs::tom::set<RN_max>(r, RANGE_INFINITY);
+            r->set<RN_min>(rmin);
+            r->set<RN_max>(RANGE_INFINITY);
             DRETURN(r);
          } else {
             DRETURN(nullptr);
@@ -1450,9 +1450,9 @@ range_parse_from_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char
       rmin = ldummy;
    }
 
-   ocs::tom::set<RN_min>(r, rmin);
-   ocs::tom::set<RN_max>(r, rmax);
-   ocs::tom::set<RN_step>(r, step);
+   r->set<RN_min>(rmin);
+   r->set<RN_max>(rmax);
+   r->set<RN_step>(step);
 
    /* Ughhhh! Done ... */
 
@@ -1478,9 +1478,9 @@ range_parse_get_ids(const char *value, const int step_allowed, uint32_t &start, 
       // string didn't contain a valid range
       ret = false;
    } else {
-      start = ocs::tom::get<RN_min>(*range);
-      end = ocs::tom::get<RN_max>(*range);
-      step = ocs::tom::get<RN_step>(*range);
+      start = range->get<RN_min>();
+      end = range->get<RN_max>();
+      step = range->get<RN_step>();
    }
 
    return ret;

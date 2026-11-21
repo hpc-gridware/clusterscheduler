@@ -521,8 +521,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       // check only processes that belong to a job
       if ((pr = get_pr(atoi(pidname)))) {
          /* set process as still running */
-         ocs::tom::set<PRO_run>(pr, true);
-         if (ocs::tom::get<PRO_rel>(pr) != true) {
+         pr.set<PRO_run>(true);
+         if (pr.get<PRO_rel>() != true) {
             continue;
          }
       }
@@ -596,22 +596,22 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
          if (!pr) {
             auto new_pr = ocs::tom::ElementPtr<ocs::tom::PRO>::create();
-            ocs::tom::set<PRO_pid>(new_pr, pid);
-            ocs::tom::set<PRO_rel>(new_pr, false);
+            new_pr->set<PRO_pid>(pid);
+            new_pr->set<PRO_rel>(false);
             // the process table takes the element over
             pr = append_pr(std::move(new_pr));
          }
 
-         ocs::tom::set<PRO_utime>(pr, utime);
-         ocs::tom::set<PRO_stime>(pr, stime);
-         ocs::tom::set<PRO_vsize>(pr, vsize);
-         ocs::tom::set<PRO_rss>(pr, rss * pagesize);
-         ocs::tom::set<PRO_iow>(pr, static_cast<uint64_t>(iow));
+         pr.set<PRO_utime>(utime);
+         pr.set<PRO_stime>(stime);
+         pr.set<PRO_vsize>(vsize);
+         pr.set<PRO_rss>(rss * pagesize);
+         pr.set<PRO_iow>(static_cast<uint64_t>(iow));
 
          pt_close_fd(fd);
       }
       /* mark this proc as running */
-      ocs::tom::set<PRO_run>(pr, true);
+      pr.set<PRO_run>(true);
 
       /* 
        * get number of groups; 
@@ -619,7 +619,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        */
       {
          char procnam[1024];
-         const auto groupTable = ocs::tom::get<PRO_groups>(pr);
+         const auto groupTable = pr.get<PRO_groups>();
 
          sprintf(procnam, PROC_DIR "/%s/status", dent->d_name);
          if (SGE_STAT(procnam, &fst) != 0) {
@@ -632,7 +632,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
          groups = 0;
          if (fst.st_mtime < last_time && groupTable) {
             for (const auto group : groupTable) {
-               list[groups] = ocs::tom::get<GR_group>(group);
+               list[groups] = group.get<GR_group>();
                groups++;
             }
          } else {
@@ -652,14 +652,14 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                      auto gr = ocs::tom::ElementPtr<ocs::tom::GR>::create();
                      long group = atol(token);
                      list[groups] = group;
-                     ocs::tom::set<GR_group>(gr, group);
+                     gr->set<GR_group>(group);
                      groupTable->push_back(std::move(gr));
                      groups++;
                   }
                   break;
                }
             }
-            ocs::tom::set<PRO_groups>(pr, std::move(groupTable));
+            pr.set<PRO_groups>(std::move(groupTable));
             fclose(f);
          }
       } 
@@ -710,7 +710,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
             if ((gid_t)job_elem->job.jd_jid == list[group]) {
 #if defined(LINUX)
                // mark this process as relevant
-               ocs::tom::set<PRO_rel>(pr, true);
+               pr.set<PRO_rel>(true);
 #endif
                found_it = 1;
             }
@@ -742,7 +742,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
     */
 
 #if defined(LINUX)
-   pid_tmp = ocs::tom::get<PRO_pid>(pr);
+   pid_tmp = pr.get<PRO_pid>();
 #else
    pid_tmp = pr.pr_pid;
 #endif
@@ -775,15 +775,15 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
    proc_elem->proc.pd_tstamp = time_stamp;
 
 #if defined(LINUX)
-   proc_elem->proc.pd_pid = ocs::tom::get<PRO_pid>(pr);
-   proc_elem->proc.pd_utime  = static_cast<double>(ocs::tom::get<PRO_utime>(pr)) / HZ;
-   proc_elem->proc.pd_stime  = static_cast<double>(ocs::tom::get<PRO_stime>(pr)) / HZ;
+   proc_elem->proc.pd_pid = pr.get<PRO_pid>();
+   proc_elem->proc.pd_utime  = static_cast<double>(pr.get<PRO_utime>()) / HZ;
+   proc_elem->proc.pd_stime  = static_cast<double>(pr.get<PRO_stime>()) / HZ;
    /* could retrieve uid/gid using stat() on stat file */
-   proc_elem->vmem           = ocs::tom::get<PRO_vsize>(pr);
-   proc_elem->rss            = ocs::tom::get<PRO_rss>(pr);
+   proc_elem->vmem           = pr.get<PRO_vsize>();
+   proc_elem->rss            = pr.get<PRO_rss>();
 
    // iow can go to 0 at job end, so we calculate a delta which we will add to iow reached so far
-   double new_iow = static_cast<double>(ocs::tom::get<PRO_iow>(pr)) / HZ;
+   double new_iow = static_cast<double>(pr.get<PRO_iow>()) / HZ;
    if (new_iow > 0 && new_iow > proc_elem->iow) {
       proc_elem->delta_iow = new_iow - proc_elem->iow;
       proc_elem->iow = new_iow;
@@ -837,13 +837,13 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
                } /* while */
 
                fclose(f);
-               ocs::tom::set<PRO_io>(pr, new_iochars);
-               ocs::tom::set<PRO_ioops>(pr, new_ioops);
+               pr.set<PRO_io>(new_iochars);
+               pr.set<PRO_ioops>(new_ioops);
             }
          }
       } else {
-         new_iochars = ocs::tom::get<PRO_io>(pr);
-         new_ioops = ocs::tom::get<PRO_ioops>(pr);
+         new_iochars = pr.get<PRO_io>();
+         new_ioops = pr.get<PRO_ioops>();
       }
       /*
        *  Update process I/O info

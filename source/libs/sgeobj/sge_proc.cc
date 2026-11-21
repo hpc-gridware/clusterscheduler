@@ -120,7 +120,7 @@ void clean_procList() {
 
    // mark all jobs to finished
    for (auto pr : list) {
-      ocs::tom::set<PRO_run>(pr, false);
+      pr.set<PRO_run>(false);
    }
    DRETURN_VOID;
 }

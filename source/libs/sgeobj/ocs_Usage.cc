@@ -141,7 +141,7 @@ void ocs::Usage::add_decay_element(ocs::tom::ListPtr<ocs::tom::UA> &decay_list, 
       decay_list = ocs::tom::ListPtr<ocs::tom::UA>::create("");
    }
    const auto u = decay_list->emplace_back<UA_name>(name);
-   ocs::tom::set<UA_value>(u, decay_constant);
+   u.set<UA_value>(decay_constant);
 
    DRETURN_VOID;
 }
@@ -163,7 +163,7 @@ ocs::Usage::get_decay_list() {
 
    if (halflife_decay_list) {
       for (const auto ep : halflife_decay_list.get()) {
-         add_decay_element(decay_list, ocs::tom::get<UA_value>(ep), ocs::tom::get<UA_name>(ep));
+         add_decay_element(decay_list, ep.get<UA_value>(), ep.get<UA_name>());
       }
    } else {
       /* The "finished_jobs" counter is summed into UU_/PR_/UPP_ from each
@@ -200,13 +200,13 @@ ocs::Usage::decay_usage(const ocs::tom::List<ocs::tom::UA> usage_list,
    for (const auto usage : usage_list) {
       double decay;
 
-      if (const auto decay_elem = ocs::tom::find_first<UA_name>(decay_list, ocs::tom::get<UA_name>(usage));
+      if (const auto decay_elem = decay_list.find_first<UA_name>(usage.get<UA_name>());
           decay_elem) {
-         decay = pow(ocs::tom::get<UA_value>(decay_elem), interval / sge_usage_interval);
+         decay = pow(decay_elem.get<UA_value>(), interval / sge_usage_interval);
       } else {
          decay = pow(sconf_get_decay_constant(), interval / sge_usage_interval);
       }
-      ocs::tom::set<UA_value>(usage, ocs::tom::get<UA_value>(usage) * decay);
+      usage.set<UA_value>(usage.get<UA_value>() * decay);
    }
 
    DRETURN_VOID;
@@ -239,7 +239,7 @@ usage_relevant_for_sharetree(const char *name, const ocs::tom::ConstList<ocs::to
        strcmp(name, "finished_jobs") == 0) {
       ret = true;
    } else {
-      ret = static_cast<bool>(ocs::tom::find_first<UA_name>(usage_weight_list, name));
+      ret = static_cast<bool>(usage_weight_list.find_first<UA_name>(name));
    }
    DRETURN(ret);
 }
@@ -258,10 +258,10 @@ static ocs::tom::List<ocs::tom::UA>
 ocs_usage_list_get_or_build(const E ep, const char *name) {
    DENTER(BASIS_LAYER);
 
-   auto list = ocs::tom::get<F>(ep);
+   auto list = ep.template get<F>();
    if (!list) {
-      ocs::tom::set<F>(ep, ocs::Usage::build_usage_list(name, nullptr));
-      list = ocs::tom::get<F>(ep);
+      ep.template set<F>(ocs::Usage::build_usage_list(name, nullptr));
+      list = ep.template get<F>();
    }
    DRETURN(list);
 }
@@ -339,15 +339,15 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
 
    ocs::tom::ListPtr<ocs::tom::UA> job_usage_list;
    if (ja_task) {
-      job_usage_list = ocs::tom::get<JAT_scaled_usage_list>(ja_task).clone("");
+      job_usage_list = ja_task.get<JAT_scaled_usage_list>().clone("");
 
       /* sum sub-task usage into job_usage_list */
       if (job_usage_list) {
-         for (const auto petask : ocs::tom::get<JAT_task_list>(ja_task)) {
-            for (const auto src : ocs::tom::get<PET_scaled_usage>(petask)) {
-               const auto dst = ocs::tom::find_first_rw<UA_name>(job_usage_list.get(), ocs::tom::get<UA_name>(src));
+         for (const auto petask : ja_task.get<JAT_task_list>()) {
+            for (const auto src : petask.get<PET_scaled_usage>()) {
+               const auto dst = job_usage_list.get().find_first<UA_name>(src.get<UA_name>());
                if (dst) {
-                  ocs::tom::set<UA_value>(dst, ocs::tom::get<UA_value>(dst) + ocs::tom::get<UA_value>(src));
+                  dst.set<UA_value>(dst.get<UA_value>() + src.get<UA_value>());
                } else {
                   job_usage_list->push_back(src.clone());
                }
@@ -359,9 +359,9 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
    // the debited job usage is kept in the user if there is one, else in the project
    ocs::tom::ListPtr<ocs::tom::UA> old_usage_list;
    const ocs::tom::ConstList<ocs::tom::UPU> upu_list =
-      user ? ocs::tom::get<UU_debited_job_usage>(user) : ocs::tom::get<PR_debited_job_usage>(project);
-   if (const auto upu = ocs::tom::find_first<UPU_job_number>(upu_list, ocs::tom::get<JB_job_number>(job)); upu) {
-      old_usage_list = ocs::tom::get<UPU_old_usage_list>(upu).clone("");
+      user ? user.get<UU_debited_job_usage>() : project.get<PR_debited_job_usage>();
+   if (const auto upu = upu_list.find_first<UPU_job_number>(job.get<JB_job_number>()); upu) {
+      old_usage_list = upu.get<UPU_old_usage_list>().clone("");
    }
 
    if (!old_usage_list) {
@@ -378,9 +378,9 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
       /* if there is a user & project, usage is kept in the project sub-list */
 
       if (project) {
-         const char *project_name = ocs::tom::get<PR_name>(project);
+         const char *project_name = project.get<PR_name>();
          const auto upp_list = ocs::tom::get_or_create<UU_project>(user, "");
-         auto upp = ocs::tom::find_first_rw<UPP_name>(upp_list, project_name);
+         auto upp = upp_list.find_first<UPP_name>(project_name);
          if (!upp) {
             upp = upp_list.emplace_back<UPP_name>(project_name);
          }
@@ -402,7 +402,7 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
     * Add to node usage for each usage type
     *-------------------------------------------------------------*/
    for (const auto job_usage : job_usage_list.get()) {
-      const char *usage_name = ocs::tom::get<UA_name>(job_usage);
+      const char *usage_name = job_usage.get<UA_name>();
 
       /*---------------------------------------------------------
        * Only attributes relevant for share tree usage may be
@@ -441,35 +441,35 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
       }
 
       const double usage_value =
-         std::max(ocs::tom::get<UA_value>(job_usage) - ocs::tom::get<UA_value>(old_usage), 0.0);
+         std::max(job_usage.get<UA_value>() - old_usage.get<UA_value>(), 0.0);
 
       /*---------------------------------------------------
        * Add usage to decayed user usage
        *---------------------------------------------------*/
       if (user_usage) {
-         ocs::tom::set<UA_value>(user_usage, ocs::tom::get<UA_value>(user_usage) + usage_value);
+         user_usage.set<UA_value>(user_usage.get<UA_value>() + usage_value);
       }
 
       /*---------------------------------------------------
        * Add usage to long term user usage
        *---------------------------------------------------*/
       if (user_long_term_usage) {
-         ocs::tom::set<UA_value>(user_long_term_usage, ocs::tom::get<UA_value>(user_long_term_usage) + usage_value);
+         user_long_term_usage.set<UA_value>(user_long_term_usage.get<UA_value>() + usage_value);
       }
 
       /*---------------------------------------------------
        * Add usage to decayed project usage
        *---------------------------------------------------*/
       if (project_usage) {
-         ocs::tom::set<UA_value>(project_usage, ocs::tom::get<UA_value>(project_usage) + usage_value);
+         project_usage.set<UA_value>(project_usage.get<UA_value>() + usage_value);
       }
 
       /*---------------------------------------------------
        * Add usage to long term project usage
        *---------------------------------------------------*/
       if (project_long_term_usage) {
-         ocs::tom::set<UA_value>(project_long_term_usage,
-                                 ocs::tom::get<UA_value>(project_long_term_usage) + usage_value);
+         project_long_term_usage.set<UA_value>(
+                                 project_long_term_usage.get<UA_value>() + usage_value);
       }
    }
 
@@ -480,15 +480,15 @@ book_user_project_usage(const ocs::tom::ConstElement<ocs::tom::JB> job,
    old_usage_list.reset();
 
    if (job_usage_list) {
-      const uint32_t jobnum = ocs::tom::get<JB_job_number>(job);
+      const uint32_t jobnum = job.get<JB_job_number>();
       const auto debited = user ? ocs::tom::get_or_create<UU_debited_job_usage>(user, "")
                                 : ocs::tom::get_or_create<PR_debited_job_usage>(project, "");
-      if (const auto upu = ocs::tom::find_first_rw<UPU_job_number>(debited, jobnum); upu) {
-         ocs::tom::set<UPU_old_usage_list>(upu, job_usage_list->clone());
+      if (const auto upu = debited.find_first<UPU_job_number>(jobnum); upu) {
+         upu.set<UPU_old_usage_list>(job_usage_list->clone());
       } else {
          auto new_upu = ocs::tom::ElementPtr<ocs::tom::UPU>::create();
-         ocs::tom::set<UPU_job_number>(new_upu, jobnum);
-         ocs::tom::set<UPU_old_usage_list>(new_upu, job_usage_list->clone());
+         new_upu->set<UPU_job_number>(jobnum);
+         new_upu->set<UPU_old_usage_list>(job_usage_list->clone());
          debited.push_back(std::move(new_upu));
       }
    }
@@ -577,7 +577,7 @@ ocs::Usage::strip_irrelevant_usage(const ocs::tom::List<ocs::tom::UA> usage_list
    auto next_usage = usage_list.front();
    while (const auto usage = next_usage) {
       next_usage = usage.next();
-      if (!usage_relevant_for_sharetree(ocs::tom::get<UA_name>(usage), usage_weight_list)) {
+      if (!usage_relevant_for_sharetree(usage.get<UA_name>(), usage_weight_list)) {
          usage_list.erase(usage);
          removed = true;
       }
@@ -608,7 +608,7 @@ ocs::Usage::build_usage_list(const char *name, const ocs::tom::ConstList<ocs::to
 
       usage_list = old_usage_list.clone(name);
       for (const auto usage : usage_list.get()) {
-         ocs::tom::set<UA_value>(usage, 0);
+         usage.set<UA_value>(0);
       }
 
    } else {
@@ -635,7 +635,7 @@ ocs::Usage::build_usage_list(const char *name, const ocs::tom::ConstList<ocs::to
 ocs::tom::Element<ocs::tom::UA>
 ocs::Usage::get_usage(const ocs::tom::List<ocs::tom::UA> usage_list, const char *name) {
    DENTER(BASIS_LAYER);
-   const auto ret = ocs::tom::find_first_rw<UA_name>(usage_list, name);
+   const auto ret = usage_list.find_first<UA_name>(name);
    DRETURN(ret);
 }
 
@@ -647,7 +647,7 @@ ocs::tom::ElementPtr<ocs::tom::UA>
 ocs::Usage::create_usage_elem(const char *name) {
    DENTER(BASIS_LAYER);
    auto usage = ocs::tom::ElementPtr<ocs::tom::UA>::create();
-   ocs::tom::set<UA_name>(usage, name);
-   ocs::tom::set<UA_value>(usage, 0);
+   usage->set<UA_name>(name);
+   usage->set<UA_value>(0);
    DRETURN(usage);
 }

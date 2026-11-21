@@ -86,8 +86,8 @@ bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::to
 
    for (const auto job : master_job_list) {
       if (job_is_ckpt_referenced(job, ckpt)) {
-         const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
-         uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+         const char *ckpt_name = ckpt.get<CK_name>();
+         uint32_t job_id = job.get<JB_job_number>();
 
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_INFO, MSG_CKPTREFINJOB_SU,
@@ -100,15 +100,15 @@ bool ckpt_is_referenced(const ocs::tom::ConstElement<ocs::tom::CK> ckpt, ocs::to
       /* fix for bug 6422335
        * check the cq configuration for ckpt references instead of qinstances
        */
-      const char *ckpt_name = ocs::tom::get<CK_name>(ckpt);
+      const char *ckpt_name = ckpt.get<CK_name>();
 
       for (const auto queue : master_cqueue_list) {
-         for (const auto ckl : ocs::tom::get<CQ_ckpt_list>(queue)) {
-            if (ocs::tom::find_first_in<ASTRLIST_value, ST_name>(ckl, ckpt_name))  {
+         for (const auto ckl : queue.get<CQ_ckpt_list>()) {
+            if (ckl.find_first_in<ASTRLIST_value, ST_name>(ckpt_name))  {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                        ANSWER_QUALITY_INFO, 
                                        MSG_CKPTREFINQUEUE_SS,
-                                       ckpt_name, ocs::tom::get<CQ_name>(queue));
+                                       ckpt_name, queue.get<CQ_name>());
                ret = true;
                break;
             }
@@ -217,7 +217,7 @@ int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom
 
    /* -------- CK_name */
    if (verify_obj_name(
-         alpp, ocs::tom::get<CK_name>(this_elem),
+         alpp, this_elem.get<CK_name>(),
          MAX_VERIFY_STRING, "checkpoint interface") != STATUS_OK) {
       DRETURN(STATUS_EUNKNOWN);
    }
@@ -226,7 +226,7 @@ int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom
     * check if ckpt obj can be added
     * check allowed interfaces and license
     */
-   interface = ocs::tom::get<CK_interface>(this_elem);
+   interface = this_elem.get<CK_interface>();
    found = 0;
    /* handle nullptr pointer for interface name */
    if (interface == nullptr) {
@@ -253,21 +253,21 @@ int ckpt_validate(const ocs::tom::ConstElement<ocs::tom::CK> this_elem, ocs::tom
       const char *value;
       const char *text;
    } ckpt_commands[] = {
-      { ocs::tom::get<CK_ckpt_command>(this_elem), "ckpt_command" },
-      { ocs::tom::get<CK_migr_command>(this_elem), "migr_command" },
-      { ocs::tom::get<CK_rest_command>(this_elem), "restart_command" },
-      { ocs::tom::get<CK_clean_command>(this_elem), "clean_command" }
+      { this_elem.get<CK_ckpt_command>(), "ckpt_command" },
+      { this_elem.get<CK_migr_command>(), "migr_command" },
+      { this_elem.get<CK_rest_command>(), "restart_command" },
+      { this_elem.get<CK_clean_command>(), "clean_command" }
    };
    for (const auto &command : ckpt_commands) {
       if (replace_params(command.value, nullptr, 0, ckpt_variables)) {
-         ERROR(MSG_OBJ_CKPTENV_SSS, command.text, ocs::tom::get<CK_name>(this_elem), err_msg);
+         ERROR(MSG_OBJ_CKPTENV_SSS, command.text, this_elem.get<CK_name>(), err_msg);
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
    }
 
    /* -------- CK_signal */
-   if ((s=ocs::tom::get<CK_signal>(this_elem)) &&
+   if ((s=this_elem.get<CK_signal>()) &&
          strcasecmp(s, "none") &&
          sge_sys_str2signal(s)==SIGUNKNOWN) {
       ERROR(MSG_CKPT_XISNOTASIGNALSTRING_S , s);
@@ -298,7 +298,7 @@ bool ckpt_list_do_all_exist(const ocs::tom::ConstList<ocs::tom::CK> ckpt_list,
    bool ret = true;
 
    for (const auto ckpt_ref_elem : ckpt_ref_list) {
-      const char *ckpt_ref_string = ocs::tom::get<ST_name>(ckpt_ref_elem);
+      const char *ckpt_ref_string = ckpt_ref_elem.get<ST_name>();
 
       if (!ckpt_list_locate(ckpt_list, ckpt_ref_string)) {
          answer_list_add_sprintf(answer_list, STATUS_EEXIST,
@@ -326,19 +326,19 @@ ocs::tom::ElementPtr<ocs::tom::CK> sge_generic_ckpt(const char *ckpt_name) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CK>::create();
 
    if (ckpt_name)
-      ocs::tom::set<CK_name>(ep, ckpt_name);
+      ep->set<CK_name>(ckpt_name);
    else
-      ocs::tom::set<CK_name>(ep, "template");
+      ep->set<CK_name>("template");
 
-   ocs::tom::set<CK_interface>(ep, "userdefined");
-   ocs::tom::set<CK_ckpt_command>(ep, NONE_STR);
-   ocs::tom::set<CK_migr_command>(ep, NONE_STR);
-   ocs::tom::set<CK_rest_command>(ep, NONE_STR);
-   ocs::tom::set<CK_clean_command>(ep, NONE_STR);
-   ocs::tom::set<CK_ckpt_dir>(ep, "/tmp");
-   ocs::tom::set<CK_when>(ep, "sx");
-   ocs::tom::set<CK_signal>(ep, NONE_STR);
-   ocs::tom::set<CK_job_pid>(ep, 0);
+   ep->set<CK_interface>("userdefined");
+   ep->set<CK_ckpt_command>(NONE_STR);
+   ep->set<CK_migr_command>(NONE_STR);
+   ep->set<CK_rest_command>(NONE_STR);
+   ep->set<CK_clean_command>(NONE_STR);
+   ep->set<CK_ckpt_dir>("/tmp");
+   ep->set<CK_when>("sx");
+   ep->set<CK_signal>(NONE_STR);
+   ep->set<CK_job_pid>(0);
 
    DRETURN(ep);
 }
