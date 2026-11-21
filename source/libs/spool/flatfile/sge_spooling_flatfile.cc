@@ -275,7 +275,7 @@ spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
                                           spool_classic_default_delete_func,
                                           spool_default_validate_func,
                                           spool_default_validate_list_func);
-         ocs::tom::set<SPR_clientdata>(rule, field_info);
+         rule.set<SPR_clientdata>(field_info);
          const auto type = spool_context_create_type(answer_list, context.get(), SGE_TYPE_ALL);
          spool_type_add_rule(answer_list, type, rule, true);
 
@@ -702,7 +702,7 @@ bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
                const auto context = spool_get_default_context();
                const auto type = spool_context_search_type(context, SGE_TYPE_QINSTANCE);
                const auto rule = spool_type_search_default_rule(type);
-               const char *url = ocs::tom::get<SPR_url>(rule);
+               const char *url = rule.get<SPR_url>();
 
                dstring key = DSTRING_INIT;
                dstring dir = DSTRING_INIT;

@@ -249,11 +249,11 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
          uint32_t status;
          answer_quality_t quality;
 
-         status = ocs::tom::get<AN_status>(aep);
-         quality = (answer_quality_t)ocs::tom::get<AN_quality>(aep);
+         status = aep.get<AN_status>();
+         quality = (answer_quality_t)aep.get<AN_quality>();
 
          if (quality == ANSWER_QUALITY_ERROR) {
-            DPRINTF("%s", ocs::tom::get<AN_text>(aep));
+            DPRINTF("%s", aep.get<AN_text>());
             if (status == STATUS_EDISK) {
                /*
                ** we turn this error into a warning here
@@ -263,9 +263,9 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
                do_exit = 1;
             }
          } else {
-            DPRINTF("Warning: Error: %s\n", ocs::tom::get<AN_text>(aep));
+            DPRINTF("Warning: Error: %s\n", aep.get<AN_text>());
          }
-         answer_list_add(answer_list, ocs::tom::get<AN_text>(aep), status, quality);
+         answer_list_add(answer_list, aep.get<AN_text>(), status, quality);
       }
       alp.reset();
 
@@ -358,11 +358,11 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::List
    DENTER(TOP_LAYER);
    const char *scriptfile = nullptr;
    if (const auto script_option = opts_cmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPT)) {
-      scriptfile = ocs::tom::get<SPA_argval_lStringT>(script_option);
+      scriptfile = script_option.get<SPA_argval_lStringT>();
    }
    const char *prefix = nullptr;
    if (const auto c_option = opts_cmdline.find_first<SPA_switch_val>("-C")) {
-      prefix = ocs::tom::get<SPA_argval_lStringT>(c_option);
+      prefix = c_option.get<SPA_argval_lStringT>();
    } else {
       prefix = default_prefix;
    }
@@ -401,7 +401,7 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
    char *scriptpath = nullptr;
 
    if (const auto script_option = opts_cmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPT)) {
-      const char *scriptfile = ocs::tom::get<SPA_argval_lStringT>(script_option);
+      const char *scriptfile = script_option.get<SPA_argval_lStringT>();
 
       /* If the scriptfile path isn't absolute (which includes starting with
          $HOME), make it absolute relative to the given path.
@@ -420,7 +420,7 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
 
    const char *prefix = nullptr;
    if (const auto c_option = opts_cmdline.find_first<SPA_switch_val>("-C")) {
-      prefix = ocs::tom::get<SPA_argval_lStringT>(c_option);
+      prefix = c_option.get<SPA_argval_lStringT>();
    } else {
       prefix = default_prefix;
    }
@@ -461,7 +461,7 @@ void ocs_opt_list_override_queues(const ocs::tom::List<ocs::tom::SPA> opts_all,
    bool overridden = false;
    for (auto first = options->front(); first; first = options->front()) {
       auto option = options->extract(first);
-      if (!overridden && sge_strnullcmp(ocs::tom::get<SPA_switch_val>(option), "-q") == 0) {
+      if (!overridden && sge_strnullcmp(option->get<SPA_switch_val>(), "-q") == 0) {
          // every -q held so far, one by one as lRemoveElem() removed them
          while (opts_all.erase<SPA_switch_val>("-q") > 0) {
          }
@@ -525,7 +525,7 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
    /* If -ar was requested add -w if it was not explicitly set */
    if (opts_all->find_first<SPA_switch_val>("-ar") && !opts_all->find_first<SPA_switch_val>("-w")) {
       const auto ep_opt = sge_add_arg(opts_all, r_OPT, lIntT, "-w", "e");
-      ocs::tom::set<SPA_argval_lIntT>(ep_opt, ERROR_VERIFY);
+      ep_opt.set<SPA_argval_lIntT>(ERROR_VERIFY);
    }
    DRETURN_VOID;
 }
@@ -569,7 +569,7 @@ bool opt_list_is_X_true(const ocs::tom::ConstList<ocs::tom::SPA> opts, const cha
    bool ret = false;
 
    if (const auto opt = opts.find_first<SPA_switch_val>(option)) {
-      ret = ocs::tom::get<SPA_argval_lIntT>(opt) == 1;
+      ret = opt.get<SPA_argval_lIntT>() == 1;
    }
    DRETURN(ret);
 }

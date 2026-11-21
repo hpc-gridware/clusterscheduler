@@ -128,13 +128,13 @@ int ocs::gdi::ClientExecd::gdi_wait_for_conf(ocs::tom::ListPtr<ocs::tom::CONF> *
     * we don't keep all information, just the name and the version
     * the entries are freed
     */
-   ocs::tom::set<CONF_entries>(global, nullptr);
+   global->set<CONF_entries>(nullptr);
    conf_list->reset();
    auto confs = ocs::tom::ListPtr<ocs::tom::CONF>::create("config list");
    confs->push_back(std::move(global));
    // a host without a local configuration gets none
    if (local) {
-      ocs::tom::set<CONF_entries>(local, nullptr);
+      local->set<CONF_entries>(nullptr);
       confs->push_back(std::move(local));
    }
    *conf_list = std::move(confs);
@@ -176,14 +176,14 @@ int ocs::gdi::ClientExecd::gdi_get_merged_configuration(ocs::tom::ListPtr<ocs::t
     * we don't keep all information, just the name and the version
     * the entries are freed
     */
-   ocs::tom::set<CONF_entries>(global, nullptr);
+   global->set<CONF_entries>(nullptr);
 
    conf_list->reset();
    auto confs = ocs::tom::ListPtr<ocs::tom::CONF>::create("config list");
    confs->push_back(std::move(global));
    // a host without a local configuration gets none, as lAppendElem() refused the null element
    if (local) {
-      ocs::tom::set<CONF_entries>(local, nullptr);
+      local->set<CONF_entries>(nullptr);
       confs->push_back(std::move(local));
    }
    *conf_list = std::move(confs);

@@ -169,7 +169,7 @@ ocs_mirror_update_master_list_by_type(sge_object_type type, sge_event_action act
 template <ocs::tom::ObjectType T>
 inline ocs::tom::List<T>
 ocs_mirror_event_objects(const ocs::tom::Element<ocs::tom::ET> event) {
-   return ocs::tom::List<T>(ocs::tom::get<ET_new_version>(event));
+   return ocs::tom::List<T>(event.get<ET_new_version>());
 }
 
 /**

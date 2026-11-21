@@ -197,16 +197,16 @@ int job_initialize_job(lListElem *job_raw) {
    const ocs::tom::Element<ocs::tom::JB> job(job_raw);
    uint32_t job_id;
 
-   job_id = ocs::tom::get<JB_job_number>(job); 
-   for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
+   job_id = job.get<JB_job_number>(); 
+   for (const auto ja_task : job.get<JB_ja_tasks>()) {
       uint32_t ja_task_id;
 
-      ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      ja_task_id = ja_task.get<JAT_task_number>();
 
       add_job_report(job_id, ja_task_id, nullptr, job);
                                                                                       /* add also job reports for tasks */
-      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-         add_job_report(job_id, ja_task_id, ocs::tom::get<PET_id>(pe_task), job);
+      for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+         add_job_report(job_id, ja_task_id, pe_task.get<PET_id>(), job);
       }
 
       if (mconf_get_simulate_jobs()) {
@@ -215,8 +215,8 @@ int job_initialize_job(lListElem *job_raw) {
       }
 
       /* does active dir exist ? */
-      if (ocs::tom::get<JAT_status>(ja_task) == JRUNNING ||
-          ocs::tom::get<JAT_status>(ja_task) == JWAITING4OSJID) {
+      if (ja_task.get<JAT_status>() == JRUNNING ||
+          ja_task.get<JAT_status>() == JWAITING4OSJID) {
          SGE_STRUCT_STAT stat_buffer;
          stringT active_dir = "";
 
@@ -233,17 +233,18 @@ int job_initialize_job(lListElem *job_raw) {
       {
          int ret;
          /* register still running jobs at ptf */
-         if (ocs::tom::get<JAT_status>(ja_task) == JRUNNING) {
+         if (ja_task.get<JAT_status>() == JRUNNING) {
             ret = register_at_ptf(job, ja_task, nullptr);
             if (ret) {
                ERROR(MSG_JOB_XREGISTERINGJOBYATPTFDURINGSTARTUP_SU, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id);
             }
          }
-         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-            if (ocs::tom::get<PET_status>(pe_task) == JRUNNING) {
+         for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+            if (pe_task.get<PET_status>() == JRUNNING) {
                ret=register_at_ptf(job, ja_task, pe_task);
                if (ret) {
-                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED), job_id, ocs::tom::get<PET_id>(pe_task));
+                  ERROR(MSG_JOB_XREGISTERINGJOBYTASKZATPTFDURINGSTARTUP_SUS, (ret == 1 ? MSG_DELAYED : MSG_FAILED),
+                        job_id, pe_task.get<PET_id>());
                }
             }
          }

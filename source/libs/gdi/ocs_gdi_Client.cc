@@ -204,14 +204,14 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, const
                // created as the free emplace_back() creates a missing list
                hosts = ocs::tom::ListPtr<ocs::tom::ID>::create("");
             }
-            const auto hlep = hosts->emplace_back<ID_str>(static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
-            ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
+            const auto hlep = hosts->emplace_back<ID_str>(hep.get<EH_name>());
+            hlep.set<ID_force>((action_flag & JOB_KILL) ? 1 : 0);
          }
       } else {
          hosts = ocs::tom::ListPtr<ocs::tom::ID>::create("kill all hosts");
          auto hlep = ocs::tom::ElementPtr<ocs::tom::ID>::create();
-         ocs::tom::set<ID_str>(hlep, nullptr);
-         ocs::tom::set<ID_force>(hlep, (action_flag & JOB_KILL) ? 1 : 0);
+         hlep->set<ID_str>(nullptr);
+         hlep->set<ID_force>((action_flag & JOB_KILL) ? 1 : 0);
          hosts->push_back(std::move(hlep));
       }
       auto tmpalp = sge_gdi(Target::EH_LIST, Command::TRIGGER, SubCommand::NONE, hosts);
@@ -248,19 +248,19 @@ ocs::gdi::Client::sge_gdi_get_permission(ocs::tom::ListPtr<ocs::tom::AN> *alpp, 
    // prepare return values
    const auto perm = permission_list->front();
    if (is_manager != nullptr) {
-      *is_manager = ocs::tom::get<PERM_is_manager>(perm);
+      *is_manager = perm.get<PERM_is_manager>();
       DPRINTF("is_manager: %s\n", *is_manager ? "true" : "false");
    }
    if (is_operator != nullptr) {
-      *is_operator = ocs::tom::get<PERM_is_operator>(perm);
+      *is_operator = perm.get<PERM_is_operator>();
       DPRINTF("is_operator: %s\n", *is_manager ? "true" : "false");
    }
    if (is_admin_host != nullptr) {
-      *is_admin_host = ocs::tom::get<PERM_is_admin_host>(perm);
+      *is_admin_host = perm.get<PERM_is_admin_host>();
       DPRINTF("is_admin_host: %s\n", *is_admin_host ? "true" : "false");
    }
    if (is_submit_host != nullptr) {
-      *is_submit_host = ocs::tom::get<PERM_is_submit_host>(perm);
+      *is_submit_host = perm.get<PERM_is_submit_host>();
       DPRINTF("is_submit_host: %s\n", *is_submit_host ? "true" : "false");
    }
 
@@ -309,7 +309,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
       is_global_requested = 1;
    } else {
       hep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-      ocs::tom::set<EH_name>(hep, config_name);
+      hep->set<EH_name>(ocs::tom::Host(config_name));
 
       if (const int ret = ocs_resolve_host<EH_name>(*hep); ret != CL_RETVAL_OK) {
          DPRINTF("get_configuration: error %d resolving host %s: %s\n", ret, config_name, cl_get_error_text(ret));
@@ -318,7 +318,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
          DRETURN(std::make_tuple(-2, std::move(global_conf), std::move(local_conf)));
       }
       DPRINTF("get_configuration: unique for %s: %s\n", config_name,
-              static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
+              hep->get<EH_name>().c_str());
 
       const uint32_t me = component_get_component_id();
       if (sge_get_com_error_flag(me, ocs::gdi::SGE_COM_ACCESS_DENIED, false)) {
@@ -341,8 +341,8 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
       DPRINTF("requesting global\n");
    } else {
       where = ocs::tom::field<CONF_name>().equals_nocase(SGE_GLOBAL_NAME) ||
-              ocs::tom::field<CONF_name>().same_host(static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
-      DPRINTF("requesting global and %s\n", static_cast<const char *>(ocs::tom::get<EH_name>(hep)));
+              ocs::tom::field<CONF_name>().same_host(hep->get<EH_name>());
+      DPRINTF("requesting global and %s\n", hep->get<EH_name>().c_str());
    }
    const auto what = ocs::tom::what_all<ocs::tom::CONF>();
    // the response holds the configurations (CONF)
@@ -350,9 +350,9 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
    auto alp = sge_gdi(Target::CONF_LIST, Command::GET, SubCommand::NONE, lp, where, what);
 
    /* in case the gdi request failed: error handling & return */
-   if (const uint32_t status = ocs::tom::get<AN_status>(alp->front()); status != STATUS_OK) {
+   if (const uint32_t status = alp->front().get<AN_status>(); status != STATUS_OK) {
       if (!already_logged) {
-         ERROR(SFN, ocs::tom::get<AN_text>(alp->front()));
+         ERROR(SFN, alp->front().get<AN_text>());
          already_logged = 1;
       }
 
@@ -379,7 +379,7 @@ ocs::gdi::Client::gdi_get_configuration(const char *config_name, const bool with
     * print a warning
     */
    if (is_global_requested == 0) {
-      const char *hostname = ocs::tom::get<EH_name>(hep);
+      const char *hostname = hep->get<EH_name>();
       const auto local = lp->find_first<CONF_name>(ocs::tom::Host(hostname));
       if (!local) {
          if (global_conf) {

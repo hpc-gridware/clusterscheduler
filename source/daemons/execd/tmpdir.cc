@@ -74,14 +74,14 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
 
    const char *t;
 
-   t = ocs::tom::get<QU_tmpdir>(qep);
+   t = qep.get<QU_tmpdir>();
    if (t == nullptr) {
       DRETURN(nullptr);
    }
 
    /* Note could have multiple instantiations of same job, */
    /* on same machine, under same queue */
-   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, ocs::tom::get<QU_qname>(qep));
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, qep.get<QU_qname>());
 
    DPRINTF("making TMPDIR=%s\n", tmpdir);
 
@@ -161,11 +161,11 @@ char *sge_get_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint3
    DENTER(TOP_LAYER);
    const char *t;
 
-   if (!(t=ocs::tom::get<QU_tmpdir>(qep))) {
+   if (!(t=qep.get<QU_tmpdir>())) {
       DRETURN(nullptr);
    }
 
-   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, ocs::tom::get<QU_qname>(qep));
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, qep.get<QU_qname>());
    DPRINTF("TMPDIR=%s\n", tmpdir);
    DRETURN(tmpdir);
 }

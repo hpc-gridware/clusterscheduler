@@ -386,7 +386,7 @@ int sge_execd_process_messages() {
                   bool delay_job_reporting = false;
                   const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
                   for (const auto job : master_job_list) {
-                     uint32_t sync_options = ocs::tom::get<JB_sync_options>(job);
+                     uint32_t sync_options = job.get<JB_sync_options>();
                      if (sync_options != SYNC_NO) {
                         delay_job_reporting = true;
                         break;

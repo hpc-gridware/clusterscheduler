@@ -90,9 +90,9 @@ do_ticket(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       }
       const auto job_ticket = ticket_modifier->emplace_back<JB_job_number>(jobid);
       if (job_ticket) {
-         const auto task_ticket = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(job_ticket, jataskid);
+         const auto task_ticket = job_ticket.emplace_back_in<JB_ja_tasks, JAT_task_number>(jataskid);
          if (task_ticket) {
-            ocs::tom::set<JAT_tix>(task_ticket, ticket);
+            task_ticket.set<JAT_tix>(ticket);
          }
       }
    }

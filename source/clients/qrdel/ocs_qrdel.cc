@@ -244,7 +244,7 @@ static bool sge_parse_qrdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::to
       ocs::tom::ListPtr<ocs::tom::ST> ars;
       if (parse_multi_stringlist<ST_name>(cmdline, "ars", alpp, ars)) {
          for (const auto ep : *ars) {
-            const char *id = ocs::tom::get<ST_name>(ep);
+            const char *id = ep.get<ST_name>();
             // a null id added nothing in the free emplace_back(), which created the list with the first one
             if (id == nullptr) {
                continue;
@@ -260,7 +260,7 @@ static bool sge_parse_qrdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::to
       for (const auto ep : cmdline) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
-                                 ocs::tom::get<SPA_switch_val>(ep));
+                                 ep.get<SPA_switch_val>());
 
       }
       break;
@@ -277,17 +277,17 @@ static bool sge_parse_qrdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::to
                id_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
             }
             const auto id = id_list->emplace_back<ID_str>("0");
-            ocs::tom::set<ID_user_list>(id, user_list->clone(""));
+            id.set<ID_user_list>(user_list->clone(""));
          } else {
             for (const auto id : *id_list) {
-               ocs::tom::set<ID_user_list>(id, user_list->clone(""));
+               id.set<ID_user_list>(user_list->clone(""));
             }
          }
       }
 
       if (pforce != 0) {
          for (const auto id : *id_list) {
-            ocs::tom::set<ID_force>(id, pforce);
+            id.set<ID_force>(pforce);
          }
       }
    }

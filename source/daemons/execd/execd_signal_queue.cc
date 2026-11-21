@@ -132,18 +132,18 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
       for (const auto jep : job_list) {
          const char *qnm;
 
-         for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-            if (ocs::tom::get<JAT_status>(jatep) == JSLAVE) {
+         for (const auto jatep : jep.get<JB_ja_tasks>()) {
+            if (jatep.get<JAT_status>() == JSLAVE) {
                break;
             }
 
             /* iterate through all queues of a parallel job -
                this is done to ensure that signal delivery is also
                forwarded to the job in case the master queue keeps still active */
-            for (const auto gdil_ep : ocs::tom::get<JAT_granted_destin_identifier_list>(jatep)) {
-               const ocs::tom::Element<ocs::tom::QU> master_q(ocs::tom::get<JG_queue>(gdil_ep));
+            for (const auto gdil_ep : jatep.get<JAT_granted_destin_identifier_list>()) {
+               const ocs::tom::Element<ocs::tom::QU> master_q(gdil_ep.get<JG_queue>());
                if (master_q) {
-                  qnm =  ocs::tom::get<QU_full_name>(master_q);
+                  qnm =  master_q.get<QU_full_name>();
                   if (strcmp(qname, qnm) == 0) {
                      char tmpstr[SGE_PATH_MAX];
 
@@ -153,9 +153,9 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
                         we do not deliver a signal */
                      if (signal == SGE_SIGSTOP) {
                         qinstance_state_set_manual_suspended(master_q, true);
-                        if (!VALID(JSUSPENDED, ocs::tom::get<JAT_state>(jatep))) {
-                           if (ocs::tom::get<JB_checkpoint_attr>(jep)& CHECKPOINT_SUSPEND) {
-                              INFO(MSG_JOB_INITMIGRSUSPQ_U, ocs::tom::get<JB_job_number>(jep));
+                        if (!VALID(JSUSPENDED, jatep.get<JAT_state>())) {
+                           if (jep.get<JB_checkpoint_attr>()& CHECKPOINT_SUSPEND) {
+                              INFO(MSG_JOB_INITMIGRSUSPQ_U, jep.get<JB_job_number>());
                               signal = SGE_MIGRATE;
                            }
                            if (sge_execd_deliver_signal(signal, jep, jatep) == 0) {
@@ -167,7 +167,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
                            we do not deliver a signal */
                         if (signal == SGE_SIGCONT) {
                            qinstance_state_set_manual_suspended(master_q, false);
-                           if (!VALID(JSUSPENDED, ocs::tom::get<JAT_state>(jatep))) {
+                           if (!VALID(JSUSPENDED, jatep.get<JAT_state>())) {
                               if ( sge_execd_deliver_signal(signal, jep, jatep) == 0) {
                                  sge_send_suspend_mail(signal,master_q ,jep, jatep);
                               }
@@ -180,7 +180,7 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
 
                      if (!mconf_get_simulate_jobs()) {
                         job_write_spool_file(jep,
-                                             ocs::tom::get<JAT_task_number>(ocs::tom::get<JB_ja_tasks>(jep).front()),
+                                             jep.get<JB_ja_tasks>().front().get<JAT_task_number>(),
                                              nullptr, SPOOL_WITHIN_EXECD);
                      }
 
@@ -255,7 +255,7 @@ int sge_execd_deliver_signal(const uint32_t sig, const ocs::tom::ConstElement<oc
    int queue_already_suspended;
    int getridofjob = 0;
 
-   INFO(MSG_JOB_SIGNALTASK_UUS, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep), sge_sig2str(sig));
+   INFO(MSG_JOB_SIGNALTASK_UUS, jep.get<JB_job_number>(), jatep.get<JAT_task_number>(), sge_sig2str(sig));
 
    // for simulated jobs fill in the job report
    if (mconf_get_simulate_jobs()) {
@@ -269,23 +269,23 @@ int sge_execd_deliver_signal(const uint32_t sig, const ocs::tom::ConstElement<oc
    /* Simply apply signal to all subtasks of the job
       except in case of SGE_MIGRATE when there is a
       ckpt env with "migrate on suspend" configured */
-   queue_already_suspended = (ocs::tom::get<JAT_state>(jatep)&JSUSPENDED);
+   queue_already_suspended = (jatep.get<JAT_state>()&JSUSPENDED);
    if (!(sig == SGE_MIGRATE
-         && (ocs::tom::get<JB_checkpoint_attr>(jep)|CHECKPOINT_SUSPEND))
+         && (jep.get<JB_checkpoint_attr>()|CHECKPOINT_SUSPEND))
          && !queue_already_suspended) {
       /* signal each pe task */
-      for (const auto petep : ocs::tom::get<JAT_task_list>(jatep)) {
-         if (sge_kill((int)ocs::tom::get<PET_pid>(petep), sig,
-                      ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep),
-                      ocs::tom::get<PET_id>(petep)) == -2) {
+      for (const auto petep : jatep.get<JAT_task_list>()) {
+         if (sge_kill((int)petep.get<PET_pid>(), sig,
+                      jep.get<JB_job_number>(), jatep.get<JAT_task_number>(),
+                      petep.get<PET_id>()) == -2) {
             getridofjob = 1;
          }
       }
    }
 
-   if (ocs::tom::get<JAT_status>(jatep) != JSLAVE) {
-      if (sge_kill((int)ocs::tom::get<JAT_pid>(jatep), sig, ocs::tom::get<JB_job_number>(jep),
-                        ocs::tom::get<JAT_task_number>(jatep), nullptr) == -2) {
+   if (jatep.get<JAT_status>() != JSLAVE) {
+      if (sge_kill((int)jatep.get<JAT_pid>(), sig, jep.get<JB_job_number>(),
+                        jatep.get<JAT_task_number>(), nullptr) == -2) {
          getridofjob = 1;
       }
    }
@@ -314,7 +314,7 @@ void sge_send_suspend_mail(const uint32_t signal, const ocs::tom::ConstElement<o
 
    uint32_t mail_options;
 
-   mail_options = ocs::tom::get<JB_mail_options>(jep);
+   mail_options = jep.get<JB_mail_options>();
 
    /* only if mail at suspendsion is enabled */
    if (VALID(MAIL_AT_SUSPENSION, mail_options)) {
@@ -343,17 +343,17 @@ void sge_send_suspend_mail(const uint32_t signal, const ocs::tom::ConstElement<o
 
        /* get values */
        if (jep) {
-          job_sub_time = ocs::tom::get<JB_submission_time>(jep);
-          jobid        = ocs::tom::get<JB_job_number>(jep);
-          mail_users   = ocs::tom::get<JB_mail_list>(jep);
-          job_name     = ocs::tom::get<JB_job_name>(jep);
-          job_owner    = ocs::tom::get<JB_owner>(jep);
+          job_sub_time = jep.get<JB_submission_time>();
+          jobid        = jep.get<JB_job_number>();
+          mail_users   = jep.get<JB_mail_list>();
+          job_name     = jep.get<JB_job_name>();
+          job_owner    = jep.get<JB_owner>();
         }
 
        if (jatep) {
-          job_exec_time    = ocs::tom::get<JAT_start_time>(jatep);
-          taskid           = ocs::tom::get<JAT_task_number>(jatep);
-          job_master_queue = ocs::tom::get<JAT_master_queue>(jatep);
+          job_exec_time    = jatep.get<JAT_start_time>();
+          taskid           = jatep.get<JAT_task_number>();
+          job_master_queue = jatep.get<JAT_master_queue>();
        }
 
        /* check strings */
@@ -648,17 +648,17 @@ CheckShepherdStillRunning:
       }
 
       const ocs::tom::ConstElement<ocs::tom::QU> master_q(
-         ocs::tom::get<JG_queue>(ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front()));
+         jatep.get<JAT_granted_destin_identifier_list>().front().get<JG_queue>());
 
       DPRINTF("sending %s to job " sge_u32 "." sge_u32 "\n", sge_sig2str(signal), jobid, jataskid);
       if (signal == SGE_SIGCONT) {
-         state = ocs::tom::get<JAT_state>(jatep);
+         state = jatep.get<JAT_state>();
          if (ISSET(state, JSUSPENDED)) {
             suspend_change = 1;
          }
          CLEARBIT(JSUSPENDED, state);
          SETBIT(JRUNNING, state);
-         ocs::tom::set<JAT_state>(jatep, state);
+         jatep.set<JAT_state>(state);
 
          /* If the one of the queues is suspended
          and we unsuspend the job.
@@ -673,18 +673,18 @@ CheckShepherdStillRunning:
             DPRINTF("Queue is suspended -> do nothing\n");
          }
       } else {
-         if ((signal == SGE_SIGSTOP) && (ocs::tom::get<JB_checkpoint_attr>(jep) & CHECKPOINT_SUSPEND)) {
-            INFO(MSG_JOB_INITMIGRSUSPJ_UU, ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep));
+         if ((signal == SGE_SIGSTOP) && (jep.get<JB_checkpoint_attr>() & CHECKPOINT_SUSPEND)) {
+            INFO(MSG_JOB_INITMIGRSUSPJ_UU, jep.get<JB_job_number>(), jatep.get<JAT_task_number>());
             signal = SGE_MIGRATE;
             getridofjob = sge_execd_deliver_signal(signal, jep, jatep);
          } else if (signal == SGE_SIGSTOP) {
-            state = ocs::tom::get<JAT_state>(jatep);
+            state = jatep.get<JAT_state>();
             if (!ISSET(state, JSUSPENDED)) {
                suspend_change = 1;
             }
             SETBIT(JSUSPENDED, state);
             CLEARBIT(JRUNNING, state);
-            ocs::tom::set<JAT_state>(jatep, state);
+            jatep.set<JAT_state>(state);
 
             /* if this is a stop signal for a job
             which is in at least ONE queue
@@ -707,9 +707,9 @@ CheckShepherdStillRunning:
              * ja_task_message_add(jatep, 1, err_str) could be used to intermediately
              * store job termination reason until it gets reaped later on.
              */
-               state = ocs::tom::get<JAT_state>(jatep);
+               state = jatep.get<JAT_state>();
                SETBIT(JDELETED, state);
-               ocs::tom::set<JAT_state>(jatep, state);
+               jatep.set<JAT_state>(state);
                DPRINTF("SIGKILL of job " sge_u32 "\n", jobid);
             }
             getridofjob = sge_execd_deliver_signal(signal, jep, jatep);

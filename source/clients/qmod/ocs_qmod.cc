@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
       ** high level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s\n", aep.get<AN_text>());
       }
       alp.reset();
       pcmdline.reset();
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
       ** low level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s\n", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s\n", aep.get<AN_text>());
       }
       alp.reset();
       pcmdline.reset();
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
    }
 
    for (const auto idep : *ref_list) {
-      ocs::tom::set<ID_force>(idep, force);
+      idep.set<ID_force>(force);
    }
 
    if (ref_list) {
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
    ** show answer list
    */
    for (const auto aep : *alp) {
-      fprintf(stdout, "%s\n", ocs::tom::get<AN_text>(aep));
+      fprintf(stdout, "%s\n", aep.get<AN_text>());
    }
 
    alp.reset();
@@ -460,7 +460,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_qmod(const ocs::tom::List<ocs::
       /* we get to this point, than there are -t options without job names. We have to write an error message */
       if ((ep = cmdline.find_first<SPA_switch_val>("-t"))) {
          answer_list_add_sprintf(&alp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
-                                 MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
+                                 MSG_JOB_LONELY_TOPTION_S, ep.get<SPA_switch_arg>());
 
          break;
       }

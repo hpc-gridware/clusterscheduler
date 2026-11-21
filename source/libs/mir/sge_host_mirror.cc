@@ -146,7 +146,7 @@ hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_objec
 
    // the master list stays untyped: the generic merge below replaces it through the pointer
    lList **list = ocs::DataStore::get_master_list_rw(type);
-   const char *key = ocs::tom::get<ET_strkey>(event);
+   const char *key = event.get<ET_strkey>();
 
    // Both versions are in hand before the merge, which is what lets the decision
    // be made without a version field. On every other action either the old or
@@ -164,7 +164,7 @@ hgroup_update_master_list([[maybe_unused]] sge_evc_class_t *evc, const sge_objec
    const bool matchers_changed =
            action == SGE_EMA_MOD && before && !ocs::Matcher::cache_carries_over(before, after);
    const bool carry = action == SGE_EMA_MOD && before && !matchers_changed &&
-                      static_cast<bool>(ocs::tom::get<HGRP_match_cache>(before));
+                      static_cast<bool>(before.get<HGRP_match_cache>());
    ocs::tom::ListPtr<ocs::tom::HM> cache;
 
    /*

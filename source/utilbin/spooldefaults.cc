@@ -163,7 +163,7 @@ static int spool_configuration(int argc, char *argv[]) {
       ret = EXIT_FAILURE;
    } else {
       /* put config into a list - we can't spool free objects */
-      ocs::tom::set<CONF_name>(conf, SGE_GLOBAL_NAME);
+      conf->set<CONF_name>(ocs::tom::Host(SGE_GLOBAL_NAME));
       if (!spool_write_object(&answer_list, spool_get_default_context(), *conf, SGE_GLOBAL_NAME,
                               SGE_TYPE_CONFIG)) {
          /* error output has been done in spooling function */
@@ -211,7 +211,7 @@ static int spool_local_conf(int argc, char *argv[]) {
             spool_read_object(nullptr, spool_get_default_context(), SGE_TYPE_CONFIG, argv[3]));
          if (!le) {
             /* put config into a list - we can't spool free objects */
-            ocs::tom::set<CONF_name>(conf, argv[3]);
+            conf->set<CONF_name>(ocs::tom::Host(argv[3]));
             if (!spool_write_object(&answer_list, spool_get_default_context(), *conf, argv[3],
                                     SGE_TYPE_CONFIG)) {
                /* error output has been done in spooling function */
@@ -331,7 +331,7 @@ static int spool_object_list(const char *directory,
    // the directory entries (ST), freed when leaving the function
    const auto direntries = ocs_get_dirents(directory);
    for (const auto direntry : *direntries) {
-      name = ocs::tom::get<ST_name>(direntry);
+      name = direntry.get<ST_name>();
       if (name[0] != '.') {
          sge_dstring_sprintf(&file, "%s/%s", directory, name);
          // the object, of the type given at run time; freed at the end of the step, also on the break

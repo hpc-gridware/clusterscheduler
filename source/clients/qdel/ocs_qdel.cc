@@ -135,12 +135,12 @@ int main(int argc, char **argv) {
             ref_list = ocs::tom::ListPtr<ocs::tom::ID>::create("");
          }
          const auto id = ref_list->emplace_back<ID_str>("0");
-         ocs::tom::set<ID_user_list>(id, std::move(user_list));
+         id.set<ID_user_list>(std::move(user_list));
       } else {
          // every reference gets its own copy: the request list frees the sublist of each element, so
          // one list shared by several elements was freed once per element (CS-3118)
          for (const auto id : *ref_list) {
-            ocs::tom::set<ID_user_list>(id, user_list->clone(""));
+            id.set<ID_user_list>(user_list->clone(""));
          }
          user_list.reset();
       }
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
          const auto cp_refs = ref_list->clone("");
 
          for (const auto idep : *cp_refs) {
-            ocs::tom::set<ID_force>(idep, !no_forced_deletion);
+            idep.set<ID_force>(!no_forced_deletion);
          } 
 
          /*
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
                auto part_refs = ocs::tom::ListPtr<ocs::tom::ID>::create("part_del_jobs");
                for (std::size_t i = 0; i < max; i++) {
                   const auto temp_ref = cp_refs->front();
-                  const char *job = ocs::tom::get<ID_str>(temp_ref);
+                  const char *job = temp_ref.get<ID_str>();
                   /* break if we got job ids first and hit a job name now */
                   if (!isdigit(job[0]) && (i > 0)) {
                      break;
@@ -237,9 +237,9 @@ int main(int argc, char **argv) {
                                             ocs::gdi::SubCommand::NONE, part_ref_list);
 
             for (const auto aep : *alp) {
-               status = ocs::tom::get<AN_status>(aep);
+               status = aep.get<AN_status>();
 
-               if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_ERROR) {
+               if (aep.get<AN_quality>() == ANSWER_QUALITY_ERROR) {
                   ret = 1;
                }
 
@@ -247,7 +247,7 @@ int main(int argc, char **argv) {
                    ((first_try  && status != STATUS_OK_DOAGAIN) ||
                     (!first_try && status == STATUS_OK))) {
                   
-                  printf("%s\n", ocs::tom::get<AN_text>(aep));
+                  printf("%s\n", aep.get<AN_text>());
                   
                }
                /* but a job name might have extended to more than MAX_DELETE_JOBS */
@@ -381,7 +381,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
          // the job names are collected here and put into the option, which created its list with the first name
          ocs::tom::ListPtr<ocs::tom::ST> job_names;
          for (const auto job : *del_list) {
-            const char *job_name = ocs::tom::get<ST_name>(job);
+            const char *job_name = job.get<ST_name>();
             if (!ep) {
                ep = sge_add_arg(cmdline, 0, lListT, "jobs", nullptr);
             }
@@ -468,7 +468,8 @@ static bool sge_parse_qdel(const ocs::tom::List<ocs::tom::SPA> cmdline, ocs::tom
 
        /* we get to this point, than there are -t options without job names. We have to write an error message */
       if ((ep = cmdline.find_first<SPA_switch_val>("-t"))) {
-         answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S, ocs::tom::get<SPA_switch_arg>(ep));
+         answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR, MSG_JOB_LONELY_TOPTION_S,
+                                 ep.get<SPA_switch_arg>());
          break;
       }
    }

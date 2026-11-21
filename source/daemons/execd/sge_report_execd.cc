@@ -242,8 +242,8 @@ int sge_add_str2load_report(const ocs::tom::List<ocs::tom::LR> lp, const char *n
    ocs::tom::Element<ocs::tom::LR> search_ep = ocs::tom::find_first_rw<LR_host>(lp, host, &iterator);
 
    while (search_ep != nullptr) {
-      DPRINTF("---> %s\n", ocs::tom::get<LR_name>(search_ep));
-      if (strcmp(ocs::tom::get<LR_name>(search_ep), name) == 0) {
+      DPRINTF("---> %s\n", search_ep.get<LR_name>());
+      if (strcmp(search_ep.get<LR_name>(), name) == 0) {
          ep = search_ep;
          break;
       }
@@ -253,12 +253,12 @@ int sge_add_str2load_report(const ocs::tom::List<ocs::tom::LR> lp, const char *n
    if (ep == nullptr) {
       DPRINTF("adding new load variable %s for host %s\n", name, host);
       ep = lp.emplace_back<LR_name>(name);
-      ocs::tom::set<LR_host>(ep, host);
-      ocs::tom::set<LR_global>(ep, (uint32_t)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
-      ocs::tom::set<LR_is_static>(ep, sge_is_static_load_value(name));
+      ep.set<LR_host>(ocs::tom::Host(host));
+      ep.set<LR_global>((uint32_t)(strcmp(host, SGE_GLOBAL_NAME) == 0 ? 1 : 0));
+      ep.set<LR_is_static>(sge_is_static_load_value(name));
    }
 
-   ocs::tom::set<LR_value>(ep, value);
+   ep.set<LR_value>(value);
 
    DPRINTF("load value %s for host %s: %s\n", name, host, value);
 

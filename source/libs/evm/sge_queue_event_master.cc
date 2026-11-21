@@ -64,8 +64,8 @@ void qinstance_add_event(const ocs::tom::Element<ocs::tom::QU> this_elem, const 
                          const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    // a host field, handed on as a C string key
-   const char *qhostname = ocs::tom::get<QU_qhostname>(this_elem);
-   sge_add_event(0, type, 0, 0, ocs::tom::get<QU_qname>(this_elem), qhostname, nullptr, this_elem, gdi_session);
+   const char *qhostname = this_elem.get<QU_qhostname>();
+   sge_add_event(0, type, 0, 0, this_elem.get<QU_qname>(), qhostname, nullptr, this_elem, gdi_session);
    DRETURN_VOID;
 }
 
@@ -80,6 +80,6 @@ void qinstance_add_event(const ocs::tom::Element<ocs::tom::QU> this_elem, const 
 void cqueue_add_event(const ocs::tom::Element<ocs::tom::CQ> this_elem, const ev_event type,
                       const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
-   sge_add_event(0, type, 0, 0, ocs::tom::get<CQ_name>(this_elem), nullptr, nullptr, this_elem, gdi_session);
+   sge_add_event(0, type, 0, 0, this_elem.get<CQ_name>(), nullptr, nullptr, this_elem, gdi_session);
    DRETURN_VOID;
 }

@@ -89,9 +89,9 @@ static bool job_update_master_list_usage(const ocs::tom::List<ocs::tom::JB> job_
    uint32_t job_id, ja_task_id;
    const char *pe_task_id;
 
-   job_id = ocs::tom::get<ET_intkey>(event);
-   ja_task_id = ocs::tom::get<ET_intkey2>(event);
-   pe_task_id = ocs::tom::get<ET_strkey>(event);
+   job_id = event.get<ET_intkey>();
+   ja_task_id = event.get<ET_intkey2>();
+   pe_task_id = event.get<ET_strkey>();
 
    if(ja_task_id == 0) {
       dstring id_dstring = DSTRING_INIT;
@@ -148,11 +148,11 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
 
    // the master list slot stays untyped: the generic merge below may create the list through it
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_JOB);
-   const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
+   const uint32_t job_id = event.get<ET_intkey>();
    const auto job = ocs::tom::find_first_rw<JB_job_number>(*list, job_id);
 
    if (action == SGE_EMA_MOD) {
-      uint32_t event_type = ocs::tom::get<ET_type>(event);
+      uint32_t event_type = event.get<ET_type>();
 
       if (!job) {
          ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring),
@@ -190,28 +190,28 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
              ja_tasks = job.exchange<JB_ja_tasks>(std::move(ja_tasks));
 
              // @todo Why is that needed?
-             const bool has_host = ocs::tom::has<JB_host>(event_job);
+             const bool has_host = event_job.has<JB_host>();
              if (has_host) {
-                ocs::tom::set<JB_host>(event_job, ocs::tom::get<JB_host>(job));
+                event_job.set<JB_host>(job.get<JB_host>());
              }
 
              // find category ID
              uint32_t category_id = 0;
-             const bool has_category_id = ocs::tom::has<JB_category_id>(event_job);
+             const bool has_category_id = event_job.has<JB_category_id>();
              if (has_category_id) {
-                category_id = ocs::tom::get<JB_category_id>(event_job);
+                category_id = event_job.get<JB_category_id>();
              }
 
              // convert category id to category ref for the modified job within the current client
              // (scheduler, reader, ...)
-             const bool has_category = ocs::tom::has<JB_category>(event_job);
+             const bool has_category = event_job.has<JB_category>();
              if (has_category && has_category_id) {
                 // the master category list (CT), fetched with its fixed type
                 const auto master_category_list = ocs::DataStore::master_list<SGE_TYPE_CATEGORY>();
                 // JB_category is a reference field, which takes the raw element
                 lListElem *category = ocs::tom::find_first_rw<CT_id>(master_category_list, category_id);
 
-                ocs::tom::set<JB_category>(event_job, category);
+                event_job.set<JB_category>(category);
              }
           }
       }

@@ -85,7 +85,7 @@ ocs_gdi_copy_request_data(const lList *lp, const lEnumeration *enp) {
    try {
       if (enp != nullptr) {
          ocs::tom::RawListPtr copy(ocs::tom::select_list("", lp, nullptr, enp, true, false));
-         if (ocs::tom::size(copy.get()) == 0) {
+         if (copy.get().size() == 0) {
             // an empty result of a hashed selection is no list, as lSelect() gave
             copy.reset();
          }
@@ -204,7 +204,7 @@ ocs::gdi::Request::get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Com
    }
 
    // get the response for the given id
-   ocs::tom::Element<ocs::tom::MA> map = ocs::tom::find_first_rw<MA_id>(multi_answer_list.get(), id);
+   ocs::tom::Element<ocs::tom::MA> map = multi_answer_list.get().find_first<MA_id>(id);
    if (!map) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_SGEGDIFAILED_S, to_string(target).c_str());
       answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);

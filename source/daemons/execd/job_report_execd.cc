@@ -114,7 +114,7 @@ void flush_job_report(const ocs::tom::Element<ocs::tom::JR> jr) {
    DENTER(TOP_LAYER);
 
    if (jr) {
-      ocs::tom::set<JR_flush>(jr, true);
+      jr.set<JR_flush>(true);
       sge_set_flush_jr_flag(true);
    }
 
@@ -147,10 +147,10 @@ add_job_report(const uint32_t jobid, const uint32_t jataskid, const char *petask
 
    auto new_jr = ocs::tom::ElementPtr<ocs::tom::JR>::create();
 
-   ocs::tom::set<JR_job_number>(new_jr, jobid);
-   ocs::tom::set<JR_ja_task_number>(new_jr, jataskid);
+   new_jr->set<JR_job_number>(jobid);
+   new_jr->set<JR_ja_task_number>(jataskid);
    if (petaskid != nullptr) {
-      ocs::tom::set<JR_pe_task_id_str>(new_jr, petaskid);
+      new_jr->set<JR_pe_task_id_str>(petaskid);
    }
 
    const auto jr = job_reports.push_back(std::move(new_jr));
@@ -187,12 +187,12 @@ get_job_report(const uint32_t job_id, const uint32_t ja_task_id, const char *pe_
 
    ocs::tom::Element<ocs::tom::JR> ret;
    for (const auto jr : ocs::tom::List<ocs::tom::JR>(jr_list).find_all<JR_job_number>(job_id)) {
-      if (ocs::tom::get<JR_ja_task_number>(jr) == ja_task_id) {
+      if (jr.get<JR_ja_task_number>() == ja_task_id) {
          if (pe_task_id == nullptr) {
             ret = jr;
             break;
          } else {
-            if (sge_strnullcmp(pe_task_id, ocs::tom::get<JR_pe_task_id_str>(jr)) == 0) {
+            if (sge_strnullcmp(pe_task_id, jr.get<JR_pe_task_id_str>()) == 0) {
                ret = jr;
                break;
             }
@@ -232,8 +232,8 @@ void cleanup_job_report(const uint32_t jobid, const uint32_t jataskid) {
    while (jr_next) {
       const auto jr = jr_next;
       jr_next = ocs::tom::find_next_rw<JR_job_number>(job_reports, jobid, &iterator);
-      if (ocs::tom::get<JR_ja_task_number>(jr) == jataskid) {
-         const char *s = ocs::tom::get<JR_pe_task_id_str>(jr);
+      if (jr.get<JR_ja_task_number>() == jataskid) {
+         const char *s = jr.get<JR_pe_task_id_str>();
 
          DPRINTF("!!!! removing jobreport for " sge_u32 "." sge_u32 " task %s !!!!\n", jobid, jataskid,
                  s?s:"master");
@@ -266,9 +266,9 @@ int add_usage(const ocs::tom::Element<ocs::tom::JR> jr, const char *name, const 
    }
 
    /* check if we already have a usage value with this name */
-   ocs::tom::Element<ocs::tom::UA> usage = ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, name);
+   ocs::tom::Element<ocs::tom::UA> usage = jr.find_first_in_rw<JR_usage, UA_name>(name);
    if (!usage) {
-      if (!(usage = ocs::tom::emplace_back_in<JR_usage, UA_name>(jr, name))) {
+      if (!(usage = jr.emplace_back_in<JR_usage, UA_name>(name))) {
          DRETURN(-1);
       }
    }
@@ -277,14 +277,14 @@ int add_usage(const ocs::tom::Element<ocs::tom::JR> jr, const char *name, const 
       char *p;
       double parsed = strtod(val_as_str, &p);
       if (p==val_as_str) {
-         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, ocs::tom::get<JR_job_number>(jr)); /* use default value */
-         ocs::tom::set<UA_value>(usage, val);
+         ERROR(MSG_PARSE_USAGEATTR_SSU, val_as_str, name, jr.get<JR_job_number>()); /* use default value */
+         usage.set<UA_value>(val);
          DRETURN(-1);
       }
       val = parsed;
    }
 
-   ocs::tom::set<UA_value>(usage, val);
+   usage.set<UA_value>(val);
 
    DRETURN(0);
 }
@@ -305,7 +305,7 @@ job_report_update_value_from_usage_list(const ocs::tom::Element<ocs::tom::JR> jr
 
    const auto usage = usage_list.find_first<UA_name>(name);
    if (usage) {
-      add_usage(jr, name, nullptr, ocs::tom::get<UA_value>(usage));
+      add_usage(jr, name, nullptr, usage.get<UA_value>());
    }
 
    DRETURN_VOID;
@@ -380,7 +380,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
          DRETURN(0);
       }
 
-      switch (ocs::tom::get<ACK_type>(ack)) {
+      switch (ack->get<ACK_type>()) {
 
          case ACK_JOB_EXIT:
 /*
@@ -390,9 +390,9 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 **          - retry is triggered by next job report sent to qmaster
 **            containing this job as "exiting"
 */
-            jobid = ocs::tom::get<ACK_id>(ack);
-            jataskid = ocs::tom::get<ACK_id2>(ack);
-            pe_task_id_str = ocs::tom::get<ACK_str>(ack);
+            jobid = ack->get<ACK_id>();
+            jataskid = ack->get<ACK_id2>();
+            pe_task_id_str = ack->get<ACK_str>();
 
             DPRINTF("remove exiting job " sge_u32 "." sge_u32 " %s\n",
                     jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
@@ -417,9 +417,9 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 **          sent by qmaster instead of ACK_JOB_EXIT to make execd
 **          resend the job report
 */
-            jobid = ocs::tom::get<ACK_id>(ack);
-            jataskid = ocs::tom::get<ACK_id2>(ack);
-            pe_task_id_str = ocs::tom::get<ACK_str>(ack);
+            jobid = ack->get<ACK_id>();
+            jataskid = ack->get<ACK_id2>();
+            pe_task_id_str = ack->get<ACK_str>();
 
             DPRINTF("resending report for exiting job " sge_u32 "/" sge_u32"/%s\n", jobid, jataskid, pe_task_id_str?pe_task_id_str:"");
 
@@ -447,8 +447,8 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             {
                uint32_t signo  = SGE_SIGKILL;
 
-               jobid = ocs::tom::get<ACK_id>(ack);
-               jataskid = ocs::tom::get<ACK_id2>(ack);
+               jobid = ack->get<ACK_id>();
+               jataskid = ack->get<ACK_id2>();
 
                if (signal_job(jobid, jataskid, signo)) {
                   auto jr = get_job_report(jobid, jataskid, nullptr);
@@ -464,7 +464,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
             break;
 
          case ACK_LOAD_REPORT:
-            execd_merge_load_report(ocs::tom::get<ACK_id>(ack));
+            execd_merge_load_report(ack->get<ACK_id>());
             break;
 
 /*
@@ -476,8 +476,8 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
  * once all pe_tasks have finished.
  */
          case ACK_SIGNAL_SLAVE:
-            jobid = ocs::tom::get<ACK_id>(ack);
-            jataskid = ocs::tom::get<ACK_id2>(ack);
+            jobid = ack->get<ACK_id>();
+            jataskid = ack->get<ACK_id2>();
 
             execd_slave_job_exit(jobid, jataskid);
             break;
@@ -528,7 +528,7 @@ count_queue_limits(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::
    // @todo: store this once in the ja_task?
    double lim{};
    bool found_limit = false;
-   parse_ulong_val(&lim, nullptr, type, ocs::tom::get<F>(queue), nullptr, 0);
+   parse_ulong_val(&lim, nullptr, type, queue.get<F>(), nullptr, 0);
    if (lim != DBL_MAX) {
       if (increase) {
          check_queue_limits++;
@@ -555,10 +555,10 @@ void modify_queue_limits_flag_for_job(const char *qualified_hostname, const ocs:
                                       const bool increase) {
    DENTER(TOP_LAYER);
 
-   for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-      const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep);
+   for (const auto jatep : jep.get<JB_ja_tasks>()) {
+      const auto gdil = jatep.get<JAT_granted_destin_identifier_list>();
       for (const auto gdil_ep : gdil.find_all<JG_qhostname>(ocs::tom::Host(qualified_hostname))) {
-         const ocs::tom::ConstElement<ocs::tom::QU> q(ocs::tom::get<JG_queue>(gdil_ep));
+         const ocs::tom::ConstElement<ocs::tom::QU> q(gdil_ep.get<JG_queue>());
          if (!q) {
             // this should never happen, but if it does, we have to skip this gdil_ep
             CRITICAL(MSG_SGETEXT_NULLPTRPASSED_S, "gdil_ep->JG_queue");

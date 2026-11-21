@@ -887,7 +887,7 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       /** @brief Take the element out of the temporary list, free again; the emptied list goes with its owner */
       ~BorrowGuard() {
          if (list) {
-            static_cast<void>(ocs::tom::take(list.get(), object).release());
+            static_cast<void>(list.get().take(object).release());
          }
       }
    } borrow{{}, const_cast<lListElem *>(object)};

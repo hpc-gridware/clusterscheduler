@@ -128,7 +128,7 @@ qconf_answer_take(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::
    int failed = 0;
    bool fatal = false;
    for (const auto aep : from->get()) {
-      if (ocs::tom::get<AN_quality>(aep) == ANSWER_QUALITY_END) {
+      if (aep.get<AN_quality>() == ANSWER_QUALITY_END) {
          continue;
       }
       if (answer_get_status(aep) != STATUS_OK) {
@@ -154,12 +154,12 @@ qconf_answer_take(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListPtr<ocs::
 void
 qconf_answer_print(ocs::tom::ListPtr<ocs::tom::AN> *alpp, FILE *info_stream) {
    for (const auto aep : **alpp) {
-      const uint32_t quality = ocs::tom::get<AN_quality>(aep);
+      const uint32_t quality = aep.get<AN_quality>();
       if (quality == ANSWER_QUALITY_END) {
          continue;
       }
       answer_exit_if_not_recoverable(aep);
-      const char *text = ocs::tom::get<AN_text>(aep);
+      const char *text = aep.get<AN_text>();
       if (text == nullptr) {
          continue;
       }
@@ -352,9 +352,9 @@ qconf_conf_host_of(const char *filepath, const ocs::tom::Element<ocs::tom::EH> h
 
    const char *slash = strrchr(filepath, '/');
    const char *base = slash != nullptr ? slash + 1 : filepath;
-   ocs::tom::set<EH_name>(host_ep, base);
+   host_ep.set<EH_name>(ocs::tom::Host(base));
    ocs_resolve_host<EH_name>(host_ep);   /* best-effort, like -Aconf/-dconf */
-   const char *hostname = ocs::tom::get<EH_name>(host_ep);
+   const char *hostname = host_ep.get<EH_name>();
 
    DRETURN(hostname);
 }
@@ -378,12 +378,12 @@ qconf_missing_argument(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp
 static bool
 qconf_resolve_one_host(const char *name, std::string &resolved, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
-   ocs::tom::set<EH_name>(host_ep, name);
+   host_ep->set<EH_name>(ocs::tom::Host(name));
    const bool ok = (ocs_resolve_host<EH_name>(*host_ep) == CL_RETVAL_OK);
    if (ok) {
-      resolved = static_cast<const char *>(ocs::tom::get<EH_name>(host_ep));
+      resolved = host_ep->get<EH_name>();
    } else {
-      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
+      qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, host_ep->get<EH_name>().c_str());
    }
    return ok;
 }
@@ -424,11 +424,11 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
    for (const auto host_ep : *hosts) {
       if (ocs_resolve_host<EH_name>(host_ep) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S,
-                      static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
+                      host_ep.get<EH_name>().c_str());
          failed = true;
          continue;
       }
-      names.emplace_back(static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
+      names.emplace_back(host_ep.get<EH_name>().c_str());
    }
 
    DRETURN_VOID;
@@ -442,7 +442,7 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[
    std::string arg = op.args[0];
    const auto usersets = parse_name_list_to_cull<US_name>("usersets", arg.data());
    for (const auto us_ep : *usersets) {
-      const char *name = ocs::tom::get<US_name>(us_ep);
+      const char *name = us_ep.get<US_name>();
       names.emplace_back(name != nullptr ? name : "");
    }
 
@@ -456,7 +456,7 @@ qconf_names_user_list(const qconf_op &op, std::vector<std::string> &names, [[may
 
    const auto users = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(op.args[0].c_str(), ", ");
    for (const auto user_ep : *users) {
-      names.emplace_back(ocs::tom::get<ST_name>(user_ep));
+      names.emplace_back(user_ep.get<ST_name>());
    }
 
    DRETURN_VOID;
@@ -483,7 +483,7 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
    auto host_ep = ocs::tom::ElementPtr<ocs::tom::EH>::create();
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
-      ocs::tom::set<EH_name>(host_ep, cp);
+      host_ep->set<EH_name>(ocs::tom::Host(cp));
       const int ret = ocs_resolve_host<EH_name>(*host_ep);
       if (ret != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_SS, cp, cl_get_error_text(ret));
@@ -492,7 +492,7 @@ qconf_names_conf_hosts(const qconf_op &op, std::vector<std::string> &names, bool
             continue;
          }
       }
-      const char *hostname = ocs::tom::get<EH_name>(host_ep);
+      const char *hostname = host_ep->get<EH_name>();
       names.emplace_back((strcasecmp(hostname, "global") == 0) ? SGE_GLOBAL_NAME : hostname);
    }
 }

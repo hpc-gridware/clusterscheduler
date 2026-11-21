@@ -82,7 +82,7 @@ properties_equal(const ocs::tom::ConstList<ocs::tom::CE> a, const ocs::tom::Cons
 }
 
 /**
- * Add an RSMAP id to a CE element, optionally attaching per-instance
+ * @brief Add an RSMAP id to a CE element, optionally attaching per-instance
  * properties.
  *
  * Duplicate-id semantics (see CS-1338): the same id may appear multiple
@@ -110,9 +110,9 @@ static bool
 store_resl(const ocs::tom::Element<ocs::tom::CE> centry, const char *id, ocs::tom::ListPtr<ocs::tom::CE> &&properties,
            ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *rsmap_name) {
    auto incoming = std::move(properties);
-   const auto resl = ocs::tom::find_first_in_rw<CE_resource_map_list, RESL_value>(centry, id);
+   const auto resl = centry.find_first_in_rw<CE_resource_map_list, RESL_value>(id);
    if (!resl) {
-      const auto added = ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(centry, id);
+      const auto added = centry.emplace_back_in<CE_resource_map_list, RESL_value>(id);
       if (!added) {
          return true;  // allocation failure is not this function's error to report
       }

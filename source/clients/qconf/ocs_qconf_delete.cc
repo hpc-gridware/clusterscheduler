@@ -113,7 +113,7 @@ qconf_delete_names_of(const ocs::tom::ConstList<typename ocs::tom::FieldTraits<F
    DENTER(TOP_LAYER);
    std::vector<std::string> names;
    for (const auto ep : list) {
-      const char *name = static_cast<const char *>(ocs::tom::get<F>(ep));
+      const char *name = static_cast<const char *>(ep.template get<F>());
       if (name != nullptr) {
          names.emplace_back(name);
       }
@@ -225,7 +225,7 @@ qconf_rqs_collect(const char *filepath, void *vctx) {
       DRETURN(1);
    }
    for (const auto rqs : *rqs_list) {
-      ctx->names->emplace_back(ocs::tom::get<RQS_name>(rqs));
+      ctx->names->emplace_back(rqs.get<RQS_name>());
       ctx->sources->emplace_back(filepath);
    }
 
@@ -343,12 +343,12 @@ qconf_delete_conf_hosts([[maybe_unused]] std::ostream &os, const qconf_op &op, o
    std::vector<std::string> names;
    for (const char *cp = sge_strtok(list.data(), ","); cp != nullptr && *cp != '\0';
         cp = sge_strtok(nullptr, ",")) {
-      ocs::tom::set<EH_name>(host_ep, cp);
+      host_ep->set<EH_name>(ocs::tom::Host(cp));
       if (ocs_resolve_host<EH_name>(*host_ep) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S, cp);
          ret = 1;
       }
-      names.emplace_back(static_cast<const char *>(ocs::tom::get<EH_name>(host_ep)));
+      names.emplace_back(host_ep->get<EH_name>().c_str());
    }
    host_ep.reset();
    if (!names.empty() && qconf_delete_send(QConfObj::CONF, names, {}, alpp) != 0) {

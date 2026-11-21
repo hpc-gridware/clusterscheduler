@@ -263,7 +263,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
          for (const auto aep : **alpp) {
             if (answer_has_quality(aep, ANSWER_QUALITY_ERROR) && (answer_get_status(aep) == STATUS_ESYNTAX)) {
                snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_QCONF_BAD_ATTR_ARGS_SS, name, value);
-               ocs::tom::set<AN_text>(aep, SGE_EVENT);
+               aep.set<AN_text>(SGE_EVENT);
             }
          }
          sge_dstring_free(&delim);

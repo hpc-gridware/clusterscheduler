@@ -77,11 +77,11 @@ pe_task_update_master_list_usage([[maybe_unused]] const ocs::tom::List<ocs::tom:
                                  const ocs::tom::Element<ocs::tom::ET> event) {
    DENTER(TOP_LAYER);
 
-   const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
-   const uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
-   const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
+   const uint32_t job_id = event.get<ET_intkey>();
+   const uint32_t ja_task_id = event.get<ET_intkey2>();
+   const char *pe_task_id = event.get<ET_strkey>();
 
-   const auto job = ocs::tom::find_first_rw<JB_job_number>(ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(), job_id);
+   const auto job = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().find_first<JB_job_number>(job_id);
    if (!job) {
       dstring id_dstring = DSTRING_INIT;
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
@@ -153,11 +153,11 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
 
    sge_dstring_init(&id_dstring, id_buffer, MAX_STRING_SIZE);
 
-   const uint32_t job_id = ocs::tom::get<ET_intkey>(event);
-   const uint32_t ja_task_id = ocs::tom::get<ET_intkey2>(event);
-   const char *pe_task_id = ocs::tom::get<ET_strkey>(event);
+   const uint32_t job_id = event.get<ET_intkey>();
+   const uint32_t ja_task_id = event.get<ET_intkey2>();
+   const char *pe_task_id = event.get<ET_strkey>();
 
-   const auto job = ocs::tom::find_first_rw<JB_job_number>(ocs::DataStore::master_list_rw<SGE_TYPE_JOB>(), job_id);
+   const auto job = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().find_first<JB_job_number>(job_id);
    if (!job) {
       ERROR(MSG_JOB_CANTFINDJOBFORUPDATEIN_SS, job_get_id_string(job_id, 0, nullptr, &id_dstring), __func__);
       DRETURN(SGE_EMA_FAILURE);
@@ -175,7 +175,7 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
    auto pe_task = ocs::tom::Element<ocs::tom::PET>(ja_task_search_pe_task(ja_task, pe_task_id));
 
    // stays untyped: the generic merge below may create the list through the pointer
-   lList *pe_task_list = ocs::tom::get<JAT_task_list>(ja_task);
+   lList *pe_task_list = ja_task.get<JAT_task_list>();
 
    if (action == SGE_EMA_MOD) {
       /* modify event for pe_task.
@@ -211,7 +211,7 @@ pe_task_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused
    }
 
    /* first petask add event could have created new pe_task list for job */
-   if (!ocs::tom::get<JAT_task_list>(ja_task) && pe_task_list != nullptr) {
+   if (!ja_task.get<JAT_task_list>() && pe_task_list != nullptr) {
       ocs::tom::set<JAT_task_list>(ja_task, pe_task_list);
    }
 

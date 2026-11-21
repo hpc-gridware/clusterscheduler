@@ -168,7 +168,7 @@ qconf_action_stnode_failed(const qconf_op &op) {
    bool usage = false;
    const auto args = ocs::tom::ListPtr<ocs::tom::ST>::from_string<ST_name>(op.args[0].c_str(), ", ");
    for (const auto arg : *args) {
-      const char *text = ocs::tom::get<ST_name>(arg);
+      const char *text = arg.get<ST_name>();
       const char *eq = (text != nullptr) ? strchr(text, '=') : nullptr;
       int shares;
       if (eq == nullptr || eq == text || sscanf(eq + 1, "%d", &shares) != 1) {
@@ -311,7 +311,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
    bool ok = true;
    std::vector<std::string> members;
    for (const auto name_ep : *names) {
-      const char *name = ocs::tom::get<HR_name>(name_ep);
+      const char *name = name_ep.get<HR_name>();
       if (name == nullptr) {
          ok = false;
          continue;
@@ -322,7 +322,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
             ok = false;
             continue;
          }
-         name = ocs::tom::get<HR_name>(name_ep);
+         name = name_ep.get<HR_name>();
       }
       members.emplace_back(name);
    }

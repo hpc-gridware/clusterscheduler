@@ -411,7 +411,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
                const auto last_event = event_list->back();
                uint64_t last_unique_id;
                if (last_event) {
-                  last_unique_id = ocs::tom::get<ET_unique_id>(last_event);
+                  last_unique_id = last_event.get<ET_unique_id>();
                   found_last_event = true;
                }
 

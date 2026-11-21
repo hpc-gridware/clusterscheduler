@@ -1194,7 +1194,7 @@ sge_mirror_process_event_list(sge_evc_class_t *evc, const ocs::tom::List<ocs::to
       }
       num_events++;
 
-      switch (ocs::tom::get<ET_type>(event)) {
+      switch (event.get<ET_type>()) {
 
          case sgeE_CALENDAR_LIST:
             ret = sge_mirror_process_event(evc, mirror_base, SGE_TYPE_CALENDAR, SGE_EMA_LIST, event);
@@ -1514,9 +1514,9 @@ static ocs::tom::KeyArgOf<ocs::tom::FieldTraits<K>::type>
 ocs_mirror_event_key(const ocs::tom::ConstElement<ocs::tom::ET> event) {
    static_assert(ocs::tom::FieldTraits<K>::type != ocs::tom::FieldType::Uint64, "no event carries a 64 bit key");
    if constexpr (ocs::tom::FieldTraits<K>::type == ocs::tom::FieldType::Uint32) {
-      return ocs::tom::get<ET_intkey>(event);
+      return event.get<ET_intkey>();
    } else {
-      return ocs::tom::get<ET_strkey>(event);
+      return event.get<ET_strkey>();
    }
 }
 
@@ -1543,7 +1543,7 @@ mir_event_root_missing(const ocs::tom::ConstElement<ocs::tom::ET> event) {
       return true; /* nothing of the root type mirrored -> event targets an object we lack */
    }
 
-   return !ocs::tom::find_first<E::key>(rlist, ocs_mirror_event_key<E::key>(event));
+   return !rlist.template find_first<E::key>(ocs_mirror_event_key<E::key>(event));
 }
 
 /**

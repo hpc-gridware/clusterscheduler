@@ -208,7 +208,7 @@ list_objects(const char *key) {
        * Sucess: print out data.
        */
       for (const auto stu_elem : *stu_list) {
-         fprintf(stdout, "%s\n", ocs::tom::get<STU_name>(stu_elem));
+         fprintf(stdout, "%s\n", stu_elem.get<STU_name>());
       }
    } else {
       answer_list_output(&answer_list);

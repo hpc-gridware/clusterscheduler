@@ -83,7 +83,7 @@ cqueue_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]
    // the queue instances of the cluster queue, kept across the event
    ocs::tom::ListPtr<ocs::tom::QU> qinstance_list;
 
-   const char *name = ocs::tom::get<ET_strkey>(event);
+   const char *name = event.get<ET_strkey>();
    // the master list slot stays untyped: the generic merge below may create the list through it
    lList **list = ocs::DataStore::get_master_list_rw(SGE_TYPE_CQUEUE);
    // a cluster queue of the master list (CQ)
@@ -141,8 +141,8 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
 
    sge_callback_result ret = SGE_EMA_OK;
 
-   const char *name = ocs::tom::get<ET_strkey>(event);
-   const char *hostname = ocs::tom::get<ET_strkey2>(event);
+   const char *name = event.get<ET_strkey>();
+   const char *hostname = event.get<ET_strkey2>();
 
    // a cluster queue of the master list (CQ)
    const auto cqueue = cqueue_list_locate(
@@ -150,7 +150,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
 
    if (cqueue) {
       dstring key_buffer = DSTRING_INIT;
-      const auto qinstances = ocs::tom::get<CQ_qinstances>(cqueue);
+      const auto qinstances = cqueue.get<CQ_qinstances>();
       // stays untyped: the generic merge below may create the list through the pointer
       lList *list = qinstances;
 
@@ -162,7 +162,7 @@ qinstance_update_cqueue_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unus
       key = sge_dstring_get_string(&key_buffer);
 
       if (action == SGE_EMA_MOD) {
-         uint32_t type = ocs::tom::get<ET_type>(event);
+         uint32_t type = event.get<ET_type>();
 
          if (type == sgeE_QINSTANCE_SOS ||
              type == sgeE_QINSTANCE_USOS) {

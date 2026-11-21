@@ -167,13 +167,13 @@ bool spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *c
                               __func__);
    } else {
       for (ocs::tom::Element<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
-         auto func = (spooling_option_func) ocs::tom::get<SPR_option_func>(rule);
+         auto func = (spooling_option_func) rule.get<SPR_option_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, option)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_SETOPTIONOFRULEFAILED_SS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context));
                ret = false;
                break;
@@ -234,19 +234,19 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
       for (ocs::tom::ConstElement<ocs::tom::SPT> type : ocs::tom::get<SPC_types>(context)) {
          int default_rules = 0;
          
-         if (ocs::tom::get<SPT_rules>(type).empty()) {
+         if (type.get<SPT_rules>().empty()) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPECONTAINSNORULES_SS, 
-                                    ocs::tom::get<SPT_name>(type),
+                                    type.get<SPT_name>(),
                                     ocs::tom::get<SPC_name>(context));
             ret = false;
             goto error;
          }
 
          /* count default rules */
-         for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : ocs::tom::get<SPT_rules>(type)) {
-            if(ocs::tom::get<SPTR_is_default>(type_rule)) {
+         for (ocs::tom::ConstElement<ocs::tom::SPTR> type_rule : type.get<SPT_rules>()) {
+            if(type_rule.get<SPTR_is_default>()) {
                default_rules++;
             }
          }
@@ -255,7 +255,7 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPEHASNODEFAULTRULE_SS,
-                                    ocs::tom::get<SPT_name>(type),
+                                    type.get<SPT_name>(),
                                     ocs::tom::get<SPC_name>(context));
             ret = false;
             goto error;
@@ -265,7 +265,7 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_TYPEHASMORETHANONEDEFAULTRULE_SS,
-                                    ocs::tom::get<SPT_name>(type),
+                                    type.get<SPT_name>(),
                                     ocs::tom::get<SPC_name>(context));
             ret = false;
             goto error;
@@ -283,13 +283,13 @@ bool spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListEl
       }
       
       for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
-         auto func = (spooling_startup_func)ocs::tom::get<SPR_startup_func>(rule);
+         auto func = (spooling_startup_func)rule.get<SPR_startup_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, check)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_STARTUPOFRULEFAILED_SS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context));
                ret = false;
                goto error;
@@ -339,13 +339,13 @@ bool spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListE
       ret = false;
    } else {
       for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
-         auto func = (spooling_maintenance_func) ocs::tom::get<SPR_maintenance_func>(rule);
+         auto func = (spooling_maintenance_func) rule.get<SPR_maintenance_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd, args)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_MAINTENANCEOFRULEFAILED_SS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context));
                ret = false;
                break;
@@ -390,13 +390,13 @@ bool spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
       ret = false;
    } else {
       for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
-         auto func = (spooling_shutdown_func)ocs::tom::get<SPR_shutdown_func>(rule);
+         auto func = (spooling_shutdown_func)rule.get<SPR_shutdown_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_SHUTDOWNOFRULEFAILED_SS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context));
                ret = false;
                break;
@@ -439,13 +439,13 @@ bool spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
       ret = false;
    } else {
       for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
-         auto func = (spooling_trigger_func)ocs::tom::get<SPR_trigger_func>(rule);
+         auto func = (spooling_trigger_func)rule.get<SPR_trigger_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, trigger, next_trigger)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_TRIGGEROFRULEFAILED_SS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context));
                ret = false;
                break;
@@ -487,13 +487,13 @@ bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList
       ret = false;
    } else {
       for (ocs::tom::ConstElement<ocs::tom::SPR> rule : ocs::tom::get<SPC_rules>(context)) {
-         auto func = (spooling_transaction_func)ocs::tom::get<SPR_transaction_func>(rule);
+         auto func = (spooling_transaction_func)rule.get<SPR_transaction_func>();
          if (func != nullptr) {
             if (!func(answer_list, rule, cmd)) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_TRANSACTIONOFRULEFAILED_SS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context));
                ret = false;
                break;
@@ -876,12 +876,12 @@ bool spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListEl
             spooling_list_func func;
 
             /* read and call the list callback function */
-            func = (spooling_list_func)ocs::tom::get<SPR_list_func>(rule);
+            func = (spooling_list_func)rule.get<SPR_list_func>();
             if (func == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context),
                                        __func__);
             } else {
@@ -947,12 +947,12 @@ spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem 
             spooling_read_func func;
 
             /* retrieve and execute the read callback */
-            func = (spooling_read_func)ocs::tom::get<SPR_read_func>(rule);
+            func = (spooling_read_func)rule.get<SPR_read_func>();
             if (func == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_ERROR, 
                                        MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
-                                       ocs::tom::get<SPR_name>(rule), 
+                                       rule.get<SPR_name>(), 
                                        ocs::tom::get<SPC_name>(context),
                                        __func__);
             } else {
@@ -1003,12 +1003,12 @@ spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *c
       for (const ocs::tom::ConstElement<ocs::tom::SPR> rule : rules) {
 
          /* retrieve and execute the read callback */
-         auto func = (spooling_read_keys_func)ocs::tom::get<SPR_read_keys_func>(rule);
+         auto func = (spooling_read_keys_func)rule.get<SPR_read_keys_func>();
          if (func == nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                     ANSWER_QUALITY_ERROR, 
                                     MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
-                                    ocs::tom::get<SPR_name>(rule), 
+                                    rule.get<SPR_name>(), 
                                     ocs::tom::get<SPC_name>(context),
                                     __func__);
          } else {
@@ -1082,7 +1082,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 
                                           MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
-                                          ocs::tom::get<SPR_name>(rule), 
+                                          rule.get<SPR_name>(), 
                                           ocs::tom::get<SPC_name>(context),
                                           __func__);
                    ret = false;
@@ -1091,7 +1091,7 @@ bool spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLis
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                              ANSWER_QUALITY_WARNING, 
                                              MSG_SPOOL_RULEINCONTEXTFAILEDWRITING_SS,
-                                             ocs::tom::get<SPR_name>(rule), 
+                                             rule.get<SPR_name>(), 
                                              ocs::tom::get<SPC_name>(context));
                      ret = false;
                   }
@@ -1164,7 +1164,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                           ANSWER_QUALITY_ERROR, 
                                           MSG_SPOOL_CORRUPTRULEINCONTEXT_SSS,
-                                          ocs::tom::get<SPR_name>(rule), 
+                                          rule.get<SPR_name>(), 
                                           ocs::tom::get<SPC_name>(context),
                                           __func__);
                   ret = false;
@@ -1173,7 +1173,7 @@ bool spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lLi
                      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                              ANSWER_QUALITY_WARNING, 
                                              MSG_SPOOL_RULEINCONTEXTFAILEDWRITING_SS,
-                                             ocs::tom::get<SPR_name>(rule), 
+                                             rule.get<SPR_name>(), 
                                              ocs::tom::get<SPC_name>(context));
                      ret = false;
                   }

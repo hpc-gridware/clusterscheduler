@@ -271,11 +271,11 @@ namespace ocs::execd {
    execd_store_tight_pe_slice(const ocs::tom::ConstElement<ocs::tom::JB> job,
                               const ocs::tom::Element<ocs::tom::JAT> ja_task, const char *slice_name) {
       DENTER(TOP_LAYER);
-      const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
-      if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe)) {
+      const auto pe = ja_task.get<JAT_pe_object>();
+      if (pe != nullptr && pe.get<PE_control_slaves>()) {
          // tightly integrated parallel job, store the slice name
          if (slice_name != nullptr && *slice_name != '\0') {
-            ocs::tom::set<JAT_systemd_slice>(ja_task, slice_name);
+            ja_task.set<JAT_systemd_slice>(slice_name);
          } else {
             // no slice name given, build it ourselves
             std::string systemd_slice;
@@ -283,7 +283,7 @@ namespace ocs::execd {
             DSTRING_STATIC(error_dstr, MAX_STRING_SIZE);
             if (ocs::Job::job_get_systemd_slice_and_scope(job, ja_task, nullptr, systemd_slice, systemd_scope,
                                                           &error_dstr)) {
-               ocs::tom::set<JAT_systemd_slice>(ja_task, systemd_slice.c_str());
+               ja_task.set<JAT_systemd_slice>(systemd_slice.c_str());
             }
          }
       }
@@ -343,18 +343,18 @@ namespace ocs::execd {
             ocs::tom::Element<ocs::tom::JB> job;
             ocs::tom::Element<ocs::tom::JAT> ja_task;
             if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task, false)) {
-               const char *slice = ocs::tom::get<JAT_systemd_slice>(ja_task);
+               const char *slice = ja_task.get<JAT_systemd_slice>();
                // only if there is a job slice and it has not yet been deleted
                if (slice != nullptr) {
-                  const ocs::tom::ConstElement<ocs::tom::PE> pe = ocs::tom::get<JAT_pe_object>(ja_task);
+                  const ocs::tom::ConstElement<ocs::tom::PE> pe = ja_task.get<JAT_pe_object>();
                   // if it is tight integration and there are no running pe tasks left,
                   // we can delete the systemd slice
-                  if (pe != nullptr && ocs::tom::get<PE_control_slaves>(pe) &&
-                      ocs::tom::get<JAT_task_list>(ja_task).empty()) {
+                  if (pe != nullptr && pe.get<PE_control_slaves>() &&
+                      ja_task.get<JAT_task_list>().empty()) {
                      // tightly integrated parallel job, no more pe tasks left
                      execd_delete_tight_pe_slice(slice);
                      // make sure to delete the slice only once
-                     ocs::tom::set<JAT_systemd_slice>(ja_task, nullptr);
+                     ja_task.set<JAT_systemd_slice>(nullptr);
                   }
                }
             }
@@ -569,7 +569,7 @@ namespace ocs::execd {
                        property_str, scope.c_str());
             } else {
                double usage_value = value * factor;
-               ocs::tom::set<UA_value>(usage_elem, usage_value);
+               usage_elem.set<UA_value>(usage_value);
                DPRINTF("==> Updated usage %s for scope '%s': %f\n", usage_attr_str, scope.c_str(), usage_value);
             }
          } else if (systemd.get_error_class() == ocs::uti::Systemd::ErrorClass::unit_gone) {
@@ -641,9 +641,9 @@ namespace ocs::execd {
          bool bus_stalled = false;
          // ptf_jobs belongs to ptf.cc
          for (const auto ptf_job : ocs::tom::List<ocs::tom::JL>(ptf_jobs)) {
-            for (const auto os_job : ocs::tom::get<JL_OS_job_list>(ptf_job)) {
-               usage_collection_t usage_collection = static_cast<usage_collection_t>(ocs::tom::get<JO_usage_collection>(os_job));
-               const char *scope_str = ocs::tom::get<JO_systemd_scope>(os_job);
+            for (const auto os_job : ptf_job.get<JL_OS_job_list>()) {
+               usage_collection_t usage_collection = static_cast<usage_collection_t>(os_job.get<JO_usage_collection>());
+               const char *scope_str = os_job.get<JO_systemd_scope>();
                if (scope_str != nullptr) {
                   std::string scope{scope_str};
                   std::string state;
@@ -651,10 +651,10 @@ namespace ocs::execd {
                   if (success) {
                       if (state.compare("active") == 0) {
                         DPRINTF("==> Job is active in systemd scope %s\n", scope.c_str());
-                        auto usage_list = ocs::tom::get<JO_usage_list>(os_job);
+                        auto usage_list = os_job.get<JO_usage_list>();
                         if (!usage_list) {
-                           ocs::tom::set<JO_usage_list>(os_job, ptf_build_usage_list("usagelist", usage_collection));
-                           usage_list = ocs::tom::get<JO_usage_list>(os_job);
+                           os_job.set<JO_usage_list>(ptf_build_usage_list("usagelist", usage_collection));
+                           usage_list = os_job.get<JO_usage_list>();
                         }
                         // from systemd we do *not* get vmem / maxvmem
                         ptf_get_usage_value_from_systemd(systemd, scope, usage_list, "CPUUsageNSec", USAGE_ATTR_CPU, 1.0 / 1000000000.0); // convert nanoseconds to seconds
@@ -670,15 +670,15 @@ namespace ocs::execd {
                            // the polled RSS - which misses peaks between two polls
                            const auto usage_elem = usage_list.find_first<UA_name>(USAGE_ATTR_RSS);
                            if (usage_elem != nullptr) {
-                              double rss = ocs::tom::get<UA_value>(usage_elem);
+                              double rss = usage_elem.get<UA_value>();
                               double peak = 0.0;
                               if (ptf_get_peak_memory_from_cgroup(systemd, scope, peak) &&
                                   peak > rss) {
                                  rss = peak;
                               }
                               const auto usage_elem = usage_list.find_first<UA_name>(USAGE_ATTR_MAXRSS);
-                              if (rss > ocs::tom::get<UA_value>(usage_elem)) {
-                                 ocs::tom::set<UA_value>(usage_elem, rss);
+                              if (rss > usage_elem.get<UA_value>()) {
+                                 usage_elem.set<UA_value>(rss);
                                  DPRINTF("==> Updated MAXRSS for scope '%s': %f\n", scope.c_str(), rss);
                               }
                            }

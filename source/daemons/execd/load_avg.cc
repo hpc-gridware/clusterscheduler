@@ -202,17 +202,17 @@ void execd_merge_load_report(const uint32_t seqno) {
    // last_lr and lr_list stay raw process-lifetime statics; last_lr is only set beside an existing lr_list
    const ocs::tom::List<ocs::tom::LR> known_lr(lr_list);
    for (const auto old_lr : ocs::tom::ConstList<ocs::tom::LR>(ocs::tom::get<REP_list>(last_lr))) {
-      const char *hostname = ocs::tom::get<LR_host>(old_lr);
-      const char *name = ocs::tom::get<LR_name>(old_lr);
+      const char *hostname = old_lr.get<LR_host>();
+      const char *name = old_lr.get<LR_name>();
       bool found = false;
 
       for (const auto lr : known_lr.find_all<LR_name>(name)) {
-         if (sge_hostcmp(ocs::tom::get<LR_host>(lr), hostname) == 0) {
+         if (sge_hostcmp(lr.get<LR_host>(), hostname) == 0) {
             found = true;
-            if (ocs::tom::get<LR_is_static>(old_lr) == 2) {
+            if (old_lr.get<LR_is_static>() == 2) {
                known_lr.erase(lr);
             } else {
-               ocs::tom::set<LR_value>(lr, ocs::tom::get<LR_value>(old_lr));
+               lr.set<LR_value>(old_lr.get<LR_value>());
             }
             break;
          }
@@ -264,13 +264,13 @@ execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
       */
       auto report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
       if (send_all) {
-         ocs::tom::set<REP_type>(report, NUM_REP_FULL_REPORT_LOAD);
+         report->set<REP_type>(NUM_REP_FULL_REPORT_LOAD);
       } else {
-         ocs::tom::set<REP_type>(report, NUM_REP_REPORT_LOAD);
+         report->set<REP_type>(NUM_REP_REPORT_LOAD);
       }
-      ocs::tom::set<REP_version>(report, ocs::Version::get_version());
-      ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
-      ocs::tom::set<REP_host>(report, qualified_hostname);
+      report->set<REP_version>(ocs::Version::get_version());
+      report->set<REP_seqno>(sge_execd_report_seqno);
+      report->set<REP_host>(ocs::tom::Host(qualified_hostname));
 
       auto tmp_lr_list = sge_build_load_report(qualified_hostname, binary_path);
 
@@ -281,25 +281,25 @@ execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
          ocs::tom::set<REP_list>(report, std::move(tmp_lr_list));
       } else {
          for (const auto lr : ocs::tom::List<ocs::tom::LR>(lr_list)) {
-            const char *hostname = ocs::tom::get<LR_host>(lr);
-            const char *name = ocs::tom::get<LR_name>(lr);
-            const char *value = ocs::tom::get<LR_value>(lr);
+            const char *hostname = lr.get<LR_host>();
+            const char *name = lr.get<LR_name>();
+            const char *value = lr.get<LR_value>();
             bool found = false;
 
             for (const auto ep : tmp_lr_list->find_all<LR_name>(name)) {
                DPRINTF("handling %s in execd_add_load_report\n", name);
-               if (sge_hostcmp(ocs::tom::get<LR_host>(ep), hostname) == 0) {
+               if (sge_hostcmp(ep.get<LR_host>(), hostname) == 0) {
                   /* we found the same load value in the temp list */
                   found = true;
 
-                  if (!send_all && sge_strnullcmp(ocs::tom::get<LR_value>(ep), value) == 0) {
+                  if (!send_all && sge_strnullcmp(ep.get<LR_value>(), value) == 0) {
                      /* value hasn't changed, remove it from list */
                      tmp_lr_list->erase(ep);
                   } else {
                      DPRINTF("value %s has changed from %s to %s\n", name, value ? value : "nullptr",
-                             ocs::tom::get<LR_value>(ep));
+                             ep.get<LR_value>());
                      /* Old value is no longer valid */
-                     ocs::tom::set<LR_value>(lr, nullptr);
+                     lr.set<LR_value>(nullptr);
                   }
                   break;
                }
@@ -309,7 +309,7 @@ execd_add_load_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
                /* the load value is no longer reported, tag is as deleted and
                   add it to the report list */
                auto del_report = lr.clone();
-               ocs::tom::set<LR_is_static>(del_report, 2);
+               del_report->set<LR_is_static>(2);
                tmp_lr_list->push_back(std::move(del_report));
             }
          }
@@ -351,10 +351,10 @@ execd_add_conf_report(const ocs::tom::List<ocs::tom::REP> report_list, const uin
       ** order of the reports is irrelevant
       */
       auto report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
-      ocs::tom::set<REP_type>(report, NUM_REP_REPORT_CONF);
-      ocs::tom::set<REP_version>(report, ocs::Version::get_version());
-      ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
-      ocs::tom::set<REP_host>(report, qualified_hostname);
+      report->set<REP_type>(NUM_REP_REPORT_CONF);
+      report->set<REP_version>(ocs::Version::get_version());
+      report->set<REP_seqno>(sge_execd_report_seqno);
+      report->set<REP_host>(ocs::tom::Host(qualified_hostname));
       ocs::tom::set<REP_list>(report,
          ocs::tom::ConstList<ocs::tom::CONF>(Execd_Config_List).clone("execd config list copy"));
       report_list.push_back(std::move(report));
@@ -383,10 +383,10 @@ execd_add_license_report(const ocs::tom::List<ocs::tom::REP> report_list, const 
       ** 3. license report
       */
       auto report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
-      ocs::tom::set<REP_type>(report, NUM_REP_REPORT_PROCESSORS);
-      ocs::tom::set<REP_version>(report, ocs::Version::get_version());
-      ocs::tom::set<REP_seqno>(report, sge_execd_report_seqno);
-      ocs::tom::set<REP_host>(report, qualified_hostname);
+      report->set<REP_type>(NUM_REP_REPORT_PROCESSORS);
+      report->set<REP_version>(ocs::Version::get_version());
+      report->set<REP_seqno>(sge_execd_report_seqno);
+      report->set<REP_host>(ocs::tom::Host(qualified_hostname));
       {
          
          auto lp_lic = ocs::tom::ListPtr<ocs::tom::LIC>::create("license report list");
@@ -394,8 +394,8 @@ execd_add_license_report(const ocs::tom::List<ocs::tom::REP> report_list, const 
          /*
          ** no error handling here cause we can just send 1 as #processors
          */
-         ocs::tom::set<LIC_processors>(ep_lic,  sge_nprocs());
-         ocs::tom::set<LIC_arch>(ep_lic, sge_get_arch());
+         ep_lic->set<LIC_processors>(sge_nprocs());
+         ep_lic->set<LIC_arch>(sge_get_arch());
          lp_lic->push_back(std::move(ep_lic));
          ocs::tom::set<REP_list>(report, std::move(lp_lic));
       }
@@ -451,10 +451,10 @@ execd_add_job_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint
 
       /* create job report */
       auto job_report = ocs::tom::ElementPtr<ocs::tom::REP>::create();
-      ocs::tom::set<REP_type>(job_report, NUM_REP_REPORT_JOB);
-      ocs::tom::set<REP_version>(job_report, ocs::Version::get_version());
-      ocs::tom::set<REP_seqno>(job_report, sge_execd_report_seqno);
-      ocs::tom::set<REP_host>(job_report, qualified_hostname);
+      job_report->set<REP_type>(NUM_REP_REPORT_JOB);
+      job_report->set<REP_version>(ocs::Version::get_version());
+      job_report->set<REP_seqno>(sge_execd_report_seqno);
+      job_report->set<REP_host>(ocs::tom::Host(qualified_hostname));
 
       /* create job report list */
       auto job_report_list = ocs::tom::ListPtr<ocs::tom::JR>::create("jr");
@@ -465,10 +465,10 @@ execd_add_job_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint
        */
       bool complete = !only_flush;
       for (const auto jr : job_reports) {
-         bool delayed = sge_get_delay_job_reports_flag() && ocs::tom::get<JR_delay_report>(jr);
-         if ((!only_flush || ocs::tom::get<JR_flush>(jr)) && !ocs::tom::get<JR_no_send>(jr) && !delayed) {
+         bool delayed = sge_get_delay_job_reports_flag() && jr.get<JR_delay_report>();
+         if ((!only_flush || jr.get<JR_flush>()) && !jr.get<JR_no_send>() && !delayed) {
             job_report_list->push_back(jr.clone());
-            ocs::tom::set<JR_flush>(jr, false);
+            jr.set<JR_flush>(false);
          } else if (delayed) {
             // the job is on this host, but it is missing in the report
             complete = false;
@@ -479,7 +479,7 @@ execd_add_job_report(const ocs::tom::List<ocs::tom::REP> report_list, const uint
       /* a complete job report contains all jobs on this host, sge_qmaster uses it to find out
        * that a job does not run here any more (reschedule unknown list), see CS-3076
        * JR_no_send is only set for pe tasks, the job report of the master task is still sent */
-      ocs::tom::set<REP_complete>(job_report, complete);
+      job_report->set<REP_complete>(complete);
      
       /* append this new job report to the report list */
       report_list.push_back(std::move(job_report));
@@ -535,9 +535,9 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
    /* retrieve num procs first - we need it for all other derived load values */
    ocs::tom::ConstElement<ocs::tom::LR> ep = ocs::tom::find_first<LR_name>(*lp, LOAD_ATTR_NUM_PROC, &iterator);
    while (ep != nullptr) {
-      const char *value = ocs::tom::get<LR_value>(ep);
+      const char *value = ep.get<LR_value>();
 
-      if (sge_hostcmp(ocs::tom::get<LR_host>(ep), qualified_hostname) == 0) {
+      if (sge_hostcmp(ep.get<LR_host>(), qualified_hostname) == 0) {
          if (value) {
             nprocs = std::max(1, atoi(value));
          }
@@ -549,8 +549,8 @@ sge_build_load_report(const char *qualified_hostname, const char *binary_path) {
    /* now make the derived load values */
    ocs::tom::ConstElement<ocs::tom::LR> ep_lr = ocs::tom::find_first<LR_host>(*lp, qualified_hostname, &iterator);
    while (ep_lr != nullptr) {
-      const char *name = ocs::tom::get<LR_name>(ep_lr);
-      const char *value = ocs::tom::get<LR_value>(ep_lr);
+      const char *name = ep_lr.get<LR_name>();
+      const char *value = ep_lr.get<LR_value>();
 
       if (strcmp(name, LOAD_ATTR_LOAD_AVG) == 0) {
          if (value != nullptr) {
@@ -863,10 +863,10 @@ void update_job_usage(const char *qualified_hostname) {
 
    /* replace existing usage in the job report with the new one */
    for (const auto usage : *usage_list) {
-      uint32_t job_id = ocs::tom::get<JB_job_number>(usage);
+      uint32_t job_id = usage.get<JB_job_number>();
 
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(usage)) {
-         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      for (const auto ja_task : usage.get<JB_ja_tasks>()) {
+         uint32_t ja_task_id = ja_task.get<JAT_task_number>();
          /* search matching job report */
          auto jr = get_job_report(job_id, ja_task_id, nullptr);
          if (!jr) {
@@ -880,10 +880,10 @@ void update_job_usage(const char *qualified_hostname) {
 
          /* replace cpu/mem/io/... with newer values */
          DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32 "\n", job_id, ja_task_id);
-         job_report_update_from_usage_list(jr, ocs::tom::get<JAT_usage_list>(ja_task));
+         job_report_update_from_usage_list(jr, ja_task.get<JAT_usage_list>());
 
-         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-            const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
+         for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+            const char *pe_task_id = pe_task.get<PET_id>();
 
             /* search matching job report */
             jr = get_job_report(job_id, ja_task_id, pe_task_id);
@@ -901,7 +901,7 @@ void update_job_usage(const char *qualified_hostname) {
             /* replace cpu/mem/io/... with newer values */
             DPRINTF("---> updating job report usage for job " sge_u32 "." sge_u32" task \"%s\"\n",
                 job_id, ja_task_id, pe_task_id);
-            job_report_update_from_usage_list(jr, ocs::tom::get<PET_usage>(pe_task));
+            job_report_update_from_usage_list(jr, pe_task.get<PET_usage>());
          }
       }
    }
@@ -980,7 +980,7 @@ calculate_reserved_usage(const char *qualified_hostname, const ocs::tom::ConstEl
     */
    // the job report belongs to job_report_execd.cc
    const auto jr = ocs::tom::ConstElement<ocs::tom::JR>(get_job_report(job_id, ja_task_id, pe_task_id));
-   if (!ocs::tom::find_first_in<JR_usage, UA_name>(jr, USAGE_ATTR_CPU_ACCT)) {
+   if (!jr.find_first_in<JR_usage, UA_name>(USAGE_ATTR_CPU_ACCT)) {
       double cpu{}, mem{}, maxvmem{}, maxrss{};
       double wall_clock_time;
       build_reserved_usage(now, ja_task, pe_task, &wall_clock_time, &cpu, &mem, &maxvmem, &maxrss);
@@ -1047,12 +1047,12 @@ calculate_reserved_usage_ja_task(const char *qualified_hostname, const ocs::tom:
    /* create data structures */
    if (!new_job) {
       new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-      ocs::tom::set<JB_job_number>(new_job, job_id);
+      new_job->set<JB_job_number>(job_id);
    }
 
-   const auto new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id);
+   const auto new_ja_task = new_job->emplace_back_in<JB_ja_tasks, JAT_task_number>(ja_task_id);
 
-   ocs::tom::set<JAT_usage_list>(new_ja_task, calculate_reserved_usage(qualified_hostname, ja_task, nullptr,
+   new_ja_task.set<JAT_usage_list>(calculate_reserved_usage(qualified_hostname, ja_task, nullptr,
                                                                        job_id, ja_task_id, nullptr, pe, now));
 
    DRETURN(new_job);
@@ -1084,18 +1084,18 @@ calculate_reserved_usage_pe_task(const char *qualified_hostname, const ocs::tom:
    /* create data structures */
    if (!new_job) {
       new_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-      ocs::tom::set<JB_job_number>(new_job, job_id);
+      new_job->set<JB_job_number>(job_id);
    }
 
-   auto new_ja_task = ocs::tom::get<JB_ja_tasks>(new_job).find_first<JAT_task_number>(ja_task_id);
+   auto new_ja_task = new_job->get<JB_ja_tasks>().find_first<JAT_task_number>(ja_task_id);
 
    if (!new_ja_task) {
-      new_ja_task = ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(new_job, ja_task_id);
+      new_ja_task = new_job->emplace_back_in<JB_ja_tasks, JAT_task_number>(ja_task_id);
    }
 
-   const auto new_pe_task = ocs::tom::emplace_back_in<JAT_task_list, PET_id>(new_ja_task, pe_task_id);
+   const auto new_pe_task = new_ja_task.emplace_back_in<JAT_task_list, PET_id>(pe_task_id);
 
-   ocs::tom::set<PET_usage>(new_pe_task, calculate_reserved_usage(qualified_hostname, ja_task, pe_task,
+   new_pe_task.set<PET_usage>(calculate_reserved_usage(qualified_hostname, ja_task, pe_task,
                                                                   job_id, ja_task_id, pe_task_id, pe, now));
 
    DRETURN(new_job);
@@ -1123,22 +1123,22 @@ get_reserved_usage(const char *qualified_hostname) {
    auto temp_job_usage_list = ocs::tom::ListPtr<ocs::tom::JB>::create("JobResUsageList");
 
    for (const auto job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
-      uint32_t job_id = ocs::tom::get<JB_job_number>(job);
+      uint32_t job_id = job.get<JB_job_number>();
       ocs::tom::ElementPtr<ocs::tom::JB> new_job;
 
-      for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-         uint32_t ja_task_id = ocs::tom::get<JAT_task_number>(ja_task);
+      for (const auto ja_task : job.get<JB_ja_tasks>()) {
+         uint32_t ja_task_id = ja_task.get<JAT_task_number>();
 
          /* we need the pe to be able to calculate the number of slots used
           * as multiplication factor for usage
           */
-         const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         const auto pe = ja_task.get<JAT_pe_object>();
 
          /* If we have a pid for the ja_task: it's either a non-parallel job
           * or the master task of a parallel job.
           * Produce a usage record for it.
           */
-         if (ocs::tom::get<JAT_pid>(ja_task) != 0) {
+         if (ja_task.get<JAT_pid>() != 0) {
             new_job = calculate_reserved_usage_ja_task(qualified_hostname, ja_task, job_id, ja_task_id, pe, now,
                                                        std::move(new_job));
          }
@@ -1147,9 +1147,9 @@ get_reserved_usage(const char *qualified_hostname) {
           * for each of them.
           * Do not report reserved usage, if accounting_summary is activated!
           */
-         if (!(pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe))) {
-            for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-               const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
+         if (!(pe != nullptr && pe.get<PE_accounting_summary>())) {
+            for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+               const char *pe_task_id = pe_task.get<PET_id>();
                new_job = calculate_reserved_usage_pe_task(qualified_hostname, ja_task, pe_task, job_id, ja_task_id,
                                                           pe_task_id, pe, now, std::move(new_job));
             }
@@ -1190,7 +1190,7 @@ build_reserved_mem_usage(const ocs::tom::ConstElement<ocs::tom::JG> gdil_ep, con
     * sum up memory usage (integral current memory * wallclock time)
     * and maxvmem (assume it is vmem)
     */
-   const ocs::tom::ConstElement<ocs::tom::QU> queue(ocs::tom::get<JG_queue>(gdil_ep));
+   const ocs::tom::ConstElement<ocs::tom::QU> queue(gdil_ep.get<JG_queue>());
    double vmem = calculate_reserved_memory(queue, slots, QU_h_vmem, QU_s_vmem);
    *mem += vmem * wallclock / (1024*1024*1024);
    *maxvmem += vmem;
@@ -1237,9 +1237,9 @@ build_reserved_usage(const uint64_t now, const ocs::tom::ConstElement<ocs::tom::
 
    /* calculate wallclock time */ 
    if (!pe_task) {
-      start_time = ocs::tom::get<JAT_start_time>(ja_task);
+      start_time = ja_task.get<JAT_start_time>();
    } else {
-      start_time = ocs::tom::get<PET_start_time>(pe_task);
+      start_time = pe_task.get<PET_start_time>();
    }
    if (start_time > 0 && start_time < now) {
       *wallclock = sge_gmt64_to_gmt32_double(now - start_time); // reported wallclock is in seconds as double
@@ -1280,26 +1280,26 @@ build_reserved_usage(const uint64_t now, const ocs::tom::ConstElement<ocs::tom::
           */
          *cpu = *wallclock;
          const char *queue_name =
-            ocs::tom::get<JG_qname>(ocs::tom::get<PET_granted_destin_identifier_list>(pe_task).front());
+            pe_task.get<PET_granted_destin_identifier_list>().front().get<JG_qname>();
          const auto gdil_ep =
-            ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task).find_first<JG_qname>(queue_name);
+            ja_task.get<JAT_granted_destin_identifier_list>().find_first<JG_qname>(queue_name);
          build_reserved_mem_usage(gdil_ep, 1, *wallclock, mem, maxvmem, maxrss);
       } else {
          /* compute cpu */
          int slots = 0;
          int slots_total = 0;
-         const auto gdil = ocs::tom::get<JAT_granted_destin_identifier_list>(ja_task);
-         const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
+         const auto gdil = ja_task.get<JAT_granted_destin_identifier_list>();
+         const auto pe = ja_task.get<JAT_pe_object>();
 
          /* sequential job, or loose integration, or tight integration with accounting_summary */
-         if (pe == nullptr || !ocs::tom::get<PE_control_slaves>(pe) || ocs::tom::get<PE_accounting_summary>(pe)) {
+         if (pe == nullptr || !pe.get<PE_control_slaves>() || pe.get<PE_accounting_summary>()) {
             /* account for all gdil */
             const auto master_gdil_ep = gdil.front();
             for (const auto gdil_ep : gdil) {
-               slots = ocs::tom::get<JG_slots>(gdil_ep);
+               slots = gdil_ep.get<JG_slots>();
                /* respect job_is_first_task, only once (for the master task gdil) */
                // @todo CS-547 we cannot differentiate master task only and master task + 1 slave task
-               if (pe != nullptr && gdil_ep == master_gdil_ep && !ocs::tom::get<PE_job_is_first_task>(pe)) {
+               if (pe != nullptr && gdil_ep == master_gdil_ep && !pe.get<PE_job_is_first_task>()) {
                   slots++;
                }
                slots_total += slots;

@@ -159,31 +159,31 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
    /* ---- build up pe task request structure (see gdilib/sge_petaskL.h) */
    auto petrep = ocs::tom::ElementPtr<ocs::tom::PETR>::create();
 
-   ocs::tom::set<PETR_jobid>(petrep, jobid);
-   ocs::tom::set<PETR_jataskid>(petrep, jataskid);
-   ocs::tom::set<PETR_owner>(petrep, myname);
-   ocs::tom::set<PETR_submission_time>(petrep, sge_get_gmt64());
+   petrep->set<PETR_jobid>(jobid);
+   petrep->set<PETR_jataskid>(jataskid);
+   petrep->set<PETR_owner>(myname);
+   petrep->set<PETR_submission_time>(sge_get_gmt64());
 
    if (cwd != nullptr) {
-      ocs::tom::set<PETR_cwd>(petrep, cwd);
+      petrep->set<PETR_cwd>(cwd);
    }
 
    if (environment) {
-      ocs::tom::set<PETR_environment>(petrep, environment.clone("environment"));
+      petrep->set<PETR_environment>(environment.clone("environment"));
    }
 
    if (path_aliases) {
-      ocs::tom::set<PETR_path_aliases>(petrep, path_aliases.clone("path_aliases"));
+      petrep->set<PETR_path_aliases>(path_aliases.clone("path_aliases"));
    }
 
 #if defined(OCS_WITH_OPENSSL)
    if (cert != nullptr) {
-      ocs::tom::set<PETR_cred>(petrep, cert);
+      petrep->set<PETR_cred>(cert);
    }
 #endif
 
    if (queuename != nullptr) {
-      ocs::tom::set<PETR_queuename>(petrep, queuename);
+      petrep->set<PETR_queuename>(queuename);
    }
 
    /* CS-2375: the qrsh -inherit task delivery to the execd is a single
@@ -245,12 +245,12 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
 
    /* add list into our remote task list */
    ocs::tom::Element<ocs::tom::RT> rt = ocs::tom::emplace_back<RT_tid>(&remote_task_list, "none");
-   ocs::tom::set<RT_hostname>(rt, hostname);
-   ocs::tom::set<RT_state>(rt, RT_STATE_WAIT4ACK);
+   rt.set<RT_hostname>(ocs::tom::Host(hostname));
+   rt.set<RT_state>(RT_STATE_WAIT4ACK);
 
    rcv_from_execd(OPT_SYNCHRON, ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION);
 
-   auto tid = (sge_tid_t) ocs::tom::get<RT_tid>(rt);
+   auto tid = (sge_tid_t) rt.get<RT_tid>();
 
    if (strcmp(tid, "none") == 0) {
       tid = nullptr;
@@ -292,8 +292,8 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    }
 
    while ((rt && /* definite one searched */
-           ocs::tom::get<RT_state>(rt) != RT_STATE_EXITED && /* not exited */
-           ocs::tom::get<RT_state>(rt) == RT_STATE_WAIT4ACK) /* waiting for ack */
+           rt.get<RT_state>() != RT_STATE_EXITED && /* not exited */
+           rt.get<RT_state>() == RT_STATE_WAIT4ACK) /* waiting for ack */
           || (!rt && /* anybody searched */
               !ocs::tom::find_first<RT_state>(remote_task_list, RT_STATE_EXITED) && /* none exited */
               ocs::tom::find_first<RT_state>(remote_task_list, RT_STATE_WAIT4ACK))) /* but one is waiting for ack */ {
@@ -304,8 +304,8 @@ int sge_qwaittid(sge_tid_t tid, int *status, int options) {
    }
 
    if (status)
-      *status = (int)ocs::tom::get<RT_status>(rt);
-   ocs::tom::set<RT_state>(rt, RT_STATE_WAITED);
+      *status = (int)rt.get<RT_status>();
+   rt.set<RT_state>(RT_STATE_WAITED);
 
    DRETURN(0);
 }
@@ -386,8 +386,8 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
             DRETURN(-1);
          }
 
-         ocs::tom::set<RT_status>(rt_rcv, exit_status);
-         ocs::tom::set<RT_state>(rt_rcv, RT_STATE_EXITED);
+         rt_rcv.set<RT_status>(exit_status);
+         rt_rcv.set<RT_state>(RT_STATE_EXITED);
          break;
 
       case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
@@ -396,7 +396,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
             snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid);
             DRETURN(-1);
          }
-         ocs::tom::set<RT_tid>(rt_rcv, tid);
+         rt_rcv.set<RT_tid>(tid);
          break;
 
       default:

@@ -104,7 +104,7 @@ qconf_control_thread(const qconf_op &op, const uint32_t trigger, ocs::tom::ListP
 
    const auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
    for (const auto ep : *ids) {
-      ocs::tom::set<ID_action>(ep, trigger);
+      ep.set<ID_action>(trigger);
    }
    const int ret = qconf_control_kill(*ids, THREAD_START, alpp);
 
@@ -176,7 +176,7 @@ qconf_control_clean_queues(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *
 
    auto ids = ocs::tom::ListPtr<ocs::tom::ID>::from_string<ID_str>(op.args[0].c_str(), ", ");
    for (const auto ep : *ids) {
-      ocs::tom::set<ID_action>(ep, QI_DO_CLEAN);
+      ep.set<ID_action>(QI_DO_CLEAN);
    }
    /* the request list is replaced by the response, if any */
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CQ_LIST, ocs::gdi::Command::TRIGGER,

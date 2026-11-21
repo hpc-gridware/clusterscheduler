@@ -123,7 +123,7 @@ int set_sec_cred(const char *sge_root, const char *mastername, const ocs::tom::E
       
       ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
       
-      ocs::tom::set<JB_tgt>(job, str);
+      job.set<JB_tgt>(str);
       sge_free(&str);
    }
       

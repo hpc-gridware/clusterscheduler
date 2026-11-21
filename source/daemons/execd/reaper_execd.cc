@@ -242,14 +242,14 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
       ocs::tom::Element<ocs::tom::JAT> jatep;
       ocs::tom::Element<ocs::tom::PET> petep;
       for (const auto job : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
-         for (const auto ja_task : ocs::tom::get<JB_ja_tasks>(job)) {
-            if ((int)ocs::tom::get<JAT_pid>(ja_task) == pid) {
+         for (const auto ja_task : job.get<JB_ja_tasks>()) {
+            if ((int)ja_task.get<JAT_pid>() == pid) {
                jatep = ja_task;
                break;
             }
 
-            for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-               if ((int)ocs::tom::get<PET_pid>(pe_task) == pid) {
+            for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+               if ((int)pe_task.get<PET_pid>() == pid) {
                   petep = pe_task;
                   break;
                }
@@ -268,8 +268,8 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
 
       /* was it a job ? */
       if (jep && jatep) {
-         jobid = ocs::tom::get<JB_job_number>(jep);
-         jataskid = ocs::tom::get<JAT_task_number>(jatep);
+         jobid = jep.get<JB_job_number>();
+         jataskid = jatep.get<JAT_task_number>();
    
          if (child_signal)
             ERROR(MSG_SHEPHERD_VSHEPHERDOFJOBWXDIEDTHROUGHSIGNALYZ_SUUSI, (petep ? MSG_SLAVE : "" ), jobid, jataskid, core_dumped ? MSG_COREDUMPED: "", child_signal);
@@ -284,15 +284,15 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
           *  keeping job object itself)
           */
          DPRINTF("Job: " sge_u32 ", JA-Task: " sge_u32 ", PE-Task: %s\n", jobid, jataskid,
-            petep != nullptr ? ocs::tom::get<PET_id>(petep) : "");
+            petep != nullptr ? petep.get<PET_id>() : "");
          // the job reports belong to job_report_execd.cc
          auto jr = get_job_report(jobid, jataskid,
-                                                                  petep != nullptr ? ocs::tom::get<PET_id>(petep)
+                                                                  petep != nullptr ? petep.get<PET_id>()
                                                                                    : nullptr);
          if (!jr) {
             ERROR(MSG_JOB_MISSINGJOBXYINJOBREPORTFOREXITINGJOBADDINGIT_UU, jobid, jataskid);
             if (petep != nullptr) {
-               jr = add_job_report(jobid, jataskid, ocs::tom::get<PET_id>(petep), jep);
+               jr = add_job_report(jobid, jataskid, petep.get<PET_id>(), jep);
             } else {
                jr = add_job_report(jobid, jataskid, nullptr, jep);
             }
@@ -300,20 +300,20 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
 
          /* when restarting execd it happens that cleanup_old_jobs()
             has already cleaned up this job */
-         if (ocs::tom::get<JR_state>(jr) == JEXITING) {
+         if (jr.get<JR_state>() == JEXITING) {
             DPRINTF("State of job " sge_u32 " already changed to JEXITING\n", jobid);
             continue;
          }
 
-         ocs::tom::set<JR_state>(jr, JEXITING);
+         jr.set<JR_state>(JEXITING);
 
          if(petep != nullptr) {
-            ocs::tom::set<PET_status>(petep, JEXITING);
+            petep.set<PET_status>(JEXITING);
          } else {
-            ocs::tom::set<JAT_status>(jatep, JEXITING);
+            jatep.set<JAT_status>(JEXITING);
          }
 
-         clean_up_job(jr, failed, exit_status, job_is_array(jep), jatep, ocs::tom::get<JB_owner>(jep));
+         clean_up_job(jr, failed, exit_status, job_is_array(jep), jatep, jep.get<JB_owner>());
 
          reaper_finish_job_scope(jr, jep, jatep, petep);
 
@@ -324,12 +324,12 @@ int sge_reap_children_execd(int max_count, bool is_qmaster_down) {
           * recovered or qmaster is down now, which means the qsub -sync/DRMAA client needs to yet
           * collect the exit status!
           */
-         if (ocs::tom::get<JB_session>(jep) && strncmp(ocs::tom::get<JB_session>(jep), JAPI_SINGLE_SESSION_KEY, 8) != 0 && 
-               (is_qmaster_down || ocs::tom::get<JB_submission_time>(jep) < sge_get_qmrestart_time())) {
-            ocs::tom::set<JR_delay_report>(jr, true);
+         if (jep.get<JB_session>() && strncmp(jep.get<JB_session>(), JAPI_SINGLE_SESSION_KEY, 8) != 0 && 
+               (is_qmaster_down || jep.get<JB_submission_time>() < sge_get_qmrestart_time())) {
+            jr.set<JR_delay_report>(true);
             INFO(MSG_EXECD_ENABLEDELEAYDREPORTINGFORJOB_U, jobid);
          } else {
-            ocs::tom::set<JR_delay_report>(jr, false);
+            jr.set<JR_delay_report>(false);
          }
 
          flush_job_report(jr);
@@ -392,10 +392,10 @@ static void unregister_from_ptf(const uint32_t job_id, const uint32_t ja_task_id
          if (pe_task_id != nullptr) {
             const ocs::tom::ConstElement<ocs::tom::PET> pe_task(ja_task_search_pe_task(ja_task, pe_task_id));
             if (pe_task) {
-               start_time = ocs::tom::get<PET_start_time>(pe_task);
+               start_time = pe_task.get<PET_start_time>();
             }
          } else {
-            start_time = ocs::tom::get<JAT_start_time>(ja_task);
+            start_time = ja_task.get<JAT_start_time>();
          }
 
          /* check if the job was a short-runner */
@@ -418,7 +418,7 @@ static void unregister_from_ptf(const uint32_t job_id, const uint32_t ja_task_id
    } else {
       if (usage) {
          // the job report takes the list over and frees the one it held, as exchanging and freeing did
-         ocs::tom::set<JR_usage>(jr, std::move(usage));
+         jr.set<JR_usage>(std::move(usage));
       }
    }
 
@@ -454,11 +454,11 @@ reaper_get_qversion(const ocs::tom::ConstElement<ocs::tom::JR> jr,
    DENTER(TOP_LAYER);
 
    uint32_t ret = 0;
-   const char *qname = ocs::tom::get<JR_queue_name>(jr);
+   const char *qname = jr.get<JR_queue_name>();
    if (ja_task && qname != nullptr) {
-      const auto gdil_ep = ocs::tom::find_first_in<JAT_granted_destin_identifier_list, JG_qname>(ja_task, qname);
+      const auto gdil_ep = ja_task.find_first_in<JAT_granted_destin_identifier_list, JG_qname>(qname);
       if (gdil_ep) {
-         ret = ocs::tom::get<JG_qversion>(gdil_ep);
+         ret = gdil_ep.get<JG_qversion>();
       }
    }
 
@@ -485,8 +485,8 @@ reaper_finish_job_scope(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom
 
 #if defined(OCS_WITH_SYSTEMD)
    // the scope name is not spooled, after a restart of sge_execd it has to be built again
-   const char *scope_name = petep != nullptr ? ocs::tom::get<PET_systemd_scope>(petep)
-                                             : ocs::tom::get<JAT_systemd_scope>(jatep);
+   const char *scope_name = petep != nullptr ? petep.get<PET_systemd_scope>()
+                                             : jatep.get<JAT_systemd_scope>();
    std::string scope;
    if (scope_name != nullptr) {
       scope = scope_name;
@@ -501,7 +501,7 @@ reaper_finish_job_scope(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom
 
    // The job has run in its scope unless it failed before it was started. A job which did not
    // run might find a failed scope of an earlier job with the same name, which is not its own.
-   uint32_t failed = ocs::tom::get<JR_failed>(jr);
+   uint32_t failed = jr.get<JR_failed>();
    bool job_has_run = failed == 0 || failed == SSTATE_FAILURE_AFTER_JOB ||
                       (failed >= SSTATE_BEFORE_PESTOP && failed <= SSTATE_PROCSET_NOTFREED);
 
@@ -510,11 +510,11 @@ reaper_finish_job_scope(const ocs::tom::Element<ocs::tom::JR> jr, const ocs::tom
    if (!scope.empty() && ocs::execd::execd_finish_job_scope(scope.c_str()) && job_has_run) {
       DSTRING_STATIC(dstr, MAX_STRING_SIZE);
       sge_dstring_sprintf(&dstr, "oom-killer@%s", component_get_qualified_hostname());
-      ocs::tom::set<JR_deleted_by>(jr, sge_dstring_get_string(&dstr));
+      jr.set<JR_deleted_by>(sge_dstring_get_string(&dstr));
       DSTRING_STATIC(id_dstr, MAX_STRING_SIZE);
-      const char *pe_task_id = petep != nullptr ? ocs::tom::get<PET_id>(petep) : nullptr;
+      const char *pe_task_id = petep != nullptr ? petep.get<PET_id>() : nullptr;
       WARNING(MSG_EXECD_OOMKILLED_SS,
-              job_get_id_string(ocs::tom::get<JB_job_number>(jep), ocs::tom::get<JAT_task_number>(jatep),
+              job_get_id_string(jep.get<JB_job_number>(), jatep.get<JAT_task_number>(),
                                 pe_task_id, &id_dstr), scope.c_str());
    }
 #endif
@@ -561,9 +561,9 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
       DRETURN(-1);
    }
 
-   job_id = ocs::tom::get<JR_job_number>(jr);
-   ja_task_id = ocs::tom::get<JR_ja_task_number>(jr);
-   pe_task_id = ocs::tom::get<JR_pe_task_id_str>(jr);
+   job_id = jr.get<JR_job_number>();
+   ja_task_id = jr.get<JR_ja_task_number>();
+   pe_task_id = jr.get<JR_pe_task_id_str>();
 
    DPRINTF("cleanup for job %s\n", job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
 
@@ -600,8 +600,8 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
          The pain with this case is, that we have not much information
          to report this job to qmaster. */
       ERROR(MSG_JOB_CANTREADCONFIGFILEFORJOBXY_S, job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring));
-      ocs::tom::set<JR_failed>(jr, ESSTATE_NO_CONFIG);
-      ocs::tom::set<JR_err_str>(jr, (char *) MSG_SHEPHERD_EXECDWENTDOWNDURINGJOBSTART);
+      jr.set<JR_failed>(ESSTATE_NO_CONFIG);
+      jr.set<JR_err_str>((char *) MSG_SHEPHERD_EXECDWENTDOWNDURINGJOBSTART);
 
       sge_dstring_free(&fname);
       sge_dstring_free(&jobdir);
@@ -739,9 +739,9 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
    
 
    /* map system signals into sge signals to make signo's exchangable */
-   ocs::tom::Element<ocs::tom::UA> du=ocs::tom::find_first_in_rw<JR_usage, UA_name>(jr, "signal");
+   ocs::tom::Element<ocs::tom::UA> du=jr.find_first_in_rw<JR_usage, UA_name>("signal");
    if (du) {
-      int signo = (int)ocs::tom::get<UA_value>(du);
+      int signo = (int)du.get<UA_value>();
 
       if (signo) {
          int sge_signo;
@@ -755,10 +755,10 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
          failed = SSTATE_FAILURE_AFTER_JOB;
 
          if ((sge_signo=sge_map_signal(signo)) != -1)
-            ocs::tom::set<UA_value>(du, (double)sge_signo);
+            du.set<UA_value>((double)sge_signo);
       }
 
-      if ((uint32_t)ocs::tom::get<UA_value>(du) == 0xffffffff) {
+      if ((uint32_t)du.get<UA_value>() == 0xffffffff) {
          if (!failed) {
             failed = SSTATE_FAILURE_AFTER_JOB;
             if (!*error)
@@ -807,10 +807,10 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
       job_pid = 0;
    }
 
-   ocs::tom::set<JR_job_pid>(jr, job_pid);
+   jr.set<JR_job_pid>(job_pid);
    
    /* Only used for ckpt jobs: 1 checkpointed, 2 checkpoint in the arena */
-   ocs::tom::set<JR_ckpt_arena>(jr, ckpt_arena);
+   jr.set<JR_ckpt_arena>(ckpt_arena);
 
    /* Currently the shepherd doesn't create this file */
    sge_get_active_job_file_path(&fname, job_id, ja_task_id, pe_task_id, "noresources");
@@ -818,12 +818,12 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
       failed = SSTATE_AGAIN;
    
    /* failed */
-   ocs::tom::set<JR_failed>(jr, failed);
+   jr.set<JR_failed>(failed);
    DPRINTF("job report for job " SFN ": failed = %ld\n",
             job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), failed);
    /* err_str */
    if (*error) {
-      ocs::tom::set<JR_err_str>(jr, error);
+      jr.set<JR_err_str>(error);
       DPRINTF("job report for job " SFN ": err_str = %s\n",
                job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), error);
    }
@@ -841,7 +841,7 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
       host or queue error detection must be improved
    */
       general_failure = GFSTATE_HOST;
-      ocs::tom::set<JR_general_failure>(jr, general_failure);
+      jr.set<JR_general_failure>(general_failure);
       job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    case SSTATE_PROCSET_NOTSET:
@@ -854,7 +854,7 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
    case SSTATE_BEFORE_EPILOG:
    case SSTATE_EPILOG_FAILED:
       general_failure = GFSTATE_QUEUE;
-      ocs::tom::set<JR_general_failure>(jr, general_failure);
+      jr.set<JR_general_failure>(general_failure);
       job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    case SSTATE_ADD_GRP_SET_ERROR:
@@ -875,9 +875,9 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
          const ocs::tom::ConstElement<ocs::tom::JB> job(job_found);
 
          if ((failed == SSTATE_NO_SHELL) && (job != nullptr) &&
-             ((ocs::tom::get<JB_shell_list>(job) != nullptr) ||
-             ((master_queue != nullptr) && JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job))
-                                        && JOB_TYPE_IS_NO_SHELL(ocs::tom::get<JB_type>(job))))) {
+             ((job.get<JB_shell_list>() != nullptr) ||
+             ((master_queue != nullptr) && JOB_TYPE_IS_BINARY(job.get<JB_type>())
+                                        && JOB_TYPE_IS_NO_SHELL(job.get<JB_type>())))) {
             job_caused_failure = 1;
          } else if ((failed == SSTATE_NO_SHELL) && (master_queue != nullptr)) {
             char* shell_start_mode = mconf_get_shell_start_mode();
@@ -887,15 +887,15 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
             if (strcmp(mode, "unix_behavior") == 0) {
                job_caused_failure = 1;
             }
-         } else if ((failed == SSTATE_BEFORE_JOB) && (job != nullptr) && JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(job)) &&
-                    !sge_is_file(ocs::tom::get<JB_script_file>(job))) {
+         } else if ((failed == SSTATE_BEFORE_JOB) && (job != nullptr) && JOB_TYPE_IS_BINARY(job.get<JB_type>()) &&
+                    !sge_is_file(job.get<JB_script_file>())) {
             job_caused_failure = 1;
          } else if (failed == SSTATE_ADD_GRP_SET_ERROR) {
             job_caused_failure = 1;
          }
 
          general_failure = job_caused_failure ? GFSTATE_JOB : GFSTATE_QUEUE;
-         ocs::tom::set<JR_general_failure>(jr, general_failure);
+         jr.set<JR_general_failure>(general_failure);
          job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       }
       break;
@@ -908,7 +908,7 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
    case SSTATE_AFS_PROBLEM:
    case SSTATE_APPERROR:
       general_failure = GFSTATE_JOB;
-      ocs::tom::set<JR_general_failure>(jr, general_failure);
+      jr.set<JR_general_failure>(general_failure);
       job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    /*
@@ -917,7 +917,7 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
    */
    case SSTATE_PROCSET_NOTFREED:
       general_failure = GFSTATE_NO_HALT;
-      ocs::tom::set<JR_general_failure>(jr, general_failure);
+      jr.set<JR_general_failure>(general_failure);
       job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    /*
@@ -934,7 +934,7 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
       ** test for admin mail here
       */
       general_failure = GFSTATE_NO_HALT;
-      ocs::tom::set<JR_general_failure>(jr, general_failure);
+      jr.set<JR_general_failure>(general_failure);
       job_related_adminmail(EXECD, jr, is_array, job_owner, qversion);
       break;
    default: 
@@ -945,7 +945,7 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
       break;
    } /* switch */
    
-   ocs::tom::set<JR_general_failure>(jr, general_failure);
+   jr.set<JR_general_failure>(general_failure);
    DPRINTF("job report for job " SFN ": general_failure = %ld\n",
            job_get_id_string(job_id, ja_task_id, pe_task_id, &id_dstring), general_failure);
 
@@ -972,7 +972,7 @@ write_failed_info(const uint32_t job_id, const uint32_t ja_task_id, const char *
    DSTRING_STATIC(dstr_failed, MAX_STRING_SIZE);
    sge_get_active_job_file_path(&dstr_filename, job_id, ja_task_id, pe_task_id, "failed");
    sge_dstring_sprintf(&dstr_failed, sge_u32 ":" SFN2 "\n",
-                       ocs::tom::get<JR_failed>(jr), ocs::tom::get<JR_err_str>(jr));
+                       jr.get<JR_failed>(), jr.get<JR_err_str>());
    sge_string2file(sge_dstring_get_string(&dstr_failed), sge_dstring_strlen(&dstr_failed),
                 sge_dstring_get_string(&dstr_filename));
 
@@ -1012,12 +1012,12 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
       DRETURN_VOID;
    }
 
-   pe_task_id_str = jr?ocs::tom::get<JR_pe_task_id_str>(jr):nullptr;
+   pe_task_id_str = jr?jr.get<JR_pe_task_id_str>():nullptr;
 
    // check if the job shall be kept active
    {
       keep_active_t keep_active = mconf_get_keep_active();
-      bool job_failed = ocs::tom::get<JR_failed>(jr) != 0 ? true : false;
+      bool job_failed = jr.get<JR_failed>() != 0 ? true : false;
 
       if (keep_active == KEEP_ACTIVE_TRUE ||
           sge_getenv("SGE_KEEP_ACTIVE") ||
@@ -1045,7 +1045,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
       // as we would delete the pe tasks' active_job directories and other data.
       // Just return, the ACK_JOB_EXIT will be repeated by sge_qmaster.
       if (pe_task_id == nullptr &&
-          !ocs::tom::get<JAT_task_list>(jatep).empty()) {
+          !jatep.get<JAT_task_list>().empty()) {
          // flush the job report to speed up repeating of the ACK_JOB_EXIT
          flush_job_report(jr);
          DRETURN_VOID;
@@ -1053,7 +1053,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
 
       DPRINTF("REMOVING WITH jep && jatep\n");
       if (pe_task_id_str) {
-         petep = ocs::tom::get<JAT_task_list>(jatep).find_first<PET_id>(pe_task_id_str);
+         petep = jatep.get<JAT_task_list>().find_first<PET_id>(pe_task_id_str);
 
          if (!petep) {
             ERROR(MSG_JOB_XYHASNOTASKZ_UUS, job_id, ja_task_id, pe_task_id_str);
@@ -1061,7 +1061,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
             DRETURN_VOID;
          }
 
-         if (ocs::tom::get<JR_state>(jr) != JEXITING) {
+         if (jr.get<JR_state>() != JEXITING) {
             WARNING(MSG_EXECD_GOTACKFORPETASKBUTISNOTINSTATEEXITING_S, pe_task_id_str);
             /* job report has to be deleted */
             del_job_report(jr);
@@ -1074,7 +1074,7 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
       }
      
       /* use mail list of job instead of tasks one */
-      if (jr != nullptr && ocs::tom::get<JR_state>(jr) != JSLAVE) {
+      if (jr != nullptr && jr.get<JR_state>() != JSLAVE) {
          reaper_sendmail(jep, jr);
       }
 
@@ -1093,12 +1093,12 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
        * not done for the slave container of tightly integrated parallel jobs
        */
       used_slots = qinstance_slots_used(master_q);
-      if (ocs::tom::get<JAT_status>(jatep) == JSLAVE && pe_task_id_str == nullptr) {
+      if (jatep.get<JAT_status>() == JSLAVE && pe_task_id_str == nullptr) {
          DPRINTF("remove_acked_job_exit for slave container - not decreasing used slots");
       } else {
          used_slots--;
          qinstance_set_slots_used(master_q, used_slots);
-         DPRINTF("%s: used slots decreased to %d\n", ocs::tom::get<QU_full_name>(master_q), used_slots);
+         DPRINTF("%s: used slots decreased to %d\n", master_q.get<QU_full_name>(), used_slots);
       }
 
       /*
@@ -1108,10 +1108,10 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
        * does not have a tmpdir
        */
       if (used_slots == 0) {
-         if (ocs::tom::get<JAT_status>(jatep) != JSLAVE || pe_task_id_str != nullptr) {
-         sge_remove_tmpdir(ocs::tom::get<QU_tmpdir>(master_q), 
-                           ocs::tom::get<JB_owner>(jep), ocs::tom::get<JB_job_number>(jep), 
-                           ja_task_id, ocs::tom::get<QU_qname>(master_q));
+         if (jatep.get<JAT_status>() != JSLAVE || pe_task_id_str != nullptr) {
+         sge_remove_tmpdir(master_q.get<QU_tmpdir>(), 
+                           jep.get<JB_owner>(), jep.get<JB_job_number>(), 
+                           ja_task_id, master_q.get<QU_qname>());
          }
       }
 
@@ -1123,9 +1123,9 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
          if (!mconf_get_simulate_jobs()) {
             job_remove_spool_file(job_id, ja_task_id, nullptr, SPOOL_WITHIN_EXECD);
 
-            if (!JOB_TYPE_IS_BINARY(ocs::tom::get<JB_type>(jep)) &&
-                ocs::tom::get<JB_exec_file>(jep) &&
-                ocs::tom::get<JAT_status>(jatep) != JSLAVE) {
+            if (!JOB_TYPE_IS_BINARY(jep.get<JB_type>()) &&
+                jep.get<JB_exec_file>() &&
+                jatep.get<JAT_status>() != JSLAVE) {
 
                /*
                 * Unlink job_script if there are no other master tasks
@@ -1133,8 +1133,8 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
                 */
                if (count_master_tasks(ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                                       job_id) <= 1) {
-                  DPRINTF("unlinking script file %s\n", ocs::tom::get<JB_exec_file>(jep));
-                  unlink(ocs::tom::get<JB_exec_file>(jep));
+                  DPRINTF("unlinking script file %s\n", jep.get<JB_exec_file>());
+                  unlink(jep.get<JB_exec_file>());
                }
             }
          }
@@ -1148,15 +1148,15 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
           */
 
          /* unchain pe task element from task list */
-         ocs::tom::get<JAT_task_list>(jatep).erase(petep);
+         jatep.get<JAT_task_list>().erase(petep);
 
          /*
           * if this was the last pe_task of an exiting slave job
           * send the slave job final report
           */
-         if (ocs::tom::get<JAT_task_list>(jatep).empty()) {
+         if (jatep.get<JAT_task_list>().empty()) {
             const auto jr = get_job_report(job_id, ja_task_id, nullptr);
-            if (jr != nullptr && ocs::tom::get<JR_state>(jr) == JSLAVE && ISSET(ocs::tom::get<JAT_state>(jatep), JDELETED)) {
+            if (jr != nullptr && jr.get<JR_state>() == JSLAVE && ISSET(jatep.get<JAT_state>(), JDELETED)) {
                add_usage(jr, "exit_status", nullptr, 0);
                flush_job_report(jr);
             }
@@ -1300,12 +1300,12 @@ execd_job_failure(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom
    uint32_t jobid, jataskid = 0;
    const char *petaskid = nullptr;
 
-   jobid = ocs::tom::get<JB_job_number>(jep);
+   jobid = jep.get<JB_job_number>();
    if (jatep) {
-      jataskid = ocs::tom::get<JAT_task_number>(jatep);
+      jataskid = jatep.get<JAT_task_number>();
    }
    if (petep) {
-      petaskid = ocs::tom::get<PET_id>(petep);
+      petaskid = petep.get<PET_id>();
    }
 
    ERROR((failed==SSTATE_FAILURE_BEFORE_JOB)? MSG_SHEPHERD_CANTSTARTJOBXY_US: MSG_SHEPHERD_PROBLEMSAFTERSTART_DS, jobid, error_string);
@@ -1319,23 +1319,23 @@ execd_job_failure(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom
 
    if (jr) {
       if (petep) {
-         ep = ocs::tom::get<PET_granted_destin_identifier_list>(petep).front();
+         ep = petep.get<PET_granted_destin_identifier_list>().front();
       } else if (jatep) {
-         ep = ocs::tom::get<JAT_granted_destin_identifier_list>(jatep).front();
+         ep = jatep.get<JAT_granted_destin_identifier_list>().front();
       }
 
       if (ep) {
-         ocs::tom::set<JR_queue_name>(jr, ocs::tom::get<JG_qname>(ep));
+         jr.set<JR_queue_name>(ep.get<JG_qname>());
       }
 
-      ocs::tom::set<JR_failed>(jr, failed);
-      ocs::tom::set<JR_general_failure>(jr, general);
-      ocs::tom::set<JR_err_str>(jr, error_string);
+      jr.set<JR_failed>(failed);
+      jr.set<JR_general_failure>(general);
+      jr.set<JR_err_str>(error_string);
 
-      ocs::tom::set<JR_state>(jr, JEXITING);
+      jr.set<JR_state>(JEXITING);
 
-      job_related_adminmail(EXECD, jr, job_is_array(jep), ocs::tom::get<JB_owner>(jep),
-                            ep ? ocs::tom::get<JG_qversion>(ep) : 0);
+      job_related_adminmail(EXECD, jr, job_is_array(jep), jep.get<JB_owner>(),
+                            ep ? ep.get<JG_qversion>() : 0);
    }
 
    DRETURN(jr);
@@ -1368,18 +1368,18 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
    bool unknown_tasks = false;
    if (execd_get_job_ja_task(jobid, jataskid, &job, &ja_task_found, false)) {
       const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
-      for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
+      for (const auto pe_task : ja_task.get<JAT_task_list>()) {
          // create the unknown job report for this pe task
-         const char *pe_task_id = ocs::tom::get<PET_id>(pe_task);
+         const char *pe_task_id = pe_task.get<PET_id>();
          auto jr = get_job_report(jobid, jataskid, pe_task_id);
          if (!jr) {
             jr = add_job_report(jobid, jataskid, pe_task_id, nullptr);
          }
          if (jr) {
-            ocs::tom::set<JR_queue_name>(jr, qname);
-            ocs::tom::set<JR_failed>(jr, ESSTATE_UNKNOWN_JOB);
-            ocs::tom::set<JR_state>(jr, JEXITING);
-            ocs::tom::set<JR_err_str>(jr, MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
+            jr.set<JR_queue_name>(qname);
+            jr.set<JR_failed>(ESSTATE_UNKNOWN_JOB);
+            jr.set<JR_state>(JEXITING);
+            jr.set<JR_err_str>(MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
          }
          unknown_tasks = true;
       }
@@ -1392,10 +1392,10 @@ void job_unknown(uint32_t jobid, uint32_t jataskid, char *qname) {
          jr = add_job_report(jobid, jataskid, nullptr, nullptr);
       }
       if (jr) {
-         ocs::tom::set<JR_queue_name>(jr, qname);
-         ocs::tom::set<JR_failed>(jr, ESSTATE_UNKNOWN_JOB);
-         ocs::tom::set<JR_state>(jr, JEXITING);
-         ocs::tom::set<JR_err_str>(jr, MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
+         jr.set<JR_queue_name>(qname);
+         jr.set<JR_failed>(ESSTATE_UNKNOWN_JOB);
+         jr.set<JR_state>(JEXITING);
+         jr.set<JR_err_str>(MSG_JR_ERRSTR_EXECDDONTKNOWJOB);
       }
    }
 
@@ -1491,12 +1491,12 @@ cleanup_jobs_and_states(bool startup, const std::vector<pid_t> &shepherd_pids) {
          const ocs::tom::Element<ocs::tom::JB> jep(jep_found);
          const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
          char dir[SGE_PATH_MAX];
-         if (ocs::tom::get<JAT_status>(ja_task) != JSLAVE) {
+         if (ja_task.get<JAT_status>() != JSLAVE) {
             snprintf(dir, sizeof(dir), "%s/%s", ACTIVE_DIR, job_directory);
             examine_job_task_from_file(startup, dir, jep, ja_task, nullptr, shepherd_pids);
          }
-         for (const auto pe_task : ocs::tom::get<JAT_task_list>(ja_task)) {
-            snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, job_directory, ocs::tom::get<PET_id>(pe_task));
+         for (const auto pe_task : ja_task.get<JAT_task_list>()) {
+            snprintf(dir, sizeof(dir), "%s/%s/%s", ACTIVE_DIR, job_directory, pe_task.get<PET_id>());
             examine_job_task_from_file(startup, dir, jep, ja_task, pe_task, shepherd_pids);
          }
       }
@@ -1774,10 +1774,10 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
    const char *pe_task_id_str = nullptr;
    static uint64_t startup_time = sge_get_gmt64();
 
-   jobid = ocs::tom::get<JB_job_number>(jep);
-   jataskid = ocs::tom::get<JAT_task_number>(jatep);
+   jobid = jep.get<JB_job_number>();
+   jataskid = jatep.get<JAT_task_number>();
    if (petep) {
-      pe_task_id_str = ocs::tom::get<PET_id>(petep);
+      pe_task_id_str = petep.get<PET_id>();
    }
 
    if (SGE_STAT(dir, &statbuf)) {
@@ -1806,9 +1806,10 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
             2. a newly started job
                In this case the shepherd had not enough time 
                to write the pid file -> No Logging */
-      if (startup && startup_time >= ocs::tom::get<JAT_start_time>(jatep)) {
+      if (startup && startup_time >= jatep.get<JAT_start_time>()) {
          DSTRING_STATIC(dstr, 100);
-         ERROR(MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSSS, fname, dir, sge_ctime64(ocs::tom::get<JAT_start_time>(jatep), &dstr), strerror(errno));
+         ERROR(MSG_SHEPHERD_CANTREADPIDFILEXFORJOBYSTARTTIMEZX_SSSS, fname, dir,
+               sge_ctime64(jatep.get<JAT_start_time>(), &dstr), strerror(errno));
          /* seek job report for this job - it must be contained in job report
             If this is a newly started execd we can assume the execd was broken
             in the interval between making the jobs active directory and writing
@@ -1818,8 +1819,9 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
             CRITICAL(MSG_SHEPHERD_MISSINGJOBXINJOBREPORTFOREXITINGJOB_U, jobid);
             jr = add_job_report(jobid, jataskid, pe_task_id_str, nullptr);
          }
-         ocs::tom::set<JR_state>(jr, JEXITING);
-         clean_up_job(jr, ESSTATE_NO_PID, 0, job_is_array(jep), jatep, ocs::tom::get<JB_owner>(jep));  /* failed before execution */
+         jr.set<JR_state>(JEXITING);
+         clean_up_job(jr, ESSTATE_NO_PID, 0, job_is_array(jep), jatep,
+                      jep.get<JB_owner>());  /* failed before execution */
       }
       DRETURN_VOID;
    }
@@ -1866,13 +1868,13 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
             to JRUNNING
          */
          if ((jr = get_job_report(jobid, jataskid, pe_task_id_str))) {
-            ocs::tom::set<JR_state>(jr, JRUNNING);
+            jr.set<JR_state>(JRUNNING);
          } else {
             /* found job in active jobs directory 
                but not in spool directory of execd */
             ERROR(MSG_SHEPHERD_INCONSISTENTDATAFORJOBX_U, jobid);
             jr = add_job_report(jobid, jataskid, pe_task_id_str, nullptr);
-            ocs::tom::set<JR_state>(jr, JEXITING);
+            jr.set<JR_state>(JEXITING);
          }
       }
       DRETURN_VOID;
@@ -1887,14 +1889,14 @@ examine_job_task_from_file(const int startup, char *dir, const ocs::tom::Element
 
    /* if the state is already JEXITING work is done  
       for this job and we wait for ACK from qmaster */
-   if (ocs::tom::get<JR_state>(jr)==JEXITING) {
+   if (jr.get<JR_state>()==JEXITING) {
       DPRINTF("State of job " sge_u32 "." sge_u32" already changed to JEXITING\n", jobid, jataskid);
       DRETURN_VOID;
    }
 
-   clean_up_job(jr, 0, 0, job_is_array(jep), jatep, ocs::tom::get<JB_owner>(jep));
+   clean_up_job(jr, 0, 0, job_is_array(jep), jatep, jep.get<JB_owner>());
    reaper_finish_job_scope(jr, jep, jatep, petep);
-   ocs::tom::set<JR_state>(jr, JEXITING);
+   jr.set<JR_state>(JEXITING);
    
 
    flush_job_report(jr);
@@ -1948,7 +1950,7 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
       qinstance_name = sge_dstring_sprintf(&buffer, SFN "@" SFN,
                                            get_conf_val("queue"),
                                            get_conf_val("host"));
-      ocs::tom::set<JR_queue_name>(jr, qinstance_name);
+      jr.set<JR_queue_name>(qinstance_name);
       qinstance_name = nullptr;
       sge_dstring_free(&buffer);
 
@@ -1975,7 +1977,7 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
          FCLOSE(fp);
 
          if (extract_ulong_attribute(*cflp, "wait_status", &wait_status)==0)
-            ocs::tom::set<JR_wait_status>(jr, wait_status);
+            jr.set<JR_wait_status>(wait_status);
 
          convert_attribute(*cflp, jr, "exit_status",   1);
          convert_attribute(*cflp, jr, "signal",        0);
@@ -2010,8 +2012,8 @@ read_dusage(const ocs::tom::Element<ocs::tom::JR> jr, const char *jobdir, const 
          // (numeric) or UA_svalue (string) but never both. The factory-append
          // shape bypasses add_usage()'s numeric-only path entirely.
          for (const auto ep : *cflp) {
-            const char *name = ocs::tom::get<CF_name>(ep);
-            const char *value = ocs::tom::get<CF_value>(ep);
+            const char *name = ep.get<CF_name>();
+            const char *value = ep.get<CF_value>();
             DEBUG("additional usage variable %s = %s", name, value);
             auto parsed = usage_parse_value(name, value);
             if (!parsed) {
@@ -2068,7 +2070,7 @@ build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32
 
    bool accounting_summary = false;
 
-   const ocs::tom::ConstList<ocs::tom::UA> usage_list = ocs::tom::get<JR_usage>(jr);
+   const ocs::tom::ConstList<ocs::tom::UA> usage_list = jr.get<JR_usage>();
 
    bool have_mem_details = static_cast<bool>(usage_list.find_first<UA_name>(USAGE_ATTR_MAXPSS));
 
@@ -2083,15 +2085,15 @@ build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32
    if (execd_get_job_ja_task(job_id, ja_task_id, &job, &ja_task_found, false)) {
       const ocs::tom::ConstElement<ocs::tom::JAT> ja_task(ja_task_found);
       if (pe_task_id != nullptr) {
-         pe_task = ocs::tom::find_first_in<JAT_task_list, PET_id>(ja_task, pe_task_id);
+         pe_task = ja_task.find_first_in<JAT_task_list, PET_id>(pe_task_id);
       }
 
       double wallclock;
       if (mconf_get_acct_reserved_usage() || mconf_get_sharetree_reserved_usage()) {
          // reserved usage
          uint64_t end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
-         const auto pe = ocs::tom::get<JAT_pe_object>(ja_task);
-         if (pe != nullptr && ocs::tom::get<PE_accounting_summary>(pe)) {
+         const auto pe = ja_task.get<JAT_pe_object>();
+         if (pe != nullptr && pe.get<PE_accounting_summary>()) {
             accounting_summary = true;
          }
 
@@ -2100,9 +2102,9 @@ build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32
          // non-reserved usage, need to calculate wallclock
          uint64_t start_time;
          if (pe_task == nullptr) {
-            start_time = ocs::tom::get<JAT_start_time>(ja_task);
+            start_time = ja_task.get<JAT_start_time>();
          } else {
-            start_time = ocs::tom::get<PET_start_time>(pe_task);
+            start_time = pe_task.get<PET_start_time>();
          }
          wallclock = sge_gmt64_to_gmt32_double(sge_get_gmt64() - start_time);
       }
@@ -2182,8 +2184,8 @@ build_derived_final_usage(const ocs::tom::Element<ocs::tom::JR> jr, const uint32
     * usage was wanted, which left the report suppressed for exactly the combination
     * sharetree_reserved_usage + acct_reserved_usage + accounting_summary.
     */
-   if (pe_task_id != nullptr && ocs::tom::get<JR_no_send>(jr)) {
-      ocs::tom::set<JR_no_send>(jr, false);
+   if (pe_task_id != nullptr && jr.get<JR_no_send>()) {
+      jr.set<JR_no_send>(false);
    }
 
    /* Report reserved usage or real usage.
@@ -2300,60 +2302,60 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
    const char *qualified_hostname = component_get_qualified_hostname();
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
-   ocs::tom::ConstList<ocs::tom::MR> mail_users = ocs::tom::get<JB_mail_list>(jep);
-   mail_options = ocs::tom::get<JB_mail_options>(jep); 
-   pe_task_id_str = ocs::tom::get<JR_pe_task_id_str>(jr);
+   ocs::tom::ConstList<ocs::tom::MR> mail_users = jep.get<JB_mail_list>();
+   mail_options = jep.get<JB_mail_options>(); 
+   pe_task_id_str = jr.get<JR_pe_task_id_str>();
 
-   if (!(q=ocs::tom::get<JR_queue_name>(jr))) {
+   if (!(q=jr.get<JR_queue_name>())) {
       q = MSG_MAIL_UNKNOWN_NAME;
    }
 
    h = qualified_hostname;
 
-   if (!(u=ocs::tom::get<JB_owner>(jep)))
+   if (!(u=jep.get<JB_owner>()))
       u = MSG_MAIL_UNKNOWN_NAME;
 
    /* JG: TODO (397): Extend usage module: usage_list_get_ctime_usage() 
     *                 and use the other usage_list_get functions.
     */
 
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "start_time")))
-      strcpy(sge_mail_start, sge_ctime64(ocs::tom::get<UA_value>(ep), &ds));
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("start_time")))
+      strcpy(sge_mail_start, sge_ctime64(ep.get<UA_value>(), &ds));
    else   
       strcpy(sge_mail_start, MSG_MAIL_UNKNOWN_NAME);
 
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "end_time")))
-      strcpy(sge_mail_end, sge_ctime64(ocs::tom::get<UA_value>(ep), &ds));
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("end_time")))
+      strcpy(sge_mail_end, sge_ctime64(ep.get<UA_value>(), &ds));
    else   
       strcpy(sge_mail_end, MSG_MAIL_UNKNOWN_NAME);
 
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "ru_utime")))
-      ru_utime = ocs::tom::get<UA_value>(ep); 
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("ru_utime")))
+      ru_utime = ep.get<UA_value>(); 
    else
       ru_utime = 0;
 
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "ru_stime")))
-      ru_stime = ocs::tom::get<UA_value>(ep); 
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("ru_stime")))
+      ru_stime = ep.get<UA_value>(); 
    else
       ru_stime = 0;
 
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "ru_wallclock")))
-      ru_wallclock = ocs::tom::get<UA_value>(ep); 
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("ru_wallclock")))
+      ru_wallclock = ep.get<UA_value>(); 
    else
       ru_wallclock = 0;
 
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, USAGE_ATTR_CPU_ACCT)))
-      ru_cpu = ocs::tom::get<UA_value>(ep);
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, USAGE_ATTR_MAXVMEM_ACCT)))
-      ru_maxvmem = ocs::tom::get<UA_value>(ep);
+   if ((ep=jr.find_first_in<JR_usage, UA_name>(USAGE_ATTR_CPU_ACCT)))
+      ru_cpu = ep.get<UA_value>();
+   if ((ep=jr.find_first_in<JR_usage, UA_name>(USAGE_ATTR_MAXVMEM_ACCT)))
+      ru_maxvmem = ep.get<UA_value>();
 
-   jobid = ocs::tom::get<JR_job_number>(jr);
-   taskid = ocs::tom::get<JR_ja_task_number>(jr);
+   jobid = jr.get<JR_job_number>();
+   taskid = jr.get<JR_ja_task_number>();
 
-   failed = ocs::tom::get<JR_failed>(jr);
+   failed = jr.get<JR_failed>();
    
-   if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "exit_status")))
-      exit_status = (int)ocs::tom::get<UA_value>(ep);
+   if ((ep=jr.find_first_in<JR_usage, UA_name>("exit_status")))
+      exit_status = (int)ep.get<UA_value>();
    
    double_print_time_to_dstring(ru_cpu, &cpu_string, true);
    double_print_memory_to_dstring(ru_maxvmem, &maxvmem_string);
@@ -2370,7 +2372,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
       double_print_time_to_dstring(ru_wallclock, &wtime_string, true);
       if (job_is_array(jep)) {
          snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_JA_TASK_COMP_UUS,
-                  jobid, taskid, ocs::tom::get<JB_job_name>(jep));
+                  jobid, taskid, jep.get<JB_job_name>());
          snprintf(sge_mail_body, sizeof(sge_mail_body), MSG_MAIL_BODY_COMP_SSSSSSSSSSSI, sge_mail_subj, u, q, h,
                  sge_mail_start, sge_mail_end, sge_dstring_get_string(&utime_string),
                  sge_dstring_get_string(&stime_string), sge_dstring_get_string(&wtime_string),
@@ -2379,7 +2381,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
                  exit_status);
       } else {
          snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_JOB_COMP_US,
-                  jobid, ocs::tom::get<JB_job_name>(jep));
+                  jobid, jep.get<JB_job_name>());
          snprintf(sge_mail_body, sizeof(sge_mail_body), MSG_MAIL_BODY_COMP_SSSSSSSSSSSI, sge_mail_subj, u, q, h,
                   sge_mail_start, sge_mail_end, sge_dstring_get_string(&utime_string),
                   sge_dstring_get_string(&stime_string), sge_dstring_get_string(&wtime_string),
@@ -2396,7 +2398,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
 
    if (((VALID(MAIL_AT_ABORT, mail_options)) 
        || (VALID(MAIL_AT_EXIT, mail_options))) && 
-       (failed || ocs::tom::get<JR_general_failure>(jr)==GFSTATE_JOB)) {
+       (failed || jr.get<JR_general_failure>()==GFSTATE_JOB)) {
       char exitstr[256];
       const char *err_str;
       const char *action, *comment = "";
@@ -2407,17 +2409,17 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
          action = MSG_MAIL_ACTION_RESCH;
       } else if (failed==SSTATE_APPERROR) {
          action = MSG_MAIL_ACTION_APPERROR;
-      } else if (ocs::tom::get<JR_general_failure>(jr)==GFSTATE_JOB) {
+      } else if (jr.get<JR_general_failure>()==GFSTATE_JOB) {
          action = MSG_MAIL_ACTION_ERR;
          comment = MSG_MAIL_ACTION_ERR_COMMENT;
       } else {
          action = MSG_MAIL_ACTION_ABORT;
       }
 
-      if ((ep=ocs::tom::find_first_in<JR_usage, UA_name>(jr, "signal")))
-         signo = (uint32_t)ocs::tom::get<UA_value>(ep);
+      if ((ep=jr.find_first_in<JR_usage, UA_name>("signal")))
+         signo = (uint32_t)ep.get<UA_value>();
 
-      if (!(err_str=ocs::tom::get<JR_err_str>(jr)))
+      if (!(err_str=jr.get<JR_err_str>()))
          err_str = MSG_UNKNOWNREASON;
 
       DPRINTF("MAIL VALID at ABORT\n");
@@ -2425,7 +2427,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
       if (pe_task_id_str == nullptr) {
          if (job_is_array(jep)) {
             snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_JA_TASK_STATE_UUSS, jobid,
-                     taskid, ocs::tom::get<JB_job_name>(jep), action);
+                     taskid, jep.get<JB_job_name>(), action);
             snprintf(sge_mail_body, sizeof(sge_mail_body), MSG_MAIL_BODY_STATE_SSSSSSSSSSSSS, sge_mail_subj, exitstr,
                      sge_sig2str(signo), u, q, h, sge_mail_start, sge_mail_end,
                      (ru_cpu     == 0.0) ? "NA":sge_dstring_get_string(&cpu_string),
@@ -2433,7 +2435,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
                      get_sstate_description(failed), err_str, comment);
          } else {
             snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_JOB_STATE_USS,
-                     jobid, ocs::tom::get<JB_job_name>(jep), action);
+                     jobid, jep.get<JB_job_name>(), action);
             snprintf(sge_mail_body, sizeof(sge_mail_body), MSG_MAIL_BODY_STATE_SSSSSSSSSSSSS, sge_mail_subj, exitstr,
                      sge_sig2str(signo), u, q, h, sge_mail_start, sge_mail_end,
                      (ru_cpu     == 0.0) ? "NA":sge_dstring_get_string(&cpu_string),
@@ -2484,7 +2486,7 @@ void execd_slave_job_exit(const uint32_t job_id, const uint32_t ja_task_id) {
       /* if there are no pe_tasks running
        * we can finish the slave job right away
        */
-      if (ocs::tom::get<JAT_task_list>(ja_task).empty()) {
+      if (ja_task.get<JAT_task_list>().empty()) {
          const auto jr = get_job_report(job_id, ja_task_id, nullptr);
 
          // qmaster only has to see *an* exit status here to know that this host is
@@ -2496,7 +2498,7 @@ void execd_slave_job_exit(const uint32_t job_id, const uint32_t ja_task_id) {
          // the master task's own and already carries the status the job ended with,
          // so overwriting it would replace it with a zero and make the accounting
          // record of a failed job indistinguishable from a successful one (CS-2632).
-         if (jr && !ocs::tom::find_first_in<JR_usage, UA_name>(jr, "exit_status")) {
+         if (jr && !jr.find_first_in<JR_usage, UA_name>("exit_status")) {
             add_usage(jr, "exit_status", nullptr, 0);
          }
          flush_job_report(jr);
@@ -2636,8 +2638,8 @@ int count_master_tasks(const ocs::tom::ConstList<ocs::tom::JB> lp, const uint32_
    int master_jobs = 0;
 
    for (const auto jep : lp.find_all<JB_job_number>(job_id)) {
-      for (const auto jatep : ocs::tom::get<JB_ja_tasks>(jep)) {
-         if (ocs::tom::get<JAT_status>(jatep) != JSLAVE) {
+      for (const auto jatep : jep.get<JB_ja_tasks>()) {
+         if (jatep.get<JAT_status>() != JSLAVE) {
             master_jobs++;
          }
       }
@@ -2660,10 +2662,10 @@ void simulated_job_exit(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
                         const uint32_t sig) {
    DENTER(TOP_LAYER);
 
-   uint32_t jobid = ocs::tom::get<JB_job_number>(jep);
-   uint32_t jataskid = ocs::tom::get<JAT_task_number>(jatep);
+   uint32_t jobid = jep.get<JB_job_number>();
+   uint32_t jataskid = jatep.get<JAT_task_number>();
 
-   uint32_t state = ocs::tom::get<JAT_status>(jatep);
+   uint32_t state = jatep.get<JAT_status>();
    if (state == JEXITING) {
       DPRINTF("Simulated job " sge_u32"." sge_u32" is already in state JEXITING\n", jobid, jataskid);
    } else {
@@ -2676,15 +2678,15 @@ void simulated_job_exit(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
          jr = add_job_report(jobid, jataskid, nullptr, jep);
       }
 
-      ocs::tom::set<JR_state>(jr, JEXITING);
-      add_usage(jr, "submission_time", nullptr, ocs::tom::get<JB_submission_time>(jep));
+      jr.set<JR_state>(JEXITING);
+      add_usage(jr, "submission_time", nullptr, jep.get<JB_submission_time>());
 
-      uint64_t start_time = ocs::tom::get<JAT_start_time>(jatep);
+      uint64_t start_time = jatep.get<JAT_start_time>();
       add_usage(jr, "start_time", nullptr, start_time);
 
       // get the current time as end time - it shall contain overhead in sge_execd
       uint64_t end_time = sge_get_gmt64();
-      ocs::tom::set<JAT_end_time>(jatep, end_time);
+      jatep.set<JAT_end_time>(end_time);
       add_usage(jr, "end_time", nullptr, end_time);
 
       double wallclock = sge_gmt64_to_gmt32_double(end_time - start_time);
@@ -2700,7 +2702,7 @@ void simulated_job_exit(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
          add_usage(jr, "exit_status", nullptr, 0);
       }
 
-      ocs::tom::set<JAT_status>(jatep, JEXITING);
+      jatep.set<JAT_status>(JEXITING);
       flush_job_report(jr);
    }
 

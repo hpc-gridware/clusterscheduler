@@ -111,8 +111,8 @@ int main(int argc, char **argv) {
 
    auto refs = ocs::tom::ListPtr<ocs::tom::ID>::create("reconnect ref");
    const auto idep = refs->emplace_back<ID_str>(spec);
-   ocs::tom::set<ID_action>(idep, QI_DO_RECONNECT | JOB_DO_ACTION);
-   ocs::tom::set<ID_force>(idep, 0);
+   idep.set<ID_action>(QI_DO_RECONNECT | JOB_DO_ACTION);
+   idep.set<ID_force>(0);
 
    /* the request list is replaced by the response, if any */
    alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
@@ -120,8 +120,8 @@ int main(int argc, char **argv) {
 
    bool ok = false;
    for (const auto aep : *alp) {
-      const char *text = ocs::tom::get<AN_text>(aep);
-      uint32_t status = ocs::tom::get<AN_status>(aep);
+      const char *text = aep.get<AN_text>();
+      uint32_t status = aep.get<AN_status>();
       printf("[%u] %s\n", status, text != nullptr ? text : "(null)");
       if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
          ok = true;

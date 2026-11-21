@@ -410,7 +410,11 @@ ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cu
    do {
       DPRINTF("parse_name_list_to_cull: Adding %s type element\n", is_host ? "lHostT" : "lStringT");
       auto ep = ocs::tom::ElementPtr<T>::create();
-      ocs::tom::set<F>(ep, cp2);
+      if constexpr (is_host) {
+         ep->template set<F>(ocs::tom::Host(cp2));
+      } else {
+         ep->template set<F>(cp2);
+      }
       if constexpr (std::is_same_v<T, ocs::tom::EH>) {
          // only an exec host is resolved: the resolution was asked for EH_name on every type, and an element
          // without that field was left as it was

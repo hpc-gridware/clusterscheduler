@@ -76,11 +76,11 @@ int do_kill_execd(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
          for (const auto jatep : jep.get<JB_ja_tasks>()) {
             uint32_t sge_signal;
-            if (ocs::tom::get<JB_checkpoint_attr>(jep) & CHECKPOINT_AT_SHUTDOWN) {
-               WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, ocs::tom::get<JB_job_number>(jep));
+            if (jep.get<JB_checkpoint_attr>() & CHECKPOINT_AT_SHUTDOWN) {
+               WARNING(MSG_JOB_INITCKPTSHUTDOWN_U, jep.get<JB_job_number>());
                sge_signal = SGE_MIGRATE;
             } else {
-               WARNING(MSG_JOB_KILLSHUTDOWN_U, ocs::tom::get<JB_job_number>(jep));
+               WARNING(MSG_JOB_KILLSHUTDOWN_U, jep.get<JB_job_number>());
                sge_signal = SGE_SIGKILL;
             }
             sge_execd_deliver_signal(sge_signal, jep, jatep);

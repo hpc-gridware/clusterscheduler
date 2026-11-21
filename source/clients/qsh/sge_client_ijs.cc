@@ -1549,9 +1549,9 @@ int start_ijs_server(cl_framework_t communication_framework, const char *hostnam
       bool found = false;
       comm_set_suppress_bind_errors(true);
       for (auto rep = port_range.front(); rep && !found; rep = rep.next()) {
-         const uint32_t min  = ocs::tom::get<RN_min>(rep);
-         const uint32_t max  = ocs::tom::get<RN_max>(rep);
-         uint32_t step = ocs::tom::get<RN_step>(rep);
+         const uint32_t min  = rep.get<RN_min>();
+         const uint32_t max  = rep.get<RN_max>();
+         uint32_t step = rep.get<RN_step>();
          if (step == 0) {
             step = 1;
          }

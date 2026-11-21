@@ -527,9 +527,9 @@ int sge_execd_register_at_qmaster(bool is_restart) {
       return_value = 1;
    } else {
       const auto aep = alp->front();
-      if (ocs::tom::get<AN_status>(aep) != STATUS_OK) {
+      if (aep.get<AN_status>() != STATUS_OK) {
          if (sge_last_register_error_flag == 0) {
-            WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", ocs::tom::get<AN_text>(aep));
+            WARNING(MSG_COM_CANTREGISTER_SS, master_host?master_host:"", aep.get<AN_text>());
             sge_last_register_error_flag = 1;
          }
          return_value = 1;
@@ -561,7 +561,7 @@ static void parse_cmdline_execd(char **argv) {
       ** high level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s", aep.get<AN_text>());
       }
       alp.reset();
       pcmdline.reset();
@@ -577,7 +577,7 @@ static void parse_cmdline_execd(char **argv) {
       ** low level parsing error! show answer list
       */
       for (const auto aep : *alp) {
-         fprintf(stderr, "%s", ocs::tom::get<AN_text>(aep));
+         fprintf(stderr, "%s", aep.get<AN_text>());
       }
       alp.reset();
       /* TODO: replace with alpp and DRETURN */

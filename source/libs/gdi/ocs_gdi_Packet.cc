@@ -203,11 +203,11 @@ ocs::gdi::Packet::create_multi_answer(ocs::tom::ListPtr<ocs::tom::MA> &malp) {
       const auto map = malp->emplace_back<MA_id>(static_cast<uint32_t>(id));
 
       if (get_response_from_master(task->command, task->sub_command)) {
-         ocs::tom::set<MA_objects>(map, task->data_list);
+         map.set<MA_objects>(task->data_list);
          task->data_list = nullptr;
       }
 
-      ocs::tom::set<MA_answers>(map, std::move(task->answer_list));
+      map.set<MA_answers>(std::move(task->answer_list));
    }
    DRETURN_VOID;
 }

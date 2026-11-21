@@ -125,17 +125,17 @@ int sge_get_path(const char *qualified_hostname, const ocs::tom::ConstList<ocs::
     */
    const auto ep_pn = lp.find_first<PN_host>(ocs::tom::Host(qualified_hostname));
    if (ep_pn) {
-      path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep_pn), job_number, ja_task_number, job_name, owner,
+      path = expand_path(&dstr_exp_path, ep_pn.get<PN_path>(), job_number, ja_task_number, job_name, owner,
                          qualified_hostname);
-      host = ocs::tom::get<PN_host>(ep_pn);
+      host = ep_pn.get<PN_host>();
    } else {
       /* 
        * hostname: wasn't set, look for a default 
        */
       for (const auto ep : lp) {
-         path = expand_path(&dstr_exp_path, ocs::tom::get<PN_path>(ep), job_number, ja_task_number, job_name, owner,
+         path = expand_path(&dstr_exp_path, ep.get<PN_path>(), job_number, ja_task_number, job_name, owner,
                             qualified_hostname);
-         host = ocs::tom::get<PN_host>(ep);
+         host = ep.get<PN_host>();
          if (host == nullptr) {
             break;
          }
@@ -183,14 +183,14 @@ bool sge_get_fs_path(const ocs::tom::ConstList<ocs::tom::PN> lp, char *fs_host, 
 
    const auto ep = lp.front();
    if (ep) {
-      bFileStaging = (bool)ocs::tom::get<PN_file_staging>(ep);
+      bFileStaging = ep.get<PN_file_staging>();
  
       if( bFileStaging ) {
-         if(ocs::tom::get<PN_file_host>(ep)) {
-            sge_strlcpy(fs_host, ocs::tom::get<PN_file_host>(ep), fs_host_len);
+         if(ep.get<PN_file_host>()) {
+            sge_strlcpy(fs_host, ep.get<PN_file_host>(), fs_host_len);
          }
-         if(ocs::tom::get<PN_path>(ep)) {
-            sge_strlcpy(fs_path, ocs::tom::get<PN_path>(ep), fs_path_len);
+         if(ep.get<PN_path>()) {
+            sge_strlcpy(fs_path, ep.get<PN_path>(), fs_path_len);
          }
       }
    }
@@ -320,15 +320,15 @@ const char *sge_make_ja_task_active_dir(const ocs::tom::ConstElement<ocs::tom::J
 
    /* build path to active dir */
    path = sge_get_active_job_file_path(&path_buffer,
-                                       ocs::tom::get<JB_job_number>(job), 
-                                       ocs::tom::get<JAT_task_number>(ja_task), 
+                                       job.get<JB_job_number>(), 
+                                       ja_task.get<JAT_task_number>(), 
                                        nullptr, nullptr);
 
    /* try to create it */
    result = sge_mkdir(path, 0755, false, false);
    if (result == -1) {
       /* if it already exists and keep_active: try to rename it */
-      if (errno == EEXIST && mconf_get_keep_active() != KEEP_ACTIVE_FALSE && ocs::tom::get<JAT_job_restarted>(ja_task) > 0) {
+      if (errno == EEXIST && mconf_get_keep_active() != KEEP_ACTIVE_FALSE && ja_task.get<JAT_job_restarted>() > 0) {
          dstring new_path = DSTRING_INIT;
          int success = 0;
 
@@ -410,9 +410,9 @@ const char *sge_make_pe_task_active_dir(const ocs::tom::ConstElement<ocs::tom::J
 
    /* build path to active dir */
    path = sge_get_active_job_file_path(&path_buffer,
-                                       ocs::tom::get<JB_job_number>(job), 
-                                       ocs::tom::get<JAT_task_number>(ja_task), 
-                                       ocs::tom::get<PET_id>(pe_task), 
+                                       job.get<JB_job_number>(), 
+                                       ja_task.get<JAT_task_number>(), 
+                                       pe_task.get<PET_id>(), 
                                        nullptr);
 
    /* try to create it */

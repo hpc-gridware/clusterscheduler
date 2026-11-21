@@ -250,12 +250,12 @@ int main(int argc, const char **argv) {
    }
 
    /* Check if job is immediate */
-   is_immediate = (int)JOB_TYPE_IS_IMMEDIATE(ocs::tom::get<JB_type>(job));
+   is_immediate = (int)JOB_TYPE_IS_IMMEDIATE(job->get<JB_type>());
    DPRINTF("Job is%s immediate\n", is_immediate ? "" : " not");
 
    DPRINTF("Everything ok\n");
 
-   if (ocs::tom::get<JB_verify>(job)) {
+   if (job->get<JB_verify>()) {
       std::stringstream ss;
       ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
       printf("%s", ss.str().c_str());
@@ -366,8 +366,8 @@ int main(int argc, const char **argv) {
 
    /* only success message is printed to stdout */
 
-   just_verify = (ocs::tom::get<JB_verify_suitable_queues>(job)==JUST_VERIFY ||
-                  ocs::tom::get<JB_verify_suitable_queues>(job)==POKE_VERIFY);
+   just_verify = (job->get<JB_verify_suitable_queues>()==JUST_VERIFY ||
+                  job->get<JB_verify_suitable_queues>()==POKE_VERIFY);
    DPRINTF("Just verifying job\n");
 
    if (!just_verify) {
@@ -379,7 +379,7 @@ int main(int argc, const char **argv) {
       } else if (output != nullptr) {
         printf("%s", output);
       } else {
-        printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string, ocs::tom::get<JB_job_name>(job));
+        printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string, job->get<JB_job_name>());
       }
       printf("\n");
    } else {

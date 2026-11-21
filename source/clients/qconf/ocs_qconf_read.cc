@@ -373,7 +373,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
       const int n_total = static_cast<int>(objects->size());
 
       for (const auto pair : *objects) {
-         const char *name = ocs::tom::get<VA_variable>(pair);
+         const char *name = pair.get<VA_variable>();
          if (!qconf_name_is_fs_safe(name)) {
             qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTUNSAFENAME_S, name != nullptr ? name : "");
             failures++;
@@ -389,7 +389,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          }
          seen->emplace_back<ST_name>(lcbuf);
 
-         failures += qconf_export_write_one(os, ocs::tom::get<VA_value>(pair),
+         failures += qconf_export_write_one(os, pair.get<VA_value>(),
                                             qconf_export_dest(dir, name, suffix).c_str(), alpp);
       }
 
@@ -403,7 +403,7 @@ qconf_export_path(std::ostream &os, ocs::QConfParameterClient &param,
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_EXPORTNOOBJECT_S, path);
          failures++;
       } else {
-         failures += qconf_export_write_one(os, ocs::tom::get<VA_value>(pair),
+         failures += qconf_export_write_one(os, pair.get<VA_value>(),
                                             qconf_export_dest(nullptr, path, suffix).c_str(), alpp);
       }
    }
@@ -449,7 +449,7 @@ qconf_export_singleton(std::ostream &os, ocs::QConfParameterClient &param,
       DRETURN(1);
    }
 
-   const int ret = qconf_export_write_one(os, ocs::tom::get<VA_value>(pair), path, alpp);
+   const int ret = qconf_export_write_one(os, pair.get<VA_value>(), path, alpp);
    DRETURN(ret);
 }
 

@@ -163,7 +163,7 @@ spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
       DPRINTF("using database path %s\n", path);
 
       info = bdb_create(path);
-      ocs::tom::set<SPR_clientdata>(rule, info);
+      rule.set<SPR_clientdata>(info);
       const auto type = spool_context_create_type(answer_list, context.get(), SGE_TYPE_ALL);
       spool_type_add_rule(answer_list, type, rule, true);
    }

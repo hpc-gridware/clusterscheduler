@@ -120,7 +120,7 @@ static pid_t sge_ls_get_pid(const ocs::tom::ConstElement<ocs::tom::LS> this_ls) 
    pid_t pid = -1;
    const char *pid_string;
 
-   pid_string = ocs::tom::get<LS_pid>(this_ls);
+   pid_string = this_ls.get<LS_pid>();
    if (pid_string) {
       sscanf(pid_string, pid_t_fmt, &pid);
    }
@@ -142,7 +142,7 @@ static void sge_ls_set_pid(const ocs::tom::Element<ocs::tom::LS> this_ls, const 
    char pid_buffer[256];
 
    snprintf(pid_buffer, sizeof(pid_buffer), pid_t_fmt, pid);
-   ocs::tom::set<LS_pid>(this_ls, pid_buffer);
+   this_ls.set<LS_pid>(pid_buffer);
    DRETURN_VOID;
 }
 
@@ -173,7 +173,7 @@ static int sge_ls_status(const ocs::tom::ConstElement<ocs::tom::LS> this_ls) {
 
    /* build writefds */
    FD_ZERO(&writefds);
-   higest_fd = fileno((FILE *) ocs::tom::get<LS_in>(this_ls));
+   higest_fd = fileno((FILE *) this_ls.get<LS_in>());
    FD_SET(higest_fd, &writefds);
 
    /* is load sensor ready to read ? */
@@ -223,7 +223,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Eleme
    // If we are starting the qidle load sensor, we need to export XAUTHORITY.
    // @todo Does anything speak against exporting it always?
    //       We do not really want special handling for one specific load sensor.
-   if (has_to_use_qidle && !strcmp(ocs::tom::get<LS_name>(this_ls), IDLE_LOADSENSOR_NAME)) {
+   if (has_to_use_qidle && !strcmp(this_ls.get<LS_name>(), IDLE_LOADSENSOR_NAME)) {
       envp = (char **) sge_malloc(sizeof(char *) * 4);
       envp[0] = (char *)str_host;
       envp[1] = (char *)str_spool;
@@ -237,7 +237,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Eleme
    }
 
    /* we need fds for select() .. */
-   pid = sge_peopen("/bin/sh", 0, ocs::tom::get<LS_command>(this_ls), nullptr, envp, &fp_in, &fp_out, &fp_err, true);
+   pid = sge_peopen("/bin/sh", 0, this_ls.get<LS_command>(), nullptr, envp, &fp_in, &fp_out, &fp_err, true);
 
    if (envp) {
       sge_free(&envp);
@@ -245,20 +245,20 @@ static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Eleme
    if (pid == -1) {
       // There is no load sensor process and therefore there are no streams. Whatever the
       // previous run of this sensor left in the refs has been closed by sge_ls_stop_ls().
-      ocs::tom::set<LS_in>(this_ls, nullptr);
-      ocs::tom::set<LS_out>(this_ls, nullptr);
-      ocs::tom::set<LS_err>(this_ls, nullptr);
+      this_ls.set<LS_in>(nullptr);
+      this_ls.set<LS_out>(nullptr);
+      this_ls.set<LS_err>(nullptr);
       DRETURN(LS_CANT_PEOPEN);
    }
    /* we need load reports non blocking */
    fcntl(fileno(fp_out), F_SETFL, O_NONBLOCK);
 
    sge_ls_set_pid(this_ls, pid);
-   ocs::tom::set<LS_in>(this_ls, fp_in);
-   ocs::tom::set<LS_out>(this_ls, fp_out);
-   ocs::tom::set<LS_err>(this_ls, fp_err);
+   this_ls.set<LS_in>(fp_in);
+   this_ls.set<LS_out>(fp_out);
+   this_ls.set<LS_err>(fp_err);
 
-   DPRINTF("%s: successfully started load sensor \"%s\"\n", __func__, ocs::tom::get<LS_command>(this_ls));
+   DPRINTF("%s: successfully started load sensor \"%s\"\n", __func__, this_ls.get<LS_command>());
 
    /* request first load report after starting */
    ls_send_command(this_ls, "\n");
@@ -300,23 +300,23 @@ sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *s
       new_ls = ocs::tom::ElementPtr<ocs::tom::LS>::create();
       if (new_ls) {
          /* initialize all attributes */
-         ocs::tom::set<LS_name>(new_ls, name);
-         ocs::tom::set<LS_command>(new_ls, scriptfile);
+         new_ls->set<LS_name>(name);
+         new_ls->set<LS_command>(scriptfile);
          sge_ls_set_pid(*new_ls, -1);
-         ocs::tom::set<LS_in>(new_ls, nullptr);
-         ocs::tom::set<LS_out>(new_ls, nullptr);
-         ocs::tom::set<LS_err>(new_ls, nullptr);
-         ocs::tom::set<LS_has_to_restart>(new_ls, false);
-         ocs::tom::set<LS_tag>(new_ls, 0);
-         ocs::tom::set<LS_incomplete>(new_ls, ocs::tom::ListPtr<ocs::tom::LR>::create(""));
-         ocs::tom::set<LS_complete>(new_ls, ocs::tom::ListPtr<ocs::tom::LR>::create(""));
-         ocs::tom::set<LS_last_mod>(new_ls, st.st_mtime);
+         new_ls->set<LS_in>(nullptr);
+         new_ls->set<LS_out>(nullptr);
+         new_ls->set<LS_err>(nullptr);
+         new_ls->set<LS_has_to_restart>(false);
+         new_ls->set<LS_tag>(0);
+         new_ls->set<LS_incomplete>(ocs::tom::ListPtr<ocs::tom::LR>::create(""));
+         new_ls->set<LS_complete>(ocs::tom::ListPtr<ocs::tom::LR>::create(""));
+         new_ls->set<LS_last_mod>(st.st_mtime);
 
          /* start loadsensor, if couldn't set the restart flag so that we
           * restart it in the next load interval
           */
          if (sge_ls_start_ls(qualified_hostname, *new_ls) != LS_OK) {
-            ocs::tom::set<LS_has_to_restart>(new_ls, true);
+            new_ls->set<LS_has_to_restart>(true);
          }
       }
    }
@@ -360,17 +360,17 @@ static void sge_ls_stop_ls(const ocs::tom::Element<ocs::tom::LS> this_ls, const 
 
    /* close all fds to load sensor */
    if (ret != LS_NOT_STARTED) {
-      exit_status = sge_peclose(sge_ls_get_pid(this_ls), (FILE *)ocs::tom::get<LS_in>(this_ls),
-                            (FILE *)ocs::tom::get<LS_out>(this_ls), (FILE *)ocs::tom::get<LS_err>(this_ls),
+      exit_status = sge_peclose(sge_ls_get_pid(this_ls), (FILE *)this_ls.get<LS_in>(),
+                            (FILE *)this_ls.get<LS_out>(), (FILE *)this_ls.get<LS_err>(),
                             (t.tv_sec ? &t : nullptr));
       DPRINTF("%s: load sensor `%s` stopped, exit status from sge_peclose= %d\n",
-              __func__, ocs::tom::get<LS_command>(this_ls), exit_status);
+              __func__, this_ls.get<LS_command>(), exit_status);
 
       // sge_peclose() has fclose()d the three streams. Their descriptor numbers are free for
       // the process to hand out again, so nothing may be left pointing at them.
-      ocs::tom::set<LS_in>(this_ls, nullptr);
-      ocs::tom::set<LS_out>(this_ls, nullptr);
-      ocs::tom::set<LS_err>(this_ls, nullptr);
+      this_ls.set<LS_in>(nullptr);
+      this_ls.set<LS_out>(nullptr);
+      this_ls.set<LS_err>(nullptr);
    }
 
    sge_ls_set_pid(this_ls, -1);
@@ -405,9 +405,9 @@ static int read_ls() {
          continue;
       }
 
-      FILE *file = (FILE *)ocs::tom::get<LS_out>(ls_elem);
+      FILE *file = (FILE *)ls_elem.get<LS_out>();
 
-      DPRINTF("receiving from %s\n", ocs::tom::get<LS_command>(ls_elem));
+      DPRINTF("receiving from %s\n", ls_elem.get<LS_command>());
 
       while (flag) {
          if (fscanf(file, "%[^\n]\n", input) != 1) {
@@ -417,7 +417,7 @@ static int read_ls() {
 
          if (!strcmp(input, "begin") || !strcmp(input, "start")) {
             /* remove last possibly incomplete load report */
-            ocs::tom::set<LS_incomplete>(ls_elem, ocs::tom::ListPtr<ocs::tom::LR>::create(""));
+            ls_elem.set<LS_incomplete>(ocs::tom::ListPtr<ocs::tom::LR>::create(""));
             continue;
          }
 
@@ -435,11 +435,11 @@ static int read_ls() {
          strcat(input, "\n");
          if (sscanf(input, "%[^:]:%[^:]:%[^\n]", host, name, value) != 3) {
             DPRINTF("format error in line: \"%100s\"\n", input);
-            ERROR(MSG_LS_FORMAT_ERROR_SS, ocs::tom::get<LS_command>(ls_elem), input);
+            ERROR(MSG_LS_FORMAT_ERROR_SS, ls_elem.get<LS_command>(), input);
          } else {
             // after "end" and before the next "begin" there is no incomplete report: the value is dropped, as it
             // was before when it went into a list created on the fly and lost
-            sge_add_str2load_report(ocs::tom::get<LS_incomplete>(ls_elem), name, value, host);
+            sge_add_str2load_report(ls_elem.get<LS_incomplete>(), name, value, host);
          }
       }
    }
@@ -464,7 +464,7 @@ static int ls_send_command(const ocs::tom::ConstElement<ocs::tom::LS> this_ls, c
    // A sensor which has been stopped has no streams any more. fileno() on a closed stream
    // reads freed memory, and the descriptor number it used to hold may belong to someone
    // else by now, so refuse here instead of trusting the caller to have checked LS_pid.
-   FILE *file = (FILE *)ocs::tom::get<LS_in>(this_ls);
+   FILE *file = (FILE *)this_ls.get<LS_in>();
    if (file == nullptr) {
       DPRINTF("load sensor is not running, cannot send command\n");
       DRETURN(-1);
@@ -485,36 +485,36 @@ static int ls_send_command(const ocs::tom::ConstElement<ocs::tom::LS> this_ls, c
       switch (errno) {
       case EINTR:
          DPRINTF("select failed with EINTR\n");
-         WARNING("[load_sensor %s] select failed with EINTR", ocs::tom::get<LS_pid>(this_ls));
+         WARNING("[load_sensor %s] select failed with EINTR", this_ls.get<LS_pid>());
          break;
       case EBADF:
          DPRINTF("select failed with EBADF\n");
-         WARNING("[load_sensor %s] select failed with EBADF", ocs::tom::get<LS_pid>(this_ls));
+         WARNING("[load_sensor %s] select failed with EBADF", this_ls.get<LS_pid>());
          break;
       case EINVAL:
          DPRINTF("select failed with EINVAL\n");
-         WARNING("[load_sensor %s] select failed with EINVAL", ocs::tom::get<LS_pid>(this_ls));
+         WARNING("[load_sensor %s] select failed with EINVAL", this_ls.get<LS_pid>());
          break;
       default:
          DPRINTF("select failed with unexpected errno %d", errno);
-         WARNING("[load_sensor %s] select failed with [%s]", ocs::tom::get<LS_pid>(this_ls), strerror(errno));
+         WARNING("[load_sensor %s] select failed with [%s]", this_ls.get<LS_pid>(), strerror(errno));
       }
       DRETURN(-1);
    }
 
    if (!FD_ISSET(higest_fd, &writefds)) {
       DPRINTF("received: cannot read\n");
-      WARNING("[load_sensor %s] received: cannot read", ocs::tom::get<LS_pid>(this_ls));
+      WARNING("[load_sensor %s] received: cannot read", this_ls.get<LS_pid>());
       DRETURN(-1);
    }
 
    /* send command to load sensor */
    if (fprintf(file, "%s", command) != (int)strlen(command)) {
-      WARNING("[load_sensor %s] couldn't send command [%s]", ocs::tom::get<LS_pid>(this_ls), strerror(errno));
+      WARNING("[load_sensor %s] couldn't send command [%s]", this_ls.get<LS_pid>(), strerror(errno));
       DRETURN(-1);
    }
    if (fflush(file) != 0) {
-      WARNING("[load_sensor %s] fflush failed [%s]", ocs::tom::get<LS_pid>(this_ls), strerror(errno));
+      WARNING("[load_sensor %s] fflush failed [%s]", this_ls.get<LS_pid>(), strerror(errno));
       DRETURN(-1);
    }
 
@@ -616,7 +616,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
 
    /* tag all elements */
    for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
-      ocs::tom::set<LS_tag>(ls_elem, 1);
+      ls_elem.set<LS_tag>(1);
    }
 
    /* add / remove load sensors */
@@ -653,7 +653,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
             }
          }
          if (ls_elem) {
-            ocs::tom::set<LS_tag>(ls_elem, 0);
+            ls_elem.set<LS_tag>(0);
          }
          scriptfile = strtok(nullptr, ",\n");
       }
@@ -682,7 +682,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
          }
       }
       if (ls_elem) {
-         ocs::tom::set<LS_tag>(ls_elem, 0);
+         ls_elem.set<LS_tag>(0);
       }
    }
 
@@ -709,7 +709,7 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
          }
       }
       if (ls_elem) {
-         ocs::tom::set<LS_tag>(ls_elem, 0);
+         ls_elem.set<LS_tag>(0);
       }
    }
 
@@ -718,8 +718,8 @@ static int sge_ls_start(const char *qualified_hostname, const char *binary_path,
    const ocs::tom::List<ocs::tom::LS> ls_elems(ls_list);
    for (auto ls_elem = ls_elems.front(); ls_elem;) {
       const auto nxt_ls_elem = ls_elem.next();
-      if (ocs::tom::get<LS_tag>(ls_elem) == 1) {
-         INFO(MSG_LS_STOPLS_S, ocs::tom::get<LS_command>(ls_elem));
+      if (ls_elem.get<LS_tag>() == 1) {
+         INFO(MSG_LS_STOPLS_S, ls_elem.get<LS_command>());
          sge_ls_stop_ls(ls_elem, 0);
          ls_elems.erase(ls_elem);
       }
@@ -738,7 +738,7 @@ void trigger_ls_restart() {
    DENTER(TOP_LAYER);
 
    for (const auto ls : ocs::tom::List<ocs::tom::LS>(ls_list)) {
-      ocs::tom::set<LS_has_to_restart>(ls, true);
+      ls.set<LS_has_to_restart>(true);
    }
 
    DRETURN_VOID;
@@ -801,11 +801,11 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom
       const char *ls_command;
       const char *ls_name;
 
-      ls_command = ocs::tom::get<LS_command>(ls_elem);
-      ls_name = ocs::tom::get<LS_name>(ls_elem);
+      ls_command = ls_elem.get<LS_command>();
+      ls_name = ls_elem.get<LS_name>();
 
       /* someone triggered the restart */
-      if (ocs::tom::get<LS_has_to_restart>(ls_elem)) {
+      if (ls_elem.get<LS_has_to_restart>()) {
          restart = true;
       }
 
@@ -818,9 +818,9 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom
             }
             continue;
          }
-         if ((time_t)ocs::tom::get<LS_last_mod>(ls_elem) != st.st_mtime) {
+         if ((time_t)ls_elem.get<LS_last_mod>() != st.st_mtime) {
             restart = true;
-            ocs::tom::set<LS_last_mod>(ls_elem, st.st_mtime);
+            ls_elem.set<LS_last_mod>(st.st_mtime);
          }
       }
 
@@ -832,7 +832,7 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom
           * load interval! 
           */
          if (sge_ls_start_ls(qualified_hostname, ls_elem) == LS_OK) {
-            ocs::tom::set<LS_has_to_restart>(ls_elem, false);
+            ls_elem.set<LS_has_to_restart>(false);
          }
       }
    }
@@ -841,10 +841,10 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom
 
    for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       /* merge external load into existing load report list */
-      for (const auto ep : ocs::tom::get<LS_complete>(ls_elem)) {
-         sge_add_str2load_report(lpp, ocs::tom::get<LR_name>(ep),
-                                 ocs::tom::get<LR_value>(ep),
-                                 ocs::tom::get<LR_host>(ep));
+      for (const auto ep : ls_elem.get<LS_complete>()) {
+         sge_add_str2load_report(lpp, ep.get<LR_name>(),
+                                 ep.get<LR_value>(),
+                                 ep.get<LR_host>());
       }
    }
 

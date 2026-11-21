@@ -94,7 +94,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
    /* -a date_time start time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-a"))) {
-      ocs::tom::set<AR_start_time>(ar, ocs::tom::get<SPA_argval_lUlong64T>(ep));
+      ar.set<AR_start_time>(ep.get<SPA_argval_lUlong64T>());
       pcmdline.erase(ep);
    }
 
@@ -106,7 +106,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_new_type>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_new_type>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
@@ -117,7 +117,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_amount>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_amount>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
@@ -128,7 +128,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_instance>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_instance>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
@@ -139,7 +139,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_unit>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_unit>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
@@ -150,7 +150,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_filter>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
+      binding_elem.set<BN_filter>(ep.get<SPA_argval_lStringT>());
       pcmdline.erase(ep);
    }
 
@@ -161,7 +161,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_sort>(binding_elem, ocs::tom::get<SPA_argval_lStringT>(ep));
+      binding_elem.set<BN_sort>(ep.get<SPA_argval_lStringT>());
       pcmdline.erase(ep);
    }
 
@@ -172,7 +172,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_start>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_start>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
@@ -183,7 +183,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_stop>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_stop>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
@@ -194,44 +194,44 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       if (!binding_elem) {
          DRETURN(false);
       }
-      ocs::tom::set<BN_strategy>(binding_elem, ocs::tom::get<SPA_argval_lIntT>(ep));
+      binding_elem.set<BN_strategy>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
 
 
    /*  -e date_time 	 end time in [[CC]YY]MMDDhhmm[.SS] SGE_ULONG*/
    while ((ep = pcmdline.find_first<SPA_switch_val>("-e"))) {
-      ocs::tom::set<AR_end_time>(ar, ocs::tom::get<SPA_argval_lUlong64T>(ep));
+      ar.set<AR_end_time>(ep.get<SPA_argval_lUlong64T>());
       pcmdline.erase(ep);
    }
 
    /*  -d time duration in TIME format SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-d"))) {
-      ocs::tom::set<AR_duration>(ar, ocs::tom::get<SPA_argval_lUlong64T>(ep));
+      ar.set<AR_duration>(ep.get<SPA_argval_lUlong64T>());
       pcmdline.erase(ep);
    }
    
    /*  -w e/v 	 validate availability of AR request, default e SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-w"))) {
-      ocs::tom::set<AR_verify>(ar, ocs::tom::get<SPA_argval_lIntT>(ep));
+      ar.set<AR_verify>(ep.get<SPA_argval_lIntT>());
       pcmdline.erase(ep);
    }
   
    /*  -N name 	 AR name SGE_STRING */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-N"))) {
-      ocs::tom::set<AR_name>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
+      ar.set<AR_name>(ep.get<SPA_argval_lStringT>());
       pcmdline.erase(ep);
    }
       
    /*  -A account_string AR name in accounting record SGE_STRING */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-A"))) {
-      ocs::tom::set<AR_account>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
+      ar.set<AR_account>(ep.get<SPA_argval_lStringT>());
       pcmdline.erase(ep);
    }
      
    /*  -P project_name project of the AR SGE_STRING */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-P"))) {
-      ocs::tom::set<AR_project>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
+      ar.set<AR_project>(ep.get<SPA_argval_lStringT>());
       pcmdline.erase(ep);
    }
 
@@ -244,10 +244,10 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    /*  an access list is a set: a name given twice is kept once, merged by parse_list_append (CS-3053) */
    parse_list_append<AR_acl_list>(pcmdline, "-u", ar);
    /*  -u ! list separation */
-   ocs::tom::List<ocs::tom::ARA> lp = ocs::tom::get<AR_acl_list>(ar);
+   ocs::tom::List<ocs::tom::ARA> lp = ar.get<AR_acl_list>();
    for (auto acl = lp.front(); acl;) {
       bool is_xacl = false;
-      const char *name = ocs::tom::get<ARA_name>(acl);
+      const char *name = acl.get<ARA_name>();
 
       const auto next_acl = acl.next();
       if (name[0] == '!') { /* move this element to xacl_list */
@@ -272,19 +272,19 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
            DRETURN(false);
          }
          sge_gid2group(pw->pw_gid, group, MAX_STRING_SIZE, MAX_NIS_RETRIES);
-         ocs::tom::set<ARA_group>(acl, group);
+         acl.set<ARA_group>(group);
          sge_free(&buffer);
       }
 
       if (is_xacl) {
-         ocs::tom::Element<ocs::tom::ARA> new_ep = ocs::tom::emplace_back_in<AR_xacl_list, ARA_name>(ar, name);
-         ocs::tom::set<ARA_group>(new_ep, ocs::tom::get<ARA_group>(acl));
+         ocs::tom::Element<ocs::tom::ARA> new_ep = ar.emplace_back_in<AR_xacl_list, ARA_name>(name);
+         new_ep.set<ARA_group>(acl.get<ARA_group>());
          lp.erase(acl);
       }
 
       acl = next_acl;
    }
-   ocs_object_list_remove_repeated_keys(ocs::tom::get<AR_xacl_list>(ar), ARA_name);
+   ocs_object_list_remove_repeated_keys(ar.get<AR_xacl_list>(), ARA_name);
 
    /*  -q wc_queue_list 	 reserve in queue(s) SGE_LIST */
    /*  a queue given twice is kept once, merged by parse_list_append (CS-3053) */
@@ -292,10 +292,10 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
   /*    -pe pe_name slot_range reserve slot range for parallel jobs */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-pe"))) {
-      ocs::tom::set<AR_pe>(ar, ocs::tom::get<SPA_argval_lStringT>(ep)); /* SGE_STRING, */
+      ar.set<AR_pe>(ep.get<SPA_argval_lStringT>()); /* SGE_STRING, */
       // SPA_argval_lListT carries lists of several types; at -pe the parser fills it with a slot range, so the
       // list is taken out raw and adopted as RN here; the range held before is freed by the set
-      ocs::tom::set<AR_pe_range>(ar, ocs::tom::adopt<ocs::tom::RN>(
+      ar.set<AR_pe_range>(ocs::tom::adopt<ocs::tom::RN>(
          ocs::tom::exchange(ep, SPA_argval_lListT, ocs::tom::RawListPtr())));
       pcmdline.erase(ep);
    }
@@ -303,7 +303,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    while ((ep = pcmdline.find_first<SPA_switch_val>("-par"))) {
       /* The scope the tokenizer stored in SPA_argval_lCharT is always the global one: qrsub has no
        * -scope switch, and a -scope given anyway stays in pcmdline and is rejected further down. */
-      ocs::tom::set<AR_allocation_rule>(ar, ocs::tom::get<SPA_switch_arg>(ep));
+      ar.set<AR_allocation_rule>(ep.get<SPA_switch_arg>());
       pcmdline.erase(ep);
    }
 
@@ -312,7 +312,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
    /*  -ckpt ckpt-name 	 reserve in queue with ckpt method SGE_STRING */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-ckpt"))) {
-      ocs::tom::set<AR_checkpoint_name>(ar, ocs::tom::get<SPA_argval_lStringT>(ep));
+      ar.set<AR_checkpoint_name>(ep.get<SPA_argval_lStringT>());
       pcmdline.erase(ep);
    }
    
@@ -321,12 +321,12 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       uint32_t ul;
       uint32_t old_mail_opts;
 
-      ul = ocs::tom::get<SPA_argval_lIntT>(ep);
+      ul = ep.get<SPA_argval_lIntT>();
       if  ((ul & NO_MAIL)) {
-         ocs::tom::set<AR_mail_options>(ar, 0);
+         ar.set<AR_mail_options>(0);
       } else {
-         old_mail_opts = ocs::tom::get<AR_mail_options>(ar);
-         ocs::tom::set<AR_mail_options>(ar, ul | old_mail_opts);
+         old_mail_opts = ar.get<AR_mail_options>();
+         ar.set<AR_mail_options>(ul | old_mail_opts);
       }
       pcmdline.erase(ep);
    }
@@ -336,20 +336,20 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
    /*  -he yes/no 	 hard error handling SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-he"))) {
-      ocs::tom::set<AR_error_handling>(ar, ocs::tom::get<SPA_argval_lUlongT>(ep));
+      ar.set<AR_error_handling>(ep.get<SPA_argval_lUlongT>());
       pcmdline.erase(ep);
    }
 
    /*   -now 	 reserve in queues with qtype interactive  SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-now"))) {
-      uint32_t ar_now = ocs::tom::get<AR_type>(ar);
-      if(ocs::tom::get<SPA_argval_lIntT>(ep)) {
+      uint32_t ar_now = ar.get<AR_type>();
+      if(ep.get<SPA_argval_lIntT>()) {
          JOB_TYPE_SET_IMMEDIATE(ar_now);
       } else {
          JOB_TYPE_CLEAR_IMMEDIATE(ar_now);
       }
 
-      ocs::tom::set<AR_type>(ar, ar_now);
+      ar.set<AR_type>(ar_now);
 
       pcmdline.erase(ep);
    }
@@ -369,12 +369,12 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
 
    ep = pcmdline.front();
    if (ep) {
-      const char *option = ocs::tom::get<SPA_switch_val>(ep);
+      const char *option = ep.get<SPA_switch_val>();
       /* as jobarg are stored no switch values, need to be filtered */ 
       if(sge_strnullcmp(option, "jobarg") != 0) {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                               MSG_PARSE_INVALIDOPTIONARGUMENTX_S,
-                              ocs::tom::get<SPA_switch_val>(ep)); 
+                              ep.get<SPA_switch_val>()); 
       } else {
          answer_list_add_sprintf(alpp, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
                                  SFNMAX, MSG_PARSE_INVALIDOPTIONARGUMENT);
@@ -382,17 +382,17 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       DRETURN(false);
    }
 
-   if (ocs::tom::get<AR_start_time>(ar) == 0 && ocs::tom::get<AR_end_time>(ar) != 0 &&
-       ocs::tom::get<AR_duration>(ar) != 0) {
-      ocs::tom::set<AR_start_time>(ar, ocs::tom::get<AR_end_time>(ar) - ocs::tom::get<AR_duration>(ar));
-   } else if (ocs::tom::get<AR_start_time>(ar) != 0 && ocs::tom::get<AR_end_time>(ar) == 0 &&
-              ocs::tom::get<AR_duration>(ar) != 0) {
-      ocs::tom::set<AR_end_time>(ar, duration_add_offset(ocs::tom::get<AR_start_time>(ar),
-                                                         ocs::tom::get<AR_duration>(ar)));
-      ocs::tom::set<AR_duration>(ar, ocs::tom::get<AR_end_time>(ar) - ocs::tom::get<AR_start_time>(ar));
-   } else if (ocs::tom::get<AR_start_time>(ar) != 0 && ocs::tom::get<AR_end_time>(ar) != 0 &&
-              ocs::tom::get<AR_duration>(ar) == 0) {
-      ocs::tom::set<AR_duration>(ar, ocs::tom::get<AR_end_time>(ar) - ocs::tom::get<AR_start_time>(ar));
+   if (ar.get<AR_start_time>() == 0 && ar.get<AR_end_time>() != 0 &&
+       ar.get<AR_duration>() != 0) {
+      ar.set<AR_start_time>(ar.get<AR_end_time>() - ar.get<AR_duration>());
+   } else if (ar.get<AR_start_time>() != 0 && ar.get<AR_end_time>() == 0 &&
+              ar.get<AR_duration>() != 0) {
+      ar.set<AR_end_time>(duration_add_offset(ar.get<AR_start_time>(),
+                                                         ar.get<AR_duration>()));
+      ar.set<AR_duration>(ar.get<AR_end_time>() - ar.get<AR_start_time>());
+   } else if (ar.get<AR_start_time>() != 0 && ar.get<AR_end_time>() != 0 &&
+              ar.get<AR_duration>() == 0) {
+      ar.set<AR_duration>(ar.get<AR_end_time>() - ar.get<AR_start_time>());
    }
 
    DRETURN(true);
