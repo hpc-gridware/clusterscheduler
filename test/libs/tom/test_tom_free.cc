@@ -537,7 +537,7 @@ void test_owning() {
    same = same && ocs::tom::has_any_bits<JAT_status>(task, 0x4) && ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 &&
           ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 && ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 &&
           task->get<JAT_status>() == 0x4;
-   CHECK(12, "the free forms on an owning element handle give what they give on the handle it owns", same);
+   CHECK(12, "the free forms that remain on an owning element handle give what they give on the handle it owns", same);
 
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
    lListElem *const held = job.get().raw();

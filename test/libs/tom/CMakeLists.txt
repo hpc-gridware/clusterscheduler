@@ -90,7 +90,7 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                pack_type_with_int_field merge_by_key_double_key
                raw_set_std_string raw_get_mutable_from_const raw_handle_mutable_from_const raw_owner_copied
                raw_set_typed_owner member_bits_on_64_bit_field member_or_bits_on_const
-               free_get_on_handle)
+               free_get_on_handle free_has_on_handle free_set_on_handle free_get_on_const_handle)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}

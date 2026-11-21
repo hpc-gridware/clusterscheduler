@@ -801,7 +801,7 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    bool has(const ElementPtr<T> &ep) = delete;

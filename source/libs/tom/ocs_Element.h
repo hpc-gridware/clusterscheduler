@@ -2060,7 +2060,7 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    auto get(const ElementPtr<T> &ep) = delete;
@@ -2088,7 +2088,7 @@ namespace ocs::tom {
     * @param value the value
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
    template <auto F, ObjectType T, typename V>
       requires TypedField<decltype(F)>
    int set(const ElementPtr<T> &ep, V &&value) = delete;
