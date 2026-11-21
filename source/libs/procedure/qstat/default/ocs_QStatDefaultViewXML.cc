@@ -225,7 +225,7 @@ void ocs::QStatDefaultViewXML::report_queue_summary(std::ostream &os, const char
    }
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>().raw()));
 
    xml_append_Attr_S(attribute_list, "name", qname);
    xml_append_Attr_S(attribute_list, "qtype", summary->queue_type.c_str());
@@ -261,7 +261,7 @@ void ocs::QStatDefaultViewXML::report_queue_load_alarm(std::ostream &os, const c
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>().raw()));
    xml_append_Attr_S(attribute_list, "load-alarm-reason", reason);
 
    DRETURN_VOID;
@@ -278,7 +278,7 @@ void ocs::QStatDefaultViewXML::report_queue_suspend_alarm(std::ostream &os, cons
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>().raw()));
    xml_append_Attr_S(attribute_list, "suspend-alarm-reason", reason);
 
    DRETURN_VOID;
@@ -295,7 +295,7 @@ void ocs::QStatDefaultViewXML::report_queue_message(std::ostream &os, const char
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>().raw()));
 
    xml_append_Attr_S(attribute_list, "message", message);
 
@@ -329,7 +329,7 @@ void ocs::QStatDefaultViewXML::report_queue_resource(std::ostream &os,
 
    // the queue instance's element nests an element whose list holds its attributes
    const ocs::tom::List<ocs::tom::XMLE> attribute_list(
-      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>()));
+      ocs::tom::get<XMLE_List>(queue_elem->get<XMLE_Element>().raw()));
 
    DPRINTF("queue resource: %s, %s, %s, %s\n", dom, name, value, details);
    const auto xml_elem = xml_append_Attr_S(attribute_list, "resource", value);

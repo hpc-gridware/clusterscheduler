@@ -66,6 +66,12 @@ namespace ocs::tom {
    template <ObjectType T> class ConstList;
    template <ObjectType T> class List;
    template <ObjectType T> class ListPtr;
+   class ConstRawElement;
+   class RawElement;
+   class RawElementPtr;
+   class ConstRawList;
+   class RawList;
+   class RawListPtr;
    struct SublistMode;
    struct SublistOutcome;
    enum class SublistEvent;
@@ -331,6 +337,103 @@ namespace ocs::tom {
             } else {
                return static_cast<const lListElem *>(value.obj);
             }
+         }
+      }
+
+      /**
+       * @brief A list or object field for which the model names no sub-type: it may hold a list or an element of
+       *        any object type
+       *
+       * The members of the handles read such a field as a raw handle and take an owner of any object type
+       * for it; get_as() gives a checked typed view.
+       *
+       * @tparam F the field number
+       */
+      template <auto F>
+      concept NoSubType = (FieldTraits<F>::type == FieldType::List || FieldTraits<F>::type == FieldType::Object) &&
+                          !FieldTraits<F>::has_sub;
+
+      /**
+       * @brief The raw handle a member getter gives for a field without a sub-type
+       *
+       * A class template, so that the raw handles of ocs_Raw.h, declared only here, are named in a dependent
+       * context and need to be complete only where a getter is instantiated.
+       *
+       * @tparam F the field number, a list or object field without a sub-type
+       * @tparam Mutable whether the field is read through a mutable handle
+       */
+      template <auto F, bool Mutable>
+         requires NoSubType<F>
+      struct RawHandleOf {
+         /// the handle: ConstRawList, RawList, ConstRawElement or RawElement
+         using type = std::conditional_t<FieldTraits<F>::type == FieldType::List,
+                                         std::conditional_t<Mutable, RawList, ConstRawList>,
+                                         std::conditional_t<Mutable, RawElement, ConstRawElement>>;
+      };
+
+      /**
+       * @brief Read a field the element holds, as the member getters of the handles return it
+       *
+       * As read(), except for a list or object field without a sub-type: the members give a raw handle on it
+       * (ConstRawList/RawList, ConstRawElement/RawElement), which converts implicitly to the raw pointer read()
+       * gives to the free getter.
+       *
+       * @tparam F the field number
+       * @tparam Mutable whether the value is read through a mutable handle
+       * @param ep the element, not nullptr
+       * @param s the slot index of the field
+       * @return the value
+       */
+      template <auto F, bool Mutable>
+      inline auto read_member(const lListElem *ep, const int s) {
+         if constexpr (NoSubType<F>) {
+            using Handle = typename RawHandleOf<F, Mutable>::type;
+            return Handle(read<F, Mutable>(ep, s));
+         } else {
+            return read<F, Mutable>(ep, s);
+         }
+      }
+
+      /**
+       * @brief The typed view get_as() gives on a field without a sub-type
+       * @tparam F the field number, a list or object field without a sub-type
+       * @tparam U the struct of the object type the caller expects
+       * @tparam Mutable whether the field is read through a mutable handle
+       */
+      template <auto F, ObjectType U, bool Mutable>
+         requires NoSubType<F>
+      using TypedViewOf = std::conditional_t<FieldTraits<F>::type == FieldType::List,
+                                             std::conditional_t<Mutable, List<U>, ConstList<U>>,
+                                             std::conditional_t<Mutable, Element<U>, ConstElement<U>>>;
+
+      /**
+       * @brief Read a field without a sub-type as a checked typed view
+       * @tparam F the field number, a list or object field without a sub-type
+       * @tparam U the struct of the object type the caller expects
+       * @tparam Mutable whether the field is read through a mutable handle
+       * @param ep the element, not nullptr
+       * @param s the slot index of the field
+       * @return the view; empty if the field holds nullptr
+       * @throw FieldException with reason WrongType if the field holds a list or an element of another type
+       */
+      template <auto F, ObjectType U, bool Mutable>
+         requires NoSubType<F>
+      inline TypedViewOf<F, U, Mutable> read_as(const lListElem *ep, const int s) {
+         const lMultiType &value = ep->cont[s];
+         // the type is checked here, so that the error names the field; the view is then made unchecked
+         const lDescr *descr = nullptr;
+         if constexpr (FieldTraits<F>::type == FieldType::List) {
+            descr = value.glp != nullptr ? value.glp->descr : nullptr;
+         } else {
+            descr = value.obj != nullptr ? value.obj->descr : nullptr;
+         }
+         if (descr != nullptr && descr[0].nm != U::descriptor.e[0].nm) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::WrongType, static_cast<int>(F), descr, U::descriptor.e);
+         }
+         if constexpr (FieldTraits<F>::type == FieldType::List) {
+            return TypedViewOf<F, U, Mutable>::from_typed(value.glp);
+         } else {
+            return TypedViewOf<F, U, Mutable>::from_typed(value.obj);
          }
       }
 
@@ -758,6 +861,11 @@ namespace ocs::tom {
 
       /**
        * @brief Read a field, as lGetUlong(), lGetString(), lGetList() and the other getters by name do
+       *
+       * A list or object field for which the model names no sub-type gives a raw handle, ConstRawList or
+       * ConstRawElement, which converts implicitly to `const lList *` / `const lListElem *`; get_as() gives a
+       * checked typed view on it instead.
+       *
        * @tparam F the field number, of this object type
        * @return the value, as the type's field table declares it
        * @throw FieldException if the handle is empty or the reduced element does not hold the field
@@ -765,7 +873,26 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T>
       [[nodiscard]] auto get() const {
-         return detail::read<F, false>(ep_, present_slot<F>());
+         return detail::read_member<F, false>(ep_, present_slot<F>());
+      }
+
+      /**
+       * @brief Read a list or object field without a sub-type in the model as a typed view on the type expected
+       *
+       * The field may hold a list or an element of any object type; the view checks at run time that it holds
+       * one of @p U, as the checked constructor of ConstList and ConstElement does.
+       *
+       * @tparam F the field number, of this object type, a list or object field without a sub-type
+       * @tparam U the struct of the object type the caller expects, e.g. ocs::tom::PN
+       * @return ConstList<U> for a list field, ConstElement<U> for an object field; empty if the field holds
+       *         nullptr
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field, WrongType if the field holds a list or an element of another type
+       */
+      template <auto F, ObjectType U>
+         requires FieldOf<F, T> && detail::NoSubType<F>
+      [[nodiscard]] detail::TypedViewOf<F, U, false> get_as() const {
+         return detail::read_as<F, U, false>(ep_, present_slot<F>());
       }
 
       /**
@@ -1208,6 +1335,11 @@ namespace ocs::tom {
 
       /**
        * @brief Read a field; list and object fields give mutable handles, as lGetListRW() and lGetObject() do
+       *
+       * A list or object field for which the model names no sub-type gives a raw handle, RawList or
+       * RawElement, which converts implicitly to `lList *` / `lListElem *`; get_as() gives a checked typed
+       * view on it instead.
+       *
        * @tparam F the field number, of this object type
        * @return the value, as the type's field table declares it
        * @throw FieldException if the handle is empty or the reduced element does not hold the field
@@ -1215,7 +1347,25 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T>
       [[nodiscard]] auto get() const {
-         return detail::read<F, true>(this->ep_, this->template present_slot<F>());
+         return detail::read_member<F, true>(this->ep_, this->template present_slot<F>());
+      }
+
+      /**
+       * @brief Read a list or object field without a sub-type in the model as a mutable typed view on the type
+       *        expected
+       *
+       * Declared here, because the template accessor of the base gives the read-only view.
+       *
+       * @tparam F the field number, of this object type, a list or object field without a sub-type
+       * @tparam U the struct of the object type the caller expects, e.g. ocs::tom::PN
+       * @return List<U> for a list field, Element<U> for an object field; empty if the field holds nullptr
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field, WrongType if the field holds a list or an element of another type
+       */
+      template <auto F, ObjectType U>
+         requires FieldOf<F, T> && detail::NoSubType<F>
+      [[nodiscard]] detail::TypedViewOf<F, U, true> get_as() const {
+         return detail::read_as<F, U, true>(this->ep_, this->template present_slot<F>());
       }
 
       /**
@@ -1253,6 +1403,54 @@ namespace ocs::tom {
                                      F, this->ep_->descr);
             }
          }
+      }
+
+      /**
+       * @brief Put a list of any object type into a list field for which the model names no sub-type, as
+       *        lSetList() does
+       *
+       * The field takes the list over and frees the one it held before. A list field with a sub-type takes
+       * only the owner of its sub-type (set() above), so a list of another type does not compile there.
+       *
+       * @tparam F the field number, of this object type, a list field without a sub-type
+       * @tparam U the struct of the list's object type, deduced
+       * @param list the list, moved in; may be empty, which leaves the field holding nullptr
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field; the list stays with the caller then
+       */
+      template <auto F, ObjectType U>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
+      void set(ListPtr<U> &&list) const {
+         static_cast<void>(this->template present_slot<F>());
+         store_list(this->ep_, FieldTraits<F>::pos, list.release());
+      }
+
+      /**
+       * @brief Put an element of any object type into an object field for which the model names no sub-type, as
+       *        lSetObject() does
+       *
+       * The field takes the element over and frees the one it held before. An element bound in a list or
+       * another object already is refused as by the setter of a field with a sub-type: the owner gives it up
+       * before any check, it stays where it is bound. An object field with a sub-type takes only the owner of
+       * its sub-type (set() above).
+       *
+       * @tparam F the field number, of this object type, an object field without a sub-type
+       * @tparam U the struct of the element's object type, deduced
+       * @param elem the element, moved in; may be empty, which leaves the field holding nullptr
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field (a free element stays with the caller then), BoundElement if the element
+       *        is bound in a list or another object already (@p elem is empty afterwards)
+       */
+      template <auto F, ObjectType U>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Object) && detail::NoSubType<F>
+      void set(ElementPtr<U> &&elem) const {
+         // a bound element is given up before present_slot() can throw, so that the caller's owner never frees it
+         lListElem *const object = detail::release_if_bound(elem);
+         static_cast<void>(this->template present_slot<F>());
+         if (!store_object(this->ep_, FieldTraits<F>::pos, object)) [[unlikely]] {
+            throw_field_exception(FieldException::Reason::BoundElement, F, this->ep_->descr);
+         }
+         static_cast<void>(elem.release());   // stored: the element now belongs to the field
       }
 
       /**
@@ -1351,6 +1549,44 @@ namespace ocs::tom {
          exchange_list(this->ep_, FieldTraits<F>::pos, lp);
          return ListPtr<typename FieldTraits<F>::Sub>::from_typed(lp);
       }
+
+      /**
+       * @brief Put a list of any object type into a list field without a sub-type in the model and take out the
+       *        one held, as std::exchange() and lXchgList() do
+       *
+       * Defined in ocs_Raw.h, where the raw owner is complete.
+       *
+       * @tparam F a list field of this object type for which the model names no sub-type
+       * @tparam U the struct of the new list's object type, deduced
+       * @param list the new list, which the element takes over; may be empty
+       * @return the list held before, of a type known only at run time, now owned by the caller; empty if the
+       *         field held none
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field; nothing is changed then
+       */
+      template <auto F, ObjectType U>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
+      RawListPtr exchange(ListPtr<U> &&list) const;
+
+      /**
+       * @brief Put an element of any object type into an object field without a sub-type in the model and take
+       *        out the one held, as lDechainObject() followed by lSetObject() does
+       *
+       * Defined in ocs_Raw.h, where the raw owner is complete. An element bound in a list or another object
+       * already, also the one the field holds, is refused as set() refuses it.
+       *
+       * @tparam F an object field of this object type for which the model names no sub-type
+       * @tparam U the struct of the new element's object type, deduced
+       * @param elem the new element, which the field takes over; may be empty
+       * @return the element held before, of a type known only at run time, now free and owned by the caller;
+       *         empty if the field held none
+       * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element
+       *        does not hold the field (a free element stays with the caller), BoundElement if the element is
+       *        bound already (@p elem is empty afterwards); nothing is changed in the field then
+       */
+      template <auto F, ObjectType U>
+         requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Object) && detail::NoSubType<F>
+      RawElementPtr exchange(ElementPtr<U> &&elem) const;
 
       /**
        * @brief Take the element out of an object field without copying it, as lDechainObject() does

@@ -2087,3 +2087,8 @@ namespace ocs::tom {
    }
 
 } // namespace ocs::tom
+
+// the raw handles and owners, which the members of the typed element handle give for a list or object field without
+// a sub-type (Element<T>::get<F>(), exchange<F>()); included last, so that the typed handles are complete in it
+// whichever of the typed headers a source includes first
+#include "tom/ocs_Raw.h"

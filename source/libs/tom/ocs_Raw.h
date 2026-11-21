@@ -2469,4 +2469,57 @@ namespace ocs::tom {
       return What<T>::from_typed(raw.release());
    }
 
+   // the members of the typed element handle for the fields without a sub-type that return a raw owner, defined
+   // here, where the raw owners are complete
+
+   /**
+    * @brief Element::exchange() of a list field without a sub-type: puts in a list of any type, gives back the
+    *        list held before as a raw owner
+    * @tparam T the object type of the handle
+    * @tparam F a list field of T for which the model names no sub-type
+    * @tparam U the struct of the new list's object type
+    * @param list the new list, which the element takes over; may be empty
+    * @return the list held before, now owned by the caller; empty if the field held none
+    * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element does
+    *        not hold the field; nothing is changed then
+    */
+   template <ObjectType T>
+   template <auto F, ObjectType U>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
+   RawListPtr Element<T>::exchange(ListPtr<U> &&list) const {
+      static_cast<void>(this->template present_slot<F>());
+      lList *lp = list.release();
+      exchange_list(this->ep_, FieldTraits<F>::pos, lp);
+      return RawListPtr(lp);
+   }
+
+   /**
+    * @brief Element::exchange() of an object field without a sub-type: puts in an element of any type, gives back
+    *        the element held before as a raw owner
+    * @tparam T the object type of the handle
+    * @tparam F an object field of T for which the model names no sub-type
+    * @tparam U the struct of the new element's object type
+    * @param elem the new element, which the field takes over; may be empty
+    * @return the element held before, now free and owned by the caller; empty if the field held none
+    * @throw FieldException with reason EmptyHandle if the handle is empty, AbsentField if the reduced element does
+    *        not hold the field (a free element stays with the caller), BoundElement if the element is bound in a
+    *        list or another object already (@p elem is empty afterwards); the field is unchanged then
+    */
+   template <ObjectType T>
+   template <auto F, ObjectType U>
+      requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Object) && detail::NoSubType<F>
+   RawElementPtr Element<T>::exchange(ElementPtr<U> &&elem) const {
+      // a bound element is given up before present_slot() can throw, so that the caller's owner never frees it
+      lListElem *const object = detail::release_if_bound(elem);
+      static_cast<void>(this->template present_slot<F>());
+      if (object != nullptr && !elem) [[unlikely]] {
+         // given up above: it is bound in a list or another object, also when it is the one the field holds
+         throw_field_exception(FieldException::Reason::BoundElement, F, this->ep_->descr);
+      }
+      RawElementPtr old(take_object(this->ep_, FieldTraits<F>::pos));
+      // the field is empty now and the element free, so the store cannot be refused
+      static_cast<void>(store_object(this->ep_, FieldTraits<F>::pos, elem.release()));
+      return old;
+   }
+
 } // namespace ocs::tom

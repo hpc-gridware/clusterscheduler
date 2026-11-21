@@ -30,6 +30,7 @@
 #include <cstring>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "tom/ocs_Types.h"
@@ -503,6 +504,133 @@ test_clone_empty() {
    CHECK(37, "clone of an empty element handle gives an empty owning handle", !no_job.clone() && !no_const_job.clone());
 }
 
+// the members on a field without a sub-type give raw handles; get_as() gives the typed views
+static_assert(std::is_same_v<decltype(std::declval<ConstElement<SPA>>().get<SPA_argval_lListT>()), ConstRawList>);
+static_assert(std::is_same_v<decltype(std::declval<Element<SPA>>().get<SPA_argval_lListT>()), RawList>);
+static_assert(std::is_same_v<decltype(std::declval<ConstElement<TEST>>().get<TEST_obj_any>()), ConstRawElement>);
+static_assert(std::is_same_v<decltype(std::declval<Element<TEST>>().get<TEST_obj_any>()), RawElement>);
+static_assert(std::is_same_v<decltype(std::declval<ConstElement<SPA>>().get_as<SPA_argval_lListT, PN>()),
+                             ConstList<PN>>);
+static_assert(std::is_same_v<decltype(std::declval<Element<SPA>>().get_as<SPA_argval_lListT, PN>()), List<PN>>);
+static_assert(std::is_same_v<decltype(std::declval<ConstElement<TEST>>().get_as<TEST_obj_any, JB>()),
+                             ConstElement<JB>>);
+static_assert(std::is_same_v<decltype(std::declval<Element<TEST>>().get_as<TEST_obj_any, JB>()), Element<JB>>);
+// a field with a sub-type keeps its typed getter
+static_assert(std::is_same_v<decltype(std::declval<Element<TEST>>().get<TEST_obj_jb>()), Element<JB>>);
+
+/**
+ * @brief The members on a list field and an object field for which the model names no sub-type: set and exchange
+ *        take owners of any type, get gives a raw handle, get_as a checked typed view
+ * @return nothing; CHECK records the results
+ */
+static void
+test_no_sub_type() {
+   // the list field SPA_argval_lListT takes a list of any type
+   ElementPtr<SPA> opt = ElementPtr<SPA>::create();
+   ListPtr<PN> paths = ListPtr<PN>::create("paths");
+   paths->emplace_back<PN_path>("/tmp/out");
+   const lList *paths_raw = paths.get().raw();
+   opt->set<SPA_argval_lListT>(std::move(paths));
+   const bool list_pn = !paths && opt->get<SPA_argval_lListT>().raw() == paths_raw &&
+                        std::strcmp(opt->get_as<SPA_argval_lListT, PN>().front().get<PN_path>(), "/tmp/out") == 0;
+   ListPtr<ST> names = ListPtr<ST>::create("names");
+   names->emplace_back<ST_name>("a");
+   names->emplace_back<ST_name>("b");
+   opt->set<SPA_argval_lListT>(std::move(names));   // frees the path list
+   const bool list_st = !names && opt->get_as<SPA_argval_lListT, ST>().size() == 2;
+
+   // the object field TEST_obj_any takes an element of any type
+   ElementPtr<TEST> test = ElementPtr<TEST>::create();
+   ElementPtr<JB> job = ElementPtr<JB>::create();
+   job->set<JB_job_number>(7u);
+   test->set<TEST_obj_any>(std::move(job));
+   const bool obj_jb = !job && test->get_as<TEST_obj_any, JB>().get<JB_job_number>() == 7;
+   ElementPtr<QU> queue = ElementPtr<QU>::create();
+   queue->set<QU_qname>("all.q");
+   test->set<TEST_obj_any>(std::move(queue));   // frees the job
+   const bool obj_qu = !queue && std::strcmp(test->get_as<TEST_obj_any, QU>().get<QU_qname>(), "all.q") == 0;
+   CHECK(38, "set takes an owner of any type into a list field and an object field without a sub-type",
+         list_pn && list_st && obj_jb && obj_qu);
+
+   // exchange gives back the content held before as a raw owner
+   ListPtr<PN> more = ListPtr<PN>::create("more");
+   more->emplace_back<PN_path>("/tmp/err");
+   RawListPtr old_list = opt->exchange<SPA_argval_lListT>(std::move(more));
+   const ListPtr<ST> old_names = adopt<ST>(std::move(old_list));
+   ElementPtr<JB> other_job = ElementPtr<JB>::create();
+   RawElementPtr old_elem = test->exchange<TEST_obj_any>(std::move(other_job));
+   const ElementPtr<QU> old_queue = adopt<QU>(std::move(old_elem));
+   CHECK(39, "exchange puts in the new list or element and gives back the one held before, free",
+         (!more && old_names.get().size() == 2 && opt->get_as<SPA_argval_lListT, PN>().size() == 1 && !other_job &&
+          std::strcmp(old_queue->get<QU_qname>(), "all.q") == 0 && is_free(old_queue.get()) &&
+          test->get_as<TEST_obj_any, JB>()));
+
+   // get gives a raw handle on what the field holds, read-only through a read-only handle
+   const ConstElement<SPA> const_opt = opt.get();
+   const ConstRawList const_list = const_opt.get<SPA_argval_lListT>();
+   const RawList list = opt->get<SPA_argval_lListT>();
+   const ConstElement<TEST> const_test = test.get();
+   const ConstRawElement const_elem = const_test.get<TEST_obj_any>();
+   const RawElement elem = test->get<TEST_obj_any>();
+   CHECK(40, "get gives a raw handle on the list or element the field holds",
+         const_list.raw() == list.raw() && const_list.size() == 1 && const_elem.raw() == elem.raw() &&
+         elem.get<std::uint32_t>(JB_job_number) == 0);
+
+   // get_as checks the type: the right one gives the view, another one throws WrongType
+   const Element<JB> job_view = test->get_as<TEST_obj_any, JB>();
+   job_view.set<JB_job_number>(11u);
+   const bool right = const_test.get_as<TEST_obj_any, JB>().get<JB_job_number>() == 11 &&
+                      const_opt.get_as<SPA_argval_lListT, PN>().front().get<PN_path>() != nullptr;
+   const bool wrong_list = throws_field_exception([&] { static_cast<void>(opt->get_as<SPA_argval_lListT, ST>()); },
+                                                  FieldException::Reason::WrongType, "as type ST");
+   const bool wrong_const_list = throws_field_exception(
+           [&] { static_cast<void>(const_opt.get_as<SPA_argval_lListT, JB>()); }, FieldException::Reason::WrongType,
+           "as type JB");
+   const bool wrong_elem = throws_field_exception([&] { static_cast<void>(test->get_as<TEST_obj_any, QU>()); },
+                                                  FieldException::Reason::WrongType, "as type QU");
+   CHECK(41, "get_as gives the typed view for the type the field holds and throws WrongType for another type",
+         right && wrong_list && wrong_const_list && wrong_elem);
+
+   // an empty owner empties the field; an empty field gives an empty view and an empty raw handle
+   opt->set<SPA_argval_lListT>(ListPtr<PN>{});
+   const RawElementPtr last = test->exchange<TEST_obj_any>(ElementPtr<JB>{});
+   const ElementPtr<SPA> unset = ElementPtr<SPA>::create();
+   CHECK(42, "an empty field gives an empty view and an empty raw handle; an empty owner empties the field",
+         (!opt->get<SPA_argval_lListT>() && !opt->get_as<SPA_argval_lListT, ST>() && last &&
+          !test->get<TEST_obj_any>() && !const_test.get_as<TEST_obj_any, QU>() &&
+          !unset->get_as<SPA_argval_lListT, PN>()));
+
+   // the contract of all members: EmptyHandle on an empty handle, AbsentField on a reduced element
+   const Element<SPA> no_opt;
+   const ConstElement<TEST> no_test;
+   const ElementPtr<SPA> reduced = ElementPtr<SPA>::create(layout<SPA_switch_val>());
+   ListPtr<PN> kept = ListPtr<PN>::create("kept");
+   const bool empty = throws_field_exception([&] { static_cast<void>(no_opt.get_as<SPA_argval_lListT, PN>()); },
+                                             FieldException::Reason::EmptyHandle, "SPA_argval_lListT") &&
+                      throws_field_exception([&] { static_cast<void>(no_test.get_as<TEST_obj_any, JB>()); },
+                                             FieldException::Reason::EmptyHandle, "TEST_obj_any") &&
+                      throws_field_exception([&] { no_opt.set<SPA_argval_lListT>(std::move(kept)); },
+                                             FieldException::Reason::EmptyHandle, "SPA_argval_lListT") &&
+                      kept;   // the list stays with the caller
+   const bool absent = throws_field_exception([&] { static_cast<void>(reduced->get<SPA_argval_lListT>()); },
+                                              FieldException::Reason::AbsentField, "SPA_argval_lListT") &&
+                       throws_field_exception([&] { static_cast<void>(reduced->get_as<SPA_argval_lListT, PN>()); },
+                                              FieldException::Reason::AbsentField, "SPA_argval_lListT") &&
+                       throws_field_exception(
+                               [&] { static_cast<void>(reduced->exchange<SPA_argval_lListT>(std::move(kept))); },
+                               FieldException::Reason::AbsentField, "SPA_argval_lListT") &&
+                       kept;
+   // an element bound in a list is refused, the owner gives it up and the element stays in its list
+   const ListPtr<JB> jobs = ListPtr<JB>::create("jobs");
+   ElementPtr<JB> bound = ElementPtr<JB>::from_typed(jobs->emplace_back<JB_job_number>(1u).raw());
+   const bool refused = throws_field_exception([&] { test->set<TEST_obj_any>(std::move(bound)); },
+                                               FieldException::Reason::BoundElement, "type TEST ") &&
+                        !bound && jobs.get().size() == 1 && !test->get<TEST_obj_any>();
+   CHECK(43, "an empty handle throws EmptyHandle, a reduced element without the field AbsentField, a bound element "
+             "BoundElement; a list or a free element stays with the caller",
+         empty && absent && refused);
+}
+
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -569,5 +697,17 @@ int main(int argc, char *argv[]) {
       {"HANDLE-10", "clone of nothing", "clone of an empty element handle is not an error",
        {"clone an empty Element and an empty ConstElement"}, "an empty owning handle", {{"OPS-01", "covers"}}, {37},
        test_clone_empty},
+      {"HANDLE-11", "fields without a sub-type",
+       "a list or object field for which the model names no sub-type takes an owner of any type, gives a raw "
+       "handle and a checked typed view (CS-3103)",
+       {"set a list field to a PN list and then to an ST list, an object field to a JB and then to a QU element",
+        "exchange both fields and adopt what comes back",
+        "read both fields with get and with get_as for the right and for a wrong type",
+        "empty both fields with an empty owner and read them",
+        "use the members on an empty handle, a reduced element and with a bound element"},
+       "set and exchange take every type and give back the old content; get gives a raw handle; get_as gives the "
+       "view for the right type, throws WrongType for a wrong one and gives an empty view for an empty field; "
+       "EmptyHandle, AbsentField and BoundElement as for every member",
+       {{"OPS-01", "covers"}}, {38, 39, 40, 41, 42, 43}, test_no_sub_type},
    });
 }

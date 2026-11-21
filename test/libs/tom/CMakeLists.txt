@@ -75,8 +75,8 @@ target_include_directories(test_tom_raw_build PRIVATE "./")
 target_link_libraries(test_tom_raw_build PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_tom_raw_build COMMAND test_tom_raw_build)
 
-# TRT-02, WHT-01, OPS-01, RAW-ACC and RAW-OPS: sources that must not compile. Each is compiled with the flags of
-# test_tom_handles as part of the build, which fails if one compiles or fails
+# TRT-02, WHT-01, OPS-01, RAW-ACC, RAW-OPS and CS-3103: sources that must not compile. Each is compiled with the
+# flags of test_tom_handles as part of the build, which fails if one compiles or fails
 # with another error than the one it names; test_tom_handles holds the correct
 # counterpart of each.
 string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_upper)
@@ -90,7 +90,8 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                pack_type_with_int_field merge_by_key_double_key
                raw_set_std_string raw_get_mutable_from_const raw_handle_mutable_from_const raw_owner_copied
                raw_set_typed_owner member_bits_on_64_bit_field member_or_bits_on_const
-               free_get_on_handle free_has_on_handle free_set_on_handle free_get_on_const_handle)
+               free_get_on_handle free_has_on_handle free_set_on_handle free_get_on_const_handle
+               foreign_list_into_typed_field foreign_element_into_typed_field get_as_on_typed_field)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}
