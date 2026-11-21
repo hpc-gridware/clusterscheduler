@@ -38,8 +38,6 @@
 #include "tom/detail/ocs_Hash.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
-#include "tom/detail/ocs_Errno.h"
-#include "tom/detail/ocs_State.h"
 
 #include "tom/ocs_ListCore.h"
 
@@ -403,21 +401,21 @@ namespace ocs::tom {
 
    int layout_difference(const lDescr *a, const lDescr *b) noexcept {
       if (a == nullptr || b == nullptr) {
-         return LELISTNULL;
+         return 1;
       }
       const int n = descr_length(a);
       const int m = descr_length(b);
       if (n <= 0 || m <= 0) {
-         return LECOUNTDESCR;
+         return 2;
       }
       if (n != m) {
-         return LEDIFFDESCR;
+         return 3;
       }
       for (int i = 0; i < n; i++) {
          // both full length: the same fields must be present (CS-439)
          if (a[i].nm != b[i].nm || mt_get_type(a[i].mt) != mt_get_type(b[i].mt) ||
              (a[i].off == OCS_CULL_ABSENT) != (b[i].off == OCS_CULL_ABSENT)) {
-            return LEDIFFDESCR;
+            return 3;
          }
       }
       return 0;
@@ -539,10 +537,6 @@ namespace ocs::tom {
          }
       }
       return true;
-   }
-
-   void set_lerrno(const int code) {
-      ocs::tom::detail::state_set_lerrno(code);
    }
 
    namespace {

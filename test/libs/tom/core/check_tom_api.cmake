@@ -23,8 +23,7 @@
 # Product code reaches objects through the typed object model and the raw API
 # (tom/ocs_*.h). The data types are public: tom/ocs_Types.h (lList, lListElem,
 # lDescr, ... and the object type definition macros) and tom/ocs_PackBuffer.h
-# (sge_pack_buffer, the PACK_* codes); tom/detail/ocs_Errno.h (the error codes
-# the tom error state is set with) may be included directly.
+# (sge_pack_buffer, the PACK_* codes).
 #
 # Two checks, both ERRORs:
 #
@@ -73,10 +72,7 @@ cmake_policy(SET CMP0057 NEW)
 set(forbidden "")
 file(GLOB detail_headers RELATIVE "${SOURCE_DIR}/source/libs" "${SOURCE_DIR}/source/libs/tom/detail/*.h")
 foreach (header IN LISTS detail_headers)
-   # the error codes of the list core stay public
-   if (NOT header STREQUAL "tom/detail/ocs_Errno.h")
-      list(APPEND forbidden "${header}")
-   endif ()
+   list(APPEND forbidden "${header}")
 endforeach ()
 list(APPEND forbidden "tom/ocs_Descr.h")
 # headers are compared by their file name, so "ocs_Hash.h" or "./ocs_Hash.h" reach the same header as

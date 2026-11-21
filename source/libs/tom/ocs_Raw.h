@@ -795,8 +795,7 @@ namespace ocs::tom {
    //
    // For code that knows the fields and the values only at run time (the Python bridge): the field is an int
    // argument and the value type the type of the argument; no format string is parsed. Each builder makes through
-   // the core what the old format builder made, and where the old one returned nullptr it returns an empty owner
-   // and leaves the error number the old one left.
+   // the core what the old format builder made, and where the old one returned nullptr it returns an empty owner.
 
    namespace detail {
 
@@ -820,8 +819,7 @@ namespace ocs::tom {
        * @param op the comparison
        * @param value_type the list library type of @p value (lUlongT, lStringT, ...)
        * @param value the value
-       * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold,
-       *         with the error number LEPARSECOND
+       * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold
        * @throw FieldException with reason WrongType if @p value_type does not fit the field
        */
       [[nodiscard]] RawWherePtr raw_where_compare(const lDescr *descr, int nm, CompareOp op, int value_type,
@@ -848,7 +846,7 @@ namespace ocs::tom {
     * @param value the value
     * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold
     *         (also one a reduced descriptor leaves out) and when the condition or a string value cannot be
-    *         allocated, with the error number LEPARSECOND, as lWhere() left it
+    *         allocated, as lWhere() gave it
     * @throw FieldException with reason WrongType if @p V does not fit the field's type
     * @see Old form: lWhere() with one comparison, e.g. lWhere("%T(%I == %s)", descr, nm, value); core:
     *      ocs::tom::make_compare(); typed form: ocs::tom::field<F>() with its operators
@@ -886,8 +884,8 @@ namespace ocs::tom {
     * @param descr the descriptor of the type
     * @param fields the fields
     * @return the owner of the selection; empty for a null descriptor, no field, or a field the descriptor does not
-    *         hold (also one a reduced descriptor leaves out), with the error number LENAMENOT, as
-    *         lIntVector2What() left it
+    *         hold (also one a reduced descriptor leaves out), and if there is no memory, as lIntVector2What()
+    *         gave it
     * @see Old form: lIntVector2What(), lWhat("%T(%I...)") without sub-selections; core: ocs::tom::make_what();
     *      typed form: ocs::tom::what<T>(fields)
     */
@@ -895,7 +893,7 @@ namespace ocs::tom {
 
    /**
     * @brief The selection of every field, of whatever type it is applied to
-    * @return the owner of the selection; empty only if there is no memory (the error number is set then)
+    * @return the owner of the selection; empty only if there is no memory
     * @see Old form: lWhatAll(), lWhat("%T(ALL)", descr) with a descriptor that is not null; core:
     *      ocs::tom::make_what_special(); typed form: ocs::tom::what_all<T>()
     */
@@ -908,19 +906,19 @@ namespace ocs::tom {
    // wire and whose condition and selection may come from a client: the result is named as the caller says (the
    // name is packed), no match is no list when hashing is on, no selection copies every field, a precomputed
    // reduced descriptor is taken as it is, and a condition or selection that does not fit the list gives no list
-   // and an error number instead of an exception. They throw no exception of the object model; every error the
+   // instead of an exception. They throw no exception of the object model; every error the
    // old function survived they survive the same way.
 
    /**
     * @brief Copy the elements of a list that fulfil a condition, reduced to a selection, as lSelect() did
     *
     * Differences from select(): the result is named @p name, not after the
-    * source list; with Hashing::On no match gives no list (error number
-    * LEGETNROFELEM) instead of an empty one, with Hashing::Off an empty list;
+    * source list; with Hashing::On no match gives no list instead of an empty
+    * one, with Hashing::Off an empty list;
     * @p what == nullptr copies the whole list instead of throwing - then under
     * the name of the source list and without applying @p where, as
     * lSelectHashPack() did; a selection that does not fit the list's type gives
-    * no list and sets the error number instead of throwing. An element whose
+    * no list instead of throwing. An element whose
     * fields cannot be copied is left out.
     *
     * @param name the name of the result, nullptr for the default name of a list; ignored when @p what is nullptr
@@ -929,7 +927,7 @@ namespace ocs::tom {
     * @param what the selection of fields, or nullptr for every field
     * @param hashing whether the result and its copied sub-lists keep hash tables; Hashing::On also turns an
     *        empty result into no list
-    * @return the owner of the result; empty for a null list, on an error (the CULL error number is set), and
+    * @return the owner of the result; empty for a null list, on an error, and
     *         with Hashing::On for no match
     * @see Old form: lSelect() (Hashing::On), lSelectHashPack() without a pack buffer; core: select_list(),
     *      copy_list()
@@ -943,14 +941,13 @@ namespace ocs::tom {
     * Differences from select(const lListElem *, ...): the condition is
     * applied (no match gives no copy); @p what == nullptr copies the whole
     * element - then without applying @p where - instead of throwing; a
-    * selection that does not fit gives no copy and sets the error number
-    * instead of throwing.
+    * selection that does not fit gives no copy instead of throwing.
     *
     * @param ep the element, or nullptr for no copy
     * @param where the condition, or nullptr; not applied when @p what is nullptr
     * @param what the selection of fields, or nullptr for every field
     * @param hashing whether copied sub-lists keep hash tables
-    * @return the owner of the copy, a free element; empty for nullptr, no match, or an error (error number set)
+    * @return the owner of the copy, a free element; empty for nullptr, no match, or an error
     * @see Old form: lSelectElemPack() without a pack buffer; core: compare(), select_elem(), copy_elem()
     */
    [[nodiscard]] RawElementPtr select_elem_as(const lListElem *ep, const lCondition *where, const lEnumeration *what,
@@ -965,8 +962,7 @@ namespace ocs::tom {
     * up per call. Differences from select(): the descriptor is the caller's
     * (it must hold every field @p what selects; an element whose copy fails is
     * left out); the result is named @p name; with Hashing::On no match gives no
-    * list; @p what == nullptr leaves every element out (error number
-    * LEENUMNULL); nothing throws.
+    * list; @p what == nullptr leaves every element out; nothing throws.
     *
     * @param name the name of the result, nullptr for the default name of a list
     * @param lp the list, or nullptr for no list
@@ -977,8 +973,7 @@ namespace ocs::tom {
     * @param hashing whether the result and its copied sub-lists keep hash tables; Hashing::On also turns an
     *        empty result into no list
     * @return the owner of the result; empty for a null list or descriptor, if the list cannot be created or an
-    *         element cannot be linked into it (error number LECREATELIST, LEAPPENDELEM), and with Hashing::On for
-    *         no match (LEGETNROFELEM)
+    *         element cannot be linked into it, and with Hashing::On for no match
     * @see Old form: lSelectDPack() without a pack buffer; core: create_list(), compare(), copy_elem_partial()
     */
    [[nodiscard]] RawListPtr select_into_descr(const char *name, const lList *lp, const lCondition *where,
@@ -999,7 +994,7 @@ namespace ocs::tom {
     * @param descr the descriptor of the copy; nullptr for no copy
     * @param what the selection of fields
     * @param hashing whether copied sub-lists keep hash tables
-    * @return the owner of the copy, a free element; empty as described (error number set on a failed copy)
+    * @return the owner of the copy, a free element; empty as described
     * @see Old form: lSelectElemDPack() without a pack buffer; core: create_elem(), compare(), copy_elem_partial()
     */
    [[nodiscard]] RawElementPtr select_elem_into_descr(const lListElem *ep, const lCondition *where,
@@ -1879,7 +1874,7 @@ namespace ocs::tom {
    /**
     * @brief Write a list with its name, its number of elements and its elements as text for debugging
     * @param fp the stream, or nullptr to write nothing
-    * @param list the list; an empty handle writes nothing and sets the CULL error number LELISTNULL, as before
+    * @param list the list; an empty handle writes nothing, as before
     * @see Old form: lWriteListTo(); core: ocs::tom::print_list(); typed form: ConstList<T>::print()
     */
    void write_to(FILE *fp, ConstRawList list);
@@ -1887,8 +1882,7 @@ namespace ocs::tom {
    /**
     * @brief Write an element as text for debugging
     * @param fp the stream, or nullptr to write nothing
-    * @param element the element; an empty handle writes nothing and sets the CULL error number LEELEMNULL, as
-    *        before
+    * @param element the element; an empty handle writes nothing, as before
     * @see Old form: lWriteElemTo(); core: ocs::tom::print_elem(); typed form: ConstElement<T>::print()
     */
    void write_to(FILE *fp, ConstRawElement element);
@@ -1896,7 +1890,7 @@ namespace ocs::tom {
    /**
     * @brief Write a condition as text for debugging
     * @param fp the stream, or nullptr to write nothing
-    * @param where the condition; nullptr writes nothing and sets the CULL error number LECONDNULL, as before
+    * @param where the condition; nullptr writes nothing, as before
     * @see Old form: lWriteWhereTo(); core: ocs::tom::print_where(); typed form: Where<T>::print()
     */
    void write_to(FILE *fp, const lCondition *where);
@@ -1904,7 +1898,7 @@ namespace ocs::tom {
    /**
     * @brief Write a field selection with its nested selections as text for debugging
     * @param fp the stream, or nullptr to write nothing
-    * @param what the selection; nullptr writes nothing and sets the CULL error number LEENUMNULL, as before
+    * @param what the selection; nullptr writes nothing, as before
     * @see Old form: lWriteWhatTo(); core: ocs::tom::print_what(); typed form: What<T>::print()
     */
    void write_to(FILE *fp, const lEnumeration *what);
@@ -1925,7 +1919,7 @@ namespace ocs::tom {
     *
     * For the process-lifetime globals and C struct members that hold a list as a raw pointer, since such state
     * gets no static owner. Frees as the old function did: nullptr frees nothing; a list holding an element
-    * without descriptor - a corrupted list - sets the CULL error number LEDESCRNULL and aborts the process.
+    * without descriptor - a corrupted list - aborts the process.
     *
     * @param lp the holder; nullptr afterwards
     * @see Old form: lFreeList(&lp); core: ocs::tom::free_list(), which throws instead of aborting
@@ -1935,8 +1929,8 @@ namespace ocs::tom {
    /**
     * @brief Free an element that a raw holder keeps, and clear the holder
     *
-    * The element counterpart of free_raw_list(): nullptr frees nothing; an element without descriptor sets
-    * the CULL error number LEDESCRNULL and aborts the process, as the old function did.
+    * The element counterpart of free_raw_list(): nullptr frees nothing; an element without descriptor aborts
+    * the process, as the old function did.
     *
     * @param ep the holder of a free element; nullptr afterwards
     * @see Old form: lFreeElem(&ep); core: ocs::tom::free_elem(), which throws instead of aborting
@@ -1953,8 +1947,6 @@ namespace ocs::tom {
 
    /**
     * @brief Whether an element is free: in no list and no object field
-    *
-    * Unlike the old function, an empty handle does not set the CULL error number.
     *
     * @param element the element
     * @return true if the element is free, false if it is bound to a list or an object field, or the handle is

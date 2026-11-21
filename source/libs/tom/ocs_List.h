@@ -1748,7 +1748,7 @@ namespace ocs::tom {
        * @param name the name of the list, or nullptr for the name in the text
        * @return the owning handle on the list
        * @throw FieldException with reason WrongType if the text holds a list of another type; it is freed
-       * @throw ListCoreError with the error number of before if the text cannot be read
+       * @throw ListCoreError if the text cannot be read
        * @see Old form: lUndumpList(); core: ocs::tom::undump_list()
        */
       [[nodiscard]] static ListPtr undump(FILE *fp, const char *name = nullptr) {

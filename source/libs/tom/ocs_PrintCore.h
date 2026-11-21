@@ -44,7 +44,7 @@ namespace ocs::tom {
     * @param buffer the string to append to
     * @param ep the element
     * @param level the nesting level, three blanks each
-    * @throw ListCoreError with LEELEMNULL if @p ep is null
+    * @throw ListCoreError if @p ep is null
     */
    void print_elem(dstring *buffer, const lListElem *ep, int level);
 
@@ -53,7 +53,7 @@ namespace ocs::tom {
     * @param buffer the string to append to
     * @param lp the list
     * @param level the nesting level, three blanks each
-    * @throw ListCoreError with LELISTNULL if @p lp is null
+    * @throw ListCoreError if @p lp is null
     */
    void print_list(dstring *buffer, const lList *lp, int level);
 
@@ -62,21 +62,20 @@ namespace ocs::tom {
     * @param buffer the string to append to
     * @param what the selection
     * @param level the nesting level, three blanks each
-    * @throw ListCoreError with LEENUMNULL if @p what is null
+    * @throw ListCoreError if @p what is null
     */
    void print_what(dstring *buffer, const lEnumeration *what, int level);
 
    /**
     * @brief Append a condition as text, as lWriteWhereTo() did
     *
-    * An operator the core does not know sets LEOPUNKNOWN and ends the text of
-    * its own sub-condition only, as before; an operand that is null sets
-    * LECONDNULL and is left out.
+    * An operator the core does not know ends the text of its own
+    * sub-condition only, as before; an operand that is null is left out.
     *
     * @param buffer the string to append to
     * @param cp the condition
     * @param level the nesting level, three blanks each
-    * @throw ListCoreError with LECONDNULL if @p cp is null
+    * @throw ListCoreError if @p cp is null
     */
    void print_where(dstring *buffer, const lCondition *cp, int level);
 

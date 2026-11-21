@@ -20,7 +20,7 @@
 
 # source/libs/tom: the typed object model (CS-3043), the list library of the product (CS-3103)
 #
-# The storage layer (the structures, the descriptor layout, the hash tables, the error number) lives in detail/;
+# The storage layer (the structures, the descriptor layout, the hash tables) lives in detail/;
 # the old list library and its interface are gone.
 add_library(tom STATIC)
 # the list library calls the utility library, so it is linked after it (CS-3088)
@@ -29,8 +29,6 @@ target_include_directories(tom PUBLIC ${SGE_INCLUDES})
 
 target_sources(tom PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_Hash.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_Errno.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_State.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_Descr.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DescrRegistryProbe.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_DumpCore.cc

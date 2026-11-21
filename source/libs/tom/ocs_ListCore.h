@@ -35,8 +35,7 @@
  *   (ForeignList), lists of different types (WrongType), an element or a list
  *   whose descriptor has another layout than the list's (WrongLayout), a
  *   duplicate key in a unique field in a debug build (DuplicateKey);
- * - a failure at run time throws ListCoreError, which carries the error number
- *   the old function set, so that its wrapper can set it again.
+ * - a failure at run time throws ListCoreError, whose message says what failed.
  */
 
 #include <string>
@@ -48,30 +47,18 @@
 namespace ocs::tom {
 
    /**
-    * @brief A run-time failure of the list core, such as no memory, with the error number of the old interface
+    * @brief A run-time failure of the list core, such as no memory
     */
    class ListCoreError : public ocs::RuntimeException {
    public:
       /**
        * @brief Describe the failure
-       * @param lerrno the error number the old function set for it, e.g. LEMALLOC
-       * @param message what failed
+       * @param message what failed, returned by what()
        */
-      ListCoreError(int lerrno, const std::string &message);
+      explicit ListCoreError(const std::string &message);
 
       /** @brief Destroy the exception; defined out of line as the key function */
       ~ListCoreError() override;
-
-      /**
-       * @brief The error number the old function set for this failure
-       * @return the number, e.g. LEMALLOC
-       */
-      [[nodiscard]] int lerrno() const noexcept {
-         return lerrno_;
-      }
-
-   private:
-      int lerrno_;   ///< the error number of the old interface
    };
 
    /**
@@ -118,7 +105,7 @@ namespace ocs::tom {
     * @param skip_no_transfer whether fields marked as not to transfer are left out
     * @return the copy, free, owned by the caller
     * @throw FieldException with reason NullElement if @p ep is null
-    * @throw ListCoreError with LECREATEELEM or LECOPYSWITCH if the copy fails
+    * @throw ListCoreError if the copy fails
     */
    lListElem *copy_elem(const lListElem *ep, bool hash, bool skip_no_transfer);
 
@@ -130,7 +117,7 @@ namespace ocs::tom {
     * @param skip_no_transfer whether fields marked as not to transfer are left out
     * @return the copy, owned by the caller
     * @throw FieldException with reason NullList if @p src is null
-    * @throw ListCoreError with LECREATELIST or LEAPPENDELEM if the copy fails
+    * @throw ListCoreError if the copy fails
     */
    lList *copy_list(const char *name, const lList *src, bool hash, bool skip_no_transfer);
 

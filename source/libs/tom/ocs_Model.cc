@@ -290,7 +290,7 @@ namespace ocs::tom {
          std::string rule;
          index = build_index(model, rule);
          if (index == nullptr) {
-            CRITICAL(MSG_CULL_MODELREJECTED_S, rule.c_str());
+            CRITICAL(MSG_TOM_MODELREJECTED_S, rule.c_str());
             if (reason != nullptr) {
                *reason = rule;
             }

@@ -48,7 +48,6 @@
 #include "tom/ocs_Types.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/ocs_DumpCore.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_ElementCore.h"
@@ -86,9 +85,8 @@ namespace {
    int no_sink_child(const char *missing) {
       setenv("OCS_SOFT_PATH_DIR", missing, 1);
       ocs::tom::install_model(ocs::tom::gcs_model());
-      ocs::tom::detail::state_set_lerrno(0);
       const int result = ocs::tom::set<TEST_bool>(nullptr, true);
-      return result == -1 && ocs::tom::detail::state_get_lerrno() == LEELEMNULL && access(missing, F_OK) != 0 ? 0 : 1;
+      return result == -1 && access(missing, F_OK) != 0 ? 0 : 1;
    }
 
    /**
@@ -145,13 +143,12 @@ namespace {
    }
 
    /**
-    * @brief Check the result and the error number of a free accessor
-    * @param result the setter's return value
-    * @param lerrno the error number expected with -1
-    * @return true if the setter returned -1 with that error number
+    * @brief Check the result of a free accessor on its soft path
+    * @param result the accessor's return value
+    * @return true if the accessor returned -1
     */
-   [[maybe_unused]] bool returned(const int result, const int lerrno) {
-      return result == -1 && ocs::tom::detail::state_get_lerrno() == lerrno;
+   [[maybe_unused]] bool returned(const int result) {
+      return result == -1;
    }
 
    /** @brief A TEST element in a list, a reduced copy of it, and a job with its task list */
@@ -197,29 +194,25 @@ namespace {
       // CHECK 2 removed: lCopyElem() has no TOM counterpart for its recorded null element, clone() records nothing
       // (CS-3103)
 
-      // a null element: -1 with LEELEMNULL, as lSetDouble() gave
-      ocs::tom::detail::state_set_lerrno(0);
-      const bool null_elem = returned(ocs::tom::set<TEST_double>(nullptr, 1.0), LEELEMNULL);
+      // a null element: -1, as lSetDouble() gave
+      const bool null_elem = returned(ocs::tom::set<TEST_double>(nullptr, 1.0));
       CHECK(3, "a null element is recorded, the result is unchanged",
             null_elem && lines_for("ocs::tom::set", "TEST_double", "null-element") == 1);
 
       // CHECK 4 removed: lSetPosUlong() has no TOM counterpart for its soft return, the raw set() throws (CS-3103)
 
-      // a null output pointer of exchange, which replaced lXchgList(): -1 with LEELEMNULL
-      ocs::tom::detail::state_set_lerrno(0);
-      const bool null_arg = returned(ocs::tom::exchange<JB_ja_tasks>(f.job, nullptr), LEELEMNULL);
+      // a null output pointer of exchange, which replaced lXchgList(): -1
+      const bool null_arg = returned(ocs::tom::exchange<JB_ja_tasks>(f.job, nullptr));
       CHECK(5, "a null argument is recorded, the result is unchanged",
             null_arg && lines_for("ocs::tom::exchange", "JB_ja_tasks", "null-argument") == 1);
 
-      // an element bound in a list cannot become an object field: -1 with LEBOUNDELEM, as lSetObject() gave
-      ocs::tom::detail::state_set_lerrno(0);
-      const bool bound = returned(ocs::tom::set<TEST_obj_any>(f.reduced, f.full), LEBOUNDELEM);
+      // an element bound in a list cannot become an object field: -1, as lSetObject() gave
+      const bool bound = returned(ocs::tom::set<TEST_obj_any>(f.reduced, f.full));
       CHECK(6, "a bound element is recorded, the result is unchanged",
             bound && lines_for("ocs::tom::set", "TEST_obj_any", "bound-element") == 1);
 
       // the free setter on a null element, as the old lSetUlong
-      ocs::tom::detail::state_set_lerrno(0);
-      const bool free_setter = returned(ocs::tom::set<TEST_uint32>(nullptr, 1u), LEELEMNULL);
+      const bool free_setter = returned(ocs::tom::set<TEST_uint32>(nullptr, 1u));
       CHECK(7, "the free setter records a null element like the old setter",
             free_setter && lines_for("ocs::tom::set", "TEST_uint32", "null-element") == 1);
 
@@ -271,7 +264,7 @@ namespace {
 
 /**
  * @brief The error behaviour of the cores behind the old accessors: what the old wrappers turned into a return
- *        value or an abort, the core reports as an exception with a reason or an error number (CS-3077, LEG-01)
+ *        value or an abort, the core reports as an exception with a reason or a message (CS-3077, LEG-01)
  *
  * The expectations were taken from the old wrappers, which only catch what the core throws: where a wrapper gave
  * -1, nullptr or an abort, the core throws the FieldException, ListCoreError or PackException named here. The
@@ -330,17 +323,16 @@ namespace legacy_cores {
    }
 
    /**
-    * @brief Whether a call throws a ListCoreError and leaves a given CULL error number
+    * @brief Whether a call throws a ListCoreError with a given message
     * @param call the call
-    * @param lerrno the expected error number
-    * @return true if it threw and the error number is the expected one
+    * @param message the expected message, what() of the exception
+    * @return true if it threw a ListCoreError with that message
     */
-   bool throws_lerrno(const std::function<void()> &call, const int lerrno) {
-      ocs::tom::detail::state_set_lerrno(0);
+   bool throws_core_error(const std::function<void()> &call, const char *message) {
       try {
          call();
-      } catch (const ListCoreError &) {
-         return ocs::tom::detail::state_get_lerrno() == lerrno;
+      } catch (const ListCoreError &e) {
+         return std::strcmp(e.what(), message) == 0;
       }
       return false;
    }
@@ -369,7 +361,7 @@ namespace legacy_cores {
       lList *src = source.get().raw();
       RawElementPtr ep = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
       lListElem *free_ep = ep.get().raw();
-      // the old wrappers gave -1 with LELISTNULL and LEELEMNULL, and aborted on a bound element
+      // the old wrappers gave -1 for a null list or element, and aborted on a bound element
       const bool append_errors =
          throws_reason([&] { ocs::tom::append_elem(nullptr, free_ep); }, FieldException::Reason::NullList) &&
          throws_reason([&] { ocs::tom::append_elem(src, nullptr); }, FieldException::Reason::NullElement) &&
@@ -381,7 +373,7 @@ namespace legacy_cores {
                 "lInsertElem gave -1 or aborted",
             append_errors && ocs::tom::size(src) == 1);
 
-      // the old wrappers gave nullptr with LELISTNULL and LEELEMNULL, and aborted on an element of another list
+      // the old wrappers gave nullptr for a null list or element, and aborted on an element of another list
       RawListPtr other = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e, Hashing::On, "other");
       ocs::tom::append(other.get().raw(), ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e));
       lListElem *foreign = other.get().raw()->first;
@@ -393,7 +385,7 @@ namespace legacy_cores {
       CHECK(12, "dechain_elem and take throw NullList, NullElement and ForeignList and change nothing",
             dechain_errors && ocs::tom::size(src) == 1 && ocs::tom::size(other.get().raw()) == 1);
 
-      // the old wrapper gave -1 with LELISTNULL and LEDIFFDESCR
+      // the old wrapper gave -1 for a null list and for lists of different types
       RawListPtr jobs = ocs::tom::create_raw_list(ocs::tom::JB::descriptor.e, Hashing::On, "jobs");
       const bool list_errors =
          throws_reason([&] { ocs::tom::append_list(nullptr, src); }, FieldException::Reason::NullList) &&
@@ -684,8 +676,6 @@ namespace legacy_cores {
 
    /// the hash of the dump text, recorded on the code before the cores took the old bodies over
    constexpr std::uint64_t DumpTextHash = 0x77f15bc08feb7b97ULL;
-   /// the hash of the error numbers of every cut of the dump text, recorded on the same code
-   constexpr std::uint64_t DumpCutHash = 0xc5f21f6804def9fbULL;
    /// the hash of the text the print functions write, recorded on the same code
    constexpr std::uint64_t RestTextHash = 0x6ba2bcf5a05b2a91ULL;
 
@@ -826,8 +816,7 @@ namespace legacy_cores {
             hash == DumpTextHash && elem_again == elem_text && list_again == list_text &&
                object_again == object_text);
 
-      // every cut of the text after a whole line: nothing read, and the error numbers of before
-      std::uint64_t cuts = 0xcbf29ce484222325ULL;
+      // every cut of the text after a whole line: nothing read
       bool all_null = true;
       for (const std::string *text : {&elem_text, &list_text, &object_text}) {
          for (std::size_t n = 0; n < text->size(); n++) {
@@ -835,10 +824,8 @@ namespace legacy_cores {
                continue;
             }
             const std::string cut = text->substr(0, n);
-            int lerrno = 0;
             bool nothing = false;
             read_text(cut.empty() ? std::string(" ") : cut, [&](FILE *fp) {
-               ocs::tom::detail::state_set_lerrno(0);
                if (text == &elem_text) {
                   nothing = reads_nothing([fp] { return ocs::tom::undump_elem(fp, ocs::tom::TEST::descriptor.e); });
                } else if (text == &list_text) {
@@ -846,24 +833,23 @@ namespace legacy_cores {
                } else {
                   nothing = reads_nothing([fp] { return ocs::tom::undump_object(fp); });
                }
-               lerrno = ocs::tom::detail::state_get_lerrno();
             });
             all_null = all_null && nothing;
-            cuts = fnv1a(reinterpret_cast<const char *>(&lerrno), sizeof(lerrno), cuts);
          }
       }
-      const bool null_file = throws_lerrno([&] { ocs::tom::dump_elem(nullptr, ep, 0); }, LEFILENULL) &&
+      const bool null_file = throws_core_error([&] { ocs::tom::dump_elem(nullptr, ep, 0); },
+                                               "dumping an element to no stream") &&
                              reads_nothing([] {
                                 return ocs::tom::undump_elem(nullptr, ocs::tom::TEST::descriptor.e);
                              }) &&
                              reads_nothing([] { return ocs::tom::undump_list(nullptr, nullptr, nullptr); });
-      const bool no_file = throws_lerrno([] {
+      const bool no_file = throws_core_error([] {
          lListElem *read = ocs::tom::undump_elem_from("/nonexistent/test_tom_soft_path", ocs::tom::TEST::descriptor.e);
          ocs::tom::free_raw_elem(read);
-      }, LEOPEN);
-      CHECK(23, "reading a cut text reads nothing and leaves the error numbers of before; a null stream and a "
-                "missing file fail with LEFILENULL and LEOPEN",
-            all_null && cuts == DumpCutHash && null_file && no_file);
+      }, "opening a file to read a dump from");
+      // the hash of the error numbers every cut left is gone with the error numbers (CS-3103)
+      CHECK(23, "reading a cut text reads nothing; a null stream and a missing file throw a ListCoreError saying so",
+            all_null && null_file && no_file);
 
       // files of packed elements; a TEST element holds int and long fields, which are not packed, so a job is used
       char dir[] = "/tmp/test_tom_soft_path_XXXXXX";
@@ -1034,7 +1020,7 @@ int main(int argc, char *argv[]) {
        "every soft error path the contract of N-L-4 keeps in the free accessors and select_as is recorded "
        "with accessor, field, reason and caller, and the result stays as it was",
        {"call each soft path once with a sink directory"},
-       "one line per call, return value and error number unchanged", {{"LEG-03", "covers"}},
+       "one line per call, return value unchanged", {{"LEG-03", "covers"}},
        {1, 3, 5, 6, 7, 8}, test_each_soft_path},
       {"SOFT-02", "hot loop",
        "a soft path taken in a loop writes a bounded number of lines",
@@ -1074,7 +1060,8 @@ int main(int argc, char *argv[]) {
       {"SOFT-10", "dump core", "the dump core writes and reads the text of before",
        {"dump an element of every value type, a list, an object and a descriptor; read them back, read every cut, "
         "read from no stream and a missing file; carry a packed element through a file and fail on bad ones"},
-       "the recorded hashes; the same text read back; LEFILENULL and LEOPEN; a runtime error for every bad file",
+       "the recorded hashes; the same text read back; ListCoreError for no stream and a missing file; a runtime "
+       "error for every bad file",
        {{"LEG-01", "covers"}}, {22, 23, 24}, legacy_cores::test_dump},
       {"SOFT-11", "rest of the cores", "type names, shared names, reductions, merged selections and the print text",
        {"name every type; take out shared names, also with a missing list; reduce a descriptor; merge and nest "

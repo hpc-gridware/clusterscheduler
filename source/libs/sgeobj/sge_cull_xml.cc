@@ -56,7 +56,6 @@
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_stdlib.h"
 
-#include "tom/detail/ocs_Errno.h"
 #include "tom/ocs_Types.h"
 
 #include "sgeobj/tom/ocs_tom_all.h"
@@ -210,7 +209,6 @@ static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_le
 
 
    if (!lp) {
-      ocs::tom::set_lerrno(LELISTNULL);
       DRETURN_VOID;
    }
 
@@ -407,7 +405,6 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
    int max = nesting_level *2;
 
    if (!ep) {
-      ocs::tom::set_lerrno(LEELEMNULL);
       DRETURN_VOID;
    }
 

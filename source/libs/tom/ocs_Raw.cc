@@ -37,7 +37,6 @@
 #include "uti/sge_profiling.h"
 
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/ocs_Descr.h"
 #include "tom/ocs_ElementCore.h"
@@ -120,8 +119,8 @@ namespace ocs::tom {
        * @brief Write the text a print function of the core appends to a string into a stream, as the old
        *        lWrite*To() functions do
        *
-       * The core throws ListCoreError only for a null object, before it has appended anything, and has set the
-       * CULL error number then; the old functions caught it and wrote nothing, and so does this one.
+       * The core throws ListCoreError only for a null object, before it has appended anything; the old functions
+       * wrote nothing then, and neither does this one.
        *
        * @tparam Print the type of the print function
        * @param fp the stream, or nullptr to write nothing
@@ -132,7 +131,7 @@ namespace ocs::tom {
          try {
             print_to(fp, print);
          } catch (const ListCoreError &) {
-            // a null object: nothing written, the core has set the error number
+            // a null object: nothing written
          }
       }
 
@@ -231,8 +230,7 @@ namespace ocs::tom {
       } catch (const ListCoreError &) {
          // lWhere() reported every failure of a comparison as a condition that did not parse
       }
-      // a null descriptor or a field it does not hold: no condition, with the error number lWhere() left last
-      LERROR(LEPARSECOND);
+      // a null descriptor or a field it does not hold: no condition
       return {};
    }
 
@@ -245,10 +243,9 @@ namespace ocs::tom {
       try {
          return RawWhatPtr(make_what(descr, entries));
       } catch (const FieldException &) {
-         // a null descriptor, no field, or a field the descriptor does not hold, all LENAMENOT in _lWhat()
-         LERROR(LENAMENOT);
-      } catch (const ListCoreError &e) {
-         LERROR(e.lerrno());
+         // a null descriptor, no field, or a field the descriptor does not hold: no selection, as _lWhat() gave
+      } catch (const ListCoreError &) {
+         // no memory: no selection
       }
       return {};
    }
@@ -256,8 +253,8 @@ namespace ocs::tom {
    RawWhatPtr what_all() {
       try {
          return RawWhatPtr(make_what_special(WHAT_ALL));
-      } catch (const ListCoreError &e) {
-         LERROR(e.lerrno());
+      } catch (const ListCoreError &) {
+         // no memory: no selection
       }
       return {};
    }
@@ -344,8 +341,8 @@ namespace ocs::tom {
          } catch (const FieldException &e) {
             // the list is not null, so no reason is left that lCopyListHash() survived
             legacy_abort("select_as", e);
-         } catch (const ListCoreError &e) {
-            LERROR(e.lerrno());
+         } catch (const ListCoreError &) {
+            // no memory: no copy
          }
          return {};
       }
@@ -356,14 +353,12 @@ namespace ocs::tom {
          // a null list or selection, both excluded above: nothing to select from
          report_soft_path("select_as", SoftPathNoName, SoftPathReason::NullList);
          return {};
-      } catch (const ListCoreError &e) {
+      } catch (const ListCoreError &) {
          // e.g. a selection the list's type does not hold
-         LERROR(e.lerrno());
          return {};
       }
       // an empty result of a list that may be hashed is no list, as it always was
       if (hash && result.get().raw()->nelem == 0) {
-         LERROR(LEGETNROFELEM);
          result.reset();
       }
       return result;
@@ -381,9 +376,8 @@ namespace ocs::tom {
             return RawElementPtr(copy_elem(ep, hash, false));
          } catch (const FieldException &) {
             report_soft_path("select_elem_as", SoftPathNoName, SoftPathReason::NullElement);
-            LERROR(LEELEMNULL);
-         } catch (const ListCoreError &e) {
-            LERROR(e.lerrno());
+         } catch (const ListCoreError &) {
+            // no memory: no copy
          }
          return {};
       }
@@ -393,9 +387,9 @@ namespace ocs::tom {
          }
          return RawElementPtr(select_elem(ep, what, hash, false));
       } catch (const FieldException &) {
-         LERROR(LEELEMNULL);
-      } catch (const ListCoreError &e) {
-         LERROR(e.lerrno());
+         // a null element: no copy
+      } catch (const ListCoreError &) {
+         // a selected field the element does not hold, or no memory: no copy
       }
       return {};
    }
@@ -410,10 +404,8 @@ namespace ocs::tom {
       try {
          result = RawListPtr(create_list(name, descr, false));
       } catch (const FieldException &) {
-         LERROR(LECREATELIST);
          return {};
       } catch (const ListCoreError &) {
-         LERROR(LECREATELIST);
          return {};
       }
       lList *dst = result.get().raw();
@@ -431,7 +423,6 @@ namespace ocs::tom {
             static_cast<void>(copy.release());
          } catch (const FieldException &) {
             // a new free element of the list's own descriptor: as lAppendElem() refusing it
-            LERROR(LEAPPENDELEM);
             return {};
          }
       }
@@ -441,7 +432,6 @@ namespace ocs::tom {
          ocs::tom::make_hashable(dst);
          // no match is no list, as lSelectDPack() decided it
          if (dst->nelem == 0) {
-            LERROR(LEGETNROFELEM);
             return {};
          }
       }
@@ -461,24 +451,19 @@ namespace ocs::tom {
       try {
          copy = RawElementPtr(create_elem(descr));
       } catch (const FieldException &) {
-         LERROR(LECOUNTDESCR);
          return {};
-      } catch (const ListCoreError &e) {
-         LERROR(e.lerrno());
+      } catch (const ListCoreError &) {
          return {};
       }
       if (what == nullptr) {
          // lCopyElemPartialPack() refused a missing selection
-         LERROR(LEENUMNULL);
          return {};
       }
       try {
          copy_elem_partial(copy.get().raw(), ep, what, hashing == Hashing::On, false);
       } catch (const FieldException &) {
-         LERROR(LEELEMNULL);
          return {};
-      } catch (const ListCoreError &e) {
-         LERROR(e.lerrno());
+      } catch (const ListCoreError &) {
          return {};
       }
       return copy;
@@ -574,7 +559,6 @@ namespace ocs::tom {
          free_list(lp);
       } catch (const FieldException &) {
          // an element without descriptor: the list is corrupted, lFreeList() aborted here
-         set_lerrno(LEDESCRNULL);
          TerminationManager::trigger_abort();
       }
    }
@@ -584,7 +568,6 @@ namespace ocs::tom {
          free_elem(ep);
       } catch (const FieldException &) {
          // an element without descriptor: lFreeElem() aborted here
-         set_lerrno(LEDESCRNULL);
          TerminationManager::trigger_abort();
       }
    }

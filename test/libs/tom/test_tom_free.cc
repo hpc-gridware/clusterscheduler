@@ -53,7 +53,6 @@
 #include "tom/ocs_Types.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Raw.h"
 
@@ -422,6 +421,7 @@ void test_has() {
 
 /**
  * @brief FREE-07: exchanging and swapping list fields, exchanging a string
+ * @return nothing; CHECK records the results
  */
 void test_exchange() {
    std::vector<std::string> seen;
@@ -434,16 +434,13 @@ void test_exchange() {
    const auto env = [](const ocs::tom::ElementPtr<ocs::tom::JB> &job) {
       return keys(job->get<JB_env_list>().raw(), VA_variable);
    };
-   ocs::tom::detail::state_set_lerrno(0);
    seen.push_back(std::to_string(ocs::tom::exchange<JB_env_list>(a, &other)));
    seen.push_back(env(a_owner) + "/" + keys(other, VA_variable));
-   seen.push_back(then(ocs::tom::exchange<JB_env_list>(nullptr, &other), ocs::tom::detail::state_get_lerrno));
-   ocs::tom::detail::state_set_lerrno(0);
-   seen.push_back(then(ocs::tom::exchange<JB_env_list>(a, nullptr), ocs::tom::detail::state_get_lerrno));
+   seen.push_back(std::to_string(ocs::tom::exchange<JB_env_list>(nullptr, &other)));
+   seen.push_back(std::to_string(ocs::tom::exchange<JB_env_list>(a, nullptr)));
    seen.push_back(std::to_string(ocs::tom::swap<JB_env_list, JB_env_list>(a, b)));
    seen.push_back(env(a_owner) + "/" + env(b_owner));
-   ocs::tom::detail::state_set_lerrno(0);
-   seen.push_back(then(ocs::tom::swap<JB_env_list, JB_env_list>(b, nullptr), ocs::tom::detail::state_get_lerrno));
+   seen.push_back(std::to_string(ocs::tom::swap<JB_env_list, JB_env_list>(b, nullptr)));
    seen.push_back(env(b_owner));
 
    auto t = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
@@ -455,17 +452,16 @@ void test_exchange() {
    ocs::tom::free_raw_list(other);
 
    // a swap with a null second element changes neither element (lSwapList() lost the first's list there)
-   const std::string elemnull = std::to_string(LEELEMNULL);
-   const std::vector<std::string> expected{
-      "0", "Q /A b ", "-1 " + elemnull, "-1 " + elemnull, "0", "Z /Q ", "-1 " + elemnull, "Q ", "0", "new/held"};
+   const std::vector<std::string> expected{"0", "Q /A b ", "-1", "-1", "0", "Z /Q ", "-1", "Q ", "0", "new/held"};
    show_if_differs("exchange", seen, expected);
-   CHECK(10, "exchange<F> and swap<F, G> move the lists and the string, and give -1 with LEELEMNULL for a null "
-             "argument, changing nothing",
+   CHECK(10, "exchange<F> and swap<F, G> move the lists and the string, and give -1 for a null argument, changing "
+             "nothing",
          seen == expected);
 }
 
 /**
  * @brief FREE-08: a list created on demand, a list reference, a string never null, bit masks
+ * @return nothing; CHECK records the results
  */
 void test_small() {
    std::vector<std::string> seen;
@@ -492,17 +488,15 @@ void test_small() {
    seen.push_back(then(ocs::tom::or_bits<JAT_status>(task, 0x2), status));
    seen.push_back(then(ocs::tom::and_bits<JAT_status>(task, 0x6), status));
    seen.push_back(then(ocs::tom::clear_bits<JAT_status>(task, 0x2), status));
-   ocs::tom::detail::state_set_lerrno(0);
-   seen.push_back(then(ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2),
-                       ocs::tom::detail::state_get_lerrno));
+   seen.push_back(std::to_string(ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2)));
 
    // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4
    const std::vector<std::string> expected{"created", "same", "null",  "ref",  "[]",
                                            "[x]",     "match", "no",   "0 7", "0 6",
-                                           "0 4",     "-1 " + std::to_string(LEELEMNULL)};
+                                           "0 4",     "-1"};
    show_if_differs("small ones", seen, expected);
    CHECK(11, "get_or_create creates the list once, list_ref gives the field's slot, get_or_empty never nullptr, the "
-             "bit mask forms set and test bits and give -1 with LEELEMNULL for a null element",
+             "bit mask forms set and test bits and give -1 for a null element",
          seen == expected);
 }
 
@@ -1130,14 +1124,10 @@ test_member_element_forms() {
              ta->get<JAT_status>() == eb.get<JAT_status>();
       same = same && ta->clear_bits<JAT_status>(0x2) == ocs::tom::clear_bits<JAT_status>(eb.raw(), 0x2) &&
              ta->get<JAT_status>() == eb.get<JAT_status>() && eb.get<JAT_status>() == 0x4;
-      // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4; an empty handle gives -1 with LEELEMNULL in both forms
-      ocs::tom::detail::state_set_lerrno(0);
+      // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4; an empty handle gives -1 in both forms
       const int member_null = ocs::tom::Element<ocs::tom::JAT>().clear_bits<JAT_status>(0x2);
-      const int member_errno = ocs::tom::detail::state_get_lerrno();
-      ocs::tom::detail::state_set_lerrno(0);
       const int free_null = ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2);
-      same = same && member_null == -1 && member_null == free_null && member_errno == LEELEMNULL &&
-             ocs::tom::detail::state_get_lerrno() == LEELEMNULL;
+      same = same && member_null == -1 && member_null == free_null;
 
       auto ha = ocs::tom::ElementPtr<ocs::tom::HM>::create();
       auto hb = ocs::tom::ElementPtr<ocs::tom::HM>::create();
@@ -1252,7 +1242,7 @@ int main(int argc, char *argv[]) {
        {{"OPS-02", "covers"}}, {9}, test_has},
       {"FREE-07", "exchange and swap", "exchange<F> and swap<F, G> move lists and strings",
        {"exchange a list and a string, swap two lists, with null arguments"},
-       "the lists and strings moved; -1 with LEELEMNULL and nothing changed for a null argument",
+       "the lists and strings moved; -1 and nothing changed for a null argument",
        {{"OPS-02", "covers"}}, {10}, test_exchange},
       {"FREE-08", "small ones", "get_or_create, list_ref, get_or_empty and the bit masks",
        {"create a list on demand, take its reference, read an unset string, set and clear bits"},

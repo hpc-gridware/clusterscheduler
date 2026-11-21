@@ -27,18 +27,17 @@
  * lUndumpElem() and its siblings, and the packed element files of the classic
  * spooling (lWriteElemToDisk(), lReadElemFromDisk()). The functions are
  * untyped and throw; the old functions of the list library are thin wrappers
- * that give back -1, 1 or nullptr as before (N-L-1, N-L-2). The text and the
- * error numbers are those of before; LEGACY-15 pins both.
+ * that give back -1, 1 or nullptr as before (N-L-1, N-L-2). The text is that
+ * of before; LEGACY-15 pins it.
  *
  * A `"` inside a string is written escaped. As before, a `"` at the start or
  * the end of a string, and one of two in a row, is lost: the string is split at
  * its quotes with sge_strtok(), which drops empty pieces. The dump serves
  * debugging and tests, so the text is kept as it was.
  *
- * Every failure sets the error number of the list library exactly as the old
- * code did, the outermost reader last, and throws a ListCoreError carrying
- * it. A writer whose last write fails throws without an error number, as the
- * old one returned -1 without one.
+ * Every failure throws a ListCoreError whose message names what failed, for a
+ * reader the outermost reader. A writer whose last write fails throws one as
+ * well, where the old one returned -1.
  */
 
 #include <cstdio>
@@ -52,7 +51,7 @@ namespace ocs::tom {
     * @param fp the stream
     * @param descr the descriptor
     * @param indent the nesting level, three blanks each
-    * @throw ListCoreError with LEFILENULL or LEDESCRNULL, or without an error number if the last write failed
+    * @throw ListCoreError if the stream or the descriptor is null or the last write failed
     */
    void dump_descr(FILE *fp, const lDescr *descr, int indent);
 
@@ -61,7 +60,7 @@ namespace ocs::tom {
     * @param fp the stream
     * @param ep the element
     * @param indent the nesting level
-    * @throw ListCoreError with LEFILENULL or LEELEMNULL, or without an error number if the last write failed
+    * @throw ListCoreError if the stream or the element is null or the last write failed
     */
    void dump_elem(FILE *fp, const lListElem *ep, int indent);
 
@@ -70,7 +69,7 @@ namespace ocs::tom {
     * @param fp the stream
     * @param ep the object
     * @param indent the nesting level
-    * @throw ListCoreError with LEFILENULL or LEELEMNULL, or without an error number if the last write failed
+    * @throw ListCoreError if the stream or the element is null or the last write failed
     */
    void dump_object(FILE *fp, const lListElem *ep, int indent);
 
@@ -79,7 +78,7 @@ namespace ocs::tom {
     * @param fp the stream
     * @param lp the list
     * @param indent the nesting level
-    * @throw ListCoreError with LEFILENULL or LELISTNULL, or without an error number if the last write failed
+    * @throw ListCoreError if the stream or the list is null or the last write failed
     */
    void dump_list(FILE *fp, const lList *lp, int indent);
 
@@ -88,7 +87,7 @@ namespace ocs::tom {
     * @param path the file, created or truncated
     * @param ep the element
     * @param indent the nesting level
-    * @throw ListCoreError with LEOPEN, LECLOSE, or as dump_elem()
+    * @throw ListCoreError if the file cannot be opened or closed, or as dump_elem()
     */
    void dump_elem_to(const char *path, const lListElem *ep, int indent);
 
@@ -100,7 +99,7 @@ namespace ocs::tom {
     *
     * @param fp the stream
     * @return the descriptor, allocated with sge_malloc() and owned by the caller
-    * @throw ListCoreError with LEFILENULL, LESYNTAX, LEFIELDREAD, LEFGETDESCR or LEMALLOC
+    * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
     */
    lDescr *undump_descr(FILE *fp);
 
@@ -109,7 +108,7 @@ namespace ocs::tom {
     * @param fp the stream
     * @param descr the descriptor of the element
     * @return the element, owned by the caller
-    * @throw ListCoreError with LEFILENULL, LEDESCRNULL, LECREATEELEM, LECOUNTDESCR, LESYNTAX or LEFIELDREAD
+    * @throw ListCoreError if the stream or the descriptor is null, the text cannot be read or there is no memory
     */
    lListElem *undump_elem(FILE *fp, const lDescr *descr);
 
@@ -117,7 +116,7 @@ namespace ocs::tom {
     * @brief Read a sub-object written by dump_object(), as lUndumpObject() did
     * @param fp the stream
     * @return the object, a free element owned by the caller
-    * @throw ListCoreError with LEFILENULL, LESYNTAX, LEFGETDESCR, LECOUNTDESCR or LEUNDUMPELEM
+    * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
     */
    lListElem *undump_object(FILE *fp);
 
@@ -131,8 +130,7 @@ namespace ocs::tom {
     * @param name the name of the list, or nullptr for the name in the text
     * @param descr the descriptor of the list, or nullptr for the one in the text
     * @return the list, owned by the caller
-    * @throw ListCoreError with LEFILENULL, LESYNTAX, LEFIELDREAD, LEFGETDESCR, LECREATELIST, LECOUNTDESCR,
-    *        LEMALLOC, LEUNDUMPELEM, LECREATEELEM, LECOPYSWITCH or LEAPPENDELEM
+    * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
     */
    lList *undump_list(FILE *fp, const char *name, const lDescr *descr);
 
@@ -141,7 +139,7 @@ namespace ocs::tom {
     * @param path the file
     * @param descr the descriptor of the element
     * @return the element, owned by the caller
-    * @throw ListCoreError with LEOPEN, or as undump_elem()
+    * @throw ListCoreError if the file cannot be opened, or as undump_elem()
     */
    lListElem *undump_elem_from(const char *path, const lDescr *descr);
 

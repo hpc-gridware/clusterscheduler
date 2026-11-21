@@ -347,7 +347,7 @@ load_object(const char *key, const char *fname) {
          try {
             object = ocs::tom::RawElementPtr(ocs::tom::undump_elem(fd, descr));
          } catch (const ocs::tom::ListCoreError &) {
-            // the core has set the error number, as lUndumpElemFp() did; no object
+            // the text cannot be read: no object, as lUndumpElemFp() gave none
          }
          FCLOSE(fd);
          if (!object) {

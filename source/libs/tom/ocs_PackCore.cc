@@ -50,7 +50,6 @@
 #include "uti/sge_uidgid.h"
 
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/detail/ocs_Stats.h"
@@ -72,17 +71,17 @@ namespace ocs::tom {
    const char *pack_error_text(const int code) noexcept {
       switch (code) {
          case PACK_SUCCESS:
-            return MSG_CULL_PACK_SUCCESS;
+            return MSG_TOM_PACK_SUCCESS;
          case PACK_ENOMEM:
-            return MSG_CULL_PACK_ENOMEM;
+            return MSG_TOM_PACK_ENOMEM;
          case PACK_FORMAT:
-            return MSG_CULL_PACK_FORMAT;
+            return MSG_TOM_PACK_FORMAT;
          case PACK_BADARG:
-            return MSG_CULL_PACK_BADARG;
+            return MSG_TOM_PACK_BADARG;
          case PACK_VERSION:
-            return MSG_CULL_PACK_VERSION;
+            return MSG_TOM_PACK_VERSION;
          case PACK_AUTHINFO:
-            return MSG_CULL_PACK_AUTHINFO;
+            return MSG_TOM_PACK_AUTHINFO;
          default:
             return "";
       }
@@ -186,7 +185,7 @@ namespace ocs::tom {
       DENTER(PACK_LAYER);
 
       if (pb == nullptr) {
-         ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, MSG_CULL_PACK_FORMAT);
+         ERROR(MSG_TOM_ERRORININITPACKBUFFER_S, MSG_TOM_PACK_FORMAT);
          fail(PACK_FORMAT, "initializing a pack buffer");
       }
 
@@ -214,7 +213,7 @@ namespace ocs::tom {
 
       pb->head_ptr = sge_malloc(initial_size);
       if (pb->head_ptr == nullptr) {
-         ERROR(MSG_CULL_NOTENOUGHMEMORY_D, static_cast<int>(initial_size));
+         ERROR(MSG_TOM_NOTENOUGHMEMORY_D, static_cast<int>(initial_size));
          sge_free(&(pb->auth_info));
          fail(PACK_ENOMEM, "initializing a pack buffer");
       }
@@ -253,7 +252,7 @@ namespace ocs::tom {
       const std::uint32_t version = get_uint32(pb);
       pb->auth_info = get_str(pb);
       if (pad != 0 || version != CULL_VERSION) {
-         ERROR(MSG_CULL_PACK_WRONG_VERSION_XX, static_cast<unsigned int>(version), CULL_VERSION);
+         ERROR(MSG_TOM_PACK_WRONG_VERSION_XX, static_cast<unsigned int>(version), CULL_VERSION);
          fail(PACK_VERSION, "reading a pack buffer");
       }
       pb->version = static_cast<int>(version);
@@ -408,7 +407,7 @@ namespace ocs::tom {
       // sge_qmaster and sge_execd
       if (local_uid_gid) {
          if ((pb->uid != component_get_uid() && pb->uid != 0) || (pb->gid != component_get_gid() && pb->gid != 0)) {
-            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_UIDGIDMISMATCH_UUUU, pb->uid, pb->gid, component_get_uid(),
+            sge_dstring_sprintf(error, MSG_TOM_AUTHINFO_UIDGIDMISMATCH_UUUU, pb->uid, pb->gid, component_get_uid(),
                                 component_get_gid());
             ret = false;
          }
@@ -418,7 +417,7 @@ namespace ocs::tom {
          char buffer[MAX_USER_GROUP]{};
          if (sge_uid2user(pb->uid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
             // sge_uid2user() logs the error
-            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_COULDNOTRESOLVEUSER_U, pb->uid);
+            sge_dstring_sprintf(error, MSG_TOM_AUTHINFO_COULDNOTRESOLVEUSER_U, pb->uid);
             ret = false;
          } else if (strcmp(pb->username, buffer) != 0) {
             sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_CORRECTINGUSERNAME_SS, pb->username, buffer);
@@ -426,7 +425,7 @@ namespace ocs::tom {
          }
          if (sge_gid2group(pb->gid, buffer, sizeof(buffer), MAX_NIS_RETRIES) != 0) {
             // sge_gid2group() logs the error
-            sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_COULDNOTRESOLVEGROUP_U, pb->gid);
+            sge_dstring_sprintf(error, MSG_TOM_AUTHINFO_COULDNOTRESOLVEGROUP_U, pb->gid);
             ret = false;
          } else if (strcmp(pb->groupname, buffer) != 0) {
             sge_dstring_sprintf(error, MSG_CULL_AUTHINFO_CORRECTINGGROUPNAME_SS, pb->groupname, buffer);
@@ -574,21 +573,18 @@ namespace ocs::tom {
       };
 
       /**
-       * @brief Fail with a format error, setting the error number as the old code did
-       * @param lerrno the error number
+       * @brief Fail with a format error
        * @param what what failed
        */
-      [[noreturn, gnu::cold]] void format_error(const int lerrno, const char *what) {
-         LERROR(lerrno);
+      [[noreturn, gnu::cold]] void format_error(const char *what) {
          fail(PACK_FORMAT, what);
       }
 
       /**
-       * @brief Fail for lack of memory, setting the error number as the old code did
+       * @brief Fail for lack of memory
        * @param what what failed
        */
       [[noreturn, gnu::cold]] void no_memory(const char *what) {
-         LERROR(LEMALLOC);
          fail(PACK_ENOMEM, what);
       }
 
@@ -882,7 +878,7 @@ namespace ocs::tom {
             }
          }
          if (n > type_n) {
-            format_error(LEDESCRNULL, "unpacking a descriptor longer than its type");
+            format_error("unpacking a descriptor longer than its type");
          }
          return type;
       }
@@ -913,14 +909,14 @@ namespace ocs::tom {
 
          if (n == CULL_PACK_DESCR_TYPE_REF) {
             if (flags != 0) {
-               format_error(LEDESCRNULL, "a type reference in flag-filtered data");
+               format_error("a type reference in flag-filtered data");
             }
             const std::uint32_t first_nm = get_uint32(pb);
             const std::uint32_t count = get_uint32(pb);
             // fewer fields than the local type: the sender's type had only these (N-W-6)
             const lDescr *block = ocs::tom::descr_static_for(static_cast<int>(first_nm));
             if (block == nullptr || count == 0 || static_cast<int>(count) > descr_length(block)) {
-               format_error(LEDESCRNULL, "a type reference to an unknown or shorter type");
+               format_error("a type reference to an unknown or shorter type");
             }
             *wire_n = count;
             return block;
@@ -930,12 +926,12 @@ namespace ocs::tom {
          bool enter_table = false;
          if (n == CULL_PACK_DESCR_TABLE_REF || n == CULL_PACK_DESCR_TABLE_DEF) {
             if (flags != 0) {
-               format_error(LEDESCRNULL, "a descriptor table entry in flag-filtered data");
+               format_error("a descriptor table entry in flag-filtered data");
             }
             if (n == CULL_PACK_DESCR_TABLE_REF) {
                const std::uint32_t index = get_uint32(pb);
                if (pb->dtab == nullptr || index >= pb->dtab->entries.size()) {
-                  format_error(LEDESCRNULL, "a reference to a descriptor table entry that does not exist");
+                  format_error("a reference to a descriptor table entry that does not exist");
                }
                const lDescr *dp = ocs::tom::descr_ref(pb->dtab->entries[index]);
                *wire_n = static_cast<std::uint32_t>(lCountPresent(dp));
@@ -950,20 +946,20 @@ namespace ocs::tom {
                const lDescr *type = ocs::tom::descr_static_for(static_cast<int>(type_nm));
                const int type_n = type != nullptr ? descr_length(type) : 0;
                if (type == nullptr || count > static_cast<std::uint32_t>(type_n)) {
-                  format_error(LEDESCRNULL, "a descriptor of an unknown type or with too many fields");
+                  format_error("a descriptor of an unknown type or with too many fields");
                }
                std::vector<bool> keep(type_n, false);
                std::int64_t last = -1;
                for (std::uint32_t i = 0; i < count; i++) {
                   const std::uint32_t index = get_uint32(pb);
                   if (index >= static_cast<std::uint32_t>(type_n) || static_cast<std::int64_t>(index) <= last) {
-                     format_error(LEDESCRNULL, "a descriptor whose fields are not in type order");
+                     format_error("a descriptor whose fields are not in type order");
                   }
                   last = index;
                   keep[index] = true;
                }
                if (count == 0) {
-                  format_error(LEDESCRNULL, "a descriptor without fields");
+                  format_error("a descriptor without fields");
                }
                CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
                CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
@@ -978,7 +974,7 @@ namespace ocs::tom {
                return ocs::tom::descr_ref(shared.release());
             }
             if (kind != CULL_PACK_DESCR_BY_FIELD) {
-               format_error(LEDESCRNULL, "a descriptor table entry of an unknown kind");
+               format_error("a descriptor table entry of an unknown kind");
             }
             // field by field, as without the table; the result enters the table
             n = get_uint32(pb);
@@ -999,7 +995,7 @@ namespace ocs::tom {
          for (std::uint32_t i = 0; i < n; i++) {
             dp[i].nm = static_cast<int>(get_uint32(pb));
             if (i > 0 && dp[i].nm <= dp[i - 1].nm) {
-               format_error(LEDESCRNULL, "a descriptor whose fields are not in type order");
+               format_error("a descriptor whose fields are not in type order");
             }
             // a sender never packs the process local reference count flag; clear it anyway
             dp[i].mt = static_cast<int>(get_uint32(pb)) & ~CULL_DESCR_INTERNED;
@@ -1011,7 +1007,7 @@ namespace ocs::tom {
          if (!enter_table && !wire_reduced) {
             const lDescr *type = prefix_type(dp.data(), n);
             if (type != expected && expected != nullptr && ocs::tom::descr_is_static(expected)) {
-               format_error(LEDESCRNULL, "a descriptor of another type than expected");
+               format_error("a descriptor of another type than expected");
             }
             if (type != nullptr) {
                return type;
@@ -1036,7 +1032,7 @@ namespace ocs::tom {
             }
          }
          if (!known) {
-            format_error(LEDESCRNULL, "a descriptor with fields of no known type");
+            format_error("a descriptor with fields of no known type");
          }
          OwnedDescr built(ocs::tom::descr_build(type, keep));
          if (built == nullptr) {
@@ -1185,7 +1181,7 @@ namespace ocs::tom {
          const lDescr *dp = ep->descr;
          const int n = lCountPresent(dp);
          if (wire_n > static_cast<std::uint32_t>(n)) {
-            format_error(LEDESCRNULL, "more values than the descriptor has fields");
+            format_error("more values than the descriptor has fields");
          }
          ep->cont = static_cast<lMultiType *>(calloc(1, sizeof(lMultiType) * (n + 1)));
          if (ep->cont == nullptr) {
@@ -1345,7 +1341,6 @@ namespace ocs::tom {
 
       // a selection on the full type applies to a reduction holding its fields (N-B-11)
       if (!ocs::tom::detail::what_fits(what, descr)) {
-         LERROR(LEENUMDESCR);
          fail(PACK_BADARG, "packing a selection of fields the descriptor does not hold");
       }
 

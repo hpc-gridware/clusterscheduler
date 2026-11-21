@@ -27,8 +27,6 @@
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
 
-#include "tom/detail/ocs_Errno.h"
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/detail/ocs_WhatP.h"
@@ -119,7 +117,7 @@ namespace ocs::tom {
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     = %p\n", sp, name, value.ref);
                   break;
                default:
-                  unknownType("lWriteElem");
+                  break;
             }
          }
       }
@@ -195,14 +193,13 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Append a condition; a null one sets LECONDNULL and appends nothing
+       * @brief Append a condition; a null one appends nothing
        * @param buffer the string to append to
        * @param cp the condition, or nullptr
        * @param level the nesting level
        */
       void append_where(dstring *buffer, const lCondition *cp, const int level) {
          if (cp == nullptr) {
-            set_lerrno(LECONDNULL);
             return;
          }
          const std::string space = indent(level);
@@ -262,7 +259,6 @@ namespace ocs::tom {
                      sge_dstring_sprintf_append(buffer, "%s %p\n", out, val.ref);
                      break;
                   default:
-                     unknownType("lWriteWhere");
                      return;
                }
                break;
@@ -281,7 +277,6 @@ namespace ocs::tom {
                sge_dstring_sprintf_append(buffer, "%s)\n", sp);
                break;
             default:
-               set_lerrno(LEOPUNKNOWN);
                return;
          }
       }
@@ -290,32 +285,28 @@ namespace ocs::tom {
 
    void print_elem(dstring *buffer, const lListElem *ep, const int level) {
       if (ep == nullptr) {
-         set_lerrno(LEELEMNULL);
-         throw ListCoreError(LEELEMNULL, "printing a null element");
+         throw ListCoreError("printing a null element");
       }
       append_elem(buffer, ep, level);
    }
 
    void print_list(dstring *buffer, const lList *lp, const int level) {
       if (lp == nullptr) {
-         set_lerrno(LELISTNULL);
-         throw ListCoreError(LELISTNULL, "printing a null list");
+         throw ListCoreError("printing a null list");
       }
       append_list(buffer, lp, level);
    }
 
    void print_what(dstring *buffer, const lEnumeration *what, const int level) {
       if (what == nullptr) {
-         set_lerrno(LEENUMNULL);
-         throw ListCoreError(LEENUMNULL, "printing a null selection");
+         throw ListCoreError("printing a null selection");
       }
       append_what(buffer, what, level);
    }
 
    void print_where(dstring *buffer, const lCondition *cp, const int level) {
       if (cp == nullptr) {
-         set_lerrno(LECONDNULL);
-         throw ListCoreError(LECONDNULL, "printing a null condition");
+         throw ListCoreError("printing a null condition");
       }
       append_where(buffer, cp, level);
    }

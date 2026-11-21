@@ -38,10 +38,8 @@
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
 
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_MultitypeP.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/detail/ocs_Stats.h"
 #include "tom/msg_tom.h"
 #include "tom/ocs_Descr.h"
@@ -373,7 +371,7 @@ const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
    }
 
    // log outside the lock; the copy stays private
-   WARNING(MSG_CULL_DESCR_SOFTCAPREACHED_U, static_cast<uint32_t>(cap));
+   WARNING(MSG_TOM_DESCR_SOFTCAPREACHED_U, static_cast<uint32_t>(cap));
    DRETURN(entries_of(fresh));
 }
 
@@ -395,7 +393,7 @@ static void check_full_length(const lDescr *dp, const uint32_t n) {
    int pos = 0;
    const lDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
    if (type == nullptr || pos != 0 || count_entries(type) != n) {
-      CRITICAL(MSG_CULL_DESCRNOTFULLLENGTH_IU, dp[0].nm, n);
+      CRITICAL(MSG_TOM_DESCRNOTFULLLENGTH_IU, dp[0].nm, n);
       abort();
    }
 }
@@ -516,20 +514,15 @@ const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &
    std::vector<lDescr> entries(n + 1);
    const int kept = ocs::tom::descr_layout(src, keep, entries.data());
    if (kept < 0) {
-      LERROR(LEENUMDESCR);
       DRETURN(nullptr);
    }
    if (kept == 0) {
-      LERROR(LEENUMNULL);
       DRETURN(nullptr);
    }
    if (static_cast<uint32_t>(kept) == n) {
       DRETURN(ocs::tom::descr_acquire(src));
    }
    const lDescr *dp = ocs::tom::descr_intern(entries.data());
-   if (dp == nullptr) {
-      LERROR(LEMALLOC);
-   }
    DRETURN(dp);
 }
 
@@ -557,7 +550,6 @@ const lDescr *ocs::tom::descr_reduce(const lDescr *type, const std::initializer_
    for (const int nm : fields) {
       const int pos = n > 0 ? nm - type[0].nm : -1;
       if (pos < 0 || static_cast<uint32_t>(pos) >= n || type[pos].nm != nm) {
-         LERROR(LENAMENOT);
          DRETURN(nullptr);
       }
       keep[pos] = true;
@@ -662,7 +654,7 @@ int lCountPresent(const lDescr *dp) {
  */
 void ocs::tom::detail::bad_slot(const lListElem *ep, const int pos) {
    const cull_descr_header *h = ocs::tom::descr_header_of(ep->descr);
-   CRITICAL(MSG_CULL_BADSLOT_IIUU, pos, ep->descr[0].nm, h->n, h->np);
+   CRITICAL(MSG_TOM_BADSLOT_IIUU, pos, ep->descr[0].nm, h->n, h->np);
    abort();
 }
 

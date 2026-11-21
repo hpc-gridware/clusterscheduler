@@ -27,9 +27,9 @@
  * condition must select the elements the comparison holds for (no list for no
  * match), a selection must give the fields asked for, in descriptor order and
  * each once, with the values of the source. Where the old builder returned
- * nullptr, the run-time builder gives nothing and the error number the old one
- * set. reduced_descr() of a selection of what_of() must give the layout of the
- * descriptor reduced to the same fields.
+ * nullptr, the run-time builder gives nothing. reduced_descr() of a selection
+ * of what_of() must give the layout of the descriptor reduced to the same
+ * fields.
  */
 
 #include <algorithm>
@@ -43,7 +43,6 @@
 #include "tom/ocs_Types.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_Model.h"
 #include "tom/ocs_Raw.h"
@@ -79,19 +78,6 @@ namespace {
          ocs::tom::append(list.get().raw(), std::move(ep));
       }
       return list;
-   }
-
-   /**
-    * @brief The error number of the list library a call leaves, starting from 0
-    * @tparam Call the type of the call
-    * @param call the call
-    * @return the error number after the call
-    */
-   template <typename Call>
-   int lerrno_after(Call &&call) {
-      ocs::tom::detail::state_set_lerrno(0);
-      call();
-      return ocs::tom::detail::state_get_lerrno();
    }
 
    /**
@@ -314,8 +300,7 @@ test_where_compare() {
 }
 
 /**
- * @brief where_compare() fails where lWhere() returned nullptr, with the error number LEPARSECOND lWhere() set,
- *        and throws WrongType where lWhere() aborted
+ * @brief where_compare() fails where lWhere() returned nullptr, and throws WrongType where lWhere() aborted
  * @return nothing; CHECK records the results
  */
 static void
@@ -334,17 +319,15 @@ test_where_compare_errors() {
                          {"absent field", reduced, TEST_string}};
    bool refused = reduced != nullptr;
    for (const Case &c : cases) {
-      ocs::tom::RawWherePtr built;
-      const int new_errno =
-          lerrno_after([&] { built = ocs::tom::where_compare(c.descr, c.nm, Op::Equal, "s1"); });
-      if (built != nullptr || new_errno != LEPARSECOND) {
-         std::printf("%s: %s (%d)\n", c.label, built ? "condition" : "none", new_errno);
+      const ocs::tom::RawWherePtr built = ocs::tom::where_compare(c.descr, c.nm, Op::Equal, "s1");
+      if (built != nullptr) {
+         std::printf("%s: condition\n", c.label);
          refused = false;
       }
    }
    ocs::tom::release_descr(reduced);
    CHECK(3, "where_compare() with a null descriptor, a foreign field and a field the reduced descriptor leaves out "
-            "gives no condition and LEPARSECOND, as lWhere() did",
+            "gives no condition, as lWhere() did",
          refused);
 
    bool wrong_type = false;
@@ -414,7 +397,7 @@ test_what() {
 }
 
 /**
- * @brief what_of() fails where lIntVector2What() returned nullptr, with the error number LENAMENOT it set
+ * @brief what_of() fails where lIntVector2What() returned nullptr
  * @return nothing; CHECK records the results
  */
 static void
@@ -433,16 +416,15 @@ test_what_errors() {
                          {"absent field", reduced, {TEST_string}}};
    bool refused = reduced != nullptr;
    for (const Case &c : cases) {
-      ocs::tom::RawWhatPtr built;
-      const int new_errno = lerrno_after([&] { built = ocs::tom::what_of(c.descr, c.fields); });
-      if (built != nullptr || new_errno != LENAMENOT) {
-         std::printf("%s: %s (%d)\n", c.label, built ? "selection" : "none", new_errno);
+      const ocs::tom::RawWhatPtr built = ocs::tom::what_of(c.descr, c.fields);
+      if (built != nullptr) {
+         std::printf("%s: selection\n", c.label);
          refused = false;
       }
    }
    ocs::tom::release_descr(reduced);
    CHECK(8, "what_of() with no field, a foreign field, a null descriptor and a field the reduced descriptor leaves "
-            "out gives no selection and LENAMENOT, as lIntVector2What() did",
+            "out gives no selection, as lIntVector2What() did",
          refused);
 }
 
@@ -771,7 +753,7 @@ int main(int argc, char *argv[]) {
        "where_compare() fails where lWhere() failed, without an exception except for a value of the wrong type",
        {"build with a null descriptor, a foreign field and an absent field",
         "build with a number on a string field and a string on a host field"},
-       "no condition and LEPARSECOND, as lWhere() gave; WrongType where lWhere() aborted", {}, {3, 4},
+       "no condition, as lWhere() gave; WrongType where lWhere() aborted", {}, {3, 4},
        test_where_compare_errors},
       {"RAW-BUILD-03", "what_of and what_all",
        "what_of(), what_all() and reduced_descr() give what lIntVector2What(), lWhatAll(), lWhat(\"%T(ALL)\") and "
@@ -782,7 +764,7 @@ int main(int argc, char *argv[]) {
        "to the same fields; the full layout", {}, {5, 6, 7}, test_what},
       {"RAW-BUILD-04", "what_of errors", "what_of() fails where lIntVector2What() failed",
        {"build with no field, a foreign field, a null descriptor and an absent field"},
-       "no selection and LENAMENOT, as lIntVector2What() gave", {}, {8}, test_what_errors},
+       "no selection, as lIntVector2What() gave", {}, {8}, test_what_errors},
       {"RAW-BUILD-05", "typed what", "what<F...>() and what<T>(fields) select fields, also nested",
        {"select the names of user sets and the names of their entries, nested and flat"}, "the names and entries",
        {{"OPS-01", "covers"}, {"WHT-01", "covers"}}, {9}, typed_select::test_what},

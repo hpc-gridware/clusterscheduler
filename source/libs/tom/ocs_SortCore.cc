@@ -28,8 +28,6 @@
 #include "uti/sge_string.h"
 
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_Errno.h"
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/detail/ocs_SortP.h"
@@ -83,7 +81,6 @@ namespace ocs::tom {
             case lRefT:
                return three_way(x.ref, y.ref);
             default:
-               unknownType("lSortCompare");
                return 0;
          }
       }
@@ -97,7 +94,7 @@ namespace ocs::tom {
        *
        * @param lp the list
        * @param less true if the first element comes before the second
-       * @throw ListCoreError with LEMALLOC if there is no memory
+       * @throw ListCoreError if there is no memory
        */
       template <typename Less>
       void sort_elems(lList *lp, const Less &less) {
@@ -105,7 +102,7 @@ namespace ocs::tom {
          try {
             elems.reserve(lp->nelem);
          } catch (const std::bad_alloc &) {
-            throw ListCoreError(LEMALLOC, "no memory to sort a list");
+            throw ListCoreError("no memory to sort a list");
          }
          for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
             elems.push_back(ep);
@@ -133,7 +130,7 @@ namespace ocs::tom {
       }
       auto *so = static_cast<lSortOrder *>(malloc(sizeof(lSortOrder) * (keys.size() + 1)));
       if (so == nullptr) {
-         throw ListCoreError(LEMALLOC, "no memory for a sort order");
+         throw ListCoreError("no memory for a sort order");
       }
       std::size_t i = 0;
       for (const SortKey &key : keys) {

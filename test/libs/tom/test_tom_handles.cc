@@ -36,7 +36,6 @@
 
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/ocs_Descr.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_all.h"
@@ -217,18 +216,14 @@ test_errors() {
          throws_field_exception([&] { static_cast<void>(ocs::tom::get<JB_job_name>(queue)); },
                             FieldException::Reason::ForeignField, "JB_job_name"));
 
-   // the free setter on a null element: -1 and LEELEMNULL, what the old setter gave
-   ocs::tom::detail::state_set_lerrno(0);
+   // the free setter on a null element: -1, what the old setter gave
    const int new_null = ocs::tom::set<TEST_uint32>(nullptr, 1u);
-   CHECK(14, "a null element: -1 and LEELEMNULL, like the old setter",
-         new_null == -1 && ocs::tom::detail::state_get_lerrno() == LEELEMNULL);
-   ocs::tom::detail::state_set_lerrno(0);
+   CHECK(14, "a null element: -1, like the old setter", new_null == -1);
    const int new_null_str = ocs::tom::set<TEST_string>(nullptr, "x");
-   CHECK(15, "a null element for a string field: -1 and LEELEMNULL",
-         new_null_str == -1 && ocs::tom::detail::state_get_lerrno() == LEELEMNULL);
+   CHECK(15, "a null element for a string field: -1", new_null_str == -1);
 
    // an absent number field: the free setter throws, where the old setter aborted, as for every field type since
-   // CS-3062 (N-L-4); before, both returned -1, with LENEGPOS for an int field and without one for a uint64 field
+   // CS-3062 (N-L-4); before, both returned -1
    CHECK(16, "an absent int field: the free setter throws",
          throws_field_exception([&] { ocs::tom::set<TEST_int>(r, 1); }, FieldException::Reason::AbsentField, "TEST_int"));
    CHECK(17, "an absent uint64 field: the free setter throws",
@@ -468,12 +463,8 @@ test_free_add() {
    lListElem *full = tasks->push_back(ElementPtr<JAT>::create()).raw();
    std::vector<int> seen;
    for (lListElem *ep : {static_cast<lListElem *>(nullptr), full}) {
-      ocs::tom::detail::state_set_lerrno(0);
       seen.push_back(ocs::tom::add<JAT_status>(ep, 1));
-      seen.push_back(ocs::tom::detail::state_get_lerrno());
-      ocs::tom::detail::state_set_lerrno(0);
       seen.push_back(ocs::tom::add<JAT_tix>(ep, 1.0));
-      seen.push_back(ocs::tom::detail::state_get_lerrno());
    }
    seen.push_back(static_cast<int>(tasks->front().get<JAT_status>()));
 
@@ -488,10 +479,10 @@ test_free_add() {
          absent_throws += e.reason() == FieldException::Reason::AbsentField ? 1 : 0;
       }
    }
-   // a null element: -1 with LEELEMNULL; a full element: 0 without an error number, the status 0 + 1
-   CHECK(36, "ocs::tom::add<F>(ep, offset) gives -1 with LEELEMNULL on a null element, 0 on a full one, and throws "
-             "AbsentField on a field the element does not hold",
-         seen == std::vector<int>({-1, LEELEMNULL, -1, LEELEMNULL, 0, 0, 0, 0, 1}) && absent_throws == 2);
+   // a null element: -1; a full element: 0, the status 0 + 1
+   CHECK(36, "ocs::tom::add<F>(ep, offset) gives -1 on a null element, 0 on a full one, and throws AbsentField on a "
+             "field the element does not hold",
+         seen == std::vector<int>({-1, -1, 0, 0, 1}) && absent_throws == 2);
 }
 
 /**
@@ -807,8 +798,8 @@ int main(int argc, char *argv[]) {
        {"read an absent field, read through an empty handle, make a job handle from a queue",
         "call the free getter with a job field on a queue",
         "call the free setter with a null element and with absent number and string fields"},
-       "each error throws with field and type named; the free setter returns -1 with the error number the old "
-       "one gave, and throws where the old one aborted",
+       "each error throws with field and type named; the free setter returns -1 where the old one did, and "
+       "throws where the old one aborted",
        {{"HDL-03", "covers"}}, {10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 24}, test_errors},
       {"HANDLE-04", "hash tables",
        "the setters keep the hash table of the owning list",
@@ -847,7 +838,7 @@ int main(int argc, char *argv[]) {
       {"HANDLE-09", "free add", "the free form add<F>(ep, offset) for the rewrite keeps the error behaviour of the "
        "old adders",
        {"add to a null element, a full element and a reduced element without the field"},
-       "-1 with LEELEMNULL, 0 and the sum; AbsentField thrown for the absent field", {{"OPS-01", "covers"}}, {36},
+       "-1, 0 and the sum; AbsentField thrown for the absent field", {{"OPS-01", "covers"}}, {36},
        test_free_add},
       {"HANDLE-10", "clone of nothing", "clone of an empty element handle is not an error",
        {"clone an empty Element and an empty ConstElement"}, "an empty owning handle", {{"OPS-01", "covers"}}, {37},

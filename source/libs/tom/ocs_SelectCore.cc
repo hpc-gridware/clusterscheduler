@@ -27,15 +27,14 @@
 #include <utility>
 #include <vector>
 
+#include "uti/ocs_TerminationManager.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/detail/ocs_WhatP.h"
 #include "tom/detail/ocs_WhereP.h"
 #include "tom/ocs_Descr.h"
@@ -48,6 +47,11 @@
 namespace ocs::tom {
 
    namespace {
+
+      /// What a ListCoreError says when ocs::tom::detail::what_descr() gives no reduced descriptor
+      constexpr const char *reduction_failed =
+         "reducing the descriptor of a selection failed: the selection selects no field or a field the descriptor "
+         "does not hold, or there is no memory";
 
       /**
        * @brief Free the sub-selections of entries that were not taken into a selection
@@ -63,12 +67,12 @@ namespace ocs::tom {
       /**
        * @brief Allocate a condition node
        * @return the node, zeroed
-       * @throw ListCoreError with LEMALLOC if there is no memory
+       * @throw ListCoreError if there is no memory
        */
       lCondition *new_node() {
          auto *cp = static_cast<lCondition *>(calloc(1, sizeof(lCondition)));
          if (cp == nullptr) {
-            throw ListCoreError(LEMALLOC, "out of memory building a condition");
+            throw ListCoreError("out of memory building a condition");
          }
          return cp;
       }
@@ -112,16 +116,16 @@ namespace ocs::tom {
        * @param hash true to build the hash tables of copied sub-lists
        * @param sub_what the selection for a sub-list or sub-object, or nullptr
        * @param skip_no_transfer true if the copy is handed out
-       * @throw ListCoreError with LECOPYSWITCH if the field cannot be copied
+       * @throw ListCoreError if the field cannot be copied
        */
       void copy_field_or_throw(const lListElem *src, lListElem *dst, const int pos, const bool hash,
                                const lEnumeration *sub_what, const bool skip_no_transfer) {
          try {
             copy_field(src, dst, pos, pos, hash, sub_what, skip_no_transfer);
          } catch (const FieldException &) {
-            throw ListCoreError(LECOPYSWITCH, "copying a field of an element failed");
+            throw ListCoreError("copying a field of an element failed");
          } catch (const ListCoreError &) {
-            throw ListCoreError(LECOPYSWITCH, "copying a field of an element failed");
+            throw ListCoreError("copying a field of an element failed");
          }
       }
 
@@ -139,7 +143,7 @@ namespace ocs::tom {
       const lMultiType &field_value(const lListElem *ep, const lCondition *cp) {
          const int pos = cp->operand.cmp.pos;
          if (mt_get_type(ep->descr[pos].mt) != mt_get_type(cp->operand.cmp.mt)) [[unlikely]] {
-            incompatibleType("lCompare");
+            ocs::TerminationManager::trigger_abort();
          }
          return ocs::tom::detail::value(ep, pos);
       }
@@ -172,7 +176,6 @@ namespace ocs::tom {
             case lHostT: {
                const char *value = string_value(ep, cp);
                if (value == nullptr || operand.str == nullptr) {
-                  set_lerrno(LENULLSTRING);
                   return false;
                }
                // strcmp() gives any negative or positive number; the old lCompare() took only -1 and 1, so an
@@ -190,7 +193,6 @@ namespace ocs::tom {
             case lListT: {
                const lList *sub = field_value(ep, cp).glp;
                if (sub == nullptr) {
-                  set_lerrno(LELISTNULL);
                   return false;
                }
                return find_first(sub, operand.cp) != nullptr;
@@ -208,7 +210,6 @@ namespace ocs::tom {
                result = three_way(field_value(ep, cp).ref, operand.ref);
                break;
             default:
-               unknownType("lCompare");
                return false;
          }
          switch (cp->op) {
@@ -226,7 +227,6 @@ namespace ocs::tom {
                return result == 1;
             default:
                // a nested condition on a field that is not a list
-               set_lerrno(LEOPUNKNOWN);
                return false;
          }
       }
@@ -284,7 +284,7 @@ namespace ocs::tom {
       auto *ep = static_cast<lEnumeration *>(calloc(entries.size() + 1, sizeof(lEnumeration)));
       if (ep == nullptr) {
          free_subs(entries);
-         throw ListCoreError(LEMALLOC, "out of memory building a selection");
+         throw ListCoreError("out of memory building a selection");
       }
       std::size_t i = 0;
       for (const WhatEntry &entry : entries) {
@@ -305,7 +305,7 @@ namespace ocs::tom {
    lEnumeration *make_what_special(const int pos) {
       auto *ep = static_cast<lEnumeration *>(calloc(2, sizeof(lEnumeration)));
       if (ep == nullptr) {
-         throw ListCoreError(LEMALLOC, "out of memory building a selection");
+         throw ListCoreError("out of memory building a selection");
       }
       ep[0].pos = pos;
       ep[0].nm = -99;
@@ -372,7 +372,7 @@ namespace ocs::tom {
             const char *text = value.str;
             if (text != nullptr && (cp->operand.cmp.val.str = strdup(text)) == nullptr) {
                sge_free(&cp);
-               throw ListCoreError(LESTRDUP, "out of memory copying the value of a condition");
+               throw ListCoreError("out of memory copying the value of a condition");
             }
             break;
          }
@@ -453,13 +453,11 @@ namespace ocs::tom {
          case HOSTNAMECMP: {
             const int type = mt_get_type(cp->operand.cmp.mt);
             if (type != lStringT && type != lHostT) {
-               unknownType("lCompare");
                return false;
             }
             const char *value = string_value(ep, cp);
             const char *operand = cp->operand.cmp.val.str;
             if (value == nullptr || operand == nullptr) {
-               set_lerrno(LENULLSTRING);
                return false;
             }
             return (cp->op == STRCASECMP ? SGE_STRCASECMP(value, operand) : sge_hostcmp(value, operand)) == 0;
@@ -468,13 +466,11 @@ namespace ocs::tom {
          case PATTERNCMP: {
             const int type = mt_get_type(cp->operand.cmp.mt);
             if (type != lStringT && type != lHostT) {
-               unknownType("lCompare");
                return false;
             }
             const char *value = string_value(ep, cp);
             const char *pattern = cp->operand.cmp.val.str;
             if (pattern == nullptr) {
-               set_lerrno(LENULLSTRING);
                return false;
             }
             // a null string matches as the empty one
@@ -483,7 +479,6 @@ namespace ocs::tom {
 
          case BITMASK:
             if (mt_get_type(cp->operand.cmp.mt) != lUlongT) {
-               unknownType("lCompare");
                return false;
             }
             return (field_value(ep, cp).ul & cp->operand.cmp.val.ul) == cp->operand.cmp.val.ul;
@@ -555,12 +550,11 @@ namespace ocs::tom {
       if (what == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp->descr);
       }
-      // the shared reduction, cached in the selection; it sets the error number when it fails
+      // the shared reduction, cached in the selection
       bool owned;
-      ocs::tom::detail::state_set_lerrno(0);
       const lDescr *descr = ocs::tom::detail::what_descr(what, lp->descr, &owned);
       if (descr == nullptr) {
-         throw ListCoreError(ocs::tom::detail::state_get_lerrno(), "reducing the descriptor of a selection failed");
+         throw ListCoreError(reduction_failed);
       }
       lList *dst;
       try {
@@ -570,7 +564,7 @@ namespace ocs::tom {
          if (owned) {
             ocs::tom::release_descr(descr);
          }
-         throw ListCoreError(LECREATELIST, "out of memory creating the list of a selection");
+         throw ListCoreError("out of memory creating the list of a selection");
       }
       if (owned) {
          ocs::tom::release_descr(descr);
@@ -627,7 +621,7 @@ namespace ocs::tom {
       // the cache of the reduced descriptor is not copied; the copy builds its own
       auto *copy = static_cast<lEnumeration *>(calloc(n + 1, sizeof(lEnumeration)));
       if (copy == nullptr) {
-         throw ListCoreError(LEMALLOC, "out of memory copying a selection");
+         throw ListCoreError("out of memory copying a selection");
       }
       try {
          for (int i = 0; i <= n; i++) {
@@ -681,7 +675,6 @@ namespace ocs::tom {
             free_where(cp->operand.log.first);
             break;
          default:
-            set_lerrno(LEOPUNKNOWN);
             break;
       }
       sge_free(&cp);
@@ -714,7 +707,7 @@ namespace ocs::tom {
                   case lHostT:
                      if (cp->operand.cmp.val.str != nullptr &&
                          (copy->operand.cmp.val.str = strdup(cp->operand.cmp.val.str)) == nullptr) {
-                        throw ListCoreError(LESTRDUP, "out of memory copying the value of a condition");
+                        throw ListCoreError("out of memory copying the value of a condition");
                      }
                      break;
                   case lListT:
@@ -733,8 +726,7 @@ namespace ocs::tom {
                      copy->operand.cmp.val = cp->operand.cmp.val;
                      break;
                   default:
-                     unknownType("lCopyWhere");
-                     throw ListCoreError(LEUNKTYPE, "a condition of an unknown type");
+                     throw ListCoreError("a condition of an unknown type");
                }
                break;
             case AND:
@@ -746,7 +738,7 @@ namespace ocs::tom {
                copy->operand.log.first = copy_where(cp->operand.log.first);
                break;
             default:
-               throw ListCoreError(LEOPUNKNOWN, "a condition with an unknown operator");
+               throw ListCoreError("a condition with an unknown operator");
          }
       } catch (...) {
          // the node was zeroed, so freeing it frees only what was copied
@@ -775,7 +767,7 @@ namespace ocs::tom {
                const int pos = what[i].pos;
                if (pos >= maxpos || pos < 0 || src->descr[pos].off == OCS_CULL_ABSENT ||
                    dst->descr[pos].off == OCS_CULL_ABSENT) {
-                  throw ListCoreError(LEENUMDESCR, "a selected field is absent in an element");
+                  throw ListCoreError("a selected field is absent in an element");
                }
                copy_field_or_throw(src, dst, pos, hash, what[i].ep, skip_no_transfer);
             }
@@ -789,12 +781,11 @@ namespace ocs::tom {
       if (ep == nullptr || what == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
-      // the shared reduction, cached in the selection; it sets the error number when it fails
+      // the shared reduction, cached in the selection
       bool owned;
-      ocs::tom::detail::state_set_lerrno(0);
       const lDescr *descr = ocs::tom::detail::what_descr(what, ep->descr, &owned);
       if (descr == nullptr) {
-         throw ListCoreError(ocs::tom::detail::state_get_lerrno(), "reducing the descriptor of a selection failed");
+         throw ListCoreError(reduction_failed);
       }
       lListElem *copy;
       try {
@@ -821,11 +812,9 @@ namespace ocs::tom {
 
    int count_what(const lEnumeration *enp, const lDescr *dp) noexcept {
       if (enp == nullptr) {
-         LERROR(LEENUMNULL);
          return -1;
       }
       if (dp == nullptr) {
-         LERROR(LEDESCRNULL);
          return -1;
       }
       switch (enp[0].pos) {
@@ -833,9 +822,6 @@ namespace ocs::tom {
             return 0;
          case WHAT_ALL: {
             const int n = lCountPresent(dp);
-            if (n == -1) {
-               LERROR(LECOUNTDESCR);
-            }
             return n;
          }
          default: {
@@ -850,15 +836,12 @@ namespace ocs::tom {
 
    int partial_descr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp) noexcept {
       if (enp == nullptr) {
-         LERROR(LEELEMNULL);
          return -1;
       }
       if (sdp == nullptr || ddp == nullptr) {
-         LERROR(LEDESCRNULL);
          return -1;
       }
       if (indexp == nullptr) {
-         LERROR(LENULLARGS);
          return -1;
       }
 
@@ -877,14 +860,12 @@ namespace ocs::tom {
                const int pos = enp[i].pos;
                if (pos < 0 || pos >= n || enp[i].nm != sdp[pos].nm || mt_get_type(enp[i].mt) != mt_get_type(sdp[pos].mt) ||
                    sdp[pos].off == OCS_CULL_ABSENT) {
-                  LERROR(LEENUMDESCR);
                   return -1;
                }
                keep[pos] = true;
             }
       }
       if (ocs::tom::descr_layout(sdp, keep, ddp) < 0) {
-         LERROR(LEENUMDESCR);
          return -1;
       }
       *indexp = n;
@@ -955,7 +936,7 @@ namespace ocs::tom {
       auto *ep = static_cast<lEnumeration *>(calloc(entries.size() + 1, sizeof(lEnumeration)));
       if (ep == nullptr) {
          give_up();
-         throw ListCoreError(LEMALLOC, "out of memory merging two selections");
+         throw ListCoreError("out of memory merging two selections");
       }
       std::ranges::copy(entries, ep);
       ep[entries.size()].pos = 0;
@@ -1020,25 +1001,21 @@ const lDescr *ocs::tom::detail::what_descr(const lEnumeration *enp, const lDescr
    }
 
    if (ocs::tom::count_what(enp, src) <= 0) {
-      LERROR(LECOUNTWHAT);
       return nullptr;
    }
    // the reduction has the full length of the type (N-B-1)
    auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (ocs::tom::descr_length(src) + 1)));
    if (tmp == nullptr) {
-      LERROR(LEMALLOC);
       return nullptr;
    }
    int index = 0;
    if (ocs::tom::partial_descr(enp, src, tmp, &index) < 0) {
-      LERROR(LEPARTIALDESCR);
       sge_free(&tmp);
       return nullptr;
    }
    const lDescr *dp = ocs::tom::descr_acquire(tmp);
    sge_free(&tmp);
    if (dp == nullptr) {
-      LERROR(LEMALLOC);
       return nullptr;
    }
 

@@ -34,7 +34,7 @@
  * select_into_descr(), select_elem_into_descr(), select_pack()) must give
  * what lSelect(), lSelectHashPack(), lSelectDPack(), lSelectElemPack() and
  * lSelectElemDPack() gave: the same list name, no list where those gave
- * none, the same error number, the same packed bytes. Those expectations were
+ * none, the same packed bytes. Those expectations were
  * recorded from the old functions before they were removed (CS-3103).
  *
  * That the owners free in their destructors is shown by the leak checker
@@ -66,7 +66,6 @@
 #include "tom/ocs_Raw.h"
 #include "tom/detail/ocs_Hash.h"
 #include "tom/detail/ocs_ListP.h"
-#include "tom/detail/ocs_State.h"
 #include "tom/detail/ocs_WhatP.h"
 #include "tom/ocs_PackCore.h"
 #include "tom/ocs_PrintCore.h"
@@ -228,25 +227,19 @@ namespace {
       const lDescr *layout;        ///< the layout of the list's descriptor
       std::uint32_t nslots;        ///< the number of hash slots (the tables themselves are built by the first lookup)
       Numbers keys;                ///< the TEST_uint32 of the elements, in order
-      int lerrno;                  ///< the error number the call leaves
    };
 
    /**
     * @brief Whether a list made by a select op with the old contract is the one the old select function gave
     *
-    * Both no list, or a list with the expected name, layout, hash slots and keys, and the expected error number.
+    * Both no list, or a list with the expected name, layout, hash slots and keys.
     *
     * @param label the case, for the message
     * @param selected the result of the op, or nullptr
-    * @param lerrno the error number the op left
     * @param expected what the old function gave
     * @return true if they are equal
     */
-   bool list_is(const char *label, const lList *selected, const int lerrno, const ListResult &expected) {
-      if (lerrno != expected.lerrno) {
-         std::printf("%s: error number %d, expected %d\n", label, lerrno, expected.lerrno);
-         return false;
-      }
+   bool list_is(const char *label, const lList *selected, const ListResult &expected) {
       if (selected == nullptr || !expected.exists) {
          if ((selected != nullptr) != expected.exists) {
             std::printf("%s: %s, expected %s\n", label, selected ? "a list" : "no list",
@@ -275,17 +268,14 @@ namespace {
     * @brief Whether an element made by a select op with the old contract is the one the old select function gave
     * @param label the case, for the message
     * @param selected the result of the op, or nullptr
-    * @param lerrno the error number the op left
     * @param source the element selected from, for its TEST_uint32; ignored if @p layout is nullptr
     * @param layout the layout of the expected copy, nullptr for no copy
-    * @param expected_errno the error number the old function left
     * @return true if both are none, or the copy has the layout and the TEST_uint32 of the source
     */
-   bool elem_is(const char *label, const lListElem *selected, const int lerrno, const lListElem *source,
-                const lDescr *layout, const int expected_errno) {
-      if (lerrno != expected_errno || (selected != nullptr) != (layout != nullptr)) {
-         std::printf("%s: %s with error number %d, expected %s with %d\n", label, selected ? "a copy" : "no copy",
-                     lerrno, layout ? "a copy" : "no copy", expected_errno);
+   bool elem_is(const char *label, const lListElem *selected, const lListElem *source, const lDescr *layout) {
+      if ((selected != nullptr) != (layout != nullptr)) {
+         std::printf("%s: %s, expected %s\n", label, selected ? "a copy" : "no copy",
+                     layout ? "a copy" : "no copy");
          return false;
       }
       if (selected != nullptr &&
@@ -887,29 +877,21 @@ test_write_to() {
              "the text of the print cores, for every argument form",
          list && elem && condition && selection);
 
-   // empty handles and null pointers: nothing written, the error number the old functions set (that of the
-   // print core: LELISTNULL, LEELEMNULL, LECONDNULL, LEENUMNULL)
+   // empty handles and null pointers: nothing written, as the old functions wrote nothing
    bool empty = true;
-   const auto as_old = [&empty](const char *step, const int old_errno, auto &&new_write) {
-      ocs::tom::detail::state_set_lerrno(0);
+   const auto as_old = [&empty](const char *step, auto &&new_write) {
       const auto new_text = written(new_write);
-      const int new_errno = ocs::tom::detail::state_get_lerrno();
       // no temporary file fails the case: a missing text must not pass as an empty one
-      if (!new_text || !new_text->empty() || new_errno != old_errno) {
-         std::printf("write_to, %s: \"%s\" %d, expected nothing and %d\n", step,
-                     new_text ? new_text->c_str() : "(no file)", new_errno, old_errno);
+      if (!new_text || !new_text->empty()) {
+         std::printf("write_to, %s: \"%s\", expected nothing\n", step, new_text ? new_text->c_str() : "(no file)");
          empty = false;
       }
    };
-   as_old("empty list", LELISTNULL, [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList()); });
-   as_old("empty element", LEELEMNULL, [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement()); });
-   as_old("null condition", LECONDNULL,
-          [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lCondition *>(nullptr)); });
-   as_old("null selection", LEENUMNULL,
-          [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lEnumeration *>(nullptr)); });
-   CHECK(19, "write_to() of an empty handle or a null pointer writes nothing and sets the error number of the "
-             "old function",
-         empty);
+   as_old("empty list", [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList()); });
+   as_old("empty element", [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement()); });
+   as_old("null condition", [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lCondition *>(nullptr)); });
+   as_old("null selection", [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lEnumeration *>(nullptr)); });
+   CHECK(19, "write_to() of an empty handle or a null pointer writes nothing, as the old function", empty);
 }
 
 /**
@@ -955,20 +937,6 @@ test_unpack_elem() {
 }
 
 /**
- * @brief The error number a call leaves, after clearing it
- * @tparam Call the type of the call
- * @param call the call
- * @return the CULL error number afterwards
- */
-template <typename Call>
-static int
-lerrno_after(Call &&call) {
-   ocs::tom::detail::state_set_lerrno(0);
-   call();
-   return ocs::tom::detail::state_get_lerrno();
-}
-
-/**
  * @brief select_as() and select_elem_as() give what lSelect(), lSelectHashPack() and lSelectElemPack() gave
  *
  * The expected results were recorded from the old functions on the same list (CS-3103).
@@ -1005,49 +973,42 @@ test_select_as() {
       const char *names[] = {"selected", nullptr, "nothing", "all", "ignored", "foreign", "null list"};
       const char *labels[] = {"selected", "default name", "nothing", "all", "ignored", "foreign", "null list"};
       // what lSelectHashPack() without a pack buffer gave: no list for no match only when hashed, hash slots
-      // for a full layout only when hashed, LEPARTIALDESCR for a foreign selection, no error for a null list
+      // for a full layout only when hashed, no list for a foreign selection and for a null list
       const std::uint32_t full_slots = hash ? 1 : 0;
       const ListResult expected[] = {
-         {true, "selected", reduced, 0, above, 0},
-         {true, "No list name specified", reduced, 0, above, 0},
-         hash ? ListResult{false, nullptr, nullptr, 0, {}, LEGETNROFELEM}
-              : ListResult{true, "nothing", reduced, 0, {}, 0},
-         {true, "all", full, full_slots, above, 0},
-         {true, "test", full, full_slots, every, 0},
-         {false, nullptr, nullptr, 0, {}, LEPARTIALDESCR},
-         {false, nullptr, nullptr, 0, {}, 0}};
+         {true, "selected", reduced, 0, above},
+         {true, "No list name specified", reduced, 0, above},
+         hash ? ListResult{false, nullptr, nullptr, 0, {}} : ListResult{true, "nothing", reduced, 0, {}},
+         {true, "all", full, full_slots, above},
+         {true, "test", full, full_slots, every},
+         {false, nullptr, nullptr, 0, {}},
+         {false, nullptr, nullptr, 0, {}}};
       for (std::size_t i = 0; i < std::size(names); i++) {
-         ocs::tom::RawListPtr selected;
-         const int new_errno = lerrno_after(
-            [&] { selected = ocs::tom::select_as(names[i], sources[i], conditions[i], selections[i], hashing); });
-         lists = list_is(labels[i], selected.get(), new_errno, expected[i]) && lists;
+         const ocs::tom::RawListPtr selected =
+            ocs::tom::select_as(names[i], sources[i], conditions[i], selections[i], hashing);
+         lists = list_is(labels[i], selected.get(), expected[i]) && lists;
       }
    }
    const auto hashed = ocs::tom::select_as("selected", lp, where.get(), what.get(), ocs::tom::Hashing::On);
    const auto nothing = ocs::tom::select_as("nothing", lp, none.get(), what.get(), ocs::tom::Hashing::On);
    const auto empty = ocs::tom::select_as("nothing", lp, none.get(), what.get(), ocs::tom::Hashing::Off);
    const auto whole = ocs::tom::select_as("ignored", lp, where.get(), nullptr, ocs::tom::Hashing::Off);
-   int foreign_errno[2] = {0, 0};
    bool foreign_refused = true;
    for (const bool hash : {true, false}) {
-      const int errno_now = lerrno_after([&] {
-         foreign_refused = !ocs::tom::select_as("", lp, nullptr, foreign.get(),
-                                                hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off) &&
-                           foreign_refused;
-      });
-      foreign_errno[hash ? 0 : 1] = errno_now;
+      foreign_refused = !ocs::tom::select_as("", lp, nullptr, foreign.get(),
+                                             hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off) &&
+                        foreign_refused;
    }
    // lSelect() is lSelectHashPack() hashed: the elements above 4 under the given name, no hash slots
    lists = lists &&
-           list_is("lSelect", hashed.get(), 0, ListResult{true, "selected", reduced, 0, above, 0}) && !nothing &&
+           list_is("lSelect", hashed.get(), ListResult{true, "selected", reduced, 0, above}) && !nothing &&
            empty && empty->size() == 0 && std::strcmp(ocs::tom::list_name(hashed.get()), "selected") == 0 && whole &&
            whole->size() == 10 && std::strcmp(ocs::tom::list_name(whole.get()), "test") == 0 && foreign_refused &&
-           foreign_errno[0] != 0 && foreign_errno[1] != 0 &&
            !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::On) &&
            !ocs::tom::select_as("", nullptr, where.get(), what.get(), ocs::tom::Hashing::Off);
    CHECK(21, "select_as() gives what lSelect() and lSelectHashPack() gave, hashed and not: the given name, the "
-             "same hash slots, no list for no match when hashed, every field without a selection, no list and the same "
-             "error number for a foreign selection and a null list",
+             "same hash slots, no list for no match when hashed, every field without a selection, no list for a "
+             "foreign selection and a null list",
          lists);
 
    bool elements = true;
@@ -1060,23 +1021,19 @@ test_select_as() {
       for (const lListElem *ep : sources) {
          // what lSelectElemPack() without a pack buffer gave, hashed or not: nothing for a null element; a copy of
          // a matching element in the layout of the selection; a whole copy of every element without a selection
-         // (the condition not applied); no copy for no match, and LEPARTIALDESCR for a match with a foreign
-         // selection
+         // (the condition not applied); no copy for no match and for a foreign selection
          const bool match = ep != nullptr && ocs::tom::get<std::uint32_t>(ep, TEST_uint32) > 4;
          struct Case {
             const lEnumeration *selection;
             const lDescr *layout;
-            int lerrno;
          };
-         const Case cases[] = {{what.get(), match ? reduced : nullptr, 0},
-                               {all.get(), match ? full : nullptr, 0},
-                               {nullptr, ep != nullptr ? full : nullptr, 0},
-                               {foreign.get(), nullptr, match ? LEPARTIALDESCR : 0}};
+         const Case cases[] = {{what.get(), match ? reduced : nullptr},
+                               {all.get(), match ? full : nullptr},
+                               {nullptr, ep != nullptr ? full : nullptr},
+                               {foreign.get(), nullptr}};
          for (const Case &c : cases) {
-            ocs::tom::RawElementPtr selected;
-            const int new_errno =
-               lerrno_after([&] { selected = ocs::tom::select_elem_as(ep, where.get(), c.selection, hashing); });
-            elements = elem_is("lSelectElemPack", selected.get(), new_errno, ep, c.layout, c.lerrno) && elements;
+            const ocs::tom::RawElementPtr selected = ocs::tom::select_elem_as(ep, where.get(), c.selection, hashing);
+            elements = elem_is("lSelectElemPack", selected.get(), ep, c.layout) && elements;
          }
       }
    }
@@ -1086,9 +1043,8 @@ test_select_as() {
               !ocs::tom::select_elem_as(nullptr, where.get(), what.get(), ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_as(first.raw(), nullptr, foreign.get(), ocs::tom::Hashing::Off);
    ocs::tom::release_descr(reduced);
-   CHECK(22, "select_elem_as() gives what lSelectElemPack() gave, hashed and not, with the same error numbers: no "
-             "copy for no match, a whole copy without a selection, no copy for a foreign selection or a null "
-             "element",
+   CHECK(22, "select_elem_as() gives what lSelectElemPack() gave, hashed and not: no copy for no match, a whole "
+             "copy without a selection, no copy for a foreign selection or a null element",
          elements);
 }
 
@@ -1129,27 +1085,23 @@ test_select_into_descr() {
                              "null list"};
       const char *labels[] = {"updating list", "nothing", "no selection", "no descriptor", "lacking field",
                               "default name", "null list"};
-      // what lSelectDPack() without a pack buffer gave: an empty list stays a list only when not hashed, then
-      // with LEENUMNULL for no selection and LEENUMDESCR for a field the descriptor lacks; hashed, no list and
-      // LEGETNROFELEM; no list without an error for no descriptor and a null list
-      const auto emptied = [&](const char *name, const int lerrno) {
-         return hash ? ListResult{false, nullptr, nullptr, 0, {}, LEGETNROFELEM}
-                     : ListResult{true, name, reduced, 0, {}, lerrno};
+      // what lSelectDPack() without a pack buffer gave: an empty list stays a list only when not hashed, also
+      // for no selection and for a field the descriptor lacks; hashed, no list; no list for no descriptor and a
+      // null list
+      const auto emptied = [&](const char *name) {
+         return hash ? ListResult{false, nullptr, nullptr, 0, {}} : ListResult{true, name, reduced, 0, {}};
       };
-      const ListResult expected[] = {{true, "updating list", reduced, 0, above, 0},
-                                     emptied("nothing", 0),
-                                     emptied("no selection", LEENUMNULL),
-                                     {false, nullptr, nullptr, 0, {}, 0},
-                                     emptied("lacking field", LEENUMDESCR),
-                                     {true, "No list name specified", reduced, 0, above, 0},
-                                     {false, nullptr, nullptr, 0, {}, 0}};
+      const ListResult expected[] = {{true, "updating list", reduced, 0, above},
+                                     emptied("nothing"),
+                                     emptied("no selection"),
+                                     {false, nullptr, nullptr, 0, {}},
+                                     emptied("lacking field"),
+                                     {true, "No list name specified", reduced, 0, above},
+                                     {false, nullptr, nullptr, 0, {}}};
       for (std::size_t i = 0; i < std::size(names); i++) {
-         ocs::tom::RawListPtr selected;
-         const int new_errno = lerrno_after([&] {
-            selected = ocs::tom::select_into_descr(names[i], sources[i], conditions[i], descriptors[i],
-                                                   selections[i], hashing);
-         });
-         lists = list_is(labels[i], selected.get(), new_errno, expected[i]) && lists;
+         const ocs::tom::RawListPtr selected = ocs::tom::select_into_descr(names[i], sources[i], conditions[i],
+                                                                           descriptors[i], selections[i], hashing);
+         lists = list_is(labels[i], selected.get(), expected[i]) && lists;
       }
    }
    const auto updating = ocs::tom::select_into_descr("updating list", lp, where.get(), reduced, what.get(),
@@ -1164,7 +1116,7 @@ test_select_into_descr() {
            lacking && lacking->size() == 0;
    CHECK(23, "select_into_descr() gives what lSelectDPack() gave, hashed and not: the given or default name and "
              "descriptor, no list for no match when hashed, no element without a selection or for a field the "
-             "descriptor lacks, no list for a null list or descriptor, the same error numbers",
+             "descriptor lacks, no list for a null list or descriptor",
          lists);
 
    bool elements = reduced != nullptr;
@@ -1174,27 +1126,23 @@ test_select_into_descr() {
    }
    for (const lListElem *ep : sources) {
       // what lSelectElemDPack() without a pack buffer gave: nothing for a null element, no descriptor or no match;
-      // for a match the copy in the descriptor, LEENUMNULL without a selection, LEENUMDESCR for a field the
-      // descriptor lacks
+      // for a match the copy in the descriptor, none without a selection or for a field the descriptor lacks
       const bool match = ep != nullptr && ocs::tom::get<std::uint32_t>(ep, TEST_uint32) > 4;
       struct Case {
          const lEnumeration *selection;
          const lDescr *descr;
          const lDescr *layout;
-         int lerrno;
       };
-      const Case cases[] = {{what.get(), reduced, match ? reduced : nullptr, 0},
-                            {what.get(), nullptr, nullptr, 0},
-                            {nullptr, reduced, nullptr, match ? LEENUMNULL : 0},
-                            {nullptr, nullptr, nullptr, 0},
-                            {wider.get(), reduced, nullptr, match ? LEENUMDESCR : 0},
-                            {wider.get(), nullptr, nullptr, 0}};
+      const Case cases[] = {{what.get(), reduced, match ? reduced : nullptr},
+                            {what.get(), nullptr, nullptr},
+                            {nullptr, reduced, nullptr},
+                            {nullptr, nullptr, nullptr},
+                            {wider.get(), reduced, nullptr},
+                            {wider.get(), nullptr, nullptr}};
       for (const Case &c : cases) {
-         ocs::tom::RawElementPtr selected;
-         const int new_errno = lerrno_after([&] {
-            selected = ocs::tom::select_elem_into_descr(ep, where.get(), c.descr, c.selection, ocs::tom::Hashing::Off);
-         });
-         elements = elem_is("lSelectElemDPack", selected.get(), new_errno, ep, c.layout, c.lerrno) && elements;
+         const ocs::tom::RawElementPtr selected =
+            ocs::tom::select_elem_into_descr(ep, where.get(), c.descr, c.selection, ocs::tom::Hashing::Off);
+         elements = elem_is("lSelectElemDPack", selected.get(), ep, c.layout) && elements;
       }
    }
    const lListElem *last = nullptr;
@@ -1207,8 +1155,7 @@ test_select_into_descr() {
               !ocs::tom::select_elem_into_descr(last, where.get(), nullptr, what.get(), ocs::tom::Hashing::Off) &&
               !ocs::tom::select_elem_into_descr(last, where.get(), reduced, wider.get(), ocs::tom::Hashing::Off);
    CHECK(24, "select_elem_into_descr() gives what lSelectElemDPack() gave: the copy in the given descriptor, none "
-             "for a null element, no match, no selection, no descriptor or a field the descriptor lacks, the same "
-             "error numbers",
+             "for a null element, no match, no selection, no descriptor or a field the descriptor lacks",
          elements);
    ocs::tom::release_descr(reduced);
 }
@@ -2630,6 +2577,12 @@ test_walk() {
          read_only && mutable_walk && empty_ok);
 }
 
+/**
+ * @brief Run the scenarios
+ * @param argc argument count
+ * @param argv arguments
+ * @return the exit code of the module test framework
+ */
 int main(int argc, char *argv[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
    return ocs::module_test::run(argc, argv, {
@@ -2690,7 +2643,7 @@ int main(int argc, char *argv[]) {
        {"write a list, an element, a condition and a selection in every argument form and render them with the "
         "print cores the old functions wrote",
         "write empty handles and null pointers"},
-       "the same bytes; nothing written and the error number of the old functions", {}, {18, 19}, test_write_to},
+       "the same bytes; nothing written, as by the old functions", {}, {18, 19}, test_write_to},
       {"RAW-OPS-11", "unpack element", "unpack_raw_elem() reads an element of the type the buffer names",
        {"pack a typed job, unpack it raw, adopt it as a job", "unpack a cut-off buffer raw and through the core"},
        "a job with the same fields; PackException with the code of cull_unpack_elem(), PACK_FORMAT", {}, {20},
@@ -2700,16 +2653,14 @@ int main(int argc, char *argv[]) {
        {"select a list with a name, no name, no match, every field, no selection, a foreign selection, a null "
         "list, hashed and not",
         "select each element with a selection, every field, none and a foreign selection"},
-       "the lists and elements, names and error numbers recorded from the old functions; no list where they gave "
-       "none",
+       "the lists and elements and names recorded from the old functions; no list where they gave none",
        {}, {21, 22}, test_select_as},
       {"RAW-OPS-13", "select_into_descr",
        "select_into_descr() and select_elem_into_descr() give what lSelectDPack() and lSelectElemDPack() gave",
        {"select a list into a reduced descriptor with a match, no match, no selection, no descriptor, hashed and "
         "not",
         "select each element into the reduced descriptor and none, with and without a selection"},
-       "the lists and elements, names and error numbers recorded from the old functions; no list where they gave "
-       "none",
+       "the lists and elements and names recorded from the old functions; no list where they gave none",
        {}, {23, 24}, test_select_into_descr},
       {"RAW-OPS-14", "select_pack",
        "select_pack() writes the bytes lSelectHashPack() with a pack buffer wrote",

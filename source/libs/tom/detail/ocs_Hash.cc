@@ -56,7 +56,6 @@
 
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_Errno.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/detail/ocs_Stats.h"
@@ -187,7 +186,6 @@ cull_htable ocs::tom::detail::hash_create(const lDescr *dp, const int pos, int s
          ht = sge_htable_create(size, dup_func_uint64_t, hash_func_uint64_t, hash_compare_uint64_t);
          break;
       default:
-         unknownType("cull_create_hash");
          ht = nullptr;
          break;
    }
@@ -956,7 +954,7 @@ int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
 
    cull_hash_slot *slot = list_hash_slot(lp, pos);
    if (slot != nullptr && slot->get() != nullptr) {
-      WARNING(MSG_CULL_HASHTABLEALREADYEXISTS_S, ocs::tom::field_name(nm));
+      WARNING(MSG_TOM_HASHTABLEALREADYEXISTS_S, ocs::tom::field_name(nm));
       DRETURN(0);
    }
 
@@ -1048,7 +1046,6 @@ void *ocs::tom::detail::hash_key(const lListElem *ep, int pos, char *host_key) {
          break;
 
       default:
-         unknownType("ocs::tom::detail::hash_key");
          key = nullptr;
          break;
    }

@@ -34,8 +34,8 @@
  * run time, or not at all: that the key has the field's type, that the key
  * field belongs to the sub-type of a list field, and it takes the descriptor
  * from the field instead of a parameter. At run time it keeps the error
- * behaviour of the old function it replaces, the same returns, error numbers,
- * messages and soft-path records, so that the rewrite changes no behaviour
+ * behaviour of the old function it replaces, the same returns, messages and
+ * soft-path records, so that the rewrite changes no behaviour
  * (N-R-5). Where the old function aborts, the free form throws a
  * FieldException, which unconverted code does not catch, so it ends in an
  * abort as well.
@@ -53,7 +53,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "tom/detail/ocs_Errno.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/ocs_ElementCore.h"
@@ -237,7 +236,6 @@ namespace ocs::tom {
             }
          } else {
             if (lp == nullptr) [[unlikely]] {
-               set_lerrno(LEDESCRNULL);
                missing_key_field(FindOp<F>, function, F, nullptr);
                return nullptr;
             }
@@ -292,8 +290,7 @@ namespace ocs::tom {
        *   the old message, records the soft path and gives nullptr, as the old
        *   function does since CS-3045;
        * - a ListCoreError of the core, a run-time failure such as no memory for
-       *   the list, the element or a copy of the key, sets the error number it
-       *   carries (LEMALLOC, LESTRDUP) and gives nullptr, as ocs_add_by_key()
+       *   the list, the element or a copy of the key, gives nullptr, as ocs_add_by_key()
        *   in the list library maps it for the old function. The typed
        *   List<T>::emplace_back<F>() lets the same exception through as a
        *   run-time error instead;
@@ -326,8 +323,8 @@ namespace ocs::tom {
          constexpr int pos = FieldTraits<F>::pos;
          try {
             return add_elem_at<FieldTraits<F>::type>(*lpp, pos, key, descr);
-         } catch (const ListCoreError &e) {
-            set_lerrno(e.lerrno());
+         } catch (const ListCoreError &) {
+            // no memory: no element
          }
          return nullptr;
       }
@@ -415,7 +412,7 @@ namespace ocs::tom {
       /**
        * @brief The position of a field an old setter-like function writes, with the setters' contract (N-L-4)
        *
-       * A null element records the soft path, sets LEELEMNULL and gives -1. An
+       * A null element records the soft path and gives -1. An
        * element that does not hold the field throws, where the old function
        * aborts.
        *
@@ -431,7 +428,6 @@ namespace ocs::tom {
          using Tr = FieldTraits<F>;
          if (ep == nullptr) [[unlikely]] {
             report_soft_path(function, static_cast<int>(F), SoftPathReason::NullElement);
-            set_lerrno(LEELEMNULL);
             return -1;
          }
          check_holds<F, Typed>(ep);
@@ -841,8 +837,7 @@ namespace ocs::tom {
     * the error behaviour of the old function: a null list reference or a null
     * string key gives nullptr and records the soft path, a list of another
     * type writes the old message, and a run-time failure of the core
-    * (ListCoreError, such as no memory) sets its error number and gives
-    * nullptr; see detail::free_emplace_back().
+    * (ListCoreError, such as no memory) gives nullptr; see detail::free_emplace_back().
     *
     * @tparam F the key field, a string, host, 32 bit or 64 bit field
     * @param lpp the list reference; the list is created if it is nullptr
@@ -1027,7 +1022,7 @@ namespace ocs::tom {
     * @brief Put a list into a list field and take out the one held; replaces lXchgList()
     *
     * With the setters' contract (N-L-4): a null element or a null list
-    * reference records the soft path and returns -1 with LEELEMNULL; an
+    * reference records the soft path and returns -1; an
     * element without the field throws, where the old function aborts.
     *
     * @tparam F the list field
@@ -1042,7 +1037,6 @@ namespace ocs::tom {
    int exchange(lListElem *ep, lList **lpp) {
       if (lpp == nullptr) {
          report_soft_path("ocs::tom::exchange", F, SoftPathReason::NullArgument);
-         set_lerrno(LEELEMNULL);
          return -1;
       }
       const int pos = detail::setter_pos<F>(ep, "ocs::tom::exchange");
@@ -1061,7 +1055,7 @@ namespace ocs::tom {
     * @tparam F the string field
     * @param ep the element, or nullptr
     * @param str the string to put in; the string held before afterwards
-    * @return 0, or -1 with LEELEMNULL for a null element or a null @p str
+    * @return 0, or -1 for a null element or a null @p str
     * @throw FieldException with reason ForeignField or AbsentField
     */
    template <auto F>
@@ -1069,7 +1063,6 @@ namespace ocs::tom {
    int exchange(lListElem *ep, char **str) {
       if (str == nullptr) {
          report_soft_path("ocs::tom::exchange", F, SoftPathReason::NullArgument);
-         set_lerrno(LEELEMNULL);
          return -1;
       }
       const int pos = detail::setter_pos<F>(ep, "ocs::tom::exchange");
@@ -1087,7 +1080,7 @@ namespace ocs::tom {
     * @brief Swap the lists of two list fields of two elements; replaces lSwapList()
     *
     * Both fields hold lists of the same sub-type. A null element records the
-    * soft path and returns -1 with LEELEMNULL, without changing either
+    * soft path and returns -1, without changing either
     * element; the old function had taken the list out of @p from already
     * when it found @p to to be nullptr, and lost it. An element without its
     * field throws, where the old function aborts.
@@ -1127,8 +1120,7 @@ namespace ocs::tom {
     *
     * The descriptor of a list created here is the field's sub-type; the old
     * function took it as a parameter. A null element records the soft path
-    * and gives nullptr, lack of memory sets the error number and gives
-    * nullptr, an element without the field throws, where the old function
+    * and gives nullptr, lack of memory gives nullptr, an element without the field throws, where the old function
     * aborts.
     *
     * @tparam F the list field
@@ -1151,8 +1143,8 @@ namespace ocs::tom {
       try {
          return Result::from_typed(get_or_create_list(ep, pos, list_name != nullptr ? list_name : "No list name specified",
                                                       FieldTraits<F>::Sub::descriptor.e));
-      } catch (const ListCoreError &e) {
-         set_lerrno(e.lerrno());
+      } catch (const ListCoreError &) {
+         // no memory: an empty handle
       }
       return Result();
    }
@@ -1210,7 +1202,7 @@ namespace ocs::tom {
        * @param ep the element, or nullptr
        * @param function the calling form, for the record of a soft path
        * @param op the change
-       * @return 0, or -1 with LEELEMNULL for a null element
+       * @return 0, or -1 for a null element
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed, typename Op>
@@ -1229,7 +1221,7 @@ namespace ocs::tom {
        * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
        * @param ep the element, or nullptr
        * @param mask the bits
-       * @return 0, or -1 with LEELEMNULL for a null element
+       * @return 0, or -1 for a null element
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed>
@@ -1243,7 +1235,7 @@ namespace ocs::tom {
        * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
        * @param ep the element, or nullptr
        * @param mask the bits to keep
-       * @return 0, or -1 with LEELEMNULL for a null element
+       * @return 0, or -1 for a null element
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed>
@@ -1257,7 +1249,7 @@ namespace ocs::tom {
        * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
        * @param ep the element, or nullptr
        * @param mask the bits to clear
-       * @return 0, or -1 with LEELEMNULL for a null element
+       * @return 0, or -1 for a null element
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed>
@@ -1318,7 +1310,7 @@ namespace ocs::tom {
     * @tparam F the 32 bit field
     * @param ep the element, or nullptr
     * @param mask the bits
-    * @return 0, or -1 with LEELEMNULL for a null element
+    * @return 0, or -1 for a null element
     * @throw FieldException with reason ForeignField or AbsentField, where the old function aborts
     * @see Typed form: ocs::tom::Element<T>::or_bits<F>()
     */
@@ -1333,7 +1325,7 @@ namespace ocs::tom {
     * @tparam F the 32 bit field
     * @param ep the element, or nullptr
     * @param mask the bits to keep
-    * @return 0, or -1 with LEELEMNULL for a null element
+    * @return 0, or -1 for a null element
     * @throw FieldException with reason ForeignField or AbsentField, where the old function aborts
     * @see Typed form: ocs::tom::Element<T>::and_bits<F>()
     */
@@ -1348,7 +1340,7 @@ namespace ocs::tom {
     * @tparam F the 32 bit field
     * @param ep the element, or nullptr
     * @param mask the bits to clear
-    * @return 0, or -1 with LEELEMNULL for a null element
+    * @return 0, or -1 for a null element
     * @throw FieldException with reason ForeignField or AbsentField, where the old function aborts
     * @see Typed form: ocs::tom::Element<T>::clear_bits<F>()
     */
@@ -2254,7 +2246,7 @@ namespace ocs::tom {
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @return 0, or -1 for an empty handle
     * @see free form ocs::tom::or_bits()
     */
    template <ObjectType T>
@@ -2269,7 +2261,7 @@ namespace ocs::tom {
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits to keep
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @return 0, or -1 for an empty handle
     * @see free form ocs::tom::and_bits()
     */
    template <ObjectType T>
@@ -2284,7 +2276,7 @@ namespace ocs::tom {
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits to clear
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @return 0, or -1 for an empty handle
     * @see free form ocs::tom::clear_bits()
     */
    template <ObjectType T>

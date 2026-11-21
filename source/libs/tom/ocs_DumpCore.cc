@@ -46,7 +46,6 @@
 #include "uti/sge_string.h"
 #include "uti/sge_unistd.h"
 
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/msg_tom.h"
@@ -66,29 +65,27 @@ namespace ocs::tom {
       constexpr const char *IndentString = "   ";
 
       /**
-       * @brief Set the error number and throw it
-       * @param lerrno the error number
-       * @param what what failed
+       * @brief Throw the failure of a dump or of reading one
+       * @param what what failed, the message of the ListCoreError
        */
-      [[noreturn, gnu::cold]] void fail(const int lerrno, const char *what) {
-         LERROR(lerrno);
-         throw ListCoreError(lerrno, what);
+      [[noreturn, gnu::cold]] void fail(const char *what) {
+         throw ListCoreError(what);
       }
 
       /**
-       * @brief Run a reader and give a failure in it the error number of the caller, as the old readers did when
+       * @brief Run a reader and report a failure in it as a failure of the caller, as the old readers did when
        *        they returned
-       * @param lerrno the error number of the caller
-       * @param what what failed, for the message
+       * @param what what failed, the message of the ListCoreError that replaces the reader's
        * @param read the reader
        * @return what the reader returns
+       * @throw ListCoreError with @p what if the reader throws one
        */
       template <typename Read>
-      auto relabel(const int lerrno, const char *what, Read read) -> decltype(read()) {
+      auto relabel(const char *what, Read read) -> decltype(read()) {
          try {
             return read();
          } catch (const ListCoreError &) {
-            fail(lerrno, what);
+            fail(what);
          }
       }
 
@@ -161,16 +158,16 @@ namespace ocs::tom {
        * @param dp the descriptor
        * @param indent the nesting level
        * @return 0, or -1 if the last write failed
-       * @throw ListCoreError with LEFILENULL or LEDESCRNULL
+       * @throw ListCoreError if the stream or the descriptor is null
        */
       int write_descr(FILE *fp, const lDescr *dp, const int indent) {
          const std::string space = indentation(indent);
          if (fp == nullptr) {
-            fail(LEFILENULL, "dumping a descriptor to no stream");
+            fail("dumping a descriptor to no stream");
          }
          int ret = fprintf(fp, "%s{ /* DESCR BEGIN */\n", space.c_str());
          if (dp == nullptr) {
-            fail(LEDESCRNULL, "dumping a null descriptor");
+            fail("dumping a null descriptor");
          }
          ret = fprintf(fp, "%s/* NUMBER OF DESCR FIELDS */ %d\n", space.c_str(), lCountPresent(dp));
          for (const auto f : ocs::tom::present_fields(dp)) {
@@ -190,16 +187,16 @@ namespace ocs::tom {
        * @param ep the element
        * @param indent the nesting level
        * @return 0, or -1 if the last write failed
-       * @throw ListCoreError with LEFILENULL or LEELEMNULL
+       * @throw ListCoreError if the stream or the element is null
        */
       int write_elem(FILE *fp, const lListElem *ep, const int indent) {
          const std::string sp = indentation(indent);
          const char *space = sp.c_str();
          if (fp == nullptr) {
-            fail(LEFILENULL, "dumping an element to no stream");
+            fail("dumping an element to no stream");
          }
          if (ep == nullptr) {
-            fail(LEELEMNULL, "dumping a null element");
+            fail("dumping a null element");
          }
 
          dstring dstr = DSTRING_INIT;
@@ -286,15 +283,15 @@ namespace ocs::tom {
        * @param ep the object
        * @param indent the nesting level
        * @return 0, or -1 if the last write failed
-       * @throw ListCoreError with LEFILENULL or LEELEMNULL
+       * @throw ListCoreError if the stream or the element is null
        */
       int write_object(FILE *fp, const lListElem *ep, const int indent) {
          const std::string space = indentation(indent);
          if (fp == nullptr) {
-            fail(LEFILENULL, "dumping an object to no stream");
+            fail("dumping an object to no stream");
          }
          if (ep == nullptr) {
-            fail(LEELEMNULL, "dumping a null object");
+            fail("dumping a null object");
          }
          fprintf(fp, "%s{ /* OBJECT BEGIN */\n", space.c_str());
          write_descr(fp, ep->descr, indent);
@@ -309,21 +306,17 @@ namespace ocs::tom {
        * @param lp the list
        * @param indent the nesting level
        * @return 0, or -1 if the last write failed
-       * @throw ListCoreError with LEFILENULL or LELISTNULL
+       * @throw ListCoreError if the stream or the list is null
        */
       int write_list(FILE *fp, const lList *lp, const int indent) {
          const std::string space = indentation(indent);
          if (fp == nullptr) {
-            fail(LEFILENULL, "dumping a list to no stream");
+            fail("dumping a list to no stream");
          }
          if (lp == nullptr) {
-            fail(LELISTNULL, "dumping a null list");
+            fail("dumping a null list");
          }
          fprintf(fp, "%s{ /* LIST BEGIN */\n", space.c_str());
-         if (lp->listname == nullptr) {
-            // as lGetListName() reported it
-            LERROR(LENULLSTRING);
-         }
          fprintf(fp, "%s/* LISTNAME               */ \"%s\"\n", space.c_str(), list_name(lp));
          fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ " sge_u32 "\n", space.c_str(), lp->nelem);
          int ret = write_descr(fp, lp->descr, indent);
@@ -336,10 +329,9 @@ namespace ocs::tom {
 
       // ---------------------------------------------------------------- readers
       //
-      // Every reader throws a ListCoreError after setting the error number of
-      // before; a caller that set an error number of its own when the reader
-      // returned an error does so through relabel(), so that the last error
-      // number set is that of before.
+      // Every reader throws a ListCoreError naming what failed; a caller that
+      // reported a failure of its own when the reader returned an error does so
+      // through relabel(), so that the message names the outermost reader.
 
       /**
        * @brief Blank out the comments of a line
@@ -365,17 +357,17 @@ namespace ocs::tom {
        * @param fp the stream
        * @param line receives the line
        * @param max_line the size of @p line
-       * @throw ListCoreError with LEFILENULL, LEFGETS or LESPACECOMMENT
+       * @throw ListCoreError if the stream is null, no line can be read or a comment is not closed
        */
       void read_line(FILE *fp, char *line, const int max_line) {
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a line from no stream");
+            fail("reading a line from no stream");
          }
          if (fgets(line, max_line, fp) == nullptr) {
-            fail(LEFGETS, "reading a line");
+            fail("reading a line");
          }
          if (!blank_comments(line)) {
-            fail(LESPACECOMMENT, "reading a line with a comment that is not closed");
+            fail("reading a line with a comment that is not closed");
          }
       }
 
@@ -383,11 +375,11 @@ namespace ocs::tom {
        * @brief Read a line and tell whether it opens a block
        * @param fp the stream
        * @return true if the line holds a `{`
-       * @throw ListCoreError with LEFGETLINE
+       * @throw ListCoreError if no line can be read
        */
       bool read_bra(FILE *fp) {
          char s[ReadLineLength + 1];
-         relabel(LEFGETLINE, "reading the opening of a block", [&] { read_line(fp, s, ReadLineLength); });
+         relabel("reading the opening of a block", [&] { read_line(fp, s, ReadLineLength); });
          return strstr(s, "{") != nullptr;
       }
 
@@ -395,11 +387,11 @@ namespace ocs::tom {
        * @brief Read a line and tell whether it closes a block
        * @param fp the stream
        * @return true if the line holds a `}`
-       * @throw ListCoreError with LEFGETLINE
+       * @throw ListCoreError if no line can be read
        */
       bool read_ket(FILE *fp) {
          char s[ReadLineLength + 1];
-         relabel(LEFGETLINE, "reading the closing of a block", [&] { read_line(fp, s, ReadLineLength); });
+         relabel("reading the closing of a block", [&] { read_line(fp, s, ReadLineLength); });
          return strstr(s, "}") != nullptr;
       }
 
@@ -434,17 +426,17 @@ namespace ocs::tom {
        * @param fp the stream
        * @param format the format, with one conversion
        * @param value receives the value
-       * @throw ListCoreError with LEFILENULL, LEFGETLINE or LESSCANF
+       * @throw ListCoreError if the stream is null or the value cannot be read
        */
       template <typename V>
       void read_number(FILE *fp, const char *format, V *value) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a value from no stream");
+            fail("reading a value from no stream");
          }
-         relabel(LEFGETLINE, "reading a value", [&] { read_line(fp, s, ReadLineLength); });
+         relabel("reading a value", [&] { read_line(fp, s, ReadLineLength); });
          if (sscanf(s, format, value) != 1) {
-            fail(LESSCANF, "reading a value");
+            fail("reading a value");
          }
       }
 
@@ -452,14 +444,14 @@ namespace ocs::tom {
        * @brief Read a descriptor entry `{ nm, mt }`; the slot offset is 0
        * @param fp the stream
        * @param dp receives the entry
-       * @throw ListCoreError with LEFILENULL, LEFGETLINE, LESSCANF or LESYNTAX
+       * @throw ListCoreError if the stream is null or the entry cannot be read
        */
       void read_descr_entry(FILE *fp, lDescr *dp) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a descriptor entry from no stream");
+            fail("reading a descriptor entry from no stream");
          }
-         relabel(LEFGETLINE, "reading a descriptor entry", [&] { read_line(fp, s, ReadLineLength); });
+         relabel("reading a descriptor entry", [&] { read_line(fp, s, ReadLineLength); });
          int mt;
          int nm;
          char bra[2];
@@ -467,10 +459,10 @@ namespace ocs::tom {
          char ket[2];
          // this form of sscanf skips the white space at the beginning
          if (sscanf(s, "%1s %d %1s %d %1s", bra, &nm, comma, &mt, ket) != 5) {
-            fail(LESSCANF, "reading a descriptor entry");
+            fail("reading a descriptor entry");
          }
          if (bra[0] != '{' || comma[0] != ',' || ket[0] != '}') {
-            fail(LESYNTAX, "reading a descriptor entry");
+            fail("reading a descriptor entry");
          }
          dp->nm = nm;
          dp->mt = mt;
@@ -481,20 +473,20 @@ namespace ocs::tom {
        * @brief Read a quoted string; a string divided by a newline continues on the next lines
        * @param fp the stream
        * @return the string, allocated with malloc; an empty string for `""`
-       * @throw ListCoreError with LEFILENULL, LEFGETLINE, LESYNTAX or LESTRDUP
+       * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
        */
       char *read_string(FILE *fp) {
          char line[ReadLineLength + 1];
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a string from no stream");
+            fail("reading a string from no stream");
          }
-         relabel(LEFGETLINE, "reading a string", [&] { read_line(fp, line, ReadLineLength); });
+         relabel("reading a string", [&] { read_line(fp, line, ReadLineLength); });
          const char *s = line;
          while (isspace(static_cast<int>(*s))) {
             s++;
          }
          if (*s++ != '"') {
-            fail(LESYNTAX, "reading a string that is not quoted");
+            fail("reading a string that is not quoted");
          }
          std::string sp;
          int i;
@@ -508,7 +500,7 @@ namespace ocs::tom {
             // the string is divided by a newline
             bool done = false;
             while (!done) {
-               relabel(LEFGETLINE, "reading the rest of a string", [&] { read_line(fp, line, ReadLineLength); });
+               relabel("reading the rest of a string", [&] { read_line(fp, line, ReadLineLength); });
                s = line;
                int j;
                for (j = 0; s[j] != '\0' && s[j] != '"'; j++) {
@@ -519,7 +511,7 @@ namespace ocs::tom {
          }
          char *str = strdup(sp.c_str());
          if (str == nullptr) {
-            fail(LESTRDUP, "reading a string");
+            fail("reading a string");
          }
          return str;
       }
@@ -528,30 +520,30 @@ namespace ocs::tom {
        * @brief Read a quoted host name on one line
        * @param fp the stream
        * @return the name, allocated with malloc
-       * @throw ListCoreError with LEFILENULL, LEFGETLINE, LESYNTAX or LESTRDUP
+       * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
        */
       char *read_host(FILE *fp) {
          char line[ReadLineLength + 1];
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a host name from no stream");
+            fail("reading a host name from no stream");
          }
-         relabel(LEFGETLINE, "reading a host name", [&] { read_line(fp, line, ReadLineLength); });
+         relabel("reading a host name", [&] { read_line(fp, line, ReadLineLength); });
          const char *s = line;
          while (isspace(static_cast<int>(*s))) {
             s++;
          }
          if (*s++ != '"') {
-            fail(LESYNTAX, "reading a host name that is not quoted");
+            fail("reading a host name that is not quoted");
          }
          int i;
          for (i = 0; s[i] != '\0' && s[i] != '"'; i++) {
          }
          if (s[i] != '"') {
-            fail(LESYNTAX, "reading a host name that is not closed");
+            fail("reading a host name that is not closed");
          }
          char *host = strndup(s, i);
          if (host == nullptr) {
-            fail(LESTRDUP, "reading a host name");
+            fail("reading a host name");
          }
          return host;
       }
@@ -560,39 +552,39 @@ namespace ocs::tom {
        * @brief Read a sub-list: `empty`, or a list
        * @param fp the stream
        * @return the list, or nullptr for `empty`
-       * @throw ListCoreError with LEFILENULL, LEFGETLINE or LEUNDUMPLIST
+       * @throw ListCoreError if the stream is null or the sub-list cannot be read
        */
       lList *read_sub_list(FILE *fp) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a sub-list from no stream");
+            fail("reading a sub-list from no stream");
          }
-         relabel(LEFGETLINE, "reading a sub-list", [&] { read_line(fp, s, ReadLineLength); });
+         relabel("reading a sub-list", [&] { read_line(fp, s, ReadLineLength); });
          if (strstr(s, "empty") != nullptr) {
             return nullptr;
          }
-         return relabel(LEUNDUMPLIST, "reading a sub-list", [&] { return read_list(fp, nullptr, nullptr); });
+         return relabel("reading a sub-list", [&] { return read_list(fp, nullptr, nullptr); });
       }
 
       /**
        * @brief Read a sub-object: `none`, or `object` and the object
        * @param fp the stream
        * @return the object, or nullptr for `none`
-       * @throw ListCoreError with LEFILENULL, LEFGETLINE, LESYNTAX or LEUNDUMPELEM
+       * @throw ListCoreError if the stream is null or the sub-object cannot be read
        */
       lListElem *read_sub_object(FILE *fp) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a sub-object from no stream");
+            fail("reading a sub-object from no stream");
          }
-         relabel(LEFGETLINE, "reading a sub-object", [&] { read_line(fp, s, ReadLineLength); });
+         relabel("reading a sub-object", [&] { read_line(fp, s, ReadLineLength); });
          if (strstr(s, "none") != nullptr) {
             return nullptr;
          }
          if (strstr(s, "object") == nullptr) {
-            fail(LESYNTAX, "reading a sub-object");
+            fail("reading a sub-object");
          }
-         lListElem *ep = relabel(LEUNDUMPELEM, "reading a sub-object", [&] { return read_object(fp); });
+         lListElem *ep = relabel("reading a sub-object", [&] { return read_object(fp); });
          elem_set_object(ep);
          return ep;
       }
@@ -601,7 +593,7 @@ namespace ocs::tom {
        * @brief Read the values of an element
        * @param fp the stream
        * @param ep the element, with its descriptor
-       * @throw ListCoreError with the error number of the value that failed
+       * @throw ListCoreError if a value cannot be read
        */
       void read_values(FILE *fp, lListElem *ep) {
          const lDescr *dp = ep->descr;
@@ -649,8 +641,7 @@ namespace ocs::tom {
                   value.glp = read_sub_list(fp);
                   break;
                default:
-                  unknownType("lUndumpElemFp");
-                  fail(LEFIELDREAD, "reading a value of an unknown type");
+                  fail("reading a value of an unknown type");
             }
          }
       }
@@ -659,36 +650,36 @@ namespace ocs::tom {
        * @brief Read a descriptor
        * @param fp the stream
        * @return the descriptor, allocated with sge_malloc
-       * @throw ListCoreError with LEFILENULL, LESYNTAX, LEFIELDREAD, LEFGETDESCR or LEMALLOC
+       * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
        */
       lDescr *read_descr(FILE *fp) {
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a descriptor from no stream");
+            fail("reading a descriptor from no stream");
          }
          if (!opens(fp)) {
             printf("bra is missing\n");
-            fail(LESYNTAX, "reading a descriptor");
+            fail("reading a descriptor");
          }
          int n = 0;
          try {
             read_number(fp, "%d", &n);
          } catch (const ListCoreError &) {
             printf("reading integer from dump file failed\n");
-            fail(LEFIELDREAD, "reading the number of fields of a descriptor");
+            fail("reading the number of fields of a descriptor");
          }
          if (n < 0) {
-            fail(LEMALLOC, "reading a descriptor with a negative number of fields");
+            fail("reading a descriptor with a negative number of fields");
          }
          std::vector<lDescr> dp(static_cast<std::size_t>(n) + 1);
          for (int i = 0; i < n; i++) {
-            relabel(LEFGETDESCR, "reading a descriptor entry", [&] { read_descr_entry(fp, &(dp[i])); });
+            relabel("reading a descriptor entry", [&] { read_descr_entry(fp, &(dp[i])); });
          }
          dp[n].nm = NoName;
          dp[n].mt = lEndT;
          dp[n].off = 0;
          if (!closes(fp)) {
             printf("ket is missing");
-            fail(LESYNTAX, "reading a descriptor");
+            fail("reading a descriptor");
          }
 
          // the full length of the type the fields belong to; they are listed in type order, as the values follow
@@ -707,11 +698,11 @@ namespace ocs::tom {
             }
          }
          if (!known) {
-            fail(LEFGETDESCR, "reading a descriptor of no known type");
+            fail("reading a descriptor of no known type");
          }
          auto *out = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (type_n + 1)));
          if (out == nullptr) {
-            fail(LEMALLOC, "reading a descriptor");
+            fail("reading a descriptor");
          }
          ocs::tom::descr_layout(type, keep, out);
          return out;
@@ -722,32 +713,32 @@ namespace ocs::tom {
        * @param fp the stream
        * @param dp the descriptor
        * @return the element
-       * @throw ListCoreError with LEFILENULL, LEDESCRNULL, LECREATEELEM, LECOUNTDESCR, LESYNTAX or LEFIELDREAD
+       * @throw ListCoreError if the stream or the descriptor is null, the text cannot be read or there is no memory
        */
       lListElem *read_elem(FILE *fp, const lDescr *dp) {
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading an element from no stream");
+            fail("reading an element from no stream");
          }
          if (dp == nullptr) {
-            fail(LEDESCRNULL, "reading an element without a descriptor");
+            fail("reading an element without a descriptor");
          }
          OwnedElem ep;
          try {
             ep.reset(create_elem(dp));
          } catch (const std::exception &) {
-            fail(LECREATEELEM, "reading an element");
+            fail("reading an element");
          }
          if (lCountPresent(dp) <= 0) {
-            fail(LECOUNTDESCR, "reading an element without fields");
+            fail("reading an element without fields");
          }
          if (!opens(fp)) {
             printf("bra is missing\n");
-            fail(LESYNTAX, "reading an element");
+            fail("reading an element");
          }
-         relabel(LEFIELDREAD, "reading the values of an element", [&] { read_values(fp, ep.get()); });
+         relabel("reading the values of an element", [&] { read_values(fp, ep.get()); });
          if (!closes(fp)) {
             printf("ket is missing\n");
-            fail(LESYNTAX, "reading an element");
+            fail("reading an element");
          }
          return ep.release();
       }
@@ -756,24 +747,24 @@ namespace ocs::tom {
        * @brief Read a sub-object with its descriptor
        * @param fp the stream
        * @return the object
-       * @throw ListCoreError with LEFILENULL, LESYNTAX, LEFGETDESCR, LECOUNTDESCR or LEUNDUMPELEM
+       * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
        */
       lListElem *read_object(FILE *fp) {
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading an object from no stream");
+            fail("reading an object from no stream");
          }
          if (!opens(fp)) {
             printf("bra is missing\n");
-            fail(LESYNTAX, "reading an object");
+            fail("reading an object");
          }
-         OwnedDescr dp(relabel(LEFGETDESCR, "reading the descriptor of an object", [&] { return read_descr(fp); }));
+         OwnedDescr dp(relabel("reading the descriptor of an object", [&] { return read_descr(fp); }));
          if (descr_length(dp.get()) <= 0) {
-            fail(LECOUNTDESCR, "reading an object without fields");
+            fail("reading an object without fields");
          }
-         OwnedElem ep(relabel(LEUNDUMPELEM, "reading an object", [&] { return read_elem(fp, dp.get()); }));
+         OwnedElem ep(relabel("reading an object", [&] { return read_elem(fp, dp.get()); }));
          if (!closes(fp)) {
             printf("ket is missing\n");
-            fail(LESYNTAX, "reading an object");
+            fail("reading an object");
          }
          return ep.release();
       }
@@ -788,27 +779,27 @@ namespace ocs::tom {
        */
       lList *read_list(FILE *fp, const char *name, const lDescr *dp) {
          if (fp == nullptr) {
-            fail(LEFILENULL, "reading a list from no stream");
+            fail("reading a list from no stream");
          }
          if (!opens(fp)) {
             printf("bra is missing\n");
-            fail(LESYNTAX, "reading a list");
+            fail("reading a list");
          }
          OwnedChars oldname;
          try {
             oldname.reset(read_string(fp));
          } catch (const ListCoreError &) {
             printf("fGetString failed\n");
-            fail(LEFIELDREAD, "reading the name of a list");
+            fail("reading the name of a list");
          }
          int nelem = 0;
          try {
             read_number(fp, "%d", &nelem);
          } catch (const ListCoreError &) {
             printf("fGetInt failed\n");
-            fail(LEFIELDREAD, "reading the number of elements of a list");
+            fail("reading the number of elements of a list");
          }
-         OwnedDescr fdp(relabel(LEFGETDESCR, "reading the descriptor of a list", [&] { return read_descr(fp); }));
+         OwnedDescr fdp(relabel("reading the descriptor of a list", [&] { return read_descr(fp); }));
          if (dp == nullptr) {
             // the descriptor of the text
             dp = fdp.get();
@@ -818,11 +809,11 @@ namespace ocs::tom {
          try {
             lp.reset(create_list(name != nullptr ? name : oldname.get(), dp, true));
          } catch (const std::exception &) {
-            fail(LECREATELIST, "reading a list");
+            fail("reading a list");
          }
          const int n = descr_length(dp);
          if (n <= 0) {
-            fail(LECOUNTDESCR, "reading a list without fields");
+            fail("reading a list without fields");
          }
 
          // the field of the text each field of the list takes its value from, -1 for none
@@ -842,43 +833,43 @@ namespace ocs::tom {
          }
 
          for (int k = 0; k < nelem; k++) {
-            OwnedElem fep(relabel(LEUNDUMPELEM, "reading an element of a list", [&] { return read_elem(fp, fdp.get()); }));
+            OwnedElem fep(relabel("reading an element of a list", [&] { return read_elem(fp, fdp.get()); }));
             OwnedElem ep;
             try {
                ep.reset(create_elem(dp));
             } catch (const std::exception &) {
-               fail(LECREATEELEM, "reading an element of a list");
+               fail("reading an element of a list");
             }
             for (int i = 0; i < n; i++) {
                if (found[i] != -1) {
                   try {
                      copy_field(fep.get(), ep.get(), found[i], i, true, nullptr, false);
                   } catch (const std::exception &) {
-                     fail(LECOPYSWITCH, "copying a field of an element of a list");
+                     fail("copying a field of an element of a list");
                   }
                }
             }
             try {
                append_elem(lp.get(), ep.get());
             } catch (const std::exception &) {
-               fail(LEAPPENDELEM, "appending an element to a list");
+               fail("appending an element to a list");
             }
             static_cast<void>(ep.release());
          }
 
          if (!closes(fp)) {
             printf("ket is missing\n");
-            fail(LESYNTAX, "reading a list");
+            fail("reading a list");
          }
          return lp.release();
       }
 
       /**
-       * @brief Throw the error of a writer whose last write failed, without an error number, as before
+       * @brief Throw the error of a writer whose last write failed
        * @param what what failed
        */
       [[noreturn, gnu::cold]] void write_failed(const char *what) {
-         throw ListCoreError(0, what);
+         throw ListCoreError(what);
       }
 
    } // namespace
@@ -910,7 +901,7 @@ namespace ocs::tom {
    void dump_elem_to(const char *path, const lListElem *ep, const int indent) {
       FILE *fp = fopen(path, "w");
       if (fp == nullptr) {
-         fail(LEOPEN, "opening a file to dump into");
+         fail("opening a file to dump into");
       }
       int ret;
       try {
@@ -920,7 +911,7 @@ namespace ocs::tom {
          throw;
       }
       if (fclose(fp) != 0) {
-         fail(LECLOSE, "closing a file dumped into");
+         fail("closing a file dumped into");
       }
       if (ret != 0) {
          write_failed("dumping an element");
@@ -946,7 +937,7 @@ namespace ocs::tom {
    lListElem *undump_elem_from(const char *path, const lDescr *descr) {
       FILE *fp = fopen(path, "r");
       if (fp == nullptr) {
-         fail(LEOPEN, "opening a file to read a dump from");
+         fail("opening a file to read a dump from");
       }
       // unlike before, the file is closed again
       std::unique_ptr<FILE, int (*)(FILE *)> closer(fp, fclose);
@@ -1005,8 +996,8 @@ namespace ocs::tom {
       DENTER(TOP_LAYER);
 
       if (prefix == nullptr && name == nullptr) {
-         ERROR(SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK);
-         throw ocs::RuntimeException(MSG_CULL_NOPREFIXANDNOFILENAMEINWRITEELMTODISK);
+         ERROR(SFNMAX, MSG_TOM_WRITETODISK_NOPREFIXANDNOFILENAME);
+         throw ocs::RuntimeException(MSG_TOM_WRITETODISK_NOPREFIXANDNOFILENAME);
       }
 
       sge_pack_buffer pb{};
@@ -1017,13 +1008,13 @@ namespace ocs::tom {
       } catch (const PackException &e) {
          switch (e.code()) {
             case PACK_ENOMEM:
-               ERROR(MSG_CULL_NOTENOUGHMEMORYFORPACKINGXY_SS, obj_name, name ? name : "null");
+               ERROR(MSG_TOM_NOTENOUGHMEMORYFORPACKINGXY_SS, obj_name, name ? name : "null");
                break;
             case PACK_FORMAT:
-               ERROR(MSG_CULL_FORMATERRORWHILEPACKINGXY_SS, obj_name, name ? name : "null");
+               ERROR(MSG_TOM_FORMATERRORWHILEPACKINGXY_SS, obj_name, name ? name : "null");
                break;
             default:
-               ERROR(MSG_CULL_UNEXPECTEDERRORWHILEPACKINGXY_SS, obj_name, name ? name : "null");
+               ERROR(MSG_TOM_UNEXPECTEDERRORWHILEPACKINGXY_SS, obj_name, name ? name : "null");
                break;
          }
          throw;
@@ -1033,11 +1024,11 @@ namespace ocs::tom {
       SpoolingProfile profile;
       const int fd = SGE_OPEN3(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0666);
       if (fd < 0) {
-         CRITICAL(MSG_CULL_CANTOPENXFORWRITINGOFYZ_SSS, filename.c_str(), obj_name, strerror(errno));
+         CRITICAL(MSG_TOM_CANTOPENXFORWRITINGOFYZ_SSS, filename.c_str(), obj_name, strerror(errno));
          throw ocs::RuntimeException("cannot open " + filename + " for writing");
       }
       if (sge_writenbytes(fd, pb.head_ptr, pb.bytes_used) != static_cast<int>(pb.bytes_used)) {
-         CRITICAL(MSG_CULL_CANTWRITEXTOFILEY_SS, obj_name, filename.c_str());
+         CRITICAL(MSG_TOM_CANTWRITEXTOFILEY_SS, obj_name, filename.c_str());
          close(fd);
          throw ocs::RuntimeException("cannot write " + filename);
       }
@@ -1050,35 +1041,35 @@ namespace ocs::tom {
       DENTER(TOP_LAYER);
 
       if (prefix == nullptr && name == nullptr) {
-         ERROR(SFNMAX, MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK);
-         throw ocs::RuntimeException(MSG_CULL_NOPREFIXANDNOFILENAMEINREADELEMFROMDISK);
+         ERROR(SFNMAX, MSG_TOM_READFROMDISK_NOPREFIXANDNOFILENAME);
+         throw ocs::RuntimeException(MSG_TOM_READFROMDISK_NOPREFIXANDNOFILENAME);
       }
       const std::string filename = element_file(prefix, name);
 
       // the size of the file
       SGE_STRUCT_STAT statbuf;
       if (SGE_STAT(filename.c_str(), &statbuf) == -1) {
-         CRITICAL(MSG_CULL_CANTGETFILESTATFORXFILEY_SS, obj_name, filename.c_str());
+         CRITICAL(MSG_TOM_CANTGETFILESTATFORXFILEY_SS, obj_name, filename.c_str());
          throw ocs::RuntimeException("cannot stat " + filename);
       }
       if (statbuf.st_size == 0) {
-         CRITICAL(MSG_CULL_XFILEYHASZEROSIYE_SS, obj_name, filename.c_str());
+         CRITICAL(MSG_TOM_XFILEYHASZEROSIYE_SS, obj_name, filename.c_str());
          throw ocs::RuntimeException(filename + " is empty");
       }
       const auto size = static_cast<std::size_t>(statbuf.st_size);
       OwnedChars buf(static_cast<SGE_OFF_T>(size) == statbuf.st_size ? sge_malloc(size) : nullptr);
       if (buf == nullptr) {
-         CRITICAL(SFNMAX, MSG_CULL_LEMALLOC);
-         throw ocs::RuntimeException(MSG_CULL_LEMALLOC);
+         CRITICAL(SFNMAX, MSG_TOM_MALLOCFAILURE);
+         throw ocs::RuntimeException(MSG_TOM_MALLOCFAILURE);
       }
 
       const int fd = SGE_OPEN2(filename.c_str(), O_RDONLY);
       if (fd < 0) {
-         CRITICAL(MSG_CULL_CANTREADXFROMFILEY_SS, obj_name, filename.c_str());
+         CRITICAL(MSG_TOM_CANTREADXFROMFILEY_SS, obj_name, filename.c_str());
          throw ocs::RuntimeException("cannot open " + filename + " for reading");
       }
       if (sge_readnbytes(fd, buf.get(), size) != static_cast<int>(size)) {
-         CRITICAL(MSG_CULL_ERRORREADINGXINFILEY_SS, obj_name, filename.c_str());
+         CRITICAL(MSG_TOM_ERRORREADINGXINFILEY_SS, obj_name, filename.c_str());
          close(fd);
          throw ocs::RuntimeException("cannot read " + filename);
       }
@@ -1091,7 +1082,7 @@ namespace ocs::tom {
       try {
          init_buffer_from(&pb, buf.release(), static_cast<std::uint32_t>(size), false);
       } catch (const PackException &e) {
-         ERROR(MSG_CULL_ERRORININITPACKBUFFER_S, pack_error_text(e.code()));
+         ERROR(MSG_TOM_ERRORININITPACKBUFFER_S, pack_error_text(e.code()));
       }
       lListElem *ep = nullptr;
       try {
@@ -1099,16 +1090,16 @@ namespace ocs::tom {
       } catch (const PackException &e) {
          switch (e.code()) {
             case PACK_ENOMEM:
-               ERROR(MSG_CULL_NOTENOUGHMEMORYFORUNPACKINGXY_SS, obj_name, filename.c_str());
+               ERROR(MSG_TOM_NOTENOUGHMEMORYFORUNPACKINGXY_SS, obj_name, filename.c_str());
                break;
             case PACK_FORMAT:
-               ERROR(MSG_CULL_FORMATERRORWHILEUNPACKINGXY_SS, obj_name, filename.c_str());
+               ERROR(MSG_TOM_FORMATERRORWHILEUNPACKINGXY_SS, obj_name, filename.c_str());
                break;
             case PACK_BADARG:
-               ERROR(MSG_CULL_BADARGUMENTWHILEUNPACKINGXY_SS, obj_name, filename.c_str());
+               ERROR(MSG_TOM_BADARGUMENTWHILEUNPACKINGXY_SS, obj_name, filename.c_str());
                break;
             default:
-               ERROR(MSG_CULL_UNEXPECTEDERRORWHILEUNPACKINGXY_SS, obj_name, filename.c_str());
+               ERROR(MSG_TOM_UNEXPECTEDERRORWHILEUNPACKINGXY_SS, obj_name, filename.c_str());
                break;
          }
          throw;

@@ -58,7 +58,7 @@ namespace ocs::tom {
     * @return the order, owned by the caller, freed with free_sort_order()
     * @throw FieldException with reason NullDescriptor if @p descr is null, ForeignField for a field the type does
     *        not hold, AbsentField for a field a reduced descriptor does not hold
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lSortOrder *make_sort_order(const lDescr *descr, std::span<const SortKey> keys);
 
@@ -72,8 +72,8 @@ namespace ocs::tom {
     * @brief Compare two elements by a sort order, as lSortCompare() did
     *
     * Strings and host names compare as sge_strnullcmp() does, a missing one
-    * before every other. A field of a type the order cannot compare calls
-    * unknownType() and counts as equal.
+    * before every other. A field of a type the order cannot compare counts as
+    * equal.
     *
     * @param a the first element
     * @param b the second element
@@ -90,7 +90,7 @@ namespace ocs::tom {
     * @param lp the list, or nullptr, which is sorted already
     * @param so the order
     * @throw FieldException with reason NullElement if @p so is null and the list has two elements or more
-    * @throw ListCoreError with LEMALLOC if there is no memory; the list is unchanged then
+    * @throw ListCoreError if there is no memory; the list is unchanged then
     */
    void sort_list(lList *lp, const lSortOrder *so);
 
@@ -102,7 +102,7 @@ namespace ocs::tom {
     *
     * @param lp the list, or nullptr, which is sorted already
     * @param less true if the first element comes before the second; a strict weak ordering
-    * @throw ListCoreError with LEMALLOC if there is no memory; the list is unchanged then
+    * @throw ListCoreError if there is no memory; the list is unchanged then
     * @throw whatever @p less throws; the list is unchanged then
     */
    void sort_list_with(lList *lp, const std::function<bool(const lListElem *, const lListElem *)> &less);

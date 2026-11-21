@@ -42,7 +42,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "tom/detail/ocs_Errno.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/ocs_Descr.h"
@@ -743,7 +742,7 @@ namespace ocs::tom {
     * @tparam F the first field
     * @tparam Fs the further fields, of the same type
     * @return the layout
-    * @throw ListCoreError with LEMALLOC if there is no memory to build it, on the first call and on every later
+    * @throw ListCoreError if there is no memory to build it, on the first call and on every later
     *        call once the first build failed
     * @see Old form: ocs::tom::descr_reduce(), lReduceDescr()
     */
@@ -755,7 +754,7 @@ namespace ocs::tom {
       static const lDescr *const descr =
               ocs::tom::descr_reduce(T::descriptor.e, {static_cast<int>(F), static_cast<int>(Fs)...});
       if (descr == nullptr) [[unlikely]] {
-         throw ListCoreError(LEMALLOC, "out of memory reducing the descriptor of a layout");
+         throw ListCoreError("out of memory reducing the descriptor of a layout");
       }
       return Layout<T>::from_typed(descr);
    }
@@ -1736,7 +1735,7 @@ namespace ocs::tom {
        * @brief Set the bits of a mask in a 32 bit field, as lOrUlongBitMask() does
        * @tparam F the 32 bit field, of this object type
        * @param mask the bits
-       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @return 0, or -1 for an empty handle
        * @throw FieldException with reason AbsentField if the reduced element does not hold the field
        * @see free form ocs::tom::or_bits()
        */
@@ -1748,7 +1747,7 @@ namespace ocs::tom {
        * @brief Keep only the bits of a mask in a 32 bit field, as lAndUlongBitMask() does
        * @tparam F the 32 bit field, of this object type
        * @param mask the bits to keep
-       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @return 0, or -1 for an empty handle
        * @throw FieldException with reason AbsentField if the reduced element does not hold the field
        * @see free form ocs::tom::and_bits()
        */
@@ -1760,7 +1759,7 @@ namespace ocs::tom {
        * @brief Clear the bits of a mask in a 32 bit field, as lClearUlongBitMask() does
        * @tparam F the 32 bit field, of this object type
        * @param mask the bits to clear
-       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @return 0, or -1 for an empty handle
        * @throw FieldException with reason AbsentField if the reduced element does not hold the field
        * @see free form ocs::tom::clear_bits()
        */
@@ -1773,7 +1772,7 @@ namespace ocs::tom {
        *        writes it
        * @tparam F the field, of this object type and of type Uint64, declared neither hashed nor unique
        * @param value the value to store
-       * @return 0, or -1 with LEELEMNULL for an empty handle
+       * @return 0, or -1 for an empty handle
        * @throw FieldException with reason AbsentField if the reduced element does not hold the field
        * @see free form ocs::tom::set_atomic()
        */
@@ -2104,7 +2103,7 @@ namespace ocs::tom {
        *
        * @param fp the stream
        * @return the owning handle on the element
-       * @throw ListCoreError with the error number of before if the text cannot be read
+       * @throw ListCoreError if the text cannot be read
        * @see Old form: lUndumpElemFp(); core: ocs::tom::undump_elem()
        */
       [[nodiscard]] static ElementPtr undump(FILE *fp) {
@@ -2222,7 +2221,6 @@ namespace ocs::tom {
          }
          if (ep == nullptr) [[unlikely]] {
             report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::NullElement);
-            set_lerrno(LEELEMNULL);
             return -1;
          }
          check_holds<F, Typed>(ep);
@@ -2242,7 +2240,6 @@ namespace ocs::tom {
             if (!store_object(ep, Tr::pos, object)) {
                // bound elsewhere: an owning handle gave it up above, it stays where it is bound
                report_soft_path("ocs::tom::set", static_cast<int>(F), SoftPathReason::BoundElement);
-               set_lerrno(LEBOUNDELEM);
                return -1;
             }
             if constexpr (is_element_ptr<Value>) {
@@ -2251,7 +2248,6 @@ namespace ocs::tom {
             return 0;
          } else {
             if (!write<F>(ep, Tr::pos + off, static_cast<typename ValueOf<Tr::type>::type>(value))) {
-               set_lerrno(LESTRDUP);
                return -1;
             }
             return 0;
@@ -2264,7 +2260,7 @@ namespace ocs::tom {
        * @tparam Typed true if the element comes from a handle of the field's type, see check_holds()
        * @param ep the element, or nullptr
        * @param offset the amount to add
-       * @return 0 on success, -1 with LEELEMNULL for a null element
+       * @return 0 on success, -1 for a null element
        * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
        */
       template <auto F, bool Typed>
@@ -2272,7 +2268,6 @@ namespace ocs::tom {
          using Tr = FieldTraits<F>;
          if (ep == nullptr) [[unlikely]] {
             report_soft_path("ocs::tom::add", static_cast<int>(F), SoftPathReason::NullElement);
-            set_lerrno(LEELEMNULL);
             return -1;
          }
          check_holds<F, Typed>(ep);
@@ -2287,8 +2282,8 @@ namespace ocs::tom {
     * @brief Set a field of an element whose type is known only at run time, with the error behaviour of the old setter it replaces (lSetUlong(), lSetString(), ...)
     *
     * The free form that replaces the old setter in the mechanical rewrite,
-    * with the contract the old setters follow since CS-3062 (N-L-4): -1 with
-    * LEELEMNULL for a null element, a logic error for a field the element
+    * with the contract the old setters follow since CS-3062 (N-L-4): -1 for
+    * a null element, a logic error for a field the element
     * does not hold. The object or list a field holds already is set again
     * without an error.
     *
@@ -2372,8 +2367,8 @@ namespace ocs::tom {
     * @brief Add an offset to a number field of an element whose type is known only at run time, with the error behaviour of the old function it replaces (lAddUlong(), lAddUlong64(), lAddDouble())
     *
     * The free form for the mechanical rewrite, next to the free setter, with
-    * the contract of the old setters since CS-3062 (N-L-4): -1 with
-    * LEELEMNULL for a null element, a logic error for a field the element
+    * the contract of the old setters since CS-3062 (N-L-4): -1 for
+    * a null element, a logic error for a field the element
     * does not hold. A field of another type does not compile.
     *
     * @tparam F the field number, a 32 bit, 64 bit or double field
@@ -2400,7 +2395,7 @@ namespace ocs::tom {
     * @tparam T the object type, deduced from the handle
     * @param ep the element
     * @param offset the amount to add
-    * @return 0 on success, -1 with LEELEMNULL for an empty handle
+    * @return 0 on success, -1 for an empty handle
     * @throw FieldException with reason AbsentField if the element does not hold the field
     */
    template <auto F, ObjectType T>
@@ -2448,7 +2443,7 @@ namespace ocs::tom {
     * @tparam T the object type, deduced from the handle
     * @param ep the element
     * @param value the value to store
-    * @return 0 on success, -1 with LEELEMNULL for an empty handle, as lSetUlong64Atomic() on nullptr
+    * @return 0 on success, -1 for an empty handle, as lSetUlong64Atomic() on nullptr
     * @throw FieldException with reason AbsentField if the element does not hold the field
     * @see core: ocs::tom::store_uint64_atomic()
     */
@@ -2459,7 +2454,6 @@ namespace ocs::tom {
       lListElem *raw = ep.raw();
       if (raw == nullptr) [[unlikely]] {
          report_soft_path("ocs::tom::set_atomic", static_cast<int>(F), SoftPathReason::NullElement);
-         set_lerrno(LEELEMNULL);
          return -1;
       }
       const int pos = detail::checked_slot<F, true>(raw);
@@ -2477,7 +2471,7 @@ namespace ocs::tom {
     * @tparam T the object type, deduced from the handle
     * @param ep the element
     * @param offset the amount to add
-    * @return 0 on success, -1 with LEELEMNULL for an empty handle
+    * @return 0 on success, -1 for an empty handle
     * @throw FieldException with reason AbsentField if the element does not hold the field
     */
    template <auto F, ObjectType T>
@@ -2508,7 +2502,7 @@ namespace ocs::tom {
     * @tparam T the object type, deduced from the handle
     * @param ep the element
     * @param value the value to store
-    * @return 0 on success, -1 with LEELEMNULL for an empty handle
+    * @return 0 on success, -1 for an empty handle
     * @throw FieldException with reason AbsentField if the element does not hold the field
     */
    template <auto F, ObjectType T>
@@ -2538,7 +2532,7 @@ namespace ocs::tom {
     * @tparam T the object type of the handle
     * @tparam F the field, of type Uint64, neither hashed nor unique
     * @param value the value to store
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @return 0, or -1 for an empty handle
     * @see free form ocs::tom::set_atomic()
     */
    template <ObjectType T>

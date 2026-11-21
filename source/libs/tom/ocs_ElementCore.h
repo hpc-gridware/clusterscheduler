@@ -142,8 +142,7 @@ namespace ocs::tom {
     *
     * @param a the first descriptor
     * @param b the second descriptor
-    * @return 0 if equivalent, otherwise the error number lCompListDescr() set: LELISTNULL for a null
-    *         descriptor, LECOUNTDESCR for an empty one, LEDIFFDESCR for different ones
+    * @return 0 if equivalent, otherwise 1 for a null descriptor, 2 for an empty one, 3 for different ones
     */
    int layout_difference(const lDescr *a, const lDescr *b) noexcept;
 
@@ -284,16 +283,6 @@ namespace ocs::tom {
     * @return true if stored or held already, false if @p value is bound to a list or another element
     */
    bool store_object(lListElem *ep, int pos, lListElem *value);
-
-   /**
-    * @brief Set the error number of the list library for the calling thread
-    *
-    * The free setter of the typed interface keeps the error behaviour of the
-    * old setter it replaces, including the error number it leaves behind.
-    *
-    * @param code an LE* code of cull_lerrno.h
-    */
-   void set_lerrno(int code);
 
    /**
     * @brief Suspend the debug checks for duplicate keys in unique fields of the calling thread for a scope

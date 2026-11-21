@@ -124,7 +124,7 @@ namespace ocs::tom {
       const bool alone = lp->nelem == 1;
       free_list(lp);
       if (!alone) {
-         throw ListCoreError(0, "\"none\" stands beside other names");
+         throw ListCoreError("\"none\" stands beside other names");
       }
    }
 

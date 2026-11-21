@@ -63,7 +63,7 @@ namespace ocs::tom {
     * @param descr the descriptor of the elements
     * @param nm the string or host field the names go into
     * @param delimiters the delimiters, or nullptr for white space
-    * @throw ListCoreError without an error number if "none" stands beside other names; the list is freed and
+    * @throw ListCoreError if "none" stands beside other names; the list is freed and
     *        nullptr then
     * @throw FieldException or ListCoreError as string_to_list()
     */

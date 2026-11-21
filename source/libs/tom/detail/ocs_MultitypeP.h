@@ -48,7 +48,7 @@
  * Which member is live is decided by the field's type in the descriptor —
  * see @ref _enum_lMultiType and #mt_get_type. Reading the wrong member is not
  * detected by the compiler, which is why the accessors in cull_multitype.cc
- * check the type first and abort through #incompatibleType on a mismatch.
+ * check the type first and abort on a mismatch.
  */
 union _lMultiType {
    lDouble db;        ///< value when the field is #lDoubleT

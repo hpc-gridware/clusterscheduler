@@ -39,8 +39,7 @@
  *   (WrongType), a null list or element (NullList, NullElement), a null
  *   operand of a combination (NullArgument is not a reason, so NullElement is
  *   used for it);
- * - a failure at run time throws ListCoreError with the error number of the
- *   old interface.
+ * - a failure at run time throws ListCoreError, whose message says what failed.
  */
 
 #include <cstdint>
@@ -96,7 +95,7 @@ namespace ocs::tom {
     * @return the selection, owned by the caller, freed with lFreeWhat()
     * @throw FieldException with reason NullDescriptor if @p descr is null, ForeignField for a field it does not
     *        hold or for no field at all, AbsentField for a field a reduced descriptor does not hold
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lEnumeration *make_what(const lDescr *descr, std::span<const WhatEntry> entries);
 
@@ -104,7 +103,7 @@ namespace ocs::tom {
     * @brief Build the selection of every field or of none
     * @param pos WHAT_ALL or WHAT_NONE
     * @return the selection, owned by the caller, freed with lFreeWhat()
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lEnumeration *make_what_special(int pos);
 
@@ -130,7 +129,7 @@ namespace ocs::tom {
     * @return the condition, owned by the caller, freed with lFreeWhere()
     * @throw FieldException with reason NullDescriptor, ForeignField, AbsentField, or WrongType if @p value_type
     *        is not the field's type
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lCondition *make_compare(const lDescr *descr, int nm, CompareOp op, int value_type, const lMultiType &value);
 
@@ -142,7 +141,7 @@ namespace ocs::tom {
     * @return the condition, owned by the caller, freed with lFreeWhere()
     * @throw FieldException with reason NullDescriptor, ForeignField, AbsentField, or WrongType if the field is
     *        not a list
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lCondition *make_subscope(const lDescr *descr, int nm, lCondition *sub);
 
@@ -153,7 +152,7 @@ namespace ocs::tom {
     * @param second the second operand, nullptr for Not; taken over, also when the function throws
     * @return the condition, owned by the caller, freed with lFreeWhere()
     * @throw FieldException with reason NullElement if an operand the operator needs is null
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lCondition *make_logic(LogicOp op, lCondition *first, lCondition *second);
 
@@ -161,8 +160,7 @@ namespace ocs::tom {
     * @brief Whether an element fulfils a condition, as lCompare() decided it
     *
     * A comparison that cannot be made, a null string or an operator that does
-    * not apply to the field's type, is false and sets the error number of the
-    * list library as lCompare() did.
+    * not apply to the field's type, is false, as lCompare() gave it.
     *
     * @param ep the element
     * @param cp the condition; nullptr is fulfilled by every element
@@ -221,7 +219,7 @@ namespace ocs::tom {
     * @param skip_no_transfer true if fields marked CULL_NO_TRANSFER are not copied
     * @return the new list, owned by the caller
     * @throw FieldException with reason NullList if @p lp is null, NullElement if @p what is null
-    * @throw ListCoreError with the error number of lSelect() if the reduction or a copy fails
+    * @throw ListCoreError if the reduction or a copy fails
     */
    lList *select_list(const char *name, const lList *lp, const lCondition *cp, const lEnumeration *what, bool hash,
                       bool skip_no_transfer);
@@ -237,7 +235,7 @@ namespace ocs::tom {
     * @param ep the selection
     * @return the copy, owned by the caller
     * @throw FieldException with reason NullElement if @p ep is null
-    * @throw ListCoreError with LEMALLOC if there is no memory
+    * @throw ListCoreError if there is no memory
     */
    lEnumeration *copy_what(const lEnumeration *ep);
 
@@ -251,8 +249,7 @@ namespace ocs::tom {
     * @brief A deep copy of a condition, as lCopyWhere() makes it; a reference value is not copied
     * @param cp the condition, or nullptr
     * @return the copy, owned by the caller, or nullptr for nullptr
-    * @throw ListCoreError with LESTRDUP or LEMALLOC if there is no memory, LEOPUNKNOWN or LEUNKTYPE for a
-    *        corrupt condition
+    * @throw ListCoreError if there is no memory or the condition is corrupt
     */
    lCondition *copy_where(const lCondition *cp);
 
@@ -265,7 +262,7 @@ namespace ocs::tom {
     * @param hash true to build the hash tables of copied sub-lists
     * @param skip_no_transfer true if fields marked CULL_NO_TRANSFER are not copied
     * @throw FieldException with reason NullElement if an argument is null
-    * @throw ListCoreError with LEENUMDESCR if a selected field is absent, LECOPYSWITCH if a copy fails
+    * @throw ListCoreError if a selected field is absent or a copy fails
     */
    void copy_elem_partial(lListElem *dst, const lListElem *src, const lEnumeration *what, bool hash,
                           bool skip_no_transfer);
@@ -286,8 +283,6 @@ namespace ocs::tom {
    /**
     * @brief The number of fields a selection takes from a descriptor, as lCountWhat() counted them
     *
-    * Sets the error number of the list library on error, as lCountWhat() did.
-    *
     * @param enp the selection
     * @param dp the descriptor
     * @return the number of fields, every present one for WHAT_ALL, 0 for WHAT_NONE; -1 if an argument is null
@@ -300,8 +295,7 @@ namespace ocs::tom {
     *
     * The result has the full length of the type, with the selected fields in
     * their slots and the others absent (see ocs::tom::descr_layout()). The source
-    * may itself be a reduction; every selected field must be present in it. Sets
-    * the error number of the list library on error.
+    * may itself be a reduction; every selected field must be present in it.
     *
     * @param enp the selection
     * @param sdp the source descriptor
@@ -338,7 +332,7 @@ namespace ocs::tom {
     * @param what1 the first selection, or nullptr; taken over
     * @param what2 the second selection, or nullptr; taken over
     * @return the merged selection, owned by the caller; nullptr if both are nullptr
-    * @throw ListCoreError with LEMALLOC if there is no memory; both selections are freed then
+    * @throw ListCoreError if there is no memory; both selections are freed then
     */
    lEnumeration *merge_what(lEnumeration *what1, lEnumeration *what2);
 

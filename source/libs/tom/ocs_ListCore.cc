@@ -27,7 +27,6 @@
 #include "uti/sge_stdlib.h"
 
 #include "tom/detail/ocs_Hash.h"
-#include "tom/detail/ocs_ErrnoP.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/detail/ocs_Stats.h"
@@ -41,8 +40,7 @@
 
 namespace ocs::tom {
 
-   ListCoreError::ListCoreError(const int lerrno, const std::string &message)
-      : ocs::RuntimeException(message), lerrno_(lerrno) {}
+   ListCoreError::ListCoreError(const std::string &message) : ocs::RuntimeException(message) {}
 
    ListCoreError::~ListCoreError() = default;
 
@@ -160,7 +158,7 @@ namespace ocs::tom {
 
       auto *ep = reinterpret_cast<lListElem *>(sge_malloc(sizeof(lListElem)));
       if (ep == nullptr) {
-         throw ListCoreError(LEMALLOC, "out of memory creating an element");
+         throw ListCoreError("out of memory creating an element");
       }
       ep->next = nullptr;
       ep->prev = nullptr;
@@ -174,7 +172,7 @@ namespace ocs::tom {
                normalised = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (n + 1)));
                if (normalised == nullptr) {
                   sge_free(&ep);
-                  throw ListCoreError(LEMALLOC, "out of memory creating an element");
+                  throw ListCoreError("out of memory creating an element");
                }
                memcpy(normalised, descr, sizeof(lDescr) * (n + 1));
                CULL_STATS_TYPE(descr[0].nm, DCOPY_ELEM, 1);
@@ -190,7 +188,7 @@ namespace ocs::tom {
       sge_free(&normalised);
       if (ep->descr == nullptr) {
          sge_free(&ep);
-         throw ListCoreError(LEMALLOC, "out of memory creating an element");
+         throw ListCoreError("out of memory creating an element");
       }
 
       elem_set_free(ep);
@@ -199,7 +197,7 @@ namespace ocs::tom {
       if (ep->cont == nullptr) {
          ocs::tom::release_descr(ep->descr);
          sge_free(&ep);
-         throw ListCoreError(LEMALLOC, "out of memory creating an element");
+         throw ListCoreError("out of memory creating an element");
       }
 
       return ep;
@@ -215,11 +213,11 @@ namespace ocs::tom {
 
       auto *lp = reinterpret_cast<lList *>(sge_malloc(sizeof(lList)));
       if (lp == nullptr) {
-         throw ListCoreError(LEMALLOC, "out of memory creating a list");
+         throw ListCoreError("out of memory creating a list");
       }
       if ((lp->listname = strdup(name)) == nullptr) {
          sge_free(&lp);
-         throw ListCoreError(LESTRDUP, "out of memory copying a list name");
+         throw ListCoreError("out of memory copying a list name");
       }
       lp->nelem = 0;
       lp->first = nullptr;
@@ -228,14 +226,14 @@ namespace ocs::tom {
       if ((lp->descr = ocs::tom::descr_acquire(descr)) == nullptr) {
          sge_free(&(lp->listname));
          sge_free(&lp);
-         throw ListCoreError(LEMALLOC, "out of memory creating a list");
+         throw ListCoreError("out of memory creating a list");
       }
       // the hash tables belong to the list: one slot per hashed field if it may be hashed
       if (!ocs::tom::detail::hash_init_slots(lp, hash)) {
          ocs::tom::release_descr(lp->descr);
          sge_free(&(lp->listname));
          sge_free(&lp);
-         throw ListCoreError(LEMALLOC, "out of memory creating a list");
+         throw ListCoreError("out of memory creating a list");
       }
 
       return lp;
@@ -284,7 +282,6 @@ namespace ocs::tom {
                }
                break;
             default:
-               unknownType("lFreeElem");
                break;
          }
       }
@@ -327,14 +324,14 @@ namespace ocs::tom {
       try {
          copy = create_elem(ep->descr);
       } catch (const ListCoreError &) {
-         throw ListCoreError(LECREATEELEM, "out of memory copying an element");
+         throw ListCoreError("out of memory copying an element");
       }
       for (const auto f : ocs::tom::present_fields(ep->descr)) {
          try {
             copy_field(ep, copy, f.pos, f.pos, hash, nullptr, skip_no_transfer);
          } catch (...) {
             free_elem(copy);
-            throw ListCoreError(LECOPYSWITCH, "copying a field of an element failed");
+            throw ListCoreError("copying a field of an element failed");
          }
       }
       elem_set_free(copy);
@@ -353,7 +350,7 @@ namespace ocs::tom {
          // the copy is created without hash slots, so that filling it maintains no table
          dst = create_list(name, src->descr, false);
       } catch (const ListCoreError &) {
-         throw ListCoreError(LECREATELIST, "out of memory copying a list");
+         throw ListCoreError("out of memory copying a list");
       }
       // the source was checked for duplicate keys when it was filled; checking each copy again would be quadratic
       const UniqueCheckSuspension suspension;
@@ -362,7 +359,7 @@ namespace ocs::tom {
             append_elem(dst, copy_elem(sep, true, skip_no_transfer));
          } catch (const ListCoreError &) {
             free_list(dst);
-            throw ListCoreError(LEAPPENDELEM, "copying an element of a list failed");
+            throw ListCoreError("copying an element of a list failed");
          }
       }
       if (hash) {
@@ -399,7 +396,7 @@ namespace ocs::tom {
             // the union holds a string and a host at the same place
             to.str = nullptr;
             if (from.str != nullptr && (to.str = strdup(from.str)) == nullptr) {
-               throw ListCoreError(LESTRDUP, "out of memory copying a string");
+               throw ListCoreError("out of memory copying a string");
             }
             break;
          case lDoubleT:
@@ -442,7 +439,7 @@ namespace ocs::tom {
             to.ref = from.ref;
             break;
          default:
-            throw ListCoreError(LEUNKTYPE, "copying a field of an unknown type");
+            throw ListCoreError("copying a field of an unknown type");
       }
    }
 
@@ -733,7 +730,7 @@ namespace ocs::tom {
       } else {
          return add_with_key(lp, pos, descr, "", [pos, key](lListElem *ep) {
             if (!store_string(ep, pos, key)) {
-               throw ListCoreError(LESTRDUP, "out of memory copying a key");
+               throw ListCoreError("out of memory copying a key");
             }
          });
       }
