@@ -176,7 +176,7 @@ const char *qinstance_get_name(const ocs::tom::ConstElement<ocs::tom::QU> this_e
    if (this_elem && string_buffer != nullptr) {
       ret = sge_dstring_sprintf(string_buffer, SFN "@" SFN,
                                 this_elem.get<QU_qname>(),
-                                static_cast<const char *>(this_elem.get<QU_qhostname>()));
+                                this_elem.get<QU_qhostname>().c_str());
    }
    return ret;
 }
@@ -636,7 +636,7 @@ bool qinstance_validate(const ocs::tom::Element<ocs::tom::QU> this_elem, ocs::to
                                  ANSWER_QUALITY_ERROR,
                                  MSG_QINSTANCE_HOSTFORQUEUEDOESNOTEXIST_SS,
                                  this_elem.get<QU_qname>(),
-                                 static_cast<const char *>(this_elem.get<QU_qhostname>()));
+                                 this_elem.get<QU_qhostname>().c_str());
          ret = false;
       }
    }

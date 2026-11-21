@@ -2708,7 +2708,7 @@ bool job_verify_submitted_job(const ocs::tom::Element<ocs::tom::JB> job, ocs::to
 
    /* JB_host must be nullptr */
    if (ret) {
-      if (static_cast<const char *>(job.get<JB_host>()) != nullptr) {
+      if (job.get<JB_host>() != nullptr) {
             answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                               MSG_INVALIDJOB_REQUEST_S, "host");
             ret = false;

@@ -113,7 +113,7 @@ ocs_attr_list_add(ocs::tom::ListPtr<A> &this_list, ocs::tom::ListPtr<ocs::tom::A
             static_cast<void>(attr_elem.template copy_if_present<ocs_attr_traits<A>::value>(*attr));
             ret = true;
          } else {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_VALUEMULDEFINED_S, static_cast<const char *>(href));
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTR_VALUEMULDEFINED_S, href.c_str());
             answer_list_add(answer_list, SGE_EVENT, STATUS_ERROR1, ANSWER_QUALITY_ERROR);
          }
       } else {

@@ -156,7 +156,7 @@ int ocs_resolve_host(const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::
    }
    std::string unique;
    bool store = false;
-   const int ret = ocs_resolve_host_name(static_cast<const char *>(ep.template get<F>()), static_cast<int>(F),
+   const int ret = ocs_resolve_host_name(ep.template get<F>(), static_cast<int>(F),
                                          is_string, unique, store);
    if (store) {
       if constexpr (is_string) {
