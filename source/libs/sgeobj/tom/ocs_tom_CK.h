@@ -29,7 +29,7 @@
  */
 
 #include "tom/ocs_FieldTraits.h"
-#include "sgeobj/cull/sge_boundaries.h"
+#include "sgeobj/tom/ocs_tom_boundaries.h"
 
 /**
  * @brief The field numbers of CK, Checkpoint

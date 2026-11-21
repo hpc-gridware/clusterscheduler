@@ -186,18 +186,6 @@ object_has_type(ocs::tom::ConstRawElement object, const lDescr *descr);
 const lDescr *
 object_get_type(const lListElem *object);
 
-/**
- * @brief The descriptor of the elements a list attribute holds
- *
- * @param nm the list attribute to ask about
- * @return the element descriptor, or nullptr when `nm` is not a list attribute
- *
- * @note Defined in the generated `sgeobj/cull/sge_sub_object.cc`, which is
- *       excluded from doxygen, so this declaration carries the documentation.
- */
-const lDescr *
-object_get_subtype(int nm);
-
 int 
 object_get_primary_key(const lDescr *descr);
 

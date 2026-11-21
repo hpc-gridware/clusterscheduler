@@ -24,8 +24,7 @@
  * The field table of a type is the source of its descriptor, so the two cannot
  * disagree. This test checks what does not follow from that: that the object
  * types of the model hold disjoint ranges of field numbers in ascending order, that the translation into
- * the list library's tags keeps every field, that the sub-types the model names
- * are the ones `object_get_subtype()` hands out, and that the value type of host
+ * the list library's tags keeps every field, that the model names sub-types, and that the value type of host
  * fields compares like a host name.
  *
  * The host comparison reads the bootstrap file of an installed cluster
@@ -138,36 +137,15 @@ test_entries() {
 }
 
 /**
- * @brief The sub-type of every list and object field is the one object_get_subtype() hands out
+ * @brief The model names sub-types at all
+ *
+ * CHECK 3 compared every sub-type with object_get_subtype() of sgeobj, which is removed with the old list library
+ * (CS-3103); test_tom_model checks sub_type() against the generated table for every field.
+ *
  * @return nothing; CHECK records the results
  */
 static void
 test_sub_types() {
-   int mismatches = 0;
-   int n_list_fields = 0;
-   for (const ocs::tom::TypeTable &table : ocs::tom::all_type_tables) {
-      for (std::size_t i = 0; i < table.size; i++) {
-         const ocs::tom::FieldInfo &f = table.fields[i];
-         if (f.type != FieldType::List && f.type != FieldType::Object) {
-            continue;
-         }
-         n_list_fields++;
-         const lDescr *traits = nullptr;
-         for (const ocs::tom::SubTypeEntry &entry : ocs::tom::all_sub_types) {
-            if (entry.nm == f.nm) {
-               traits = entry.sub;
-            }
-         }
-         if (traits != object_get_subtype(f.nm)) {
-            std::printf("%s: %s names a different sub-type than object_get_subtype()\n", table.name,
-                        ocs::tom::field_name(f.nm));
-            mismatches++;
-         }
-      }
-   }
-   std::printf("%d list and object fields, %zu of them name a sub-type\n", n_list_fields,
-               std::size(ocs::tom::all_sub_types));
-   CHECK(3, "every list and object field names the sub-type of object_get_subtype()", mismatches == 0);
    CHECK(4, "the model names sub-types at all", std::size(ocs::tom::all_sub_types) > 0);
 }
 
@@ -204,9 +182,9 @@ int main(int argc, char *argv[]) {
        {{"TRT-01", "covers"}}, {2}, test_entries},
       {"TRAITS-03", "sub-types",
        "the sub-type of every list and object field comes from the model",
-       {"compare the sub-type of every list and object field with object_get_subtype()"},
-       "every sub-type is the same; fields of any sub-type name none",
-       {{"TRT-01", "covers"}}, {3, 4}, test_sub_types},
+       {"count the sub-types the model names"},
+       "at least one",
+       {{"TRT-01", "covers"}}, {4}, test_sub_types},
       {"TRAITS-04", "host",
        "the value type of a host field compares like a host name",
        {"compare host names differing in case, different ones and unset ones, also against C strings"},

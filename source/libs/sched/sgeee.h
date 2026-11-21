@@ -44,7 +44,7 @@
  * a `scheduler_all_data_t`.
  */
 
-#include "sgeobj/cull/sge_boundaries.h"
+#include "sgeobj/tom/ocs_tom_boundaries.h"
 #include "tom/ocs_Types.h"
 #include "sge_orders.h"
 #include "sgeobj/tom/ocs_tom_JB.h"

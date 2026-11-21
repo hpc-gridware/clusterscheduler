@@ -155,7 +155,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * CULL_SPOOL).
  * If `instr` contains an instruction for sublists, the function will
  * take the CULL object definition of the sublists from the spooling record
- * of the list field (the sub-type object_get_subtype() names) and call itself
+ * of the list field (the sub-type `ocs::tom::sub_type()` names) and call itself
  * recursively. Every entry carries the spooling record of its field in `ops`.
  *
  * @param answer_list answer list to report errors
@@ -167,7 +167,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * @note The returned spooling_field array has to be freed by the caller of this
  *       function using the function spool_free_spooling_fields().
  *
- * @see `object_get_subtype()`, #spool_free_spooling_fields
+ * @see `ocs::tom::sub_type()`, #spool_free_spooling_fields
  */
 spooling_field *
 spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
@@ -298,7 +298,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
                DRETURN(nullptr);
             }
 
-            // the model's sub-type, the one object_get_subtype() names (test_tom_traits checks that)
+            // the model's sub-type, the one ocs::tom::sub_type() names (test_tom_traits checks that)
             sub_descr = fields[j].ops->sub_descr;
             if (sub_descr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,

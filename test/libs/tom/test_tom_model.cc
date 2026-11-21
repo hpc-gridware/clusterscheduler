@@ -25,8 +25,7 @@
  * names come from the generated tables, installed with
  * ocs::tom::install_model(). They replace the CULL name space, which is
  * removed, so this test compares them with the field tables for every field
- * of every type, and with object_get_subtype() of sgeobj, their predecessor,
- * for the sub-types. It also checks the answers for unknown fields and
+ * of every type, and with the generated table all_sub_types for the sub-types. It also checks the answers for unknown fields and
  * descriptors, the fallback text and its buffers, the behaviour without an
  * installed model, the visibility of the model in a thread that did not
  * install it, the rejection of an inconsistent model, one case per rule of the
@@ -126,11 +125,10 @@ test_names() {
 }
 
 /**
- * @brief Every field has the sub-type object_get_subtype() of sgeobj names for it, and only those fields have one
+ * @brief Every field has the sub-type the generated table all_sub_types names for it, and only those fields have one
  *
- * object_get_subtype() is generated independently of `all_sub_types` and is
- * the lookup the model replaces, so it is the reference, not the table the
- * model was built from.
+ * The independent reference object_get_subtype() of sgeobj, the lookup the model replaced, is removed with the
+ * old list library (CS-3103); sub_type() is now checked against the generated table itself.
  *
  * @return nothing; CHECK records the results
  */
@@ -142,15 +140,21 @@ test_sub_types() {
       for (std::size_t i = 0; i < table.size; i++) {
          const int nm = table.fields[i].nm;
          const lDescr *got = ocs::tom::sub_type(nm);
-         if (got != object_get_subtype(nm)) {
-            std::printf("%s: %s has another sub-type than object_get_subtype() names\n", table.name,
+         const lDescr *expected = nullptr;
+         for (const ocs::tom::SubTypeEntry &entry : ocs::tom::all_sub_types) {
+            if (entry.nm == nm) {
+               expected = entry.sub;
+            }
+         }
+         if (got != expected) {
+            std::printf("%s: %s has another sub-type than all_sub_types names\n", table.name,
                         table.fields[i].name);
             mismatches++;
          }
          n_with_sub += got != nullptr ? 1 : 0;
       }
    }
-   CHECK(6, "sub_type() of every field equals object_get_subtype(), nullptr included", mismatches == 0);
+   CHECK(6, "sub_type() of every field equals its entry in all_sub_types, nullptr included", mismatches == 0);
    CHECK(7, "every entry of all_sub_types gives exactly one field a sub-type",
          n_with_sub == std::size(ocs::tom::all_sub_types));
 }
@@ -517,8 +521,8 @@ int main(int argc, char *argv[]) {
        "no field differs",
        {}, {3, 4, 5}, test_names},
       {"TOM-MODEL-03", "sub-types",
-       "the sub-type of every field is the one object_get_subtype() of sgeobj names",
-       {"compare sub_type() of every field with object_get_subtype()",
+       "the sub-type of every field is the one the generated table all_sub_types names",
+       {"compare sub_type() of every field with all_sub_types",
         "count the fields with a sub-type against the entries of all_sub_types"},
        "no field differs; every entry of all_sub_types gives one field a sub-type",
        {}, {6, 7}, test_sub_types},

@@ -161,7 +161,7 @@ EXCLUDE_PATTERNS       = */._* \
                          */source/experimental/* \
                          */source/security/gss/* \
                          */source/security/krb/* \
-                         */dump_cull_schema/cJSON.*
+                         */dump_object_model/cJSON.*
 
 # cJSON is vendored third-party (Dave Gamble and contributors, MIT), checked in
 # rather than fetched, and carries its own upstream documentation. Same reason

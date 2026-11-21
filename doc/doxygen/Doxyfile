@@ -1064,7 +1064,7 @@ RECURSIVE              = YES
 #
 # The rule it enforced still stands and is now enforced by the gate instead:
 # never edit generated output. A missing description belongs in
-# sgeobj/json/*.json, which feeds the CULL header and dump_cull_schema
+# sgeobj/json/*.json, which feeds the TOM headers and dump_object_model
 # alike - see "06 Exclusions and generated code".
 
 EXCLUDE                =
@@ -1106,7 +1106,7 @@ EXCLUDE_PATTERNS       = */._* \
                          */source/experimental/* \
                          */source/security/gss/* \
                          */source/security/krb/* \
-                         */dump_cull_schema/cJSON.*
+                         */dump_object_model/cJSON.*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

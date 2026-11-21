@@ -1717,6 +1717,9 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
  *    - we don't know the type of a subobject (if it is defined as
  *      CULL_ANY_SUBTYPE in the cull object definition
  *
+ * The sub-types of the fields come from the installed object model
+ * (`ocs::tom::sub_type()`); without an installed model no sub-type is fixed.
+ *
  * @param ep the object to verify, maybe empty (then the object is not OK)
  * @param descr expected object type, or nullptr (see above)
  *
@@ -1756,7 +1759,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
          if (type == ocs::tom::FieldType::List) {
             const auto lp = ep.get<ocs::tom::ConstRawList>(nm);
             if (lp) {
-               const lDescr *subdescr = object_get_subtype(nm);
+               const lDescr *subdescr = ocs::tom::sub_type(nm);
                if (!object_list_verify_cull(lp, subdescr)) {
                   ret = false;
                   break;
@@ -1765,7 +1768,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
          } else if (type == ocs::tom::FieldType::Object) {
             const auto sub_ep = ep.get<ocs::tom::ConstRawElement>(nm);
             if (sub_ep) {
-               const lDescr *subdescr = object_get_subtype(nm);
+               const lDescr *subdescr = ocs::tom::sub_type(nm);
                if (!object_verify_cull(sub_ep, subdescr)) {
                   ret = false;
                   break;
@@ -1817,7 +1820,8 @@ ocs_object_list_verify_type(const ocs::tom::ConstRawList lp, const lDescr *descr
  * The element's descriptor must describe the expected type, possibly
  * reduced; every sublist and subobject it holds must be of the subtype its
  * field declares (a field without a declared subtype is checked below its
- * own level only).
+ * own level only). The subtypes come from the installed object model
+ * (`ocs::tom::sub_type()`); without an installed model no subtype is declared.
  *
  * @param ep the element, maybe empty (nothing to verify)
  * @param descr the descriptor of the expected type, or nullptr when the type is not fixed
@@ -1837,11 +1841,11 @@ ocs_object_verify_type(const ocs::tom::ConstRawElement ep, const lDescr *descr) 
       const int nm = elem_descr[f.pos].nm;
       const ocs::tom::FieldType type = ocs::tom::field_type_of(elem_descr[f.pos].mt);
       if (type == ocs::tom::FieldType::List) {
-         if (!ocs_object_list_verify_type(ep.get<ocs::tom::ConstRawList>(nm), object_get_subtype(nm))) {
+         if (!ocs_object_list_verify_type(ep.get<ocs::tom::ConstRawList>(nm), ocs::tom::sub_type(nm))) {
             return false;
          }
       } else if (type == ocs::tom::FieldType::Object) {
-         if (!ocs_object_verify_type(ep.get<ocs::tom::ConstRawElement>(nm), object_get_subtype(nm))) {
+         if (!ocs_object_verify_type(ep.get<ocs::tom::ConstRawElement>(nm), ocs::tom::sub_type(nm))) {
             return false;
          }
       }

@@ -37,7 +37,7 @@
  * @brief Interface of the qsub-style command line parser
  */
 
-#include "sgeobj/cull/sge_boundaries.h"
+#include "sgeobj/tom/ocs_tom_boundaries.h"
 #include "tom/ocs_Types.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
