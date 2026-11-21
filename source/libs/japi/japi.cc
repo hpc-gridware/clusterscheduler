@@ -263,6 +263,39 @@ static pthread_mutex_t Master_japi_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 /** Signalled by the event client thread each time a job or task has finished */
 static pthread_cond_t Master_japi_job_list_finished_cv = PTHREAD_COND_INITIALIZER;
 
+/**
+ * @brief A checked, non-owning handle on `Master_japi_job_list`
+ *
+ * The list is a process-lifetime global and therefore held raw, without a
+ * static owner; the code reads it through this handle.
+ *
+ * @return the handle, empty while the session holds no list
+ * @throw ocs::tom::FieldException if the list holds elements of another type than JJ
+ * @note The caller holds Master_japi_job_list_mutex where other threads can reach the list.
+ */
+static ocs::tom::List<ocs::tom::JJ> ocs_japi_master_job_list() {
+   return ocs::tom::List<ocs::tom::JJ>(Master_japi_job_list);
+}
+
+/**
+ * @brief Append a job to `Master_japi_job_list`, created with the first job
+ *
+ * The list gets the name and the hash tables the free emplace_back() gave a
+ * list it created.
+ *
+ * @param jobid the job id, the key of the new element
+ * @return the handle on the new element
+ * @throw ocs::RuntimeException or ocs::tom::ListCoreError if there is no memory, where the free emplace_back()
+ *        gave an empty handle
+ * @note The caller holds Master_japi_job_list_mutex where other threads can reach the list.
+ */
+static ocs::tom::Element<ocs::tom::JJ> ocs_japi_master_job_list_add(const uint32_t jobid) {
+   if (Master_japi_job_list == nullptr) {
+      Master_japi_job_list = ocs::tom::ListPtr<ocs::tom::JJ>::create("ulong_sublist").release();
+   }
+   return ocs_japi_master_job_list().emplace_back<JJ_jobid>(jobid);
+}
+
 /* ---- japi_threads_in_session ------------------------------ */
 
 /**
@@ -1041,11 +1074,10 @@ int japi_string_vector_get_next(drmaa_attr_values_t *iter, dstring *val) {
       }
 
       if (val != nullptr) {
-         sge_dstring_copy_string(val, ocs::tom::get<ST_name>(iter->it.si.next_pos));
+         sge_dstring_copy_string(val, iter->it.si.next_pos.get<ST_name>());
       }
 
-      // the iterator walks a list of ST strings
-      iter->it.si.next_pos = ocs::tom::Element<ocs::tom::ST>(iter->it.si.next_pos).next();
+      iter->it.si.next_pos = iter->it.si.next_pos.next();
       DRETURN(DRMAA_ERRNO_SUCCESS);
    default:
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
@@ -1077,7 +1109,7 @@ int japi_string_vector_get_num(drmaa_attr_values_t *values, int *size) {
          *size = (values->it.ji.end - values->it.ji.start) / values->it.ji.incr + 1;
          DRETURN(DRMAA_ERRNO_SUCCESS);
       case JAPI_ITERATOR_STRINGS:
-         *size = static_cast<int>(ocs::tom::ConstList<ocs::tom::ST>(values->it.si.strings).size());
+         *size = static_cast<int>(values->it.si.strings.size());
          DRETURN(DRMAA_ERRNO_SUCCESS);
       default:
          DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
@@ -1101,9 +1133,12 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
    switch (iter->iterator_type) {
    case JAPI_ITERATOR_BULK_JOBS:
       break;
-   case JAPI_ITERATOR_STRINGS:
-      ocs::tom::free_raw_list(iter->it.si.strings);
+   case JAPI_ITERATOR_STRINGS: {
+      // the vector owns its list: an owner adopts it and frees it at the end of this block
+      const auto strings = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(iter->it.si.strings.raw());
+      iter->it.si.strings = nullptr;
       break;
+   }
    default:
       break;
    }
@@ -1220,7 +1255,7 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
                         bool is_array, dstring *diag) {
    DENTER(TOP_LAYER);
 
-   const auto japi_job = ocs::tom::find_first<JJ_jobid>(Master_japi_job_list, jobid);
+   const auto japi_job = ocs_japi_master_job_list().find_first<JJ_jobid>(jobid);
    if (japi_job != nullptr) {
       /* job may not yet exist */
       sge_dstring_sprintf(diag, MSG_JAPI_JOB_ALREADY_EXISTS_S, jobid);
@@ -1230,7 +1265,7 @@ static int japi_add_job(uint32_t jobid, uint32_t start, uint32_t end, uint32_t i
    /* add job to library session data
       -  all tasks in JJ_not_yet_finished_ids
       -  no task in JJ_finished_jobs */
-   ocs::tom::Element<ocs::tom::JJ> japi_job_jj = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list, jobid);
+   ocs::tom::Element<ocs::tom::JJ> japi_job_jj = ocs_japi_master_job_list_add(jobid);
    object_set_range_id<JJ_not_yet_finished_ids>(japi_job_jj, start, end, incr);
 
    /* mark it as array job */
@@ -2187,7 +2222,7 @@ static int japi_synchronize_jobids_retry(const char *job_ids[], bool dispose) {
          this must be ensured before japi_synchronize_jobids_retry() is called */
       japi_parse_jobid(job_ids[i], &jobid, &taskid, &is_array, nullptr);
 
-      const auto japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, jobid);
+      const auto japi_job = ocs_japi_master_job_list().find_first<JJ_jobid>(jobid);
 
       if (japi_job == nullptr) {
          DPRINTF("synchronized with " sge_u32 "." sge_u32"\n", jobid, taskid);
@@ -2400,8 +2435,8 @@ int japi_wait(const char *job_id, dstring *waited_job, int *stat,
 
             (*rusage)->iterator_type = JAPI_ITERATOR_STRINGS;
             (*rusage)->it.si.next_pos = slp->front();
-            // the string vector of the public interface owns the list raw
-            (*rusage)->it.si.strings = slp.release();
+            // the string vector of the public interface owns the list through a non-owning handle
+            (*rusage)->it.si.strings = ocs::tom::List<ocs::tom::ST>::from_typed(slp.release());
          }
       }
 
@@ -2791,7 +2826,7 @@ japi_sge_state_to_drmaa_state(const ocs::tom::ConstElement<ocs::tom::JB> job, bo
 
       JAPI_LOCK_JOB_LIST();
 
-      ocs::tom::Element<ocs::tom::JJ> japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, jobid);
+      ocs::tom::Element<ocs::tom::JJ> japi_job = ocs_japi_master_job_list().find_first<JJ_jobid>(jobid);
 
       if (japi_job != nullptr) {
          uint32_t wait_status;
@@ -2969,7 +3004,7 @@ japi_finished_task_state(uint32_t jobid, uint32_t taskid, bool is_array_task, in
 
    bool found = false;
    JAPI_LOCK_JOB_LIST();
-   ocs::tom::ConstElement<ocs::tom::JJ> japi_job = ocs::tom::find_first<JJ_jobid>(Master_japi_job_list, jobid);
+   ocs::tom::ConstElement<ocs::tom::JJ> japi_job = ocs_japi_master_job_list().find_first<JJ_jobid>(jobid);
    // JOB_TYPE_IS_ARRAY() returns the bit, not a bool
    bool is_array_job = japi_job != nullptr && JOB_TYPE_IS_ARRAY(japi_job.get<JJ_type>()) != 0;
    if (japi_job != nullptr && is_array_task == is_array_job) {
@@ -3778,8 +3813,8 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
                /* Now add any left over jobs to the master job list. */
                for (const auto sge_job : sge_job_list) {
-                  ocs::tom::Element<ocs::tom::JJ> japi_job = ocs::tom::emplace_back<JJ_jobid>(&Master_japi_job_list,
-                                                  sge_job.get<JB_job_number>());
+                  ocs::tom::Element<ocs::tom::JJ> japi_job =
+                     ocs_japi_master_job_list_add(sge_job.get<JB_job_number>());
                   japi_job.set<JJ_type>(sge_job.get<JB_type>());
                   japi_job.set<JJ_not_yet_finished_ids>(
                                                          sge_job.exchange<JB_ja_structure>(nullptr));
@@ -3819,7 +3854,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
                JAPI_LOCK_JOB_LIST();
 
-               japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, intkey);
+               japi_job = ocs_japi_master_job_list().find_first<JJ_jobid>(intkey);
                if (japi_job != nullptr) {
                   if (range_list_is_id_within(japi_job.get<JJ_not_yet_finished_ids>(), intkey2)) {
                      ocs::tom::ConstList<ocs::tom::UA> usage = nullptr;
@@ -3862,7 +3897,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
 
                   JAPI_LOCK_JOB_LIST();
 
-                  japi_job = ocs::tom::find_first_rw<JJ_jobid>(Master_japi_job_list, intkey);
+                  japi_job = ocs_japi_master_job_list().find_first<JJ_jobid>(intkey);
                   if (japi_job != nullptr) {
                      if (!range_list_is_id_within(japi_job.get<JJ_started_task_ids>(), intkey2)) {
                         auto range = japi_job.exchange<JJ_started_task_ids>(nullptr);

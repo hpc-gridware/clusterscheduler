@@ -435,7 +435,8 @@ static char **sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN>
 
    sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
 
-   ocs::tom::ConstElement<ocs::tom::CF> task = ocs::tom::find_first<CF_name>(task_config, taskname);
+   // task_config is a process-lifetime global held raw, read through a checked handle
+   const auto task = ocs::tom::ConstList<ocs::tom::CF>(task_config).find_first<CF_name>(taskname);
    if (task == nullptr) {
       DRETURN(nullptr);
    }
@@ -653,8 +654,8 @@ int drmaa_allocate_job_template(drmaa_job_template_t **jtp, char *error_diagnosi
       DRETURN(ret);
    }
 
-   *jtp = (drmaa_job_template_t *)sge_malloc(sizeof(drmaa_job_template_t));
-   (*jtp)->strings = (*jtp)->string_vectors = nullptr;
+   // the owners in the template start empty, a list is created with its first attribute
+   *jtp = new drmaa_job_template_t{};
 
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
@@ -688,19 +689,41 @@ int drmaa_delete_job_template(drmaa_job_template_t *jt, char *error_diagnosis, s
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
 
-   ocs::tom::free_raw_list(jt->strings);
-   ocs::tom::free_raw_list(jt->string_vectors);
-   sge_free(&jt);
+   // the owners in the template free its lists
+   delete jt;
    DRETURN(DRMAA_ERRNO_SUCCESS);
 }
 
+
+/**
+ * @brief Append a string to a string vector that iterates over strings
+ *
+ * The vector's list is created with its first string, with the name and the
+ * hash tables the free emplace_back() gave a list it created, so a vector
+ * without strings keeps no list.
+ *
+ * @param vector the string vector, of iterator type JAPI_ITERATOR_STRINGS
+ * @param name the string, not nullptr
+ * @throw ocs::RuntimeException or ocs::tom::ListCoreError if there is no memory, where the free emplace_back()
+ *        gave an empty handle
+ */
+static void ocs_drmaa_string_vector_append(drmaa_attr_names_t *vector, const char *name) {
+   auto &strings = vector->it.si.strings;
+   if (!strings) {
+      strings = ocs::tom::List<ocs::tom::ST>::from_typed(ocs::tom::ListPtr<ocs::tom::ST>::create("").release());
+   }
+   strings.emplace_back<ST_name>(name);
+}
 
 /**
  * @brief Returns values in 'name' as string vector
  *
  * @param name the nullptr terminated array of strings
  *
- * @return The string vector as it is used for DRMAA, nullptr on an error
+ * The vector goes back to a C caller of the DRMAA API, so no exception may leave
+ * it: without memory the vector is freed and nullptr returned, as before.
+ *
+ * @return The string vector as it is used for DRMAA, nullptr on an error (also without memory)
  *
  * @note MT-NOTES: drmaa_fill_string_vector() is MT safe
  */
@@ -715,16 +738,19 @@ static drmaa_attr_names_t *drmaa_fill_string_vector(const char *name[]) {
       DRETURN(nullptr);
    }
 
-   for (i=0; name[i]; i++) {
-      DPRINTF("adding \"%s\"\n", name[i]);
-      if (!ocs::tom::emplace_back<ST_name>(&(vector->it.si.strings), name[i])) {
-         japi_delete_string_vector((drmaa_attr_values_t *)vector);
-         DRETURN(nullptr);
+   try {
+      for (i=0; name[i]; i++) {
+         DPRINTF("adding \"%s\"\n", name[i]);
+         ocs_drmaa_string_vector_append(vector, name[i]);
       }
+   } catch (const ocs::RuntimeException &) {
+      // no memory: no exception crosses the C API of libdrmaa
+      japi_delete_string_vector(reinterpret_cast<drmaa_attr_values_t *>(vector));
+      DRETURN(nullptr);
    }
 
-   /* initialize iterator; the strings were added as ST elements above */
-   vector->it.si.next_pos = ocs::tom::List<ocs::tom::ST>::from_typed(vector->it.si.strings).front();
+   /* initialize iterator */
+   vector->it.si.next_pos = vector->it.si.strings.front();
 
    DRETURN(vector);
 }
@@ -754,7 +780,7 @@ static int drmaa_is_attribute_supported(const char *name, bool vector, dstring *
       p_attr = drmaa_fill_supported_nonvector_attributes(diag);
    }
 
-   if (ocs::tom::find_first<ST_name>(p_attr->it.si.strings, name)) {
+   if (p_attr->it.si.strings.find_first<ST_name>(name)) {
       DPRINTF("Attribute %s is supported\n", name);
       ret = DRMAA_ERRNO_SUCCESS;
    } else {
@@ -848,10 +874,14 @@ int drmaa_set_attribute(drmaa_job_template_t *jt, const char *name, const char *
       }
 
       /* add or replace attribute */
-      if ((ep = ocs::tom::find_first_rw<VA_variable>(jt->strings, name))) {
+      if ((ep = jt->strings->find_first<VA_variable>(name))) {
          ep.set<VA_value>(value);
       } else {
-         ep = ocs::tom::emplace_back<VA_variable>(&(jt->strings), name);
+         if (!jt->strings) {
+            // the name and the hash tables the free emplace_back() gave a list it created
+            jt->strings = ocs::tom::ListPtr<ocs::tom::VA>::create("");
+         }
+         ep = jt->strings->emplace_back<VA_variable>(name);
          ep.set<VA_value>(value);
       }
    }
@@ -905,7 +935,7 @@ int drmaa_get_attribute(drmaa_job_template_t *jt, const char *name, char *value,
    sge_dstring_init(&val, value, value_len+1);
 
    /* search name in string_vectors */
-   if (!(va = ocs::tom::find_first<VA_variable>(jt->strings, name))) {
+   if (!(va = jt->strings->find_first<VA_variable>(name))) {
       japi_standard_error(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
    }
@@ -962,11 +992,15 @@ int drmaa_set_vector_attribute(drmaa_job_template_t *jt, const char *name,
       DRETURN(DRMAA_ERRNO_INVALID_ARGUMENT);
    }
 
-   if ((ep = ocs::tom::find_first_rw<NSV_name>(jt->string_vectors, name)) != nullptr) {
+   if ((ep = jt->string_vectors->find_first<NSV_name>(name)) != nullptr) {
       ep.set<NSV_strings>(nullptr);
    }
    else {
-      ep = ocs::tom::emplace_back<NSV_name>(&(jt->string_vectors), name);
+      if (!jt->string_vectors) {
+         // the name and the hash tables the free emplace_back() gave a list it created
+         jt->string_vectors = ocs::tom::ListPtr<ocs::tom::NSV>::create("");
+      }
+      ep = jt->string_vectors->emplace_back<NSV_name>(name);
    }
 
    auto lp = ocs::tom::ListPtr<ocs::tom::ST>::create(nullptr);
@@ -1024,7 +1058,7 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    /* search name in string_vectors */
-   if (!(nsv = ocs::tom::find_first<NSV_name>(jt->string_vectors, name))) {
+   if (!(nsv = jt->string_vectors->find_first<NSV_name>(name))) {
       japi_standard_error(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE, diagp);
       DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
    }
@@ -1036,15 +1070,15 @@ int drmaa_get_vector_attribute(drmaa_job_template_t *jt, const char *name,
    }
 
    /* copy job template attributes into iterator */
-   iter->it.si.strings = nsv.get<NSV_strings>().clone().release();
+   iter->it.si.strings = ocs::tom::List<ocs::tom::ST>::from_typed(nsv.get<NSV_strings>().clone().release());
    if (!iter->it.si.strings) {
       japi_delete_string_vector(iter);
       japi_standard_error(DRMAA_ERRNO_NO_MEMORY, diagp);
       DRETURN(DRMAA_ERRNO_NO_MEMORY);
    }
 
-   /* initialize iterator; the copy holds the ST strings of NSV_strings */
-   iter->it.si.next_pos = ocs::tom::List<ocs::tom::ST>::from_typed(iter->it.si.strings).front();
+   /* initialize iterator */
+   iter->it.si.next_pos = iter->it.si.strings.front();
 
    *values = iter;
 
@@ -2319,7 +2353,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    /*
     * append the native spec switches to the list if they exist
     */
-   if ((ep=ocs::tom::find_first<VA_variable>(drmaa_jt->strings, DRMAA_NATIVE_SPECIFICATION))) {
+   if ((ep = drmaa_jt->strings->find_first<VA_variable>(DRMAA_NATIVE_SPECIFICATION))) {
       int num_args;
       char **args;
       const char *value = ep.get<VA_value>();
@@ -2360,8 +2394,8 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    alp.reset();
 
    if ((drmaa_errno = opt_list_append_opts_from_drmaa_attr(opts_drmaa,
-                           ocs::tom::ConstList<ocs::tom::VA>(drmaa_jt->strings),
-                           ocs::tom::ConstList<ocs::tom::NSV>(drmaa_jt->string_vectors),
+                           *drmaa_jt->strings,
+                           *drmaa_jt->string_vectors,
                            is_bulk, diag)) != DRMAA_ERRNO_SUCCESS) {
       DRETURN(Result(drmaa_errno, nullptr));
    }
@@ -3584,6 +3618,15 @@ static drmaa_attr_names_t *drmaa_fill_supported_vector_attributes(dstring *diag)
    return drmaa_fill_string_vector(drmaa_supported_vector);
 }
 
+/**
+ * @brief The names of the supported scalar attributes, as a string vector
+ *
+ * The fixed names of #drmaa_supported_nonvector and, when delegated file
+ * staging is enabled, DRMAA_TRANSFER_FILES.
+ *
+ * @param diag error info
+ * @return the string vector, nullptr if it cannot be allocated
+ */
 static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *diag) {
    DENTER(TOP_LAYER);
 
@@ -3591,11 +3634,14 @@ static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *di
 
    p = drmaa_fill_string_vector(drmaa_supported_nonvector);
 
-   if (japi_is_delegated_file_staging_enabled(diag)) {
+   if (p != nullptr && japi_is_delegated_file_staging_enabled(diag)) {
       DPRINTF("adding \"%s\"\n", DRMAA_TRANSFER_FILES);
-      if (!ocs::tom::emplace_back<ST_name>(&(p->it.si.strings), DRMAA_TRANSFER_FILES)) {
-         japi_delete_string_vector((drmaa_attr_values_t *)p);
-         DRETURN(nullptr);
+      try {
+         ocs_drmaa_string_vector_append(p, DRMAA_TRANSFER_FILES);
+      } catch (const ocs::RuntimeException &) {
+         // no memory: no exception crosses the C API of libdrmaa
+         japi_delete_string_vector(reinterpret_cast<drmaa_attr_values_t *>(p));
+         p = nullptr;
       }
    }
 

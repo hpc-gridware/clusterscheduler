@@ -47,12 +47,24 @@
  * job and one over a cull list of strings.
  */
 
-#include "tom/ocs_Types.h"
+#include <type_traits>
 
-/** @brief The attributes of a job template, both scalar and vector ones */
+#include "tom/ocs_Element.h"
+#include "tom/ocs_List.h"
+#include "sgeobj/tom/ocs_tom_NSV.h"
+#include "sgeobj/tom/ocs_tom_ST.h"
+#include "sgeobj/tom/ocs_tom_VA.h"
+
+/**
+ * @brief The attributes of a job template, both scalar and vector ones
+ *
+ * Created with `new` by drmaa_allocate_job_template() and destroyed with
+ * `delete` by drmaa_delete_job_template(); the owners free the lists. A list
+ * is created with its first attribute.
+ */
 struct drmaa_job_template_s {
-   lList *strings;        ///< The scalar attributes as `VA`, name and value
-   lList *string_vectors; ///< The vector attributes as `NSV`, name and list of values
+   ocs::tom::ListPtr<ocs::tom::VA> strings;         ///< The scalar attributes, name and value
+   ocs::tom::ListPtr<ocs::tom::NSV> string_vectors; ///< The vector attributes, name and list of values
 };
 
 /**
@@ -78,9 +90,13 @@ struct drmaa_bulk_jobid_iterator_s {
  * rusage strings of a finished job.
  */
 struct drmaa_string_array_iterator_s {
-   lList *strings;  ///< The strings as `ST` elements, owned by the iterator
-   /** Element the next call returns, `nullptr` once the iterator is exhausted */
-   lListElem *next_pos;
+   /**
+    * The strings, owned by the iterator and freed by japi_delete_string_vector();
+    * a non-owning handle, as the struct lives in a union and in memory from sge_malloc()
+    */
+   ocs::tom::List<ocs::tom::ST> strings;
+   /** Element the next call returns, empty once the iterator is exhausted */
+   ocs::tom::Element<ocs::tom::ST> next_pos;
 };
 
 /**
@@ -114,3 +130,11 @@ struct drmaa_job_ids_s {
       struct drmaa_string_array_iterator_s si;
    } it;
 };
+
+// the string vectors are allocated with sge_malloc() and released with sge_free(): no constructor or destructor runs
+static_assert(std::is_trivially_copyable_v<drmaa_attr_names_s> &&
+              std::is_trivially_destructible_v<drmaa_attr_names_s>);
+static_assert(std::is_trivially_copyable_v<drmaa_attr_values_s> &&
+              std::is_trivially_destructible_v<drmaa_attr_values_s>);
+static_assert(std::is_trivially_copyable_v<drmaa_job_ids_s> &&
+              std::is_trivially_destructible_v<drmaa_job_ids_s>);
