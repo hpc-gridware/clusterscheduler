@@ -431,7 +431,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
             }
          }
       } else {
-         CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CE_name>::info.name, __func__);
+         CRITICAL(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<CE_name>::info.name, __func__);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }

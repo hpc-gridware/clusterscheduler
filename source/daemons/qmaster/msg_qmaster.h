@@ -520,7 +520,7 @@
 
 #define MSG_STARTUP_BEGINWITHSTARTUP                  _MESSAGE(33590, _("begin with start up"))
 #define MSG_STARTUP_SETUPFAILED                       _MESSAGE(33591, _("setup failed"))
-#define MSG_CULL_FAILEDINCULLUNPACKLISTREPORT         _MESSAGE(33595, _("Failed in cull_unpack_list report"))
+#define MSG_QMASTER_UNPACKREPORTFAILED                _MESSAGE(33595, _("unpacking the report list failed"))
 #define MSG_SHUTDOWN_SHUTTINGDOWNQMASTERREQUIRESMANAGERPRIVILEGES    _MESSAGE(33596, _("shutting down qmaster requires manager privileges"))
 #define MSG_GOTSTATUSREPORTOFUNKNOWNCOMMPROC_S        _MESSAGE(33597, _("got load report of unknown commproc " SFQ))
 #define MSG_GOTSTATUSREPORTOFUNKNOWNEXECHOST_S        _MESSAGE(33598, _("got load report of unknown exec host " SFQ))

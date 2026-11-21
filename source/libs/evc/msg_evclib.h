@@ -56,7 +56,7 @@
 #define MSG_EVENT_HIGHESTEVENTISXWHILEWAITINGFORY_UU  _MESSAGE(65001, _("highest event number is " sge_u32 " while waiting for " sge_u32))
 #define MSG_EVENT_SMALLESTEVENTXISGRTHYWAITFOR_UU     _MESSAGE(65002, _("smallest event number " sge_u32 " is greater than number " sge_u32 " i'm waiting for"))
 #define MSG_EVENT_EVENTSWITHNOINCREASINGNUMBERS       _MESSAGE(65003, _("got events with not increasing numbers"))
-#define MSG_LIST_FAILEDINCULLUNPACKREPORT             _MESSAGE(65004, _("Failed in cull_unpack report"))
+#define MSG_EVC_UNPACKREPORTFAILED                    _MESSAGE(65004, _("unpacking the report failed"))
 #define MSG_EVENT_ILLEGAL_ID_OR_NAME_US               _MESSAGE(65005, _("Illegal id " sge_u32 " or name " SFQ " in event client registration"))
 #define MSG_EVENT_UNINITIALIZED_EC                    _MESSAGE(65006, _("event client not properly initialized"))
 #define MSG_EVENT_ILLEGALEVENTID_I                    _MESSAGE(65007, _("illegal event id %d"))

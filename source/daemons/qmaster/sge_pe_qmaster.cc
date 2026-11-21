@@ -195,7 +195,7 @@ pe_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs::to
    if (pe.has<PE_urgency_slots>()) {
       s = pe.get<PE_urgency_slots>();
       if (s == nullptr) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<PE_urgency_slots>::info.name, "validate_pe");
+         ERROR(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<PE_urgency_slots>::info.name, "validate_pe");
          answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
          DRETURN(STATUS_EEXIST);
       }
@@ -316,7 +316,7 @@ sge_del_pe(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
    }
 
    if (!pep.has<PE_name>()) {
-      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<PE_name>::info.name, __func__);
+      ERROR(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<PE_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

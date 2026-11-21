@@ -965,7 +965,6 @@
 #define MSG_NULLELEMENTPASSEDTO_S         _MESSAGE(60301, _("nullptr object pointer passed to function " SFQ))
 
 #define MSG_NMNOTINELEMENT_S              _MESSAGE(60401, _("attribute " SFQ " not contained in given object"))
-#define MSG_INVALIDCULLDATATYPE_D         _MESSAGE(60402, _("invalid cull datatype %d"))
 #define MSG_ERRORCREATINGOBJECT           _MESSAGE(60403, _("error creating object"))
 #define MSG_ERRORCREATINGLIST             _MESSAGE(60404, _("error creating list"))
 
@@ -991,7 +990,7 @@
 #define MSG_INAVLID_PARAMETER_IN_S        _MESSAGE(60601, _("invalid parameter in " SFN))
 #define MSG_AUTHINFO_IS_NULL              _MESSAGE(60602, _("authentication information is nullptr"))
 #define MSG_OBJ_PE                        _MESSAGE(60603, _("parallel environment"))
-#define MSG_SGETEXT_MISSINGCULLFIELD_SS   _MESSAGE(60604, _("missing cull field " SFQ " in " SFN "()"))
+#define MSG_SGETEXT_MISSINGFIELD_SS       _MESSAGE(60604, _("missing field " SFQ " in " SFN "()"))
 #define MSG_OBJ_USERLIST                  _MESSAGE(60605, _("user list"))
 #define MSG_OBJ_XUSERLIST                 _MESSAGE(60606, _("xuser list"))
 #define MSG_QCONF_ONLYONERANGE            _MESSAGE(60607, _("ERROR! -t option only allows one range specification"))

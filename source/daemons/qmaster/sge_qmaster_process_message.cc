@@ -727,11 +727,11 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
       rep = ocs::tom::ListPtr<ocs::tom::REP>::unpack(aMsg->buf);
    } catch (const ocs::tom::PackException &) {
       // the bytes cut off or no memory, where cull_unpack_list() returned an error
-      ERROR(SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT);
+      ERROR(SFNMAX, MSG_QMASTER_UNPACKREPORTFAILED);
       DRETURN_VOID;
    } catch (const ocs::tom::FieldException &) {
       // a list of another type than reports: refused here, so a worker thread never meets it
-      ERROR(SFNMAX, MSG_CULL_FAILEDINCULLUNPACKLISTREPORT);
+      ERROR(SFNMAX, MSG_QMASTER_UNPACKREPORTFAILED);
       DRETURN_VOID;
    }
 

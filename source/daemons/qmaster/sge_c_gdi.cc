@@ -1816,7 +1816,7 @@ static int
 ocs_gdi_add_mod_missing_key(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const gdi_object_t *object,
                             const char *function) {
    DENTER(TOP_LAYER);
-   CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::field_name(object->key_nm), function);
+   CRITICAL(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::field_name(object->key_nm), function);
    answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
    DRETURN(STATUS_EUNKNOWN);
 }

@@ -255,7 +255,7 @@
 #define MSG_PE_REJECTINGURGENCYSLOTS_S  _MESSAGE(64319, _("rejecting invalid urgency_slots setting " SFQ))
 #define MSG_CALENDAR_CALCTERMINATED    _MESSAGE(64320, _("Calendar calculation terminated due to inf. loop!"))
 
-#define MSG_OBJECT_STRUCTURE_ERROR        _MESSAGE(64321, _("corrupted cull structure or reduced element"))
+#define MSG_OBJECT_STRUCTURE_ERROR        _MESSAGE(64321, _("corrupted object structure or reduced element"))
 #define MSG_OBJECT_ULONG_NOT_NULL_S       _MESSAGE(64322, _("object attribute " SFQ " may not be 0"))
 #define MSG_OBJECT_ULONG_NULL_SU          _MESSAGE(64323, _("object attribute " SFQ " may only be 0 but is " sge_u32))
 #define MSG_OBJECT_ULONG64_NULL_SU        _MESSAGE(64324, _("object attribute " SFQ " may only be 0 but is " sge_u64))

@@ -221,7 +221,7 @@ sge_del_role(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Con
    }
 
    if (!ep.has<RL_name>()) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<RL_name>::info.name, __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<RL_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

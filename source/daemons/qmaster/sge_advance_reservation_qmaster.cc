@@ -581,7 +581,7 @@ ar_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::ConstElem
 
    /* ep is no ar_del element, if ep has no ID_str */
    if (!ep.has<ID_str>()) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<ID_str>::info.name, __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<ID_str>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       sge_dstring_free(&buffer);
       DRETURN(STATUS_EUNKNOWN);

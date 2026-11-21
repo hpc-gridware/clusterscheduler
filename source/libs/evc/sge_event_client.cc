@@ -2581,9 +2581,9 @@ get_event_list(sge_evc_class_t *thiz, const int sync, int *commlib_error) {
          ret = ocs::tom::ListPtr<ocs::tom::REP>::unpack(pb);
       } catch (const ocs::tom::PackException &) {
          // the bytes cut off or no memory, where cull_unpack_list() returned an error and freed what it unpacked
-         ERROR(SFNMAX, MSG_LIST_FAILEDINCULLUNPACKREPORT);
+         ERROR(SFNMAX, MSG_EVC_UNPACKREPORTFAILED);
       } catch (const ocs::tom::FieldException &) {
-         ERROR(SFNMAX, MSG_LIST_FAILEDINCULLUNPACKREPORT);
+         ERROR(SFNMAX, MSG_EVC_UNPACKREPORTFAILED);
       }
       ocs::tom::clear_buffer(&pb);
    }

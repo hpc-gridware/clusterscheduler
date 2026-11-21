@@ -329,7 +329,7 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    }
    /* ep is no host element, if ep has no EH_name */
    if (!hep.has<EH_name>()) {
-      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<EH_name>::info.name, __func__);
+      ERROR(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<EH_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

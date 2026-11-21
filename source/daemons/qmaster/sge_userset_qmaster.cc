@@ -123,7 +123,7 @@ sge_del_userset(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::
 
    /* ep is no userset element, if ep has no US_name */
    if (!ep.has<US_name>()) {
-      CRITICAL(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<US_name>::info.name, __func__);
+      CRITICAL(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<US_name>::info.name, __func__);
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }

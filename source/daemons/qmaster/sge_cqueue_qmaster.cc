@@ -965,7 +965,7 @@ cqueue_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
          }
       }
    } else {
-      ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CQ_name>::info.name, __func__);
+      ERROR(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<CQ_name>::info.name, __func__);
       answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -1388,7 +1388,7 @@ cqueue_del(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Const
             ret = false;
          }
       } else {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<CQ_name>::info.name, __func__);
+         ERROR(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<CQ_name>::info.name, __func__);
          answer_list_add(answer_list, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = false;
       }

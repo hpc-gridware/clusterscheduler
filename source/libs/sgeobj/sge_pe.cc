@@ -366,10 +366,10 @@ pe_validate_allocation_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
 
    if (allocation_rule == nullptr) {
       if (output_errors) {
-         ERROR(MSG_SGETEXT_MISSINGCULLFIELD_SS, ocs::tom::FieldTraits<PE_allocation_rule>::info.name,
+         ERROR(MSG_SGETEXT_MISSINGFIELD_SS, ocs::tom::FieldTraits<PE_allocation_rule>::info.name,
                "pe_validate_allocation_rule");
       }
-      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_SGETEXT_MISSINGCULLFIELD_SS,
+      answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR, MSG_SGETEXT_MISSINGFIELD_SS,
                               ocs::tom::FieldTraits<PE_allocation_rule>::info.name, "pe_validate_allocation_rule");
       ret = false;
    } else {
