@@ -107,6 +107,17 @@ sge_initialize_persistance_timer() {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Flush and close the spooling backend at qmaster shutdown
+ *
+ * Triggers the pending spooling actions, then takes the default spooling
+ * context out of the default context list, shuts it down and frees it
+ * (CS-3191: freeing it while it was still linked left the list pointing at
+ * freed memory).
+ *
+ * @param answer_list receives messages for the caller, or nullptr to output them here
+ * @return true
+ */
 bool
 sge_shutdown_persistence(lList **answer_list) {
    bool ret = true;
@@ -121,8 +132,8 @@ sge_shutdown_persistence(lList **answer_list) {
       answer_list_output(&alp);
    }
 
-   /* shutdown spooling */
-   context = spool_get_default_context();
+   /* shutdown spooling: take the default context out of the default list, then free it */
+   context = ocs_spool_clear_default_context();
    if (context != nullptr) {
       lList *local_answer = nullptr;
 
@@ -136,7 +147,6 @@ sge_shutdown_persistence(lList **answer_list) {
       }
 
       lFreeElem(&context);
-      spool_set_default_context(context);
    }
 
    DRETURN(ret);

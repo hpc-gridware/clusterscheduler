@@ -584,6 +584,27 @@ spool_get_default_context()
    return lFirstRW(Default_Spool_Context_List);
 }
 
+/**
+ * @brief Remove the default spooling context and hand it to the caller (CS-3191)
+ *
+ * Takes the context out of the default list, so that spool_get_default_context()
+ * returns nullptr afterwards. The caller owns the context: it shuts it down and
+ * frees it. Freeing the element spool_get_default_context() returns would leave
+ * the list pointing at freed memory.
+ *
+ * @return the default context, owned by the caller, or nullptr if none is set
+ */
+lListElem *
+ocs_spool_clear_default_context()
+{
+   DENTER(TOP_LAYER);
+   lListElem *context = lFirstRW(Default_Spool_Context_List);
+   if (context != nullptr) {
+      context = lDechainElem(Default_Spool_Context_List, context);
+   }
+   DRETURN(context);
+}
+
 /****** spool/spool_context_search_rule() *******************************
 *  NAME
 *     spool_context_search_rule() -- search a certain rule 

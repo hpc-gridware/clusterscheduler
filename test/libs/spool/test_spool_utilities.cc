@@ -45,6 +45,7 @@
 #include "sgeobj/cull/sge_all_listsL.h"
 #include "sgeobj/sge_object.h"
 
+#include "spool/sge_spooling.h"
 #include "spool/sge_spooling_utilities.h"
 
 static int s_fail = 0;
@@ -72,8 +73,9 @@ static int s_fail = 0;
 /**
  * @brief Run the checks of the spooling utilities
  *
- * Checks spool_get_fields_to_spool() and that every QU_Type field survives a
- * serialize and parse round-trip.
+ * Checks spool_get_fields_to_spool(), that every QU_Type field survives a
+ * serialize and parse round-trip, and setting, getting and clearing the
+ * default spooling context (CS-3191).
  *
  * @return 0 if all checks passed, 1 otherwise
  */
@@ -151,6 +153,30 @@ int main(int /*argc*/, char * /*argv*/[]) {
       lFreeElem(&copy);
       sge_dstring_free(&elem_str);
       sge_dstring_free(&copy_str);
+   }
+
+   // --- the default spooling context (CS-3191) ---
+   printf("\n--- default spooling context ---\n");
+   {
+      CHECK(id, "no default context: get and clear give nullptr",
+            spool_get_default_context() == nullptr && ocs_spool_clear_default_context() == nullptr); id++;
+
+      lListElem *context = lCreateElem(SPC_Type);
+      lSetString(context, SPC_name, "default");
+      spool_set_default_context(context);
+      CHECK(id, "set: get gives the context that was set", spool_get_default_context() == context); id++;
+
+      lListElem *cleared = ocs_spool_clear_default_context();
+      CHECK(id, "clear: hands over the context and get gives nullptr afterwards",
+            cleared == context && spool_get_default_context() == nullptr); id++;
+      CHECK(id, "clear: the handed over context is no longer linked in the default list",
+            lGetString(cleared, SPC_name) != nullptr && ocs_spool_clear_default_context() == nullptr); id++;
+
+      // the default list stays usable: a context set again is found again
+      spool_set_default_context(cleared);
+      CHECK(id, "set after clear: get gives the context again", spool_get_default_context() == context); id++;
+      cleared = ocs_spool_clear_default_context();
+      lFreeElem(&cleared);
    }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

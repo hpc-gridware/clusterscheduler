@@ -253,6 +253,9 @@ lListElem *
 spool_get_default_context();
 
 lListElem *
+ocs_spool_clear_default_context();
+
+lListElem *
 spool_context_search_rule(const lListElem *context, const char *name);
 
 lListElem *
