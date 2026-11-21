@@ -95,7 +95,11 @@ foreach (name string_into_number job_field_on_queue raw_pointer_assigned setter_
                free_find_first_rw_on_const_list free_find_next_on_typed_list
                free_exchange_on_handle free_exchange_on_owner free_get_or_create_on_handle
                free_runtime_get_on_handle free_runtime_set_on_handle free_runtime_has_on_handle
-               free_has_typed_flag_on_handle)
+               free_has_typed_flag_on_handle free_list_ref_typed_flag_on_handle
+               free_find_first_in_on_handle free_find_first_in_rw_on_handle free_emplace_back_in_on_handle
+               free_erase_in_on_handle free_swap_on_handle free_list_ref_on_handle free_get_or_empty_on_handle
+               free_has_any_bits_on_handle free_or_bits_on_handle free_and_bits_on_handle free_clear_bits_on_handle
+               free_runtime_get_or_on_handle free_runtime_exchange_on_handle free_runtime_take_on_handle)
    set(stamp ${CMAKE_CURRENT_BINARY_DIR}/compile_fail_${name}.stamp)
    add_custom_command(OUTPUT ${stamp}
            COMMAND ${CMAKE_COMMAND}

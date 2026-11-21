@@ -1763,6 +1763,79 @@ namespace ocs::tom {
    template <ObjectType T>
    bool has(const ElementPtr<T> &element, int nm) = delete;
 
+   // The same for the run-time forms a typed handle has no member for: get_or(), exchange() of a list field
+   // given by number and take_raw_object(). Code that is generic over object types writes the raw form on h.raw().
+
+   /**
+    * @brief Deleted: a typed handle has no run-time get_or(); use get_or<V>(h.raw(), nm, fallback) (CS-3103)
+    * @tparam V the value type
+    * @tparam T the object type of the handle
+    * @param element the handle
+    * @param nm the field number
+    * @param fallback the value for a field the element does not hold
+    * @return nothing, the call does not compile
+    */
+   template <typename V, ObjectType T>
+   V get_or(const ConstElement<T> &element, int nm, V fallback) = delete;
+
+   /**
+    * @brief Deleted: an owning handle has no run-time get_or(); use get_or<V>(ep->raw(), nm, fallback) (CS-3103)
+    * @tparam V the value type
+    * @tparam T the object type of the handle
+    * @param element the owning handle
+    * @param nm the field number
+    * @param fallback the value for a field the element does not hold
+    * @return nothing, the call does not compile
+    */
+   template <typename V, ObjectType T>
+   V get_or(const ElementPtr<T> &element, int nm, V fallback) = delete;
+
+   /**
+    * @brief Deleted: a typed handle has no run-time exchange(); use the member h.exchange<F>(std::move(list)) or,
+    *        for a field number known only at run time, exchange(h.raw(), nm, std::move(list)) (CS-3103)
+    * @tparam T the object type of the handle
+    * @param element the handle
+    * @param nm the field number
+    * @param list the new list
+    * @return nothing, the call does not compile
+    */
+   template <ObjectType T>
+   RawListPtr exchange(const ConstElement<T> &element, int nm, RawListPtr list) = delete;
+
+   /**
+    * @brief Deleted: an owning handle has no run-time exchange(); use the member ep->exchange<F>(std::move(list))
+    *        or, for a field number known only at run time, exchange(ep->raw(), nm, std::move(list)) (CS-3103)
+    * @tparam T the object type of the handle
+    * @param element the owning handle
+    * @param nm the field number
+    * @param list the new list
+    * @return nothing, the call does not compile
+    */
+   template <ObjectType T>
+   RawListPtr exchange(const ElementPtr<T> &element, int nm, RawListPtr list) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member h.take<F>() or, for a field number known only at run time,
+    *        take_raw_object(h.raw(), nm) (CS-3103)
+    * @tparam T the object type of the handle
+    * @param element the handle
+    * @param nm the field number
+    * @return nothing, the call does not compile
+    */
+   template <ObjectType T>
+   RawElementPtr take_raw_object(const ConstElement<T> &element, int nm) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member ep->take<F>() or, for a field number known only at run
+    *        time, take_raw_object(ep->raw(), nm) (CS-3103)
+    * @tparam T the object type of the handle
+    * @param element the owning handle
+    * @param nm the field number
+    * @return nothing, the call does not compile
+    */
+   template <ObjectType T>
+   RawElementPtr take_raw_object(const ElementPtr<T> &element, int nm) = delete;
+
    /**
     * @brief The first element of a list whose key field holds a key, through a read-only handle; forwards to
     *        find_first<V>(const lList *, int, V)

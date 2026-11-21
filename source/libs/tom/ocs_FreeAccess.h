@@ -762,6 +762,34 @@ namespace ocs::tom {
    // ---------------------------------------------------------------------------------------------------------------
    // lookups in the list of a list field
 
+   // The forms of this header that take a raw pointer have no flag to skip the type check: a `list_ref<F, true>(h)`
+   // would bind to the raw form through the implicit conversion of a typed handle and pass by the deleted
+   // overloads further down (CS-3103). The members of the handles, which know the element's type, call the
+   // detail::free_* cores with Typed = true instead.
+
+   namespace detail {
+      /**
+       * @brief The core of find_first_in() and find_first_in_rw(): the first element with a key in the list of a
+       *        list field
+       * @tparam LF the list field
+       * @tparam F the key field, of the list field's sub-type
+       * @tparam Typed true if the element comes from a handle of the list field's type: only an absent field is
+       *         checked
+       * @param ep the element, or nullptr
+       * @param key the key
+       * @param function the calling form, for the record of a soft path
+       * @return the element found, or nullptr for none and for a null element
+       * @throw FieldException with reason ForeignField or AbsentField for an element without the list field, or
+       *        DuplicateKey
+       */
+      template <auto LF, auto F, bool Typed>
+      lListElem *free_find_first_in(const lListElem *ep, const RawKey<F> key, const char *function) {
+         lList **lpp = sub_list_ref<LF, Typed>(ep, function);
+         const void *iterator = nullptr;
+         return free_find_first<F>(lpp != nullptr ? *lpp : nullptr, key, &iterator, function);
+      }
+   } // namespace detail
+
    /**
     * @brief The first element with a key in the list of a list field, read only; replaces lGetSubStr(), lGetSubHost(), lGetSubUlong() and lGetSubUlong64()
     *
@@ -771,41 +799,35 @@ namespace ocs::tom {
     *
     * @tparam LF the list field
     * @tparam F the key field, of the list field's sub-type
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param key the key
     * @return the element as a handle of the key field's type, empty if none; it converts to the old pointer
     * @throw FieldException with reason ForeignField or AbsentField for an element without the list field, or
     *        DuplicateKey
-    * @see Typed form: element.get<LF>().find_first<F>()
+    * @see Typed form: ocs::tom::ConstElement<T>::find_first_in<LF, F>()
     */
-   template <auto LF, auto F, bool Typed = false>
+   template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
    [[nodiscard]] detail::ConstElementOf<F> find_first_in(const lListElem *ep, const detail::RawKey<F> key) {
-      lList **lpp = detail::sub_list_ref<LF, Typed>(ep, "ocs::tom::find_first_in");
-      const void *iterator = nullptr;
       return detail::ConstElementOf<F>::from_typed(
-         detail::free_find_first<F>(lpp != nullptr ? *lpp : nullptr, key, &iterator, "ocs::tom::find_first_in"));
+         detail::free_find_first_in<LF, F, false>(ep, key, "ocs::tom::find_first_in"));
    }
 
    /**
     * @brief The first element with a key in the list of a list field; replaces lGetSubStrRW(), lGetSubHostRW(), lGetSubUlongRW() and lGetSubUlong64RW()
     * @tparam LF the list field
     * @tparam F the key field, of the list field's sub-type
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param key the key
     * @return the element as a handle of the key field's type, empty if none; it converts to the old pointer
     * @throw FieldException as #find_first_in
-    * @see Typed form: element.get<LF>().find_first<F>()
+    * @see Typed form: ocs::tom::ConstElement<T>::find_first_in_rw<LF, F>()
     */
-   template <auto LF, auto F, bool Typed = false>
+   template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
    [[nodiscard]] detail::ElementOf<F> find_first_in_rw(const lListElem *ep, const detail::RawKey<F> key) {
-      lList **lpp = detail::sub_list_ref<LF, Typed>(ep, "ocs::tom::find_first_in_rw");
-      const void *iterator = nullptr;
       return detail::ElementOf<F>::from_typed(
-         detail::free_find_first<F>(lpp != nullptr ? *lpp : nullptr, key, &iterator, "ocs::tom::find_first_in_rw"));
+         detail::free_find_first_in<LF, F, false>(ep, key, "ocs::tom::find_first_in_rw"));
    }
 
    // ---------------------------------------------------------------------------------------------------------------
@@ -835,6 +857,26 @@ namespace ocs::tom {
       return detail::ElementOf<F>::from_typed(detail::free_emplace_back<F>(lpp, key, "ocs::tom::emplace_back"));
    }
 
+   namespace detail {
+      /**
+       * @brief The core of emplace_back_in(): create an element with a key and append it to the list of a list
+       *        field, created if needed
+       * @tparam LF the list field
+       * @tparam F the key field, of the list field's sub-type
+       * @tparam Typed true if the element comes from a handle of the list field's type: only an absent field is
+       *         checked
+       * @param ep the element, or nullptr
+       * @param key the key
+       * @return the new element, or nullptr for a null element and on an error
+       * @throw FieldException with reason ForeignField or AbsentField, or DuplicateKey as #emplace_back
+       */
+      template <auto LF, auto F, bool Typed>
+      lListElem *free_emplace_back_in(lListElem *ep, const RawKey<F> key) {
+         lList **lpp = sub_list_ref<LF, Typed>(ep, "ocs::tom::emplace_back_in");
+         return lpp != nullptr ? free_emplace_back<F>(lpp, key, "ocs::tom::emplace_back_in") : nullptr;
+      }
+   } // namespace detail
+
    /**
     * @brief Create an element with a key and append it to the list of a list field, created if needed; replaces lAddSubStr(), lAddSubHost(), lAddSubUlong() and lAddSubUlong64()
     *
@@ -843,19 +885,16 @@ namespace ocs::tom {
     *
     * @tparam LF the list field
     * @tparam F the key field, of the list field's sub-type
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param key the key
     * @return the new element as a handle of the key field's type, empty on an error; it converts to the old pointer
     * @throw FieldException with reason ForeignField or AbsentField, or DuplicateKey as #emplace_back
-    * @see Typed form: element.get_or_create<LF>().emplace_back<F>()
+    * @see Typed form: ocs::tom::Element<T>::emplace_back_in<LF, F>()
     */
-   template <auto LF, auto F, bool Typed = false>
+   template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
    detail::ElementOf<F> emplace_back_in(lListElem *ep, const detail::RawKey<F> key) {
-      lList **lpp = detail::sub_list_ref<LF, Typed>(ep, "ocs::tom::emplace_back_in");
-      return detail::ElementOf<F>::from_typed(
-         lpp != nullptr ? detail::free_emplace_back<F>(lpp, key, "ocs::tom::emplace_back_in") : nullptr);
+      return detail::ElementOf<F>::from_typed(detail::free_emplace_back_in<LF, F, false>(ep, key));
    }
 
    /**
@@ -879,6 +918,25 @@ namespace ocs::tom {
       return detail::free_erase<F>(lpp, key, "ocs::tom::erase");
    }
 
+   namespace detail {
+      /**
+       * @brief The core of erase_in(): remove and free the first element with a key from the list of a list field
+       * @tparam LF the list field
+       * @tparam F the key field, of the list field's sub-type
+       * @tparam Typed true if the element comes from a handle of the list field's type: only an absent field is
+       *         checked
+       * @param ep the element, or nullptr
+       * @param key the key
+       * @return 1 or 0, as #erase; 0 for a null element
+       * @throw FieldException with reason ForeignField or AbsentField, or DuplicateKey as #erase
+       */
+      template <auto LF, auto F, bool Typed>
+      int free_erase_in(lListElem *ep, const RawKey<F> key) {
+         lList **lpp = sub_list_ref<LF, Typed>(ep, "ocs::tom::erase_in");
+         return lpp != nullptr ? free_erase<F>(lpp, key, "ocs::tom::erase_in") : 0;
+      }
+   } // namespace detail
+
    /**
     * @brief Remove and free the first element with a key from the list of a list field; replaces lDelSubStr(), lDelSubUlong() and lDelSubUlong64()
     *
@@ -887,18 +945,16 @@ namespace ocs::tom {
     *
     * @tparam LF the list field
     * @tparam F the key field, of the list field's sub-type
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param key the key
     * @return 1 or 0, as #erase
     * @throw FieldException with reason ForeignField or AbsentField, or DuplicateKey as #erase
-    * @see Typed form: element.get<LF>().erase<F>()
+    * @see Typed form: ocs::tom::Element<T>::erase_in<LF, F>()
     */
-   template <auto LF, auto F, bool Typed = false>
+   template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
    int erase_in(lListElem *ep, const detail::RawKey<F> key) {
-      lList **lpp = detail::sub_list_ref<LF, Typed>(ep, "ocs::tom::erase_in");
-      return lpp != nullptr ? detail::free_erase<F>(lpp, key, "ocs::tom::erase_in") : 0;
+      return detail::free_erase_in<LF, F, false>(ep, key);
    }
 
    // ---------------------------------------------------------------------------------------------------------------
@@ -1038,22 +1094,21 @@ namespace ocs::tom {
     *
     * @tparam F the list field of @p to
     * @tparam G the list field of @p from
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param to the first element
     * @param from the second element
     * @return 0, or -1 as described
     * @throw FieldException with reason ForeignField or AbsentField
     * @see Typed form: ocs::tom::Element<T>::swap<F, G>()
     */
-   template <auto F, auto G, bool Typed = false>
+   template <auto F, auto G>
       requires detail::TypedListField<F> && detail::TypedListField<G> &&
                std::is_same_v<typename FieldTraits<F>::Sub, typename FieldTraits<G>::Sub>
    int swap(lListElem *to, lListElem *from) {
-      const int from_pos = detail::setter_pos<G, Typed>(from, "ocs::tom::swap");
+      const int from_pos = detail::setter_pos<G>(from, "ocs::tom::swap");
       if (from_pos < 0) {
          return -1;
       }
-      const int to_pos = detail::setter_pos<F, Typed>(to, "ocs::tom::swap");
+      const int to_pos = detail::setter_pos<F>(to, "ocs::tom::swap");
       if (to_pos < 0) {
          return -1;
       }
@@ -1102,33 +1157,141 @@ namespace ocs::tom {
       return Result();
    }
 
+   namespace detail {
+      /**
+       * @brief The core of list_ref(): the reference to the list held in a list field
+       * @tparam F the list field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @param ep the element
+       * @return the reference to the field's list
+       * @throw FieldException with reason NullElement, ForeignField or AbsentField
+       */
+      template <auto F, bool Typed>
+      [[nodiscard]] lList **free_list_ref(const lListElem *ep) {
+         const int pos = getter_pos<F, Typed>(ep);
+         return &ocs::tom::detail::value(ep, pos).glp;
+      }
+
+      /**
+       * @brief The core of get_or_empty(): the string of a string field, or "" for an unset one
+       * @tparam F the string field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @param ep the element
+       * @return the string, never nullptr
+       * @throw FieldException with reason NullElement, ForeignField or AbsentField
+       */
+      template <auto F, bool Typed>
+      [[nodiscard]] const char *free_get_or_empty(const lListElem *ep) {
+         const int pos = getter_pos<F, Typed>(ep);
+         const char *str = ocs::tom::detail::value(ep, pos).str;
+         return str != nullptr ? str : "";
+      }
+
+      /**
+       * @brief The core of has_any_bits(): whether a 32 bit field has any bit of a mask set
+       * @tparam F the 32 bit field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @param ep the element
+       * @param mask the bits
+       * @return true if the field and the mask share a bit
+       * @throw FieldException with reason NullElement, ForeignField or AbsentField
+       */
+      template <auto F, bool Typed>
+      [[nodiscard]] bool free_has_any_bits(const lListElem *ep, const std::uint32_t mask) {
+         const int pos = getter_pos<F, Typed>(ep);
+         return (ocs::tom::detail::value(ep, pos).ul & mask) > 0;
+      }
+
+      /**
+       * @brief The core of or_bits(), and_bits() and clear_bits(): change the bits of a 32 bit field
+       * @tparam F the 32 bit field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @tparam Op the change, called with a reference to the field's value
+       * @param ep the element, or nullptr
+       * @param function the calling form, for the record of a soft path
+       * @param op the change
+       * @return 0, or -1 with LEELEMNULL for a null element
+       * @throw FieldException with reason ForeignField or AbsentField
+       */
+      template <auto F, bool Typed, typename Op>
+      int free_change_bits(lListElem *ep, const char *function, Op op) {
+         const int pos = setter_pos<F, Typed>(ep, function);
+         if (pos < 0) {
+            return -1;
+         }
+         op(ocs::tom::detail::value(ep, pos).ul);
+         return 0;
+      }
+
+      /**
+       * @brief The core of or_bits(): set the bits of a mask in a 32 bit field
+       * @tparam F the 32 bit field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @param ep the element, or nullptr
+       * @param mask the bits
+       * @return 0, or -1 with LEELEMNULL for a null element
+       * @throw FieldException with reason ForeignField or AbsentField
+       */
+      template <auto F, bool Typed>
+      int free_or_bits(lListElem *ep, const std::uint32_t mask) {
+         return free_change_bits<F, Typed>(ep, "ocs::tom::or_bits", [mask](std::uint32_t &ul) { ul |= mask; });
+      }
+
+      /**
+       * @brief The core of and_bits(): keep only the bits of a mask in a 32 bit field
+       * @tparam F the 32 bit field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @param ep the element, or nullptr
+       * @param mask the bits to keep
+       * @return 0, or -1 with LEELEMNULL for a null element
+       * @throw FieldException with reason ForeignField or AbsentField
+       */
+      template <auto F, bool Typed>
+      int free_and_bits(lListElem *ep, const std::uint32_t mask) {
+         return free_change_bits<F, Typed>(ep, "ocs::tom::and_bits", [mask](std::uint32_t &ul) { ul &= mask; });
+      }
+
+      /**
+       * @brief The core of clear_bits(): clear the bits of a mask in a 32 bit field
+       * @tparam F the 32 bit field
+       * @tparam Typed true if the element comes from a handle of the field's type: only an absent field is checked
+       * @param ep the element, or nullptr
+       * @param mask the bits to clear
+       * @return 0, or -1 with LEELEMNULL for a null element
+       * @throw FieldException with reason ForeignField or AbsentField
+       */
+      template <auto F, bool Typed>
+      int free_clear_bits(lListElem *ep, const std::uint32_t mask) {
+         return free_change_bits<F, Typed>(ep, "ocs::tom::clear_bits", [mask](std::uint32_t &ul) { ul &= ~mask; });
+      }
+   } // namespace detail
+
    /**
     * @brief The reference to the list held in a list field; replaces lGetListRef()
     * @tparam F the list field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element
     * @return the reference to the field's list
     * @throw FieldException with reason NullElement, ForeignField or AbsentField, where the old function aborts
+    * @see Typed form: ocs::tom::ConstElement<T>::list_ref<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
    [[nodiscard]] lList **list_ref(const lListElem *ep) {
-      return &ocs::tom::detail::value(ep, detail::getter_pos<F, Typed>(ep)).glp;
+      return detail::free_list_ref<F, false>(ep);
    }
 
    /**
     * @brief The string of a string field, or "" for an unset one; replaces lGetStringNotNull()
     * @tparam F the string field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element
     * @return the string, never nullptr
     * @throw FieldException with reason NullElement, ForeignField or AbsentField, where the old function aborts
+    * @see Typed form: ocs::tom::ConstElement<T>::get_or_empty<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
    [[nodiscard]] const char *get_or_empty(const lListElem *ep) {
-      const char *value = ocs::tom::detail::value(ep, detail::getter_pos<F, Typed>(ep)).str;
-      return value != nullptr ? value : "";
+      return detail::free_get_or_empty<F, false>(ep);
    }
 
    /**
@@ -1138,154 +1301,73 @@ namespace ocs::tom {
     * single bit.
     *
     * @tparam F the 32 bit field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element
     * @param mask the bits
     * @return true if the field and the mask share a bit
     * @throw FieldException with reason NullElement, ForeignField or AbsentField, where the old function aborts
+    * @see Typed form: ocs::tom::ConstElement<T>::has_any_bits<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
    [[nodiscard]] bool has_any_bits(const lListElem *ep, const std::uint32_t mask) {
-      return (ocs::tom::detail::value(ep, detail::getter_pos<F, Typed>(ep)).ul & mask) > 0;
+      return detail::free_has_any_bits<F, false>(ep, mask);
    }
 
    /**
     * @brief Set the bits of a mask in a 32 bit field; replaces lOrUlongBitMask()
     * @tparam F the 32 bit field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param mask the bits
     * @return 0, or -1 with LEELEMNULL for a null element
     * @throw FieldException with reason ForeignField or AbsentField, where the old function aborts
+    * @see Typed form: ocs::tom::Element<T>::or_bits<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
    int or_bits(lListElem *ep, const std::uint32_t mask) {
-      const int pos = detail::setter_pos<F, Typed>(ep, "ocs::tom::or_bits");
-      if (pos < 0) {
-         return -1;
-      }
-      ocs::tom::detail::value(ep, pos).ul |= mask;
-      return 0;
+      return detail::free_or_bits<F, false>(ep, mask);
    }
 
    /**
     * @brief Keep only the bits of a mask in a 32 bit field; replaces lAndUlongBitMask()
     * @tparam F the 32 bit field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param mask the bits to keep
     * @return 0, or -1 with LEELEMNULL for a null element
     * @throw FieldException with reason ForeignField or AbsentField, where the old function aborts
+    * @see Typed form: ocs::tom::Element<T>::and_bits<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
    int and_bits(lListElem *ep, const std::uint32_t mask) {
-      const int pos = detail::setter_pos<F, Typed>(ep, "ocs::tom::and_bits");
-      if (pos < 0) {
-         return -1;
-      }
-      ocs::tom::detail::value(ep, pos).ul &= mask;
-      return 0;
+      return detail::free_and_bits<F, false>(ep, mask);
    }
 
    /**
     * @brief Clear the bits of a mask in a 32 bit field; replaces lClearUlongBitMask()
     * @tparam F the 32 bit field
-    * @tparam Typed true when the overload for a handle calls it (L2): the element's type is not checked
     * @param ep the element, or nullptr
     * @param mask the bits to clear
     * @return 0, or -1 with LEELEMNULL for a null element
     * @throw FieldException with reason ForeignField or AbsentField, where the old function aborts
+    * @see Typed form: ocs::tom::Element<T>::clear_bits<F>()
     */
-   template <auto F, bool Typed = false>
+   template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
    int clear_bits(lListElem *ep, const std::uint32_t mask) {
-      const int pos = detail::setter_pos<F, Typed>(ep, "ocs::tom::clear_bits");
-      if (pos < 0) {
-         return -1;
-      }
-      ocs::tom::detail::value(ep, pos).ul &= ~mask;
-      return 0;
+      return detail::free_clear_bits<F, false>(ep, mask);
    }
 
 
    // ---------------------------------------------------------------------------------------------------------------
-   // the forms on an element handle (L2, CS-3078)
+   // no free forms on a typed handle (CS-3103)
    //
-   // A variable that became a handle keeps its free forms: each has an overload for the handle, which knows the
-   // element's type at compile time. A field of another type does not compile, and only an empty handle and a
-   // reduced element without the field are checked at run time; otherwise each behaves as its form on the raw
-   // pointer. The accessors get, set and has have no free form on a handle (CS-3103, deleted next to has()).
-
-   /**
-    * @brief find_first_in() on an element handle
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field, of the list field's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return the element as a handle of the key field's type, empty if none
-    * @throw FieldException as #find_first_in, never with reason ForeignField
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   [[nodiscard]] detail::ConstElementOf<F> find_first_in(const ConstElement<T> &ep, const detail::RawKey<F> key) {
-      detail::assert_field_of<LF, T>();
-      return find_first_in<LF, F, true>(ep.raw(), key);
-   }
-
-   /**
-    * @brief find_first_in_rw() on an element handle
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field, of the list field's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return the element as a handle of the key field's type, empty if none
-    * @throw FieldException as #find_first_in, never with reason ForeignField
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   [[nodiscard]] detail::ElementOf<F> find_first_in_rw(const ConstElement<T> &ep, const detail::RawKey<F> key) {
-      detail::assert_field_of<LF, T>();
-      return find_first_in_rw<LF, F, true>(ep.raw(), key);
-   }
-
-   /**
-    * @brief emplace_back_in() on an element handle
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field, of the list field's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return the new element as a handle of the key field's type, empty on an error
-    * @throw FieldException as #emplace_back_in, never with reason ForeignField
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   detail::ElementOf<F> emplace_back_in(const Element<T> &ep, const detail::RawKey<F> key) {
-      detail::assert_field_of<LF, T>();
-      return emplace_back_in<LF, F, true>(ep.raw(), key);
-   }
-
-   /**
-    * @brief erase_in() on an element handle
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field, of the list field's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return 1 or 0, as #erase
-    * @throw FieldException as #erase_in, never with reason ForeignField
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   int erase_in(const Element<T> &ep, const detail::RawKey<F> key) {
-      detail::assert_field_of<LF, T>();
-      return erase_in<LF, F, true>(ep.raw(), key);
-   }
+   // On a typed handle the member is the one way per operation: h.find_first_in<LF, F>(key), h.list_ref<F>(),
+   // h.or_bits<F>(mask), ep->erase_in<LF, F>(key) and so on. A handle converts implicitly to the element pointer,
+   // so without the deleted overloads below a call with a handle would bind silently to the form on the raw
+   // pointer, which checks the element's type at run time instead of at compile time. A deleted overload taking
+   // ConstElement<T> also catches an Element<T>, which derives from it; an owner does not convert to the
+   // element pointer, its deleted overload gives the reason instead of "no matching function".
 
    /**
     * @brief Deleted: on a typed handle use the member (h.exchange<F>(std::move(list)) for a list field,
@@ -1304,26 +1386,6 @@ namespace ocs::tom {
    int exchange(const ConstElement<T> &ep, A value) = delete;
 
    /**
-    * @brief swap() on two element handles
-    * @tparam F the list field of @p to, of its handle's type
-    * @tparam G the list field of @p from, of its handle's type
-    * @tparam T the object type of @p to, deduced
-    * @tparam U the object type of @p from, deduced
-    * @param to the first element
-    * @param from the second element
-    * @return 0, or -1 as #swap
-    * @throw FieldException with reason AbsentField
-    */
-   template <auto F, auto G, ObjectType T, ObjectType U>
-      requires detail::TypedListField<F> && detail::TypedListField<G> &&
-               std::is_same_v<typename FieldTraits<F>::Sub, typename FieldTraits<G>::Sub>
-   int swap(const Element<T> &to, const Element<U> &from) {
-      detail::assert_field_of<F, T>();
-      detail::assert_field_of<G, U>();
-      return swap<F, G, true>(to.raw(), from.raw());
-   }
-
-   /**
     * @brief Deleted: on a typed handle use the member (h.get_or_create<F>(name)), there is one way per
     *        operation (CS-3103)
     * @tparam F the list field
@@ -1337,164 +1399,6 @@ namespace ocs::tom {
    template <auto F, ObjectType T>
       requires detail::TypedListField<F>
    auto get_or_create(const ConstElement<T> &ep, const char *list_name) = delete;
-
-   /**
-    * @brief list_ref() on an element handle
-    * @tparam F the list field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the reference to the field's list
-    * @throw FieldException with reason NullElement or AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
-   [[nodiscard]] lList **list_ref(const ConstElement<T> &ep) {
-      detail::assert_field_of<F, T>();
-      return list_ref<F, true>(ep.raw());
-   }
-
-   /**
-    * @brief get_or_empty() on an element handle
-    * @tparam F the string field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the string, never nullptr
-    * @throw FieldException with reason NullElement or AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] const char *get_or_empty(const ConstElement<T> &ep) {
-      detail::assert_field_of<F, T>();
-      return get_or_empty<F, true>(ep.raw());
-   }
-
-   /**
-    * @brief has_any_bits() on an element handle
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits
-    * @return true if the field and the mask share a bit
-    * @throw FieldException with reason NullElement or AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   [[nodiscard]] bool has_any_bits(const ConstElement<T> &ep, const std::uint32_t mask) {
-      detail::assert_field_of<F, T>();
-      return has_any_bits<F, true>(ep.raw(), mask);
-   }
-
-   /**
-    * @brief or_bits() on an element handle
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits
-    * @return 0, or -1 with LEELEMNULL for an empty handle
-    * @throw FieldException with reason AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int or_bits(const Element<T> &ep, const std::uint32_t mask) {
-      detail::assert_field_of<F, T>();
-      return or_bits<F, true>(ep.raw(), mask);
-   }
-
-   /**
-    * @brief and_bits() on an element handle
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits to keep
-    * @return 0, or -1 with LEELEMNULL for an empty handle
-    * @throw FieldException with reason AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int and_bits(const Element<T> &ep, const std::uint32_t mask) {
-      detail::assert_field_of<F, T>();
-      return and_bits<F, true>(ep.raw(), mask);
-   }
-
-   /**
-    * @brief clear_bits() on an element handle
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits to clear
-    * @return 0, or -1 with LEELEMNULL for an empty handle
-    * @throw FieldException with reason AbsentField
-    */
-   template <auto F, ObjectType T>
-      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int clear_bits(const Element<T> &ep, const std::uint32_t mask) {
-      detail::assert_field_of<F, T>();
-      return clear_bits<F, true>(ep.raw(), mask);
-   }
-
-
-   // The owning element handle takes the free forms of the handle it owns: a local variable that owns its element
-   // (rule L3) keeps its field access lines. Template deduction does not see conversions, hence one overload each.
-
-   /**
-    * @brief find_first_in() on an owning element handle, as on the handle it owns
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field of the list's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return the element as a handle of the key field's type, empty if none
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   [[nodiscard]] detail::ConstElementOf<F> find_first_in(const ElementPtr<T> &ep, const detail::RawKey<F> key) {
-      return find_first_in<LF, F>(ep.get(), key);
-   }
-
-   /**
-    * @brief find_first_in_rw() on an owning element handle, as on the handle it owns
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field of the list's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return the element as a mutable handle of the key field's type, empty if none
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   [[nodiscard]] detail::ElementOf<F> find_first_in_rw(const ElementPtr<T> &ep, const detail::RawKey<F> key) {
-      return find_first_in_rw<LF, F>(ep.get(), key);
-   }
-
-   /**
-    * @brief emplace_back_in() on an owning element handle, as on the handle it owns
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field of the list's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key of the new element
-    * @return the new element as a handle of the key field's type, empty on an error
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   detail::ElementOf<F> emplace_back_in(const ElementPtr<T> &ep, const detail::RawKey<F> key) {
-      return emplace_back_in<LF, F>(ep.get(), key);
-   }
-
-   /**
-    * @brief erase_in() on an owning element handle, as on the handle it owns
-    * @tparam LF the list field, of the handle's type
-    * @tparam F the key field of the list's sub-type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param key the key
-    * @return 1 or 0, as #erase
-    */
-   template <auto LF, auto F, ObjectType T>
-      requires detail::SubKeyField<LF, F>
-   int erase_in(const ElementPtr<T> &ep, const detail::RawKey<F> key) {
-      return erase_in<LF, F>(ep.get(), key);
-   }
 
    /**
     * @brief Deleted: on an owning handle use the member (ep->exchange<F>(...)), there is one way per operation
@@ -1526,86 +1430,330 @@ namespace ocs::tom {
    auto get_or_create(const ElementPtr<T> &ep, const char *list_name) = delete;
 
    /**
-    * @brief list_ref() on an owning element handle, as on the handle it owns
-    * @tparam F the list field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the reference to the field's list
+    * @brief Deleted: on a typed handle use the member (h.find_first_in<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto find_first_in(const ConstElement<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.find_first_in_rw<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto find_first_in_rw(const ConstElement<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.emplace_back_in<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto emplace_back_in(const ConstElement<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.erase_in<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto erase_in(const ConstElement<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on a typed handle use the member (h.list_ref<F>()), there is one way per operation (CS-3103)
+    * @tparam F the list field
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
-   [[nodiscard]] lList ** list_ref(const ElementPtr<T> &ep) {
-      return list_ref<F>(ep.get());
-   }
+   auto list_ref(const ConstElement<T> &ep) = delete;
 
    /**
-    * @brief get_or_empty() on an owning element handle, as on the handle it owns
-    * @tparam F the string field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @return the string, never nullptr
+    * @brief Deleted: on a typed handle use the member (h.get_or_empty<F>()), there is one way per operation (CS-3103)
+    * @tparam F the string field
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @return nothing, the call does not compile
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] const char * get_or_empty(const ElementPtr<T> &ep) {
-      return get_or_empty<F>(ep.get());
-   }
+   auto get_or_empty(const ConstElement<T> &ep) = delete;
 
    /**
-    * @brief has_any_bits() on an owning element handle, as on the handle it owns
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
+    * @brief Deleted: on a typed handle use the member (h.has_any_bits<F>(mask)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the handle
     * @param mask the bits
-    * @return true if the field and the mask share a bit
+    * @return nothing, the call does not compile
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   [[nodiscard]] bool has_any_bits(const ElementPtr<T> &ep, const std::uint32_t mask) {
-      return has_any_bits<F>(ep.get(), mask);
-   }
+   auto has_any_bits(const ConstElement<T> &ep, std::uint32_t mask) = delete;
 
    /**
-    * @brief or_bits() on an owning element handle, as on the handle it owns
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits to set
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @brief Deleted: on a typed handle use the member (h.or_bits<F>(mask)), there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int or_bits(const ElementPtr<T> &ep, const std::uint32_t mask) {
-      return or_bits<F>(ep.get(), mask);
-   }
+   auto or_bits(const ConstElement<T> &ep, std::uint32_t mask) = delete;
 
    /**
-    * @brief and_bits() on an owning element handle, as on the handle it owns
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits to keep
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @brief Deleted: on a typed handle use the member (h.and_bits<F>(mask)), there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int and_bits(const ElementPtr<T> &ep, const std::uint32_t mask) {
-      return and_bits<F>(ep.get(), mask);
-   }
+   auto and_bits(const ConstElement<T> &ep, std::uint32_t mask) = delete;
 
    /**
-    * @brief clear_bits() on an owning element handle, as on the handle it owns
-    * @tparam F the 32 bit field, of the handle's type
-    * @tparam T the object type, deduced from the handle
-    * @param ep the element
-    * @param mask the bits to clear
-    * @return 0, or -1 with LEELEMNULL for an empty handle
+    * @brief Deleted: on a typed handle use the member (h.clear_bits<F>(mask)), there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
     */
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int clear_bits(const ElementPtr<T> &ep, const std::uint32_t mask) {
-      return clear_bits<F>(ep.get(), mask);
-   }
+   auto clear_bits(const ConstElement<T> &ep, std::uint32_t mask) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->find_first_in<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the owning handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto find_first_in(const ElementPtr<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->find_first_in_rw<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the owning handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto find_first_in_rw(const ElementPtr<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->emplace_back_in<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the owning handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto emplace_back_in(const ElementPtr<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->erase_in<LF, F>(key)),
+    *        there is one way per operation (CS-3103)
+    * @tparam LF the list field
+    * @tparam F the key field
+    * @tparam T the object type of the handle
+    * @tparam K the type of the key
+    * @param ep the owning handle
+    * @param key the key
+    * @return nothing, the call does not compile
+    */
+   template <auto LF, auto F, ObjectType T, typename K>
+      requires detail::SubKeyField<LF, F>
+   auto erase_in(const ElementPtr<T> &ep, K key) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->list_ref<F>()), there is one way per operation (CS-3103)
+    * @tparam F the list field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
+    * @return nothing, the call does not compile
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
+   auto list_ref(const ElementPtr<T> &ep) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->get_or_empty<F>()),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the string field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
+    * @return nothing, the call does not compile
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
+   auto get_or_empty(const ElementPtr<T> &ep) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->has_any_bits<F>(mask)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
+   auto has_any_bits(const ElementPtr<T> &ep, std::uint32_t mask) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->or_bits<F>(mask)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
+   auto or_bits(const ElementPtr<T> &ep, std::uint32_t mask) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->and_bits<F>(mask)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
+   auto and_bits(const ElementPtr<T> &ep, std::uint32_t mask) = delete;
+
+   /**
+    * @brief Deleted: on an owning handle use the member (ep->clear_bits<F>(mask)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the 32 bit field
+    * @tparam T the object type of the handle
+    * @param ep the owning handle
+    * @param mask the bits
+    * @return nothing, the call does not compile
+    */
+   template <auto F, ObjectType T>
+      requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
+   auto clear_bits(const ElementPtr<T> &ep, std::uint32_t mask) = delete;
+
+   // swap() takes two elements: a typed handle on either side is refused, the other may be a raw pointer
+
+   /**
+    * @brief Deleted: swap() on typed handles; use the member (to.swap<F, G>(from)), there is one way per
+    *        operation (CS-3103)
+    * @tparam F the list field of @p to
+    * @tparam G the list field of @p from
+    * @tparam T the object type of @p to
+    * @tparam U the object type of @p from
+    * @param to the first element
+    * @param from the second element
+    * @return nothing, the call does not compile
+    */
+   template <auto F, auto G, ObjectType T, ObjectType U>
+      requires detail::TypedListField<F> && detail::TypedListField<G>
+   int swap(const ConstElement<T> &to, const ConstElement<U> &from) = delete;
+
+   /**
+    * @brief Deleted: swap() on a typed handle and a raw pointer; use the member (to.swap<F, G>(from)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the list field of @p to
+    * @tparam G the list field of @p from
+    * @tparam T the object type of @p to
+    * @param to the first element
+    * @param from the second element
+    * @return nothing, the call does not compile
+    */
+   template <auto F, auto G, ObjectType T>
+      requires detail::TypedListField<F> && detail::TypedListField<G>
+   int swap(const ConstElement<T> &to, lListElem *from) = delete;
+
+   /**
+    * @brief Deleted: swap() on a raw pointer and a typed handle; use the member (to.swap<F, G>(from)),
+    *        there is one way per operation (CS-3103)
+    * @tparam F the list field of @p to
+    * @tparam G the list field of @p from
+    * @tparam U the object type of @p from
+    * @param to the first element
+    * @param from the second element
+    * @return nothing, the call does not compile
+    */
+   template <auto F, auto G, ObjectType U>
+      requires detail::TypedListField<F> && detail::TypedListField<G>
+   int swap(lListElem *to, const ConstElement<U> &from) = delete;
+
+   /**
+    * @brief Deleted: swap() on owning handles; use the member (to.swap<F, G>(from)), there is one way per
+    *        operation (CS-3103)
+    * @tparam F the list field of @p to
+    * @tparam G the list field of @p from
+    * @tparam T the object type of @p to
+    * @tparam U the object type of @p from
+    * @param to the first element
+    * @param from the second element
+    * @return nothing, the call does not compile
+    */
+   template <auto F, auto G, ObjectType T, ObjectType U>
+      requires detail::TypedListField<F> && detail::TypedListField<G>
+   int swap(const ElementPtr<T> &to, const ElementPtr<U> &from) = delete;
 
    /**
     * @brief Copy a field from one element to another when the source holds it
@@ -1984,10 +2132,13 @@ namespace ocs::tom {
    // the forwarding members of the handles (ocs_Element.h, ocs_List.h)
    //
    // Declared and documented in the handle classes, defined here: a member names its free form, which needs the
-   // complete handles and so comes after them. Each only forwards; the free form decides the behaviour.
+   // complete handles and so comes after them. Each only forwards; the free form decides the behaviour. The
+   // members on a single element call the core of their free form (detail::free_*) with Typed = true: the
+   // handle's type is known at compile time, and an empty handle behaves as the free form's null element (no
+   // EmptyHandle). The free forms themselves are deleted for typed handles (CS-3103).
 
    /**
-    * @brief ConstElement::find_first_in(): forwards to the free form
+    * @brief ConstElement::find_first_in(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam LF the list field
     * @tparam F the key field
@@ -2000,11 +2151,12 @@ namespace ocs::tom {
       requires detail::SubKeyOf<LF, F, T>
    ConstElement<typename FieldTraits<F>::Type>
    ConstElement<T>::find_first_in(const KeyArgOf<FieldTraits<F>::type> key) const {
-      return ocs::tom::find_first_in<LF, F>(*this, key);
+      return ConstElement<typename FieldTraits<F>::Type>::from_typed(
+         detail::free_find_first_in<LF, F, true>(this->ep_, key, "ocs::tom::find_first_in"));
    }
 
    /**
-    * @brief ConstElement::find_first_in_rw(): forwards to the free form
+    * @brief ConstElement::find_first_in_rw(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam LF the list field
     * @tparam F the key field
@@ -2017,11 +2169,12 @@ namespace ocs::tom {
       requires detail::SubKeyOf<LF, F, T>
    Element<typename FieldTraits<F>::Type>
    ConstElement<T>::find_first_in_rw(const KeyArgOf<FieldTraits<F>::type> key) const {
-      return ocs::tom::find_first_in_rw<LF, F>(*this, key);
+      return Element<typename FieldTraits<F>::Type>::from_typed(
+         detail::free_find_first_in<LF, F, true>(this->ep_, key, "ocs::tom::find_first_in_rw"));
    }
 
    /**
-    * @brief ConstElement::list_ref(): forwards to the free form
+    * @brief ConstElement::list_ref(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam F the list field
     * @return the reference to the field's list
@@ -2031,11 +2184,11 @@ namespace ocs::tom {
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List)
    lList **ConstElement<T>::list_ref() const {
-      return ocs::tom::list_ref<F>(*this);
+      return detail::free_list_ref<F, true>(this->ep_);
    }
 
    /**
-    * @brief ConstElement::get_or_empty(): forwards to the free form
+    * @brief ConstElement::get_or_empty(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam F the string field
     * @return the string, never nullptr
@@ -2045,11 +2198,11 @@ namespace ocs::tom {
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
    const char *ConstElement<T>::get_or_empty() const {
-      return ocs::tom::get_or_empty<F>(*this);
+      return detail::free_get_or_empty<F, true>(this->ep_);
    }
 
    /**
-    * @brief ConstElement::has_any_bits(): forwards to the free form
+    * @brief ConstElement::has_any_bits(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits
@@ -2060,11 +2213,11 @@ namespace ocs::tom {
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
    bool ConstElement<T>::has_any_bits(const std::uint32_t mask) const {
-      return ocs::tom::has_any_bits<F>(*this, mask);
+      return detail::free_has_any_bits<F, true>(this->ep_, mask);
    }
 
    /**
-    * @brief Element::emplace_back_in(): forwards to the free form
+    * @brief Element::emplace_back_in(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam LF the list field
     * @tparam F the key field
@@ -2076,11 +2229,12 @@ namespace ocs::tom {
    template <auto LF, auto F>
       requires detail::SubKeyOf<LF, F, T>
    Element<typename FieldTraits<F>::Type> Element<T>::emplace_back_in(const KeyArgOf<FieldTraits<F>::type> key) const {
-      return ocs::tom::emplace_back_in<LF, F>(*this, key);
+      return Element<typename FieldTraits<F>::Type>::from_typed(
+         detail::free_emplace_back_in<LF, F, true>(this->ep_, key));
    }
 
    /**
-    * @brief Element::erase_in(): forwards to the free form
+    * @brief Element::erase_in(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam LF the list field
     * @tparam F the key field
@@ -2092,11 +2246,11 @@ namespace ocs::tom {
    template <auto LF, auto F>
       requires detail::SubKeyOf<LF, F, T>
    int Element<T>::erase_in(const KeyArgOf<FieldTraits<F>::type> key) const {
-      return ocs::tom::erase_in<LF, F>(*this, key);
+      return detail::free_erase_in<LF, F, true>(this->ep_, key);
    }
 
    /**
-    * @brief Element::or_bits(): forwards to the free form
+    * @brief Element::or_bits(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits
@@ -2107,11 +2261,11 @@ namespace ocs::tom {
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
    int Element<T>::or_bits(const std::uint32_t mask) const {
-      return ocs::tom::or_bits<F>(*this, mask);
+      return detail::free_or_bits<F, true>(this->ep_, mask);
    }
 
    /**
-    * @brief Element::and_bits(): forwards to the free form
+    * @brief Element::and_bits(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits to keep
@@ -2122,11 +2276,11 @@ namespace ocs::tom {
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
    int Element<T>::and_bits(const std::uint32_t mask) const {
-      return ocs::tom::and_bits<F>(*this, mask);
+      return detail::free_and_bits<F, true>(this->ep_, mask);
    }
 
    /**
-    * @brief Element::clear_bits(): forwards to the free form
+    * @brief Element::clear_bits(): the core of the free form, without its run-time type check
     * @tparam T the object type of the handle
     * @tparam F the 32 bit field
     * @param mask the bits to clear
@@ -2137,7 +2291,7 @@ namespace ocs::tom {
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Uint32)
    int Element<T>::clear_bits(const std::uint32_t mask) const {
-      return ocs::tom::clear_bits<F>(*this, mask);
+      return detail::free_clear_bits<F, true>(this->ep_, mask);
    }
 
    /**

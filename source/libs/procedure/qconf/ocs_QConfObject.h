@@ -624,9 +624,8 @@ const char *ocs_qconf_key_of(const ocs::tom::ConstElement<typename E::type> ep) 
 template <typename E>
 void ocs_qconf_set_name(const ocs::tom::Element<typename E::type> ep, [[maybe_unused]] const char *name) {
    if constexpr (E::has_name_key) {
-      // the raw form takes the C string for a String and a Host key alike; the key is checked at compile time
-      ocs::tom::detail::assert_field_of<E::key, typename E::type>();
-      ocs::tom::set<E::key>(ep.raw(), name);
+      // E::key is a field of E::type (checked where the entry is declared); a Host key takes an ocs::tom::Host
+      ep.template set<E::key>(ocs_qconf_key_value<E::key>(name));
    }
 }
 

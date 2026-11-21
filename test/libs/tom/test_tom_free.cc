@@ -507,13 +507,16 @@ void test_small() {
 }
 
 /**
- * @brief FREE-09: an owning element handle takes the free forms, and the calls that take an element over take it
- *        moved in (rule L3)
+ * @brief FREE-09: an owning element handle reaches the members through operator->, and the calls that take an
+ *        element over take it moved in (rule L3)
  *
  * A local variable that owns its element becomes an ElementPtr: its field
- * accesses stay as they are, a call that takes the element over gets
- * std::move, and the destructor frees what no call took over. The handle
- * gives up its element only when the call took it.
+ * accesses become member calls through operator-> (the free forms on an
+ * owning handle are deleted, CS-3103), a call that takes the element over
+ * gets std::move, and the destructor frees what no call took over. The
+ * handle gives up its element only when the call took it.
+ *
+ * @return nothing; CHECK records the results
  */
 void test_owning() {
    // the explicit constructor from a raw element, which checks its type
@@ -521,24 +524,26 @@ void test_owning() {
    job->set<JB_job_number>(7);
    bool same = ocs::tom::add<JB_job_number>(job, 3) == 0 && job->get<JB_job_number>() == 10 &&
                job->has<JB_env_list>() &&
-               ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "A") ==
-                  ocs::tom::find_first_in<JB_env_list, VA_variable>(job.get(), "A") &&
-               ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 2) != nullptr &&
-               ocs::tom::emplace_back_in<JB_env_list, VA_variable>(job, "C") != nullptr &&
-               ocs::tom::erase_in<JB_env_list, VA_variable>(job, "C") == 1 &&
+               job->find_first_in<JB_env_list, VA_variable>("A") ==
+                  ocs::tom::find_first_in<JB_env_list, VA_variable>(job.get().raw(), "A") &&
+               job->find_first_in_rw<JB_ja_tasks, JAT_task_number>(2) != nullptr &&
+               job->emplace_back_in<JB_env_list, VA_variable>("C") != nullptr &&
+               job->erase_in<JB_env_list, VA_variable>("C") == 1 &&
                job->get_or_create<JB_env_list>().raw() == job->get<JB_env_list>().raw() &&
-               *ocs::tom::list_ref<JB_env_list>(job) == job->get<JB_env_list>().raw() &&
-               std::string(ocs::tom::get_or_empty<JB_owner>(job)).empty();
+               *job->list_ref<JB_env_list>() == job->get<JB_env_list>().raw() &&
+               std::string(job->get_or_empty<JB_owner>()).empty();
    char *owner = strdup("me");
    owner = job->exchange<JB_owner>(owner);
    same = same && owner == nullptr &&
-          std::string(ocs::tom::get_or_empty<JB_owner>(job)) == "me";
+          std::string(job->get_or_empty<JB_owner>()) == "me";
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    task->set<JAT_status>(0x5);
-   same = same && ocs::tom::has_any_bits<JAT_status>(task, 0x4) && ocs::tom::or_bits<JAT_status>(task, 0x2) == 0 &&
-          ocs::tom::and_bits<JAT_status>(task, 0x6) == 0 && ocs::tom::clear_bits<JAT_status>(task, 0x2) == 0 &&
+   same = same && task->has_any_bits<JAT_status>(0x4) && task->or_bits<JAT_status>(0x2) == 0 &&
+          task->and_bits<JAT_status>(0x6) == 0 && task->clear_bits<JAT_status>(0x2) == 0 &&
           task->get<JAT_status>() == 0x4;
-   CHECK(12, "the free forms that remain on an owning element handle give what they give on the handle it owns", same);
+   // the free forms on an owning handle are deleted (CS-3103): the owner reaches the members through operator->
+   CHECK(12, "the members reached through an owning element handle give what the free forms give on the raw element",
+         same);
 
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
    lListElem *const held = job.get().raw();
@@ -1067,28 +1072,28 @@ test_member_element_forms() {
       const ocs::tom::ConstElement<ocs::tom::JB> cb = b.get();
       const ocs::tom::ConstElement<ocs::tom::JB> none;
       bool same = ca.find_first_in<JB_env_list, VA_variable>("A") ==
-                     ocs::tom::find_first_in<JB_env_list, VA_variable>(ca, "A") &&
+                     ocs::tom::find_first_in<JB_env_list, VA_variable>(ca.raw(), "A") &&
                   ca.find_first_in<JB_env_list, VA_variable>("A") != nullptr &&
                   ca.find_first_in<JB_env_list, VA_variable>("x") == nullptr &&
                   none.find_first_in<JB_env_list, VA_variable>("A") == nullptr &&
                   a->find_first_in<JB_env_list, VA_variable>("b") ==
-                     ocs::tom::find_first_in<JB_env_list, VA_variable>(a, "b") &&
+                     ocs::tom::find_first_in<JB_env_list, VA_variable>(a.get().raw(), "b") &&
                   ca.find_first_in_rw<JB_ja_tasks, JAT_task_number>(2).raw() ==
-                     ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(ca, 2).raw() &&
+                     ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(ca.raw(), 2).raw() &&
                   ca.find_first_in_rw<JB_ja_tasks, JAT_task_number>(2) != nullptr;
 
       const ocs::tom::Element<ocs::tom::JB> ea = a.get();
       const ocs::tom::Element<ocs::tom::JB> eb = b.get();
       same = same && (ea.emplace_back_in<JB_env_list, VA_variable>("C") != nullptr) ==
-                        (ocs::tom::emplace_back_in<JB_env_list, VA_variable>(eb, "C") != nullptr);
+                        (ocs::tom::emplace_back_in<JB_env_list, VA_variable>(eb.raw(), "C") != nullptr);
       same = same && a->emplace_back_in<JB_ja_tasks, JAT_task_number>(3) != nullptr &&
-             ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(eb, 3) != nullptr;
+             ocs::tom::emplace_back_in<JB_ja_tasks, JAT_task_number>(eb.raw(), 3) != nullptr;
       same = same && ea.erase_in<JB_env_list, VA_variable>("A") ==
-                        ocs::tom::erase_in<JB_env_list, VA_variable>(eb, "A");
+                        ocs::tom::erase_in<JB_env_list, VA_variable>(eb.raw(), "A");
       same = same && ea.erase_in<JB_env_list, VA_variable>("x") ==
-                        ocs::tom::erase_in<JB_env_list, VA_variable>(eb, "x");
+                        ocs::tom::erase_in<JB_env_list, VA_variable>(eb.raw(), "x");
       same = same && a->erase_in<JB_ja_tasks, JAT_task_number>(1) ==
-                        ocs::tom::erase_in<JB_ja_tasks, JAT_task_number>(eb, 1);
+                        ocs::tom::erase_in<JB_ja_tasks, JAT_task_number>(eb.raw(), 1);
       same = same && ocs::tom::Element<ocs::tom::JB>().erase_in<JB_env_list, VA_variable>("b") == 0;
       const std::string env_a = keys(a->get<JB_env_list>().raw(), VA_variable);
       const std::string tasks_a = numbers(a->get<JB_ja_tasks>().raw(), JAT_task_number);
@@ -1105,9 +1110,9 @@ test_member_element_forms() {
       auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
       job->get_or_create<JB_env_list>("env");
       const ocs::tom::ConstElement<ocs::tom::JB> cjob = job.get();
-      bool same = cjob.list_ref<JB_env_list>() == ocs::tom::list_ref<JB_env_list>(cjob) &&
+      bool same = cjob.list_ref<JB_env_list>() == ocs::tom::list_ref<JB_env_list>(cjob.raw()) &&
                   *job->list_ref<JB_env_list>() == job->get<JB_env_list>().raw() &&
-                  std::string(cjob.get_or_empty<JB_owner>()) == ocs::tom::get_or_empty<JB_owner>(cjob) &&
+                  std::string(cjob.get_or_empty<JB_owner>()) == ocs::tom::get_or_empty<JB_owner>(cjob.raw()) &&
                   std::string(cjob.get_or_empty<JB_owner>()).empty();
       job->set<JB_owner>("me");
       same = same && std::string(job->get_or_empty<JB_owner>()) == "me";
@@ -1117,20 +1122,20 @@ test_member_element_forms() {
       ta->set<JAT_status>(0x5);
       tb->set<JAT_status>(0x5);
       const ocs::tom::Element<ocs::tom::JAT> eb = tb.get();
-      same = same && ta->has_any_bits<JAT_status>(0x4) == ocs::tom::has_any_bits<JAT_status>(eb, 0x4) &&
-             ta->has_any_bits<JAT_status>(0x2) == ocs::tom::has_any_bits<JAT_status>(eb, 0x2);
-      same = same && ta->or_bits<JAT_status>(0x2) == ocs::tom::or_bits<JAT_status>(eb, 0x2) &&
+      same = same && ta->has_any_bits<JAT_status>(0x4) == ocs::tom::has_any_bits<JAT_status>(eb.raw(), 0x4) &&
+             ta->has_any_bits<JAT_status>(0x2) == ocs::tom::has_any_bits<JAT_status>(eb.raw(), 0x2);
+      same = same && ta->or_bits<JAT_status>(0x2) == ocs::tom::or_bits<JAT_status>(eb.raw(), 0x2) &&
              ta->get<JAT_status>() == eb.get<JAT_status>();
-      same = same && ta->and_bits<JAT_status>(0x6) == ocs::tom::and_bits<JAT_status>(eb, 0x6) &&
+      same = same && ta->and_bits<JAT_status>(0x6) == ocs::tom::and_bits<JAT_status>(eb.raw(), 0x6) &&
              ta->get<JAT_status>() == eb.get<JAT_status>();
-      same = same && ta->clear_bits<JAT_status>(0x2) == ocs::tom::clear_bits<JAT_status>(eb, 0x2) &&
+      same = same && ta->clear_bits<JAT_status>(0x2) == ocs::tom::clear_bits<JAT_status>(eb.raw(), 0x2) &&
              ta->get<JAT_status>() == eb.get<JAT_status>() && eb.get<JAT_status>() == 0x4;
       // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4; an empty handle gives -1 with LEELEMNULL in both forms
       ocs::tom::detail::state_set_lerrno(0);
       const int member_null = ocs::tom::Element<ocs::tom::JAT>().clear_bits<JAT_status>(0x2);
       const int member_errno = ocs::tom::detail::state_get_lerrno();
       ocs::tom::detail::state_set_lerrno(0);
-      const int free_null = ocs::tom::clear_bits<JAT_status>(ocs::tom::Element<ocs::tom::JAT>(), 0x2);
+      const int free_null = ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2);
       same = same && member_null == -1 && member_null == free_null && member_errno == LEELEMNULL &&
              ocs::tom::detail::state_get_lerrno() == LEELEMNULL;
 
