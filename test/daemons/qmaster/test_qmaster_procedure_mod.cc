@@ -223,7 +223,7 @@ get_week_calendar(const char *name) {
    alp.reset();
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   ocs::tom::ConstElement<ocs::tom::CAL> found = ocs::tom::find_first<CAL_name>(*lp, name);
+   ocs::tom::ConstElement<ocs::tom::CAL> found = lp->find_first<CAL_name>(name);
    const char *value = (found != nullptr) ? found.get<CAL_week_calendar>() : nullptr;
    std::string result = (value != nullptr) ? value : "";
    lp.reset();

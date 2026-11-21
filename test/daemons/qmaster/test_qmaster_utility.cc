@@ -80,7 +80,7 @@ make_ar(const std::initializer_list<const char *> names, const bool with_list = 
  */
 static std::string
 acl_of(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
-   const auto acl = ocs::tom::get<AR_acl_list>(ar);
+   const auto acl = ar.get<AR_acl_list>();
    if (!acl) {
       return "null";
    }
@@ -89,7 +89,7 @@ acl_of(const ocs::tom::ConstElement<ocs::tom::AR> ar) {
       if (!names.empty()) {
          names += ",";
       }
-      names += ocs::tom::get<ARA_name>(ep);
+      names += ep.get<ARA_name>();
    }
    return names;
 }
@@ -116,7 +116,7 @@ make_rqs(const std::initializer_list<const char *> names) {
  */
 static std::string
 rules_of(const ocs::tom::ConstElement<ocs::tom::RQS> rqs) {
-   const auto rules = ocs::tom::get<RQS_rule>(rqs);
+   const auto rules = rqs.get<RQS_rule>();
    if (!rules) {
       return "null";
    }
@@ -125,7 +125,7 @@ rules_of(const ocs::tom::ConstElement<ocs::tom::RQS> rqs) {
       if (!names.empty()) {
          names += ",";
       }
-      names += ocs::tom::get<RQR_name>(ep);
+      names += ep.get<RQR_name>();
    }
    return names;
 }
@@ -143,10 +143,10 @@ only_missing_keys(const ocs::tom::ListPtr<ocs::tom::AN> &answers, const std::siz
       return false;
    }
    for (const auto answer : list) {
-      const char *text = ocs::tom::get<AN_text>(answer);
+      const char *text = answer.get<AN_text>();
       if (text == nullptr || strcmp(text, MSG_OBJECT_VALUEMISSING) != 0 ||
-          ocs::tom::get<AN_status>(answer) != STATUS_ESEMANTIC ||
-          ocs::tom::get<AN_quality>(answer) != static_cast<uint32_t>(ANSWER_QUALITY_ERROR)) {
+          answer.get<AN_status>() != STATUS_ESEMANTIC ||
+          answer.get<AN_quality>() != static_cast<uint32_t>(ANSWER_QUALITY_ERROR)) {
          return false;
       }
    }
@@ -248,7 +248,7 @@ test_replace_sublist() {
    {
       ocs::tom::ListPtr<ocs::tom::AN> answers;
       auto dst = make_ar({});
-      const bool held_set_empty = ocs::tom::get<AR_acl_list>(ocs::tom::ConstElement<ocs::tom::AR>(dst.get())) &&
+      const bool held_set_empty = dst->get<AR_acl_list>() &&
                                   acl_of(dst.get()).empty();
       auto request = make_ar({"x", "y"});
       const bool ret = replace_sublist<AR_acl_list>(&answers, dst.get(), request.get(),

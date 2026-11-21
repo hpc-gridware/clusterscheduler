@@ -56,6 +56,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -614,6 +615,22 @@ tom::ListPtr<T> pick(const Variant variant, tom::ListPtr<T> &&full) {
 }
 
 /**
+ * @brief A value in the form the member set<F>() of a field takes: a host name becomes a Host
+ * @tparam F the field the value is meant for
+ * @tparam V the value type
+ * @param value the value
+ * @return a Host for a host field, otherwise the value unchanged
+ */
+template <auto F, typename V>
+auto field_value(const V &value) {
+   if constexpr (tom::FieldTraits<F>::type == tom::FieldType::Host && std::is_same_v<V, const char *>) {
+      return tom::Host(value);
+   } else {
+      return value;
+   }
+}
+
+/**
  * @brief A list of elements that hold one name each
  * @tparam F the name field, a string or host field
  * @param values the names
@@ -625,7 +642,7 @@ tom::ListPtr<typename tom::FieldTraits<F>::Type> names(const std::initializer_li
    auto lp = tom::ListPtr<T>::create("names");
    for (const char *value : values) {
       auto ep = tom::ElementPtr<T>::create();
-      tom::set<F>(ep, value);
+      ep->template set<F>(field_value<F>(value));
       lp->push_back(std::move(ep));
    }
    return lp;
@@ -646,8 +663,8 @@ tom::ListPtr<typename tom::FieldTraits<NAME>::Type> pairs(
    auto lp = tom::ListPtr<T>::create("pairs");
    for (const auto &[name, value] : values) {
       auto ep = tom::ElementPtr<T>::create();
-      tom::set<NAME>(ep, name);
-      tom::set<VALUE>(ep, value);
+      ep->template set<NAME>(field_value<NAME>(name));
+      ep->template set<VALUE>(field_value<VALUE>(value));
       lp->push_back(std::move(ep));
    }
    return lp;
@@ -671,8 +688,8 @@ tom::ListPtr<typename tom::FieldTraits<HREF>::Type> attr(const V def, const V gr
    const V values[] = {def, grp, host};
    for (int i = 0; i < 3; i++) {
       auto ep = tom::ElementPtr<A>::create();
-      tom::set<HREF>(ep, hrefs[i]);
-      tom::set<VALUE>(ep, values[i]);
+      ep->template set<HREF>(tom::Host(hrefs[i]));
+      ep->template set<VALUE>(values[i]);
       lp->push_back(std::move(ep));
    }
    return lp;
@@ -697,8 +714,8 @@ tom::ListPtr<typename tom::FieldTraits<HREF>::Type> attr_lists(const Variant var
    const char *hrefs[] = {HOSTREF_DEFAULT, GRP, HOST};
    for (int i = 0; i < 3; i++) {
       auto ep = tom::ElementPtr<A>::create();
-      tom::set<HREF>(ep, hrefs[i]);
-      tom::set<VALUE>(ep, i == 0 ? pick(variant, make(i)) : make(i));
+      ep->template set<HREF>(tom::Host(hrefs[i]));
+      ep->template set<VALUE>(i == 0 ? pick(variant, make(i)) : make(i));
       lp->push_back(std::move(ep));
    }
    return lp;
@@ -720,14 +737,14 @@ tom::ElementPtr<tom::CE> centry(const char *name, const char *shortcut, const oc
                                 const uint32_t relop, const uint32_t requestable, const uint32_t consumable,
                                 const char *defaultval, const char *urgency) {
    auto ce = tom::ElementPtr<tom::CE>::create();
-   tom::set<CE_name>(ce, name);
-   tom::set<CE_shortcut>(ce, shortcut);
-   tom::set<CE_valtype>(ce, static_cast<uint32_t>(type));
-   tom::set<CE_relop>(ce, relop);
-   tom::set<CE_requestable>(ce, requestable);
-   tom::set<CE_consumable>(ce, consumable);
-   tom::set<CE_defaultval>(ce, defaultval);
-   tom::set<CE_urgency_weight>(ce, urgency);
+   ce->set<CE_name>(name);
+   ce->set<CE_shortcut>(shortcut);
+   ce->set<CE_valtype>(static_cast<uint32_t>(type));
+   ce->set<CE_relop>(relop);
+   ce->set<CE_requestable>(requestable);
+   ce->set<CE_consumable>(consumable);
+   ce->set<CE_defaultval>(defaultval);
+   ce->set<CE_urgency_weight>(urgency);
    return ce;
 }
 
@@ -749,9 +766,9 @@ tom::ListPtr<tom::UPP> project_usage() {
    const char *projects[] = {"golden_prj", "other_prj"};
    for (int i = 0; i < 2; i++) {
       auto upp = tom::ElementPtr<tom::UPP>::create();
-      tom::set<UPP_name>(upp, projects[i]);
-      tom::set<UPP_usage>(upp, usage(1.0 + i));
-      tom::set<UPP_long_term_usage>(upp, usage(10.0 + i));
+      upp->set<UPP_name>(projects[i]);
+      upp->set<UPP_usage>(usage(1.0 + i));
+      upp->set<UPP_long_term_usage>(usage(10.0 + i));
       lp->push_back(std::move(upp));
    }
    return lp;
@@ -766,8 +783,8 @@ tom::ListPtr<tom::UPU> debited_usage() {
    const uint32_t jobs[] = {4711, 4712};
    for (int i = 0; i < 2; i++) {
       auto upu = tom::ElementPtr<tom::UPU>::create();
-      tom::set<UPU_job_number>(upu, jobs[i]);
-      tom::set<UPU_old_usage_list>(upu, usage(0.5 + i));
+      upu->set<UPU_job_number>(jobs[i]);
+      upu->set<UPU_old_usage_list>(usage(0.5 + i));
       lp->push_back(std::move(upu));
    }
    return lp;
@@ -782,9 +799,9 @@ tom::ListPtr<tom::UPU> debited_usage() {
  */
 tom::ElementPtr<tom::HL> load_value(const char *name, const char *value, const bool is_static) {
    auto hl = tom::ElementPtr<tom::HL>::create();
-   tom::set<HL_name>(hl, name);
-   tom::set<HL_value>(hl, value);
-   tom::set<HL_is_static>(hl, is_static);
+   hl->set<HL_name>(name);
+   hl->set<HL_value>(value);
+   hl->set<HL_is_static>(is_static);
    return hl;
 }
 
@@ -796,8 +813,8 @@ tom::ElementPtr<tom::HL> load_value(const char *name, const char *value, const b
  */
 tom::ElementPtr<tom::RESL> resource(const char *id, const uint32_t amount) {
    auto resl = tom::ElementPtr<tom::RESL>::create();
-   tom::set<RESL_value>(resl, id);
-   tom::set<RESL_amount>(resl, amount);
+   resl->set<RESL_value>(id);
+   resl->set<RESL_amount>(amount);
    return resl;
 }
 
@@ -812,10 +829,10 @@ tom::ElementPtr<tom::RESL> resource(const char *id, const uint32_t amount) {
 tom::ElementPtr<tom::STN> share_node(const char *name, const uint32_t type, const uint32_t id,
                                      const uint32_t shares) {
    auto stn = tom::ElementPtr<tom::STN>::create();
-   tom::set<STN_name>(stn, name);
-   tom::set<STN_type>(stn, type);
-   tom::set<STN_id>(stn, id);
-   tom::set<STN_shares>(stn, shares);
+   stn->set<STN_name>(name);
+   stn->set<STN_type>(type);
+   stn->set<STN_id>(id);
+   stn->set<STN_shares>(shares);
    return stn;
 }
 
@@ -829,10 +846,10 @@ tom::ElementPtr<tom::STN> share_node(const char *name, const uint32_t type, cons
 tom::ElementPtr<tom::RQRF> rqs_filter(const bool expand, const std::initializer_list<const char *> scope,
                                       const std::initializer_list<const char *> xscope) {
    auto filter = tom::ElementPtr<tom::RQRF>::create();
-   tom::set<RQRF_expand>(filter, expand);
-   tom::set<RQRF_scope>(filter, names<ST_name>(scope));
+   filter->set<RQRF_expand>(expand);
+   filter->set<RQRF_scope>(names<ST_name>(scope));
    if (xscope.size() > 0) {
-      tom::set<RQRF_xscope>(filter, names<ST_name>(xscope));
+      filter->set<RQRF_xscope>(names<ST_name>(xscope));
    }
    return filter;
 }
@@ -846,9 +863,9 @@ tom::ElementPtr<tom::RQRF> rqs_filter(const bool expand, const std::initializer_
  */
 tom::ElementPtr<tom::JG> granted(const char *qname, const char *host, const uint32_t slots) {
    auto jg = tom::ElementPtr<tom::JG>::create();
-   tom::set<JG_qname>(jg, qname);
-   tom::set<JG_qhostname>(jg, host);
-   tom::set<JG_slots>(jg, slots);
+   jg->set<JG_qname>(qname);
+   jg->set<JG_qhostname>(ocs::tom::Host(host));
+   jg->set<JG_slots>(slots);
    return jg;
 }
 
@@ -862,9 +879,9 @@ tom::ElementPtr<tom::JG> granted(const char *qname, const char *host, const uint
 tom::ListPtr<tom::RN> range(const uint32_t min, const uint32_t max, const uint32_t step) {
    auto lp = tom::ListPtr<tom::RN>::create("range");
    auto rn = tom::ElementPtr<tom::RN>::create();
-   tom::set<RN_min>(rn, min);
-   tom::set<RN_max>(rn, max);
-   tom::set<RN_step>(rn, step);
+   rn->set<RN_min>(min);
+   rn->set<RN_max>(max);
+   rn->set<RN_step>(step);
    lp->push_back(std::move(rn));
    return lp;
 }
@@ -879,9 +896,9 @@ tom::ListPtr<tom::RN> range(const uint32_t min, const uint32_t max, const uint32
  */
 lListElem *build_CAL([[maybe_unused]] const Variant variant) {
    auto cal = tom::ElementPtr<tom::CAL>::create();
-   tom::set<CAL_name>(cal, "golden_cal");
-   tom::set<CAL_year_calendar>(cal, "1.1.2026=off 24.12.2026-26.12.2026=off");
-   tom::set<CAL_week_calendar>(cal, "mon-fri=8-18=on sat-sun=off");
+   cal->set<CAL_name>("golden_cal");
+   cal->set<CAL_year_calendar>("1.1.2026=off 24.12.2026-26.12.2026=off");
+   cal->set<CAL_week_calendar>("mon-fri=8-18=on sat-sun=off");
    return cal.release();
 }
 
@@ -892,15 +909,15 @@ lListElem *build_CAL([[maybe_unused]] const Variant variant) {
  */
 lListElem *build_CK([[maybe_unused]] const Variant variant) {
    auto ck = tom::ElementPtr<tom::CK>::create();
-   tom::set<CK_name>(ck, "golden_ckpt");
-   tom::set<CK_interface>(ck, "userdefined");
-   tom::set<CK_ckpt_command>(ck, "/opt/ckpt/ckpt.sh $job_id");
-   tom::set<CK_migr_command>(ck, "/opt/ckpt/migrate.sh $job_id");
-   tom::set<CK_rest_command>(ck, "/opt/ckpt/restart.sh $job_id");
-   tom::set<CK_clean_command>(ck, "/opt/ckpt/clean.sh");
-   tom::set<CK_ckpt_dir>(ck, "/var/spool/ckpt");
-   tom::set<CK_signal>(ck, "USR2");
-   tom::set<CK_when>(ck, "smxr");
+   ck->set<CK_name>("golden_ckpt");
+   ck->set<CK_interface>("userdefined");
+   ck->set<CK_ckpt_command>("/opt/ckpt/ckpt.sh $job_id");
+   ck->set<CK_migr_command>("/opt/ckpt/migrate.sh $job_id");
+   ck->set<CK_rest_command>("/opt/ckpt/restart.sh $job_id");
+   ck->set<CK_clean_command>("/opt/ckpt/clean.sh");
+   ck->set<CK_ckpt_dir>("/var/spool/ckpt");
+   ck->set<CK_signal>("USR2");
+   ck->set<CK_when>("smxr");
    return ck.release();
 }
 
@@ -921,8 +938,8 @@ lListElem *build_CE([[maybe_unused]] const Variant variant) {
  */
 lListElem *build_HGRP(const Variant variant) {
    auto hgrp = tom::ElementPtr<tom::HGRP>::create();
-   tom::set<HGRP_name>(hgrp, GRP);
-   tom::set<HGRP_host_list>(hgrp, pick(variant, names<HR_name>({"gexec01", HOST, "@ggrp2"})));
+   hgrp->set<HGRP_name>(ocs::tom::Host(GRP));
+   hgrp->set<HGRP_host_list>(pick(variant, names<HR_name>({"gexec01", HOST, "@ggrp2"})));
    return hgrp.release();
 }
 
@@ -933,8 +950,8 @@ lListElem *build_HGRP(const Variant variant) {
  */
 lListElem *build_HGRP_admin(const Variant variant) {
    auto hgrp = tom::ElementPtr<tom::HGRP>::create();
-   tom::set<HGRP_name>(hgrp, ADMIN_HOSTGROUP);
-   tom::set<HGRP_host_list>(hgrp, pick(variant, names<HR_name>({"gmaster", "gexec01"})));
+   hgrp->set<HGRP_name>(ocs::tom::Host(ADMIN_HOSTGROUP));
+   hgrp->set<HGRP_host_list>(pick(variant, names<HR_name>({"gmaster", "gexec01"})));
    return hgrp.release();
 }
 
@@ -945,11 +962,11 @@ lListElem *build_HGRP_admin(const Variant variant) {
  */
 lListElem *build_US(const Variant variant) {
    auto us = tom::ElementPtr<tom::US>::create();
-   tom::set<US_name>(us, "golden_acl");
-   tom::set<US_type>(us, US_ACL | US_DEPT);
-   tom::set<US_fshare>(us, 1234);
-   tom::set<US_oticket>(us, 5678);
-   tom::set<US_entries>(us, pick(variant, names<UE_name>({"alice", "bob", "@staff"})));
+   us->set<US_name>("golden_acl");
+   us->set<US_type>(US_ACL | US_DEPT);
+   us->set<US_fshare>(1234);
+   us->set<US_oticket>(5678);
+   us->set<US_entries>(pick(variant, names<UE_name>({"alice", "bob", "@staff"})));
    return us.release();
 }
 
@@ -960,9 +977,9 @@ lListElem *build_US(const Variant variant) {
  */
 lListElem *build_US_manager(const Variant variant) {
    auto us = tom::ElementPtr<tom::US>::create();
-   tom::set<US_name>(us, MANAGER_USERSET);
-   tom::set<US_type>(us, US_ACL);
-   tom::set<US_entries>(us, pick(variant, names<UE_name>({"root", "gadmin"})));
+   us->set<US_name>(MANAGER_USERSET);
+   us->set<US_type>(US_ACL);
+   us->set<US_entries>(pick(variant, names<UE_name>({"root", "gadmin"})));
    return us.release();
 }
 
@@ -973,20 +990,20 @@ lListElem *build_US_manager(const Variant variant) {
  */
 lListElem *build_PE(const Variant variant) {
    auto pe = tom::ElementPtr<tom::PE>::create();
-   tom::set<PE_name>(pe, "golden_pe");
-   tom::set<PE_slots>(pe, 4711);
-   tom::set<PE_user_list>(pe, pick(variant, names<US_name>({"pe_acl_a", "pe_acl_b"})));
-   tom::set<PE_xuser_list>(pe, pick(variant, names<US_name>({"pe_xacl"})));
-   tom::set<PE_start_proc_args>(pe, "/opt/pe/start.sh -catch_rsh $pe_hostfile");
-   tom::set<PE_stop_proc_args>(pe, "/opt/pe/stop.sh");
-   tom::set<PE_allocation_rule>(pe, "$round_robin");
-   tom::set<PE_control_slaves>(pe, true);
-   tom::set<PE_job_is_first_task>(pe, true);
-   tom::set<PE_urgency_slots>(pe, "avg");
-   tom::set<PE_accounting_summary>(pe, true);
-   tom::set<PE_ignore_slave_requests_on_master_host>(pe, true);
-   tom::set<PE_master_forks_slaves>(pe, true);
-   tom::set<PE_daemon_forks_slaves>(pe, true);
+   pe->set<PE_name>("golden_pe");
+   pe->set<PE_slots>(4711);
+   pe->set<PE_user_list>(pick(variant, names<US_name>({"pe_acl_a", "pe_acl_b"})));
+   pe->set<PE_xuser_list>(pick(variant, names<US_name>({"pe_xacl"})));
+   pe->set<PE_start_proc_args>("/opt/pe/start.sh -catch_rsh $pe_hostfile");
+   pe->set<PE_stop_proc_args>("/opt/pe/stop.sh");
+   pe->set<PE_allocation_rule>("$round_robin");
+   pe->set<PE_control_slaves>(true);
+   pe->set<PE_job_is_first_task>(true);
+   pe->set<PE_urgency_slots>("avg");
+   pe->set<PE_accounting_summary>(true);
+   pe->set<PE_ignore_slave_requests_on_master_host>(true);
+   pe->set<PE_master_forks_slaves>(true);
+   pe->set<PE_daemon_forks_slaves>(true);
    return pe.release();
 }
 
@@ -997,11 +1014,11 @@ lListElem *build_PE(const Variant variant) {
  */
 lListElem *build_RL(const Variant variant) {
    auto rl = tom::ElementPtr<tom::RL>::create();
-   tom::set<RL_name>(rl, "golden_role");
-   tom::set<RL_enabled>(rl, true);
-   tom::set<RL_user_list>(rl, pick(variant, names<US_name>({"golden_acl", "role_acl"})));
-   tom::set<RL_parent_role_list>(rl, pick(variant, names<ST_name>({"operator", "viewer"})));
-   tom::set<RL_perm_list>(rl, "client:*:read:queue:*:*,client:*:modify:job:*:owner");
+   rl->set<RL_name>("golden_role");
+   rl->set<RL_enabled>(true);
+   rl->set<RL_user_list>(pick(variant, names<US_name>({"golden_acl", "role_acl"})));
+   rl->set<RL_parent_role_list>(pick(variant, names<ST_name>({"operator", "viewer"})));
+   rl->set<RL_perm_list>("client:*:read:queue:*:*,client:*:modify:job:*:owner");
    return rl.release();
 }
 
@@ -1012,9 +1029,9 @@ lListElem *build_RL(const Variant variant) {
  */
 lListElem *build_CAT([[maybe_unused]] const Variant variant) {
    auto ct = tom::ElementPtr<tom::CT>::create();
-   tom::set<CT_id>(ct, 17);
-   tom::set<CT_refcount>(ct, 3);
-   tom::set<CT_str>(ct, "-l h_vmem=1G -q golden.q");
+   ct->set<CT_id>(17);
+   ct->set<CT_refcount>(3);
+   ct->set<CT_str>("-l h_vmem=1G -q golden.q");
    return ct.release();
 }
 
@@ -1025,16 +1042,16 @@ lListElem *build_CAT([[maybe_unused]] const Variant variant) {
  */
 lListElem *build_PR(const Variant variant) {
    auto pr = tom::ElementPtr<tom::PR>::create();
-   tom::set<PR_name>(pr, "golden_prj");
-   tom::set<PR_oticket>(pr, 111);
-   tom::set<PR_fshare>(pr, 222);
-   tom::set<PR_usage>(pr, pick(variant, usage(1.0)));
-   tom::set<PR_usage_time_stamp>(pr, T0 + 1);
-   tom::set<PR_long_term_usage>(pr, pick(variant, usage(100.0)));
-   tom::set<PR_project>(pr, pick(variant, project_usage()));
-   tom::set<PR_acl>(pr, pick(variant, names<US_name>({"golden_acl"})));
-   tom::set<PR_xacl>(pr, pick(variant, names<US_name>({"bad_acl", "worse_acl"})));
-   tom::set<PR_debited_job_usage>(pr, pick(variant, debited_usage()));
+   pr->set<PR_name>("golden_prj");
+   pr->set<PR_oticket>(111);
+   pr->set<PR_fshare>(222);
+   pr->set<PR_usage>(pick(variant, usage(1.0)));
+   pr->set<PR_usage_time_stamp>(T0 + 1);
+   pr->set<PR_long_term_usage>(pick(variant, usage(100.0)));
+   pr->set<PR_project>(pick(variant, project_usage()));
+   pr->set<PR_acl>(pick(variant, names<US_name>({"golden_acl"})));
+   pr->set<PR_xacl>(pick(variant, names<US_name>({"bad_acl", "worse_acl"})));
+   pr->set<PR_debited_job_usage>(pick(variant, debited_usage()));
    return pr.release();
 }
 
@@ -1045,16 +1062,16 @@ lListElem *build_PR(const Variant variant) {
  */
 lListElem *build_UU(const Variant variant) {
    auto uu = tom::ElementPtr<tom::UU>::create();
-   tom::set<UU_name>(uu, "alice");
-   tom::set<UU_oticket>(uu, 333);
-   tom::set<UU_fshare>(uu, 444);
-   tom::set<UU_delete_time>(uu, T0 + 86400000000);
-   tom::set<UU_usage>(uu, pick(variant, usage(2.0)));
-   tom::set<UU_usage_time_stamp>(uu, T0 + 2);
-   tom::set<UU_long_term_usage>(uu, pick(variant, usage(200.0)));
-   tom::set<UU_project>(uu, pick(variant, project_usage()));
-   tom::set<UU_default_project>(uu, "golden_prj");
-   tom::set<UU_debited_job_usage>(uu, pick(variant, debited_usage()));
+   uu->set<UU_name>("alice");
+   uu->set<UU_oticket>(333);
+   uu->set<UU_fshare>(444);
+   uu->set<UU_delete_time>(T0 + 86400000000);
+   uu->set<UU_usage>(pick(variant, usage(2.0)));
+   uu->set<UU_usage_time_stamp>(T0 + 2);
+   uu->set<UU_long_term_usage>(pick(variant, usage(200.0)));
+   uu->set<UU_project>(pick(variant, project_usage()));
+   uu->set<UU_default_project>("golden_prj");
+   uu->set<UU_debited_job_usage>(pick(variant, debited_usage()));
    return uu.release();
 }
 
@@ -1065,18 +1082,18 @@ lListElem *build_UU(const Variant variant) {
  */
 lListElem *build_STN(const Variant variant) {
    auto root = share_node("Root", 0, 0, 1);
-   tom::set<STN_version>(root, 7);
+   root->set<STN_version>(7);
 
    auto project = share_node("golden_prj", 1, 1, 100);
    auto users = tom::ListPtr<tom::STN>::create("children");
    users->push_back(share_node("alice", 0, 2, 50));
    users->push_back(share_node("default", 0, 3, 10));
-   tom::set<STN_children>(project, std::move(users));
+   project->set<STN_children>(std::move(users));
 
    auto children = tom::ListPtr<tom::STN>::create("children");
    children->push_back(std::move(project));
    children->push_back(share_node("other_prj", 1, 4, 20));
-   tom::set<STN_children>(root, pick(variant, std::move(children)));
+   root->set<STN_children>(pick(variant, std::move(children)));
    return root.release();
 }
 
@@ -1087,43 +1104,43 @@ lListElem *build_STN(const Variant variant) {
  */
 lListElem *build_SC(const Variant variant) {
    auto sc = tom::ElementPtr<tom::SC>::create();
-   tom::set<SC_algorithm>(sc, "default");
-   tom::set<SC_schedule_interval>(sc, "0:0:15");
-   tom::set<SC_maxujobs>(sc, 1024);
-   tom::set<SC_queue_sort_method>(sc, static_cast<uint32_t>(QSM_SEQNUM));
-   tom::set<SC_job_load_adjustments>(sc, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+   sc->set<SC_algorithm>("default");
+   sc->set<SC_schedule_interval>("0:0:15");
+   sc->set<SC_maxujobs>(1024);
+   sc->set<SC_queue_sort_method>(static_cast<uint32_t>(QSM_SEQNUM));
+   sc->set<SC_job_load_adjustments>(pick(variant, pairs<CE_name, CE_stringval, const char *>(
                                                           {{"np_load_avg", "0.50"}, {"mem_free", "128M"}})));
-   tom::set<SC_load_adjustment_decay_time>(sc, "0:7:30");
-   tom::set<SC_load_formula>(sc, "np_load_avg+mem_used*2");
-   tom::set<SC_schedd_job_info>(sc, "false");
-   tom::set<SC_flush_submit_sec>(sc, 3);
-   tom::set<SC_flush_finish_sec>(sc, 5);
-   tom::set<SC_params>(sc, "MONITOR=true,PROFILE=1");
-   tom::set<SC_reprioritize_interval>(sc, "0:2:0");
-   tom::set<SC_halftime>(sc, 168);
-   tom::set<SC_usage_weight_list>(sc, pick(variant, pairs<UA_name, UA_value, double>(
+   sc->set<SC_load_adjustment_decay_time>("0:7:30");
+   sc->set<SC_load_formula>("np_load_avg+mem_used*2");
+   sc->set<SC_schedd_job_info>("false");
+   sc->set<SC_flush_submit_sec>(3);
+   sc->set<SC_flush_finish_sec>(5);
+   sc->set<SC_params>("MONITOR=true,PROFILE=1");
+   sc->set<SC_reprioritize_interval>("0:2:0");
+   sc->set<SC_halftime>(168);
+   sc->set<SC_usage_weight_list>(pick(variant, pairs<UA_name, UA_value, double>(
                                                        {{"cpu", 0.5}, {"mem", 0.25}, {"io", 0.25}})));
-   tom::set<SC_compensation_factor>(sc, 5.5);
-   tom::set<SC_weight_user>(sc, 0.125);
-   tom::set<SC_weight_project>(sc, 0.25);
-   tom::set<SC_weight_department>(sc, 0.375);
-   tom::set<SC_weight_job>(sc, 0.25);
-   tom::set<SC_weight_tickets_functional>(sc, 10000);
-   tom::set<SC_weight_tickets_share>(sc, 20000);
-   tom::set<SC_share_override_tickets>(sc, true);
-   tom::set<SC_share_functional_shares>(sc, true);
-   tom::set<SC_max_functional_jobs_to_schedule>(sc, 300);
-   tom::set<SC_report_pjob_tickets>(sc, true);
-   tom::set<SC_max_pending_tasks_per_job>(sc, 70);
-   tom::set<SC_halflife_decay_list>(sc, "cpu=168:mem=0:io=-1");
-   tom::set<SC_policy_hierarchy>(sc, "OSF");
-   tom::set<SC_weight_ticket>(sc, 0.5);
-   tom::set<SC_weight_waiting_time>(sc, 0.125);
-   tom::set<SC_weight_deadline>(sc, 3600.5);
-   tom::set<SC_weight_urgency>(sc, 0.25);
-   tom::set<SC_weight_priority>(sc, 2.5);
-   tom::set<SC_max_reservation>(sc, 42);
-   tom::set<SC_default_duration>(sc, "8:0:0");
+   sc->set<SC_compensation_factor>(5.5);
+   sc->set<SC_weight_user>(0.125);
+   sc->set<SC_weight_project>(0.25);
+   sc->set<SC_weight_department>(0.375);
+   sc->set<SC_weight_job>(0.25);
+   sc->set<SC_weight_tickets_functional>(10000);
+   sc->set<SC_weight_tickets_share>(20000);
+   sc->set<SC_share_override_tickets>(true);
+   sc->set<SC_share_functional_shares>(true);
+   sc->set<SC_max_functional_jobs_to_schedule>(300);
+   sc->set<SC_report_pjob_tickets>(true);
+   sc->set<SC_max_pending_tasks_per_job>(70);
+   sc->set<SC_halflife_decay_list>("cpu=168:mem=0:io=-1");
+   sc->set<SC_policy_hierarchy>("OSF");
+   sc->set<SC_weight_ticket>(0.5);
+   sc->set<SC_weight_waiting_time>(0.125);
+   sc->set<SC_weight_deadline>(3600.5);
+   sc->set<SC_weight_urgency>(0.25);
+   sc->set<SC_weight_priority>(2.5);
+   sc->set<SC_max_reservation>(42);
+   sc->set<SC_default_duration>("8:0:0");
    return sc.release();
 }
 
@@ -1134,9 +1151,9 @@ lListElem *build_SC(const Variant variant) {
  */
 lListElem *build_CONF([[maybe_unused]] const Variant variant) {
    auto conf = tom::ElementPtr<tom::CONF>::create();
-   tom::set<CONF_name>(conf, "global");
-   tom::set<CONF_version>(conf, 3);
-   tom::set<CONF_entries>(conf, pairs<CF_name, CF_value, const char *>({
+   conf->set<CONF_name>(ocs::tom::Host("global"));
+   conf->set<CONF_version>(3);
+   conf->set<CONF_entries>(pairs<CF_name, CF_value, const char *>({
       {"execd_spool_dir", "/var/spool/gcs"},
       {"mailer", "/usr/bin/mail"},
       {"load_sensor", "none"},
@@ -1180,14 +1197,14 @@ lListElem *build_CONF([[maybe_unused]] const Variant variant) {
  */
 lListElem *build_EH(const Variant variant) {
    auto eh = tom::ElementPtr<tom::EH>::create();
-   tom::set<EH_name>(eh, "gexec01");
-   tom::set<EH_scaling_list>(eh, pick(variant, pairs<HS_name, HS_value, double>(
+   eh->set<EH_name>(ocs::tom::Host("gexec01"));
+   eh->set<EH_scaling_list>(pick(variant, pairs<HS_name, HS_value, double>(
                                                   {{"np_load_avg", 1.5}, {"mem_free", 0.75}})));
 
    auto complex_values = pairs<CE_name, CE_stringval, const char *>({{"mem_free", "4G"}, {"slots", "8"}});
    auto gpu = tom::ElementPtr<tom::CE>::create();
-   tom::set<CE_name>(gpu, "gpu");
-   tom::set<CE_valtype>(gpu, static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
+   gpu->set<CE_name>("gpu");
+   gpu->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::RSMAP));
    auto map = tom::ListPtr<tom::RESL>::create("resource map");
    map->push_back(resource("0", 1));
    map->push_back(resource("1", 1));
@@ -1195,44 +1212,44 @@ lListElem *build_EH(const Variant variant) {
 #if defined(WITH_EXTENSIONS)
    // an id with per-instance characteristics (CS-1338), written as id[k=v;...]
    auto characteristic = resource("gpu7", 1);
-   tom::set<RESL_properties>(characteristic, pairs<CE_name, CE_stringval, const char *>(
+   characteristic->set<RESL_properties>(pairs<CE_name, CE_stringval, const char *>(
                                                 {{"memory", "80G"}, {"device", "/dev/nvidia7"}}));
    map->push_back(std::move(characteristic));
-   tom::set<CE_stringval>(gpu, "5");
+   gpu->set<CE_stringval>("5");
 #else
    tom::set<CE_stringval>(gpu, "4");
 #endif
-   tom::set<CE_resource_map_list>(gpu, std::move(map));
+   gpu->set<CE_resource_map_list>(std::move(map));
    complex_values->push_back(std::move(gpu));
-   tom::set<EH_consumable_config_list>(eh, pick(variant, std::move(complex_values)));
+   eh->set<EH_consumable_config_list>(pick(variant, std::move(complex_values)));
 
-   tom::set<EH_usage_scaling_list>(eh, pick(variant, pairs<HS_name, HS_value, double>(
+   eh->set<EH_usage_scaling_list>(pick(variant, pairs<HS_name, HS_value, double>(
                                                         {{"cpu", 1.25}, {"mem", 2.0}, {"io", 0.5}})));
    auto loads = tom::ListPtr<tom::HL>::create("load values");
    loads->push_back(load_value("arch", "lx-amd64", true));
    loads->push_back(load_value("num_proc", "16", true));
    loads->push_back(load_value("load_avg", "0.250000", false));
    loads->push_back(load_value("mem_free", "12.5G", false));
-   tom::set<EH_load_list>(eh, pick(variant, std::move(loads)));
-   tom::set<EH_processors>(eh, 16);
-   tom::set<EH_acl>(eh, pick(variant, names<US_name>({"golden_acl"})));
-   tom::set<EH_xacl>(eh, pick(variant, names<US_name>({"bad_acl"})));
-   tom::set<EH_prj>(eh, pick(variant, names<PR_name>({"golden_prj"})));
-   tom::set<EH_xprj>(eh, pick(variant, names<PR_name>({"other_prj"})));
-   tom::set<EH_resource_utilization>(eh, pick(variant, pairs<RUE_name, RUE_utilized_now, double>(
+   eh->set<EH_load_list>(pick(variant, std::move(loads)));
+   eh->set<EH_processors>(16);
+   eh->set<EH_acl>(pick(variant, names<US_name>({"golden_acl"})));
+   eh->set<EH_xacl>(pick(variant, names<US_name>({"bad_acl"})));
+   eh->set<EH_prj>(pick(variant, names<PR_name>({"golden_prj"})));
+   eh->set<EH_xprj>(pick(variant, names<PR_name>({"other_prj"})));
+   eh->set<EH_resource_utilization>(pick(variant, pairs<RUE_name, RUE_utilized_now, double>(
                                                           {{"slots", 3.0}, {"mem_free", 1073741824.0}})));
    auto unknown = tom::ListPtr<tom::RU>::create("reschedule unknown");
    const uint32_t ru[][3] = {{4711, 1, 2}, {4712, 3, 1}};
    for (const auto &entry : ru) {
       auto ep = tom::ElementPtr<tom::RU>::create();
-      tom::set<RU_job_number>(ep, entry[0]);
-      tom::set<RU_task_number>(ep, entry[1]);
-      tom::set<RU_state>(ep, entry[2]);
+      ep->set<RU_job_number>(entry[0]);
+      ep->set<RU_task_number>(entry[1]);
+      ep->set<RU_state>(entry[2]);
       unknown->push_back(std::move(ep));
    }
-   tom::set<EH_reschedule_unknown_list>(eh, pick(variant, std::move(unknown)));
-   tom::set<EH_report_variables>(eh, pick(variant, names<STU_name>({"cpu", "mem_free"})));
-   tom::set<EH_auto_added_time>(eh, T0 + 3000000);
+   eh->set<EH_reschedule_unknown_list>(pick(variant, std::move(unknown)));
+   eh->set<EH_report_variables>(pick(variant, names<STU_name>({"cpu", "mem_free"})));
+   eh->set<EH_auto_added_time>(T0 + 3000000);
    return eh.release();
 }
 
@@ -1244,68 +1261,68 @@ lListElem *build_EH(const Variant variant) {
  */
 lListElem *build_QU_on(const Variant variant, const char *host) {
    auto qu = tom::ElementPtr<tom::QU>::create();
-   tom::set<QU_qname>(qu, "golden.q");
-   tom::set<QU_qhostname>(qu, host);
-   tom::set<QU_seq_no>(qu, 7);
-   tom::set<QU_load_thresholds>(qu, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+   qu->set<QU_qname>("golden.q");
+   qu->set<QU_qhostname>(ocs::tom::Host(host));
+   qu->set<QU_seq_no>(7);
+   qu->set<QU_load_thresholds>(pick(variant, pairs<CE_name, CE_stringval, const char *>(
                                                      {{"np_load_avg", "1.75"}})));
-   tom::set<QU_suspend_thresholds>(qu, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+   qu->set<QU_suspend_thresholds>(pick(variant, pairs<CE_name, CE_stringval, const char *>(
                                                         {{"load_avg", "3"}})));
-   tom::set<QU_nsuspend>(qu, 2);
-   tom::set<QU_suspend_interval>(qu, "0:10:0");
-   tom::set<QU_priority>(qu, "5");
-   tom::set<QU_min_cpu_interval>(qu, "0:5:0");
-   tom::set<QU_processors>(qu, "UNDEFINED");
-   tom::set<QU_qtype>(qu, static_cast<uint32_t>(BQ | IQ));
-   tom::set<QU_ckpt_list>(qu, pick(variant, names<ST_name>({"golden_ckpt"})));
-   tom::set<QU_pe_list>(qu, pick(variant, names<ST_name>({"golden_pe", "make"})));
-   tom::set<QU_rerun>(qu, true);
-   tom::set<QU_job_slots>(qu, 8);
-   tom::set<QU_tmpdir>(qu, "/scratch");
-   tom::set<QU_shell>(qu, "/bin/bash");
-   tom::set<QU_prolog>(qu, "/opt/gcs/qprolog.sh");
-   tom::set<QU_epilog>(qu, "/opt/gcs/qepilog.sh");
-   tom::set<QU_shell_start_mode>(qu, "unix_behavior");
-   tom::set<QU_starter_method>(qu, "/opt/gcs/starter.sh");
-   tom::set<QU_suspend_method>(qu, "SIGTSTP");
-   tom::set<QU_resume_method>(qu, "SIGCONT");
-   tom::set<QU_terminate_method>(qu, "/opt/gcs/kill.sh $job_pid");
-   tom::set<QU_notify>(qu, "0:0:60");
-   tom::set<QU_owner_list>(qu, pick(variant, names<US_name>({"qowner"})));
-   tom::set<QU_acl>(qu, pick(variant, names<US_name>({"golden_acl"})));
-   tom::set<QU_xacl>(qu, pick(variant, names<US_name>({"bad_acl"})));
+   qu->set<QU_nsuspend>(2);
+   qu->set<QU_suspend_interval>("0:10:0");
+   qu->set<QU_priority>("5");
+   qu->set<QU_min_cpu_interval>("0:5:0");
+   qu->set<QU_processors>("UNDEFINED");
+   qu->set<QU_qtype>(static_cast<uint32_t>(BQ | IQ));
+   qu->set<QU_ckpt_list>(pick(variant, names<ST_name>({"golden_ckpt"})));
+   qu->set<QU_pe_list>(pick(variant, names<ST_name>({"golden_pe", "make"})));
+   qu->set<QU_rerun>(true);
+   qu->set<QU_job_slots>(8);
+   qu->set<QU_tmpdir>("/scratch");
+   qu->set<QU_shell>("/bin/bash");
+   qu->set<QU_prolog>("/opt/gcs/qprolog.sh");
+   qu->set<QU_epilog>("/opt/gcs/qepilog.sh");
+   qu->set<QU_shell_start_mode>("unix_behavior");
+   qu->set<QU_starter_method>("/opt/gcs/starter.sh");
+   qu->set<QU_suspend_method>("SIGTSTP");
+   qu->set<QU_resume_method>("SIGCONT");
+   qu->set<QU_terminate_method>("/opt/gcs/kill.sh $job_pid");
+   qu->set<QU_notify>("0:0:60");
+   qu->set<QU_owner_list>(pick(variant, names<US_name>({"qowner"})));
+   qu->set<QU_acl>(pick(variant, names<US_name>({"golden_acl"})));
+   qu->set<QU_xacl>(pick(variant, names<US_name>({"bad_acl"})));
    auto subordinates = tom::ListPtr<tom::SO>::create("subordinates");
    auto so = tom::ElementPtr<tom::SO>::create();
-   tom::set<SO_name>(so, "sub.q");
-   tom::set<SO_threshold>(so, 3);
+   so->set<SO_name>("sub.q");
+   so->set<SO_threshold>(3);
    subordinates->push_back(std::move(so));
-   tom::set<QU_subordinate_list>(qu, pick(variant, std::move(subordinates)));
-   tom::set<QU_consumable_config_list>(qu, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+   qu->set<QU_subordinate_list>(pick(variant, std::move(subordinates)));
+   qu->set<QU_consumable_config_list>(pick(variant, pairs<CE_name, CE_stringval, const char *>(
                                                             {{"slots", "8"}, {"h_vmem", "16G"}})));
-   tom::set<QU_projects>(qu, pick(variant, names<PR_name>({"golden_prj"})));
-   tom::set<QU_xprojects>(qu, pick(variant, names<PR_name>({"other_prj"})));
-   tom::set<QU_calendar>(qu, "golden_cal");
-   tom::set<QU_initial_state>(qu, "enabled");
-   tom::set<QU_s_rt>(qu, "1:0:0");
-   tom::set<QU_h_rt>(qu, "2:0:0");
-   tom::set<QU_s_cpu>(qu, "0:30:0");
-   tom::set<QU_h_cpu>(qu, "1:0:0");
-   tom::set<QU_s_fsize>(qu, "1G");
-   tom::set<QU_h_fsize>(qu, "2G");
-   tom::set<QU_s_data>(qu, "3G");
-   tom::set<QU_h_data>(qu, "4G");
-   tom::set<QU_s_stack>(qu, "8M");
-   tom::set<QU_h_stack>(qu, "16M");
-   tom::set<QU_s_core>(qu, "0");
-   tom::set<QU_h_core>(qu, "1M");
-   tom::set<QU_s_rss>(qu, "5G");
-   tom::set<QU_h_rss>(qu, "6G");
-   tom::set<QU_s_vmem>(qu, "7G");
-   tom::set<QU_h_vmem>(qu, "INFINITY");
-   tom::set<QU_state>(qu, QI_DISABLED | QI_SUSPENDED);
-   tom::set<QU_pending_signal>(qu, 15);
-   tom::set<QU_pending_signal_delivery_time>(qu, T0 + 4000000);
-   tom::set<QU_version>(qu, 42);
+   qu->set<QU_projects>(pick(variant, names<PR_name>({"golden_prj"})));
+   qu->set<QU_xprojects>(pick(variant, names<PR_name>({"other_prj"})));
+   qu->set<QU_calendar>("golden_cal");
+   qu->set<QU_initial_state>("enabled");
+   qu->set<QU_s_rt>("1:0:0");
+   qu->set<QU_h_rt>("2:0:0");
+   qu->set<QU_s_cpu>("0:30:0");
+   qu->set<QU_h_cpu>("1:0:0");
+   qu->set<QU_s_fsize>("1G");
+   qu->set<QU_h_fsize>("2G");
+   qu->set<QU_s_data>("3G");
+   qu->set<QU_h_data>("4G");
+   qu->set<QU_s_stack>("8M");
+   qu->set<QU_h_stack>("16M");
+   qu->set<QU_s_core>("0");
+   qu->set<QU_h_core>("1M");
+   qu->set<QU_s_rss>("5G");
+   qu->set<QU_h_rss>("6G");
+   qu->set<QU_s_vmem>("7G");
+   qu->set<QU_h_vmem>("INFINITY");
+   qu->set<QU_state>(QI_DISABLED | QI_SUSPENDED);
+   qu->set<QU_pending_signal>(15);
+   qu->set<QU_pending_signal_delivery_time>(T0 + 4000000);
+   qu->set<QU_version>(42);
    return qu.release();
 }
 
@@ -1325,86 +1342,86 @@ lListElem *build_QU(const Variant variant) {
  */
 lListElem *build_CQ(const Variant variant) {
    auto cq = tom::ElementPtr<tom::CQ>::create();
-   tom::set<CQ_name>(cq, "golden.q");
-   tom::set<CQ_hostlist>(cq, pick(variant, names<HR_name>({GRP, HOST, "gexec03"})));
+   cq->set<CQ_name>("golden.q");
+   cq->set<CQ_hostlist>(pick(variant, names<HR_name>({GRP, HOST, "gexec03"})));
 
-   tom::set<CQ_seq_no>(cq, attr<AULNG_href, AULNG_value, uint32_t>(0, 10, 20));
-   tom::set<CQ_nsuspend>(cq, attr<AULNG_href, AULNG_value, uint32_t>(1, 2, 3));
-   tom::set<CQ_job_slots>(cq, attr<AULNG_href, AULNG_value, uint32_t>(8, 16, 32));
-   tom::set<CQ_rerun>(cq, attr<ABOOL_href, ABOOL_value, bool>(false, true, false));
-   tom::set<CQ_qtype>(cq, attr<AQTLIST_href, AQTLIST_value, uint32_t>(BQ | IQ, BQ, IQ));
+   cq->set<CQ_seq_no>(attr<AULNG_href, AULNG_value, uint32_t>(0, 10, 20));
+   cq->set<CQ_nsuspend>(attr<AULNG_href, AULNG_value, uint32_t>(1, 2, 3));
+   cq->set<CQ_job_slots>(attr<AULNG_href, AULNG_value, uint32_t>(8, 16, 32));
+   cq->set<CQ_rerun>(attr<ABOOL_href, ABOOL_value, bool>(false, true, false));
+   cq->set<CQ_qtype>(attr<AQTLIST_href, AQTLIST_value, uint32_t>(BQ | IQ, BQ, IQ));
 
    using S = const char *;
-   tom::set<CQ_suspend_interval>(cq, attr<AINTER_href, AINTER_value, S>("00:05:00", "00:10:00", "00:15:00"));
-   tom::set<CQ_min_cpu_interval>(cq, attr<AINTER_href, AINTER_value, S>("00:05:00", "00:01:00", "00:02:00"));
-   tom::set<CQ_notify>(cq, attr<AINTER_href, AINTER_value, S>("00:00:60", "00:00:30", "00:01:30"));
-   tom::set<CQ_priority>(cq, attr<ASTR_href, ASTR_value, S>("0", "5", "-5"));
-   tom::set<CQ_processors>(cq, attr<ASTR_href, ASTR_value, S>("UNDEFINED", "0-3", "4-7"));
-   tom::set<CQ_tmpdir>(cq, attr<ASTR_href, ASTR_value, S>("/tmp", "/scratch", "/local"));
-   tom::set<CQ_shell>(cq, attr<ASTR_href, ASTR_value, S>("/bin/sh", "/bin/bash", "/bin/zsh"));
-   tom::set<CQ_calendar>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "golden_cal", "night_cal"));
-   tom::set<CQ_prolog>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "/opt/p1.sh", "/opt/p2.sh"));
-   tom::set<CQ_epilog>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "/opt/e1.sh", "/opt/e2.sh"));
-   tom::set<CQ_shell_start_mode>(cq, attr<ASTR_href, ASTR_value, S>("unix_behavior", "posix_compliant",
+   cq->set<CQ_suspend_interval>(attr<AINTER_href, AINTER_value, S>("00:05:00", "00:10:00", "00:15:00"));
+   cq->set<CQ_min_cpu_interval>(attr<AINTER_href, AINTER_value, S>("00:05:00", "00:01:00", "00:02:00"));
+   cq->set<CQ_notify>(attr<AINTER_href, AINTER_value, S>("00:00:60", "00:00:30", "00:01:30"));
+   cq->set<CQ_priority>(attr<ASTR_href, ASTR_value, S>("0", "5", "-5"));
+   cq->set<CQ_processors>(attr<ASTR_href, ASTR_value, S>("UNDEFINED", "0-3", "4-7"));
+   cq->set<CQ_tmpdir>(attr<ASTR_href, ASTR_value, S>("/tmp", "/scratch", "/local"));
+   cq->set<CQ_shell>(attr<ASTR_href, ASTR_value, S>("/bin/sh", "/bin/bash", "/bin/zsh"));
+   cq->set<CQ_calendar>(attr<ASTR_href, ASTR_value, S>("NONE", "golden_cal", "night_cal"));
+   cq->set<CQ_prolog>(attr<ASTR_href, ASTR_value, S>("NONE", "/opt/p1.sh", "/opt/p2.sh"));
+   cq->set<CQ_epilog>(attr<ASTR_href, ASTR_value, S>("NONE", "/opt/e1.sh", "/opt/e2.sh"));
+   cq->set<CQ_shell_start_mode>(attr<ASTR_href, ASTR_value, S>("unix_behavior", "posix_compliant",
                                                                     "script_from_stdin"));
-   tom::set<CQ_starter_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "/opt/s1.sh", "/opt/s2.sh"));
-   tom::set<CQ_suspend_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "SIGTSTP", "/opt/susp.sh"));
-   tom::set<CQ_resume_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "SIGCONT", "/opt/res.sh"));
-   tom::set<CQ_terminate_method>(cq, attr<ASTR_href, ASTR_value, S>("NONE", "SIGKILL", "/opt/term.sh"));
-   tom::set<CQ_initial_state>(cq, attr<ASTR_href, ASTR_value, S>("default", "enabled", "disabled"));
-   tom::set<CQ_s_rt>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "1:0:0", "0:30:0"));
-   tom::set<CQ_h_rt>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "2:0:0", "1:0:0"));
-   tom::set<CQ_s_cpu>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "3:0:0", "0:10:0"));
-   tom::set<CQ_h_cpu>(cq, attr<ATIME_href, ATIME_value, S>("INFINITY", "4:0:0", "0:20:0"));
-   tom::set<CQ_s_fsize>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "1G", "512M"));
-   tom::set<CQ_h_fsize>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "2G", "1G"));
-   tom::set<CQ_s_data>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "3G", "2G"));
-   tom::set<CQ_h_data>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "4G", "3G"));
-   tom::set<CQ_s_stack>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "8M", "4M"));
-   tom::set<CQ_h_stack>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "16M", "8M"));
-   tom::set<CQ_s_core>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "0", "1K"));
-   tom::set<CQ_h_core>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "1M", "2K"));
-   tom::set<CQ_s_rss>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "5G", "4G"));
-   tom::set<CQ_h_rss>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "6G", "5G"));
-   tom::set<CQ_s_vmem>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "7G", "6G"));
-   tom::set<CQ_h_vmem>(cq, attr<AMEM_href, AMEM_value, S>("INFINITY", "8G", "7G"));
+   cq->set<CQ_starter_method>(attr<ASTR_href, ASTR_value, S>("NONE", "/opt/s1.sh", "/opt/s2.sh"));
+   cq->set<CQ_suspend_method>(attr<ASTR_href, ASTR_value, S>("NONE", "SIGTSTP", "/opt/susp.sh"));
+   cq->set<CQ_resume_method>(attr<ASTR_href, ASTR_value, S>("NONE", "SIGCONT", "/opt/res.sh"));
+   cq->set<CQ_terminate_method>(attr<ASTR_href, ASTR_value, S>("NONE", "SIGKILL", "/opt/term.sh"));
+   cq->set<CQ_initial_state>(attr<ASTR_href, ASTR_value, S>("default", "enabled", "disabled"));
+   cq->set<CQ_s_rt>(attr<ATIME_href, ATIME_value, S>("INFINITY", "1:0:0", "0:30:0"));
+   cq->set<CQ_h_rt>(attr<ATIME_href, ATIME_value, S>("INFINITY", "2:0:0", "1:0:0"));
+   cq->set<CQ_s_cpu>(attr<ATIME_href, ATIME_value, S>("INFINITY", "3:0:0", "0:10:0"));
+   cq->set<CQ_h_cpu>(attr<ATIME_href, ATIME_value, S>("INFINITY", "4:0:0", "0:20:0"));
+   cq->set<CQ_s_fsize>(attr<AMEM_href, AMEM_value, S>("INFINITY", "1G", "512M"));
+   cq->set<CQ_h_fsize>(attr<AMEM_href, AMEM_value, S>("INFINITY", "2G", "1G"));
+   cq->set<CQ_s_data>(attr<AMEM_href, AMEM_value, S>("INFINITY", "3G", "2G"));
+   cq->set<CQ_h_data>(attr<AMEM_href, AMEM_value, S>("INFINITY", "4G", "3G"));
+   cq->set<CQ_s_stack>(attr<AMEM_href, AMEM_value, S>("INFINITY", "8M", "4M"));
+   cq->set<CQ_h_stack>(attr<AMEM_href, AMEM_value, S>("INFINITY", "16M", "8M"));
+   cq->set<CQ_s_core>(attr<AMEM_href, AMEM_value, S>("INFINITY", "0", "1K"));
+   cq->set<CQ_h_core>(attr<AMEM_href, AMEM_value, S>("INFINITY", "1M", "2K"));
+   cq->set<CQ_s_rss>(attr<AMEM_href, AMEM_value, S>("INFINITY", "5G", "4G"));
+   cq->set<CQ_h_rss>(attr<AMEM_href, AMEM_value, S>("INFINITY", "6G", "5G"));
+   cq->set<CQ_s_vmem>(attr<AMEM_href, AMEM_value, S>("INFINITY", "7G", "6G"));
+   cq->set<CQ_h_vmem>(attr<AMEM_href, AMEM_value, S>("INFINITY", "8G", "7G"));
 
-   tom::set<CQ_pe_list>(cq, attr_lists<ASTRLIST_href, ASTRLIST_value>(variant, [](const int i) {
+   cq->set<CQ_pe_list>(attr_lists<ASTRLIST_href, ASTRLIST_value>(variant, [](const int i) {
       return names<ST_name>({i == 0 ? "make" : i == 1 ? "golden_pe" : "mpi"});
    }));
-   tom::set<CQ_ckpt_list>(cq, attr_lists<ASTRLIST_href, ASTRLIST_value>(variant, [](const int i) {
+   cq->set<CQ_ckpt_list>(attr_lists<ASTRLIST_href, ASTRLIST_value>(variant, [](const int i) {
       return names<ST_name>({i == 0 ? "golden_ckpt" : i == 1 ? "ckpt_a" : "ckpt_b"});
    }));
-   tom::set<CQ_owner_list>(cq, attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
+   cq->set<CQ_owner_list>(attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
       return names<US_name>({i == 0 ? "qowner" : i == 1 ? "grp_owner" : "host_owner"});
    }));
-   tom::set<CQ_acl>(cq, attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
+   cq->set<CQ_acl>(attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
       return names<US_name>({i == 0 ? "golden_acl" : i == 1 ? "grp_acl" : "host_acl"});
    }));
-   tom::set<CQ_xacl>(cq, attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
+   cq->set<CQ_xacl>(attr_lists<AUSRLIST_href, AUSRLIST_value>(variant, [](const int i) {
       return names<US_name>({i == 0 ? "bad_acl" : i == 1 ? "grp_xacl" : "host_xacl"});
    }));
-   tom::set<CQ_projects>(cq, attr_lists<APRJLIST_href, APRJLIST_value>(variant, [](const int i) {
+   cq->set<CQ_projects>(attr_lists<APRJLIST_href, APRJLIST_value>(variant, [](const int i) {
       return names<PR_name>({i == 0 ? "golden_prj" : i == 1 ? "grp_prj" : "host_prj"});
    }));
-   tom::set<CQ_xprojects>(cq, attr_lists<APRJLIST_href, APRJLIST_value>(variant, [](const int i) {
+   cq->set<CQ_xprojects>(attr_lists<APRJLIST_href, APRJLIST_value>(variant, [](const int i) {
       return names<PR_name>({i == 0 ? "other_prj" : i == 1 ? "grp_xprj" : "host_xprj"});
    }));
-   tom::set<CQ_load_thresholds>(cq, attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
+   cq->set<CQ_load_thresholds>(attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
       return pairs<CE_name, CE_stringval, const char *>({{"np_load_avg", i == 0 ? "1.75" : i == 1 ? "2.5" : "4"}});
    }));
-   tom::set<CQ_suspend_thresholds>(cq, attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
+   cq->set<CQ_suspend_thresholds>(attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
       return pairs<CE_name, CE_stringval, const char *>({{"load_avg", i == 0 ? "3" : i == 1 ? "6" : "9"}});
    }));
-   tom::set<CQ_consumable_config_list>(cq, attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
+   cq->set<CQ_consumable_config_list>(attr_lists<ACELIST_href, ACELIST_value>(variant, [](const int i) {
       return pairs<CE_name, CE_stringval, const char *>(
          {{"slots", i == 0 ? "8" : i == 1 ? "16" : "32"}, {"h_vmem", i == 0 ? "16G" : "64G"}});
    }));
-   tom::set<CQ_subordinate_list>(cq, attr_lists<ASOLIST_href, ASOLIST_value>(variant, [](const int i) {
+   cq->set<CQ_subordinate_list>(attr_lists<ASOLIST_href, ASOLIST_value>(variant, [](const int i) {
       auto lp = tom::ListPtr<tom::SO>::create("subordinates");
       auto so = tom::ElementPtr<tom::SO>::create();
-      tom::set<SO_name>(so, i == 0 ? "sub.q" : i == 1 ? "grp_sub.q" : "host_sub.q");
-      tom::set<SO_threshold>(so, static_cast<uint32_t>(2 + i));
+      so->set<SO_name>(i == 0 ? "sub.q" : i == 1 ? "grp_sub.q" : "host_sub.q");
+      so->set<SO_threshold>(static_cast<uint32_t>(2 + i));
       lp->push_back(std::move(so));
       return lp;
    }));
@@ -1419,33 +1436,33 @@ lListElem *build_CQ(const Variant variant) {
  */
 tom::ElementPtr<tom::RQS> rqs(const char *name, const bool enabled) {
    auto rule_set = tom::ElementPtr<tom::RQS>::create();
-   tom::set<RQS_name>(rule_set, name);
-   tom::set<RQS_description>(rule_set, "golden limits");
-   tom::set<RQS_enabled>(rule_set, enabled);
+   rule_set->set<RQS_name>(name);
+   rule_set->set<RQS_description>("golden limits");
+   rule_set->set<RQS_enabled>(enabled);
 
    auto rules = tom::ListPtr<tom::RQR>::create("rules");
    auto rule = tom::ElementPtr<tom::RQR>::create();
-   tom::set<RQR_name>(rule, "per_user");
-   tom::set<RQR_filter_users>(rule, rqs_filter(true, {"@golden_acl"}, {"baduser"}));
-   tom::set<RQR_filter_projects>(rule, rqs_filter(false, {"golden_prj"}, {}));
-   tom::set<RQR_filter_pes>(rule, rqs_filter(false, {"golden_pe"}, {"other_pe"}));
-   tom::set<RQR_filter_queues>(rule, rqs_filter(false, {"golden.q"}, {}));
-   tom::set<RQR_filter_hosts>(rule, rqs_filter(true, {GRP}, {HOST}));
-   tom::set<RQR_limit>(rule, pairs<RQRL_name, RQRL_value, const char *>({{"slots", "10"}, {"h_vmem", "4G"}}));
+   rule->set<RQR_name>("per_user");
+   rule->set<RQR_filter_users>(rqs_filter(true, {"@golden_acl"}, {"baduser"}));
+   rule->set<RQR_filter_projects>(rqs_filter(false, {"golden_prj"}, {}));
+   rule->set<RQR_filter_pes>(rqs_filter(false, {"golden_pe"}, {"other_pe"}));
+   rule->set<RQR_filter_queues>(rqs_filter(false, {"golden.q"}, {}));
+   rule->set<RQR_filter_hosts>(rqs_filter(true, {GRP}, {HOST}));
+   rule->set<RQR_limit>(pairs<RQRL_name, RQRL_value, const char *>({{"slots", "10"}, {"h_vmem", "4G"}}));
    rules->push_back(std::move(rule));
 
    rule = tom::ElementPtr<tom::RQR>::create();
-   tom::set<RQR_filter_hosts>(rule, rqs_filter(true, {"*"}, {}));
-   tom::set<RQR_limit>(rule, pairs<RQRL_name, RQRL_value, const char *>({{"slots", "$num_proc*2"}}));
+   rule->set<RQR_filter_hosts>(rqs_filter(true, {"*"}, {}));
+   rule->set<RQR_limit>(pairs<RQRL_name, RQRL_value, const char *>({{"slots", "$num_proc*2"}}));
    rules->push_back(std::move(rule));
 
    rule = tom::ElementPtr<tom::RQR>::create();
-   tom::set<RQR_name>(rule, "arch_limit");
-   tom::set<RQR_filter_users>(rule, rqs_filter(false, {"*"}, {}));
-   tom::set<RQR_limit>(rule, pairs<RQRL_name, RQRL_value, const char *>({{"arch", "lx-amd64"}}));
+   rule->set<RQR_name>("arch_limit");
+   rule->set<RQR_filter_users>(rqs_filter(false, {"*"}, {}));
+   rule->set<RQR_limit>(pairs<RQRL_name, RQRL_value, const char *>({{"arch", "lx-amd64"}}));
    rules->push_back(std::move(rule));
 
-   tom::set<RQS_rule>(rule_set, std::move(rules));
+   rule_set->set<RQS_rule>(std::move(rules));
    return rule_set;
 }
 
@@ -1465,57 +1482,57 @@ lListElem *build_RQS([[maybe_unused]] const Variant variant) {
  */
 lListElem *build_AR(const Variant variant) {
    auto ar = tom::ElementPtr<tom::AR>::create();
-   tom::set<AR_id>(ar, 815);
-   tom::set<AR_name>(ar, "golden_ar");
-   tom::set<AR_account>(ar, "golden_account");
-   tom::set<AR_project>(ar, "golden_prj");
-   tom::set<AR_owner>(ar, "alice");
-   tom::set<AR_group>(ar, "staff");
-   tom::set<AR_submission_time>(ar, T0 + 5000000);
-   tom::set<AR_start_time>(ar, T0 + 3600000000);
-   tom::set<AR_end_time>(ar, T0 + 7200000000);
-   tom::set<AR_duration>(ar, uint64_t{3600000000});
-   tom::set<AR_verify>(ar, static_cast<uint32_t>(AR_JUST_VERIFY));
-   tom::set<AR_error_handling>(ar, 1);
-   tom::set<AR_state>(ar, static_cast<uint32_t>(AR_WAITING));
-   tom::set<AR_checkpoint_name>(ar, "golden_ckpt");
-   tom::set<AR_resource_list>(ar, pick(variant, pairs<CE_name, CE_stringval, const char *>(
+   ar->set<AR_id>(815);
+   ar->set<AR_name>("golden_ar");
+   ar->set<AR_account>("golden_account");
+   ar->set<AR_project>("golden_prj");
+   ar->set<AR_owner>("alice");
+   ar->set<AR_group>("staff");
+   ar->set<AR_submission_time>(T0 + 5000000);
+   ar->set<AR_start_time>(T0 + 3600000000);
+   ar->set<AR_end_time>(T0 + 7200000000);
+   ar->set<AR_duration>(uint64_t{3600000000});
+   ar->set<AR_verify>(static_cast<uint32_t>(AR_JUST_VERIFY));
+   ar->set<AR_error_handling>(1);
+   ar->set<AR_state>(static_cast<uint32_t>(AR_WAITING));
+   ar->set<AR_checkpoint_name>("golden_ckpt");
+   ar->set<AR_resource_list>(pick(variant, pairs<CE_name, CE_stringval, const char *>(
                                                    {{"h_vmem", "2G"}, {"arch", "lx-amd64"}})));
-   tom::set<AR_queue_list>(ar, pick(variant, names<QR_name>({"golden.q", "other.q@gexec01"})));
+   ar->set<AR_queue_list>(pick(variant, names<QR_name>({"golden.q", "other.q@gexec01"})));
    auto slots = tom::ListPtr<tom::JG>::create("granted slots");
    slots->push_back(granted("golden.q@gexec01", "gexec01", 4));
    slots->push_back(granted("golden.q@gexec02", HOST, 2));
-   tom::set<AR_granted_slots>(ar, pick(variant, std::move(slots)));
-   tom::set<AR_mail_options>(ar, MAIL_AT_BEGINNING | MAIL_AT_EXIT);
+   ar->set<AR_granted_slots>(pick(variant, std::move(slots)));
+   ar->set<AR_mail_options>(MAIL_AT_BEGINNING | MAIL_AT_EXIT);
    auto mail = tom::ListPtr<tom::MR>::create("mail");
    auto mr = tom::ElementPtr<tom::MR>::create();
-   tom::set<MR_user>(mr, "alice");
-   tom::set<MR_host>(mr, "mail.example.com");
+   mr->set<MR_user>("alice");
+   mr->set<MR_host>("mail.example.com");
    mail->push_back(std::move(mr));
    mr = tom::ElementPtr<tom::MR>::create();
-   tom::set<MR_user>(mr, "bob");
+   mr->set<MR_user>("bob");
    mail->push_back(std::move(mr));
-   tom::set<AR_mail_list>(ar, pick(variant, std::move(mail)));
-   tom::set<AR_pe>(ar, "golden_pe");
-   tom::set<AR_pe_range>(ar, pick(variant, range(2, 8, 2)));
-   tom::set<AR_granted_pe>(ar, "golden_pe");
-   tom::set<AR_master_queue_list>(ar, pick(variant, names<QR_name>({"golden.q@gexec01"})));
+   ar->set<AR_mail_list>(pick(variant, std::move(mail)));
+   ar->set<AR_pe>("golden_pe");
+   ar->set<AR_pe_range>(pick(variant, range(2, 8, 2)));
+   ar->set<AR_granted_pe>("golden_pe");
+   ar->set<AR_master_queue_list>(pick(variant, names<QR_name>({"golden.q@gexec01"})));
    auto acl = tom::ListPtr<tom::ARA>::create("acl");
    auto ara = tom::ElementPtr<tom::ARA>::create();
-   tom::set<ARA_name>(ara, "alice");
-   tom::set<ARA_group>(ara, "staff");
+   ara->set<ARA_name>("alice");
+   ara->set<ARA_group>("staff");
    acl->push_back(std::move(ara));
    ara = tom::ElementPtr<tom::ARA>::create();
-   tom::set<ARA_name>(ara, "@golden_acl");
+   ara->set<ARA_name>("@golden_acl");
    acl->push_back(std::move(ara));
-   tom::set<AR_acl_list>(ar, pick(variant, std::move(acl)));
+   ar->set<AR_acl_list>(pick(variant, std::move(acl)));
    auto xacl = tom::ListPtr<tom::ARA>::create("xacl");
    ara = tom::ElementPtr<tom::ARA>::create();
-   tom::set<ARA_name>(ara, "baduser");
-   tom::set<ARA_group>(ara, "badgroup");
+   ara->set<ARA_name>("baduser");
+   ara->set<ARA_group>("badgroup");
    xacl->push_back(std::move(ara));
-   tom::set<AR_xacl_list>(ar, pick(variant, std::move(xacl)));
-   tom::set<AR_type>(ar, 1);
+   ar->set<AR_xacl_list>(pick(variant, std::move(xacl)));
+   ar->set<AR_type>(1);
    return ar.release();
 }
 
@@ -1563,9 +1580,9 @@ lList *build_CAT_list() {
    auto lp = tom::ListPtr<tom::CT>::create("categories");
    lp->push_back(tom::ElementPtr<tom::CT>::from_typed(build_CAT(Variant::FULL)));
    auto ct = tom::ElementPtr<tom::CT>::create();
-   tom::set<CT_id>(ct, 18);
-   tom::set<CT_refcount>(ct, 1);
-   tom::set<CT_str>(ct, "-U alice -pe golden_pe 4");
+   ct->set<CT_id>(18);
+   ct->set<CT_refcount>(1);
+   ct->set<CT_str>("-U alice -pe golden_pe 4");
    lp->push_back(std::move(ct));
    return lp.release();
 }
@@ -1849,96 +1866,96 @@ tom::ElementPtr<tom::JB> build_job() {
    static const char script[] = "#!/bin/sh\n#$ -N golden\necho golden\n";
 
    auto job = tom::ElementPtr<tom::JB>::create();
-   tom::set<JB_job_number>(job, 4711);
-   tom::set<JB_job_name>(job, "golden");
-   tom::set<JB_version>(job, 2);
-   tom::set<JB_project>(job, "golden_prj");
-   tom::set<JB_department>(job, "golden_acl");
-   tom::set<JB_directive_prefix>(job, "#$");
-   tom::set<JB_exec_file>(job, EXEC_DIR "/4711");
-   tom::set<JB_script_file>(job, "golden.sh");
-   tom::set<JB_script_size>(job, static_cast<uint32_t>(sizeof(script) - 1));
-   tom::set<JB_script_ptr>(job, script);
-   tom::set<JB_submission_time>(job, T0 + 6000000);
-   tom::set<JB_execution_time>(job, T0 + 7000000);
-   tom::set<JB_deadline>(job, T0 + 8000000);
-   tom::set<JB_owner>(job, "alice");
-   tom::set<JB_uid>(job, 1001);
-   tom::set<JB_group>(job, "staff");
-   tom::set<JB_gid>(job, 100);
-   tom::set<JB_account>(job, "golden_account");
-   tom::set<JB_cwd>(job, "/home/alice/work");
-   tom::set<JB_notify>(job, true);
-   tom::set<JB_priority>(job, 1024 - 100);
-   tom::set<JB_jobshare>(job, 5);
-   tom::set<JB_shell_list>(job, pairs<PN_path, PN_host, const char *>({{"/bin/bash", "gexec01"}}));
-   tom::set<JB_env_list>(job, pairs<VA_variable, VA_value, const char *>(
+   job->set<JB_job_number>(4711);
+   job->set<JB_job_name>("golden");
+   job->set<JB_version>(2);
+   job->set<JB_project>("golden_prj");
+   job->set<JB_department>("golden_acl");
+   job->set<JB_directive_prefix>("#$");
+   job->set<JB_exec_file>(EXEC_DIR "/4711");
+   job->set<JB_script_file>("golden.sh");
+   job->set<JB_script_size>(static_cast<uint32_t>(sizeof(script) - 1));
+   job->set<JB_script_ptr>(script);
+   job->set<JB_submission_time>(T0 + 6000000);
+   job->set<JB_execution_time>(T0 + 7000000);
+   job->set<JB_deadline>(T0 + 8000000);
+   job->set<JB_owner>("alice");
+   job->set<JB_uid>(1001);
+   job->set<JB_group>("staff");
+   job->set<JB_gid>(100);
+   job->set<JB_account>("golden_account");
+   job->set<JB_cwd>("/home/alice/work");
+   job->set<JB_notify>(true);
+   job->set<JB_priority>(1024 - 100);
+   job->set<JB_jobshare>(5);
+   job->set<JB_shell_list>(pairs<PN_path, PN_host, const char *>({{"/bin/bash", "gexec01"}}));
+   job->set<JB_env_list>(pairs<VA_variable, VA_value, const char *>(
                                  {{"PATH", "/usr/bin:/bin"}, {"GOLDEN", "1"}}));
-   tom::set<JB_context>(job, pairs<VA_variable, VA_value, const char *>({{"ctx", "golden"}}));
-   tom::set<JB_job_args>(job, names<ST_name>({"-v", "input.dat"}));
-   tom::set<JB_stdout_path_list>(job, pairs<PN_path, PN_host, const char *>({{"/home/alice/out", "gexec01"}}));
-   tom::set<JB_stderr_path_list>(job, pairs<PN_path, PN_host, const char *>({{"/home/alice/err", HOST}}));
-   tom::set<JB_stdin_path_list>(job, pairs<PN_path, PN_host, const char *>({{"/dev/null", "gexec01"}}));
-   tom::set<JB_merge_stderr>(job, true);
+   job->set<JB_context>(pairs<VA_variable, VA_value, const char *>({{"ctx", "golden"}}));
+   job->set<JB_job_args>(names<ST_name>({"-v", "input.dat"}));
+   job->set<JB_stdout_path_list>(pairs<PN_path, PN_host, const char *>({{"/home/alice/out", "gexec01"}}));
+   job->set<JB_stderr_path_list>(pairs<PN_path, PN_host, const char *>({{"/home/alice/err", HOST}}));
+   job->set<JB_stdin_path_list>(pairs<PN_path, PN_host, const char *>({{"/dev/null", "gexec01"}}));
+   job->set<JB_merge_stderr>(true);
 
    auto requests = tom::ListPtr<tom::JRS>::create("requests");
    auto request = tom::ElementPtr<tom::JRS>::create();
-   tom::set<JRS_hard_resource_list>(request, pairs<CE_name, CE_stringval, const char *>(
+   request->set<JRS_hard_resource_list>(pairs<CE_name, CE_stringval, const char *>(
                                                 {{"h_vmem", "1G"}, {"h_rt", "1:0:0"}}));
-   tom::set<JRS_soft_resource_list>(request, pairs<CE_name, CE_stringval, const char *>({{"arch", "lx-amd64"}}));
-   tom::set<JRS_hard_queue_list>(request, names<QR_name>({"golden.q"}));
-   tom::set<JRS_soft_queue_list>(request, names<QR_name>({"other.q"}));
+   request->set<JRS_soft_resource_list>(pairs<CE_name, CE_stringval, const char *>({{"arch", "lx-amd64"}}));
+   request->set<JRS_hard_queue_list>(names<QR_name>({"golden.q"}));
+   request->set<JRS_soft_queue_list>(names<QR_name>({"other.q"}));
    requests->push_back(std::move(request));
-   tom::set<JB_request_set_list>(job, std::move(requests));
+   job->set<JB_request_set_list>(std::move(requests));
 
-   tom::set<JB_mail_options>(job, MAIL_AT_BEGINNING | MAIL_AT_EXIT);
+   job->set<JB_mail_options>(MAIL_AT_BEGINNING | MAIL_AT_EXIT);
    auto mail = tom::ListPtr<tom::MR>::create("mail");
    auto mr = tom::ElementPtr<tom::MR>::create();
-   tom::set<MR_user>(mr, "alice");
-   tom::set<MR_host>(mr, "mail.example.com");
+   mr->set<MR_user>("alice");
+   mr->set<MR_host>("mail.example.com");
    mail->push_back(std::move(mr));
-   tom::set<JB_mail_list>(job, std::move(mail));
-   tom::set<JB_pe>(job, "golden_pe");
-   tom::set<JB_pe_range>(job, range(2, 4, 1));
-   tom::set<JB_ja_structure>(job, range(1, 2, 1));
+   job->set<JB_mail_list>(std::move(mail));
+   job->set<JB_pe>("golden_pe");
+   job->set<JB_pe_range>(range(2, 4, 1));
+   job->set<JB_ja_structure>(range(1, 2, 1));
 
    auto tasks = tom::ListPtr<tom::JAT>::create("ja_tasks");
    for (uint32_t number = 1; number <= 2; number++) {
       auto task = tom::ElementPtr<tom::JAT>::create();
-      tom::set<JAT_task_number>(task, number);
-      tom::set<JAT_status>(task, 0x80 * number);
-      tom::set<JAT_state>(task, 0x40 + number);
-      tom::set<JAT_start_time>(task, T0 + 9000000 + number);
-      tom::set<JAT_granted_pe>(task, "golden_pe");
-      tom::set<JAT_master_queue>(task, "golden.q@gexec01");
+      task->set<JAT_task_number>(number);
+      task->set<JAT_status>(0x80 * number);
+      task->set<JAT_state>(0x40 + number);
+      task->set<JAT_start_time>(T0 + 9000000 + number);
+      task->set<JAT_granted_pe>("golden_pe");
+      task->set<JAT_master_queue>("golden.q@gexec01");
       auto destinations = tom::ListPtr<tom::JG>::create("granted");
       destinations->push_back(granted("golden.q@gexec01", "gexec01", 2));
       destinations->push_back(granted("golden.q@gexec02", HOST, 2));
-      tom::set<JAT_granted_destin_identifier_list>(task, std::move(destinations));
-      tom::set<JAT_osjobid>(task, number == 1 ? "12345" : "12346");
-      tom::set<JAT_usage_list>(task, usage(number));
+      task->set<JAT_granted_destin_identifier_list>(std::move(destinations));
+      task->set<JAT_osjobid>(number == 1 ? "12345" : "12346");
+      task->set<JAT_usage_list>(usage(number));
       if (number == 1) {
          auto pe_tasks = tom::ListPtr<tom::PET>::create("pe tasks");
          auto pet = tom::ElementPtr<tom::PET>::create();
-         tom::set<PET_id>(pet, "1.gexec02");
-         tom::set<PET_name>(pet, "golden_petask");
-         tom::set<PET_status>(pet, 0x80);
-         tom::set<PET_pid>(pet, 23456);
-         tom::set<PET_osjobid>(pet, "23456");
-         tom::set<PET_submission_time>(pet, T0 + 10000000);
-         tom::set<PET_start_time>(pet, T0 + 11000000);
-         tom::set<PET_cwd>(pet, "/home/alice/work");
-         tom::set<PET_environment>(pet, pairs<VA_variable, VA_value, const char *>({{"PE_TASK", "1"}}));
-         tom::set<PET_usage>(pet, usage(0.25));
+         pet->set<PET_id>("1.gexec02");
+         pet->set<PET_name>("golden_petask");
+         pet->set<PET_status>(0x80);
+         pet->set<PET_pid>(23456);
+         pet->set<PET_osjobid>("23456");
+         pet->set<PET_submission_time>(T0 + 10000000);
+         pet->set<PET_start_time>(T0 + 11000000);
+         pet->set<PET_cwd>("/home/alice/work");
+         pet->set<PET_environment>(pairs<VA_variable, VA_value, const char *>({{"PE_TASK", "1"}}));
+         pet->set<PET_usage>(usage(0.25));
          auto pet_destinations = tom::ListPtr<tom::JG>::create("granted");
          pet_destinations->push_back(granted("golden.q@gexec02", HOST, 1));
-         tom::set<PET_granted_destin_identifier_list>(pet, std::move(pet_destinations));
+         pet->set<PET_granted_destin_identifier_list>(std::move(pet_destinations));
          pe_tasks->push_back(std::move(pet));
-         tom::set<JAT_task_list>(task, std::move(pe_tasks));
+         task->set<JAT_task_list>(std::move(pe_tasks));
       }
       tasks->push_back(std::move(task));
    }
-   tom::set<JB_ja_tasks>(job, std::move(tasks));
+   job->set<JB_ja_tasks>(std::move(tasks));
    return job;
 }
 
@@ -1997,7 +2014,7 @@ void run_classic() {
 
    // the PE of the job, with control_slaves, so that its parallel tasks are spooled as files of their own
    static_cast<void>(ocs::DataStore::replace_master_list<SGE_TYPE_PE>(names<PE_name>({"golden_pe"})));
-   tom::set<PE_control_slaves>(ocs::DataStore::master_list_rw<SGE_TYPE_PE>().front(), true);
+   ocs::DataStore::master_list_rw<SGE_TYPE_PE>().front().set<PE_control_slaves>(true);
 
    auto job = build_job();
    auto ar = tom::ElementPtr<tom::AR>::from_typed(build_AR(Variant::FULL));
@@ -2005,8 +2022,8 @@ void run_classic() {
       fail("classic", "the job or the advance reservation cannot be spooled");
    }
    std::filesystem::create_directories(EXEC_DIR);
-   if (sge_string2file(tom::get<JB_script_ptr>(job), static_cast<int>(tom::get<JB_script_size>(job)),
-                       tom::get<JB_exec_file>(job)) != 0) {
+   if (sge_string2file(job->get<JB_script_ptr>(), static_cast<int>(job->get<JB_script_size>()),
+                       job->get<JB_exec_file>()) != 0) {
       fail("classic", "the job script cannot be written");
    }
    const auto before = snapshot(".");

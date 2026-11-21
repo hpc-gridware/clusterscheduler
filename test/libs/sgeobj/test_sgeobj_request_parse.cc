@@ -258,7 +258,7 @@ test_amount_split() {
    check_int("T20", "a request with a parameter list is accepted" PARAM_LIST_NOTE,
              centry_list_fill_request(lp, &answer_list, centries, true, false, true),
              PARAM_LIST_RC);
-   ocs::tom::ConstElement<ocs::tom::CE> ep = ocs::tom::find_first<CE_name>(*lp, "gpu");
+   ocs::tom::ConstElement<ocs::tom::CE> ep = lp->find_first<CE_name>("gpu");
    check_int("T20b", "CE_doubleval is the amount", (int)ep.get<CE_doubleval>(), 4);
    check_str("T20c", "CE_stringval still carries the parameters",
              ep.get<CE_stringval>(), "4[same=id]");
@@ -270,7 +270,7 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T21", "a plain amount is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
-   ocs::tom::ConstElement<ocs::tom::CE> ep_ce = ocs::tom::find_first<CE_name>(*lp, "gpu");
+   ocs::tom::ConstElement<ocs::tom::CE> ep_ce = lp->find_first<CE_name>("gpu");
    check_int("T21b", "CE_doubleval is the amount", (int)ep_ce.get<CE_doubleval>(), 4);
    answer_list.reset();
    lp.reset();
@@ -314,7 +314,7 @@ test_amount_split() {
    answer_list = nullptr;
    check_int("T24", "a memory request is accepted",
              centry_list_fill_request(lp, &answer_list, centries, true, false, true), 0);
-   ocs::tom::ConstElement<ocs::tom::CE> ep_ce_2 = ocs::tom::find_first<CE_name>(*lp, "mem");
+   ocs::tom::ConstElement<ocs::tom::CE> ep_ce_2 = lp->find_first<CE_name>("mem");
    check_int("T24b", "the multiplier is applied",
              (int)(ep_ce_2.get<CE_doubleval>() / (1024 * 1024)), 2048);
    answer_list.reset();
@@ -732,7 +732,7 @@ test_best_free_group() {
     * left out rather than forming a group of its own */
    auto def_partial = make_resource_definition_numa();
    ocs::tom::Element<ocs::tom::RESL> stray =
-      ocs::tom::emplace_back_in<CE_resource_map_list, RESL_value>(def_partial, "9");
+      def_partial->emplace_back_in<CE_resource_map_list, RESL_value>("9");
    stray.set<RESL_amount>(99);
    key = centry_rsmap_best_free_group(*def_partial, no_instances, "numa_node", &free);
    check_int("T98", "an instance without the characteristic is left out", (int)free, 4);
@@ -761,7 +761,7 @@ test_select_group_instances() {
              took(selected, centry_rsmap_select_group_instances(*def, nullptr, nullptr, "id", 4)), 1);
    check_int("T100b", "come from a single id", (int)selected->size(), 1);
    check_int("T100c", "with the whole amount on it",
-             (int)ocs::tom::get<RESL_amount>(selected->front()), 4);
+             (int)selected->front().get<RESL_amount>(), 4);
    selected.reset();
 
    check_int("T101", "more than any id holds is refused",
@@ -775,9 +775,9 @@ test_select_group_instances() {
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 3)), 1);
    check_int("T102b", "spread over the two cards of it", (int)selected->size(), 2);
    check_int("T102c", "filling the first before touching the second",
-             (int)ocs::tom::get<RESL_amount>(selected->front()), 2);
+             (int)selected->front().get<RESL_amount>(), 2);
    check_int("T102d", "and taking the remainder from the second",
-             (int)ocs::tom::get<RESL_amount>(selected->back()), 1);
+             (int)selected->back().get<RESL_amount>(), 1);
    selected.reset();
 
    check_int("T103", "the same three are refused by the identifier keying",
@@ -797,9 +797,9 @@ test_select_group_instances() {
    check_int("T105", "a later scope takes from the group the first one took from",
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, already, "numa_node", 2)), 1);
    check_str("T105b", "from the other card of that node, the first being spent",
-             ocs::tom::get<RESL_value>(selected->front()), "1");
+             selected->front().get<RESL_value>(), "1");
    check_int("T105c", "and only what is left of it",
-             (int)ocs::tom::get<RESL_amount>(selected->front()), 2);
+             (int)selected->front().get<RESL_amount>(), 2);
    selected.reset();
 
    check_int("T106", "what this job already holds is not free for it again",
@@ -812,7 +812,7 @@ test_select_group_instances() {
    check_int("T107", "a node booked down to two cannot serve three",
              took(selected, centry_rsmap_select_group_instances(*numa, use, nullptr, "numa_node", 3)), 1);
    check_str("T107b", "it moves to the node which can",
-             ocs::tom::get<RESL_value>(selected->front()), "2");
+             selected->front().get<RESL_value>(), "2");
    selected.reset();
    use.reset();
 
@@ -822,8 +822,8 @@ test_select_group_instances() {
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, nullptr, "numa_node", 3, nullptr,
                                                                 nullptr, "1")), 1);
    check_str("T108b", "so the cards of that node are used",
-             ocs::tom::get<RESL_value>(selected->front()), "2");
-   check_str("T108c", "both of them", ocs::tom::get<RESL_value>(selected->back()), "3");
+             selected->front().get<RESL_value>(), "2");
+   check_str("T108c", "both of them", selected->back().get<RESL_value>(), "3");
    selected.reset();
 
    check_int("T109", "more than the required group holds is refused, not moved elsewhere",
@@ -846,7 +846,7 @@ test_select_group_instances() {
              took(selected, centry_rsmap_select_group_instances(*numa, nullptr, granted, "numa_node", 2, nullptr,
                                                                 nullptr, "1")), 1);
    check_str("T109d", "so the rest comes from the node that scope used",
-             ocs::tom::get<RESL_value>(selected->front()), "1");
+             selected->front().get<RESL_value>(), "1");
    selected.reset();
    granted.reset();
 
@@ -871,9 +871,9 @@ test_select_instances() {
              took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 6)), 1);
    check_int("T111b", "two entries", (int)selected->size(), 2);
    check_int("T111c", "the first id filled before the second is touched",
-             (int)ocs::tom::get<RESL_amount>(selected->front()), 4);
+             (int)selected->front().get<RESL_amount>(), 4);
    check_int("T111d", "and the remainder from the second",
-             (int)ocs::tom::get<RESL_amount>(selected->back()), 2);
+             (int)selected->back().get<RESL_amount>(), 2);
    selected.reset();
 
    check_int("T112", "more than the map holds is refused",
@@ -889,7 +889,7 @@ test_select_instances() {
 
    check_int("T113", "a later scope skips the id the first one used up",
              took(selected, centry_rsmap_select_instances(*def, nullptr, already, 4)), 1);
-   check_str("T113b", "and takes from the other", ocs::tom::get<RESL_value>(selected->front()), "1");
+   check_str("T113b", "and takes from the other", selected->front().get<RESL_value>(), "1");
    check_int("T113c", "in one entry", (int)selected->size(), 1);
    selected.reset();
 
@@ -902,7 +902,7 @@ test_select_instances() {
    auto use = make_utilization("0", 4);
    check_int("T115", "an id used up by other jobs is skipped",
              took(selected, centry_rsmap_select_instances(*def, use, nullptr, 4)), 1);
-   check_str("T115b", "so the free one is taken", ocs::tom::get<RESL_value>(selected->front()), "1");
+   check_str("T115b", "so the free one is taken", selected->front().get<RESL_value>(), "1");
    selected.reset();
    use.reset();
 
@@ -1033,14 +1033,14 @@ test_id_expression() {
    check_int("T130", "one instance is taken from those the expression accepts",
              took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 1, "gpu1*")), 1);
    check_str("T130b", "and it is one of them",
-             ocs::tom::get<RESL_value>(selected->front()), "gpu1a");
+             selected->front().get<RESL_value>(), "gpu1a");
    selected.reset();
 
    check_int("T131", "more matches than are asked for is not a problem",
              took(selected, centry_rsmap_select_instances(*def, nullptr, nullptr, 2, "!gpu1a")), 1);
    check_int("T131b", "the amount is taken", (int)selected->size(), 2);
    check_str("T131c", "from the accepted set only",
-             ocs::tom::get<RESL_value>(selected->front()), "gpu1b");
+             selected->front().get<RESL_value>(), "gpu1b");
    selected.reset();
 
    check_int("T132", "more than the expression leaves is refused",
@@ -1072,7 +1072,7 @@ test_id_expression() {
              took(selected, centry_rsmap_select_group_instances(*shared, nullptr, nullptr, "id", 4,
                                                                 "gpu2*")), 1);
    check_str("T136b", "and it is that card",
-             ocs::tom::get<RESL_value>(selected->front()), "gpu2");
+             selected->front().get<RESL_value>(), "gpu2");
    check_int("T136c", "in one entry", (int)selected->size(), 1);
    selected.reset();
 

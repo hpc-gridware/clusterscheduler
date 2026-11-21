@@ -214,7 +214,7 @@ test_select_pack_bytes() {
          packed && ref_packed && same_bytes(&pb, &ref));
 
    // T05: the source list is untouched
-   CHECK(5, "the borrowed list keeps its three elements", ocs::tom::size(source.get()) == 3);
+   CHECK(5, "the borrowed list keeps its three elements", source->size() == 3);
 
    ocs::tom::clear_buffer(&pb);
    ocs::tom::clear_buffer(&ref);
@@ -261,7 +261,7 @@ test_unpack_roundtrip() {
    CHECK(6, "three tasks read back with data, condition and selection",
          read && back.tasks.size() == 3 && ocs::tom::size(back.tasks[0]->data_list) == 3 &&
          back.tasks[0]->condition && back.tasks[0]->enumeration && back.tasks[1]->data_list == nullptr &&
-         !back.tasks[1]->condition && ocs::tom::size(back.tasks[2]->answer_list.get().raw()) == 1);
+         !back.tasks[1]->condition && back.tasks[2]->answer_list->size() == 1);
 
    sge_pack_buffer again;
    ocs::tom::try_init_buffer(&again, 0, false, false);

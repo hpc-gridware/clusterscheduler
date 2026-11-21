@@ -368,7 +368,7 @@ test_update_cache() {
    add_hgroup(master_list, "@top", {"@mid", "hostc"});
 
    CHECK(26, "nothing is cached before the first update",
-         ocs::tom::get<HGRP_cache_version>(ocs::tom::find_first<HGRP_name>(*master_list, "@leaf")) == 0);
+         master_list->find_first<HGRP_name>(ocs::tom::Host("@leaf")).get<HGRP_cache_version>() == 0);
 
    CHECK(27, "hgroup_list_update_caches succeeds",
          hgroup_list_update_caches(master_list, nullptr));
@@ -386,14 +386,14 @@ test_update_cache() {
       bool all = true;
 
       for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(master_list)) {
-         all &= (ocs::tom::get<HGRP_cache_version>(hgroup) != 0) && cache_equals_walk(hgroup, master_list);
+         all &= (hgroup.get<HGRP_cache_version>() != 0) && cache_equals_walk(hgroup, master_list);
       }
       CHECK(32, "every cache equals a fresh walk and carries a version", all);
    }
 
    /* the nested case: change @leaf, and the containers must follow */
    {
-      ocs::tom::Element<ocs::tom::HGRP> leaf = ocs::tom::find_first_rw<HGRP_name>(*master_list, "@leaf");
+      ocs::tom::Element<ocs::tom::HGRP> leaf = master_list->find_first<HGRP_name>(ocs::tom::Host("@leaf"));
       ocs::tom::ListPtr<ocs::tom::HR> new_hosts;
 
       href_list_add(new_hosts, nullptr, "hosta");
@@ -404,12 +404,12 @@ test_update_cache() {
       ocs::tom::ListPtr<ocs::tom::HR> referencees;
       CHECK(33, "the referencees of @leaf are found transitively",
             hgroup_find_all_referencees(leaf, nullptr, master_list, &referencees) &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(*referencees, "@mid")) != nullptr &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(*referencees, "@top")) != nullptr);
+            static_cast<const lListElem *>(referencees->find_first<HR_name>(ocs::tom::Host("@mid"))) != nullptr &&
+            static_cast<const lListElem *>(referencees->find_first<HR_name>(ocs::tom::Host("@top"))) != nullptr);
 
       hgroup_update_cache(leaf, nullptr, master_list);
       for (const ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::ConstList<ocs::tom::HR>(referencees)) {
-         hgroup_update_cache(ocs::tom::find_first_rw<HGRP_name>(*master_list, ocs::tom::get<HR_name>(href)),
+         hgroup_update_cache(master_list->find_first<HGRP_name>(href.get<HR_name>()),
                              nullptr, master_list);
       }
       referencees.reset();
@@ -706,7 +706,7 @@ test_member_classes() {
       CHECK(84, "the collapse is reported",
             answer_list->size() == 1);
       CHECK(85, "and the report cannot fail the client",
-            ocs::tom::get<AN_status>(answer_list->front()) == STATUS_OK);
+            answer_list->front().get<AN_status>() == STATUS_OK);
 
       answer_list.reset();
    }
@@ -900,7 +900,7 @@ oracle_flatten(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char
       return;
    }
    for (ocs::tom::ConstElement<ocs::tom::HR> member : hgroup.get<HGRP_host_list>()) {
-      const char *member_name = ocs::tom::get<HR_name>(member);
+      const char *member_name = member.get<HR_name>();
 
       switch (ocs::classify_member(member_name)) {
          case ocs::MemberClass::GROUP_REFERENCE:
@@ -909,7 +909,7 @@ oracle_flatten(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char
          case ocs::MemberClass::MATCHER:
 #ifdef WITH_EXTENSIONS
             for (const ocs::tom::ConstElement<ocs::tom::HR> candidate : candidates) {
-               const char *host = ocs::tom::get<HR_name>(candidate);
+               const char *host = candidate.get<HR_name>();
 
                if (sge_hostmatch_pattern(ocs::matcher_payload(member_name), host) == 0) {
                   href_list_add(out, nullptr, host);
@@ -936,7 +936,7 @@ same_host_set(const ocs::tom::ConstList<ocs::tom::HR> a, const ocs::tom::ConstLi
       return false;
    }
    for (const ocs::tom::ConstElement<ocs::tom::HR> href : a) {
-      if (href_list_locate(b, ocs::tom::get<HR_name>(href)) == nullptr) {
+      if (href_list_locate(b, href.get<HR_name>()) == nullptr) {
          return false;
       }
    }
@@ -959,8 +959,8 @@ dump_mismatch(const ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, const char 
    for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : hgroup_list) {
       dstring members = DSTRING_INIT;
 
-      href_list_append_to_dstring(ocs::tom::get<HGRP_host_list>(hgroup), &members);
-      printf("        %-14s = %s\n", static_cast<const char *>(ocs::tom::get<HGRP_name>(hgroup)),
+      href_list_append_to_dstring(hgroup.get<HGRP_host_list>(), &members);
+      printf("        %-14s = %s\n", hgroup.get<HGRP_name>().c_str(),
              sge_dstring_get_string(&members));
       sge_dstring_free(&members);
    }
@@ -1030,7 +1030,7 @@ test_generated_trees() {
                   break;
             }
             // a host group holds a member once, as href_list_add() keeps it; a member drawn twice is skipped
-            if (static_cast<const lListElem *>(ocs::tom::find_first<HR_name>(*members, buffer)) == nullptr) {
+            if (static_cast<const lListElem *>(members->find_first<HR_name>(ocs::tom::Host(buffer))) == nullptr) {
                members->emplace_back<HR_name>(ocs::tom::Host(buffer));
             }
          }
@@ -1047,7 +1047,7 @@ test_generated_trees() {
 
       for (int g = 0; g < GROUPS; g++) {
          snprintf(buffer, sizeof(buffer), "@g%d", g);
-         ocs::tom::Element<ocs::tom::HGRP> hgroup = ocs::tom::find_first_rw<HGRP_name>(*hgroup_list, buffer);
+         ocs::tom::Element<ocs::tom::HGRP> hgroup = hgroup_list->find_first<HGRP_name>(ocs::tom::Host(buffer));
          ocs::tom::ListPtr<ocs::tom::HR> expected;
          ocs::tom::ListPtr<ocs::tom::HR> walked;
 
@@ -1092,7 +1092,7 @@ test_generated_trees() {
           */
          for (ocs::tom::ConstElement<ocs::tom::HR> cached : hgroup.get<HGRP_cached_hosts>()) {
             if (href_list_locate(hgroup.get<HGRP_cached_hosts>(),
-                                 ocs::tom::get<HR_name>(cached)) == nullptr) {
+                                 cached.get<HR_name>()) == nullptr) {
                unfindable++;
             }
          }
@@ -1101,7 +1101,7 @@ test_generated_trees() {
          hgroup_find_all_references(hgroup, nullptr, hgroup_list, &named, nullptr, nullptr, false);
 
          for (ocs::tom::ConstElement<ocs::tom::HR> candidate : exec_group.get<HGRP_host_list>()) {
-            const char *host = ocs::tom::get<HR_name>(candidate);
+            const char *host = candidate.get<HR_name>();
             const bool admitted = ocs::Matcher::admits(hgroup, host, groups);
             const bool resolved = href_list_locate(hgroup.get<HGRP_cached_hosts>(), host) != nullptr;
             const bool is_named = href_list_locate(named, host) != nullptr;
@@ -1482,8 +1482,8 @@ test_split_members() {
       CHECK(126, "a group carrying a matcher reports that it does", has_matcher);
       CHECK(127, "and every member lands in its class, in the order stored",
             hosts->size() == 2 && groups->size() == 1 && matchers->size() == 1 &&
-            sge_hostcmp(ocs::tom::get<HR_name>(hosts->front()), "node001") == 0 &&
-            strcmp(ocs::tom::get<HR_name>(matchers->front()), "host:gpu*") == 0);
+            sge_hostcmp(hosts->front().get<HR_name>(), "node001") == 0 &&
+            strcmp(matchers->front().get<HR_name>(), "host:gpu*") == 0);
    }
 
    {

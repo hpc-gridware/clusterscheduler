@@ -304,9 +304,9 @@ test_single_characteristic() {
    T_ASSERT(r != nullptr);
    const auto dev = find_prop(r, "device");
    T_ASSERT(dev != nullptr);
-   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
+   T_ASSERT(strcmp(dev.get<CE_stringval>(), "/dev/nvidia0") == 0);
    /* reader stores only name+stringval verbatim; valtype must remain unset */
-   T_ASSERT(ocs::tom::get<CE_valtype>(dev) == 0);
+   T_ASSERT(dev.get<CE_valtype>() == 0);
 
    ce.reset();
    alp.reset();
@@ -328,15 +328,15 @@ test_multiple_characteristics() {
                        &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ce->get<CE_resource_map_list>(), "gpu0");
+   ocs::tom::ConstElement<ocs::tom::RESL> r = ce->get<CE_resource_map_list>().find_first<RESL_value>("gpu0");
    T_ASSERT(r != nullptr);
 
    const auto dev = find_prop(r, "device");
    const auto mem = find_prop(r, "memory");
    const auto aff = find_prop(r, "affinity_mask");
-   T_ASSERT(dev != nullptr && strcmp(ocs::tom::get<CE_stringval>(dev), "/dev/nvidia0") == 0);
-   T_ASSERT(mem != nullptr && strcmp(ocs::tom::get<CE_stringval>(mem), "80G") == 0);
-   T_ASSERT(aff != nullptr && strcmp(ocs::tom::get<CE_stringval>(aff), "SCCCCCCCCScccccccc") == 0);
+   T_ASSERT(dev != nullptr && strcmp(dev.get<CE_stringval>(), "/dev/nvidia0") == 0);
+   T_ASSERT(mem != nullptr && strcmp(mem.get<CE_stringval>(), "80G") == 0);
+   T_ASSERT(aff != nullptr && strcmp(aff.get<CE_stringval>(), "SCCCCCCCCScccccccc") == 0);
 
    /* reader stores properties in file order; the writer sorts them at emit
     * time. Verify the count so the properties list length is exact. */
@@ -460,7 +460,7 @@ test_characteristics_on_numeric_id() {
    ocs::tom::ConstElement<ocs::tom::RESL> resl = ce->find_first_in<CE_resource_map_list, RESL_value>("0");
    T_ASSERT(resl != nullptr);
    T_ASSERT(resl.get<RESL_properties>().size() == 1);
-   T_ASSERT(strcmp(ocs::tom::get<CE_stringval>(resl.get<RESL_properties>().front()),
+   T_ASSERT(strcmp(resl.get<RESL_properties>().front().get<CE_stringval>(),
                    "/dev/nvidia0") == 0);
 
    ce.reset();
@@ -556,7 +556,7 @@ test_duplicate_matching_reordered() {
    T_ASSERT(run_reader(*ce, "2(gpu0[a=1,b=2] gpu0[b=2,a=1])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ce->get<CE_resource_map_list>(), "gpu0");
+   ocs::tom::ConstElement<ocs::tom::RESL> r = ce->get<CE_resource_map_list>().find_first<RESL_value>("gpu0");
    T_ASSERT(r != nullptr && r.get<RESL_amount>() == 2);
    T_ASSERT(r.get<RESL_properties>().size() == 2);
 
@@ -607,7 +607,7 @@ test_whitespace_inside_brackets() {
    T_ASSERT(run_reader(*ce, "1(gpu0[device=/dev/nvidia0, memory=80G])", &alp) == 1);
    T_ASSERT(alp == nullptr);
 
-   ocs::tom::ConstElement<ocs::tom::RESL> r = ocs::tom::find_first<RESL_value>(ce->get<CE_resource_map_list>(), "gpu0");
+   ocs::tom::ConstElement<ocs::tom::RESL> r = ce->get<CE_resource_map_list>().find_first<RESL_value>("gpu0");
    T_ASSERT(r != nullptr && r.get<RESL_amount>() == 1);
    ocs::tom::ConstList<ocs::tom::CE> props = r.get<RESL_properties>();
    T_ASSERT(props != nullptr && props.size() == 2);

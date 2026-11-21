@@ -120,7 +120,7 @@ static bool find_str_value(const ocs::tom::ConstList<ocs::tom::ASTR> attrs, ocs:
                            bool *ambiguous, const ocs::tom::ConstList<ocs::tom::HGRP> hgroups) {
    const auto lookup = ocs_attr_list_find(attrs, al, hostname, match_hog, match_grp, ambiguous, hgroups);
    if (lookup.entry) {
-      *value = ocs::tom::get<ASTR_value>(lookup.entry);
+      *value = lookup.entry.get<ASTR_value>();
    }
    return lookup.found;
 }
@@ -138,7 +138,7 @@ static bool find_str_value_href(const ocs::tom::ConstList<ocs::tom::ASTR> attrs,
                                 const char *hostname, const char **value, bool *found) {
    const auto entry = ocs_attr_list_find_href(attrs, al, hostname, found);
    if (entry) {
-      *value = ocs::tom::get<ASTR_value>(entry);
+      *value = entry.get<ASTR_value>();
    }
    return static_cast<bool>(entry);
 }

@@ -138,7 +138,7 @@ calendar_readable() {
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::CAL_LIST, ocs::gdi::Command::GET,
                                         ocs::gdi::SubCommand::NONE, lp, where, ocs::tom::what_all<ocs::tom::CAL>());
    alp.reset();
-   const bool found = ocs::tom::find_first<CAL_name>(*lp, CAL_NAME) != nullptr;
+   const bool found = lp->find_first<CAL_name>(CAL_NAME) != nullptr;
    lp.reset();
    return found;
 }

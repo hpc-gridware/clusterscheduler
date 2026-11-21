@@ -236,12 +236,12 @@ test_cache_content_and_invalidation() {
       bool all_match = true;
 
       for (const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup : ocs::tom::ConstList<ocs::tom::HGRP>(hgroup_list)) {
-         all_versioned &= (ocs::tom::get<HGRP_cache_version>(hgroup) != 0);
+         all_versioned &= (hgroup.get<HGRP_cache_version>() != 0);
          all_match &= cache_matches_walk(hgroup, hgroup_list);
          checked++;
 
-         for (const ocs::tom::ConstElement<ocs::tom::HR> href : ocs::tom::get<HGRP_host_list>(hgroup)) {
-            const char *h = ocs::tom::get<HR_name>(href);
+         for (const ocs::tom::ConstElement<ocs::tom::HR> href : hgroup.get<HGRP_host_list>()) {
+            const char *h = href.get<HR_name>();
 
             if (host_b[0] == '\0' && h[0] != '@' && strcmp(h, host_a) != 0) {
                snprintf(host_b, sizeof(host_b), "%s", h);
@@ -264,7 +264,7 @@ test_cache_content_and_invalidation() {
       CHECK(4, "created " GRP_LEAF, write_hgroup(ocs::gdi::Command::ADD, GRP_LEAF, leaf_members, 1));
 
       auto hgroup_list = fetch_hgroup_list();
-      ocs::tom::ConstElement<ocs::tom::HGRP> leaf = ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_LEAF);
+      ocs::tom::ConstElement<ocs::tom::HGRP> leaf = hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_LEAF));
 
       CHECK(5, GRP_LEAF " has a cache version after ADD",
             leaf != nullptr && leaf.get<HGRP_cache_version>() != 0);
@@ -286,7 +286,7 @@ test_cache_content_and_invalidation() {
       CHECK(9, GRP_TOP " resolves two levels down to the leaf host",
             cache_contains(hgroup_list, GRP_TOP, host_a));
 
-      ocs::tom::ConstElement<ocs::tom::HGRP> top = ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_TOP);
+      ocs::tom::ConstElement<ocs::tom::HGRP> top = hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_TOP));
       CHECK(10, GRP_TOP " caches no group references, only hosts",
             top != nullptr && cache_matches_walk(top, hgroup_list));
       hgroup_list.reset();
@@ -330,9 +330,9 @@ test_cache_content_and_invalidation() {
    {
       auto hgroup_list = fetch_hgroup_list();
       CHECK(15, "test host groups removed again",
-            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_LEAF)) == nullptr &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_MID)) == nullptr &&
-            static_cast<const lListElem *>(ocs::tom::find_first<HGRP_name>(*hgroup_list, GRP_TOP)) == nullptr);
+            static_cast<const lListElem *>(hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_LEAF))) == nullptr &&
+            static_cast<const lListElem *>(hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_MID))) == nullptr &&
+            static_cast<const lListElem *>(hgroup_list->find_first<HGRP_name>(ocs::tom::Host(GRP_TOP))) == nullptr);
       hgroup_list.reset();
    }
 }

@@ -83,13 +83,13 @@ check_element(const char *variable, const char *value,
       printf("       usage_parse_value returned nullptr for value='%s'\n", value);
       return false;
    }
-   const char *name = ocs::tom::get<UA_name>(ep);
+   const char *name = ep->get<UA_name>();
    if (name == nullptr || std::strcmp(name, variable) != 0) {
       printf("       UA_name='%s', expected '%s'\n", name ? name : "(nullptr)", variable);
       return false;
    }
-   const char *svalue = ocs::tom::get<UA_svalue>(ep);
-   double dvalue = ocs::tom::get<UA_value>(ep);
+   const char *svalue = ep->get<UA_svalue>();
+   double dvalue = ep->get<UA_value>();
    bool ok = true;
    if (expect_string) {
       if (svalue == nullptr) {

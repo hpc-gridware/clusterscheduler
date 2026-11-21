@@ -140,14 +140,14 @@ int main(int /*argc*/, char * /*argv*/[]) {
    cqueue_set_template_attributes(*created, &alp);
    alp.reset();
 
-   ocs::tom::set<CQ_name>(created, "foobar");
+   created->set<CQ_name>("foobar");
 
    auto lp = ocs::tom::ListPtr<ocs::tom::ASTR>::create("Shell Terminate Methods");
    auto ep = ocs::tom::ElementPtr<ocs::tom::ASTR>::create();
    ep->set<ASTR_href>(ocs::tom::Host("global"));
    ep->set<ASTR_value>("/tmp/myterminate_method.sh");
    lp->push_back(std::move(ep));
-   ocs::tom::set<CQ_terminate_method>(created, std::move(lp));
+   created->set<CQ_terminate_method>(std::move(lp));
 
    auto cqueue_list = ocs::tom::ListPtr<ocs::tom::CQ>::create("CQ List");
    const auto cqueue = cqueue_list->push_back(std::move(created));

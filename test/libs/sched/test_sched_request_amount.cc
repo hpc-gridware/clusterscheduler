@@ -68,10 +68,10 @@ check(const char *id, const char *what, int got, int expected) {
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_request(const char *name, ocs::CEntry::Type type, const char *stringval, double doubleval) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, name);
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
-   ocs::tom::set<CE_stringval>(ep, stringval);
-   ocs::tom::set<CE_doubleval>(ep, doubleval);
+   ep->set<CE_name>(name);
+   ep->set<CE_valtype>(static_cast<uint32_t>(type));
+   ep->set<CE_stringval>(stringval);
+   ep->set<CE_doubleval>(doubleval);
    return ep;
 }
 
@@ -93,12 +93,12 @@ make_request(const char *name, ocs::CEntry::Type type, const char *stringval, do
 static ocs::tom::ElementPtr<ocs::tom::CE>
 make_offer(const char *name, ocs::CEntry::Type type, uint32_t relop, const char *stringval, double doubleval) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, name);
-   ocs::tom::set<CE_valtype>(ep, static_cast<uint32_t>(type));
-   ocs::tom::set<CE_relop>(ep, relop);
-   ocs::tom::set<CE_stringval>(ep, stringval);
-   ocs::tom::set<CE_doubleval>(ep, doubleval);
-   ocs::tom::set<CE_pj_doubleval>(ep, doubleval);
+   ep->set<CE_name>(name);
+   ep->set<CE_valtype>(static_cast<uint32_t>(type));
+   ep->set<CE_relop>(relop);
+   ep->set<CE_stringval>(stringval);
+   ep->set<CE_doubleval>(doubleval);
+   ep->set<CE_pj_doubleval>(doubleval);
    return ep;
 }
 

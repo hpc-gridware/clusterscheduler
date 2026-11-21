@@ -65,7 +65,7 @@
  */
 static bool
 answer_contains(const ocs::tom::ConstList<ocs::tom::AN> answer_list, const char *text) {
-   const char *answer = ocs::tom::get<AN_text>(answer_list.front());
+   const char *answer = answer_list.front().get<AN_text>();
    return answer != nullptr && strstr(answer, text) != nullptr;
 }
 
@@ -153,19 +153,19 @@ static void
 test_variable_parser() {
    ocs::tom::ListPtr<ocs::tom::VA> vars;
    const int ret = var_list_parse_from_string(vars, "A=1,B=2,A=3", 0);
-   ocs::tom::ConstElement<ocs::tom::VA> a = ocs::tom::find_first<VA_variable>(*vars, "A");
+   ocs::tom::ConstElement<ocs::tom::VA> a = vars->find_first<VA_variable>("A");
    CHECK(8, "-v A=1,B=2,A=3 holds A once, with the value 3",
          ret == 0 && vars->size() == 2 && a != nullptr && strcmp(a.get<VA_value>(), "3") == 0);
 
    const int ret2 = var_list_parse_from_string(vars, "A=4", 0);
-   ocs::tom::ConstElement<ocs::tom::VA> a_va = ocs::tom::find_first<VA_variable>(*vars, "A");
+   ocs::tom::ConstElement<ocs::tom::VA> a_va = vars->find_first<VA_variable>("A");
    CHECK(9, "a later -v adds to the same list by name",
          ret2 == 0 && vars->size() == 2 && strcmp(a_va.get<VA_value>(), "4") == 0);
    vars.reset();
 
    const int ret3 = var_list_parse_from_string(vars, "A,A", 0);
    CHECK(10, "a name without a value, given twice, is kept once without a value",
-         ret3 == 0 && vars->size() == 1 && ocs::tom::get<VA_value>(vars->front()) == nullptr);
+         ret3 == 0 && vars->size() == 1 && vars->front().get<VA_value>() == nullptr);
    vars.reset();
 }
 
@@ -307,9 +307,9 @@ test_context_change() {
    job_add_parent_id_to_context(*child);
    unsetenv("JOB_ID");
    auto effective = ocs_context_get_effective(*child);
-   ocs::tom::ConstElement<ocs::tom::VA> parent = ocs::tom::find_first<VA_variable>(*effective, CONTEXT_PARENT);
+   ocs::tom::ConstElement<ocs::tom::VA> parent = effective->find_first<VA_variable>(CONTEXT_PARENT);
    CHECK(21, "PARENT given after a trailing -dc is in the effective context",
-         ocs::tom::size(*effective) == 1 && parent != nullptr && strcmp(parent.get<VA_value>(), "42") == 0);
+         effective->size() == 1 && parent != nullptr && strcmp(parent.get<VA_value>(), "42") == 0);
    effective.reset();
    child.reset();
 
@@ -322,8 +322,8 @@ test_context_change() {
    auto reduced = jobs->select(ocs::tom::what<JB_job_number, JB_context>());
    auto reduced_effective = ocs_context_get_effective(reduced->front());
    CHECK(22, "the effective context of a reduced job without the change request is its context",
-         ocs::tom::size(*reduced_effective) == 1 &&
-         static_cast<const lListElem *>(ocs::tom::find_first<VA_variable>(*reduced_effective, "f")) != nullptr);
+         reduced_effective->size() == 1 &&
+         static_cast<const lListElem *>(reduced_effective->find_first<VA_variable>("f")) != nullptr);
    reduced_effective.reset();
    reduced.reset();
    jobs.reset();
@@ -364,24 +364,24 @@ test_repair() {
    ocs::tom::emplace_back<QR_name>(&queues, "all.q");
    ocs::tom::emplace_back<QR_name>(&queues, "b.q");
    ocs::tom::emplace_back<QR_name>(&queues, "all.q");
-   ocs::tom::set<JRS_hard_queue_list>(request_set, queues);
+   request_set.set<JRS_hard_queue_list>(ocs::tom::ListPtr<ocs::tom::QR>(queues));
    lList *resources = nullptr;
-   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&resources, "h_vmem"), "1G");
-   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&resources, "h_vmem"), "2G");
-   ocs::tom::set<JRS_hard_resource_list>(request_set, resources);
+   ocs::tom::emplace_back<CE_name>(&resources, "h_vmem").set<CE_stringval>("1G");
+   ocs::tom::emplace_back<CE_name>(&resources, "h_vmem").set<CE_stringval>("2G");
+   request_set.set<JRS_hard_resource_list>(ocs::tom::ListPtr<ocs::tom::CE>(resources));
 
    std::string repairs;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const bool repaired = ocs_object_repair_repeated_keys(*job, repairs, &answer_list, "job 7");
-   ocs::tom::ConstElement<ocs::tom::VA> a = ocs::tom::find_first<VA_variable>(job->get<JB_env_list>(), "A");
+   ocs::tom::ConstElement<ocs::tom::VA> a = job->get<JB_env_list>().find_first<VA_variable>("A");
    ocs::tom::ConstList<ocs::tom::QR> repaired_queues = request_set.get<JRS_hard_queue_list>();
    ocs::tom::ConstList<ocs::tom::CE> repaired_resources = request_set.get<JRS_hard_resource_list>();
    CHECK(23, "variables and resources keep the last value, a repeated queue is dropped, the first stays",
          repaired && answer_list == nullptr && job->get<JB_env_list>().size() == 2 && a != nullptr &&
          strcmp(a.get<VA_value>(), "3") == 0 && repaired_queues.size() == 2 &&
-         strcmp(ocs::tom::get<QR_name>(repaired_queues.front()), "all.q") == 0 &&
+         strcmp(repaired_queues.front().get<QR_name>(), "all.q") == 0 &&
          repaired_resources.size() == 1 &&
-         strcmp(ocs::tom::get<CE_stringval>(repaired_resources.front()), "2G") == 0);
+         strcmp(repaired_resources.front().get<CE_stringval>(), "2G") == 0);
    CHECK(24, "the repairs name the path of each list and the key",
          repairs.find("JB_env_list \"A\"") != std::string::npos &&
          repairs.find("JB_request_set_list/JRS_hard_queue_list \"all.q\"") != std::string::npos &&
@@ -456,10 +456,10 @@ test_merge() {
 
    lList *resources = nullptr;
    lList *switch_1 = nullptr;
-   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&switch_1, "h_vmem"), "1G");
-   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&switch_1, "h_rt"), "60");
+   ocs::tom::emplace_back<CE_name>(&switch_1, "h_vmem").set<CE_stringval>("1G");
+   ocs::tom::emplace_back<CE_name>(&switch_1, "h_rt").set<CE_stringval>("60");
    lList *switch_2 = nullptr;
-   ocs::tom::set<CE_stringval>(ocs::tom::emplace_back<CE_name>(&switch_2, "h_vmem"), "2G");
+   ocs::tom::emplace_back<CE_name>(&switch_2, "h_vmem").set<CE_stringval>("2G");
    ocs_object_list_add_unique(&resources, &switch_1);
    ocs_object_list_add_unique(&resources, &switch_2);
    ocs::tom::ConstElement<ocs::tom::CE> h_vmem = ocs::tom::find_first<CE_name>(resources, "h_vmem");
@@ -505,7 +505,7 @@ add_arch_request(ocs::tom::ListPtr<ocs::tom::CE> &lp, const char *name, const ch
    if (!lp) {
       lp = ocs::tom::ListPtr<ocs::tom::CE>::create("request");
    }
-   ocs::tom::set<CE_stringval>(lp->emplace_back<CE_name>(name), value);
+   lp->emplace_back<CE_name>(name).set<CE_stringval>(value);
 }
 
 /**
@@ -515,10 +515,10 @@ add_arch_request(ocs::tom::ListPtr<ocs::tom::CE> &lp, const char *name, const ch
  */
 static const char *
 only_arch_value(const ocs::tom::ConstList<ocs::tom::CE> lp) {
-   if (lp.size() != 1 || strcmp(ocs::tom::get<CE_name>(lp.front()), "arch") != 0) {
+   if (lp.size() != 1 || strcmp(lp.front().get<CE_name>(), "arch") != 0) {
       return nullptr;
    }
-   return ocs::tom::get<CE_stringval>(lp.front());
+   return lp.front().get<CE_stringval>();
 }
 
 /**

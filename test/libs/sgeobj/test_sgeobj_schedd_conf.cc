@@ -104,7 +104,7 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
       if (schedd_conf) {
          switch (conf->type) {
             case lStringT:
-               ocs::tom::set(schedd_conf, static_cast<int>(conf->test_attribute), settings[i].test_value);
+               schedd_conf.set(static_cast<int>(conf->test_attribute), settings[i].test_value);
                break;
             case lDoubleT:
                break;

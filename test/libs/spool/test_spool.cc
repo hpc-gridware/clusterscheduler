@@ -94,7 +94,7 @@ static ocs::tom::ElementPtr<ocs::tom::CONF> sge_get_configuration_for_host(const
       strcpy(unique_name, aName);
    }
 
-   auto conf = ocs::tom::find_first<CONF_name>(cluster_config, unique_name).clone();
+   auto conf = cluster_config.find_first<CONF_name>(ocs::tom::Host(unique_name)).clone();
 
    DRETURN(conf);
 }

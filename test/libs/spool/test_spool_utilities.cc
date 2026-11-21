@@ -195,7 +195,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       ok = ocs_spool_parse_value(*ocs_spool_field_ops_of(QU_load_thresholds), qinstance.get(), &alp, "NONE");
       CHECK(id, "list field: append gives nullptr, parse gives true and leaves the list unset",
             value == nullptr && ok && !answer_list_has_error(&alp) &&
-            ocs::tom::get<const lList *>(qinstance.get(), QU_load_thresholds) == nullptr); id++;
+            qinstance->get<const lList *>(QU_load_thresholds) == nullptr); id++;
       alp.reset();
 
       // T09: a host field: unset is written as NONE, a parsed name is stored as a host and written back
@@ -207,7 +207,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       value = ocs_spool_append_value(*ocs_spool_field_ops_of(QU_qhostname), qinstance.get(), &alp, &buffer);
       CHECK(id, "host field: unset written as NONE, parsed host stored and written back",
             unset_is_none && ok && value != nullptr && strcmp(value, "host1") == 0 &&
-            strcmp(ocs::tom::get<ocs::tom::Host>(qinstance.get(), QU_qhostname).c_str(), "host1") == 0); id++;
+            strcmp(qinstance->get<ocs::tom::Host>(QU_qhostname).c_str(), "host1") == 0); id++;
       alp.reset();
 
       // T10: a field of a symbolic kind is parsed from and written as its word
@@ -218,15 +218,15 @@ int main(int /*argc*/, char * /*argv*/[]) {
       DSTRING_STATIC(expected, 64);
       const char *const expected_word = ocs_object_append_symbolic(&expected, ocs_object_symbolic::qinstance_type, BQ);
       CHECK(id, "symbolic field: BATCH parsed into the BQ bit and written back as BATCH",
-            ok && ocs::tom::get<std::uint32_t>(qinstance.get(), QU_qtype) == static_cast<std::uint32_t>(BQ) &&
+            ok && qinstance->get<std::uint32_t>(QU_qtype) == static_cast<std::uint32_t>(BQ) &&
             value != nullptr && expected_word != nullptr && strcmp(value, expected_word) == 0); id++;
       alp.reset();
 
       // T11: a number that does not parse is refused and leaves the field as it was
-      ocs::tom::set(qinstance.get(), QU_seq_no, std::uint32_t{7});
+      qinstance->set(QU_seq_no, std::uint32_t{7});
       ok = ocs_spool_parse_value(*ocs_spool_field_ops_of(QU_seq_no), qinstance.get(), &alp, "seven");
       CHECK(id, "number field: unparsable text gives false and keeps the old value",
-            !ok && ocs::tom::get<std::uint32_t>(qinstance.get(), QU_seq_no) == 7U); id++;
+            !ok && qinstance->get<std::uint32_t>(QU_seq_no) == 7U); id++;
       alp.reset();
 
       sge_dstring_free(&buffer);

@@ -100,8 +100,8 @@ test_copies() {
    CHECK(5, "the rethrown copy keeps the message", rethrown_what == error_text);
    CHECK(6, "the first take returns the whole list with both entries",
          taken != nullptr && taken->size() == 2
-         && ocs::tom::get<AN_text>(taken->front()) == error_text
-         && ocs::tom::get<AN_text>(taken->back()) == warning_text);
+         && taken->front().get<AN_text>() == error_text
+         && taken->back().get<AN_text>() == warning_text);
    CHECK(7, "a later take on another copy returns nullptr, and the message stays",
          copy.take_answer_list() == nullptr && copy.what() == error_text);
 }

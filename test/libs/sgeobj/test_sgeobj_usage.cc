@@ -226,7 +226,7 @@ test_sum_usage_user_only(int *id) {
 
    /* Debited-job entry for the finished job should be present so the
     * worker thread's drop_debited_job step has something to remove. */
-   ocs::tom::ConstList<ocs::tom::UPU> debited = ocs::tom::get<UU_debited_job_usage>(user);
+   ocs::tom::ConstList<ocs::tom::UPU> debited = user->get<UU_debited_job_usage>();
    const lListElem *upu = (debited != nullptr) ?
                           static_cast<const lListElem *>(debited.find_first<UPU_job_number>(1)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 1", upu != nullptr);
@@ -258,7 +258,7 @@ test_sum_usage_user_and_project(int *id) {
 
    /* CS-1239 sharetree routing: project-bound finish populates
     * UU_project[p1].UPP_usage, NOT UU_usage. */
-   ocs::tom::ConstList<ocs::tom::UPP> upp_list = ocs::tom::get<UU_project>(user);
+   ocs::tom::ConstList<ocs::tom::UPP> upp_list = user->get<UU_project>();
    const lListElem *upp = (upp_list != nullptr) ?
                           static_cast<const lListElem *>(upp_list.find_first<UPP_name>("p1")) : nullptr;
    CHECK((*id)++, "UU_project[p1] entry created", upp != nullptr);
@@ -269,12 +269,12 @@ test_sum_usage_user_and_project(int *id) {
       ++(*id);
    }
    CHECK((*id)++, "UU_usage stays empty for project-bound finish",
-         static_cast<const lList *>(ocs::tom::get<UU_usage>(user)) == nullptr ||
+         static_cast<const lList *>(user->get<UU_usage>()) == nullptr ||
          get_usage_value(*user, UU_usage, "cpu") <= 0.0);
 
    /* Debited entry recorded on the user object (sum_usage routes debited
     * to UU_ when user is non-null). */
-   ocs::tom::ConstList<ocs::tom::UPU> debited = ocs::tom::get<UU_debited_job_usage>(user);
+   ocs::tom::ConstList<ocs::tom::UPU> debited = user->get<UU_debited_job_usage>();
    const lListElem *upu = (debited != nullptr) ?
                           static_cast<const lListElem *>(debited.find_first<UPU_job_number>(2)) : nullptr;
    CHECK((*id)++, "UU_debited_job_usage contains job 2", upu != nullptr);
@@ -291,10 +291,10 @@ test_decay_over_interval(int *id) {
 
    /* Seed a user with cpu=100 stamped at t0. */
    auto user = make_user("u1");
-   ocs::tom::set<UU_usage>(user, make_usage_list("usage", "cpu", 100.0));
+   user->set<UU_usage>(make_usage_list("usage", "cpu", 100.0));
 
    const uint64_t t0 = sge_get_gmt64();
-   ocs::tom::set<UU_usage_time_stamp>(user, t0);
+   user->set<UU_usage_time_stamp>(t0);
 
    /* 1-hour halftime via the default decay constant; nullptr decay_list
     * routes through the same default. */

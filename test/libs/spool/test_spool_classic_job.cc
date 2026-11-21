@@ -90,7 +90,7 @@ make_array_job(const uint32_t job_id) {
    ocs::tom::ListPtr<ocs::tom::RN> structure;
    range_list_parse_from_string(structure, &alp, "1-2", false, true, INF_NOT_ALLOWED);
    alp.reset();
-   ocs::tom::set<JB_ja_structure>(*job, std::move(structure));
+   job->set<JB_ja_structure>(std::move(structure));
    auto tasks = ocs::tom::ListPtr<ocs::tom::JAT>::create("ja_tasks");
    for (uint32_t task_id = 1; task_id <= 2; task_id++) {
       auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();

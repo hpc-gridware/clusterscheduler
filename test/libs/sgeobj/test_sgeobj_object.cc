@@ -126,24 +126,25 @@ static void test_object_get_type(lListElem *queue) {
    CHECK(6,  "nullptr element → nullptr",      object_get_type(nullptr) == nullptr);
 }
 
-// ---------------------------------------------------------------------------
-// object_get_subtype — descriptor of an attribute's sub-list  [T07–T09]
-//
-// Returns the element descriptor for a list-type attribute; returns nullptr
-// for scalar attributes and the NoName sentinel.
-// ---------------------------------------------------------------------------
-
+/**
+ * @brief The sub-type of an attribute: the element descriptor of a list attribute, nullptr otherwise [T07–T09]
+ *
+ * ocs::tom::sub_type() of the model replaced object_get_subtype() of sgeobj (CS-3103); the checks keep their
+ * numbers.
+ *
+ * @return nothing; CHECK records the results
+ */
 static void test_object_get_subtype() {
-   printf("\n--- object_get_subtype ---\n");
+   printf("\n--- sub_type (formerly object_get_subtype) ---\n");
 
    // T07: sub-list attribute QU_acl carries US elements
-   CHECK(7,  "QU_acl sub-type → US",      object_get_subtype(QU_acl) == ocs::tom::US::descriptor.e);
+   CHECK(7,  "QU_acl sub-type → US",      ocs::tom::sub_type(QU_acl) == ocs::tom::US::descriptor.e);
 
    // T08: scalar attribute has no sub-type
-   CHECK(8,  "QU_qname (scalar) → nullptr",    object_get_subtype(QU_qname) == nullptr);
+   CHECK(8,  "QU_qname (scalar) → nullptr",    ocs::tom::sub_type(QU_qname) == nullptr);
 
    // T09: NoName sentinel → nullptr
-   CHECK(9,  "NoName → nullptr",               object_get_subtype(NoName) == nullptr);
+   CHECK(9,  "NoName → nullptr",               ocs::tom::sub_type(NoName) == nullptr);
 }
 
 // ---------------------------------------------------------------------------

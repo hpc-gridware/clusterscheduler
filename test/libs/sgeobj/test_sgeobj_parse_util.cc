@@ -96,8 +96,8 @@ static int parse_words(const std::initializer_list<const char *> words, const lD
  */
 static void add_st(const ocs::tom::List<ocs::tom::ST> list, const char *name, const std::uint32_t id) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
-   ocs::tom::set<ST_name>(ep, name);
-   ocs::tom::set<ST_id>(ep, id);
+   ep->set<ST_name>(name);
+   ep->set<ST_id>(id);
    list.push_back(std::move(ep));
 }
 
@@ -109,8 +109,8 @@ static void add_st(const ocs::tom::List<ocs::tom::ST> list, const char *name, co
  */
 static void add_spa(const ocs::tom::List<ocs::tom::SPA> list, const char *switch_val, const char *switch_arg) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
-   ocs::tom::set<SPA_switch_val>(ep, switch_val);
-   ocs::tom::set<SPA_switch_arg>(ep, switch_arg);
+   ep->set<SPA_switch_val>(switch_val);
+   ep->set<SPA_switch_arg>(switch_arg);
    list.push_back(std::move(ep));
 }
 
@@ -124,12 +124,12 @@ static void add_spa(const ocs::tom::List<ocs::tom::SPA> list, const char *switch
 static void add_pn(const ocs::tom::List<ocs::tom::PN> list, const char *path, const char *host,
                    const char *file_host) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::PN>::create();
-   ocs::tom::set<PN_path>(ep, path);
+   ep->set<PN_path>(path);
    if (host != nullptr) {
-      ocs::tom::set<PN_host>(ep, host);
+      ep->set<PN_host>(ocs::tom::Host(host));
    }
    if (file_host != nullptr) {
-      ocs::tom::set<PN_file_host>(ep, file_host);
+      ep->set<PN_file_host>(ocs::tom::Host(file_host));
    }
    list.push_back(std::move(ep));
 }
@@ -145,12 +145,12 @@ static void add_pn(const ocs::tom::List<ocs::tom::PN> list, const char *path, co
 static void add_ce(const ocs::tom::List<ocs::tom::CE> list, const char *name, const char *stringval,
                    const std::uint32_t valtype, const double doubleval) {
    auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
-   ocs::tom::set<CE_name>(ep, name);
+   ep->set<CE_name>(name);
    if (stringval != nullptr) {
-      ocs::tom::set<CE_stringval>(ep, stringval);
+      ep->set<CE_stringval>(stringval);
    }
-   ocs::tom::set<CE_valtype>(ep, valtype);
-   ocs::tom::set<CE_doubleval>(ep, doubleval);
+   ep->set<CE_valtype>(valtype);
+   ep->set<CE_doubleval>(doubleval);
    list.push_back(std::move(ep));
 }
 
@@ -184,9 +184,9 @@ static void test_parse_string_list() {
       const auto list = ocs::tom::ListPtr<ocs::tom::SPA>::from_typed(lp);
       const auto ep = list ? list->front() : ocs::tom::Element<ocs::tom::SPA>();
       CHECK(1, "one element of five typed words: string, ulong, double, long and int set",
-            ret == 0 && list->size() == 1 && same(ocs::tom::get<SPA_switch_val>(ep), "-x") &&
-               ocs::tom::get<SPA_argval_lUlongT>(ep) == 7 && ocs::tom::get<SPA_argval_lDoubleT>(ep) == 1.5 &&
-               ocs::tom::get<SPA_argval_lLongT>(ep) == -3 && ocs::tom::get<SPA_argval_lIntT>(ep) == -4);
+            ret == 0 && list->size() == 1 && same(ep.get<SPA_switch_val>(), "-x") &&
+               ep.get<SPA_argval_lUlongT>() == 7 && ep.get<SPA_argval_lDoubleT>() == 1.5 &&
+               ep.get<SPA_argval_lLongT>() == -3 && ep.get<SPA_argval_lIntT>() == -4);
       CHECK(11, "the list carries the given name", list && same(ocs::tom::list_name(list->raw()), "parsed"));
    }
    {
@@ -291,7 +291,7 @@ static void test_compress() {
       add_st(*list, "a", 3);
       const int ret = cull_compress_definition_list(*list, ST_name, ST_id, 0);
       CHECK(13, "a string key held twice keeps the later element",
-            ret == 0 && join_strings(*list, ST_name) == "b a" && ocs::tom::get<ST_id>(list->front()) == 2);
+            ret == 0 && join_strings(*list, ST_name) == "b a" && list->front().get<ST_id>() == 2);
    }
    {
       auto list = ocs::tom::ListPtr<ocs::tom::ST>::create("st");
@@ -346,9 +346,9 @@ static void test_compress() {
       const auto add = [](const ocs::tom::List<ocs::tom::SPA> list, const char *name, const char *value,
                           const char *marker) {
          auto ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
-         ocs::tom::set<SPA_switch_val>(ep, name);
-         ocs::tom::set<SPA_switch_arg>(ep, value);
-         ocs::tom::set<SPA_argval_lStringT>(ep, marker);
+         ep->set<SPA_switch_val>(name);
+         ep->set<SPA_switch_arg>(value);
+         ep->set<SPA_argval_lStringT>(marker);
          list.push_back(std::move(ep));
       };
       // double keys compare name and value with sge_strnullcmp(), which takes two nullptr as equal: an unset
@@ -467,19 +467,19 @@ static void test_uni_print_list() {
  */
 static void test_xml_field_walk() {
    auto spa = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
-   ocs::tom::set<SPA_number>(spa, 1U);
-   ocs::tom::set<SPA_argtype>(spa, 2U);
-   ocs::tom::set<SPA_switch_val>(spa, "-l");
-   ocs::tom::set<SPA_argval_lDoubleT>(spa, 1.5);
-   ocs::tom::set<SPA_argval_lUlongT>(spa, 7U);
-   ocs::tom::set<SPA_argval_lUlong64T>(spa, std::uint64_t{9});
-   ocs::tom::set<SPA_argval_lLongT>(spa, std::int64_t{-3});
-   ocs::tom::set<SPA_argval_lBoolT>(spa, true);
-   ocs::tom::set<SPA_argval_lIntT>(spa, std::int32_t{-4});
-   ocs::tom::set<SPA_argval_lStringT>(spa, "a<b");
+   spa->set<SPA_number>(1U);
+   spa->set<SPA_argtype>(2U);
+   spa->set<SPA_switch_val>("-l");
+   spa->set<SPA_argval_lDoubleT>(1.5);
+   spa->set<SPA_argval_lUlongT>(7U);
+   spa->set<SPA_argval_lUlong64T>(std::uint64_t{9});
+   spa->set<SPA_argval_lLongT>(std::int64_t{-3});
+   spa->set<SPA_argval_lBoolT>(true);
+   spa->set<SPA_argval_lIntT>(std::int32_t{-4});
+   spa->set<SPA_argval_lStringT>("a<b");
    auto st_list = ocs::tom::ListPtr<ocs::tom::ST>::create("st_list");
    add_st(*st_list, "x", 5);
-   ocs::tom::set<SPA_argval_lListT>(spa, st_list.release());
+   spa->set<SPA_argval_lListT>(st_list.release());
 
    const std::string spa_expected = "<SPA_number>1</SPA_number>\n"
                                     "<SPA_argtype>2</SPA_argtype>\n"
@@ -544,8 +544,8 @@ static void test_xml_field_walk() {
  */
 static void set_test_numbers(const ocs::tom::Element<ocs::tom::TEST> ep, const std::uint32_t uint32,
                              const std::uint64_t uint64) {
-   ocs::tom::set<TEST_uint32>(ep, uint32);
-   ocs::tom::set<TEST_uint64>(ep, uint64);
+   ep.set<TEST_uint32>(uint32);
+   ep.set<TEST_uint64>(uint64);
 }
 
 /**
@@ -568,8 +568,8 @@ static void test_xml_values() {
          sge_dstring_free(&text);
       }
       auto rde = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
-      ocs::tom::set<RDE_time>(rde, stamp);
-      ocs::tom::set<RDE_amount>(rde, 2.5);
+      rde->set<RDE_time>(stamp);
+      rde->set<RDE_amount>(2.5);
       std::ostringstream os;
       lWriteElemXMLTo(*rde, os);
       CHECK(34, "a Uint64 field named *time* is written as a time stamp, not as the number",
@@ -581,7 +581,7 @@ static void test_xml_values() {
    // left out); a set object follows on a new line at the same indentation, nested objects alike. A time
    // stamp 0 is "0" in both forms of the time branch.
    auto rde = ocs::tom::ElementPtr<ocs::tom::RDE>::create();
-   ocs::tom::set<RDE_amount>(rde, 0.5);
+   rde->set<RDE_amount>(0.5);
    auto inner = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
    set_test_numbers(*inner, 2, 0);
    ocs::tom::set((*inner).raw(), TEST_obj_any, ocs::tom::RawElementPtr(std::move(rde)));
@@ -627,8 +627,8 @@ static void test_xml_values() {
       // the walk goes over the fields the reduced descriptor holds; the absent ones are not written at all
       auto plain = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
       set_test_numbers(*plain, 3, 4);
-      ocs::tom::set<TEST_string>(plain, "s<");
-      ocs::tom::set<TEST_double>(plain, 1.5);
+      plain->set<TEST_string>("s<");
+      plain->set<TEST_double>(1.5);
       const auto reduced = (*plain).select(ocs::tom::what<TEST_uint32, TEST_string>());
       std::ostringstream os;
       lWriteElemXMLTo(*reduced, os);

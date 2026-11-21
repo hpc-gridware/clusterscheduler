@@ -44,7 +44,7 @@
 static const char *
 first_answer_text(const ocs::tom::ConstList<ocs::tom::AN> answer_list) {
    const auto aep = answer_list.front();
-   const char *text = aep ? ocs::tom::get<AN_text>(aep) : nullptr;
+   const char *text = aep ? aep.get<AN_text>() : nullptr;
    return (text != nullptr) ? text : "";
 }
 

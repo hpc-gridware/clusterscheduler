@@ -96,7 +96,7 @@ static int
 count_attribute_lists(const ocs::tom::ConstElement<ocs::tom::CQ> cqueue) {
    int set = 0;
    ocs_for_each_cqueue_attr([cqueue, &set](const auto &attr) {
-      if (ocs::tom::get<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>(cqueue)) {
+      if (cqueue.get<ocs_cqueue_attr_t<decltype(attr)>::cqueue_field>()) {
          set++;
       }
    });
@@ -154,13 +154,13 @@ test_slots_limit() {
    printf("\n--- slots limit ---\n");
 
    auto cqueue = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
-   ocs::tom::set<CQ_name>(cqueue, "all.q");
+   cqueue->set<CQ_name>("all.q");
    auto attr = ocs::tom::ElementPtr<ocs::tom::AULNG>::create();
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   ocs::tom::set<AULNG_value>(attr, OCS_MAX_SLOTS);
+   attr->set<AULNG_value>(OCS_MAX_SLOTS);
    CHECK(9, "a queue with OCS_MAX_SLOTS slots is accepted", cqueue_verify_job_slots(*cqueue, &alp, *attr));
-   ocs::tom::set<AULNG_value>(attr, OCS_MAX_SLOTS + 1);
+   attr->set<AULNG_value>(OCS_MAX_SLOTS + 1);
    CHECK(10, "a queue with more slots is refused", !cqueue_verify_job_slots(*cqueue, &alp, *attr));
    CHECK(11, "the refusal is an error", answer_list_has_error(&alp));
    alp.reset();

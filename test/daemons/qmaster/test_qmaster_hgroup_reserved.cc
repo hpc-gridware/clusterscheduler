@@ -103,7 +103,7 @@ fetch_hgroup(const char *name) {
    alp.reset();
 
    /* select by name rather than lFirst(): a GET may return more than asked for */
-   ocs::tom::ConstElement<ocs::tom::HGRP> found = ocs::tom::find_first<HGRP_name>(*lp, name);
+   ocs::tom::ConstElement<ocs::tom::HGRP> found = lp->find_first<HGRP_name>(ocs::tom::Host(name));
    return found ? found.clone() : ocs::tom::ElementPtr<ocs::tom::HGRP>();
 }
 
@@ -155,11 +155,17 @@ member_count(const char *name) {
    if (hgrp == nullptr) {
       return -1;
    }
-   return ocs::tom::size(ocs::tom::get<HGRP_host_list>(hgrp));
+   return hgrp->get<HGRP_host_list>().size();
 }
 
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Run the checks of the reserved host groups against a running qmaster
+ * @param argc unused
+ * @param argv unused
+ * @return 0 if all checks pass, 1 otherwise, 99 without a cluster
+ */
 int
 main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_qmaster_hgroup_reserved");
@@ -185,7 +191,7 @@ main(int /*argc*/, char * /*argv*/[]) {
       const char *qmaster_host = component_get_qualified_hostname();
       CHECK(4, "qmaster host is a direct member of @admin_hosts",
             hgrp != nullptr &&
-            href_list_locate(ocs::tom::get<HGRP_host_list>(hgrp), qmaster_host) != nullptr);
+            href_list_locate(hgrp->get<HGRP_host_list>(), qmaster_host) != nullptr);
       hgrp.reset();
    }
 
@@ -236,7 +242,7 @@ main(int /*argc*/, char * /*argv*/[]) {
       auto hgrp = fetch_hgroup(ADMIN_HOSTGROUP);
       CHECK(16, "qmaster host still a member",
             hgrp != nullptr &&
-            href_list_locate(ocs::tom::get<HGRP_host_list>(hgrp), qmaster_host) != nullptr);
+            href_list_locate(hgrp->get<HGRP_host_list>(), qmaster_host) != nullptr);
       hgrp.reset();
    }
 

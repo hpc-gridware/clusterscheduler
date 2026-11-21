@@ -103,7 +103,7 @@ read_hgroup(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *path, const char *
    int i = 0;
    for (const ocs::tom::ConstElement<ocs::tom::AN> aep : use_alp->get()) {
       if (i++ >= before) {
-         printf("      %s: %s\n", what, ocs::tom::get<AN_text>(aep));
+         printf("      %s: %s\n", what, aep.get<AN_text>());
       }
    }
    own_alp.reset();
@@ -124,7 +124,7 @@ has_single_member(const ocs::tom::ConstElement<ocs::tom::HGRP> ep, const char *e
    }
    ocs::tom::ConstList<ocs::tom::HR> hosts = ep.get<HGRP_host_list>();
    return hosts.size() == 1 &&
-          strcmp(ocs::tom::get<HR_name>(hosts.front()), expected) == 0;
+          strcmp(hosts.front().get<HR_name>(), expected) == 0;
 }
 
 /**

@@ -121,11 +121,15 @@ static bool generate_jobs(int num) {
    return true;
 }
 
+/**
+ * @brief Give every job of the master list a new random project name
+ * @return true
+ */
 static bool update_jobs() {
    int num_total = 0;
 
    for (const ocs::tom::Element<ocs::tom::JB> job : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
-      ocs::tom::set<JB_project>(job, random_string(20));
+      job.set<JB_project>(random_string(20));
       num_total++;
    }
 
@@ -150,14 +154,14 @@ static bool spool_data() {
    fprintf(stdout, "spooling %zu jobs\n", ocs::DataStore::master_list<SGE_TYPE_JOB>().size());
 
    for (const ocs::tom::ConstElement<ocs::tom::JB> job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
-      ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = ocs::tom::get<JB_ja_tasks>(job);
+      ocs::tom::ConstList<ocs::tom::JAT> ja_tasks = job.get<JB_ja_tasks>();
       if (ja_tasks == nullptr || ja_tasks.size() == 0) {
-         key = job_get_key(ocs::tom::get<JB_job_number>(job), 0, nullptr, &key_ds);
+         key = job_get_key(job.get<JB_job_number>(), 0, nullptr, &key_ds);
          spool_write_object(&answer_list, context, job, key, SGE_TYPE_JOB);
          num_total++;
       } else {
          for (const ocs::tom::ConstElement<ocs::tom::JAT> ja_task : ja_tasks) {
-            key = job_get_key(ocs::tom::get<JB_job_number>(job), ocs::tom::get<JAT_task_number>(ja_task), nullptr, &key_ds);
+            key = job_get_key(job.get<JB_job_number>(), ja_task.get<JAT_task_number>(), nullptr, &key_ds);
             spool_write_object(&answer_list, context, ja_task, key, SGE_TYPE_JATASK);
             num_total++;
          }
@@ -185,6 +189,10 @@ static bool read_spooled_data() {
    return true;
 }
 
+/**
+ * @brief Delete the spooled object of every job of the master list
+ * @return true
+ */
 static bool delete_spooled_data() {
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    const lListElem *context;
@@ -195,7 +203,7 @@ static bool delete_spooled_data() {
 
    /* jobs */
    for (const ocs::tom::ConstElement<ocs::tom::JB> job : ocs::DataStore::master_list<SGE_TYPE_JOB>()) {
-      snprintf(key, sizeof(key),  sge_u32 ".0", ocs::tom::get<JB_job_number>(job));
+      snprintf(key, sizeof(key),  sge_u32 ".0", job.get<JB_job_number>());
       spool_delete_object(&answer_list, context, SGE_TYPE_JOB, key);
       answer_list_output(&answer_list);
       num_total++;

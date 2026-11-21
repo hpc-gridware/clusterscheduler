@@ -535,7 +535,7 @@ static int test_rsmap_utilization() {
    printf("reading back what is taken over a window\n");
    for (int i = 0; windows[i].id != nullptr; i++) {
       auto taken = utilization_rsmap_max(*cr, 1000, windows[i].start, windows[i].duration);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), windows[i].id);
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = taken->find_first<RESL_value>(windows[i].id);
       uint32_t got = (ep != nullptr) ? ep.get<RESL_amount>() : 0;
 
       if (got != windows[i].expected) {
@@ -557,7 +557,7 @@ static int test_rsmap_utilization() {
    printf("with the same instances also recorded as held right now\n");
    {
       auto taken = utilization_rsmap_max(*cr, 1000, 1000, 200);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu0");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = taken->find_first<RESL_value>("gpu0");
       uint32_t got = (ep != nullptr) ? ep.get<RESL_amount>() : 0;
       if (got != 2) {
          printf("   FAIL: gpu0 is held twice, in both places, expected 2 got " sge_u32 "\n", got);
@@ -567,7 +567,7 @@ static int test_rsmap_utilization() {
       }
 
       // an instance only the now list knows about still counts
-      ocs::tom::ConstElement<ocs::tom::RESL> ep_resl = ocs::tom::find_first<RESL_value>(taken.get(), "gpu2");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep_resl = taken->find_first<RESL_value>("gpu2");
       got = (ep_resl != nullptr) ? ep_resl.get<RESL_amount>() : 0;
       if (got != 1) {
          printf("   FAIL: gpu2 is held right now, expected 1 got " sge_u32 "\n", got);
@@ -582,7 +582,7 @@ static int test_rsmap_utilization() {
       // every job holding something now has ended by then, so the now list does not count;
       // what remains is what the diagram says at its end, which here is nothing
       auto taken = utilization_rsmap_max(*cr, 1000, DISPATCH_TIME_QUEUE_END, 100);
-      if (ocs::tom::size(taken.get()) != 0) {
+      if (taken->size() != 0) {
          printf("   FAIL: something is taken at queue end, expected nothing\n");
          ret++;
       } else {
@@ -594,7 +594,7 @@ static int test_rsmap_utilization() {
    {
       // gpu2 is held now and nothing says it still is at 1200, so it does not count there
       auto taken = utilization_rsmap_max(*cr, 1000, 1200, 100);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu2");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = taken->find_first<RESL_value>("gpu2");
       uint32_t got = (ep != nullptr) ? ep.get<RESL_amount>() : 0;
       if (got != 0) {
          printf("   FAIL: gpu2 is held now but the window is later, expected 0 got "
@@ -615,7 +615,7 @@ static int test_rsmap_utilization() {
                       false, no_binding, one_of_gpu1);
 
       auto taken = utilization_rsmap_max(*global_cr, 1000, 1000, 100);
-      ocs::tom::ConstElement<ocs::tom::RESL> ep = ocs::tom::find_first<RESL_value>(taken.get(), "gpu1");
+      ocs::tom::ConstElement<ocs::tom::RESL> ep = taken->find_first<RESL_value>("gpu1");
       if (ep == nullptr || ep.get<RESL_amount>() != 1) {
          printf("   FAIL: a map on the global host records nothing\n");
          ret++;
@@ -630,7 +630,7 @@ static int test_rsmap_utilization() {
                       false, no_binding, one_of_gpu1);
 
       taken = utilization_rsmap_max(*queue_cr, 1000, 1000, 100);
-      if (ocs::tom::size(taken.get()) != 0) {
+      if (taken->size() != 0) {
          printf("   FAIL: a queue recorded resource map instances\n");
          ret++;
       } else {
