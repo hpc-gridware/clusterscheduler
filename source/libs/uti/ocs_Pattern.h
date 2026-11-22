@@ -173,6 +173,11 @@ namespace ocs {
       if (s == nullptr) {
          return MatcherKind::NONE;
       }
+      // every prefix starts with h or i; a host name rarely does, and this test is on the path of every host
+      // name copy and comparison (sge_hostcpy(), sge_hostcmp(), the host lookups of the list library)
+      if (const char c = s[0]; c != 'h' && c != 'H' && c != 'i' && c != 'I') {
+         return MatcherKind::NONE;
+      }
       if (strncasecmp(s, MATCHER_PREFIX_HOST, sizeof("host:") - 1) == 0) {
          return MatcherKind::HOST;
       }
