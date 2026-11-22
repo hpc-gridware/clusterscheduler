@@ -126,6 +126,18 @@ static void report(const std::string &op, const std::uint64_t calls, const doubl
    fflush(stdout);
 }
 
+/// Only operations whose name contains this text are measured (option `-only`); nullptr measures all
+static const char *g_only = nullptr;
+
+/**
+ * @brief Whether an operation is measured in this run
+ * @param op the name of the operation
+ * @return true unless `-only` was given and the name does not contain its text
+ */
+static bool selected(const std::string &op) {
+   return g_only == nullptr || op.find(g_only) != std::string::npos;
+}
+
 /**
  * @brief Measure an operation that needs no preparation per call
  *
@@ -139,6 +151,9 @@ static void report(const std::string &op, const std::uint64_t calls, const doubl
  */
 template <typename Body>
 static void run(const std::string &op, Body &&body) {
+   if (!selected(op)) {
+      return;
+   }
    std::uint64_t n = 1;
    double ns = 0.0;
    for (;;) {
@@ -182,6 +197,9 @@ static void run(const std::string &op, Body &&body) {
 template <typename Setup, typename Body, typename Teardown>
 static void run_batched(const std::string &op, const std::size_t batch, Setup &&setup, Body &&body,
                         Teardown &&teardown) {
+   if (!selected(op)) {
+      return;
+   }
    const auto round = [&]() {
       setup();
       const auto start = Clock::now();
@@ -3595,6 +3613,7 @@ static const char *api_of(const Form form) {
  * @brief Measure every operation of the catalogue in the forms asked for and print the CSV lines
  *
  * Options: `-mode typed|raw|both` selects the TOM forms (default both); the CULL variant ignores it.
+ * `-only <text>` measures only the operations whose name contains the text, for profiling one of them.
  *
  * @param argc the number of arguments
  * @param argv the arguments
@@ -3609,11 +3628,13 @@ int main(int argc, char *argv[]) {
          typed = strcmp(mode, "typed") == 0 || strcmp(mode, "both") == 0;
          raw = strcmp(mode, "raw") == 0 || strcmp(mode, "both") == 0;
          if (!typed && !raw) {
-            fprintf(stderr, "usage: %s [-mode typed|raw|both]\n", argv[0]);
+            fprintf(stderr, "usage: %s [-mode typed|raw|both] [-only text]\n", argv[0]);
             return 1;
          }
+      } else if (strcmp(argv[i], "-only") == 0 && i + 1 < argc) {
+         g_only = argv[++i];
       } else {
-         fprintf(stderr, "usage: %s [-mode typed|raw|both]\n", argv[0]);
+         fprintf(stderr, "usage: %s [-mode typed|raw|both] [-only text]\n", argv[0]);
          return 1;
       }
    }
