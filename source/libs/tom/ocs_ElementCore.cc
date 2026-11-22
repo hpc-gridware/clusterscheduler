@@ -28,6 +28,8 @@
 #include <iterator>
 #include <string>
 
+#include "uti/ocs_Bootstrap.h"
+#include "uti/ocs_Pattern.h"
 #include "uti/ocs_TerminationManager.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -245,15 +247,59 @@ namespace ocs::tom {
 
    namespace {
 
+      /// How the cluster normalises host names, read once per lookup instead of once per compared element
+      struct HostCompare {
+         bool ignore_fqdn;      ///< compare the short names only (bootstrap `ignore_fqdn`)
+         bool default_domain;   ///< a default domain is configured (bootstrap `default_domain`)
+      };
+
+      /**
+       * @brief The host name normalisation of this process, for a series of same_host() calls
+       * @return the settings sge_hostcpy() applies
+       */
+      HostCompare host_compare() {
+         return {ocs::Bootstrap::get_ignore_fqdn(), ocs::Bootstrap::has_default_domain()};
+      }
+
+      /**
+       * @brief The lower case form of an ASCII character, as strcasecmp() compares in the C locale
+       * @param c the character
+       * @return its lower case form
+       */
+      constexpr unsigned char ascii_lower(const unsigned char c) {
+         return c >= 'A' && c <= 'Z' ? static_cast<unsigned char>(c + ('a' - 'A')) : c;
+      }
+
       /**
        * @brief Whether a host name stored in an element equals a wanted one, as the cluster compares host names
+       *
+       * The result is that of comparing sge_hostcpy(stored) with @p wanted case-insensitively. A linear host
+       * lookup compares every element, so the common forms are compared in place, without the copy: a plain
+       * name, or its short name when `ignore_fqdn` is set. A host group name, a matcher, a configured default
+       * domain and a name at the length limit take the copying way.
+       *
        * @param stored the stored host name, or nullptr
        * @param wanted the wanted host name, already normalised by sge_hostcpy()
+       * @param how the normalisation, from host_compare()
        * @return true if both name the same host
        */
-      bool same_host(const char *stored, const char *wanted) {
+      bool same_host(const char *stored, const char *wanted, const HostCompare &how) {
          if (stored == nullptr) {
             return false;
+         }
+         if (!how.default_domain && !ocs::is_hgroup_name(stored) && !ocs::is_matcher(stored)) {
+            constexpr std::size_t limit = CL_MAXHOSTNAMELEN - 1;   // sge_hostcpy() keeps at most this much
+            std::size_t i = 0;
+            for (; i < limit; i++) {
+               const auto c = static_cast<unsigned char>(stored[i]);
+               if (c == '\0' || (how.ignore_fqdn && c == '.')) {
+                  return wanted[i] == '\0';
+               }
+               if (ascii_lower(c) != ascii_lower(static_cast<unsigned char>(wanted[i]))) {
+                  return false;
+               }
+            }
+            // at the length limit: let sge_hostcpy() truncate as it does
          }
          char normalised[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(normalised, stored);
@@ -290,8 +336,9 @@ namespace ocs::tom {
          }
          char wanted[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(wanted, value);
-         return search_linear(lp, pos, [pos, &wanted](const lListElem *ep) {
-            return same_host(ocs::tom::detail::value(ep, pos).host, wanted);
+         const HostCompare how = host_compare();
+         return search_linear(lp, pos, [pos, &wanted, &how](const lListElem *ep) {
+            return same_host(ocs::tom::detail::value(ep, pos).host, wanted, how);
          }, iterator);
       }
    }
@@ -315,8 +362,9 @@ namespace ocs::tom {
       } else {
          char wanted[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(wanted, value);
-         return search_next(lp, pos, [pos, &wanted](const lListElem *ep) {
-            return same_host(ocs::tom::detail::value(ep, pos).host, wanted);
+         const HostCompare how = host_compare();
+         return search_next(lp, pos, [pos, &wanted, &how](const lListElem *ep) {
+            return same_host(ocs::tom::detail::value(ep, pos).host, wanted, how);
          }, iterator);
       }
    }
