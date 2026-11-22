@@ -137,33 +137,27 @@ namespace ocs::tom {
    namespace {
 
       /**
-       * @brief The first element of a list that holds a value in a field, the lookup of the core
+       * @brief The first element of a list that holds a value in a field, by a linear search
        *
-       * Through the field's table where the list has one or reaches the hash
-       * threshold, building it if needed (#ocs::tom::detail::hash_lookup_table, which
-       * throws on a repeated key of a unique field). Otherwise by a linear
-       * search that stops at the first match; only a debug build goes on to
-       * the end of the list for a unique field and throws on a second match
+       * The search stops at the first match; only a debug build goes on to the
+       * end of the list for a unique field and throws on a second match
        * (N-H-18). A release build reads no further than it needs: the lists
        * below the hash threshold are the most searched ones, in the scheduler
-       * above all.
+       * above all. The lookup of the core, search_first(), takes this path
+       * when the field has no table.
        *
+       * @tparam Match the type of the comparison
        * @param lp the list, not nullptr
        * @param pos the field's position
-       * @param hash_key the value as the table stores it (a normalised host name, a pointer to the number)
-       * @param match whether an element holds the value, for the linear search
+       * @param match whether an element holds the value
        * @param iterator the lookup's state, for the old ...Next functions
        * @return the element, or nullptr
-       * @throw FieldException with reason DuplicateKey, naming type, field, key and list
+       * @throw FieldException with reason DuplicateKey, naming type, field, key and list (debug build)
        */
       template <typename Match>
-      lListElem *search_first(const lList *lp, const int pos, const void *hash_key, Match match,
-                              const void **iterator) {
+      lListElem *search_linear(const lList *lp, const int pos, Match match, const void **iterator) {
          *iterator = nullptr;
-         const int mt = lp->descr[pos].mt;
-         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
-            return ocs::tom::detail::hash_first(ht, hash_key, mt_is_unique(mt), iterator);
-         }
+         [[maybe_unused]] const int mt = lp->descr[pos].mt;
 #ifdef ENABLE_DEBUG_CHECKS
          const bool to_end = mt_do_hashing(mt) && mt_is_unique(mt);
 #else
@@ -188,6 +182,32 @@ namespace ocs::tom {
          }
          *iterator = found;
          return found;
+      }
+
+      /**
+       * @brief The first element of a list that holds a value in a field, the lookup of the core
+       *
+       * Through the field's table where the list has one or reaches the hash
+       * threshold, building it if needed (#ocs::tom::detail::hash_lookup_table, which
+       * throws on a repeated key of a unique field); otherwise search_linear().
+       *
+       * @tparam Match the type of the comparison
+       * @param lp the list, not nullptr
+       * @param pos the field's position
+       * @param hash_key the value as the table stores it (a normalised host name, a pointer to the number)
+       * @param match whether an element holds the value, for the linear search
+       * @param iterator the lookup's state, for the old ...Next functions
+       * @return the element, or nullptr
+       * @throw FieldException with reason DuplicateKey, naming type, field, key and list
+       */
+      template <typename Match>
+      lListElem *search_first(const lList *lp, const int pos, const void *hash_key, Match match,
+                              const void **iterator) {
+         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
+            *iterator = nullptr;
+            return ocs::tom::detail::hash_first(ht, hash_key, mt_is_unique(lp->descr[pos].mt), iterator);
+         }
+         return search_linear(lp, pos, match, iterator);
       }
    } // namespace
 
@@ -259,12 +279,18 @@ namespace ocs::tom {
             return s != nullptr && strcmp(s, value) == 0;
          }, iterator);
       } else {
-         char host_key[CL_MAXHOSTNAMELEN + 1];
-         sge_hostcpy(host_key, value);
-         sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
+         // the table path needs the upper case key, the linear one the normalised name; as lGetElemHostFirst()
+         // did, only the key of the path taken is built, a host lookup being among the most frequent ones
+         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
+            char host_key[CL_MAXHOSTNAMELEN + 1];
+            sge_hostcpy(host_key, value);
+            sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
+            *iterator = nullptr;
+            return ocs::tom::detail::hash_first(ht, host_key, mt_is_unique(lp->descr[pos].mt), iterator);
+         }
          char wanted[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(wanted, value);
-         return search_first(lp, pos, host_key, [pos, &wanted](const lListElem *ep) {
+         return search_linear(lp, pos, [pos, &wanted](const lListElem *ep) {
             return same_host(ocs::tom::detail::value(ep, pos).host, wanted);
          }, iterator);
       }
