@@ -1970,6 +1970,24 @@ namespace typed_ops {
                seen == expected && tables);
       }
       ocs::tom::detail::hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+
+      // host fields have a threshold of their own: with it at 0, a short list gets the table of its host key on
+      // the first lookup, while a short list of another key type stays linear under the general threshold
+      {
+         ocs::tom::detail::hash_set_min_elems_host(0);
+         auto hosts = ListPtr<EH>::create("hosts");
+         hosts->emplace_back<EH_name>(ocs::tom::Host("hosta"));
+         hosts->emplace_back<EH_name>(ocs::tom::Host("hostb"));
+         const bool found = hosts->find_first<EH_name>(ocs::tom::Host("hostb")) != nullptr;
+         const ListPtr<US> sets = named_sets(5);
+         static_cast<void>(sets->find_first<US_name>(set_name(2).c_str()));
+         const bool host_table = has_table(hosts->raw(), EH_name);
+         const bool set_table = has_table(sets->raw(), US_name);
+         ocs::tom::detail::hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+         CHECK(56, "the threshold of host fields applies apart from the general one: a short host list is hashed "
+                   "at host threshold 0, a short list of a string key is not",
+               found && host_table && !set_table);
+      }
    }
 
    /**
@@ -2716,9 +2734,11 @@ int main(int argc, char *argv[]) {
        {38}, typed_ops::test_select_elem},
       {"RAW-OPS-28", "split at", "split_at() takes an element and the ones after it out of a list",
        {"split a short and a long list before its last two elements", "split the rest into an existing list",
-        "the same on a hashed unique field: hashed lookups before and after the split and the splice"},
-       "the keys in both lists; lookups by key still work; ForeignList for an element of another list",
-       {{"OPS-01", "covers"}}, {39, 40}, typed_ops::test_split_at},
+        "the same on a hashed unique field: hashed lookups before and after the split and the splice",
+        "a short host list and a short string list with the host threshold at 0"},
+       "the keys in both lists; lookups by key still work; ForeignList for an element of another list; only the "
+       "host list is hashed",
+       {{"OPS-01", "covers"}}, {39, 40, 56}, typed_ops::test_split_at},
       {"RAW-OPS-29", "add hash", "add_hash<F>() adds a hash table on a field the type does not hash",
        {"add a table on the string field of a short and a long list, twice, and look up by it",
         "add one on an empty handle"},

@@ -39,6 +39,7 @@
  */
 
 #include <cstdio>
+#include <cstdlib>
 #include <new>
 #include <string>
 
@@ -89,6 +90,32 @@
 namespace ocs::tom::detail {
    /// Lists shorter than this are searched linearly by this thread; see ocs::tom::detail::hash_set_min_elems()
    static thread_local uint32_t hash_min_elems = OCS_CULL_HASH_MIN_ELEMS;
+
+   /// Marks a threshold of this thread that was neither set nor read from the environment yet
+   constexpr uint32_t HASH_MIN_ELEMS_UNSET = UINT32_MAX;
+
+   /// The threshold of this thread for host fields; see ocs::tom::detail::hash_set_min_elems_host()
+   static thread_local uint32_t hash_min_elems_host = HASH_MIN_ELEMS_UNSET;
+
+   /**
+    * @brief The threshold of the calling thread for a host field
+    *
+    * Until the thread sets one, it is taken once from the environment variable `OCS_TOM_HASH_MIN_ELEMS_HOST`,
+    * and without it from the general threshold of the thread. The variable makes builds comparable in a
+    * measurement without rebuilding.
+    *
+    * @return the list length below which a host field is searched linearly
+    */
+   static uint32_t host_min_elems() {
+      if (hash_min_elems_host == HASH_MIN_ELEMS_UNSET) {
+         const char *env = getenv("OCS_TOM_HASH_MIN_ELEMS_HOST");
+         char *end = nullptr;
+         const unsigned long value = env != nullptr && *env != '\0' ? strtoul(env, &end, 10) : 0;
+         hash_min_elems_host = env != nullptr && *env != '\0' && *end == '\0' && value < HASH_MIN_ELEMS_UNSET ?
+                                  static_cast<uint32_t>(value) : hash_min_elems;
+      }
+      return hash_min_elems_host;
+   }
 
    static void hash_destroy(cull_htable *htp);
 
@@ -367,7 +394,9 @@ cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) 
    if (ht != nullptr) {
       return ht;
    }
-   if (nelem < ocs::tom::detail::hash_min_elems) {
+   const uint32_t min_elems = mt_get_type(lp->descr[pos].mt) == lHostT ? ocs::tom::detail::host_min_elems()
+                                                                        : ocs::tom::detail::hash_min_elems;
+   if (nelem < min_elems) {
       CULL_STATS_FIELD(nm, LOOKUP_LINEAR, 1);
       return nullptr;
    }
@@ -404,10 +433,27 @@ cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) 
  * never calls this function uses #OCS_CULL_HASH_MIN_ELEMS. Threads with different values may share lists,
  * since a table, once built, is maintained and used by every thread.
  *
+ * The threshold of host fields is set to the same value; ocs::tom::detail::hash_set_min_elems_host() sets it
+ * apart afterwards.
+ *
  * @param n the new threshold; 0 builds a table on the first lookup of any hashable list
  */
 void ocs::tom::detail::hash_set_min_elems(const uint32_t n) {
    ocs::tom::detail::hash_min_elems = n;
+   ocs::tom::detail::hash_min_elems_host = n;
+}
+
+/**
+ * @brief Set the list length below which the calling thread builds no hash table for a host field
+ *
+ * Host fields are compared after normalising the stored name, which makes a linear search dearer than for
+ * other keys; their threshold can therefore differ. Without a call the environment variable
+ * `OCS_TOM_HASH_MIN_ELEMS_HOST` decides, else the general threshold.
+ *
+ * @param n the new threshold for host fields; 0 builds a table on the first lookup of any hashable list
+ */
+void ocs::tom::detail::hash_set_min_elems_host(const uint32_t n) {
+   ocs::tom::detail::hash_min_elems_host = n == ocs::tom::detail::HASH_MIN_ELEMS_UNSET ? n - 1 : n;
 }
 
 /**
