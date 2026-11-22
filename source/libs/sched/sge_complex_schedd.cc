@@ -140,10 +140,8 @@ copy_centry(const ocs::tom::ConstList<ocs::tom::CE> centry_list, const char *att
 /**
  * @def STR_LEN_AVAIL_TEXT
  * @brief Size of the buffers holding the diagnosis of a failed match
- *
- * Defined inside the body of compare_complexes(), which is why it is
- * documented here.
  */
+#define STR_LEN_AVAIL_TEXT 2048
 
 
 /**
@@ -940,6 +938,43 @@ static int resource_cmp(uint32_t relop, double req, double src_dl) {
 }
 
 /**
+ * @brief Format the availability text of a numerical attribute for a failed comparison
+ *
+ * The text names the dominance, the attribute and the value the object offers, the value printed as its type
+ * prints it: true/false for a boolean, with a unit for memory and time, as a number otherwise.
+ *
+ * @param text receives the text, #STR_LEN_AVAIL_TEXT bytes
+ * @param dom_str the dominance, from monitor_dominance()
+ * @param name the name of the attribute
+ * @param type the type of the attribute
+ * @param value the value the object offers
+ * @return nothing
+ */
+static void
+format_availability(char *text, const char *dom_str, const char *name, const ocs::CEntry::Type type,
+                    const double value) {
+   DENTER(TOP_LAYER);
+   dstring resource_string = DSTRING_INIT;
+   switch (type) {
+      case ocs::CEntry::Type::BOOL:
+         sge_dstring_copy_string(&resource_string, value > 0 ? "true" : "false");
+         break;
+      case ocs::CEntry::Type::MEM:
+         double_print_memory_to_dstring(value, &resource_string);
+         break;
+      case ocs::CEntry::Type::TIME:
+         double_print_time_to_dstring(value, &resource_string, true);
+         break;
+      default:
+         double_print_to_dstring(value, &resource_string);
+         break;
+   }
+   snprintf(text, STR_LEN_AVAIL_TEXT, "%s:%s=%s", dom_str, name, sge_dstring_get_string(&resource_string));
+   sge_dstring_free(&resource_string);
+   DRETURN_VOID;
+}
+
+/**
  * @brief Matches a request against what an object offers
  *
  * The type of the comparison comes from the **request**, `req_cplx`, and the
@@ -967,10 +1002,8 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
    int match, m1, m2;
    const char *offer;
    char dom_str[5];
-#define STR_LEN_AVAIL_TEXT 2048   
    char availability_text1[STR_LEN_AVAIL_TEXT];
-   char availability_text2[STR_LEN_AVAIL_TEXT]; 
-   dstring resource_string = DSTRING_INIT;
+   char availability_text2[STR_LEN_AVAIL_TEXT];
 
    const char *name = src_cplx.get<CE_name>();
    auto type = static_cast<ocs::CEntry::Type>(src_cplx.get<CE_valtype>());
@@ -1056,53 +1089,10 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
 
          monitor_dominance(dom_str, src_cplx.get<CE_pj_dominant>());
 
-         switch (type) {
-         case ocs::CEntry::Type::BOOL:
-            sge_dstring_copy_string(&resource_string, (src_dl > 0)?"true":"false");
-#if 0
-            snprintf(availability_text1, sizeof(availability_text1), "%s:%s=%s", dom_str, name, src_dl?"true":"false");
-            DPRINTF("-l %s=%f, Q: %s:%s:%f, Comparison(1): %s\n",
-                    name, req_all_slots, dom_str, map_op2str(used_relop),
-                    src_dl, m1?"ok":"no match");
-#endif
-            break;
-         case ocs::CEntry::Type::MEM:
-            double_print_memory_to_dstring(src_dl, &resource_string);
-#if 0
-            { 
-               dstring request_string = DSTRING_INIT;
-
-               double_print_memory_to_dstring(req_dl, &request_string);
-               DPRINTF("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                       slots, name, sge_dstring_get_string(&request_string),
-                       dom_str, name, map_op2str(used_relop),
-                       sge_dstring_get_string(&resource_string),
-                       m1?"ok":"no match");
-               sge_dstring_free(&request_string);
-            }
-#endif            
-            break;
-         case ocs::CEntry::Type::TIME:
-            double_print_time_to_dstring(src_dl, &resource_string, true);
-#if 0            
-            {
-               dstring request_string = DSTRING_INIT;
-
-               double_print_time_to_dstring(req_dl, &request_string, true);
-               DPRINTF("%d times of -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                       slots, name, sge_dstring_get_string(&request_string),
-                       dom_str, name, map_op2str(used_relop),
-                       sge_dstring_get_string(&resource_string),
-                       m1?"ok":"no match");
-               sge_dstring_free(&request_string);
-            }
-#endif            
-            break;
-         default:
-            double_print_to_dstring(src_dl, &resource_string);
-            break;
-         } 
-         snprintf(availability_text1, STR_LEN_AVAIL_TEXT, "%s:%s=%s", dom_str, name, sge_dstring_get_string(&resource_string));
+         // the text is reported only for a failed comparison of a request, so it is only formatted then
+         if (!is_threshold && !m1) {
+            format_availability(availability_text1, dom_str, name, type, src_dl);
+         }
       }
 
       /* is there a per slot limit */
@@ -1117,55 +1107,11 @@ int compare_complexes(int slots, const ocs::tom::ConstElement<ocs::tom::CE> req_
 
          monitor_dominance(dom_str, src_cplx.get<CE_dominant>());
 
-         switch (type) {
-         case ocs::CEntry::Type::BOOL:
-            sge_dstring_copy_string(&resource_string, (src_dl > 0)?"true":"false");
-#if 0
-            DPRINTF("-l %s=%f, Q: %s:%s%s%f, Comparison(2): %s\n",
-                    name, req_dl?"true":"false", dom_str, name,
-                    map_op2str(used_relop),
-                    src_dl?"true":"false", m2?"ok":"no match");
-#endif
-            break;
-         case ocs::CEntry::Type::MEM:
-            double_print_memory_to_dstring(src_dl, &resource_string);
-#if 0            
-            {
-               dstring request_string = DSTRING_INIT;
-
-               double_print_memory_to_dstring(req_dl, &request_string);
-               DPRINTF("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                       name, sge_dstring_get_string(&request_string),
-                       dom_str, name, map_op2str(used_relop),
-                       sge_dstring_get_string(&resource_string),
-                       m2?"ok":"no match");
-               sge_dstring_free(&request_string);
-            }
-#endif            
-            break;
-         case ocs::CEntry::Type::TIME:
-            double_print_time_to_dstring(src_dl, &resource_string, true);
-#if 0            
-            {
-               dstring request_string = DSTRING_INIT;
-
-               double_print_time_to_dstring(req_dl, &request_string, true);
-               DPRINTF("per slot -l %s=%s, Q: %s:%s%s%s, Comparison: %s\n",
-                       name, sge_dstring_get_string(&request_string),
-                       dom_str, name, map_op2str(used_relop),
-                       sge_dstring_get_string(&resource_string),
-                       m2?"ok":"no match");
-               sge_dstring_free(&request_string);
-            }
-#endif            
-            break;
-         default:
-            double_print_to_dstring(src_dl, &resource_string);
-            break;
-         } 
-         snprintf(availability_text2, STR_LEN_AVAIL_TEXT, "%s:%s=%s", dom_str, name, sge_dstring_get_string(&resource_string));
+         // reported only if the per job comparison matched and this one failed, see below
+         if (!is_threshold && m1 && !m2) {
+            format_availability(availability_text2, dom_str, name, type, src_dl);
+         }
       }
-      sge_dstring_free(&resource_string);
       if (is_threshold) {
          match = m1 || m2;
       } else {
