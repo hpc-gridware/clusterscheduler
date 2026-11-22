@@ -709,6 +709,41 @@ test_sort_errors() {
 }
 
 /**
+ * @brief LIST-19: the typed sort<K...>() gives the order of a sort by the same criteria through a SortOrder
+ *
+ * The typed sort compares with a comparison generated at compile time; the sort through a SortOrder interprets
+ * the order at run time. Both must give the same, stable order: a number descending and a string ascending,
+ * with many equal keys, so that the order of equal elements shows. A reduced list without a criterion's field
+ * throws AbsentField, also when it is too short to need a sort.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_typed_sort() {
+   const auto owner_of = [](const std::uint32_t number) {
+      static const char *const owners[] = {"carol", "alice", nullptr, "bob"};
+      return owners[number % 4];
+   };
+   ListPtr<JB> typed = scrambled_jobs(SortedJobs);
+   ListPtr<JB> ordered = scrambled_jobs(SortedJobs);
+   for (ListPtr<JB> *jobs : {&typed, &ordered}) {
+      for (const auto job : **jobs) {
+         job.set<JB_owner>(owner_of(job.get<JB_job_number>()));
+      }
+   }
+   typed->sort<desc<JB_priority>, asc<JB_owner>>();
+   ordered->sort(sort_order<desc<JB_priority>, asc<JB_owner>>());
+   const std::vector<std::uint32_t> expected = numbers_of(ordered);
+   CHECK(30, "sort<desc<JB_priority>, asc<JB_owner>>() gives the stable order of the sort through a SortOrder",
+         numbers_of(typed) == expected && expected.size() == SortedJobs);
+
+   ListPtr<JB> one = scrambled_jobs(1);
+   ListPtr<JB> reduced = one->select(ocs::tom::what<JB_job_number>());
+   const bool absent = throws_reason([&] { reduced->sort<asc<JB_priority>>(); }, FieldException::Reason::AbsentField);
+   CHECK(31, "sort<K>() on a reduced list without the field throws AbsentField, also for a single element", absent);
+}
+
+/**
  * @brief LIST-18: find forward and backward by a condition, and test one element
  * @return nothing; CHECK records the results
  */
@@ -796,5 +831,8 @@ int main(int argc, char *argv[]) {
       {"LIST-18", "find by condition", "find_if and its siblings find by a condition",
        {"find the odd keys forward and backward, test two elements"}, "the keys 1 and 3; 1 and 0",
        {{"OPS-01", "covers"}}, {29}, test_find_by_condition},
+      {"LIST-19", "typed sort", "the typed sort<K...>() gives the order of the sort through a SortOrder",
+       {"sort 200 jobs by priority descending and owner ascending both ways; sort a reduced one-element list"},
+       "the same stable order; AbsentField thrown", {{"OPS-01", "covers"}}, {30, 31}, test_typed_sort},
    });
 }

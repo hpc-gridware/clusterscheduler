@@ -29,16 +29,96 @@
  * do; a key that is not found gives an empty handle or an empty range.
  */
 
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <utility>
 
+#include "uti/sge_string.h"
+
 #include "tom/detail/ocs_Hash.h"
 #include "tom/detail/ocs_ListP.h"
+#include "tom/detail/ocs_SortElems.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_ListOpsCore.h"
 #include "tom/ocs_Sort.h"
+
+namespace ocs::tom::detail {
+
+   /**
+    * @brief The slot of a sort criterion's field in the elements of a list
+    *
+    * All elements of a list have the list's layout, so the slot is the same for every element and is looked up
+    * once per sort.
+    *
+    * @tparam F the field number
+    * @param descr the descriptor of the list
+    * @return the index into the elements' values
+    * @throw FieldException with reason AbsentField if the (reduced) list does not hold the field, as
+    *        check_sort_order() refuses it
+    */
+   template <auto F>
+   int sort_slot(const lDescr *descr) {
+      constexpr int pos = FieldTraits<F>::pos;
+      const int off = descr[pos].off;
+      if (off == OCS_CULL_ABSENT) [[unlikely]] {
+         throw_field_exception(FieldException::Reason::AbsentField, F, descr);
+      }
+      return pos + off;
+   }
+
+   /**
+    * @brief Compare two elements by the sort criteria K, Ks..., with the rules of the core's compare_field()
+    *
+    * Strings and hosts compare with sge_strnullcmp(), every other type three-way; a descending criterion
+    * negates the result. The field types are known at compile time, so the comparison is inlined.
+    *
+    * @tparam I the index of the slot of criterion K in @p slots
+    * @tparam K the first criterion, asc<F> or desc<F>
+    * @tparam Ks the further criteria
+    * @tparam N the number of criteria
+    * @param a the first element
+    * @param b the second element
+    * @param slots the slot of each criterion's field, from sort_slot()
+    * @return less than, equal to or greater than 0 as @p a comes before, with or after @p b
+    */
+   template <std::size_t I, typename K, typename... Ks, std::size_t N>
+   int compare_by_keys(const lListElem *a, const lListElem *b, const std::array<int, N> &slots) {
+      constexpr auto F = SortKeyTraits<K>::field;
+      constexpr FieldType type = FieldTraits<F>::type;
+      const lMultiType &x = a->cont[slots[I]];
+      const lMultiType &y = b->cont[slots[I]];
+      int result;
+      if constexpr (type == FieldType::String) {
+         result = sge_strnullcmp(x.str, y.str);
+      } else if constexpr (type == FieldType::Host) {
+         result = sge_strnullcmp(x.host, y.host);
+      } else if constexpr (type == FieldType::Uint32) {
+         result = (x.ul > y.ul) - (x.ul < y.ul);
+      } else if constexpr (type == FieldType::Uint64) {
+         result = (x.ul64 > y.ul64) - (x.ul64 < y.ul64);
+      } else if constexpr (type == FieldType::Int32) {
+         result = (x.i > y.i) - (x.i < y.i);
+      } else if constexpr (type == FieldType::Int64) {
+         result = (x.l > y.l) - (x.l < y.l);
+      } else if constexpr (type == FieldType::Double) {
+         result = (x.db > y.db) - (x.db < y.db);
+      } else {
+         static_assert(type == FieldType::Bool, "a sort criterion on a field the core cannot sort by");
+         result = (x.b > y.b) - (x.b < y.b);
+      }
+      if constexpr (!SortKeyTraits<K>::ascending) {
+         result = -result;
+      }
+      if constexpr (sizeof...(Ks) == 0) {
+         return result;
+      } else {
+         return result != 0 ? result : compare_by_keys<I + 1, Ks...>(a, b, slots);
+      }
+   }
+
+} // namespace ocs::tom::detail
 
 namespace ocs::tom {
 
@@ -1051,19 +1131,6 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Sort the list by fields known at compile time, as std::list::sort() sorts, and lPSortList() did
-       *
-       * `jobs.sort<desc<JB_priority>, asc<JB_job_number>>()` sorts by priority,
-       * the highest first, and jobs of one priority by their number. Elements
-       * with equal keys keep their order. The hash tables are rebuilt.
-       *
-       * @tparam K the first criterion, asc<F> or desc<F> on a field of this type
-       * @tparam Ks the further criteria
-       * @throw FieldException with reason AbsentField if the elements do not hold a field of the order
-       * @throw ocs::RuntimeException if there is no memory; the list is unchanged then
-       * @see Old form: lPSortList(); core: ocs::tom::sort_list()
-       */
-      /**
        * @brief Sort the list by a string or host field and keep the first element of each key, as std::list::unique()
        *        after sort() and lUniqStr() or lUniqHost() do
        *
@@ -1171,13 +1238,39 @@ namespace ocs::tom {
          remove_common_str(mine, theirs, static_cast<int>(F), false);
       }
 
+      /**
+       * @brief Sort the list by fields known at compile time, as std::list::sort() sorts, and lPSortList() did
+       *
+       * `jobs.sort<desc<JB_priority>, asc<JB_job_number>>()` sorts by priority,
+       * the highest first, and jobs of one priority by their number. Elements
+       * with equal keys keep their order. The hash tables are rebuilt.
+       *
+       * The comparison is generated from the criteria at compile time and inlined into the sort; the slots of
+       * the fields are looked up once per call.
+       *
+       * @tparam K the first criterion, asc<F> or desc<F> on a field of this type
+       * @tparam Ks the further criteria
+       * @throw FieldException with reason AbsentField if the elements do not hold a field of the order
+       * @throw ocs::RuntimeException if there is no memory; the list is unchanged then
+       * @see Old form: lPSortList(); core: ocs::tom::detail::sort_elems()
+       */
       template <typename K, typename... Ks>
          requires detail::SortKeyOf<K, T> && (detail::SortKeyOf<Ks, T> && ...)
       void sort() const {
          if (this->lp_ == nullptr) {
             return;
          }
-         sort(sort_order<K, Ks...>());
+         // the slots are looked up once, which also refuses an absent field of a reduced list as before, even a
+         // short one; each comparison is then inlined, without a sort order to interpret
+         const std::array<int, 1 + sizeof...(Ks)> slots{
+               detail::sort_slot<detail::SortKeyTraits<K>::field>(this->lp_->descr),
+               detail::sort_slot<detail::SortKeyTraits<Ks>::field>(this->lp_->descr)...};
+         if (this->lp_->nelem < 2) {
+            return;
+         }
+         detail::sort_elems(this->lp_, [&slots](const lListElem *a, const lListElem *b) {
+            return detail::compare_by_keys<0, K, Ks...>(a, b, slots) < 0;
+         });
       }
 
       /**

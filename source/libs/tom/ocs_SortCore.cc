@@ -27,6 +27,7 @@
 
 #include "uti/sge_string.h"
 
+#include "tom/detail/ocs_SortElems.h"
 #include "tom/detail/ocs_Hash.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
@@ -85,43 +86,6 @@ namespace ocs::tom {
          }
       }
 
-      /**
-       * @brief Sort the elements of a list with two elements or more, keeping equal ones in their order
-       *
-       * The elements are sorted as an array of pointers and linked again in
-       * the new order; the hash tables are rebuilt afterwards. If the
-       * comparison throws, the list is left as it was.
-       *
-       * @param lp the list
-       * @param less true if the first element comes before the second
-       * @throw ListCoreError if there is no memory
-       */
-      template <typename Less>
-      void sort_elems(lList *lp, const Less &less) {
-         std::vector<lListElem *> elems;
-         try {
-            elems.reserve(lp->nelem);
-         } catch (const std::bad_alloc &) {
-            throw ListCoreError("no memory to sort a list");
-         }
-         for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
-            elems.push_back(ep);
-         }
-
-         // the list is changed only after the sort, so a comparison that throws leaves it as it was
-         std::stable_sort(elems.begin(), elems.end(), less);
-
-         const std::size_t n = elems.size();
-         lp->first = elems[0];
-         lp->last = elems[n - 1];
-         for (std::size_t i = 0; i < n; i++) {
-            elems[i]->prev = i > 0 ? elems[i - 1] : nullptr;
-            elems[i]->next = i + 1 < n ? elems[i + 1] : nullptr;
-         }
-
-         ocs::tom::detail::hash_recreate_after_sort(lp);
-      }
-
    } // namespace
 
    lSortOrder *make_sort_order(const lDescr *descr, const std::span<const SortKey> keys) {
@@ -173,7 +137,7 @@ namespace ocs::tom {
       if (so == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp->descr);
       }
-      sort_elems(lp, [so](const lListElem *a, const lListElem *b) {
+      ocs::tom::detail::sort_elems(lp, [so](const lListElem *a, const lListElem *b) {
          return sort_compare(a, b, so) < 0;
       });
    }
@@ -182,7 +146,7 @@ namespace ocs::tom {
       if (lp == nullptr || lp->nelem < 2) {
          return;
       }
-      sort_elems(lp, less);
+      ocs::tom::detail::sort_elems(lp, less);
    }
 
    void check_sort_order(const lDescr *descr, const lSortOrder *so) {
