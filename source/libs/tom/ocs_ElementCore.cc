@@ -360,6 +360,10 @@ namespace ocs::tom {
             return s != nullptr && strcmp(s, value) == 0;
          }, iterator);
       } else {
+         // with a table, the next element comes from the table; the key is needed by the linear way only
+         if (*iterator != nullptr && list_hash_table(lp, pos) != nullptr) {
+            return ocs::tom::detail::hash_next(list_hash_table(lp, pos), iterator);
+         }
          char wanted[CL_MAXHOSTNAMELEN + 1];
          sge_hostcpy(wanted, value);
          const HostCompare how = host_compare();

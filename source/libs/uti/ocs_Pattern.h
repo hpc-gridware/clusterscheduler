@@ -173,9 +173,14 @@ namespace ocs {
       if (s == nullptr) {
          return MatcherKind::NONE;
       }
-      // every prefix starts with h or i; a host name rarely does, and this test is on the path of every host
-      // name copy and comparison (sge_hostcpy(), sge_hostcmp(), the host lookups of the list library)
-      if (const char c = s[0]; c != 'h' && c != 'H' && c != 'i' && c != 'I') {
+      // each prefix ends with ':' at a fixed place (host: at 4, ip6: at 3, ip: at 2), which a host name lacks;
+      // testing that first keeps this check, which is on the path of every host name copy and comparison
+      // (sge_hostcpy(), sge_hostcmp(), the host lookups of the list library), at a few character reads. The
+      // reads stop at the terminating 0, so a short name is never read beyond its end.
+      const bool colon_at_2 = s[0] != '\0' && s[1] != '\0' && s[2] == ':';
+      const bool colon_at_3 = s[0] != '\0' && s[1] != '\0' && s[2] != '\0' && s[3] == ':';
+      const bool colon_at_4 = s[0] != '\0' && s[1] != '\0' && s[2] != '\0' && s[3] != '\0' && s[4] == ':';
+      if (!colon_at_2 && !colon_at_3 && !colon_at_4) {
          return MatcherKind::NONE;
       }
       if (strncasecmp(s, MATCHER_PREFIX_HOST, sizeof("host:") - 1) == 0) {
