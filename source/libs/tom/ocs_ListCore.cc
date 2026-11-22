@@ -151,8 +151,7 @@ namespace ocs::tom {
    } // namespace
 
    lListElem *create_elem(const lDescr *descr) {
-      int n;
-      if ((n = descr_length(descr)) <= 0) {
+      if (descr == nullptr || mt_get_type(descr[0].mt) == lEndT) {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
@@ -163,10 +162,25 @@ namespace ocs::tom {
       ep->next = nullptr;
       ep->prev = nullptr;
 
+      // A shared descriptor, the static block of a type or a counted one, is taken as it is: a reduced one comes
+      // from ocs::tom::descr_layout(), which marks every entry (N-B-5). Only a plain array is measured and, if
+      // need be, normalised; creating an element must not walk the fields of a shared one, twice, each time.
+      const bool shared = ocs::tom::descr_is_counted(descr) || ocs::tom::descr_static_for(descr[0].nm) == descr;
+#if defined(ENABLE_DEBUG_CHECKS)
+      if (shared && (descr->mt & CULL_IS_REDUCED) != 0) {
+         for (int i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
+            if ((descr[i].mt & CULL_IS_REDUCED) == 0) {
+               abort();
+            }
+         }
+      }
+#endif
+
       // every field inherits the reduced flag of the type; a descriptor that does
       // not carry it in every field yet is normalised in a temporary copy
       lDescr *normalised = nullptr;
-      if ((descr->mt & CULL_IS_REDUCED) != 0) {
+      if (!shared && (descr->mt & CULL_IS_REDUCED) != 0) {
+         const int n = descr_length(descr);
          for (int i = 0; i <= n; i++) {
             if ((descr[i].mt & CULL_IS_REDUCED) == 0) {
                normalised = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (n + 1)));
