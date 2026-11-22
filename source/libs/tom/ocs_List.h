@@ -1744,7 +1744,9 @@ namespace ocs::tom {
        */
       ListPtr &operator=(ListPtr &&other) noexcept {
          if (this != &other) {
-            free_list(lp_);
+            if (lp_ != nullptr) {   // a moved-from owner is empty: no call
+               free_list(lp_);
+            }
             lp_ = std::exchange(other.lp_, nullptr);
          }
          return *this;
@@ -1752,7 +1754,9 @@ namespace ocs::tom {
 
       /** @brief Free the list held, with its elements, as lFreeList() does */
       ~ListPtr() {
-         free_list(lp_);
+         if (lp_ != nullptr) {   // a moved-from owner is empty: no call
+            free_list(lp_);
+         }
       }
 
       /**
@@ -1783,7 +1787,9 @@ namespace ocs::tom {
        * @brief Free the list held now with its elements, as std::unique_ptr::reset() and lFreeList() do
        */
       void reset() noexcept {
-         free_list(lp_);
+         if (lp_ != nullptr) {   // a moved-from owner is empty: no call
+            free_list(lp_);
+         }
       }
 
       /**

@@ -2004,7 +2004,9 @@ namespace ocs::tom {
        */
       ElementPtr &operator=(ElementPtr &&other) noexcept {
          if (this != &other) {
-            free_elem(ep_);
+            if (ep_ != nullptr) {   // a moved-from owner is empty: no call
+               free_elem(ep_);
+            }
             ep_ = std::exchange(other.ep_, nullptr);
          }
          return *this;
@@ -2012,7 +2014,9 @@ namespace ocs::tom {
 
       /** @brief Free the element held, as lFreeElem() does */
       ~ElementPtr() {
-         free_elem(ep_);
+         if (ep_ != nullptr) {   // a moved-from owner is empty: no call
+            free_elem(ep_);
+         }
       }
 
       /**
@@ -2043,7 +2047,9 @@ namespace ocs::tom {
        * @brief Free the element held now, as std::unique_ptr::reset() and lFreeElem() do
        */
       void reset() noexcept {
-         free_elem(ep_);
+         if (ep_ != nullptr) {   // a moved-from owner is empty: no call
+            free_elem(ep_);
+         }
       }
 
       /**
