@@ -35,7 +35,8 @@ enum {
    EVR_event_number,
    EVR_session,
    EVR_event_client,
-   EVR_event_list
+   EVR_event_list,
+   EVR_uid
 };
 
 constexpr const int EVR_Type[] = {
@@ -46,6 +47,7 @@ constexpr const int EVR_Type[] = {
    EVR_session,
    EVR_event_client,
    EVR_event_list,
+   EVR_uid,
    AttributeStatic::END_OF_ATTRIBUTES
 };
 
@@ -56,7 +58,8 @@ constexpr const int EVR_Type[] = {
    {EVR_event_number, "EVR_event_number", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EVR_session, "EVR_session", AttributeStatic::STRING, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
    {EVR_event_client, "EVR_event_client", AttributeStatic::OBJECT, nullptr, 0, AttributeStatic::NO_HASH, false, false}, \
-   {EVR_event_list, "EVR_event_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
+   {EVR_event_list, "EVR_event_list", AttributeStatic::LIST, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false}, \
+   {EVR_uid, "EVR_uid", AttributeStatic::UINT32, nullptr, AttributeStatic::NO_POS, AttributeStatic::NO_HASH, false, false} \
 
 } // end namespace
 

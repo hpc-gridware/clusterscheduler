@@ -2120,7 +2120,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DSTRING_STATIC(dstr_certfilename, MAXPATHLEN);
          const char *str_certfilename = sge_dstring_sprintf(&dstr_certfilename, "%s/%s/%s", execd_spool_dir,
                                                             active_dir_buffer, "cert.pem");
-         if (sge_string2file(cert, 0, str_certfilename) != 0) {
+         // the certificate is public, sge_shepherd reads it, also when it cannot read as root
+         if (sge_string2file(cert, 0, str_certfilename, 0644) != 0) {
             snprintf(err_str, err_length, MSG_EXECD_UNABLETOCREATECERTFILE_S, str_certfilename);
             DRETURN(-2);
          }

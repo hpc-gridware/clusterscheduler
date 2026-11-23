@@ -157,6 +157,8 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
             // messages needs to come from execd running as same admin user or root
             if (message->buf.uid != component_get_uid() && message->buf.uid != 0) {
                ERROR(MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU, message->snd_host, message->snd_name, message->buf.uid, component_get_uid());
+               lFreeElem(&ack);
+               DRETURN_VOID;
             }
          }
 #if defined(SECURE)
@@ -171,7 +173,8 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          }
 #endif
       } else if (ack_tag == ACK_EVENT_DELIVERY) {
-         // TODO: here we should check if the event belongs to the user who sent the request
+         // the event master thread checks that the event client belongs to the sender,
+         // see sge_handle_event_ack_of_user()
          ;
       } else {
          // unknown tag
@@ -186,7 +189,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          // sge_handle_event_ack stores them into the event master message queue
          u_long32 ack_ulong = lGetUlong(ack, ACK_id);
          u_long32 ack_ulong2 = lGetUlong(ack, ACK_id2);
-         sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
+         sge_handle_event_ack_of_user(ack_ulong2, (ev_event) ack_ulong, message->buf.uid);
          lFreeElem(&ack);
       } else {
          // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
@@ -640,35 +643,21 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
    DRETURN_VOID;
 } /* do_report_request */
 
-/****** qmaster/sge_qmaster_process_message/do_event_client_exit() *************
-*  NAME
-*     do_event_client_exit() -- handle event client exit message
-*
-*  SYNOPSIS
-*     static void do_event_client_exit(const char *aHost, const char *aSender,
-*     sge_pack_buffer *aBuffer)
-*
-*  FUNCTION
-*     Handle event client exit message. Extract event client id from pack
-*     buffer. Remove event client.
-*
-*  INPUTS
-*     const char *aHost        - sender
-*     const char *aSender      - communication endpoint
-*     sge_pack_buffer *aBuffer - buffer
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: do_event_client_exit() is NOT MT safe.
-*
-*******************************************************************************/
+/**
+ * @brief Handle the exit message of an event client
+ *
+ * Extracts the event client id from the message and removes the event client, if it was
+ * registered by the sender of the message.
+ *
+ * MT-NOTE: do_event_client_exit() is NOT MT safe.
+ *
+ * @param aMsg the message, its pack buffer holds the event client id
+ * @param monitor the monitoring object
+ */
 static void
 do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
-   u_long32 client_id = 0;
-
    DENTER(TOP_LAYER);
+   u_long32 client_id = 0;
 
    // in case of Munge authentication: re-resolve and check user and groups
    // @todo we do not really use the re-resolved information yet, still would drop messages with fake content
@@ -688,7 +677,8 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
 
    DPRINTF("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
 
-   sge_remove_event_client(client_id);
+   // only the user who registered the event client may remove it (CS-3135)
+   sge_remove_event_client_of_user(client_id, aMsg->buf.uid);
 
    DRETURN_VOID;
 } /* do_event_client_exit() */
@@ -731,7 +721,7 @@ sge_c_ack(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor)
 
    case ACK_EVENT_DELIVERY:
       // @TODO: is the global lock also here required?
-      sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
+      sge_handle_event_ack_of_user(ack_ulong2, (ev_event) ack_ulong, packet->uid);
       break;
    default:
       // not possible. has been filtered by listener thread already

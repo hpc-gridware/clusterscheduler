@@ -65,5 +65,15 @@
 			"subClassName":	"ET",
 			"subCullPrefix":	"ET",
 			"flags":	[]
+		}, {
+			"name":	"uid",
+			"summary":	"user id of the sender of the request",
+			"description":	[{
+					"line":	"Requests that act on an existing event client, e.g. the acknowledgement of events,"
+				}, {
+					"line":	"are only processed if the event client was registered by this user."
+				}],
+			"type":	"lUlongT",
+			"flags":	[]
 		}]
 }

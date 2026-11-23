@@ -907,7 +907,7 @@ write_failed_info(u_long32 job_id, u_long32 ja_task_id, const char *pe_task_id, 
    sge_dstring_sprintf(&dstr_failed, sge_u32 ":" SFN2 "\n",
                        lGetUlong(jr, JR_failed), lGetString(jr, JR_err_str));
    sge_string2file(sge_dstring_get_string(&dstr_failed), sge_dstring_strlen(&dstr_failed),
-                sge_dstring_get_string(&dstr_filename));
+                   sge_dstring_get_string(&dstr_filename), 0600);
 }
 
 /* ------------------------- */

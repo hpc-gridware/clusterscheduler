@@ -849,53 +849,75 @@ sge_event_master_process_mod_event_client(const lListElem *request, monitoring_t
    DRETURN_VOID;
 } /* sge_event_master_process_mod_event_client() */
 
-/****** evm/sge_event_master/sge_remove_event_client() *************************
-*  NAME
-*     sge_remove_event_client() -- remove event client
-*
-*  SYNOPSIS
-*     void sge_remove_event_client(u_long32 event_client_id)
-*
-*  FUNCTION
-*     Remove event client. Fetch event client from event client list.
-*     Only sets status to "terminated",
-*     it will be removed later on in ......................
-*
-*  INPUTS
-*     u_long32 event_client_id - event client id
-*
-*  RESULT
-*     void - none
-*
-*  NOTES
-*     MT-NOTE: sge_remove_event_client() is MT safe, uses internal locks
-*
-*  SEE ALSO
-*     evm_remove_func_t
-*
-*******************************************************************************/
-void
-sge_remove_event_client(u_long32 event_client_id) {
-   lListElem *client;
-
+/**
+ * @brief Set an event client to terminated, it is removed later by the event master thread
+ *
+ * @param event_client_id id of the event client
+ * @param check_owner if true, only an event client registered by uid is removed
+ * @param uid user id of the requestor, used if check_owner is true
+ * @return true if the event client was set to terminated, false otherwise
+ */
+static bool
+terminate_event_client(u_long32 event_client_id, bool check_owner, uid_t uid) {
    DENTER(TOP_LAYER);
+   bool ret = false;
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   DPRINTF("sge_remove_event_client id = %d\n", (int) event_client_id);
+   DPRINTF("terminate_event_client id = %d\n", (int) event_client_id);
 
-   client = get_event_client(event_client_id);
-
+   lListElem *client = get_event_client(event_client_id);
    if (client == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "remove");
-      DRETURN_VOID;
+   } else if (check_owner && lGetUlong(client, EV_uid) != static_cast<u_long32>(uid)) {
+      sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+      ERROR(MSG_EVE_NOTOWNER_SUU, "exit", event_client_id, uid);
+   } else {
+      lSetUlong(client, EV_state, EV_terminated);
+      sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+      ret = true;
    }
-   lSetUlong(client, EV_state, EV_terminated);
 
-   sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Remove an event client
+ *
+ * Only sets the state of the event client to terminated, the event master thread removes it
+ * later. Used for the event clients inside sge_qmaster; the exit message of an event client is
+ * handled by sge_remove_event_client_of_user().
+ *
+ * MT-NOTE: sge_remove_event_client() is MT safe, uses internal locks
+ *
+ * @param event_client_id event client id
+ */
+void
+sge_remove_event_client(u_long32 event_client_id) {
+   DENTER(TOP_LAYER);
+   terminate_event_client(event_client_id, false, 0);
    DRETURN_VOID;
 } /* sge_remove_event_client() */
+
+/**
+ * @brief Remove an event client on request of a user
+ *
+ * Like sge_remove_event_client(), but for the exit message an event client sends to sge_qmaster:
+ * the event client is only removed if it was registered by the sender of the message (CS-3135).
+ * Managers remove the event clients of other users with sge_shutdown_event_client().
+ *
+ * @param event_client_id id of the event client
+ * @param uid user id of the sender of the exit message
+ * @return true if the event client was set to terminated, false if it does not exist or
+ *         belongs to another user
+ */
+bool
+sge_remove_event_client_of_user(u_long32 event_client_id, uid_t uid) {
+   DENTER(TOP_LAYER);
+   bool ret = terminate_event_client(event_client_id, true, uid);
+   DRETURN(ret);
+}
 
 
 /****** sge_event_master/sge_set_max_dynamic_event_clients() *******************
@@ -1736,73 +1758,92 @@ sge_event_master_process_send(const lListElem *request, monitoring_t *monitor) {
    DRETURN_VOID;
 } /* process_sends() */
 
-/****** Eventclient/Server/sge_handle_event_ack() ******************************
-*  NAME
-*     sge_handle_event_ack() -- acknowledge event delivery
-*
-*  SYNOPSIS
-*     #include "evm/sge_event_master.h"
-*
-*     void
-*     sge_handle_event_ack(u_long32 event_client_id, ev_event event_number)
-*
-*  FUNCTION
-*     After the server sent events to an event client, it has to acknowledge
-*     their receipt.
-*     Acknowledged events are deleted from the list of events to deliver,
-*     otherwise they will be resent after the next event delivery interval.
-*     If the handling of a busy state of the event client is enabled and set to
-*     EV_BUSY_UNTIL_ACK, the event client will be set to "not busy".
-*
-*  INPUTS
-*     u_long32 event_client_id - event client sending acknowledge
-*     ev_event event_number   - serial number of the last event to acknowledge
-*
-*  RESULT
-*     bool - true on success, false on error
-*
-*  NOTES
-*     MT-NOTE: sge_handle_event_ack() is MT safe.
-*
-*
-*******************************************************************************/
-bool
-sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number)
-{
-   lListElem *evr = nullptr;
-
+/**
+ * @brief Store an acknowledgement of events for the event master thread
+ *
+ * @param operation EVR_ACK_EVENT, or EVR_ACK_EVENT_OF_USER to have the owner checked
+ * @param event_client_id event client sending the acknowledgement
+ * @param event_number serial number of the last event to acknowledge
+ * @param uid user id of the sender, checked for EVR_ACK_EVENT_OF_USER
+ */
+static void
+store_ack_request(u_long32 operation, u_long32 event_client_id, u_long32 event_number, uid_t uid) {
    DENTER(TOP_LAYER);
-
-   evr = lCreateElem(EVR_Type);
-   lSetUlong(evr, EVR_operation, EVR_ACK_EVENT);
+   lListElem *evr = lCreateElem(EVR_Type);
+   lSetUlong(evr, EVR_operation, operation);
    lSetUlong64(evr, EVR_timestamp, sge_get_gmt64());
    lSetUlong(evr, EVR_event_client_id, event_client_id);
    lSetUlong(evr, EVR_event_number, event_number);
+   lSetUlong(evr, EVR_uid, uid);
 
    sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
    lAppendElem(Event_Master_Control.requests, evr);
    sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
 
    sge_event_master_flush_requests();
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Acknowledge the delivery of events
+ *
+ * After the server sent events to an event client, it has to acknowledge their receipt.
+ * Acknowledged events are deleted from the list of events to deliver, otherwise they are
+ * resent after the next event delivery interval. If the handling of a busy state of the event
+ * client is enabled and set to EV_BUSY_UNTIL_ACK, the event client is set to "not busy".
+ *
+ * Used for the event clients inside sge_qmaster. An acknowledgement which arrived over the
+ * network is passed to sge_handle_event_ack_of_user().
+ *
+ * MT-NOTE: sge_handle_event_ack() is MT safe.
+ *
+ * @param event_client_id event client sending the acknowledgement
+ * @param event_number serial number of the last event to acknowledge
+ * @return true, the request is stored for the event master thread
+ */
+bool
+sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number)
+{
+   DENTER(TOP_LAYER);
+   store_ack_request(EVR_ACK_EVENT, event_client_id, event_number, 0);
+   DRETURN(true);
+}
+
+/**
+ * @brief Acknowledge events on behalf of the user who sent the acknowledgement
+ *
+ * Like sge_handle_event_ack(), but for an acknowledgement which arrived over the network: the
+ * event master thread processes it only if the event client was registered by the sender
+ * (CS-3135). Otherwise any user could acknowledge, and thereby drop, the events of the event
+ * clients of other users.
+ *
+ * @param event_client_id event client sending the acknowledgement
+ * @param event_number serial number of the last event to acknowledge
+ * @param uid user id of the sender of the acknowledgement
+ * @return true, the request is stored for the event master thread
+ */
+bool
+sge_handle_event_ack_of_user(u_long32 event_client_id, u_long32 event_number, uid_t uid) {
+   DENTER(TOP_LAYER);
+   store_ack_request(EVR_ACK_EVENT_OF_USER, event_client_id, event_number, uid);
    DRETURN(true);
 }
 
 static void
-sge_event_master_process_ack(const lListElem *request, monitoring_t *monitor)
+sge_event_master_process_ack(const lListElem *request, bool check_owner, monitoring_t *monitor)
 {
-   lListElem *client;
-   u_long32 event_client_id;
-
    DENTER(TOP_LAYER);
-
-   event_client_id = lGetUlong(request, EVR_event_client_id);
+   u_long32 event_client_id = lGetUlong(request, EVR_event_client_id);
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
-   client = get_event_client(event_client_id);
+   lListElem *client = get_event_client(event_client_id);
 
    if (client == nullptr) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "process acknowledgements");
+   } else if (check_owner && lGetUlong(client, EV_uid) != lGetUlong(request, EVR_uid)) {
+      ERROR(MSG_EVE_NOTOWNER_SUU, "acknowledgement", event_client_id,
+            static_cast<uid_t>(lGetUlong(request, EVR_uid)));
    } else {
       u_long32 event_number = lGetUlong(request, EVR_event_number);
       u_long64 timestamp = lGetUlong64(request, EVR_timestamp);
@@ -3600,7 +3641,10 @@ void sge_event_master_process_requests(monitoring_t *monitor)
                sge_event_master_process_send(request, monitor);
                break;
             case EVR_ACK_EVENT:
-               sge_event_master_process_ack(request, monitor);
+               sge_event_master_process_ack(request, false, monitor);
+               break;
+            case EVR_ACK_EVENT_OF_USER:
+               sge_event_master_process_ack(request, true, monitor);
                break;
          }
 

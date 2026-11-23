@@ -103,6 +103,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *ev,
 int sge_mod_event_client(lListElem *clio, lList **alpp, char *ruser, char *rhost);
 bool sge_has_event_client(u_long32 aClientID);
 void sge_remove_event_client(u_long32 aClientID);
+bool sge_remove_event_client_of_user(u_long32 aClientID, uid_t uid);
 lList* sge_select_event_clients(const char *list_name, const lCondition *where, const lEnumeration *what);
 int sge_shutdown_event_client(const ocs::gdi::Packet *packet, u_long32 aClientID, lList **alpp);
 int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, lList **alpp, monitoring_t *monitor);
@@ -139,6 +140,7 @@ bool sge_add_list_event(u_long64 timestamp,
                         u_long64 gdi_session);
 
 bool sge_handle_event_ack(u_long32 event_client_id, u_long32 event_number);
+bool sge_handle_event_ack_of_user(u_long32 event_client_id, u_long32 event_number, uid_t uid);
 void sge_deliver_events_immediately(u_long32 aClientID);
 
 int sge_resync_schedd(monitoring_t *monitor, u_long64 gdi_session);

@@ -48,7 +48,8 @@ typedef enum {
    EVR_MOD_EVC,
    EVR_DEL_EVC,
    EVR_ADD_EVENT,
-   EVR_ACK_EVENT
+   EVR_ACK_EVENT,
+   EVR_ACK_EVENT_OF_USER   // like EVR_ACK_EVENT, but only processed for the owner (EVR_uid)
 } evm_request_t;
 
 /* documentation see libs/evc/sge_event_client.c */

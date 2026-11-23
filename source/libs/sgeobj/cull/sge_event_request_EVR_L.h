@@ -53,6 +53,10 @@
 *    SGE_LIST(EVR_event_list) - @todo add summary
 *    @todo add description
 *
+*    SGE_ULONG(EVR_uid) - user id of the sender of the request
+*    Requests that act on an existing event client, e.g. the acknowledgement of events,
+*    are only processed if the event client was registered by this user.
+*
 */
 
 enum {
@@ -62,7 +66,8 @@ enum {
    EVR_event_number,
    EVR_session,
    EVR_event_client,
-   EVR_event_list
+   EVR_event_list,
+   EVR_uid
 };
 
 LISTDEF(EVR_Type)
@@ -73,6 +78,7 @@ LISTDEF(EVR_Type)
    SGE_STRING(EVR_session, CULL_DEFAULT)
    SGE_OBJECT(EVR_event_client, CULL_ANY_SUBTYPE, CULL_DEFAULT)
    SGE_LIST(EVR_event_list, ET_Type, CULL_DEFAULT)
+   SGE_ULONG(EVR_uid, CULL_DEFAULT)
 LISTEND
 
 NAMEDEF(EVRN)
@@ -83,6 +89,7 @@ NAMEDEF(EVRN)
    NAME("EVR_session")
    NAME("EVR_event_client")
    NAME("EVR_event_list")
+   NAME("EVR_uid")
 NAMEEND
 
 #define EVR_SIZE sizeof(EVRN)/sizeof(char *)

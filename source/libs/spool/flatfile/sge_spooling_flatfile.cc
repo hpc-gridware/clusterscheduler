@@ -1198,9 +1198,10 @@ spool_classic_default_write_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_JOBSCRIPT:
+         // job scripts may contain confidential data, only sge_qmaster reads them
          ret = sge_string2file(lGetString(object, JB_script_ptr),
                                lGetUlong(object, JB_script_size),
-                               lGetString(object, JB_exec_file)) ? false : true;
+                               lGetString(object, JB_exec_file), 0600) ? false : true;
          break;
       case SGE_TYPE_RQS:
          directory = RESOURCEQUOTAS_DIR;

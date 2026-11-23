@@ -47,6 +47,8 @@
 
 #include "uti/msg_utilib.h"
 
+#include "msg_common.h"
+
 #define BUFFER     4096
 #define FILE_CHUNK (100*1024)
 
@@ -615,88 +617,57 @@ char *sge_stream2string(FILE *fp, int *len) {
    DRETURN(str);
 }
 
-/****** uti/io/sge_string2file() **********************************************
-*  NAME
-*     sge_string2file() -- Write string into file
-*
-*  SYNOPSIS
-*     int sge_string2file(const char *str, int len, const char *fname)
-*
-*  FUNCTION
-*     Write string into file 
-*
-*  INPUTS
-*     const char *str   - pointer to buffer
-*     int len           - number of bytes which should be written
-*     const char *fname - filename
-*
-*  RESULT
-*     int - error state
-*         0 - OK
-*        -1 - Error
-*
-*  SEE ALSO
-*     uti/io/sge_file2string()  
-*     uti/io/sge_stream2string()
-*
-*  NOTES
-*     MT-NOTE: sge_string2file() is MT safe
-******************************************************************************/
-
-/* #define USE_FOPEN */
-
-int sge_string2file(const char *str, int len, const char *fname) {
-#ifdef USE_FOPEN
-   FILE *fp;
-#else
-   int fp = -1;
-#endif
-
+/**
+ * @brief Write a string into a file
+ *
+ * The file is created or truncated, a symbolic link at fname is not followed. The mode is set
+ * explicitly, also for an existing file, so it does not depend on the umask. If the string
+ * cannot be written completely, the file is removed.
+ *
+ * MT-NOTE: sge_string2file() is MT safe
+ *
+ * @param str the string to write
+ * @param len number of bytes to write, 0 to write strlen(str) bytes
+ * @param fname path of the file
+ * @param mode permissions of the file, e.g. 0600
+ * @return 0 on success, -1 on error, the error is logged
+ *
+ * @see sge_file2string()
+ * @see sge_stream2string()
+ */
+int sge_string2file(const char *str, int len, const char *fname, mode_t mode) {
    DENTER(TOP_LAYER);
 
-#ifdef USE_FOPEN
-   if (!(fp = fopen(fname, "w")))
-#else
-   if (!(fp = open(fname, O_WRONLY | O_CREAT, 0666)))
-#endif
-   {
-      ERROR(MSG_FILE_OPENFAILED_S, fname);
+   int fd = open(fname, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, mode);
+   if (fd < 0) {
+      ERROR(MSG_FILE_NOOPEN_SS, fname, strerror(errno));
       DRETURN(-1);
    }
-   if (!len) {
-      len = strlen(str);
+   if (fchmod(fd, mode) != 0) {
+      int old_errno = errno;
+      ERROR(MSG_FILE_SETMODEFAILED_SOS, fname, static_cast<unsigned int>(mode),
+            strerror(old_errno));
+      close(fd);
+      errno = old_errno;
+      DRETURN(-1);
    }
 
-#ifdef USE_FOPEN
-   if (fwrite(str, len, 1, fp) != 1)
-#else
-   if (write(fp, str, len) != len)
-#endif
-   {
+   if (len == 0) {
+      len = strlen(str);
+   }
+   if (write(fd, str, len) != len) {
       int old_errno = errno;
       ERROR(MSG_FILE_WRITEBYTESFAILED_IS, len, fname);
-#ifdef USE_FOPEN
-      FCLOSE(fp);
-#else
-      if (close(fp) != 0) {
-         goto FCLOSE_ERROR;
-      }
-#endif
+      close(fd);
       unlink(fname);
       errno = old_errno;
       DRETURN(-1);
    }
 
-#ifdef USE_FOPEN
-   FCLOSE(fp);
-#else
-   if (close(fp) != 0) {
-      goto FCLOSE_ERROR;
+   if (close(fd) != 0) {
+      ERROR(MSG_FILE_FCLOSEFAILED_SS, fname, strerror(errno));
+      DRETURN(-1);
    }
-#endif
    DRETURN(0);
-   FCLOSE_ERROR:
-   ERROR(MSG_FILE_FCLOSEFAILED_SS, fname, strerror(errno));
-   DRETURN(-1);
-}          
+}
 

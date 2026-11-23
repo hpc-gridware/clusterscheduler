@@ -101,6 +101,7 @@
 #define MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS       _MESSAGE(49071, _("the user already has too many group ids"))
 #define MSG_SYSTEM_RESOLVEUSER                  _MESSAGE(49118, _("can't resolve user"))
 #define MSG_SYSTEM_RESOLVEGROUP                 _MESSAGE(49119, _("can't resolve group"))
+#define MSG_FILE_SETMODEFAILED_SOS              _MESSAGE(49120, _("can't set the mode of file " SFQ " to %o: " SFN))
 
 #define MSG_MEMORY_MALLOCFAILED                 _MESSAGE(49072, _("malloc() failure"))
 #define MSG_MEMORY_REALLOCFAILED                _MESSAGE(49073, _("realloc() failure"))
