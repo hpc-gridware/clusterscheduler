@@ -51,6 +51,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <functional>
@@ -3614,6 +3615,7 @@ static const char *api_of(const Form form) {
  *
  * Options: `-mode typed|raw|both` selects the TOM forms (default both); the CULL variant ignores it.
  * `-only <text>` measures only the operations whose name contains the text, for profiling one of them.
+ * `-strmin <n>` sets the string hash threshold of the measuring thread (TOM only, the scheduler's setting).
  *
  * @param argc the number of arguments
  * @param argv the arguments
@@ -3628,13 +3630,20 @@ int main(int argc, char *argv[]) {
          typed = strcmp(mode, "typed") == 0 || strcmp(mode, "both") == 0;
          raw = strcmp(mode, "raw") == 0 || strcmp(mode, "both") == 0;
          if (!typed && !raw) {
-            fprintf(stderr, "usage: %s [-mode typed|raw|both] [-only text]\n", argv[0]);
+            fprintf(stderr, "usage: %s [-mode typed|raw|both] [-only text] [-strmin n]\n", argv[0]);
             return 1;
          }
       } else if (strcmp(argv[i], "-only") == 0 && i + 1 < argc) {
          g_only = argv[++i];
+      } else if (strcmp(argv[i], "-strmin") == 0 && i + 1 < argc) {
+         const unsigned long strmin = strtoul(argv[++i], nullptr, 10);
+#if OCS_PERF_TOM
+         ocs::tom::set_thread_string_hash_threshold(static_cast<std::uint32_t>(strmin));
+#else
+         static_cast<void>(strmin);
+#endif
       } else {
-         fprintf(stderr, "usage: %s [-mode typed|raw|both] [-only text]\n", argv[0]);
+         fprintf(stderr, "usage: %s [-mode typed|raw|both] [-only text] [-strmin n]\n", argv[0]);
          return 1;
       }
    }
