@@ -23,9 +23,12 @@
  */
 
 #include <cctype>
+#include <cerrno>
+#include <climits>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -59,6 +62,7 @@
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/ocs_spool_fields.h"
+#include "spool/flatfile/msg_spoollib_flatfile.h"
 
 #include "msg_common.h"                  /* MSG_NULLELEMENTPASSEDTO_S (SGE_CHECK_POINTER_FALSE) */
 
@@ -97,8 +101,7 @@ static bool
 spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList sub_list,
                             const spooling_field *sub_fields,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer);
-static uint32_t
-spool_json_value_to_ulong(const rapidjson::Value &v);
+static bool spool_json_value_to_u32(const rapidjson::Value &v, std::uint32_t *out);
 
 /* the JSON token shown for the cqueue default host reference HOSTREF_DEFAULT ("@/") */
 static const char *const SPOOL_JSON_DEFAULT_HREF = "default";
@@ -489,7 +492,9 @@ spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names) 
          }
       }
    }
-   return spool_json_value_to_ulong(v);   /* numeric form (or unmatched string) */
+   std::uint32_t value = 0;   /* numeric form; an unmatched string or a number out of range gives 0 */
+   static_cast<void>(spool_json_value_to_u32(v, &value));
+   return value;
 }
 
 /**
@@ -1397,18 +1402,138 @@ spool_json_value_to_string(const rapidjson::Value &v, dstring *out) {
 }
 
 /**
- * @brief Coerce a JSON value (number or numeric string) to a CULL ulong.
+ * @brief Read a JSON value as an unsigned 64 bit integer
  *
- * @param v  the JSON value
- * @return the unsigned long value, or 0 if not coercible
+ * A JSON integer, an integral float or a decimal string. null reads as 0, as an unset value is written.
+ *
+ * @param v    the JSON value
+ * @param out  receives the value
+ * @return true if the value is an integer in the range of the type, false otherwise (out unchanged)
  */
-static uint32_t
-spool_json_value_to_ulong(const rapidjson::Value &v) {
-   if (v.IsUint64()) return static_cast<uint32_t>(v.GetUint64());
-   if (v.IsInt64())  return static_cast<uint32_t>(v.GetInt64());
-   if (v.IsDouble()) return static_cast<uint32_t>(v.GetDouble());
-   if (v.IsString()) return static_cast<uint32_t>(strtoul(v.GetString(), nullptr, 10));
-   return 0;
+static bool
+spool_json_value_to_u64(const rapidjson::Value &v, std::uint64_t *out) {
+   if (v.IsNull()) {
+      *out = 0;
+      return true;
+   }
+   if (v.IsUint64()) {
+      *out = v.GetUint64();
+      return true;
+   }
+   if (v.IsInt64()) {   // a JSON integer that is not a Uint64 is negative
+      return false;
+   }
+   if (v.IsDouble()) {
+      const double d = v.GetDouble();
+      if (d < 0.0 || d >= 18446744073709551616.0 || d != std::floor(d)) {
+         return false;
+      }
+      *out = static_cast<std::uint64_t>(d);
+      return true;
+   }
+   if (v.IsString()) {
+      const char *text = v.GetString();
+      char *end = nullptr;
+      errno = 0;
+      const unsigned long long value = strtoull(text, &end, 10);
+      if (end == text || *end != '\0' || errno == ERANGE || strchr(text, '-') != nullptr) {
+         return false;
+      }
+      *out = value;
+      return true;
+   }
+   return false;
+}
+
+/**
+ * @brief Read a JSON value as a signed 64 bit integer
+ *
+ * A JSON integer, an integral float or a decimal string. null reads as 0, as an unset value is written.
+ *
+ * @param v    the JSON value
+ * @param out  receives the value
+ * @return true if the value is an integer in the range of the type, false otherwise (out unchanged)
+ */
+static bool
+spool_json_value_to_i64(const rapidjson::Value &v, std::int64_t *out) {
+   if (v.IsNull()) {
+      *out = 0;
+      return true;
+   }
+   if (v.IsInt64()) {
+      *out = v.GetInt64();
+      return true;
+   }
+   if (v.IsUint64()) {   // a JSON integer that is not an Int64 is above its range
+      return false;
+   }
+   if (v.IsDouble()) {
+      const double d = v.GetDouble();
+      if (d < -9223372036854775808.0 || d >= 9223372036854775808.0 || d != std::floor(d)) {
+         return false;
+      }
+      *out = static_cast<std::int64_t>(d);
+      return true;
+   }
+   if (v.IsString()) {
+      const char *text = v.GetString();
+      char *end = nullptr;
+      errno = 0;
+      const long long value = strtoll(text, &end, 10);
+      if (end == text || *end != '\0' || errno == ERANGE) {
+         return false;
+      }
+      *out = value;
+      return true;
+   }
+   return false;
+}
+
+/**
+ * @brief Read a JSON value as an unsigned 32 bit integer
+ * @param v    the JSON value
+ * @param out  receives the value
+ * @return true if the value is an integer in the range of the type, false otherwise (out unchanged)
+ */
+static bool
+spool_json_value_to_u32(const rapidjson::Value &v, std::uint32_t *out) {
+   std::uint64_t value = 0;
+   if (!spool_json_value_to_u64(v, &value) || value > UINT32_MAX) {
+      return false;
+   }
+   *out = static_cast<std::uint32_t>(value);
+   return true;
+}
+
+/**
+ * @brief Read a JSON value as a signed 32 bit integer
+ * @param v    the JSON value
+ * @param out  receives the value
+ * @return true if the value is an integer in the range of the type, false otherwise (out unchanged)
+ */
+static bool
+spool_json_value_to_i32(const rapidjson::Value &v, std::int32_t *out) {
+   std::int64_t value = 0;
+   if (!spool_json_value_to_i64(v, &value) || value < INT32_MIN || value > INT32_MAX) {
+      return false;
+   }
+   *out = static_cast<std::int32_t>(value);
+   return true;
+}
+
+/**
+ * @brief Report a numeric field value that does not fit the field's type
+ * @param answer_list  receives the error, may be nullptr
+ * @param field        the row of the field
+ * @param v            the JSON value
+ */
+static void
+spool_json_bad_number(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const spooling_field &field,
+                      const rapidjson::Value &v) {
+   dstring text = DSTRING_INIT;
+   answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_FLATFILE_INVALIDNUMBER_SS,
+                           spool_json_value_to_string(v, &text), field.name != nullptr ? field.name : "");
+   sge_dstring_free(&text);
 }
 
 /**
@@ -1479,34 +1604,62 @@ spool_json_set_text(const ocs::tom::RawElement ep, const spooling_field &field, 
  * writer which bypassed write_func). The value is stored with the checked setter of
  * the row's field type; a list, an object or a reference field is left as it is.
  *
- * @param ep     element to populate, holding the field
- * @param field  the row of the field
- * @param v      the JSON value
+ * A number that does not fit the field's type, or a string that is not a number, is reported and the field is
+ * left as it is.
+ *
+ * @param ep           element to populate, holding the field
+ * @param field        the row of the field
+ * @param v            the JSON value
+ * @param answer_list  receives an error for a value that does not fit, may be nullptr
+ * @return true if the field was set or has no value, false for a value that does not fit
  */
-static void
-spool_json_set_field(const ocs::tom::RawElement ep, const spooling_field &field, const rapidjson::Value &v) {
+static bool
+spool_json_set_field(const ocs::tom::RawElement ep, const spooling_field &field, const rapidjson::Value &v,
+                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (!field.ops->has_value()) {
-      return;
+      return true;
    }
    const int nm = field.nm;
    switch (field.ops->type) {
       case ocs::tom::FieldType::Double:
          ep.set(nm, v.IsNumber() ? v.GetDouble() : (v.IsString() ? strtod(v.GetString(), nullptr) : 0.0));
          break;
-      case ocs::tom::FieldType::Uint32:
-         ep.set(nm, static_cast<std::uint32_t>(spool_json_value_to_ulong(v)));
+      case ocs::tom::FieldType::Uint32: {
+         std::uint32_t value = 0;
+         if (!spool_json_value_to_u32(v, &value)) {
+            spool_json_bad_number(answer_list, field, v);
+            return false;
+         }
+         ep.set(nm, value);
          break;
-      case ocs::tom::FieldType::Uint64:
-         ep.set(nm, static_cast<std::uint64_t>(v.IsUint64() ? v.GetUint64()
-                                                            : static_cast<uint64_t>(spool_json_value_to_ulong(v))));
+      }
+      case ocs::tom::FieldType::Uint64: {
+         std::uint64_t value = 0;
+         if (!spool_json_value_to_u64(v, &value)) {
+            spool_json_bad_number(answer_list, field, v);
+            return false;
+         }
+         ep.set(nm, value);
          break;
-      case ocs::tom::FieldType::Int64:
-         ep.set(nm, static_cast<std::int64_t>(v.IsInt64() ? v.GetInt64()
-                                                          : static_cast<long>(spool_json_value_to_ulong(v))));
+      }
+      case ocs::tom::FieldType::Int64: {
+         std::int64_t value = 0;
+         if (!spool_json_value_to_i64(v, &value)) {
+            spool_json_bad_number(answer_list, field, v);
+            return false;
+         }
+         ep.set(nm, value);
          break;
-      case ocs::tom::FieldType::Int32:
-         ep.set(nm, static_cast<std::int32_t>(v.IsInt() ? v.GetInt() : static_cast<int>(spool_json_value_to_ulong(v))));
+      }
+      case ocs::tom::FieldType::Int32: {
+         std::int32_t value = 0;
+         if (!spool_json_value_to_i32(v, &value)) {
+            spool_json_bad_number(answer_list, field, v);
+            return false;
+         }
+         ep.set(nm, value);
          break;
+      }
       case ocs::tom::FieldType::Bool:
          ep.set(nm, spool_json_value_to_bool(v));
          break;
@@ -1518,6 +1671,7 @@ spool_json_set_field(const ocs::tom::RawElement ep, const spooling_field &field,
          break;
       }
    }
+   return true;
 }
 
 /**
@@ -1571,16 +1725,18 @@ spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *nam
  * @param ep     element to populate, holding the field
  * @param field  the row of the name field
  * @param v      the JSON value
+ * @param answer_list  receives an error for a value that does not fit, may be nullptr
+ * @return false for a value that does not fit the field
  */
-static void
+static bool
 spool_json_set_positional_name(const ocs::tom::RawElement ep, const spooling_field &field,
-                               const rapidjson::Value &v) {
+                               const rapidjson::Value &v, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (field.ops->type == ocs::tom::FieldType::Host && v.IsString() &&
        strcmp(v.GetString(), SPOOL_JSON_DEFAULT_HREF) == 0) {
       spool_json_set_text(ep, field, HOSTREF_DEFAULT);
-   } else {
-      spool_json_set_field(ep, field, v);
+      return true;
    }
+   return spool_json_set_field(ep, field, v, answer_list);
 }
 
 /* forward */
@@ -1601,11 +1757,12 @@ static bool spool_json_populate_members(ocs::tom::RawElement ep, const spooling_
  * @param field        the row of the list field, whose sub-rows describe the elements
  * @param answer_list  for returning errors
  * @param arr          the JSON array
+ * @param ok           set to false if a value does not fit its field (reported in @p answer_list), else unchanged
  * @return the owner of the populated list, empty for an empty/unreadable array
  */
 static ocs::tom::RawListPtr
 spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                        const rapidjson::Value &arr) {
+                        const rapidjson::Value &arr, bool *ok) {
    const lDescr *sub_descr = field.ops->sub_descr;
    const spooling_field *fields = field.sub_fields;
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
@@ -1629,13 +1786,17 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
 
       if (positional && nfields <= 1) {
          if (sub.has(fields[0].nm)) {
-            spool_json_set_positional_name(sub, fields[0], el);
+            if (!spool_json_set_positional_name(sub, fields[0], el, answer_list)) {
+               *ok = false;
+            }
          }
       } else if (positional && el.IsObject()) {
          const auto mn = el.FindMember("name");
          const auto mv = el.FindMember("value");
          if (sub.has(fields[0].nm) && mn != el.MemberEnd()) {
-            spool_json_set_positional_name(sub, fields[0], mn->value);
+            if (!spool_json_set_positional_name(sub, fields[0], mn->value, answer_list)) {
+               *ok = false;
+            }
          }
          if (sub.has(fields[1].nm) && mv != el.MemberEnd()) {
             if (fields[1].ops->json == ocs_spool_render::bitfield) {
@@ -1644,15 +1805,16 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
             } else if (fields[1].ops->type == ocs::tom::FieldType::List) {
                /* the value is itself a list (e.g. the cqueue threshold value is a
                 * complex list) -> read it as a nested sublist */
-               sub.set(fields[1].nm, spool_json_read_sublist(fields[1], answer_list, mv->value));
-            } else {
-               spool_json_set_field(sub, fields[1], mv->value);
+               sub.set(fields[1].nm, spool_json_read_sublist(fields[1], answer_list, mv->value, ok));
+            } else if (!spool_json_set_field(sub, fields[1], mv->value, answer_list)) {
+               *ok = false;
             }
          }
       } else if (el.IsObject()) {
-         /* sublists never carry a perm_list field, so populate_members cannot fail
-          * here; the bool is discarded (read_sublist returns the list, not a status) */
-         (void) spool_json_populate_members(sub, fields, nullptr, answer_list, el);
+         // a value that does not fit its field is the only way populate_members fails on a sublist element
+         if (!spool_json_populate_members(sub, fields, nullptr, answer_list, el)) {
+            *ok = false;
+         }
       }
       list->push_back(std::move(sub_owner));
    }
@@ -1810,7 +1972,11 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
 
       const ocs::tom::FieldType type = field.ops->type;
       if (type == ocs::tom::FieldType::List) {
-         ep.set(nm, spool_json_read_sublist(field, answer_list, m->value));
+         bool ok = true;
+         ep.set(nm, spool_json_read_sublist(field, answer_list, m->value, &ok));
+         if (!ok) {
+            return false;
+         }
       } else if (type == ocs::tom::FieldType::Object && field.sub_fields != nullptr) {
          /* nested JSON object (e.g. an RQS filter) -> sub-object; null / non-object
           * leaves the field unset, so an absent filter round-trips to null. The
@@ -1852,8 +2018,8 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
          dstring s = DSTRING_INIT;
          ocs_spool_parse_value(*field.ops, ep, nullptr, spool_json_value_to_string(m->value, &s));
          sge_dstring_free(&s);
-      } else {
-         spool_json_set_field(ep, field, m->value);
+      } else if (!spool_json_set_field(ep, field, m->value, answer_list)) {
+         return false;
       }
    }
    if (flatten != nullptr && !spool_json_read_flatten(ep, fields, flatten, fields_out, obj, answer_list)) {
