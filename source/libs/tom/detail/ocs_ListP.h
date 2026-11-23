@@ -60,7 +60,7 @@
  * +------------------------------------------+---+
  * | address of the list, without its 2 bits  | S |   S = state, 0..3
  * +------------------------------------------+---+
- *   owner & ~CULL_ELEM_KIND_MASK -> the list    owner & CULL_ELEM_KIND_MASK -> the state
+ *   owner & ~TOM_ELEM_KIND_MASK -> the list    owner & TOM_ELEM_KIND_MASK -> the state
  * @endcode
  *
  * The two low bits are free because every list is at least 4-byte aligned, so
@@ -84,24 +84,24 @@ enum cull_elem_kind : uintptr_t {
 };
 
 /// the bits of _lListElem::owner that hold the state
-constexpr uintptr_t CULL_ELEM_KIND_MASK = 3;
+constexpr uintptr_t TOM_ELEM_KIND_MASK = 3;
 
 /* the state as the pack format carries it, the former status values */
-constexpr uint32_t CULL_PACK_FREE_ELEM = 1 << 0;        ///< FREE_ELEM on the wire
-constexpr uint32_t CULL_PACK_BOUND_ELEM = 1 << 1;       ///< BOUND_ELEM on the wire
-constexpr uint32_t CULL_PACK_TRANS_BOUND_ELEM = 1 << 2; ///< TRANS_BOUND_ELEM on the wire
-constexpr uint32_t CULL_PACK_OBJECT_ELEM = 1 << 3;      ///< OBJECT_ELEM on the wire
+constexpr uint32_t TOM_PACK_FREE_ELEM = 1 << 0;        ///< FREE_ELEM on the wire
+constexpr uint32_t TOM_PACK_BOUND_ELEM = 1 << 1;       ///< BOUND_ELEM on the wire
+constexpr uint32_t TOM_PACK_TRANS_BOUND_ELEM = 1 << 2; ///< TRANS_BOUND_ELEM on the wire
+constexpr uint32_t TOM_PACK_OBJECT_ELEM = 1 << 3;      ///< OBJECT_ELEM on the wire
 /// first word of a descriptor packed as a reference to its type (N-W-3); no field count can take it
-constexpr uint32_t CULL_PACK_DESCR_TYPE_REF = 0xFFFFFF00;
+constexpr uint32_t TOM_PACK_DESCR_TYPE_REF = 0xFFFFFF00;
 /// first word of a descriptor that enters the descriptor table of the buffer (N-W-4)
-constexpr uint32_t CULL_PACK_DESCR_TABLE_DEF = 0xFFFFFF01;
+constexpr uint32_t TOM_PACK_DESCR_TABLE_DEF = 0xFFFFFF01;
 /// first word of a descriptor given as the index of an earlier table entry (N-W-4)
-constexpr uint32_t CULL_PACK_DESCR_TABLE_REF = 0xFFFFFF02;
+constexpr uint32_t TOM_PACK_DESCR_TABLE_REF = 0xFFFFFF02;
 /// a table entry lists the indices of its fields in one type; mt comes from the receiver's type (N-W-5)
-constexpr uint32_t CULL_PACK_DESCR_BY_INDEX = 0;
+constexpr uint32_t TOM_PACK_DESCR_BY_INDEX = 0;
 /// a table entry lists its fields as (nm, mt), for descriptors that span several types
-constexpr uint32_t CULL_PACK_DESCR_BY_FIELD = 1;
-static_assert(CULL_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference marker must not be a field count");
+constexpr uint32_t TOM_PACK_DESCR_BY_FIELD = 1;
+static_assert(TOM_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference marker must not be a field count");
 /** @} */
 
 /**
@@ -373,7 +373,7 @@ static_assert(alignof(lList) >= 4 && alignof(lListElem) >= 4,
  * @return the state held in the low bits of its owner word
  */
 inline cull_elem_kind elem_kind(const lListElem *ep) {
-   return static_cast<cull_elem_kind>(ep->owner & CULL_ELEM_KIND_MASK);
+   return static_cast<cull_elem_kind>(ep->owner & TOM_ELEM_KIND_MASK);
 }
 
 /**
@@ -390,7 +390,7 @@ inline lList *elem_list(const lListElem *ep) {
    if (elem_kind(ep) != BOUND_ELEM) {
       return nullptr;
    }
-   return reinterpret_cast<lList *>(ep->owner & ~CULL_ELEM_KIND_MASK);
+   return reinterpret_cast<lList *>(ep->owner & ~TOM_ELEM_KIND_MASK);
 }
 
 /**
@@ -418,7 +418,7 @@ inline void elem_set_free(lListElem *ep) {
  */
 inline void elem_set_bound(lListElem *ep, const lList *lp) {
    const auto address = reinterpret_cast<uintptr_t>(lp);
-   assert((address & CULL_ELEM_KIND_MASK) == 0);
+   assert((address & TOM_ELEM_KIND_MASK) == 0);
    ep->owner = address | BOUND_ELEM;
 }
 
@@ -456,14 +456,14 @@ inline void elem_set_trans_bound(lListElem *ep) {
 inline uint32_t elem_kind_to_wire(const cull_elem_kind kind) {
    switch (kind) {
       case BOUND_ELEM:
-         return CULL_PACK_BOUND_ELEM;
+         return TOM_PACK_BOUND_ELEM;
       case OBJECT_ELEM:
-         return CULL_PACK_OBJECT_ELEM;
+         return TOM_PACK_OBJECT_ELEM;
       case TRANS_BOUND_ELEM:
-         return CULL_PACK_TRANS_BOUND_ELEM;
+         return TOM_PACK_TRANS_BOUND_ELEM;
       case FREE_ELEM:
       default:
-         return CULL_PACK_FREE_ELEM;
+         return TOM_PACK_FREE_ELEM;
    }
 }
 
@@ -476,16 +476,16 @@ inline uint32_t elem_kind_to_wire(const cull_elem_kind kind) {
  */
 inline bool elem_kind_from_wire(const uint32_t wire, cull_elem_kind *kind) {
    switch (wire) {
-      case CULL_PACK_FREE_ELEM:
+      case TOM_PACK_FREE_ELEM:
          *kind = FREE_ELEM;
          return true;
-      case CULL_PACK_BOUND_ELEM:
+      case TOM_PACK_BOUND_ELEM:
          *kind = BOUND_ELEM;
          return true;
-      case CULL_PACK_TRANS_BOUND_ELEM:
+      case TOM_PACK_TRANS_BOUND_ELEM:
          *kind = TRANS_BOUND_ELEM;
          return true;
-      case CULL_PACK_OBJECT_ELEM:
+      case TOM_PACK_OBJECT_ELEM:
          *kind = OBJECT_ELEM;
          return true;
       default:

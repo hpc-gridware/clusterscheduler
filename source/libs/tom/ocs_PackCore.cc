@@ -221,7 +221,7 @@ namespace ocs::tom {
       pb->mem_size = initial_size;
       pb->bytes_used = 0;
       pb->just_count = false;
-      pb->version = CULL_VERSION;
+      pb->version = TOM_PACK_VERSION;
       put_uint32(pb, 0);              // a zero padding: the error handling of former versions
       put_uint32(pb, pb->version);    // the version of the format
       put_str(pb, pb->auth_info);
@@ -243,7 +243,7 @@ namespace ocs::tom {
       pb->bytes_used = 0;
 
       if (buflen == 0) {
-         pb->version = CULL_VERSION;
+         pb->version = TOM_PACK_VERSION;
          DRETURN_VOID;
       }
 
@@ -251,8 +251,8 @@ namespace ocs::tom {
       const std::uint32_t pad = get_uint32(pb);
       const std::uint32_t version = get_uint32(pb);
       pb->auth_info = get_str(pb);
-      if (pad != 0 || version != CULL_VERSION) {
-         ERROR(MSG_TOM_PACK_WRONG_VERSION_XX, static_cast<unsigned int>(version), CULL_VERSION);
+      if (pad != 0 || version != TOM_PACK_VERSION) {
+         ERROR(MSG_TOM_PACK_WRONG_VERSION_XX, static_cast<unsigned int>(version), TOM_PACK_VERSION);
          fail(PACK_VERSION, "reading a pack buffer");
       }
       pb->version = static_cast<int>(version);
@@ -857,7 +857,7 @@ namespace ocs::tom {
          // the number of fields, or the marker of a reference
          std::uint32_t n = get_uint32(pb);
 
-         if (n == CULL_PACK_DESCR_TYPE_REF) {
+         if (n == TOM_PACK_DESCR_TYPE_REF) {
             if (flags != 0) {
                format_error("a type reference in flag-filtered data");
             }
@@ -874,11 +874,11 @@ namespace ocs::tom {
 
          // an index into the table of the buffer, or a new entry for it
          bool enter_table = false;
-         if (n == CULL_PACK_DESCR_TABLE_REF || n == CULL_PACK_DESCR_TABLE_DEF) {
+         if (n == TOM_PACK_DESCR_TABLE_REF || n == TOM_PACK_DESCR_TABLE_DEF) {
             if (flags != 0) {
                format_error("a descriptor table entry in flag-filtered data");
             }
-            if (n == CULL_PACK_DESCR_TABLE_REF) {
+            if (n == TOM_PACK_DESCR_TABLE_REF) {
                const std::uint32_t index = get_uint32(pb);
                if (pb->dtab == nullptr || index >= pb->dtab->entries.size()) {
                   format_error("a reference to a descriptor table entry that does not exist");
@@ -889,7 +889,7 @@ namespace ocs::tom {
             }
 
             const std::uint32_t kind = get_uint32(pb);
-            if (kind == CULL_PACK_DESCR_BY_INDEX) {
+            if (kind == TOM_PACK_DESCR_BY_INDEX) {
                // the fields by their index in one type, in type order; mt is taken from the local type (N-W-5, N-B-8)
                const std::uint32_t type_nm = get_uint32(pb);
                const std::uint32_t count = get_uint32(pb);
@@ -923,7 +923,7 @@ namespace ocs::tom {
                // the table keeps the reference of the build, the caller gets one of its own
                return ocs::tom::descr_ref(shared.release());
             }
-            if (kind != CULL_PACK_DESCR_BY_FIELD) {
+            if (kind != TOM_PACK_DESCR_BY_FIELD) {
                format_error("a descriptor table entry of an unknown kind");
             }
             // field by field, as without the table; the result enters the table
@@ -1012,7 +1012,7 @@ namespace ocs::tom {
          const int n = lCountPresent(dp);
 
          if (!ocs::tom::descr_is_counted(dp)) {
-            put_uint32(pb, CULL_PACK_DESCR_TYPE_REF);
+            put_uint32(pb, TOM_PACK_DESCR_TYPE_REF);
             put_uint32(pb, dp[0].nm);
             put_uint32(pb, n);
             CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TYPE_REF);)
@@ -1022,7 +1022,7 @@ namespace ocs::tom {
          ocs::tom::descr_table *tab = pack_table(pb);
          for (std::size_t k = 0; k < tab->entries.size(); k++) {
             if (tab->entries[k] == dp) {
-               put_uint32(pb, CULL_PACK_DESCR_TABLE_REF);
+               put_uint32(pb, TOM_PACK_DESCR_TABLE_REF);
                put_uint32(pb, static_cast<std::uint32_t>(k));
                CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_REF);)
                return;
@@ -1048,9 +1048,9 @@ namespace ocs::tom {
             idx.push_back(static_cast<std::uint32_t>(p));
          }
 
-         put_uint32(pb, CULL_PACK_DESCR_TABLE_DEF);
+         put_uint32(pb, TOM_PACK_DESCR_TABLE_DEF);
          if (type != nullptr) {
-            put_uint32(pb, CULL_PACK_DESCR_BY_INDEX);
+            put_uint32(pb, TOM_PACK_DESCR_BY_INDEX);
             put_uint32(pb, type[0].nm);
             put_uint32(pb, n);
             for (const std::uint32_t p : idx) {
@@ -1058,7 +1058,7 @@ namespace ocs::tom {
             }
             return;
          }
-         put_uint32(pb, CULL_PACK_DESCR_BY_FIELD);
+         put_uint32(pb, TOM_PACK_DESCR_BY_FIELD);
          put_uint32(pb, n);
          for (const auto f : ocs::tom::present_fields(dp)) {
             // the reference count flag is process local and never leaves the process
@@ -1454,19 +1454,19 @@ namespace ocs::tom {
       int peek_descr_type(sge_pack_buffer *pb) {
          const std::uint32_t n = get_uint32(pb);
          int nm = NoName;
-         if (n == CULL_PACK_DESCR_TYPE_REF) {
+         if (n == TOM_PACK_DESCR_TYPE_REF) {
             nm = static_cast<int>(get_uint32(pb));
-         } else if (n == CULL_PACK_DESCR_TABLE_REF) {
+         } else if (n == TOM_PACK_DESCR_TABLE_REF) {
             const std::uint32_t index = get_uint32(pb);
             if (pb->dtab == nullptr || index >= pb->dtab->entries.size()) {
                fail(PACK_FORMAT, "peeking at a reference to a descriptor table entry that does not exist");
             }
             nm = pb->dtab->entries[index][0].nm;
-         } else if (n == CULL_PACK_DESCR_TABLE_DEF) {
+         } else if (n == TOM_PACK_DESCR_TABLE_DEF) {
             const std::uint32_t kind = get_uint32(pb);
-            if (kind == CULL_PACK_DESCR_BY_INDEX) {
+            if (kind == TOM_PACK_DESCR_BY_INDEX) {
                nm = static_cast<int>(get_uint32(pb));
-            } else if (kind == CULL_PACK_DESCR_BY_FIELD) {
+            } else if (kind == TOM_PACK_DESCR_BY_FIELD) {
                if (get_uint32(pb) == 0) {
                   fail(PACK_FORMAT, "peeking at a descriptor without fields");
                }

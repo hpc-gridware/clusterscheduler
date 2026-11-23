@@ -90,7 +90,7 @@ ocs::ProcedureModel::get_reduction() const {
       DPRINTF("no reduction entry in the response\n");
       DRETURN(ProcedureParameter::REDUCTION_NONE);
    }
-   // the value list is of any type (CULL_ANY_SUBTYPE); the checked handle throws on another type, as the
+   // the value list is of any type; the checked handle throws on another type, as the
    // getter on the raw element did
    const auto value = entry.get_as<SPP_value_list, ocs::tom::ULNG>().front();
    if (!value) {

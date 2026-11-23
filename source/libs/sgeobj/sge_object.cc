@@ -1658,7 +1658,7 @@ object_list_has_differences(const ocs::tom::ConstRawList this_list, ocs::tom::Li
  * is a valid object of a defined type.
  *
  * There are cases, where the type of a list cannot be verified, when the
- * type of a sublist is set to CULL_ANY_SUBTYPE in the cull list definition.
+ * type of a sublist names no sub-type in the object model.
  * In this case, the list descriptor is not checked, but still all list
  * objects and there sublists are verified.
  *
@@ -1677,7 +1677,7 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
 
    /*
     * valid input parameters?
-    * descr may be nullptr, if sublist is defined as CULL_ANY_SUBTYPE
+    * descr may be nullptr, if the sublist names no sub-type in the object model
     */
    if (!lp) {
       ret = false;
@@ -1715,7 +1715,7 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
  *    - the descriptor has already been checked. This is the case when called
  *      from object_list_verify_cull().
  *    - we don't know the type of a subobject (if it is defined as
- *      CULL_ANY_SUBTYPE in the cull object definition
+ *      no sub-type in the object model
  *
  * The sub-types of the fields come from the installed object model
  * (`ocs::tom::sub_type()`); without an installed model no sub-type is fixed.
@@ -1735,7 +1735,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
 
    /*
     * valid input parameters?
-    * descr may be nullptr, if subobject is defined as CULL_ANY_SUBTYPE
+    * descr may be nullptr, if the subobject names no sub-type in the object model
     */
    if (!ep) {
       ret = false;

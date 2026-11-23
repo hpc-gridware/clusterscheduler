@@ -126,14 +126,6 @@ static_assert(MT_IS_REDUCED < (1 << 30), "the flags fit into the mt word");
  * types the module tests define by hand use the macros of test/common/ocs_test_listdef.h.
  */
 
-/* 
- * For lists, objects and references the type of the subordinate object(s) 
- * must be specified.
- * If multiple types are thinkable or non cull data types are referenced,
- * use the following define CULL_ANY_SUBTYPE as type
- */
-#define CULL_ANY_SUBTYPE 0
-
 /**
  * @brief One field of an object type
  *

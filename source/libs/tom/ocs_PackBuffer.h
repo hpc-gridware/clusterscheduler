@@ -37,7 +37,7 @@
 
 #define CHUNK  (1024*1024) ///< bytes a packbuffer grows by when it runs out of room
 /**
- * @defgroup cull_pack_version Packbuffer version control
+ * @defgroup tom_pack_version Packbuffer version control
  * @brief How components of different cull versions reject each other's data
  *
  * Enhancements may change the format in which data is represented for spooling
@@ -53,7 +53,7 @@
  *       carrying it. The version word is therefore preceded by a zero four byte
  *       integer, which makes every known older format fail cleanly.
  *
- * History of #CULL_VERSION, newest first:
+ * History of #TOM_PACK_VERSION, newest first:
  *
  * | Version | Change |
  * |---|---|
@@ -67,7 +67,7 @@
  * @see @ref cull_packing
  */
 
-#define CULL_VERSION 0x10023000 ///< format id written into every packbuffer; see @ref cull_pack_version
+#define TOM_PACK_VERSION 0x10023000 ///< format id written into every packbuffer; see @ref tom_pack_version
 #include <uti/sge_uidgid.h>
 
 #define INTSIZE     4 ///< size of a packed integer, in 8 bit bytes
@@ -98,7 +98,7 @@ typedef struct {
    size_t mem_size;                   ///< bytes allocated
    size_t bytes_used;                 ///< bytes actually filled
    bool just_count;                   ///< true to only measure the size, writing nothing
-   int version;                       ///< #CULL_VERSION this buffer was written with
+   int version;                       ///< #TOM_PACK_VERSION this buffer was written with
    char *auth_info;                   ///< the encoded authentication information
    uid_t uid;                         ///< user id of the sender
    gid_t gid;                         ///< primary group id of the sender
@@ -117,6 +117,6 @@ enum {
    PACK_ENOMEM = -1,   ///< the buffer could not be grown
    PACK_FORMAT = -2,   ///< the buffer is exhausted or its contents are malformed
    PACK_BADARG = -3,   ///< an argument was invalid, e.g. a nullptr buffer
-   PACK_VERSION = -4,  ///< the buffer carries a different #CULL_VERSION
+   PACK_VERSION = -4,  ///< the buffer carries a different #TOM_PACK_VERSION
    PACK_AUTHINFO = -5  ///< the authentication information could not be read or verified
 };

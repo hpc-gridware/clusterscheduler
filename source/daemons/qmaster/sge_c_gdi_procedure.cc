@@ -896,7 +896,7 @@ namespace {
 
       /* CS-2821: and what RBAC removed from it. A separate entry rather than a
        * field of the response, because the response is a text and this is about
-       * the text. The bundle's sublist is CULL_ANY_SUBTYPE, so a ULNG entry
+       * the text. The bundle's sublist is of any type, so a ULNG entry
        * round-trips without a wire format change. */
       ocs::ProcedureParameter::add_parameter_bundle(*bundle, ocs::ProcedureParameter::REDUCTION,
                                                     ocs_ulong_parameter(outcome.reduction));

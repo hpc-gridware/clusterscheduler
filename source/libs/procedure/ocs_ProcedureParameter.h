@@ -252,7 +252,7 @@ namespace ocs {
 
       /** @brief Add one named entry to a bundle
        *
-       * The value list of an entry is of any type (CULL_ANY_SUBTYPE), so the type of
+       * The value list of an entry is of any type, so the type of
        * the list handed in is the caller's.
        *
        * @tparam T the object type of the value list
@@ -285,7 +285,7 @@ namespace ocs {
 
       /** @brief The value list of a bundle entry, read only
        *
-       * The value list of an entry is of any type (CULL_ANY_SUBTYPE): the caller names
+       * The value list of an entry is of any type: the caller names
        * the type the sender put in, and the list is wrapped without the descriptor check, so that an empty list
        * of another type from a broken client is ignored in qmaster instead of throwing (get_as() would throw).
        *

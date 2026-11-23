@@ -29,7 +29,7 @@
  * absent entry reads as "not reduced" - which is what a response from an older
  * qmaster looks like - and that the bits combine.
  *
- * The bundle's value sublist is declared CULL_ANY_SUBTYPE, which is why a ULNG
+ * The bundle's value sublist names no sub-type, which is why a ULNG
  * entry can sit next to the ST response text at all. If that ever changes,
  * this test is what notices.
  */

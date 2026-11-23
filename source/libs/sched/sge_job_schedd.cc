@@ -382,13 +382,8 @@ void job_lists_split_with_reference_to_max_running(const bool monitor_next_run,
       const auto pending_list = job_lists[SPLIT_PENDING]->get();
       ocs::tom::ConstElement<ocs::tom::JC> user;
       ocs::tom::ConstElement<ocs::tom::JC> next_user;
-#ifndef CULL_NO_HASH
-      /*
-       * create a hash table on JB_owner to speedup
-       * searching for jobs of a specific owner
-       */
+      // a hash table on JB_owner speeds up searching for the jobs of a specific owner
       pending_list.add_hash<JB_owner>();
-#endif
 
       if (user_name == nullptr) {
          next_user = user_list.front();

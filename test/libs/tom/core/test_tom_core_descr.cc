@@ -587,7 +587,7 @@ static int unpack_type_ref(const uint32_t first_nm, const uint32_t count) {
       ocs::tom::PackBuffer pb(false, 256);
       ocs::tom::put_uint32(&pb.raw(), 1);
       ocs::tom::put_str(&pb.raw(), "forged");
-      ocs::tom::put_uint32(&pb.raw(), CULL_PACK_DESCR_TYPE_REF);
+      ocs::tom::put_uint32(&pb.raw(), TOM_PACK_DESCR_TYPE_REF);
       ocs::tom::put_uint32(&pb.raw(), first_nm);
       ocs::tom::put_uint32(&pb.raw(), count);
       ocs::tom::put_uint32(&pb.raw(), 0);
@@ -604,10 +604,10 @@ static void test_type_ref() {
    const lDescr *reduced = ocs::tom::descr_reduce(TD_Type, {TD_id, TD_name});
    CHECK(32, "a full descriptor is packed as a type reference, a reduced one enters the table, a flag-filtered one "
          "goes field by field",
-         first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF &&
-         first_word_of_packed(heap, 0) == CULL_PACK_DESCR_TYPE_REF &&
+         first_word_of_packed(TD_Type, 0) == TOM_PACK_DESCR_TYPE_REF &&
+         first_word_of_packed(heap, 0) == TOM_PACK_DESCR_TYPE_REF &&
          first_word_of_packed(TD_Type, MT_SPOOL) == 4 &&
-         first_word_of_packed(reduced, 0) == CULL_PACK_DESCR_TABLE_DEF);
+         first_word_of_packed(reduced, 0) == TOM_PACK_DESCR_TABLE_DEF);
    ocs::tom::release_descr(reduced);
    sge_free(&heap);
 
@@ -686,7 +686,7 @@ static void test_descr_table() {
       ocs::tom::PackBuffer pb(false, 256);
       ocs::tom::put_uint32(&pb.raw(), 1);
       ocs::tom::put_str(&pb.raw(), "forged");
-      ocs::tom::put_uint32(&pb.raw(), CULL_PACK_DESCR_TABLE_REF);
+      ocs::tom::put_uint32(&pb.raw(), TOM_PACK_DESCR_TABLE_REF);
       ocs::tom::put_uint32(&pb.raw(), 0);
       ocs::tom::put_uint32(&pb.raw(), 0);
       forged = unpack_and_drop_list(pb);
@@ -724,7 +724,7 @@ static int unpack_forged_elem(const std::vector<lDescr> &fields, const bool type
       sge_pack_buffer *raw = &pb.raw();
       ocs::tom::put_uint32(raw, elem_kind_to_wire(FREE_ELEM));
       if (type_ref) {
-         ocs::tom::put_uint32(raw, CULL_PACK_DESCR_TYPE_REF);
+         ocs::tom::put_uint32(raw, TOM_PACK_DESCR_TYPE_REF);
          ocs::tom::put_uint32(raw, fields[0].nm);
          ocs::tom::put_uint32(raw, static_cast<uint32_t>(fields.size()));
       } else {
@@ -952,8 +952,8 @@ static int unpack_forged_by_index(const std::vector<uint32_t> &indices) {
       sge_pack_buffer *raw = &pb.raw();
       ocs::tom::put_uint32(raw, 1);
       ocs::tom::put_str(raw, "forged");
-      ocs::tom::put_uint32(raw, CULL_PACK_DESCR_TABLE_DEF);
-      ocs::tom::put_uint32(raw, CULL_PACK_DESCR_BY_INDEX);
+      ocs::tom::put_uint32(raw, TOM_PACK_DESCR_TABLE_DEF);
+      ocs::tom::put_uint32(raw, TOM_PACK_DESCR_BY_INDEX);
       ocs::tom::put_uint32(raw, TD_id);
       ocs::tom::put_uint32(raw, static_cast<uint32_t>(indices.size()));
       for (const uint32_t idx : indices) {
