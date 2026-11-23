@@ -36,6 +36,9 @@
  * @brief Starting and stopping the scheduler thread while qmaster runs
  */
 
+#include <cstdint>
+#include <cstdlib>
+
 #include <pthread.h>
 #include <cstring>
 #include <cerrno>
@@ -62,6 +65,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "tom/ocs_Element.h"
+#include "tom/ocs_ListCore.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Select.h"
 #include "sgeobj/tom/ocs_tom_AR.h"
@@ -571,6 +575,17 @@ sge_scheduler_main(void *arg) {
 
    /* initialize schedd_runlog logging */
    schedd_set_schedd_log_file();
+
+   // the run copies of this thread may hash short string-keyed lists apart from the other threads; the value
+   // comes from the environment, so that thresholds can be compared without rebuilding
+   if (const char *env = getenv("OCS_TOM_SCHED_HASH_MIN_ELEMS_STRING"); env != nullptr && *env != '\0') {
+      char *end = nullptr;
+      const unsigned long value = strtoul(env, &end, 10);
+      if (*end == '\0' && value < UINT32_MAX) {
+         ocs::tom::set_thread_string_hash_threshold(static_cast<uint32_t>(value));
+         DPRINTF("scheduler thread hashes string keys from %lu elements on\n", value);
+      }
+   }
 
 #ifdef WITH_GPERF
    sge_gperf_per_thread_init(gperf_data);

@@ -56,6 +56,8 @@ namespace ocs::tom::detail {
 
    void hash_set_min_elems_host(uint32_t n);
 
+   void hash_set_min_elems_string(uint32_t n);
+
    int hash_new(lList *lp, int name, bool unique);
 
    int hash_new_check(lList *lp, int nm, bool unique);

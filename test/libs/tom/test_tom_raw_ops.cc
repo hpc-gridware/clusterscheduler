@@ -1988,6 +1988,23 @@ namespace typed_ops {
                    "at host threshold 0, a short list of a string key is not",
                found && host_table && !set_table);
       }
+
+      // string fields have a threshold of their own too, which a thread such as the scheduler sets for its lists
+      {
+         ocs::tom::detail::hash_set_min_elems_string(0);
+         const ListPtr<US> sets = named_sets(5);
+         const bool found = sets->find_first<US_name>(set_name(2).c_str()) != nullptr;
+         auto hosts = ListPtr<EH>::create("hosts");
+         hosts->emplace_back<EH_name>(ocs::tom::Host("hosta"));
+         ocs::tom::detail::hash_set_min_elems_host(16);
+         static_cast<void>(hosts->find_first<EH_name>(ocs::tom::Host("hosta")));
+         const bool set_table = has_table(sets->raw(), US_name);
+         const bool host_table = has_table(hosts->raw(), EH_name);
+         ocs::tom::detail::hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+         CHECK(57, "the threshold of string fields applies apart from the others: a short list of a string key is "
+                   "hashed at string threshold 0, a short host list at host threshold 16 is not",
+               found && set_table && !host_table);
+      }
    }
 
    /**
@@ -2735,10 +2752,10 @@ int main(int argc, char *argv[]) {
       {"RAW-OPS-28", "split at", "split_at() takes an element and the ones after it out of a list",
        {"split a short and a long list before its last two elements", "split the rest into an existing list",
         "the same on a hashed unique field: hashed lookups before and after the split and the splice",
-        "a short host list and a short string list with the host threshold at 0"},
+        "a short host list and a short string list with the host threshold at 0, and with the string threshold at 0"},
        "the keys in both lists; lookups by key still work; ForeignList for an element of another list; only the "
        "host list is hashed",
-       {{"OPS-01", "covers"}}, {39, 40, 56}, typed_ops::test_split_at},
+       {{"OPS-01", "covers"}}, {39, 40, 56, 57}, typed_ops::test_split_at},
       {"RAW-OPS-29", "add hash", "add_hash<F>() adds a hash table on a field the type does not hash",
        {"add a table on the string field of a short and a long list, twice, and look up by it",
         "add one on an empty handle"},

@@ -57,6 +57,7 @@
 
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_Hash.h"
+#include "tom/ocs_ListCore.h"
 #include "tom/detail/ocs_ListP.h"
 #include "tom/detail/ocs_MultitypeP.h"
 #include "tom/detail/ocs_Stats.h"
@@ -115,6 +116,20 @@ namespace ocs::tom::detail {
                                   static_cast<uint32_t>(value) : OCS_CULL_HASH_MIN_ELEMS_HOST;
       }
       return hash_min_elems_host;
+   }
+
+   /// The threshold of this thread for string fields; see ocs::tom::detail::hash_set_min_elems_string()
+   static thread_local uint32_t hash_min_elems_string = HASH_MIN_ELEMS_UNSET;
+
+   /**
+    * @brief The threshold of the calling thread for a string field
+    *
+    * The general threshold of the thread until the thread sets one of its own.
+    *
+    * @return the list length below which a string field is searched linearly
+    */
+   static uint32_t string_min_elems() {
+      return hash_min_elems_string == HASH_MIN_ELEMS_UNSET ? hash_min_elems : hash_min_elems_string;
    }
 
    static void hash_destroy(cull_htable *htp);
@@ -394,8 +409,10 @@ cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) 
    if (ht != nullptr) {
       return ht;
    }
-   const uint32_t min_elems = mt_get_type(lp->descr[pos].mt) == lHostT ? ocs::tom::detail::host_min_elems()
-                                                                        : ocs::tom::detail::hash_min_elems;
+   const int type = mt_get_type(lp->descr[pos].mt);
+   const uint32_t min_elems = type == lHostT ? ocs::tom::detail::host_min_elems()
+                            : type == lStringT ? ocs::tom::detail::string_min_elems()
+                                               : ocs::tom::detail::hash_min_elems;
    if (nelem < min_elems) {
       CULL_STATS_FIELD(nm, LOOKUP_LINEAR, 1);
       return nullptr;
@@ -433,14 +450,15 @@ cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) 
  * never calls this function uses #OCS_CULL_HASH_MIN_ELEMS. Threads with different values may share lists,
  * since a table, once built, is maintained and used by every thread.
  *
- * The threshold of host fields is set to the same value; ocs::tom::detail::hash_set_min_elems_host() sets it
- * apart afterwards.
+ * The thresholds of host and string fields are set to the same value; ocs::tom::detail::hash_set_min_elems_host()
+ * and ocs::tom::detail::hash_set_min_elems_string() set them apart afterwards.
  *
  * @param n the new threshold; 0 builds a table on the first lookup of any hashable list
  */
 void ocs::tom::detail::hash_set_min_elems(const uint32_t n) {
    ocs::tom::detail::hash_min_elems = n;
    ocs::tom::detail::hash_min_elems_host = n;
+   ocs::tom::detail::hash_min_elems_string = n;
 }
 
 /**
@@ -454,6 +472,30 @@ void ocs::tom::detail::hash_set_min_elems(const uint32_t n) {
  */
 void ocs::tom::detail::hash_set_min_elems_host(const uint32_t n) {
    ocs::tom::detail::hash_min_elems_host = n == ocs::tom::detail::HASH_MIN_ELEMS_UNSET ? n - 1 : n;
+}
+
+/**
+ * @brief Set the list length below which the calling thread builds no hash table for a string field
+ *
+ * A thread that works on lists of its own can hash short string-keyed lists without changing the other threads:
+ * the scheduler thread looks up complex entries, queue names and resource names in short lists of its run copy
+ * over and over again. Without a call the general threshold of the thread applies.
+ *
+ * @param n the new threshold for string fields; 0 builds a table on the first lookup of any hashable list
+ */
+void ocs::tom::detail::hash_set_min_elems_string(const uint32_t n) {
+   ocs::tom::detail::hash_min_elems_string = n == ocs::tom::detail::HASH_MIN_ELEMS_UNSET ? n - 1 : n;
+}
+
+/**
+ * @brief Set the list length below which the calling thread searches a string key field linearly
+ *
+ * The public form of ocs::tom::detail::hash_set_min_elems_string() for product code outside the list core.
+ *
+ * @param n the new threshold; 0 builds a hash table on the first lookup of any hashable list
+ */
+void ocs::tom::set_thread_string_hash_threshold(const std::uint32_t n) {
+   ocs::tom::detail::hash_set_min_elems_string(n);
 }
 
 /**

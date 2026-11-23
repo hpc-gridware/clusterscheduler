@@ -38,6 +38,7 @@
  * - a failure at run time throws ListCoreError, whose message says what failed.
  */
 
+#include <cstdint>
 #include <string>
 
 #include "tom/ocs_Types.h"
@@ -362,5 +363,15 @@ namespace ocs::tom {
     * @throw ListCoreError if there is no memory
     */
    lList *get_or_create_list(lListElem *ep, int pos, const char *name, const lDescr *descr);
+
+   /**
+    * @brief Set the list length below which the calling thread searches a string key field linearly
+    *
+    * The value holds for the calling thread only. A thread that works on lists of its own, such as the scheduler
+    * on its run copy, can so hash short string-keyed lists without changing the other threads.
+    *
+    * @param n the new threshold; 0 builds a hash table on the first lookup of any hashable list
+    */
+   void set_thread_string_hash_threshold(std::uint32_t n);
 
 } // namespace ocs::tom
