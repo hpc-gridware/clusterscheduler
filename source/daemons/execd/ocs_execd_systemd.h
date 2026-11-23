@@ -19,6 +19,10 @@
  ***************************************************************************/
 /*___INFO__MARK_END_NEW__*/
 
+#include <cstdint>
+
+#include "uti/sge_dstring.h"
+
 namespace ocs::execd {
 
    bool
@@ -38,8 +42,11 @@ namespace ocs::execd {
    void
    execd_check_systemd_features();
 
+   uint64_t
+   systemd_call_timeout();
+
    bool
-   execd_move_shepherd_to_scope();
+   execd_move_shepherd_to_scope(uint64_t call_timeout, dstring *error_dstr);
 
    void
    execd_store_tight_pe_slice(const lListElem *job, lListElem *ja_task, const char *slice_name = nullptr);

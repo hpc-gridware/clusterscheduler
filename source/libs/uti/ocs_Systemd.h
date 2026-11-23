@@ -166,6 +166,7 @@ namespace ocs::uti {
          int bus_fd;              // file descriptor of the connection, -1 if we could not get it
          uint64_t bus_fd_inode;   // inode bus_fd pointed to when we connected
          mutable ErrorClass error_class;  // what the last failed call ran into
+         bool quiet;              // log nothing, see set_quiet()
 
          // instance methods
          void classify_error(int r, const dstring *error_dstr) const;
@@ -192,6 +193,10 @@ namespace ocs::uti {
          bool connected() const;
          bool is_usable() const;
          ErrorClass get_error_class() const { return error_class; }
+
+         // Log nothing, the errors are reported in the error_dstr arguments only. For a process
+         // which must not take a lock, like the child of a fork() in a multi-threaded process.
+         void set_quiet(bool q) { quiet = q; }
 
          bool move_shepherd_to_scope(pid_t pid, dstring *error_dstr) const;
          void reset_failed_unit(const std::string &unit) const;

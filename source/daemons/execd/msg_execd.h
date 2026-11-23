@@ -251,7 +251,6 @@
 
 #define MSG_SYSTEMD_INITIALIZED_II                       _MESSAGE(29230, _("systemd integration initialized, systemd version %d, cgroups version %d"))
 #define MSG_SYSTEMD_RUNNING_AS_SERVICE_S                 _MESSAGE(29231, _("running as service " SFN))
-#define MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S       _MESSAGE(29232, _("systemd: moving shepherd to scope failed: " SFN4))
 #define MSG_EXECD_CANNOT_CONNECT_TO_SYSTEMD_S            _MESSAGE(29233, _("cannot connect to systemd: " SFN4))
 #define MSG_CANNOT_TO_GET_PROPERTY_SSS                   _MESSAGE(29234, _("cannot to get property " SFN " from systemd scope " SFN ": " SFN4))
 #define MSG_EXECD_SYSTEMD_REACHABLE_AGAIN                _MESSAGE(29236, _("systemd can be reached again, usage collection continues"))

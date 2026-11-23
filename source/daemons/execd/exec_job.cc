@@ -454,6 +454,67 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_lo
    DRETURN(ret);
 }
 
+/**
+ * @brief Write a file into the active job directory of a shepherd which could not be started
+ *
+ * Called in the child of sge_execd between fork() and exec, where no lock may be taken
+ * (CS-3198), so the file is written with open() and write().
+ *
+ * @param name the file name, relative to the current working directory, the active job directory
+ * @param text the content of the file
+ */
+static void
+exec_job_write_child_file(const char *name, const char *text) {
+   DENTER(TOP_LAYER);
+   int fd = open(name, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+   if (fd >= 0) {
+      auto len = static_cast<ssize_t>(strlen(text));
+      if (write(fd, text, len) != len) {
+         // nothing can be done about it here: without the file sge_execd reports the shepherd
+         // as failed nevertheless
+      }
+      close(fd);
+   }
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Name an error of execve() without strerror()
+ *
+ * Called in the child of sge_execd between fork() and exec, where no lock may be taken
+ * (CS-3198). strerror() translates the message through gettext, which takes a lock, so the
+ * errors execve() can return are named here with constant strings.
+ *
+ * @param err the errno value set by execve()
+ * @return the name and the English description of the error, nullptr if err is none of
+ *         the errors of execve()
+ */
+static const char *
+exec_job_errno_name(int err) {
+   DENTER(TOP_LAYER);
+   const char *ret;
+   switch (err) {
+      case E2BIG:        ret = "E2BIG (Argument list too long)"; break;
+      case EACCES:       ret = "EACCES (Permission denied)"; break;
+      case EFAULT:       ret = "EFAULT (Bad address)"; break;
+      case EINVAL:       ret = "EINVAL (Invalid argument)"; break;
+      case EIO:          ret = "EIO (Input/output error)"; break;
+      case EISDIR:       ret = "EISDIR (Is a directory)"; break;
+      case ELOOP:        ret = "ELOOP (Too many levels of symbolic links)"; break;
+      case EMFILE:       ret = "EMFILE (Too many open files)"; break;
+      case ENAMETOOLONG: ret = "ENAMETOOLONG (File name too long)"; break;
+      case ENFILE:       ret = "ENFILE (Too many open files in system)"; break;
+      case ENOENT:       ret = "ENOENT (No such file or directory)"; break;
+      case ENOEXEC:      ret = "ENOEXEC (Exec format error)"; break;
+      case ENOMEM:       ret = "ENOMEM (Cannot allocate memory)"; break;
+      case ENOTDIR:      ret = "ENOTDIR (Not a directory)"; break;
+      case EPERM:        ret = "EPERM (Operation not permitted)"; break;
+      case ETXTBSY:      ret = "ETXTBSY (Text file busy)"; break;
+      default:           ret = nullptr; break;
+   }
+   DRETURN(ret);
+}
+
 /************************************************************************
  part of execd. Setup job environment then start shepherd.
 
@@ -466,7 +527,6 @@ sge_exec_job_get_limit(dstring *dstr, int limit_nm, const char *limit_name, u_lo
  ************************************************************************/
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length) {
    int i;
-   char ps_name[128];
    FILE *fp;
    u_long32 interval;
    struct passwd *pw;
@@ -482,6 +542,20 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    const lList *path_aliases = nullptr;
    char dce_wrapper_cmd[128];
    bool starting_shepherd_ok = true;
+
+   // What the child execs. Prepared before the fork, see the comment there (CS-3198).
+   // Declared up here because the FCLOSE() gotos below must not cross an initialization.
+   // The strings allocate in sge_execd before the fork, the child only uses c_str() and data().
+   std::string exec_path;
+   std::string exec_pag_cmdline;
+   std::string exec_krb5ccname;
+   std::string ps_name;
+   bool exec_pag = false;
+   bool exec_bg;
+#if defined (OCS_WITH_SYSTEMD)
+   uint64_t systemd_timeout;
+   DSTRING_STATIC(systemd_error, SGE_PATH_MAX);
+#endif
 
 #if COMPILE_DC
 #if defined(SOLARIS) || defined(LINUX) || defined(FREEBSD) || defined(DARWIN)
@@ -2082,6 +2156,10 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       }
    }
 
+   // by default the child execs sge_shepherd, see the comment at the fork below
+   exec_bg = !ISTRACE;
+   exec_path = shepherd_path;
+
    pag_cmd = mconf_get_pag_cmd();
    shepherd_cmd = mconf_get_shepherd_cmd();
    if (shepherd_cmd && strlen(shepherd_cmd) &&
@@ -2092,6 +2170,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
+      exec_path = shepherd_cmd;
    }
    else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
       snprintf(dce_wrapper_cmd, sizeof(dce_wrapper_cmd), "/%s/utilbin/%s/starter_cred", sge_root, arch);
@@ -2101,6 +2180,8 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
+      exec_path = dce_wrapper_cmd;
+      exec_bg = false; // the DCE wrapper has always been started without -bg
    } else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
               strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
       int fd, len;
@@ -2149,6 +2230,11 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          DRETURN(-2);
       }
       close(fd);
+
+      // the shepherd is started by the PAG command
+      exec_pag = true;
+      exec_path = pag_cmd;
+      exec_pag_cmdline = std::string("exec ") + shepherd_path + (exec_bg ? " -bg" : "");
    }
    sge_free(&pag_cmd);
    sge_free(&shepherd_cmd);
@@ -2189,6 +2275,21 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
          sge_dstring_free(&body);
       }
    }
+
+   // The rest of what the child needs up to the exec, see the comment after the fork.
+   ps_name = std::string(SGE_SHEPHERD) + "-" + std::to_string(job_id);
+   // set KRB5CCNAME so shepherd assumes user's identify for access to DFS or AFS file systems
+   if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
+        ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
+       lGetString(jep, JB_cred)) {
+      exec_krb5ccname = "KRB5CCNAME=FILE:/tmp/krb5cc_sge_" + std::to_string(job_id);
+   }
+#if defined (OCS_WITH_SYSTEMD)
+   systemd_timeout = ocs::execd::systemd_call_timeout();
+   sge_dstring_clear(&systemd_error);
+#endif
+   DPRINTF("about to exec ->%s< for job ->%s< under queue ->%s<\n", exec_path.c_str(),
+           lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
 
    /* Change to jobs directory. Father changes back to cwd. We do this to
       ensure chdir() works before forking. */
@@ -2256,6 +2357,12 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       DRETURN(i);
    }
 
+   // From here on this is the child of sge_execd. sge_execd is multi-threaded, and a lock which
+   // another thread held at the time of the fork stays locked in the child for ever. Therefore
+   // the child must not take any lock until it has exec'd the shepherd: no reading of the
+   // configuration, no logging, no sge_switch2*() (CS-3198). Everything it needs has been
+   // prepared before the fork.
+
    // If we are running under systemd control,
    // we need to move the shepherd out of the execd scope.
    // We create a new scope for the shepherd, e.g. "ocs-shepherd.scope".
@@ -2267,7 +2374,7 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // Therefore, we need to create a new scope when the first shepherd process is started,
    // and just attach the following shepherd processes to this scope.
 #if defined (OCS_WITH_SYSTEMD)
-   starting_shepherd_ok = ocs::execd::execd_move_shepherd_to_scope();
+   starting_shepherd_ok = ocs::execd::execd_move_shepherd_to_scope(systemd_timeout, &systemd_error);
 #endif
 
    if (starting_shepherd_ok) {  /* close all fd's except 0,1,2 */
@@ -2279,69 +2386,18 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       sge_close_all_fds(keep_open, 3);
    }
 
-   /*
-    * set KRB5CCNAME so shepherd assumes user's identify for
-    * access to DFS or AFS file systems
-    */
    if (starting_shepherd_ok) {
-      if ((ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE) ||
-           ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_KERBEROS)) &&
-          lGetString(jep, JB_cred)) {
-
-         char ccname[1024];
-         snprintf(ccname, sizeof(ccname), "KRB5CCNAME=FILE:/tmp/krb5cc_%s_" sge_u32, "sge", job_id);
-         putenv(ccname);
+      if (!exec_krb5ccname.empty()) {
+         // putenv() keeps the pointer, the string lives until the exec
+         putenv(exec_krb5ccname.data());
       }
-   }
-
-   if (starting_shepherd_ok) {
-      DPRINTF("**********************CHILD*********************\n");
-      shepherd_name = SGE_SHEPHERD;
-      snprintf(ps_name, sizeof(ps_name), "%s-" sge_u32, shepherd_name, job_id);
-
-      pag_cmd = mconf_get_pag_cmd();
-      shepherd_cmd = mconf_get_shepherd_cmd();
-      if (shepherd_cmd && strlen(shepherd_cmd) &&
-          strcasecmp(shepherd_cmd, "none")) {
-         DPRINTF("CHILD - About to exec shepherd wrapper job ->%s< under queue -<%s<\n",
-                 lGetString(jep, JB_job_name),
-                 lGetString(master_q, QU_full_name));
-         if (ISTRACE) {
-            execlp(shepherd_cmd, ps_name, nullptr);
-         } else {
-            execlp(shepherd_cmd, ps_name, "-bg", nullptr);
-         }
-      } else if (mconf_get_do_credentials() && ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_DCE)) {
-         DPRINTF("CHILD - About to exec DCE shepherd wrapper job ->%s< under queue -<%s<\n",
-                 lGetString(jep, JB_job_name),
-                 lGetString(master_q, QU_full_name));
-         execlp(dce_wrapper_cmd, ps_name, nullptr);
-      } else if (!ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) || !pag_cmd ||
-                 !strlen(pag_cmd) || !strcasecmp(pag_cmd, "none")) {
-         DPRINTF("CHILD - About to exec ->%s< under queue -<%s<\n",
-                 lGetString(jep, JB_job_name),
-                 lGetString(master_q, QU_full_name));
-
-         if (ISTRACE) {
-            execlp(shepherd_path, ps_name, nullptr);
-         } else {
-            execlp(shepherd_path, ps_name, "-bg", nullptr);
-         }
+      if (exec_pag) {
+         execlp(exec_path.c_str(), exec_path.c_str(), "-c", exec_pag_cmdline.c_str(), nullptr);
+      } else if (exec_bg) {
+         execlp(exec_path.c_str(), ps_name.c_str(), "-bg", nullptr);
       } else {
-         char commandline[2048];
-
-         DPRINTF("CHILD - About to exec PAG command job ->%s< under queue -<%s<\n",
-                 lGetString(jep, JB_job_name), lGetString(master_q, QU_full_name));
-         if (ISTRACE) {
-            snprintf(commandline, sizeof(commandline), "exec %s", shepherd_path);
-         } else {
-            snprintf(commandline, sizeof(commandline), "exec %s -bg", shepherd_path);
-         }
-
-         execlp(pag_cmd, pag_cmd, "-c", commandline, nullptr);
+         execlp(exec_path.c_str(), ps_name.c_str(), nullptr);
       }
-      sge_free(&pag_cmd);
-      sge_free(&shepherd_cmd);
    }
 
    /*---------------------------------------------------*/
@@ -2350,24 +2406,38 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
    // is a systemd problem and not a failing exec. Report it as such, so that the failure state
    // of the job names systemd and the host is set into error state rather than the job being
    // scheduled here over and over again.
-   fp = fopen("error", "w");
-   if (fp) {
-      if (starting_shepherd_ok) {
-         fprintf(fp, "failed to exec shepherd for job" sge_u32"\n", job_id);
+   {
+      // A char array, not std::string: allocating memory in the child might hang (CS-3198).
+      // strerror() is not used either, it may lock in gettext, see exec_job_errno_name().
+      char text[SGE_PATH_MAX + 128];
+      int exec_errno = errno;
+      const char *errno_name = exec_job_errno_name(exec_errno);
+
+      if (errno_name != nullptr) {
+         snprintf(text, sizeof(text), "failed to exec shepherd %s for job " sge_u32 ": %s\n",
+                  exec_path.c_str(), job_id, errno_name);
       } else {
-         fprintf(fp, "failed to move the shepherd of job " sge_u32 " into its systemd scope\n",
-                 job_id);
+         snprintf(text, sizeof(text), "failed to exec shepherd %s for job " sge_u32 ": errno %d\n",
+                  exec_path.c_str(), job_id, exec_errno);
       }
-      FCLOSE(fp);
+#if defined (OCS_WITH_SYSTEMD)
+      if (!starting_shepherd_ok) {
+         const char *reason = sge_dstring_get_string(&systemd_error);
+         snprintf(text, sizeof(text),
+                  "failed to move the shepherd of job " sge_u32 " into its systemd scope: %s\n",
+                  job_id, reason != nullptr ? reason : "");
+      }
+#endif
+      exec_job_write_child_file("error", text);
+      snprintf(text, sizeof(text), "%d\n", starting_shepherd_ok ? 1 : SSTATE_SYSTEMD_ERROR);
+      exec_job_write_child_file("exit_status", text);
    }
 
-   fp = fopen("exit_status", "w");
-   if (fp) {
-      fprintf(fp, "%d\n", starting_shepherd_ok ? 1 : SSTATE_SYSTEMD_ERROR);
-      FCLOSE(fp);
-   }
+   // no exit(): it would run the atexit handlers and destructors of sge_execd
+   _exit(1);
 
 FCLOSE_ERROR:
+   // reached from the FCLOSE() calls above, in sge_execd before the fork
    CRITICAL(SFNMAX, MSG_EXECD_NOSTARTSHEPHERD);
 
    exit(1);
