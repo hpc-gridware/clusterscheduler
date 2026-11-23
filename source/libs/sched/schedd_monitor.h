@@ -57,6 +57,8 @@ const char *job_descr(uint32_t jobid);
 
 int schedd_log(const char *logstr, ocs::tom::ListPtr<ocs::tom::AN> *monitor_alpp, bool monitor_next_run);
 
+int schedd_log_close();
+
 void schedd_log_list(bool monitor_next_run, const char *logstr, ocs::tom::ConstList<ocs::tom::QU> lp);
 void schedd_log_list(bool monitor_next_run, const char *logstr, ocs::tom::ConstList<ocs::tom::JB> lp);
 
