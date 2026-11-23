@@ -41,43 +41,25 @@
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_MultitypeP.h"
 
-/* ---- the operators of a condition; the tokens of the removed format strings among them are left over (CS-3197) ---- */
+/* ---- the operators of a condition ---- */
 
+/// the operator of a condition node, _lCondition::op; numbered without gaps, 0 is no operator
 enum {
-   NO_TOKEN = 0, ///< end of input, or nothing recognised
-
-   TYPE, ///< `%T`, an object type
-   FIELD, ///< `%I`, a field name
-   SUBSCOPE, ///< a nested scope, for sub-lists and sub-objects
-   PLUS, ///< `+`, sort ascending
-   MINUS, ///< `-`, sort descending
-   INT, ///< `%d`, an int value
-   STRING, ///< `%s`, a string value
-   ULONG, ///< `%u`, a 32 bit value
-   ULONG64, ///< a 64 bit value
-   FLOAT, ///< a float value
-   DOUBLE, ///< `%f`, a double value
-   LONG, ///< a long value
-   CHAR, ///< `%c`, a character value
-   BOOL, ///< `%b`, a boolean value
-   REF, ///< an opaque reference value
-   CULL_ALL, ///< `ALL`, select every field
-   CULL_NONE, ///< `NONE`, select no field
-   EQUAL, ///< `==`
-   NOT_EQUAL, ///< `!=`
-   LOWER_EQUAL, ///< `<=`
-   LOWER, ///< `<`
+   NO_OP = 0,     ///< no operator; what a node initialised with zeros holds
+   SUBSCOPE,      ///< a nested condition on a sub-list or sub-object
+   EQUAL,         ///< `==`
+   NOT_EQUAL,     ///< `!=`
+   LOWER_EQUAL,   ///< `<=`
+   LOWER,         ///< `<`
    GREATER_EQUAL, ///< `>=`
-   GREATER, ///< `>`
-   BITMASK, ///< `m`, all bits of the operand are set
-   STRCASECMP, ///< string comparison ignoring case
-   PATTERNCMP, ///< the value matches a shell style pattern
-   HOSTNAMECMP, ///< host name comparison, honouring aliases
-   AND, ///< `&&`
-   OR, ///< `||`
-   NEG, ///< `!`
-   BRA, ///< `(`
-   KET ///< `)`
+   GREATER,       ///< `>`
+   BITMASK,       ///< all bits of the operand are set
+   STRCASECMP,    ///< string comparison ignoring case
+   PATTERNCMP,    ///< the value matches a shell style pattern
+   HOSTNAMECMP,   ///< host name comparison, honouring aliases
+   AND,           ///< `&&`
+   OR,            ///< `||`
+   NEG            ///< `!`
 };
 
 /**
