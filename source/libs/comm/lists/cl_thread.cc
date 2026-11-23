@@ -40,6 +40,7 @@
 #include <pthread.h>
 
 #include "uti/ocs_cond.h"
+#include "uti/sge_component.h"
 #include "uti/sge_stdlib.h"
 
 #include "comm/lists/cl_lists.h"
@@ -651,6 +652,8 @@ int cl_thread_func_startup(cl_thread_settings_t *thread_config) {
    }
 
    cl_thread_set_default_cancel_method();
+   // the commlib name, e.g. "qmaster_read", as OS thread name for perf, top -H and /proc (CS-3012)
+   ocs_set_os_thread_name(thread_config->thread_name);
 
    /* set thread config data */
    if (cl_thread_set_thread_config(thread_config) != CL_RETVAL_OK) {
