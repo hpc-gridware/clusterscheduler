@@ -88,7 +88,7 @@ namespace ocs::uti {
       if (ret) {
          func = "munge_strerror";
          munge_strerror_func = reinterpret_cast<munge_strerror_func_t>(dlsym(lib_handle, func));
-         if (munge_encode_func == nullptr) {
+         if (munge_strerror_func == nullptr) {
             sge_dstring_sprintf(error_dstr, MSG_MUNGE_LOAD_FUNC_SS, func, dlerror());
             ret = false;
          }
