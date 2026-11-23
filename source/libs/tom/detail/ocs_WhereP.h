@@ -41,7 +41,7 @@
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_MultitypeP.h"
 
-/* ---- tokens of the format strings and operators of a condition, returned by scan() ---- */
+/* ---- the operators of a condition; the tokens of the removed format strings among them are left over (CS-3197) ---- */
 
 enum {
    NO_TOKEN = 0, ///< end of input, or nothing recognised

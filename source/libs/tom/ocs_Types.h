@@ -41,11 +41,10 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief The types, field flags, descriptor layout and type definition macros of the list library
+ * @brief The storage layer of the typed object model: types, field types and flags, descriptor layout
  *
- * Moved from cull/cull_list.h into the core by CS-3088: they are the storage
- * layer the core works on, and the old interface includes them from here.
- * Names stay until the old library is removed.
+ * Moved from cull/cull_list.h into the core by CS-3088. The structure names (lList, lListElem, lDescr, ...)
+ * and the cull_descr_* names still carry the prefix of the old library; CS-3197 renames them.
  */
 
 #include <atomic>

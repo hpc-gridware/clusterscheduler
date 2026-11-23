@@ -25,15 +25,10 @@
  * Building a sort order, comparing two elements by it, sorting a list,
  * inserting into a sorted list and moving a changed element to its place. The
  * functions are untyped and throw on every error; the typed sorting of
- * ocs_List.h calls them after checking at compile time, and the old functions
- * of the list library (lSortList(), lPSortList(), lInsertSorted(),
- * lResortElem(), lSortCompare(), ...) are thin wrappers that map the
- * exceptions back to what they did before (N-L-1, N-L-2). The parser of the
- * format string of lParseSortOrder() stays in the list library and builds the
- * order through make_sort_order().
+ * ocs_List.h calls them after checking at compile time, and the raw interface
+ * (ocs_Raw.h) calls them for an object type known only at run time.
  *
- * Sorting is stable: elements with equal keys keep their order. qsort(),
- * which the list library used before, made no promise about them.
+ * Sorting is stable: elements with equal keys keep their order.
  */
 
 #include <functional>

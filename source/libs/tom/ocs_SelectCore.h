@@ -26,11 +26,8 @@
  * their parts, evaluating a condition on an element, finding the elements of a
  * list that fulfil one, and selecting a reduced copy of a list. The functions
  * are untyped and throw on every error; the typed selections of ocs_Select.h
- * call them after checking at compile time, and the old functions of the list
- * library (lWhat(), lWhere(), lCompare(), lSelect(), lFindFirstRW(), ...) are
- * thin wrappers that map the exceptions back to what they did before
- * (N-L-1, N-L-2). The parsers of the format strings of lWhat() and lWhere()
- * stay in the list library; every node they build comes from here.
+ * call them after checking at compile time, and the raw interface (ocs_Raw.h)
+ * calls them for an object type known only at run time.
  *
  * Errors:
  * - a programming error throws FieldException: no descriptor (NullDescriptor),
