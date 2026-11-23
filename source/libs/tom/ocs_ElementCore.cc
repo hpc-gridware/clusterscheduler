@@ -43,9 +43,9 @@
 
 #include "tom/ocs_ListCore.h"
 
-// IF YOU CHANGE THIS TABLE, CHANGE _enum_lMultiType in cull_types.h
-const char *multitypes[] = {"lEndT", "lDoubleT", "lUlongT", "lLongT", "lBoolT",  "lIntT",
-                            "lStringT", "lListT", "lObjectT", "lRefT", "lHostT", "lUlong64T"};
+// indexed by the enum _enum_lMultiType of tom/ocs_Types.h; change both together
+const char *multitypes[] = {"MT_END", "MT_DOUBLE", "MT_UINT32", "MT_INT64", "MT_BOOL",  "MT_INT32",
+                            "MT_STRING", "MT_LIST", "MT_OBJECT", "MT_REF", "MT_HOST", "MT_UINT64"};
 
 namespace ocs::tom {
 
@@ -61,7 +61,7 @@ namespace ocs::tom {
        * @return the key, or nullptr for an unset string or host
        */
       const void *key_of_value(const int mt, const void *value, char *host_key) {
-         if (mt_get_type(mt) == lHostT) {
+         if (mt_get_type(mt) == MT_HOST) {
             if (value == nullptr) {
                return nullptr;
             }
@@ -81,9 +81,9 @@ namespace ocs::tom {
        */
       bool keys_equal(const int mt, const void *a, const void *b) {
          switch (mt_get_type(mt)) {
-            case lUlongT:
+            case MT_UINT32:
                return *static_cast<const uint32_t *>(a) == *static_cast<const uint32_t *>(b);
-            case lUlong64T:
+            case MT_UINT64:
                return *static_cast<const uint64_t *>(a) == *static_cast<const uint64_t *>(b);
             default:
                return strcmp(static_cast<const char *>(a), static_cast<const char *>(b)) == 0;
@@ -127,9 +127,9 @@ namespace ocs::tom {
 
    std::string key_text(const int mt, const void *key) {
       switch (mt_get_type(mt)) {
-         case lUlongT:
+         case MT_UINT32:
             return std::to_string(*static_cast<const uint32_t *>(key));
-         case lUlong64T:
+         case MT_UINT64:
             return std::to_string(*static_cast<const uint64_t *>(key));
          default:
             return static_cast<const char *>(key);
@@ -463,7 +463,7 @@ namespace ocs::tom {
 
    int field_type(const lDescr *descr, const int nm) noexcept {
       const int pos = present_pos(descr, nm);
-      return pos < 0 ? static_cast<int>(lEndT) : mt_get_type(descr[pos].mt);
+      return pos < 0 ? static_cast<int>(MT_END) : mt_get_type(descr[pos].mt);
    }
 
    int descr_length(const lDescr *descr) noexcept {
@@ -471,7 +471,7 @@ namespace ocs::tom {
          return -1;
       }
       int n = 0;
-      while (mt_get_type(descr[n].mt) != lEndT) {
+      while (mt_get_type(descr[n].mt) != MT_END) {
          n++;
       }
       return n;
@@ -507,13 +507,13 @@ namespace ocs::tom {
          return true;
       }
       int i = 0;
-      for (; mt_get_type(a[i].mt) != lEndT && mt_get_type(b[i].mt) != lEndT; i++) {
+      for (; mt_get_type(a[i].mt) != MT_END && mt_get_type(b[i].mt) != MT_END; i++) {
          if (a[i].nm != b[i].nm || mt_get_type(a[i].mt) != mt_get_type(b[i].mt) || a[i].off != b[i].off) {
             return false;
          }
       }
       // both end at the same position, or one is longer
-      return mt_get_type(a[i].mt) == lEndT && mt_get_type(b[i].mt) == lEndT;
+      return mt_get_type(a[i].mt) == MT_END && mt_get_type(b[i].mt) == MT_END;
    }
 
    bool same_type(const lDescr *a, const lDescr *b) noexcept {
@@ -524,17 +524,17 @@ namespace ocs::tom {
          return true;
       }
       int i = 0;
-      for (; mt_get_type(a[i].mt) != lEndT && mt_get_type(b[i].mt) != lEndT; i++) {
+      for (; mt_get_type(a[i].mt) != MT_END && mt_get_type(b[i].mt) != MT_END; i++) {
          if (a[i].nm != b[i].nm || mt_get_type(a[i].mt) != mt_get_type(b[i].mt)) {
             return false;
          }
       }
       // both end at the same position, or one is longer
-      return mt_get_type(a[i].mt) == lEndT && mt_get_type(b[i].mt) == lEndT;
+      return mt_get_type(a[i].mt) == MT_END && mt_get_type(b[i].mt) == MT_END;
    }
 
    bool store_string(lListElem *ep, const int pos, const char *value) {
-      const bool is_host = mt_get_type(ep->descr[pos].mt) == lHostT;
+      const bool is_host = mt_get_type(ep->descr[pos].mt) == MT_HOST;
       char *old_value = is_host ? ocs::tom::detail::value(ep, pos).host : ocs::tom::detail::value(ep, pos).str;
 
       // nothing to do if both are unset or both hold the same text
@@ -570,7 +570,7 @@ namespace ocs::tom {
 
    void store_hashed_number(lListElem *ep, const int pos, const std::uint64_t value) {
       lMultiType &slot = ocs::tom::detail::value(ep, pos);
-      const bool is_32 = mt_get_type(ep->descr[pos].mt) == lUlongT;
+      const bool is_32 = mt_get_type(ep->descr[pos].mt) == MT_UINT32;
       if (is_32 ? slot.ul == static_cast<uint32_t>(value) : slot.ul64 == value) {
          return;
       }
@@ -630,7 +630,7 @@ namespace ocs::tom {
          if (pos < 0) [[unlikely]] {
             throw_field_exception(FieldException::Reason::AbsentField, nm, lp->descr);
          }
-         if (mt_get_type(lp->descr[pos].mt) != lStringT) [[unlikely]] {
+         if (mt_get_type(lp->descr[pos].mt) != MT_STRING) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongType, nm, lp->descr);
          }
          return pos;

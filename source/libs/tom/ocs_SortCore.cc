@@ -63,23 +63,23 @@ namespace ocs::tom {
          const lMultiType &x = ocs::tom::detail::value(a, key.pos);
          const lMultiType &y = ocs::tom::detail::value(b, key.pos);
          switch (mt_get_type(key.mt)) {
-            case lIntT:
+            case MT_INT32:
                return three_way(x.i, y.i);
-            case lStringT:
+            case MT_STRING:
                return sge_strnullcmp(x.str, y.str);
-            case lHostT:
+            case MT_HOST:
                return sge_strnullcmp(x.host, y.host);
-            case lUlongT:
+            case MT_UINT32:
                return three_way(x.ul, y.ul);
-            case lUlong64T:
+            case MT_UINT64:
                return three_way(x.ul64, y.ul64);
-            case lDoubleT:
+            case MT_DOUBLE:
                return three_way(x.db, y.db);
-            case lLongT:
+            case MT_INT64:
                return three_way(x.l, y.l);
-            case lBoolT:
+            case MT_BOOL:
                return three_way(x.b, y.b);
-            case lRefT:
+            case MT_REF:
                return three_way(x.ref, y.ref);
             default:
                return 0;
@@ -112,7 +112,7 @@ namespace ocs::tom {
       }
       so[i].nm = NoName;
       so[i].pos = 0;
-      so[i].mt = lEndT;
+      so[i].mt = MT_END;
       so[i].ad = 0;
       return so;
    }

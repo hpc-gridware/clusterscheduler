@@ -12,7 +12,7 @@
          "description": [
             "TMR with begin/end using TM_mday/TM_mon/TM_year."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "TMR",
          "subCullPrefix": "TMR",
          "flags": []
@@ -23,7 +23,7 @@
          "description": [
             "TMR with begin/end using TM_wday."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "TMR",
          "subCullPrefix": "TMR",
          "flags": []
@@ -34,7 +34,7 @@
          "description": [
             "TMR with begin/end using TM_sec/TM_min/TM_hour."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "TMR",
          "subCullPrefix": "TMR",
          "flags": []
@@ -45,7 +45,7 @@
          "description": [
             "Queue state in the given time range, e.g. QI_DO_NOTHING, QI_DO_DISABLE, QI_DO_SUSPEND, ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

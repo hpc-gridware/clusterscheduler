@@ -70,24 +70,24 @@ namespace ocs::tom {
             const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
             const lMultiType &value = ocs::tom::detail::value(ep, f.pos);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
-               case lIntT:
+               case MT_INT32:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", sp, name, value.i);
                   break;
-               case lUlongT:
+               case MT_UINT32:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong)   = " sge_u32 "\n", sp, name, value.ul);
                   break;
-               case lUlong64T:
+               case MT_UINT64:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ulong64) = " sge_u64 "\n", sp, name, value.ul64);
                   break;
-               case lStringT:
+               case MT_STRING:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (String)  = %s\n", sp, name,
                                              value.str != nullptr ? value.str : "(null)");
                   break;
-               case lHostT:
+               case MT_HOST:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Host)    = %s\n", sp, name,
                                              value.host != nullptr ? value.host : "(null)");
                   break;
-               case lListT:
+               case MT_LIST:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (List)    = %s\n", sp, name,
                                              value.glp != nullptr ? "full {" : "empty");
                   if (value.glp != nullptr) {
@@ -95,7 +95,7 @@ namespace ocs::tom {
                      sge_dstring_sprintf_append(buffer, "%s}\n", sp);
                   }
                   break;
-               case lObjectT:
+               case MT_OBJECT:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Object)  = %s\n", sp, name,
                                              value.obj != nullptr ? "object {" : "none");
                   if (value.obj != nullptr) {
@@ -103,17 +103,17 @@ namespace ocs::tom {
                      sge_dstring_sprintf_append(buffer, "%s}\n", sp);
                   }
                   break;
-               case lDoubleT:
+               case MT_DOUBLE:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Double)  = %f\n", sp, name, value.db);
                   break;
-               case lLongT:
+               case MT_INT64:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Long)    = %ld\n", sp, name, value.l);
                   break;
-               case lBoolT:
+               case MT_BOOL:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Bool)    = %s\n", sp, name,
                                              value.b ? "true" : "false");
                   break;
-               case lRefT:
+               case MT_REF:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Ref)     = %p\n", sp, name, value.ref);
                   break;
                default:
@@ -138,7 +138,7 @@ namespace ocs::tom {
        * @param level the nesting level
        */
       void append_what(dstring *buffer, const lEnumeration *what, const int level) {
-         for (int i = 0; mt_get_type(what[i].mt) != lEndT; i++) {
+         for (int i = 0; mt_get_type(what[i].mt) != MT_END; i++) {
             sge_dstring_append(buffer, indent(level).c_str());
             const char *name;
             switch (what[i].pos) {
@@ -229,33 +229,33 @@ namespace ocs::tom {
                }
                const lMultiType &val = cp->operand.cmp.val;
                switch (mt_get_type(cp->operand.cmp.mt)) {
-                  case lIntT:
+                  case MT_INT32:
                      sge_dstring_sprintf_append(buffer, "%s %d\n", out, val.i);
                      break;
-                  case lUlongT:
+                  case MT_UINT32:
                      sge_dstring_sprintf_append(buffer, "%s " sge_u32 "\n", out, val.ul);
                      break;
-                  case lUlong64T:
+                  case MT_UINT64:
                      sge_dstring_sprintf_append(buffer, "%s " sge_u64 "\n", out, val.ul64);
                      break;
-                  case lStringT:
+                  case MT_STRING:
                      sge_dstring_sprintf_append(buffer, "%s \"%s\"\n", out, val.str);
                      break;
-                  case lHostT:
+                  case MT_HOST:
                      sge_dstring_sprintf_append(buffer, "%s \"%s\"\n", out, val.host);
                      break;
-                  case lListT:
+                  case MT_LIST:
                      break;
-                  case lDoubleT:
+                  case MT_DOUBLE:
                      sge_dstring_sprintf_append(buffer, "%s %f\n", out, val.db);
                      break;
-                  case lLongT:
+                  case MT_INT64:
                      sge_dstring_sprintf_append(buffer, "%s %ld\n", out, val.l);
                      break;
-                  case lBoolT:
+                  case MT_BOOL:
                      sge_dstring_sprintf_append(buffer, "%s %s\n", out, val.b ? "true" : "false");
                      break;
-                  case lRefT:
+                  case MT_REF:
                      sge_dstring_sprintf_append(buffer, "%s %p\n", out, val.ref);
                      break;
                   default:

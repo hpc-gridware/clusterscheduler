@@ -13,7 +13,7 @@
          "description": [
             "The parallel environment this cache is for; a category is cached once per PE it was tried with."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Cluster queues already known not to suit this category (`CTI`), so later jobs skip them."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SkipListEntry",
          "subCullPrefix": "CTI",
          "flags": []
@@ -33,7 +33,7 @@
          "description": [
             "Hosts already known not to suit this category."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SkipListEntry",
          "subCullPrefix": "CTI",
          "flags": []
@@ -44,7 +44,7 @@
          "description": [
             "The \"why not\" messages (`MES`) produced for this category, reused rather than regenerated per job."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JobSchedulingMessage",
          "subCullPrefix": "MES",
          "flags": []
@@ -55,7 +55,7 @@
          "description": [
             "Reference to the set of slot counts the parallel environment could grant, cached across the category's jobs."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -68,7 +68,7 @@
          "description": [
             "How many entries CCT_pe_job_slots holds."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

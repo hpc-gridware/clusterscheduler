@@ -248,7 +248,7 @@ char **parse_until_next_opt(char **sp, const char *shortopt, const char *longopt
          answer_list_add(alpp, str, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
          DRETURN(rp);
       }
-      const auto ep = sge_add_arg(cmdline, 0, lListT, shortopt, nullptr);
+      const auto ep = sge_add_arg(cmdline, 0, MT_LIST, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
          ocs::tom::emplace_back<ST_name>(ep.list_ref<SPA_argval_lListT>(), *rp);
@@ -281,7 +281,7 @@ char **parse_until_next_opt2(char **sp, const char *shortopt, const char *longop
    if ((!strcmp(shortopt, *sp)) || (longopt && !strcmp(longopt, *sp))) {
       ++rp;
 
-      const auto ep = sge_add_arg(cmdline, 0, lListT, shortopt, nullptr);
+      const auto ep = sge_add_arg(cmdline, 0, MT_LIST, shortopt, nullptr);
       while (*rp && **rp != '-') {
          /* string at *rp is argument to current option */
          ocs::tom::emplace_back<ST_name>(ep.list_ref<SPA_argval_lListT>(), *rp);
@@ -312,7 +312,7 @@ char **parse_param(char **sp, const char *opt, ocs::tom::ListPtr<ocs::tom::SPA> 
    while ((*rp) && (**rp != '-')) {
       /* string under rp is parameter, no option! */
       if (ep == nullptr) {
-         ep = sge_add_arg(cmdline, 0, lListT, opt, nullptr);
+         ep = sge_add_arg(cmdline, 0, MT_LIST, opt, nullptr);
       }
       ocs::tom::emplace_back<ST_name>(ep.list_ref<SPA_argval_lListT>(), *rp);
       rp++;

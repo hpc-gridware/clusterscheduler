@@ -13,7 +13,7 @@
          "description": [
             "The set's name. `defaultdepartment` is the fallback department."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -28,7 +28,7 @@
          "description": [
             "`US_ACL`, `US_DEPT`, or both. See `sge_userset.h`."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -39,7 +39,7 @@
          "description": [
             "The department's share of functional tickets."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -50,7 +50,7 @@
          "description": [
             "Override tickets granted to the department's jobs."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -61,7 +61,7 @@
          "description": [
             "Jobs of this userset currently running, maintained by the scheduler for ticket calculation."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -70,7 +70,7 @@
          "description": [
             "Jobs of this userset waiting to run."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -79,7 +79,7 @@
          "description": [
             "The users and UNIX groups in the set (`UE`). A name starting with `@` is a group."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UE",
          "subCullPrefix": "UE",
          "flags": [
@@ -92,7 +92,7 @@
          "description": [
             "The set affects which jobs can run where, so two jobs differing only in it must not share a scheduling category."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -103,7 +103,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused USR object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Part of the unused USR object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Part of the unused USR object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
          "description": [
             "Part of the unused USR object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRL",
          "subCullPrefix": "JRL",
          "flags": []
@@ -51,7 +51,7 @@
          "description": [
             "Part of the unused USR object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -60,7 +60,7 @@
          "description": [
             "Part of the unused USR object; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

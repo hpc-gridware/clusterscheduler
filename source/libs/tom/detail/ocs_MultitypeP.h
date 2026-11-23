@@ -51,17 +51,17 @@
  * check the type first and abort on a mismatch.
  */
 union _lMultiType {
-   double db;         ///< value when the field is #lDoubleT
-   uint32_t ul;       ///< value when the field is #lUlongT
-   uint64_t ul64;     ///< value when the field is #lUlong64T
-   long l;            ///< value when the field is #lLongT
-   bool b;            ///< value when the field is #lBoolT
-   int i;             ///< value when the field is #lIntT
-   char *str;         ///< value when the field is #lStringT; owned by the element
-   lList *glp;        ///< value when the field is #lListT; owned by the element
-   lListElem *obj;    ///< value when the field is #lObjectT; owned by the element
-   void *ref;         ///< value when the field is #lRefT; never owned, never spooled
-   char *host;        ///< value when the field is #lHostT; owned by the element
+   double db;         ///< value when the field is #MT_DOUBLE
+   uint32_t ul;       ///< value when the field is #MT_UINT32
+   uint64_t ul64;     ///< value when the field is #MT_UINT64
+   long l;            ///< value when the field is #MT_INT64
+   bool b;            ///< value when the field is #MT_BOOL
+   int i;             ///< value when the field is #MT_INT32
+   char *str;         ///< value when the field is #MT_STRING; owned by the element
+   lList *glp;        ///< value when the field is #MT_LIST; owned by the element
+   lListElem *obj;    ///< value when the field is #MT_OBJECT; owned by the element
+   void *ref;         ///< value when the field is #MT_REF; never owned, never spooled
+   char *host;        ///< value when the field is #MT_HOST; owned by the element
    lCondition *cp;    ///< a condition, used when a descriptor carries a where clause
 };
 

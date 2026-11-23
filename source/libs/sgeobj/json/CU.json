@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "UNIQUE",
             "HASH",
@@ -26,7 +26,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
@@ -39,7 +39,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "AULNG",
          "subCullPrefix": "AULNG",
          "flags": []
@@ -50,7 +50,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ABOOL",
          "subCullPrefix": "ABOOL",
          "flags": []
@@ -61,7 +61,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ATIME",
          "subCullPrefix": "ATIME",
          "flags": []
@@ -72,7 +72,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": []
@@ -83,7 +83,7 @@
          "description": [
             "Part of the unused CU object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "AINTER",
          "subCullPrefix": "AINTER",
          "flags": []

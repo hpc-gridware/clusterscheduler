@@ -41,7 +41,7 @@
 #include "ocs_module_test.h"
 
 /// a reduced descriptor both sides intern
-static const lDescr RED[] = {{1, lUlongT | CULL_IS_REDUCED}, {NoName, lEndT}};
+static const lDescr RED[] = {{1, MT_UINT32 | CULL_IS_REDUCED}, {NoName, MT_END}};
 
 /**
  * @brief The path of a test module, next to this executable

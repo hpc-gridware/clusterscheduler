@@ -78,9 +78,9 @@
                   "properties": {
                      "type": {
                         "enum": [
-                           "lListT",
-                           "lObjectT",
-                           "lRefT"
+                           "List",
+                           "Object",
+                           "Ref"
                         ]
                      }
                   },

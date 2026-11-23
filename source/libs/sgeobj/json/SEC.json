@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lIntT",
+         "type": "Int32",
          "flags": []
       },
       {
@@ -49,7 +49,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -58,7 +58,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -67,7 +67,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -76,7 +76,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -85,7 +85,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -94,7 +94,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -103,7 +103,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -112,7 +112,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -121,7 +121,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -130,7 +130,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -139,7 +139,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -148,7 +148,7 @@
          "description": [
             "Part of the unused SEC object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

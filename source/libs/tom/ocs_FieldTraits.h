@@ -111,29 +111,29 @@ namespace ocs::tom {
    constexpr int cull_type_of(const FieldType type) {
       switch (type) {
          case FieldType::Uint32:
-            return lUlongT;
+            return MT_UINT32;
          case FieldType::Uint64:
-            return lUlong64T;
+            return MT_UINT64;
          case FieldType::Int32:
-            return lIntT;
+            return MT_INT32;
          case FieldType::Int64:
-            return lLongT;
+            return MT_INT64;
          case FieldType::Double:
-            return lDoubleT;
+            return MT_DOUBLE;
          case FieldType::Bool:
-            return lBoolT;
+            return MT_BOOL;
          case FieldType::String:
-            return lStringT;
+            return MT_STRING;
          case FieldType::Host:
-            return lHostT;
+            return MT_HOST;
          case FieldType::List:
-            return lListT;
+            return MT_LIST;
          case FieldType::Object:
-            return lObjectT;
+            return MT_OBJECT;
          case FieldType::Ref:
-            return lRefT;
+            return MT_REF;
       }
-      return lEndT;
+      return MT_END;
    }
 
    /**
@@ -143,25 +143,25 @@ namespace ocs::tom {
     */
    constexpr FieldType field_type_of(const int mt) {
       switch (mt_get_type(mt)) {
-         case lUlongT:
+         case MT_UINT32:
             return FieldType::Uint32;
-         case lUlong64T:
+         case MT_UINT64:
             return FieldType::Uint64;
-         case lIntT:
+         case MT_INT32:
             return FieldType::Int32;
-         case lLongT:
+         case MT_INT64:
             return FieldType::Int64;
-         case lDoubleT:
+         case MT_DOUBLE:
             return FieldType::Double;
-         case lBoolT:
+         case MT_BOOL:
             return FieldType::Bool;
-         case lStringT:
+         case MT_STRING:
             return FieldType::String;
-         case lHostT:
+         case MT_HOST:
             return FieldType::Host;
-         case lListT:
+         case MT_LIST:
             return FieldType::List;
-         case lObjectT:
+         case MT_OBJECT:
             return FieldType::Object;
          default:
             return FieldType::Ref;
@@ -202,7 +202,7 @@ namespace ocs::tom {
    template <std::size_t N, std::size_t... I>
    consteval cull_descr_block<N + 1> make_descriptor_impl(const FieldInfo (&fields)[N], std::index_sequence<I...>) {
       const lDescr entries[N + 1] = {{fields[I].nm, cull_type_of(fields[I].type) | cull_flags_of(fields[I].flags), 0}...,
-                                     {NoName, lEndT, 0}};
+                                     {NoName, MT_END, 0}};
       return ocs::tom::descr_make(entries);
    }
 

@@ -131,7 +131,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
       dstring copy_str = DSTRING_INIT;
       int bad_count = 0;
 
-      for (int i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
+      for (int i = 0; mt_get_type(descr[i].mt) != MT_END; i++) {
          int nm = descr[i].nm;
          sge_dstring_clear(&elem_str);
          sge_dstring_clear(&copy_str);

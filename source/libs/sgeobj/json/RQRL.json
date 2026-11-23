@@ -12,7 +12,7 @@
          "description": [
             "The complex attribute being limited, e.g. `slots`."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "The limit as configured, still as text. For a dynamic limit this is the formula rather than a number."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "The complex attribute's type, copied from `CE_valtype`, which decides how RQRL_value is parsed."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -48,7 +48,7 @@
          "description": [
             "The limit as a number. For a static limit this is RQRL_value parsed; for a dynamic one it is the formula evaluated against the host currently being considered."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -59,7 +59,7 @@
          "description": [
             "What is booked against this limit right now (`RUE`), one entry per name when the filter expands."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
          "flags": []
@@ -70,7 +70,7 @@
          "description": [
             "The limit is a formula over host complexes rather than a constant, so RQRL_dvalue has to be recomputed per host instead of read once."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       }
    ]

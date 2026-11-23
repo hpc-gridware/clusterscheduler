@@ -15,7 +15,7 @@
          "description": [
             "Path to a file or directory."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL_SUBLIST"
@@ -28,7 +28,7 @@
             "Name of the host where this specification is valid.",
             "If it is left empty (nullptr), then the path is valid on all hosts (default)."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -37,7 +37,7 @@
          "description": [
             "@todo for file staging, the host where the file is available?"
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -46,7 +46,7 @@
          "description": [
             "Do file staging when set to true. @todo status of filestaging?"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       }
    ]

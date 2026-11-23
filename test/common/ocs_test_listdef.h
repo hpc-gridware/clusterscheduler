@@ -48,23 +48,23 @@
 
 /*
  * An object type is a static descriptor block: a cull_descr_header followed by the
- * fields and the terminating #lEndT entry. LISTDEF/LISTEND build it at compile
+ * fields and the terminating #MT_END entry. LISTDEF/LISTEND build it at compile
  * time as an inline variable, so every translation unit sees the same block and
  * its contents are constant expressions. The descriptor of a type points at its first field.
  */
 #define LISTDEF(name) inline constexpr auto name##_blk = ocs::tom::descr_make({           ///< opens an object type definition; ends with #LISTEND
-#define LISTEND(name) {NoName, lEndT}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF
-#define SGE_INT(name,flags)         { name, lIntT    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
-#define SGE_HOST(name,flags)        { name, lHostT   | flags },                 ///< declares a host name field
-#define SGE_STRING(name,flags)      { name, lStringT | flags },                 ///< declares a string field
-#define SGE_DOUBLE(name,flags)      { name, lDoubleT | flags },                 ///< declares a double field
-#define SGE_LONG(name,flags)        { name, lLongT   | flags },                 ///< declares a signed long field
-#define SGE_ULONG(name,flags)       { name, lUlongT  | flags },                 ///< declares a 32 bit unsigned field
-#define SGE_ULONG64(name,flags)     { name, lUlong64T  | flags },               ///< declares a 64 bit unsigned field
-#define SGE_BOOL(name,flags)        { name, lBoolT   | flags },                 ///< declares a boolean field
-#define SGE_LIST(name,type,flags)   { name, lListT   | flags },                 ///< declares a sub-list of another object type field
-#define SGE_OBJECT(name,type,flags) { name, lObjectT | flags },                 ///< declares a single sub-object field
-#define SGE_REF(name,type,flags)    { name, lRefT    | flags },                 ///< declares an opaque pointer field
+#define LISTEND(name) {NoName, MT_END}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF
+#define SGE_INT(name,flags)         { name, MT_INT32    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
+#define SGE_HOST(name,flags)        { name, MT_HOST   | flags },                 ///< declares a host name field
+#define SGE_STRING(name,flags)      { name, MT_STRING | flags },                 ///< declares a string field
+#define SGE_DOUBLE(name,flags)      { name, MT_DOUBLE | flags },                 ///< declares a double field
+#define SGE_LONG(name,flags)        { name, MT_INT64   | flags },                 ///< declares a signed long field
+#define SGE_ULONG(name,flags)       { name, MT_UINT32  | flags },                 ///< declares a 32 bit unsigned field
+#define SGE_ULONG64(name,flags)     { name, MT_UINT64  | flags },               ///< declares a 64 bit unsigned field
+#define SGE_BOOL(name,flags)        { name, MT_BOOL   | flags },                 ///< declares a boolean field
+#define SGE_LIST(name,type,flags)   { name, MT_LIST   | flags },                 ///< declares a sub-list of another object type field
+#define SGE_OBJECT(name,type,flags) { name, MT_OBJECT | flags },                 ///< declares a single sub-object field
+#define SGE_REF(name,type,flags)    { name, MT_REF    | flags },                 ///< declares an opaque pointer field
 
 /*
  * The field name tables of the object types written by hand in the module

@@ -14,7 +14,7 @@
          "description": [
             "Id as string, e.g. job name or job number."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -23,7 +23,7 @@
          "description": [
             "Used to transport array task specific information, e.g. status, from qalter to sge_qmaster."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": []
@@ -34,7 +34,7 @@
          "description": [
             "Used by qconf to transport specific actions to sge_qmaster, e.g. start thread, stop thread, clear queue."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -43,7 +43,7 @@
          "description": [
             "Used to express that a certain action shall be forced, e.g. from qdel -f option."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -52,7 +52,7 @@
          "description": [
             "Restricts actions to specific users, e.g. from qdel -u option."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": []

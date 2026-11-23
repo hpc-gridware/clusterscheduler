@@ -337,8 +337,8 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
          const ocs::tom::ConstRawElement first = lp.front();
 
          /* Look for the list and see if it's nullptr.  These should all be very
-          * simple CULL structures which should only contain an lHostT and an
-          * lListT. */
+          * simple CULL structures which should only contain an MT_HOST and an
+          * MT_LIST. */
          for (const auto f : ocs::tom::present_fields(first.descr())) {
             const int nm = first.descr()[f.pos].nm;
             // for CE objects which are no RSMAPs CE_resource_map_list will be nullptr - this is OK

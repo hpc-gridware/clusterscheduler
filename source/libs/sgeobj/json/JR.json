@@ -13,7 +13,7 @@
          "description": [
             "The job number / job id of the corresponding job."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "HASH"
          ]
@@ -24,7 +24,7 @@
          "description": [
             "The array task number / id of the corresponding array task."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -33,7 +33,7 @@
          "description": [
             "Queue this job is running in / tried to run in."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -42,7 +42,7 @@
          "description": [
             "Either JRUNNING or JEXITING, JRUNNING is sent as ack for jobdelivery and in the load_report_interval."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -51,7 +51,7 @@
          "description": [
             "Failure code, e.g. EESTATE_NO_CONFIG, EESTATE_NO_PID, ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -60,7 +60,7 @@
          "description": [
             "General failure code, e.g. GFSTATE_NO_HALT, GFSTATE_QUEUE, ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -69,7 +69,7 @@
          "description": [
             "Error description for failed jobs."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -78,7 +78,7 @@
          "description": [
             "List of resource usage by the job/task, e.g. wallclock, cpu, mem, ..."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": []
@@ -89,7 +89,7 @@
          "description": [
             "Process Id of the job script / the toplevel process of the job."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -98,7 +98,7 @@
          "description": [
             "If there is a checkpoint in the arena."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -108,7 +108,7 @@
             "For tasks of tightly integrated parallel jobs: The tasks unique id.",
             "It consists of the host name and a sequential number, e.g. myhostname.5"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -117,7 +117,7 @@
          "description": [
             "String containing osjobid for ckpt jobs."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -126,7 +126,7 @@
          "description": [
             "japi_wait() 'status' information."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -135,7 +135,7 @@
          "description": [
             "Used in sge_execd: Whether to send the job report immediately / as early as possible."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -144,7 +144,7 @@
          "description": [
             "Used in sge_execd: Do not send the job report, e.g. for pe tasks when accounting_summary is configured."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -153,14 +153,14 @@
          "description": [
             "Used in sge_execd: Delay sending of the job report. Used for qsub -sync/DRMAA jobs after a qmaster failover."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
 	  {
 	      "name":	"deleted_by",
 		  "summary":	"Deleted By",
           "description":	["Who deleted the job. Set by sge_execd to execd@<hostname> when the job was killed for exceeding a resource limit."],
-		  "type":	"lStringT",
+		  "type":	"String",
 		  "flags":	[]
 		}
    ]

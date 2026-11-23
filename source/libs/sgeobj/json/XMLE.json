@@ -12,7 +12,7 @@
          "description": [
             "The element's XML attributes (`XMLA`)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "XMLA",
          "subCullPrefix": "XMLA",
          "flags": []
@@ -23,7 +23,7 @@
          "description": [
             "Whether to emit this element. A node can be built and then suppressed, so the tree does not have to be pruned."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -32,7 +32,7 @@
          "description": [
             "The element's own value, when it is a leaf."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []
@@ -43,7 +43,7 @@
          "description": [
             "The child elements (`XMLE`), when it is not."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []

@@ -15,7 +15,7 @@
             "Was intended to differentiate settings for different scheduling algorithms.",
             "There is exactly one algorithm called default."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -26,7 +26,7 @@
          "description": [
             "Fixed interval (time value) defining how often scheduling runs are done."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "The maximum number of *running* jobs per user."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -50,7 +50,7 @@
             "  - seqno: requires that sequence numbers are defined in the queue definitions",
             "  - load: sorting is done by load, @see also load_formula"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -61,7 +61,7 @@
          "description": [
             "Adds virtual load to just started jobs."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
@@ -74,7 +74,7 @@
          "description": [
             "How fast to decay virtual load added via @see job_load_adjustments."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -85,7 +85,7 @@
          "description": [
             "Algebraic expression based on load values and weighting factors."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -96,7 +96,7 @@
          "description": [
             "Boolean which defines if information why jobs cannot be schedules shall be made available."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -107,7 +107,7 @@
          "description": [
             "Forces scheduling run n seconds after job submission."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -118,7 +118,7 @@
          "description": [
             "Forces a scheduling run n seconds after a job finished."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -129,7 +129,7 @@
          "description": [
             "Arbitrary list of scheduler parameters, usually name-value pairs."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -140,7 +140,7 @@
          "description": [
             "Time value defining how often running jobs will be reprioritized (based on policies)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -151,7 +151,7 @@
          "description": [
             "Halftime for decaying sharetree usage."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -162,7 +162,7 @@
          "description": [
             "Defines how different usage values (e.g. cpu, mem, io) are weighted in sharetree calculations."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -175,7 +175,7 @@
          "description": [
             "Defines how fast too low or too high sharetree usage is compensated."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -186,7 +186,7 @@
          "description": [
             "Weighting factor for functional policy on user configuration."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -197,7 +197,7 @@
          "description": [
             "Weighting factor for functional policy on project configuration."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -208,7 +208,7 @@
          "description": [
             "Weighting factor for functional policy on department configuration."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -219,7 +219,7 @@
          "description": [
             "Weighting factor for functional policy on job shares (qsub -js)."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -230,7 +230,7 @@
          "description": [
             "Weight of functional policy as compared to other ticket policies."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -241,7 +241,7 @@
          "description": [
             "Weight of sharetree policy as compared to other ticket policies."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -252,7 +252,7 @@
          "description": [
             "Weight of override policy as compared to other ticket policies."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -264,7 +264,7 @@
             "Boolean defining if every job gets the same amount of tickets from a sharetree node",
             "or if tickets shall be distributed over the jobs belonging to a sharetree node."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -276,7 +276,7 @@
             "Boolean defining if functional shares of any object instance are shared among",
             "all the jobs associated with the object"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -287,7 +287,7 @@
          "description": [
             "The maximum number of functional pending jobs to schedule using the brute-force method."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -298,7 +298,7 @@
          "description": [
             "Report pending job tickets to the qmaster via scheduler order or not."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -309,7 +309,7 @@
          "description": [
             "The number of array tasks per pending job to schedule. Helps to reduce scheduling overhead."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -320,7 +320,7 @@
          "description": [
             "A list of halflife decay values (UA)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -331,7 +331,7 @@
          "description": [
             "Defines the Order of the ticket computation."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -342,7 +342,7 @@
          "description": [
             "Weight of the ticket policies (functional, override, sharetree) as compared to other policies."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -353,7 +353,7 @@
          "description": [
             "Weight of the waiting time policy as compared to other policies."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -364,7 +364,7 @@
          "description": [
             "Weight of the deadline policy as compared to other policies."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -375,7 +375,7 @@
          "description": [
             "Weight of the urgency policy as compared to other policies."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -386,7 +386,7 @@
          "description": [
             "Weight of the posix priority as compared to other policies."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -397,7 +397,7 @@
          "description": [
             "The maximum number of resource reservations. 0 disables resource reservation."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -408,7 +408,7 @@
          "description": [
             "Default duration assumed for jobs that specify no h_rt/s_rt."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]

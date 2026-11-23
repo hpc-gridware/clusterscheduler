@@ -151,7 +151,7 @@ namespace ocs::tom {
    } // namespace
 
    lListElem *create_elem(const lDescr *descr) {
-      if (descr == nullptr || mt_get_type(descr[0].mt) == lEndT) {
+      if (descr == nullptr || mt_get_type(descr[0].mt) == MT_END) {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
@@ -168,7 +168,7 @@ namespace ocs::tom {
       const bool shared = ocs::tom::descr_is_counted(descr) || ocs::tom::descr_static_for(descr[0].nm) == descr;
 #if defined(ENABLE_DEBUG_CHECKS)
       if (shared && (descr->mt & CULL_IS_REDUCED) != 0) {
-         for (int i = 0; mt_get_type(descr[i].mt) != lEndT; i++) {
+         for (int i = 0; mt_get_type(descr[i].mt) != MT_END; i++) {
             if ((descr[i].mt & CULL_IS_REDUCED) == 0) {
                abort();
             }
@@ -221,7 +221,7 @@ namespace ocs::tom {
       if (name == nullptr) {
          name = "No list name specified";
       }
-      if (descr == nullptr || mt_get_type(descr[0].mt) == lEndT) {
+      if (descr == nullptr || mt_get_type(descr[0].mt) == MT_END) {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
@@ -267,30 +267,30 @@ namespace ocs::tom {
       for (const auto f : ocs::tom::present_fields(ep->descr)) {
          lMultiType &value = ep->cont[f.slot];
          switch (mt_get_type(ep->descr[f.pos].mt)) {
-            case lIntT:
-            case lUlongT:
-            case lUlong64T:
-            case lDoubleT:
-            case lLongT:
-            case lBoolT:
-            case lRefT:
+            case MT_INT32:
+            case MT_UINT32:
+            case MT_UINT64:
+            case MT_DOUBLE:
+            case MT_INT64:
+            case MT_BOOL:
+            case MT_REF:
                break;
-            case lStringT:
+            case MT_STRING:
                if (value.str != nullptr) {
                   sge_free(&(value.str));
                }
                break;
-            case lHostT:
+            case MT_HOST:
                if (value.host != nullptr) {
                   sge_free(&(value.host));
                }
                break;
-            case lListT:
+            case MT_LIST:
                if (value.glp != nullptr) {
                   free_list(value.glp);
                }
                break;
-            case lObjectT:
+            case MT_OBJECT:
                if (value.obj != nullptr) {
                   free_elem(value.obj);
                }
@@ -399,24 +399,24 @@ namespace ocs::tom {
       }
 
       switch (mt_get_type(dst->descr[dst_pos].mt)) {
-         case lUlongT:
+         case MT_UINT32:
             to.ul = from.ul;
             break;
-         case lUlong64T:
+         case MT_UINT64:
             to.ul64 = from.ul64;
             break;
-         case lStringT:
-         case lHostT:
+         case MT_STRING:
+         case MT_HOST:
             // the union holds a string and a host at the same place
             to.str = nullptr;
             if (from.str != nullptr && (to.str = strdup(from.str)) == nullptr) {
                throw ListCoreError("out of memory copying a string");
             }
             break;
-         case lDoubleT:
+         case MT_DOUBLE:
             to.db = from.db;
             break;
-         case lListT:
+         case MT_LIST:
             to.glp = nullptr;
             if (from.glp != nullptr) {
                if (sub_what == nullptr) {
@@ -431,7 +431,7 @@ namespace ocs::tom {
                }
             }
             break;
-         case lObjectT:
+         case MT_OBJECT:
             to.obj = nullptr;
             if (from.obj != nullptr) {
                lListElem *copy = sub_what == nullptr ? copy_elem(from.obj, hash, skip_no_transfer)
@@ -440,16 +440,16 @@ namespace ocs::tom {
                to.obj = copy;
             }
             break;
-         case lIntT:
+         case MT_INT32:
             to.i = from.i;
             break;
-         case lLongT:
+         case MT_INT64:
             to.l = from.l;
             break;
-         case lBoolT:
+         case MT_BOOL:
             to.b = from.b;
             break;
-         case lRefT:
+         case MT_REF:
             to.ref = from.ref;
             break;
          default:
@@ -644,7 +644,7 @@ namespace ocs::tom {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
-      const int pos = key_pos(descr, nm, lStringT);
+      const int pos = key_pos(descr, nm, MT_STRING);
       if (key == nullptr) {
          throw_field_exception(FieldException::Reason::NullKey, nm, descr);
       }
@@ -655,7 +655,7 @@ namespace ocs::tom {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
-      const int pos = key_pos(descr, nm, lHostT);
+      const int pos = key_pos(descr, nm, MT_HOST);
       if (key == nullptr) {
          throw_field_exception(FieldException::Reason::NullKey, nm, descr);
       }
@@ -666,7 +666,7 @@ namespace ocs::tom {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
-      const int pos = key_pos(descr, nm, lUlongT);
+      const int pos = key_pos(descr, nm, MT_UINT32);
       return add_elem_at<FieldType::Uint32>(lp, pos, key, descr);
    }
 
@@ -674,7 +674,7 @@ namespace ocs::tom {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
-      const int pos = key_pos(descr, nm, lUlong64T);
+      const int pos = key_pos(descr, nm, MT_UINT64);
       return add_elem_at<FieldType::Uint64>(lp, pos, key, descr);
    }
 
@@ -703,7 +703,7 @@ namespace ocs::tom {
       if (lp == nullptr) {
          return false;
       }
-      return remove_elem_at<FieldType::String>(lp, key_pos(lp->descr, nm, lStringT), key);
+      return remove_elem_at<FieldType::String>(lp, key_pos(lp->descr, nm, MT_STRING), key);
    }
 
    bool remove_elem_host(lList *lp, const int nm, const char *key) {
@@ -713,21 +713,21 @@ namespace ocs::tom {
       if (lp == nullptr) {
          return false;
       }
-      return remove_elem_at<FieldType::Host>(lp, key_pos(lp->descr, nm, lHostT), key);
+      return remove_elem_at<FieldType::Host>(lp, key_pos(lp->descr, nm, MT_HOST), key);
    }
 
    bool remove_elem_ulong(lList *lp, const int nm, const uint32_t key) {
       if (lp == nullptr) {
          return false;
       }
-      return remove_elem_at<FieldType::Uint32>(lp, key_pos(lp->descr, nm, lUlongT), key);
+      return remove_elem_at<FieldType::Uint32>(lp, key_pos(lp->descr, nm, MT_UINT32), key);
    }
 
    bool remove_elem_ulong64(lList *lp, const int nm, const uint64_t key) {
       if (lp == nullptr) {
          return false;
       }
-      return remove_elem_at<FieldType::Uint64>(lp, key_pos(lp->descr, nm, lUlong64T), key);
+      return remove_elem_at<FieldType::Uint64>(lp, key_pos(lp->descr, nm, MT_UINT64), key);
    }
 
    template <FieldType T>
@@ -771,7 +771,7 @@ namespace ocs::tom {
    template bool remove_elem_at<FieldType::Host>(lList *, int, KeyArgOf<FieldType::Host>);
 
    lList *get_or_create_list(lListElem *ep, const int pos, const char *name, const lDescr *descr) {
-      if (mt_get_type(ep->descr[pos].mt) != lListT) [[unlikely]] {
+      if (mt_get_type(ep->descr[pos].mt) != MT_LIST) [[unlikely]] {
          throw_field_exception(FieldException::Reason::WrongType, ep->descr[pos].nm, ep->descr);
       }
       lList *&held = ocs::tom::detail::value(ep, pos).glp;

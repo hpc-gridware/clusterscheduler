@@ -13,7 +13,7 @@
          "description": [
             "Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "When the request was posted, so the event master can order and age requests."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Which event client the request is about."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
          "description": [
             "The client's event serial the request refers to."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -49,7 +49,7 @@
          "description": [
             "The session the request belongs to, so a client sees its own changes."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -58,7 +58,7 @@
          "description": [
             "The event client object (`EV`), for the register and modify operations."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "EV",
          "subCullPrefix": "EV",
          "flags": []
@@ -69,7 +69,7 @@
          "description": [
             "The events to deliver (`ET`), for `EVR_ADD_EVENT`."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ET",
          "subCullPrefix": "ET",
          "flags": []

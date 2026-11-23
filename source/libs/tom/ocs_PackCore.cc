@@ -572,7 +572,7 @@ namespace ocs::tom {
        * @param start `bytes_used` before packing it
        */
       void count_value(const sge_pack_buffer *pb, const int nm, const int type, const std::size_t start) {
-         if (!pb->just_count && type != lListT && type != lObjectT) {
+         if (!pb->just_count && type != MT_LIST && type != MT_OBJECT) {
             CULL_STATS_FIELD(nm, PACK_VALUE_B, pb->bytes_used - start);
          }
       }
@@ -596,16 +596,16 @@ namespace ocs::tom {
          for (const auto f : ocs::tom::present_fields(descr)) {
             lMultiType &value = cp[f.slot];
             switch (mt_get_type(descr[f.pos].mt)) {
-               case lStringT:
+               case MT_STRING:
                   sge_free(&(value.str));
                   break;
-               case lHostT:
+               case MT_HOST:
                   sge_free(&(value.host));
                   break;
-               case lListT:
+               case MT_LIST:
                   free_list(value.glp);
                   break;
-               case lObjectT:
+               case MT_OBJECT:
                   if (value.obj != nullptr) {
                      free_elem(value.obj);
                   }
@@ -715,33 +715,33 @@ namespace ocs::tom {
       void pack_value(sge_pack_buffer *pb, const lMultiType *src, const lEnumeration *what, const int type,
                       const int flags) {
          switch (type) {
-            case lBoolT:
+            case MT_BOOL:
                put_uint32(pb, src->b);
                break;
-            case lUlongT:
+            case MT_UINT32:
                put_uint32(pb, src->ul);
                break;
-            case lUlong64T:
+            case MT_UINT64:
                put_uint64(pb, src->ul64);
                break;
-            case lStringT:
+            case MT_STRING:
                put_str(pb, src->str);
                break;
-            case lHostT:
+            case MT_HOST:
                put_str(pb, src->host);
                break;
-            case lListT:
+            case MT_LIST:
                pack_list(pb, src->glp, what, flags);
                break;
-            case lObjectT:
+            case MT_OBJECT:
                pack_object(pb, src->obj, what, flags);
                break;
-            case lDoubleT:
+            case MT_DOUBLE:
                put_double(pb, src->db);
                break;
-            case lRefT:
+            case MT_REF:
                break;
-            default:   // lIntT and lLongT are not packed, other types do not exist
+            default:   // MT_INT32 and MT_INT64 are not packed, other types do not exist
                fail(PACK_FORMAT, "packing a value of a type that is not packed");
          }
       }
@@ -756,34 +756,34 @@ namespace ocs::tom {
        */
       void unpack_value(sge_pack_buffer *pb, lMultiType *dst, const int type, const int flags) {
          switch (type) {
-            case lBoolT:
+            case MT_BOOL:
                dst->b = get_uint32(pb);
                break;
-            case lUlongT:
+            case MT_UINT32:
                dst->ul = get_uint32(pb);
                break;
-            case lUlong64T:
+            case MT_UINT64:
                dst->ul64 = get_uint64(pb);
                break;
-            case lStringT:
+            case MT_STRING:
                dst->str = get_str(pb);
                break;
-            case lHostT:
+            case MT_HOST:
                dst->host = get_str(pb);
                break;
-            case lListT:
+            case MT_LIST:
                dst->glp = unpack_list(pb, flags);
                break;
-            case lObjectT:
+            case MT_OBJECT:
                dst->obj = unpack_object(pb, flags);
                break;
-            case lDoubleT:
+            case MT_DOUBLE:
                dst->db = get_double(pb);
                break;
-            case lRefT:
+            case MT_REF:
                dst->ref = nullptr;
                break;
-            default:   // lIntT and lLongT are not packed, other types do not exist
+            default:   // MT_INT32 and MT_INT64 are not packed, other types do not exist
                fail(PACK_FORMAT, "unpacking a value of a type that is not packed");
          }
       }
@@ -938,7 +938,7 @@ namespace ocs::tom {
 
          std::vector<lDescr> dp(n + 1);
          dp[n].nm = NoName;
-         dp[n].mt = lEndT;
+         dp[n].mt = MT_END;
 
          // n fields, in type order (N-B-8)
          bool wire_reduced = false;
@@ -1544,7 +1544,7 @@ namespace ocs::tom {
             n++;
          }
          put_uint32(pb, n);
-         for (int i = 0; mt_get_type(what[i].nm) != NoName && mt_get_type(what[i].mt) != lEndT; i++) {
+         for (int i = 0; mt_get_type(what[i].nm) != NoName && mt_get_type(what[i].mt) != MT_END; i++) {
             put_uint32(pb, what[i].pos);
             put_uint32(pb, what[i].mt);
             put_uint32(pb, what[i].nm);
@@ -1587,7 +1587,7 @@ namespace ocs::tom {
          what.get()[0].mt = -99;
          what.get()[0].ep = nullptr;
          what.get()[1].nm = NoName;
-         what.get()[1].mt = lEndT;
+         what.get()[1].mt = MT_END;
          what.get()[1].ep = nullptr;
          return what.release();
       }
@@ -1605,7 +1605,7 @@ namespace ocs::tom {
       lEnumeration *ep = what.get();
       for (std::uint32_t i = 0; i <= n; i++) {
          ep[i].nm = NoName;
-         ep[i].mt = lEndT;
+         ep[i].mt = MT_END;
       }
       for (std::uint32_t i = 0; i < n; i++) {
          const auto pos = static_cast<int>(get_uint32(pb));
@@ -1626,7 +1626,7 @@ namespace ocs::tom {
          }
       }
       ep[n].nm = NoName;
-      ep[n].mt = lEndT;
+      ep[n].mt = MT_END;
       ep[n].ep = nullptr;
       return what.release();
    }
@@ -1656,7 +1656,7 @@ namespace ocs::tom {
             put_uint32(pb, cp->operand.cmp.pos);
             put_uint32(pb, cp->operand.cmp.mt);
             put_uint32(pb, cp->operand.cmp.nm);
-            if (mt_get_type(cp->operand.cmp.mt) != lListT) {
+            if (mt_get_type(cp->operand.cmp.mt) != MT_LIST) {
                pack_value(pb, &(cp->operand.cmp.val), nullptr, mt_get_type(cp->operand.cmp.mt), 0);
             } else {
                pack_where(pb, cp->operand.cmp.val.cp);
@@ -1703,7 +1703,7 @@ namespace ocs::tom {
             cp->operand.cmp.pos = static_cast<int>(get_uint32(pb));
             cp->operand.cmp.mt = static_cast<int>(get_uint32(pb));
             cp->operand.cmp.nm = static_cast<int>(get_uint32(pb));
-            if (mt_get_type(cp->operand.cmp.mt) != lListT) {
+            if (mt_get_type(cp->operand.cmp.mt) != MT_LIST) {
                unpack_value(pb, &(cp->operand.cmp.val), mt_get_type(cp->operand.cmp.mt), 0);
             } else {
                cp->operand.cmp.val.cp = unpack_where(pb);

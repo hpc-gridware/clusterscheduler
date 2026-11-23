@@ -13,7 +13,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -33,7 +33,7 @@
             " -userdefined, some user defined method",
             " -application-level, same as userdefined, all interface commands except restart are used, @todo verify"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -44,7 +44,7 @@
          "description": [
             "Commandline to be executed to initiate a checkpoint."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -55,7 +55,7 @@
          "description": [
             "Commandline to be executed to initiate a migration of a job (from one host to another one)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -66,7 +66,7 @@
          "description": [
             "Commandline to be executed to restart a checkpointed application."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -77,7 +77,7 @@
          "description": [
             "A directory to which checkpoints shall be written."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -93,7 +93,7 @@
             " x: when the job gets suspended",
             " an interval: in the specified interval"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -104,7 +104,7 @@
          "description": [
             "A Unix signal to be sent to the jobs process(es) in order to initiate a checkpoint."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -115,7 +115,7 @@
          "description": [
             "@todo not used and can be removed?"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -124,7 +124,7 @@
          "description": [
             "Commandline to be executed after checkpointing to clean up."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -137,7 +137,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

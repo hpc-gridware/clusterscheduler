@@ -15,7 +15,7 @@
          "description": [
             "User name of the mail receipient"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL_SUBLIST"
@@ -28,7 +28,7 @@
             "Host / Domain part of a mail receipient.",
             "It is a mail domain, not a cluster host: it is stored and compared as a plain string."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]

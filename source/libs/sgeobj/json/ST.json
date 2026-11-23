@@ -13,7 +13,7 @@
             "This field holds the string contents.",
             "@todo The primary key property is misleading. The string needn't be unique - we have STU for that."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "HASH",
@@ -26,7 +26,7 @@
          "description": [
             "allows to attach a ID to each string"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "HASH"
          ]

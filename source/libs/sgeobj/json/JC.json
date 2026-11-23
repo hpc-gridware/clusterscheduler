@@ -14,7 +14,7 @@
          "description": [
             "User or user group name"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "UNIQUE",
             "HASH"
@@ -26,7 +26,7 @@
          "description": [
             "Number of running jobs of this user / this user group."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

@@ -12,7 +12,7 @@
          "description": [
             "Name of the pe."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "Total number of slots which can be occupied by jobs running in the PE."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "US_type; list of allowed users."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -50,7 +50,7 @@
          "description": [
             "US; list of not allowed users."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -63,7 +63,7 @@
          "description": [
             "Cmd line sequence for starting the pe."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -74,7 +74,7 @@
          "description": [
             "Cmd line sequence for stopping the pe."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -90,7 +90,7 @@
             "$fill_up: Fill up slots on one host, then switch to the next host, ...",
             "$round_robin. Occupy one slot of a host, then switch to the next one, ..."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -106,7 +106,7 @@
             "Tight integration provides full job control and we get accounting information for the whole job",
             "including slave tasks on remote hosts."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -123,7 +123,7 @@
             "it just does an mpirun call spawning slave tasks and then waits for the slave tasks to finish.",
             "A 4 times parallel job can then comprise of the master task plus 4 slave tasks."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -134,7 +134,7 @@
          "description": [
             "Sub list of RUE used to store resources (slots) currently in use by running parallel jobs."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
          "flags": []
@@ -149,7 +149,7 @@
             "the number of slots finally assigned is not yet known. The following",
             "settings are supported: `min`, `max`, `avg` or a fixed integer"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -162,7 +162,7 @@
             "Specifies if a single accounting record is written for the whole job,",
             "or if every task (master task and slave tasks) gets an individual accounting record."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -175,7 +175,7 @@
             "Specifies if slave tasks on the master host are started via qrsh -inherit or if they are started",
             "by the master task process itself (via fork/exec or as threads)."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -188,7 +188,7 @@
             "Specifies if slave tasks on slave host are started individually via qrsh -inherit or if a single",
             "process is started via qrsh -inherit which then starts the slave tasks (via fork/exec or as threads)."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -201,7 +201,7 @@
             "When slave tasks are started on the master host, this flag specifies if slave specific requests",
             "shall be applied to these slave tasks or not."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -214,7 +214,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

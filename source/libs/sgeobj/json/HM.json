@@ -27,7 +27,7 @@
             "and so that an entry can be found again by name when it has to be",
             "removed."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -53,7 +53,7 @@
             "of which is a valid recent time of use. What it needs is atomicity, not",
             "mutual exclusion - see the atomic accessors of the object layer."
          ],
-         "type": "lUlong64T",
+         "type": "Uint64",
          "flags": []
       }
    ]

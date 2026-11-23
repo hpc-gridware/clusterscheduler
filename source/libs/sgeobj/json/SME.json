@@ -12,7 +12,7 @@
          "description": [
             "Job specific messages explaining why certain requests of a job cannot be granted."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "MES",
          "subCullPrefix": "MES",
          "flags": []
@@ -23,7 +23,7 @@
          "description": [
             "Global messages which apply to all jobs, e.g. queues being disabled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "MES",
          "subCullPrefix": "MES",
          "flags": []

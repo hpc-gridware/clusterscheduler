@@ -12,7 +12,7 @@
          "description": [
             "The host this queue instance runs on. Together with QU_qname it identifies the instance."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "HASH",
             "SPOOL"
@@ -24,7 +24,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "HASH",
             "SPOOL"
@@ -36,7 +36,7 @@
          "description": [
             "The instance name as users see it, \"cluster_queue@host\". Derived from QU_qname and QU_qhostname; do not set it directly."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -49,7 +49,7 @@
          "description": [
             "Scratch marker used while a cluster queue change is applied, holding SGE_QI_TAG_ADD, _MOD or _DEL for this instance. Not persistent."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -58,7 +58,7 @@
          "description": [
             "Earliest time this instance could run the job being scheduled, set during resource matching and used to order the candidates."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -67,7 +67,7 @@
          "description": [
             "Position of this queue in the scheduling order, used when the scheduler is configured to sort queues by sequence number rather than by load."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "CONFIGURE"
          ]
@@ -78,7 +78,7 @@
          "description": [
             "How many jobs are suspended at once when a suspend threshold is exceeded, and resumed at once when it falls back."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "CONFIGURE"
          ]
@@ -89,7 +89,7 @@
          "description": [
             "Whether the queue accepts batch jobs, interactive jobs, or both."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "CONFIGURE"
          ]
@@ -100,7 +100,7 @@
          "description": [
             "How many jobs may run in this instance at once. The scheduler compares it against the slots already used."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "CONFIGURE"
          ]
@@ -111,7 +111,7 @@
          "description": [
             "Where the execution daemon creates the per-job temporary directory it advertises as $TMPDIR."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -122,7 +122,7 @@
          "description": [
             "The shell a job script is started with, when the start mode calls for one."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -133,7 +133,7 @@
          "description": [
             "The calendar that enables, disables or suspends this queue by time of day and day of week."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -144,7 +144,7 @@
          "description": [
             "The nice value jobs in this queue are started with."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -155,7 +155,7 @@
          "description": [
             "The processor set jobs are bound to, on the platforms that support one."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -166,7 +166,7 @@
          "description": [
             "A command run as a preamble before the job, in the job's environment. A non-zero exit puts the queue into error state."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -177,7 +177,7 @@
          "description": [
             "A command run after the job, in the job's environment, whatever the job's own exit status was."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -188,7 +188,7 @@
          "description": [
             "How the job script is handed to the shell: as a script argument, on stdin, or by exec."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -199,7 +199,7 @@
          "description": [
             "Replaces the default way of starting the job, for jobs that need a wrapper."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -210,7 +210,7 @@
          "description": [
             "Replaces the default SIGSTOP when the job is suspended."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -221,7 +221,7 @@
          "description": [
             "Replaces the default SIGCONT when the job is resumed."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -232,7 +232,7 @@
          "description": [
             "Replaces the default SIGKILL when the job is deleted."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -243,7 +243,7 @@
          "description": [
             "The state the instance takes when it is first created or when its execution daemon restarts: enabled, disabled, or whatever it was."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -254,7 +254,7 @@
          "description": [
             "Default for jobs whose execution host crashed: rerun them elsewhere, or report them as failed. A job may override it with qsub -r."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "CONFIGURE"
          ]
@@ -265,7 +265,7 @@
          "description": [
             "Wall clock time after which the job is warned with SIGUSR1 and then killed once QU_notify has passed."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -276,7 +276,7 @@
          "description": [
             "Wall clock time after which the job is killed outright."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -287,7 +287,7 @@
          "description": [
             "Combined CPU time of all the job's processes after which it is sent SIGXCPU."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -298,7 +298,7 @@
          "description": [
             "Combined CPU time after which the job is killed."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -309,7 +309,7 @@
          "description": [
             "Largest file the job may create before it is warned."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -320,7 +320,7 @@
          "description": [
             "Largest file the job may create."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -331,7 +331,7 @@
          "description": [
             "Data segment size after which the job is warned."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -342,7 +342,7 @@
          "description": [
             "Largest data segment the job may allocate."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -353,7 +353,7 @@
          "description": [
             "Stack size after which the job is warned."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -364,7 +364,7 @@
          "description": [
             "Largest stack the job may use."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -375,7 +375,7 @@
          "description": [
             "Core file size after which the job is warned."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -386,7 +386,7 @@
          "description": [
             "Largest core file the job may write."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -397,7 +397,7 @@
          "description": [
             "Resident set size after which the job is warned."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -408,7 +408,7 @@
          "description": [
             "Largest resident set the job may hold."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -419,7 +419,7 @@
          "description": [
             "Virtual memory after which the job is warned. For a parallel job the limit applies per slot on the host."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -430,7 +430,7 @@
          "description": [
             "Virtual memory after which the job is killed. For a parallel job the limit applies per slot on the host."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -441,7 +441,7 @@
          "description": [
             "How long to wait between two suspend rounds, so a threshold is not acted on faster than the load can react."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -452,7 +452,7 @@
          "description": [
             "Shortest time between two automatic checkpoints, whatever shorter interval the checkpointing environment or the job asks for."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -463,7 +463,7 @@
          "description": [
             "How long to wait between the warning signal and the real suspend or kill signal, for jobs submitted with qsub -notify."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "CONFIGURE"
          ]
@@ -474,7 +474,7 @@
          "description": [
             "The checkpointing environments a job may request here."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
@@ -487,7 +487,7 @@
          "description": [
             "The parallel environments a job may request here."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
@@ -500,7 +500,7 @@
          "description": [
             "Users allowed to suspend, resume and disable this queue without being managers or operators."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -513,7 +513,7 @@
          "description": [
             "The usersets allowed to run jobs here. Empty means everyone who is not in QU_xacl."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -526,7 +526,7 @@
          "description": [
             "The usersets not allowed to run jobs here. Checked before QU_acl."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -539,7 +539,7 @@
          "description": [
             "The projects whose jobs may run here."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
@@ -552,7 +552,7 @@
          "description": [
             "The projects whose jobs may not run here."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
@@ -565,7 +565,7 @@
          "description": [
             "The consumable capacities of this instance, as configured. QU_resource_utilization tracks what is actually booked against them."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
@@ -578,7 +578,7 @@
          "description": [
             "Load values above which the queue stops accepting jobs. Reaching one puts the instance into alarm state (the \"a\" in qstat)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
@@ -591,7 +591,7 @@
          "description": [
             "Load values above which jobs already running here are suspended, QU_nsuspend at a time."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
@@ -604,7 +604,7 @@
          "description": [
             "Queues to suspend while this one is busy, either wholesale or per slot. What implements the \"S\" state on the other queue."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SO",
          "subCullPrefix": "SO",
          "flags": [
@@ -617,7 +617,7 @@
          "description": [
             "The QI_* state bits, and the letters qstat prints for them. Eleven independent flags; see sge_qinstance_state.cc."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -632,7 +632,7 @@
             "    however as master for reservation",
             "2 - can be used as master for now and reservation"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -641,7 +641,7 @@
          "description": [
             "@warning Read and written nowhere in either repository. Kept because removing an attribute changes the spooled format."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -650,7 +650,7 @@
          "description": [
             "A signal sent to the queue that has not taken effect yet. Kept until the state changes, so it can be repeated."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -661,7 +661,7 @@
          "description": [
             "When to send QU_pending_signal again. Spooled, so a qmaster restart does not lose an in-flight signal."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -672,7 +672,7 @@
          "description": [
             "Incremented by qinstance_increase_qversion() on every change. A scheduler order carries the version it was computed against, and sge_follow() rejects the order if the queue has moved on."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -683,7 +683,7 @@
          "description": [
             "How many superordinate queues currently demand that this one be suspended. A count, not a flag, so releasing one does not resume a queue another still holds down."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -692,7 +692,7 @@
          "description": [
             "When the suspend thresholds were last evaluated, so they are not acted on more often than QU_suspend_interval."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -701,7 +701,7 @@
          "description": [
             "@warning Read and written nowhere in either repository. Kept because removing an attribute changes the spooled format."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -710,7 +710,7 @@
          "description": [
             "@warning Read and written nowhere in either repository. Kept because removing an attribute changes the spooled format."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -719,7 +719,7 @@
          "description": [
             "How many of the job's soft requests this instance cannot satisfy. The scheduler sorts candidates by this ascending, so a queue that grants more soft requests wins."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -728,7 +728,7 @@
          "description": [
             "The host's position in the scheduler's host sort order, copied onto the instance while tagging so queues on a better host sort first."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -737,7 +737,7 @@
          "description": [
             "What is actually booked against each consumable over time, including future bookings made by advance reservations. The counterpart of QU_consumable_config_list."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
          "flags": []
@@ -748,7 +748,7 @@
          "description": [
             "Messages explaining the instance's state, shown by qstat -explain and qrstat."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "QIM",
          "subCullPrefix": "QIM",
          "flags": [
@@ -761,7 +761,7 @@
          "description": [
             "Marks the instance as having a change that is applied after the current request rather than during it."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -770,7 +770,7 @@
          "description": [
             "new state variables, these are needed for the scheduler, to dispach jobs into suitable queues"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CQU",
          "subCullPrefix": "CQU",
          "flags": []
@@ -783,7 +783,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

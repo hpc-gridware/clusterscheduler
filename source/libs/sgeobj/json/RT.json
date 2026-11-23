@@ -13,7 +13,7 @@
          "description": [
             "Task Id."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Remote host where the task is running on."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Status as it comes from waitpid(2)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
          "description": [
             "Internal state used by the qrexec module."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

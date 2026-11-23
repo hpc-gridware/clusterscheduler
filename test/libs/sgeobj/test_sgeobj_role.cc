@@ -296,7 +296,7 @@ static void test_match_rule() {
    CHECK(17, "@submit_hosts not in source_hostgroups → false",  !ocs::Role::match_rule(rule, ctx));
 
    /*
-    * CS-2761: and the group token likewise. HGRP_name is an lHostT field, so
+    * CS-2761: and the group token likewise. HGRP_name is an MT_HOST field, so
     * the object layer folds its case - "@casetest" and "@CASETEST" are one
     * group, not two - and a rule naming one spelling has to reach the other.
     */

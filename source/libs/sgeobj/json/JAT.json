@@ -35,7 +35,7 @@
          "description": [
             "Unique task number assigned during task creation."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -50,7 +50,7 @@
             "First part of the state (see also JAT_hold, JAT_state).",
             "@todo merge status, state and hold"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -61,7 +61,7 @@
          "description": [
             "Start time of the array task in microseconds since epoch."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -73,7 +73,7 @@
             "End time of the array task in microseconds since epoch.",
             "Only used in sge_execd to simulate job runs."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -85,7 +85,7 @@
             "Second part of the state (user, operator, system hold)",
             "@todo merge status, state and hold"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -96,7 +96,7 @@
          "description": [
             "Name of a granted parallel environment (in case of parallel jobs)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -108,7 +108,7 @@
             "Was the task restarted (due to reschedule/migrate)?",
             "@todo it is no boolean, but misused for other information!"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -120,7 +120,7 @@
             "Granted destination identifier list (JG).",
             "Has one element per queue instance the job is running on."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JG",
          "subCullPrefix": "JG",
          "flags": [
@@ -133,7 +133,7 @@
          "description": [
             "List of granted resources, currently these are granted RSMAPs only."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "GrantedResource",
          "subCullPrefix": "GRU",
          "flags": [
@@ -147,7 +147,7 @@
             "Name of the master queue.",
             "@todo redundant information, it is the name of the first element in the GDIL."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -159,7 +159,7 @@
             "Third part of state (see also JAT_hold, JAT_status).",
             "@todo merge status, state and hold"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -171,7 +171,7 @@
             "Pid of a previous, checkpointed run of the job/ja_task.",
             "@todo was apparently required for checkpointing/restart of PVM jobs - still needed?"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -182,7 +182,7 @@
          "description": [
             "Pending signal (not yet acknowledged by execd)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -194,7 +194,7 @@
             "Time when a signal shall be delivered by sge_qmaster to sge_execd (repeated) in µs since epoch.",
             "Also used in sge_execd to repeat sending of signals."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -205,7 +205,7 @@
          "description": [
             "Pid of the sge_shepherd of a job (child of sge_execd). Used for signal delivery."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -222,7 +222,7 @@
             "Could be / was a OS supported job id on no longer supported platforms",
             "like Cray, Nec, Irix."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -236,7 +236,7 @@
             "Only used in sge_execd, it is set during the startup phase of the",
             "job."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -251,7 +251,7 @@
             "Only used in sge_execd, it is set during the startup phase of the",
             "job."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -263,7 +263,7 @@
             "Usage collection mode of a pe task.",
             "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -273,7 +273,7 @@
             "Raw usage from data collector. Scaled by sge_qmaster to JAT_scaled_usage_list.",
             "Scheduling is using the scaled usage."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -287,7 +287,7 @@
             "Scaled usage set by qmaster, used by scheduler.",
             "Usage scaling is defined in the exechost objects, see sge_host_conf.5"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -302,7 +302,7 @@
             "in the reporting file. For long running jobs, written around midnight",
             "to provide daily accounting information."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -315,7 +315,7 @@
          "description": [
             "Functional shares associated with the job."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -326,7 +326,7 @@
          "description": [
             "Total number of tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -337,7 +337,7 @@
          "description": [
             "Override tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -348,7 +348,7 @@
          "description": [
             "Functional tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -359,7 +359,7 @@
          "description": [
             "Sharetree tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -370,7 +370,7 @@
          "description": [
             "Job targeted proportion set by scheduler."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -381,7 +381,7 @@
          "description": [
             "Tag used in filtering in client job output (qstat, qhost)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -390,7 +390,7 @@
          "description": [
             "List of running parallel tasks."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PET",
          "subCullPrefix": "PET",
          "flags": [
@@ -403,7 +403,7 @@
          "description": [
             "List of finished parallel tasks - contains only task names."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "FPET",
          "subCullPrefix": "FPET",
          "flags": [
@@ -417,7 +417,7 @@
             "Copy of the scaled usage list created when a job gets rescheduled.",
             "@todo If a job is rescheduled multiple times, should probably be aggregated."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": []
@@ -428,7 +428,7 @@
          "description": [
             "PE object granted to this task (PE) when it was scheduled."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "ParallelEnvironment",
          "subCullPrefix": "PE",
          "flags": [
@@ -441,7 +441,7 @@
          "description": [
             "Used locally in execd to store next pe task id for this jatask on this execd."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -451,7 +451,7 @@
             "The time in µs since epoch when the action to initiate a job finish",
             "(i.e. job termination, or checkpoint creation) was triggered or re-triggered."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -463,7 +463,7 @@
             "The priority derived from weighted normalized tickets and weighted normalized",
             "static urgency. Changes with task due to GEEE ticket dependency."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -472,7 +472,7 @@
          "description": [
             "Relative importance due to JAT_tix amount in the range between 0.0 and 1.0."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -482,7 +482,7 @@
             "Wallclock_limit. Either requested (qsub -l h_rt=...) or the minimum of queue h_rt",
             "in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -494,7 +494,7 @@
             "Task specific messages.",
             "Currently only used for storing the reason why a job is in error state."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "QIM",
          "subCullPrefix": "QIM",
          "flags": [
@@ -509,7 +509,7 @@
             "or the component which triggered the deletion (sge_qmaster, sge_execd).",
             "Used for accounting and reporting purposes."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -522,7 +522,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

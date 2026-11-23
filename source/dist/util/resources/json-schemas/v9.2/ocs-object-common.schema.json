@@ -32,20 +32,20 @@
       },
       "attributeType": {
          "type": "string",
-         "description": "Allowed low-level attribute type identifiers used in the cull JSON files.",
+         "description": "The field types of the object type definition files.",
          "enum": [
-            "lBoolT",
-            "lDoubleT",
-            "lHostT",
-            "lIntT",
-            "lListT",
-            "lLongT",
-            "lObjectT",
-            "lRefT",
-            "lStringT",
-            "lTimestampT",
-            "lUlong64T",
-            "lUlongT"
+            "Bool",
+            "Double",
+            "Host",
+            "Int32",
+            "Int64",
+            "List",
+            "Object",
+            "Ref",
+            "String",
+            "Timestamp",
+            "Uint32",
+            "Uint64"
          ]
       }
    }

@@ -15,7 +15,7 @@
          "description": [
             "The number of slots a job occupies in the queue / queue instance."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -24,7 +24,7 @@
          "description": [
             "The full queue instance name (cluster queue name + @ + host name)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -34,7 +34,7 @@
             "Version of the queue instance. Is used to detect if the queue has been modified during scheduling.",
             "In this case the scheduling result is skipped."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -43,7 +43,7 @@
          "description": [
             "Total SGEEE tickets for slots."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -52,7 +52,7 @@
          "description": [
             "Total SGEEE override tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -61,7 +61,7 @@
          "description": [
             "Total SGEEE functional tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -70,7 +70,7 @@
          "description": [
             "Total SGEEE sharetree tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -79,7 +79,7 @@
          "description": [
             "One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": []
@@ -91,7 +91,7 @@
             "List of RSMAP IDs granted to this job / specific tasks of a parallel job,",
             "which are running on the specific queue instance / host described by this object."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ResourceList",
          "subCullPrefix": "RESL",
          "flags": []

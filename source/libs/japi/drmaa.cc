@@ -2055,7 +2055,7 @@ static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, ocs:
 
          DPRINTF("-wd = \"%s\"\n", new_path);
 
-         const auto ep_opt = sge_add_arg(args, wd_OPT, lStringT, "-wd", value);
+         const auto ep_opt = sge_add_arg(args, wd_OPT, MT_STRING, "-wd", value);
          ep_opt.set<SPA_argval_lStringT>(new_path);
          sge_free(&new_path);
       }
@@ -2154,7 +2154,7 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
          ep.set<PN_file_staging>(bFileStaging);
 
          DPRINTF("Adding args\n");
-         const auto ep_opt = sge_add_arg(args, opt, lListT, sw, value);
+         const auto ep_opt = sge_add_arg(args, opt, MT_LIST, sw, value);
          DPRINTF("Setting List\n");
          ep_opt.set<SPA_argval_lListT>(std::move(path_list));
          DPRINTF("Freeing Path\n");
@@ -2651,7 +2651,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
    if ((ep=attrs.find_first<VA_variable>(DRMAA_JOB_NAME))) {
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_NAME, ep.get<VA_value>());
 
-      ep_opt = sge_add_arg(args, N_OPT, lStringT, "-N", ep.get<VA_value>());
+      ep_opt = sge_add_arg(args, N_OPT, MT_STRING, "-N", ep.get<VA_value>());
       ep_opt.set<SPA_argval_lStringT>(ep.get<VA_value>());
    }
 
@@ -2662,7 +2662,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOB_CATEGORY, value);
 
       DPRINTF("%d args before adding job cat\n", static_cast<int>(args->size()));
-      ep_opt = sge_add_arg(args, cat_OPT, lStringT, "-cat", value);
+      ep_opt = sge_add_arg(args, cat_OPT, MT_STRING, "-cat", value);
       ep_opt.set<SPA_argval_lStringT>(value);
       DPRINTF("%d args after adding job cat\n", static_cast<int>(args->size()));
    }
@@ -2674,11 +2674,11 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JOIN_FILES, value);
 
       if (value[0] == 'y') {
-         ep_opt = sge_add_arg(args, j_OPT, lIntT, "-j", "y");
+         ep_opt = sge_add_arg(args, j_OPT, MT_INT32, "-j", "y");
          ep_opt.set<SPA_argval_lIntT>(true);
       }
       else {
-         ep_opt = sge_add_arg(args, j_OPT, lIntT, "-j", "n");
+         ep_opt = sge_add_arg(args, j_OPT, MT_INT32, "-j", "n");
          ep_opt.set<SPA_argval_lIntT>(false);
       }
    }
@@ -2721,7 +2721,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
       DPRINTF("processing %s = \"%s\"\n", DRMAA_JS_STATE, value);
 
       if (!strcmp(value, DRMAA_SUBMISSION_STATE_HOLD)) {
-         ep_opt = sge_add_arg(args, h_OPT, lIntT, "-h", "");
+         ep_opt = sge_add_arg(args, h_OPT, MT_INT32, "-h", "");
          ep_opt.set<SPA_argval_lIntT>(MINUS_H_TGT_USER);
       }
    }
@@ -2770,7 +2770,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
 
       DPRINTF("\"%s\"\n", sge_dstring_get_string(&env));
 
-      ep_opt = sge_add_arg(args, v_OPT, lListT, "-v", sge_dstring_get_string(&env));
+      ep_opt = sge_add_arg(args, v_OPT, MT_LIST, "-v", sge_dstring_get_string(&env));
       sge_dstring_free(&env);
       ep_opt.set<SPA_argval_lListT>(std::move(nlp));
    }
@@ -2823,7 +2823,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
 
       DPRINTF("\"%s\"\n", sge_dstring_get_string(&email));
 
-      ep_opt = sge_add_arg(args, M_OPT, lListT, "-M", sge_dstring_get_string(&email));
+      ep_opt = sge_add_arg(args, M_OPT, MT_LIST, "-M", sge_dstring_get_string(&email));
       sge_dstring_free(&email);
       ep_opt.set<SPA_argval_lListT>(std::move(nlp));
    }
@@ -2835,7 +2835,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
       DPRINTF("processing %s = \"%s\"\n", DRMAA_BLOCK_EMAIL, value);
 
       if (value[0] == '1') {
-         ep_opt = sge_add_arg(args, m_OPT, lIntT, "-m", "n");
+         ep_opt = sge_add_arg(args, m_OPT, MT_INT32, "-m", "n");
          ep_opt.set<SPA_argval_lIntT>(NO_MAIL);
       }
       else if (value[0] == '0') {
@@ -2844,7 +2844,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
           * don't have the granularity to say how exactly to unblock the email,
           * we just assume an innocuous default, i.e. email when the job is
           * done.  This should definitely be documented somewhere. */
-         ep_opt = sge_add_arg(args, m_OPT, lIntT, "-m", "e");
+         ep_opt = sge_add_arg(args, m_OPT, MT_INT32, "-m", "e");
          ep_opt.set<SPA_argval_lIntT>(MAIL_AT_EXIT);
       }
       else {
@@ -2869,7 +2869,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
 
-      ep_opt = sge_add_arg(args, a_OPT, lUlongT, "-a", value);
+      ep_opt = sge_add_arg(args, a_OPT, MT_UINT32, "-a", value);
       ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
    }
 
@@ -2884,7 +2884,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
 
    if ((scriptname = ep.get<VA_value>()) != nullptr) {
       DPRINTF("remote command is \"%s\"\n", scriptname);
-      ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
+      ep_opt = sge_add_arg(args, 0, MT_STRING, STR_PSEUDO_SCRIPT, nullptr);
       ep_opt.set<SPA_argval_lStringT>(scriptname);
 
       /* job arguments -- last thing on the command line */
@@ -2895,7 +2895,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
 
          for (ocs::tom::ConstElement<ocs::tom::ST> aep : lp) {
             DPRINTF("arg: \"%s\"\n", aep.get<ST_name>());
-            ep_opt = sge_add_arg(args, 0, lStringT, STR_PSEUDO_JOBARG, nullptr);
+            ep_opt = sge_add_arg(args, 0, MT_STRING, STR_PSEUDO_JOBARG, nullptr);
             ep_opt.set<SPA_argval_lStringT>(aep.get<ST_name>());
          }
       }
@@ -2922,7 +2922,7 @@ static void opt_list_append_default_drmaa_opts(ocs::tom::ListPtr<ocs::tom::SPA> 
    ocs::tom::Element<ocs::tom::SPA> ep_opt;
    /* average priority of 0 -- -p 0 */
    DPRINTF("setting default priority to 0\n");
-   ep_opt = sge_add_arg(opts, p_OPT, lIntT, "-p", "0");
+   ep_opt = sge_add_arg(opts, p_OPT, MT_INT32, "-p", "0");
    ep_opt.set<SPA_argval_lIntT>(0);
 
    /* We always use binary submission mode by default. A native spec, job
@@ -2930,14 +2930,14 @@ static void opt_list_append_default_drmaa_opts(ocs::tom::ListPtr<ocs::tom::SPA> 
     * attributes.
     */
    DPRINTF("enabling binary mode\n");
-   ep_opt = sge_add_arg(opts, b_OPT, lIntT, "-b", "y");
+   ep_opt = sge_add_arg(opts, b_OPT, MT_INT32, "-b", "y");
    ep_opt.set<SPA_argval_lIntT>(1);
 
    /* Bugfix: Issuezilla #658
     * In order to work around Bug #476, I set DRMAA to not spawn an exec
     * shell. */
    DPRINTF("disabling execution shell\n");
-   ep_opt = sge_add_arg(opts, shell_OPT, lIntT, "-shell", "n");
+   ep_opt = sge_add_arg(opts, shell_OPT, MT_INT32, "-shell", "n");
 
    /* Bugfix: Issuezilla #1151
     * Not only should -w e be allowed, it should be set by default.  The main
@@ -2953,7 +2953,7 @@ static void opt_list_append_default_drmaa_opts(ocs::tom::ListPtr<ocs::tom::SPA> 
     * option can always be turned off in the native specification or job
     * category. */
    DPRINTF("disabling submission of unschedulable jobs\n");
-   ep_opt = sge_add_arg(opts, w_OPT, lIntT, "-w", "e");
+   ep_opt = sge_add_arg(opts, w_OPT, MT_INT32, "-w", "e");
    ep_opt.set<SPA_argval_lIntT>(ERROR_VERIFY);
 
    DRETURN_VOID;
@@ -3599,7 +3599,7 @@ static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, const in
    range_list_parse_from_string(task_id_range_list, alp, str, false, true, INF_NOT_ALLOWED);
 
    if (task_id_range_list) {
-      const auto ep_opt = sge_add_arg(opts, t_OPT, lStringT, "-t", str);
+      const auto ep_opt = sge_add_arg(opts, t_OPT, MT_STRING, "-t", str);
       ep_opt.set<SPA_argval_lListT>(std::move(task_id_range_list));
 
       DRETURN(0);

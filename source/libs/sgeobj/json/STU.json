@@ -12,7 +12,7 @@
          "description": [
             "String contents."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",

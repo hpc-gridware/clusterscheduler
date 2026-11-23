@@ -12,7 +12,7 @@
          "description": [
             "Name of the string vector."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "Strings of this string vector."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": []

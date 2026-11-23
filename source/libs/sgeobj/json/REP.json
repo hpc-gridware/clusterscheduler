@@ -15,7 +15,7 @@
             "- NUM_REP_REPORT_JOB: a job report",
             "- ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -24,7 +24,7 @@
          "description": [
             "Hostname as it is seen by sender of report."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -35,7 +35,7 @@
             "a list of load values (HL) objects for load reports or",
             "a list of job usage values (UA) objects for job reports."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []
@@ -47,7 +47,7 @@
             "Used to report software version (the GDI version) of execd.",
             "Only components with the same GDI version can communicate."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -56,7 +56,7 @@
          "description": [
             "Used to recognize old reports sent by execd."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -68,7 +68,7 @@
             "which were flushed after job events.",
             "A job report of an older sge_execd does not have this attribute."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       }
    ]

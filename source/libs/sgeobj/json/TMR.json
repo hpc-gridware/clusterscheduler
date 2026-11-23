@@ -12,7 +12,7 @@
          "description": [
             "Begin time stamp."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "TM",
          "subCullPrefix": "TM",
          "flags": []
@@ -23,7 +23,7 @@
          "description": [
             "End time stamp."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "TM",
          "subCullPrefix": "TM",
          "flags": []

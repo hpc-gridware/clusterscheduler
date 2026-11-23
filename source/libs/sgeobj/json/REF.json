@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused REF object; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

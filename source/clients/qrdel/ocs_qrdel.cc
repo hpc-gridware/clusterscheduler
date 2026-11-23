@@ -185,7 +185,7 @@ static bool sge_parse_cmdline_qrdel(char **argv, [[maybe_unused]] char **envp,
          if (*sp) {
             auto user_list = str_list_parse_from_string(*sp, ",");
 
-            const auto ep_opt = sge_add_arg(cmdline, 0, lListT, *(sp - 1), *sp);
+            const auto ep_opt = sge_add_arg(cmdline, 0, MT_LIST, *(sp - 1), *sp);
             ep_opt.set<SPA_argval_lListT>(std::move(user_list));
             sp++;
          }

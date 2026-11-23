@@ -57,7 +57,7 @@
 #include "sgeobj/sge_object.h"
 
 /// Is this CULL type one whose value is printed as a number?
-#define L_IS_NUM_TYPE(x) ((x == lDoubleT) || (x == lUlongT) || (x == lLongT)  || (x == lIntT))
+#define L_IS_NUM_TYPE(x) ((x == MT_DOUBLE) || (x == MT_UINT32) || (x == MT_INT64)  || (x == MT_INT32))
 
 /**
  * @name Flags for uni_print_list

@@ -14,7 +14,7 @@
             "This name must be resolvable on all hosts dealing with it",
             "(master host, the execution host itself, interactive and tightly integrated parallel jobs contacting it)"
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -29,7 +29,7 @@
             "Used to scale host load values.",
             "Contains pairs of load value names and doubles."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "HS",
          "subCullPrefix": "HS",
          "flags": [
@@ -42,7 +42,7 @@
          "description": [
             "consumable resources of host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
@@ -55,7 +55,7 @@
          "description": [
             "defines scaling of job usage values reported by this execution host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "HS",
          "subCullPrefix": "HS",
          "flags": [
@@ -68,7 +68,7 @@
          "description": [
             "list of load values (e.g. load_avg) reported by the execution host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "HL",
          "subCullPrefix": "HL",
          "flags": [
@@ -81,7 +81,7 @@
          "description": [
             "timestamp when the sge_execd on the host last communicated with sge_qmaster"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -91,7 +91,7 @@
             "number of processors of the execution host",
             "actually the number of processor cores (@todo threads?)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -102,7 +102,7 @@
          "description": [
             "userset defining who can access the host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -115,7 +115,7 @@
          "description": [
             "userset defining who can not access the host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -128,7 +128,7 @@
          "description": [
             "project list defining which jobs of which projects can run on the host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
@@ -141,7 +141,7 @@
          "description": [
             "project list defining jobs of which projects can run not on the host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
@@ -154,7 +154,7 @@
          "description": [
             "sort value which is only used in the scheduler thread"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -163,7 +163,7 @@
          "description": [
             "used in scheduler to tag hosts"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -172,7 +172,7 @@
          "description": [
             "Artificial load added for jobs that have just started, decaying over `load_adjustment_decay_time`. Stops the scheduler overloading a host by dispatching to it faster than the reported load can rise."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -181,7 +181,7 @@
          "description": [
             "suitability of this host for a job, scheduler only"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -190,7 +190,7 @@
          "description": [
             "calculated from load values, scheduler only"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -199,7 +199,7 @@
          "description": [
             "percentage of total SGEEE tickets, scheduler only"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -208,7 +208,7 @@
          "description": [
             "percentage of total SGEEE tickets, scheduler only"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -217,7 +217,7 @@
          "description": [
             "used for caching from global/local configuration"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -226,7 +226,7 @@
          "description": [
             "contains per consumable information about resource utilization for this host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
          "flags": []
@@ -237,7 +237,7 @@
          "description": [
             "used in scheduler for caching built attributes"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": []
@@ -248,7 +248,7 @@
          "description": [
             "used to decide whether QU_cached_complexes needs a refresh"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -257,7 +257,7 @@
          "description": [
             "used for caching from global/local conf; timout after which jobs will be rescheduled automatically"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -266,7 +266,7 @@
          "description": [
             "after the rundown of reschedule_unknown this list contains all jobs which will be rescheduled automatically"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RU",
          "subCullPrefix": "RU",
          "flags": [
@@ -281,7 +281,7 @@
             "This seqno is used to detect old * reports, because reports are send * asynchronously",
             "and we have no guarantee that they arrive in order at qmaster"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -290,7 +290,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "STU",
          "subCullPrefix": "STU",
          "flags": [
@@ -303,7 +303,7 @@
          "description": [
             "list of variables written to the report file, merged from global host and actual host"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "STU",
          "subCullPrefix": "STU",
          "flags": []
@@ -316,7 +316,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
@@ -332,7 +332,7 @@
             "memory information (numa nodes and caches),",
             "and attributes for those nodes (size, speed etc.)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -343,7 +343,7 @@
             "daemon registered and a rule of the qmaster_params AUTO_ADD_HOSTS matched it.",
             "0 for a host which an administrator added."
          ],
-         "type": "lUlong64T",
+         "type": "Uint64",
          "flags": [
             "SPOOL"
          ]

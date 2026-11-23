@@ -13,7 +13,7 @@
          "description": [
             "Project name."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -28,7 +28,7 @@
             "UA; decayed usage.",
             "Set and used by SGEEE scheduler stored to qmaster; spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -42,7 +42,7 @@
             "UA; long term accumulated non-decayed usage.",
             "Set by SGEEE scheduler stored to qmaster; spooled"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [

@@ -160,7 +160,7 @@ static void sge_urgency(uint64_t now, double *min_urgency, double *max_urgency,
       }
 
       /* we do category based caching when determining the resource request dependent contribution */
-      // the category is a reference (lRefT) to the job's category element
+      // the category is a reference (MT_REF) to the job's category element
       const auto cat =
          ocs::tom::Element<ocs::tom::CT>::from_typed(static_cast<lListElem *>(jep.get<JB_category>()));
       if (cat != nullptr && cat.get<CT_rc_valid>()) {

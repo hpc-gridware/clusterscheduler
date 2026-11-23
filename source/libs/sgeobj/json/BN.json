@@ -13,7 +13,7 @@
          "description": [
             "host or slot binding"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -24,7 +24,7 @@
          "description": [
             "Set, PE or env"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -35,7 +35,7 @@
          "description": [
             "Number of units to bind to"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -46,7 +46,7 @@
          "description": [
             "Defines if threads, cores, sockets ... should be bound"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -57,7 +57,7 @@
          "description": [
             "Masked parts have to be lowercase in the topology string."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -68,7 +68,7 @@
          "description": [
             "Defines how units within the topology string should be sorted before binding."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -79,7 +79,7 @@
          "description": [
             "Defines the start position for binding within the topology string."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -90,7 +90,7 @@
          "description": [
             "Defines the stop position for binding within the topology string."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -101,7 +101,7 @@
          "description": [
             "Defines the strategy for binding, like linear, striding, packed or explicit"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -112,7 +112,7 @@
          "description": [
             "Used in scheduler only to identify where a specific binding decision was done for."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -123,7 +123,7 @@
          "description": [
             "Used in scheduler only to hold a binding decision for a specific job on a host."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -135,7 +135,7 @@
             "Id of sublist specifies a task ID and the string the binding done for that task.",
             "Exists only if task specific binding decisions have to be done."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SpecificBindingList",
          "subCullPrefix": "ST",
          "flags": [
@@ -150,7 +150,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

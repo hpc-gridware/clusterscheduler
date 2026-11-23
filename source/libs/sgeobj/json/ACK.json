@@ -12,7 +12,7 @@
          "description": [
             "What is being acknowledged, e.g. a job report or a signal. Dispatched on by the receiver."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "Primary key of the acknowledged thing, usually a job id."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -30,7 +30,7 @@
          "description": [
             "Secondary key, usually an array task id."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -39,7 +39,7 @@
          "description": [
             "String key, used where the acknowledged thing is named rather than numbered."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

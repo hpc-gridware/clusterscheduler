@@ -13,7 +13,7 @@
          "description": [
             "Name of the Variable."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "Value of the Variable as String."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]

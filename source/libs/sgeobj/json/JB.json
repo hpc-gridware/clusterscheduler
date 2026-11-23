@@ -32,7 +32,7 @@
          "description": [
             "holds values in the range of 1..std::numeric_limits<uint32_t>::max()"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "HASH",
@@ -45,7 +45,7 @@
          "description": [
             "(qsub/qalter -N job_name)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -56,7 +56,7 @@
          "description": [
             "will be in increased when job is modified"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -68,7 +68,7 @@
             "Dependencies as requested via qsub -hold_jid.",
             "Can be job ids or job names, including the use of wildcards. (JRE only JRE_job_name)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
@@ -81,7 +81,7 @@
          "description": [
             "list of job numbers of predecessor jobs (JRE only JRE_job_name)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
@@ -94,7 +94,7 @@
          "description": [
             "list of job numbers of successor jobs (JRE only JRE_job_name)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": []
@@ -108,7 +108,7 @@
             "e.g. when task 1 of job a has finished then task 1 of job b can start",
             "Can be job ids or job names, including the use of wildcards. (JRE only JRE_job_name)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
@@ -121,7 +121,7 @@
          "description": [
             "List of job numbers of predecessor jobs for array job dependencies (JRE only JRE_job_name)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
@@ -134,7 +134,7 @@
          "description": [
             "List of job numbers of successor jobs for array job dependencies (JRE only JRE_job_name)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": []
@@ -145,7 +145,7 @@
          "description": [
             "Jobs session (JAPI session tag for job event selection)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -156,7 +156,7 @@
          "description": [
             "Project name (qsub -P project_name)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -167,7 +167,7 @@
          "description": [
             "Department name. Set by schedd, saved (once) to qmaster."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -179,7 +179,7 @@
             "Command prefix for jobscript (\"qsub -C prefix\") for parsing",
             "special comments in the script file."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -192,7 +192,7 @@
             "it is script that actually gets executed,",
             "In the case of a binary, is unused."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -204,7 +204,7 @@
             "is the path to the job as sent from the CLI, is the path on the submit host",
             "In the case of a binary, is the path to the binary"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -215,7 +215,7 @@
          "description": [
             "@todo really needed?"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -226,7 +226,7 @@
          "description": [
             "the pointer to the character area of the jobscript"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -235,7 +235,7 @@
          "description": [
             "timestamp in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -247,7 +247,7 @@
             "When should the job start (\"qsub/qalter -a date_time\")",
             "timestamp in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -259,7 +259,7 @@
             "SGEEE. Deadline initiation time. (qsub -dl date_time)",
             "timestamp in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -271,7 +271,7 @@
             "user who submitted the job",
             "@todo rename to JB_user to be consistent?"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -282,7 +282,7 @@
          "description": [
             "user id of the job owner"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -293,7 +293,7 @@
          "description": [
             "primary group name of the job owner"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -304,7 +304,7 @@
          "description": [
             "primary group id if the job owner"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -315,7 +315,7 @@
          "description": [
             "Account string (\"qsub/qalter -A account string\")"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -326,7 +326,7 @@
          "description": [
             "Current working directory from qsub (\"qsub -cwd\" or \"qsub -wd\")"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -337,7 +337,7 @@
          "description": [
             "Notify job of impending kill/stop signal. (\"qsub -notify\")"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -349,7 +349,7 @@
             "Start job immediately or not at all. (\"qsub -now\")",
             "@todo it could be a boolean, but is misused for other information!"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -369,7 +369,7 @@
             "  o only for non-immediate jobs",
             "Default is 'n'."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -380,7 +380,7 @@
          "description": [
             "Priority (\"qsub/qalter -p priority\")"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -391,7 +391,7 @@
          "description": [
             "Priority (\"qsub/qalter -js jobshare\")"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -403,7 +403,7 @@
             "Command interpreter to be used (PN).",
             "(\"qsub/qalter -S shell\")"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
@@ -416,7 +416,7 @@
          "description": [
             "Triggers \"verify\" messages. (qsub -verify)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -427,7 +427,7 @@
          "description": [
             "Export these env variables (VA). (\"qsub -V\")."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "VA",
          "subCullPrefix": "VA",
          "flags": [
@@ -441,7 +441,7 @@
             "Custom attributes (name,val) pairs (VA).",
             "The result of the -ac, -sc and -dc switches, see JB_context_change."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "VA",
          "subCullPrefix": "VA",
          "flags": [
@@ -454,7 +454,7 @@
          "description": [
             "Job arguments (ST)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
@@ -468,7 +468,7 @@
             "Checkpoint attributes (\"qsub/qalter -c interval_flags\")",
             "@todo  merge all checkpointing stuff to one object?"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -479,7 +479,7 @@
          "description": [
             "Name of ckpt object (\"qsub/qalter -ckpt ckpt_name\")"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -491,7 +491,7 @@
             "Ckpt object which will be sent from qmaster to execd.",
             "@todo: meaning when we change it in qmaster it will not be updated in execd"
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "CK",
          "subCullPrefix": "CK",
          "flags": []
@@ -502,7 +502,7 @@
          "description": [
             "Checkpoint frequency (\"qsub/qalter -c seconds\")"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -514,7 +514,7 @@
             "Is job rerunable? (\"qsub/qalter -r y/n\")",
             "@todo it could be a boolean but is misused for other information!"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -525,7 +525,7 @@
          "description": [
             "Pathname for stdout (PN). (\"qsub/qalter -o path_name\")"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
@@ -538,7 +538,7 @@
          "description": [
             "Std error path streams (PN). (\"qsub/qalter -e path_name\")"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
@@ -551,7 +551,7 @@
          "description": [
             "Std input path streams (PN). (\"qsub/qalter -i path_name\")"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
@@ -564,7 +564,7 @@
          "description": [
             "Merge stdout and stderr? (\"qsub/qalter -j y|n\")"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -578,7 +578,7 @@
             "Parallel jobs can have up to 3 request sets: global requests,",
             "requests for the master task, requests for the slave tasks."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JobRequestSet",
          "subCullPrefix": "JRS",
          "flags": [
@@ -591,7 +591,7 @@
          "description": [
             "(qsub/qalter -m mail_options)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -603,7 +603,7 @@
             "Mail recipiants (MR).",
             "(qsub/qalter -M mail_list)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "MR",
          "subCullPrefix": "MR",
          "flags": [
@@ -617,7 +617,7 @@
             "Name of requested PE or wildcard expression for matching PEs",
             "(qsub/qalter -pe pe-name slot_range)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -629,7 +629,7 @@
             "PE slot range (RN). Qmaster will ensure that it is ascending and normalized",
             "(qsub/qalter -pe pe-name slot_range)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -642,7 +642,7 @@
          "description": [
             "Kerberos client TGT"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -652,7 +652,7 @@
             "DCE/Kerberos credentials. Also used for TLS encryption to transport the credentials",
             "from qrsh to the sge_execd, which will store it in the job's active_jobs directory."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -663,7 +663,7 @@
             "submission time of a (array) job (RN).",
             "qsub -t tid_range"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -676,7 +676,7 @@
          "description": [
             "Just submitted array task without hold state (RN)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -691,7 +691,7 @@
             "qsub -h -t tid_range",
             "qalter -h u/U jid.tid1-tid2:step"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -705,7 +705,7 @@
             "Just submitted and system hold applied (RN).",
             "qalter -h s/S jid.tid1-tid2:step"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -719,7 +719,7 @@
             "Just submitted and operator hold applied (RN).",
             "qalter -h o/O jid.tid1-tid2:step"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -733,7 +733,7 @@
             "Just submitted and array hold applied (RN).",
             "qalter -hold_jid_ad wc_job_list"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
@@ -747,7 +747,7 @@
             "Template for new tasks. In SGEEE systems the schedd will",
             "store initial tickets in this element. (JAT)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JAT",
          "subCullPrefix": "JAT",
          "flags": [
@@ -761,7 +761,7 @@
             "List of array tasks (in case of array jobs) or one task",
             "(in case of a job) (JAT)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JAT",
          "subCullPrefix": "JAT",
          "flags": [
@@ -776,7 +776,7 @@
             "Not spooled.",
             "@todo still used?"
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -785,7 +785,7 @@
          "description": [
             "Category string reference used in schedd."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -802,7 +802,7 @@
             "probably be passed via lCondition.",
             "@todo change qalter, remove this attribute from job"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": []
@@ -814,7 +814,7 @@
             "condition for qalter? @todo Then it should better be passed",
             "via condition. (ID)"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ID",
          "subCullPrefix": "ID",
          "flags": []
@@ -825,7 +825,7 @@
          "description": [
             "@todo used in qalter?"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -834,7 +834,7 @@
          "description": [
             "Timestamp (microseconds since epoch) when a soft wallclock limit will take effect"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -845,7 +845,7 @@
          "description": [
             "Timestamp (microseconds since epoch) when a hard wallclock limit will take effect"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -857,7 +857,7 @@
             "SGEEE - override tickets assigned by admin.",
             "(qalter -ot tickets)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -868,7 +868,7 @@
          "description": [
             "Path aliases list (PA)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PA",
          "subCullPrefix": "PA",
          "flags": [
@@ -884,7 +884,7 @@
             "value is possible. Needed only when scheduling code is run.",
             "Not spooled."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -896,7 +896,7 @@
             "and deadline remain job attributes.",
             "Not spooled."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -908,7 +908,7 @@
             "priority remains a job attribute.",
             "Not spooled."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -921,7 +921,7 @@
             "via GDI.",
             "Not spooled."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -933,7 +933,7 @@
             "is a job attribute. Increases over time.",
             "Not spooled."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -945,7 +945,7 @@
             "is a job attribute. Increases over time.",
             "Not spooled."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -954,7 +954,7 @@
          "description": [
             "Unique advance reservation number."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -965,7 +965,7 @@
          "description": [
             "Interactive job should be started in a pty. 0=no, 1=yes, 2=use default."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -976,7 +976,7 @@
          "description": [
             "The number of concurrent array tasks executing at any given time."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -987,7 +987,7 @@
          "description": [
             "Binding strategy for the job"
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "BN",
          "subCullPrefix": "BN",
          "flags": [
@@ -1002,7 +1002,7 @@
             "Arguments which contain whitespace or wildcards are enclosed in single quotes,",
             "so it should be possible to copy/paste the command line into a shell."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -1013,7 +1013,7 @@
          "description": [
             "list of supplementary groups and corresponding ID's"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "String",
          "subCullPrefix": "ST",
          "flags": [
@@ -1028,7 +1028,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
@@ -1041,7 +1041,7 @@
          "description": [
             "Bits that have been specified to the -sync switch."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -1052,7 +1052,7 @@
          "description": [
             "Category ID (CAT_id). Within the scheduler the field category refers to the category object."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "HASH"
          ]
@@ -1063,7 +1063,7 @@
          "description": [
             "Value of the -when qalter switch (enum qalter_when_t)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -1073,7 +1073,7 @@
             "Instructions of the -ac, -sc and -dc switches (CX), in the order given.",
             "Sent by submit and qalter, applied to JB_context by the qmaster and not spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CX",
          "subCullPrefix": "CX",
          "flags": []

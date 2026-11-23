@@ -121,8 +121,8 @@ namespace ocs::tom {
 
    /**
     * @brief The name of a field type of the list library
-    * @param mt the field type, e.g. lUlongT
-    * @return the name, e.g. "lUlongT", or "unknown multitype"
+    * @param mt the field type, e.g. MT_UINT32
+    * @return the name, e.g. "MT_UINT32", or "unknown multitype"
     */
    const char *type_name(int mt) noexcept;
 
@@ -130,7 +130,7 @@ namespace ocs::tom {
     * @brief The type of a field a descriptor holds, as lGetType() gives it
     * @param descr the descriptor, or nullptr
     * @param nm the field number
-    * @return the field type, or lEndT if the descriptor is null or does not hold the field
+    * @return the field type, or MT_END if the descriptor is null or does not hold the field
     */
    int field_type(const lDescr *descr, int nm) noexcept;
 

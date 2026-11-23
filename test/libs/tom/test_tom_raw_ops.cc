@@ -1208,7 +1208,7 @@ test_select_pack() {
       {66, 0x9d7e196be5adc6deULL},   // no field, no condition, list, name nullptr
       {13, 0x07725da35b047ccdULL},   // no field, no condition, no list, name ""
       {13, 0x07725da35b047ccdULL},   // no field, no condition, no list, name nullptr
-      // no selection packs the whole list as cull_pack_list() did; TEST_int is an lIntT field, which is never
+      // no selection packs the whole list as cull_pack_list() did; TEST_int is an MT_INT32 field, which is never
       // packed, so the write ends there with PACK_FORMAT, which select_pack() does not report (as before)
       {54, 0xf247e4ab439a013aULL},   // no selection, condition, list, name ""
       {54, 0xf247e4ab439a013aULL},   // no selection, condition, list, name nullptr
@@ -1336,7 +1336,7 @@ test_make_hashable() {
 
    // the slots the list keeps: one per field of its type marked for hashing
    std::uint32_t hashed = 0;
-   for (const lDescr *dp = list.get().raw()->descr; mt_get_type(dp->mt) != lEndT; ++dp) {
+   for (const lDescr *dp = list.get().raw()->descr; mt_get_type(dp->mt) != MT_END; ++dp) {
       if (mt_do_hashing(dp->mt)) {
          hashed++;
       }

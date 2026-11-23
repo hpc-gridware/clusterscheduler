@@ -12,7 +12,7 @@
          "description": [
             "The host name."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",

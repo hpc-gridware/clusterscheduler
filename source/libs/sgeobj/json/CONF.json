@@ -14,7 +14,7 @@
          "description": [
             "Name of the host the configuration object refers to, or global for the global configuration."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -28,7 +28,7 @@
          "description": [
             "Each configuration object has a version number which is increased with every change."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -39,7 +39,7 @@
          "description": [
             "A configuration consists of multiple configuration entries of CF."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CF",
          "subCullPrefix": "CF",
          "flags": [

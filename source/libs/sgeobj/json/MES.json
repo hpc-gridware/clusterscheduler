@@ -14,7 +14,7 @@
             "A list of job ids to which the message applies.",
             "These are usually all jobs belonging to a specific job category (sharing the same requests)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ULNG",
          "subCullPrefix": "ULNG",
          "flags": []
@@ -25,7 +25,7 @@
          "description": [
             "Every possible scheduler message has an unique message number."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -34,7 +34,7 @@
          "description": [
             "The scheduler message as string."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

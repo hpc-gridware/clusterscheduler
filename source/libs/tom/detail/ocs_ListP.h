@@ -240,7 +240,7 @@ namespace ocs::tom {
             if (rmap_ != nullptr) {
                return i_ < np_;
             }
-            return mt_get_type(dp_[i_].mt) != lEndT;
+            return mt_get_type(dp_[i_].mt) != MT_END;
          }
 
       private:
@@ -248,7 +248,7 @@ namespace ocs::tom {
           * @brief Move an entry walk past absent entries
           */
          void skip_absent() {
-            while (mt_get_type(dp_[i_].mt) != lEndT && dp_[i_].off == OCS_CULL_ABSENT) {
+            while (mt_get_type(dp_[i_].mt) != MT_END && dp_[i_].off == OCS_CULL_ABSENT) {
                ++i_;
             }
          }

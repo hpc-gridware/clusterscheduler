@@ -485,8 +485,8 @@ int ocs_resolve_host_name(const char *hostname, const int nm, const bool is_stri
    store = false;
 
    if (is_string && nm != CE_stringval) {
-      DPRINTF("!!!!!!! ocs_resolve_host: WARNING call with old lStringT data type,\n");
-      DPRINTF("!!!!!!! this data type should be replaced with lHostT data type in\n");
+      DPRINTF("!!!!!!! ocs_resolve_host: WARNING call with old MT_STRING data type,\n");
+      DPRINTF("!!!!!!! this data type should be replaced with MT_HOST data type in\n");
       DPRINTF("!!!!!!! the future! Nevertheless, just a warning! Function works fine!\n");
    }
 

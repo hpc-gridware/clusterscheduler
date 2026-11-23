@@ -15,7 +15,7 @@
          "description": [
             "PE Task Id identifying a finished PE Task."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",

@@ -12,7 +12,7 @@
          "description": [
             "The instruction's attribute name, e.g. `href`."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "Its value, e.g. the stylesheet URL."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -30,7 +30,7 @@
          "description": [
             "The stylesheet version."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

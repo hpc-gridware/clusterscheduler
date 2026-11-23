@@ -57,7 +57,7 @@ namespace ocs::tom {
        * @brief The first element of a list holding a name in a string or host field
        * @param lp the list, or nullptr
        * @param nm the field
-       * @param type lStringT or lHostT
+       * @param type MT_STRING or MT_HOST
        * @param name the name
        * @return the element, or nullptr
        */
@@ -70,7 +70,7 @@ namespace ocs::tom {
             return nullptr;
          }
          const void *iterator = nullptr;
-         return type == lStringT ? lookup_first<FieldType::String>(lp, pos, name, &iterator)
+         return type == MT_STRING ? lookup_first<FieldType::String>(lp, pos, name, &iterator)
                                  : lookup_first<FieldType::Host>(lp, pos, name, &iterator);
       }
 
@@ -81,8 +81,8 @@ namespace ocs::tom {
          return;
       }
       const int pos = present_pos(descr, nm);
-      const int type = pos >= 0 ? mt_get_type(descr[pos].mt) : static_cast<int>(lEndT);
-      if (type != lStringT && type != lHostT) {
+      const int type = pos >= 0 ? mt_get_type(descr[pos].mt) : static_cast<int>(MT_END);
+      if (type != MT_STRING && type != MT_HOST) {
          return;
       }
       TokenState state;
@@ -93,7 +93,7 @@ namespace ocs::tom {
             if (find_name(lp, nm, type, name) != nullptr) {
                continue;
             }
-            if (type == lStringT) {
+            if (type == MT_STRING) {
                add_elem_str(lp, nm, name, descr);
             } else {
                add_elem_host(lp, nm, name, descr);
@@ -111,12 +111,12 @@ namespace ocs::tom {
          return;
       }
       const int pos = present_pos(descr, nm);
-      const int type = pos >= 0 ? mt_get_type(descr[pos].mt) : static_cast<int>(lEndT);
+      const int type = pos >= 0 ? mt_get_type(descr[pos].mt) : static_cast<int>(MT_END);
       const lListElem *none = nullptr;
-      if (type == lStringT) {
+      if (type == MT_STRING) {
          none = lookup_first_str_nocase(lp, nm, "none");
-      } else if (type == lHostT) {
-         none = find_name(lp, nm, lHostT, "none");
+      } else if (type == MT_HOST) {
+         none = find_name(lp, nm, MT_HOST, "none");
       }
       if (none == nullptr) {
          return;
@@ -190,7 +190,7 @@ namespace ocs::tom {
          const char *key = ocs::tom::detail::value(ep, checked_pos(ep, nm, FieldType::String)).str;
          // step on first, the element may be removed
          ep = ep->next;
-         if (key == nullptr || find_name(lp2, nm, lStringT, key) == nullptr) {
+         if (key == nullptr || find_name(lp2, nm, MT_STRING, key) == nullptr) {
             continue;
          }
          // the key of the element removed from lp1 is freed with it
@@ -216,7 +216,7 @@ namespace ocs::tom {
                                nm, lp->descr);
       }
       const int type = mt_get_type(lp->descr[pos].mt);
-      if (type != lStringT && type != lHostT) {
+      if (type != MT_STRING && type != MT_HOST) {
          throw_field_exception(FieldException::Reason::WrongType, nm, lp->descr);
       }
       const SortKey key{nm, true};
@@ -230,7 +230,7 @@ namespace ocs::tom {
       free_sort_order(so);
       auto key_of = [pos, type](const lListElem *ep) {
          const lMultiType &value = ocs::tom::detail::value(ep, pos);
-         return type == lStringT ? value.str : value.host;
+         return type == MT_STRING ? value.str : value.host;
       };
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
          lListElem *rep = ep->next;
@@ -246,7 +246,7 @@ namespace ocs::tom {
       if (ep != nullptr) {
          n = 1;
          const int pos = present_pos(ep->descr, nm);
-         if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
+         if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == MT_LIST) {
             const lList *children = ocs::tom::detail::value(ep, pos).glp;
             if (children != nullptr) {
                n += count_nodes(nullptr, children, nm);
@@ -264,7 +264,7 @@ namespace ocs::tom {
       int n = 0;
       if (ep != nullptr) {
          const int pos = present_pos(ep->descr, nm);
-         if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == lListT) {
+         if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == MT_LIST) {
             const lList *children = ocs::tom::detail::value(ep, pos).glp;
             n = children == nullptr ? 1 : count_leaves(nullptr, children, nm);
          }

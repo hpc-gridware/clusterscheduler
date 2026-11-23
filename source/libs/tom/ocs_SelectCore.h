@@ -124,7 +124,8 @@ namespace ocs::tom {
     * @param descr the descriptor of the type
     * @param nm the field
     * @param op the operator
-    * @param value_type the list library type of @p value (lUlongT, lStringT, ...); lStringT is taken for a host field
+    * @param value_type the list library type of @p value (MT_UINT32, MT_STRING, ...); MT_STRING is taken
+    *        for a host field
     * @param value the value; for a string or host only the pointer, which may be nullptr
     * @return the condition, owned by the caller, freed with lFreeWhere()
     * @throw FieldException with reason NullDescriptor, ForeignField, AbsentField, or WrongType if @p value_type

@@ -13,7 +13,7 @@
          "description": [
             "All jobs in this functional category have this amount of jobs shares."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "All jobs in this functional category have this amount of user shares."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Pointer to the user structure."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -44,7 +44,7 @@
          "description": [
             "All jobs in this functional category have this amount of project shares."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -53,7 +53,7 @@
          "description": [
             "Pointer to the project structure."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -66,7 +66,7 @@
          "description": [
             "All jobs in this functional category have this amount of department shares."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -75,7 +75,7 @@
          "description": [
             "Pointer to the department structure."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -88,7 +88,7 @@
          "description": [
             "Pointer to the first element of job ticket list."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -101,7 +101,7 @@
          "description": [
             "Pointer to the last element in the job ticket list."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

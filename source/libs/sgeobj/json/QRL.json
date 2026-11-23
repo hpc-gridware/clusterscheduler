@@ -12,7 +12,7 @@
          "description": [
             "Reference to the queue instance (`QU`). Not owned by this element."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

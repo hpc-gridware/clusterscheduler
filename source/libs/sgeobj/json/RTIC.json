@@ -12,7 +12,7 @@
          "description": [
             "The execution host the tickets belong to."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -25,7 +25,7 @@
          "description": [
             "The per-job ticket values for that host."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "OR",
          "subCullPrefix": "OR",
          "flags": []

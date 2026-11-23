@@ -12,7 +12,7 @@
          "description": [
             "The attribute name."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "Its value. Escaped when the document is written, so plain text is passed in."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

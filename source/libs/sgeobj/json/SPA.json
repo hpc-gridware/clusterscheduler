@@ -16,7 +16,7 @@
             "the -a option has option number a_OPT.",
             "Every option has a unique option number."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -25,9 +25,9 @@
          "description": [
             "If an option has additional arguments the type of the argument,",
             "as defined in source/libs/tom/ocs_Types.h, enum _enum_lMultiType, e.g.",
-            "lStringT for the -N option (defining a job name as string)."
+            "MT_STRING for the -N option (defining a job name as string)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -36,7 +36,7 @@
          "description": [
             "The option as string, e.g. -N."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "HASH"
          ]
@@ -47,7 +47,7 @@
          "description": [
             "Optional the argument to the option, e.g. for the -N switch the job name."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -59,7 +59,7 @@
             "- BIT_SPA_OCC_NOARG",
             "- BIT_SPA_OCC_ARG"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -68,7 +68,7 @@
          "description": [
             "If the option argument is a double then this value is the commandline argument (switch_arg) parsed to double."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -77,7 +77,7 @@
          "description": [
             "If the option argument is an ulong then this value is the commandline argument (switch_arg) parsed to ulong."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -86,7 +86,7 @@
          "description": [
             "If the option argument is an ulong64 then this value is the commandline argument (switch_arg) parsed to ulong64."
          ],
-         "type": "lUlong64T",
+         "type": "Uint64",
          "flags": []
       },
       {
@@ -95,7 +95,7 @@
          "description": [
             "If the option argument is a long then this value is the commandline argument (switch_arg) parsed to long."
          ],
-         "type": "lLongT",
+         "type": "Int64",
          "flags": []
       },
       {
@@ -106,7 +106,7 @@
             "In parsing of the job submission command line it is used to store the scope information,",
             "JRS_SCOPE_GLOBAL, JRS_SCOPE_MASTER, JRS_SCOPE_SLAVE."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -116,7 +116,7 @@
             "If the option argument is an integer then this value is the commandline argument (switch_arg) parsed to integer.",
             "In parsing of the job submission command line it is used to store the information if requests are hard or soft."
          ],
-         "type": "lIntT",
+         "type": "Int32",
          "flags": []
       },
       {
@@ -125,7 +125,7 @@
          "description": [
             "The commandline argument (same value as the switch_arg attribute)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -135,7 +135,7 @@
             "If the option argument defines a list of items then this attribute contains the parsed list.",
             "The type of its elements depends on the option, e.g. ST for -hold_jid, PN for -jsv, VA for -v."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []

@@ -13,7 +13,7 @@
          "description": [
             "The verifier's name, unique within its context."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Where this verifier runs: in the submit client, or in qmaster. The list is searched by context."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "The configured location of the script, as written in the JSV configuration."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
          "description": [
             "How the script is to be started, derived from the URL."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -49,7 +49,7 @@
          "description": [
             "The user the script runs as, when the configuration asks for one other than the caller."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -58,7 +58,7 @@
          "description": [
             "The resolved path of the script to execute."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -67,7 +67,7 @@
          "description": [
             "Process id of the running script, as a string, for logging and for killing it."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -76,7 +76,7 @@
          "description": [
             "`FILE *` writing to the script's stdin - how the job is sent to it."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -89,7 +89,7 @@
          "description": [
             "`FILE *` reading the script's stdout - how its verdict comes back."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -102,7 +102,7 @@
          "description": [
             "`FILE *` reading the script's stderr, logged as JSV output."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -115,7 +115,7 @@
          "description": [
             "Set when the configuration changed under a running script, so it is restarted before the next job."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -124,7 +124,7 @@
          "description": [
             "Modification time of the script file when it was started. Compared on each use, so an edited script is picked up without a reconfiguration."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -133,7 +133,7 @@
          "description": [
             "The script asked for the job environment as well as the job itself. Off by default because the environment can be large."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -142,7 +142,7 @@
          "description": [
             "`lListElem *` to the job as submitted, so the changes the script asks for can be applied to a copy."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -155,7 +155,7 @@
          "description": [
             "`lListElem *` to the job the script may modify. This is what is submitted if the verifier accepts."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -168,7 +168,7 @@
          "description": [
             "The script asked to be restarted. Ends the current conversation."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -177,7 +177,7 @@
          "description": [
             "The script accepted the job. Read together with JSV_done to tell acceptance from a script that died mid-conversation."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -186,7 +186,7 @@
          "description": [
             "The script sent its closing command. The read loop runs until this is set."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -195,7 +195,7 @@
          "description": [
             "The script asked to be shut down cleanly after this job rather than killed."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -204,7 +204,7 @@
          "description": [
             "Verify the script's own answers against an expected sequence, used by the JSV tests rather than in production."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -213,7 +213,7 @@
          "description": [
             "How far through the expected sequence the test has got."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -222,7 +222,7 @@
          "description": [
             "The last result string the script sent, kept for the test comparison and for the error message."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

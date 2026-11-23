@@ -13,7 +13,7 @@
          "description": [
             "`SGE_WHERE` or `SGE_WHAT`, saying which of the two the packed data is."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "The condition in packed form."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

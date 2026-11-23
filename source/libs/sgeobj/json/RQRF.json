@@ -12,7 +12,7 @@
          "description": [
             "False means one limit shared by everything the filter matches; true means a separate limit for each matched name. This is what distinguishes \"100 slots between all users\" from \"100 slots each\"."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -23,7 +23,7 @@
          "description": [
             "The names the filter matches (`ST`). A single `*` entry means everything."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
@@ -36,7 +36,7 @@
          "description": [
             "Names explicitly excluded, applied after RQRF_scope."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [

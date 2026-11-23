@@ -676,8 +676,9 @@ namespace legacy_cores {
 
    /// the hash of the dump text, recorded on the code before the cores took the old bodies over
    constexpr std::uint64_t DumpTextHash = 0x77f15bc08feb7b97ULL;
-   /// the hash of the text the print functions write, recorded on the same code
-   constexpr std::uint64_t RestTextHash = 0x6ba2bcf5a05b2a91ULL;
+   /// the hash of the text the print functions write, recorded on the same code; renewed for the type names MT_*
+   /// (CS-3197): with the old names put back the text hashes to the recorded 0x6ba2bcf5a05b2a91 again
+   constexpr std::uint64_t RestTextHash = 0x79e3363b282000d0ULL;
 
    /**
     * @brief FNV-1a over bytes
@@ -909,7 +910,7 @@ namespace legacy_cores {
     */
    void test_rest() {
       const bool types = std::strcmp(ocs::tom::type_name(-1), "unknown multitype") == 0 &&
-                         std::strcmp(ocs::tom::type_name(lUlong64T), "lUlong64T") == 0;
+                         std::strcmp(ocs::tom::type_name(MT_UINT64), "MT_UINT64") == 0;
 
       // shared names: taken out of both; nothing happens for a missing list
       lList *a = ListPtr<ocs::tom::ST>::from_string<ST_name>("a b c", " ").release();
@@ -979,7 +980,7 @@ namespace legacy_cores {
       text += text_of([&](FILE *fp) { ocs::tom::write_to(fp, what_name); });
       const Where<US> where = field<US_name>() == "one" && (field<US_type>() > 3U || !field<US_name>().like("t*"));
       text += text_of([&](FILE *fp) { ocs::tom::write_to(fp, where.get()); });
-      for (int mt = -1; mt <= lUlong64T + 1; mt++) {
+      for (int mt = -1; mt <= MT_UINT64 + 1; mt++) {
          text += ocs::tom::type_name(mt);
       }
       const std::uint64_t hash = fnv1a(text.data(), text.size());

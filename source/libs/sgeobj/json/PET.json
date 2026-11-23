@@ -12,7 +12,7 @@
          "description": [
             "The pe task id. It is unique per job."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "The name of this parallel environment task, used in the job's output file names and in accounting. Defaults to `petask`."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "Status of the pe job, see defines in libs/gdi/sge_jobL.h."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -48,7 +48,7 @@
          "description": [
             "Contains one entry specifying the queue the pe task runs in."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JG",
          "subCullPrefix": "JG",
          "flags": [
@@ -61,7 +61,7 @@
          "description": [
             "Pid of a running pe task (process group id)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -70,7 +70,7 @@
          "description": [
             "OS jobid / additional group id of a running pe task."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -82,7 +82,7 @@
             "Only used in sge_execd, it is set during the startup phase of the",
             "pe task."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -92,7 +92,7 @@
             "Usage collection mode of a pe task.",
             "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -101,7 +101,7 @@
          "description": [
             "Usage list of a running/just finished pe task."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -114,7 +114,7 @@
          "description": [
             "Scaled usage list of a running/just finished pe task."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -129,7 +129,7 @@
             "An intermediate usage record is written around midnight every day,",
             "the usage already reported so far is stored in the PET_reported_usage list"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -142,7 +142,7 @@
          "description": [
             "In case a petask is re-run (@todo is this ever done?) the usage of the previous run."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": []
@@ -153,7 +153,7 @@
          "description": [
             "Submission time of a task (when qrsh -inherit was called) in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -164,7 +164,7 @@
          "description": [
             "Start time of the petask in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -175,7 +175,7 @@
          "description": [
             "End time of the petask in microseconds since epoch"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -187,7 +187,7 @@
             "Path to the petask's current working directory.",
             "If not set, the cwd from the ja task is inherited."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -198,7 +198,7 @@
          "description": [
             "Path alias list for the petask."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PA",
          "subCullPrefix": "PA",
          "flags": []
@@ -210,7 +210,7 @@
             "Environment variables to be set when executing the job (qrsh inherit -v).",
             "They will overwrite inherited variables from the ja task."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "VA",
          "subCullPrefix": "VA",
          "flags": []
@@ -222,7 +222,7 @@
             "Used in limit enforcement to remember whether to contact the host where a task is running.",
             "Is set to false when the host is down/unknown."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -234,7 +234,7 @@
             "Used with the TLS encryption to transport the credentials",
             "from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -245,7 +245,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

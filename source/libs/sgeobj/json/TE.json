@@ -13,7 +13,7 @@
          "description": [
             "Time in µs since epoch when this event must be delivered."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -23,7 +23,7 @@
             "Used to differ between different event categories from enum te_type_t, e.g.",
             "TYPE_CALENDAR_EVENT, TYPE_SIGNAL_RESEND_EVENT, ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -32,7 +32,7 @@
          "description": [
             "one-time or recurring event (ONE_TIME_EVENT or RECURRING_EVENT)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -41,7 +41,7 @@
          "description": [
             "The event interval in µs, in case of recurring events."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -50,7 +50,7 @@
          "description": [
             "1st ulong key, e.g. the job number for a job specific event like a TYPE_JOB_RESEND_EVENT."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -59,7 +59,7 @@
          "description": [
             "2nd ulong key, e.g. the array task number for a job/task specific event like a TYPE_JOB_RESEND_EVENT."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -68,7 +68,7 @@
          "description": [
             "String key, e.g. for a queue instance specific event."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -77,7 +77,7 @@
          "description": [
             "Every event is assigned an unique sequence number."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

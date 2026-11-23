@@ -120,7 +120,7 @@ namespace {
     */
    uint32_t count_entries(const lDescr *dp) {
       uint32_t n = 0;
-      while (mt_get_type(dp[n].mt) != lEndT) {
+      while (mt_get_type(dp[n].mt) != MT_END) {
          n++;
       }
       return n;
@@ -261,7 +261,7 @@ bool ocs::tom::descr_is_counted(const lDescr *dp) {
  */
 const lDescr *ocs::tom::descr_static_for(const int nm) {
    const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
-   if (table == nullptr || table->descr == nullptr || mt_get_type(table->descr[0].mt) == lEndT ||
+   if (table == nullptr || table->descr == nullptr || mt_get_type(table->descr[0].mt) == MT_END ||
        table->descr[0].nm != nm) {
       return nullptr;
    }
@@ -311,7 +311,7 @@ bool ocs::tom::descr_is_static(const lDescr *dp) {
  * found by a later lookup, and a warning is logged once. The argument is left to
  * the caller; it may be static, counted or a plain array without header.
  *
- * @param dp the entries of the descriptor, terminated by #lEndT
+ * @param dp the entries of the descriptor, terminated by #MT_END
  * @return the shared or private descriptor holding one reference for the caller,
  *         or nullptr if dp is nullptr or memory is exhausted
  */
@@ -408,7 +408,7 @@ static void check_full_length(const lDescr *dp, const uint32_t n) {
  * descriptor is interned. Debug builds abort on a reduced descriptor that does
  * not have the length of its type. The argument is left to the caller.
  *
- * @param dp the entries of the descriptor, terminated by #lEndT
+ * @param dp the entries of the descriptor, terminated by #MT_END
  * @return the descriptor to hold, or nullptr if dp is nullptr or memory is exhausted
  */
 const lDescr *ocs::tom::descr_acquire(const lDescr *dp) {
@@ -440,7 +440,7 @@ const lDescr *ocs::tom::descr_acquire(const lDescr *dp) {
  * The copy is not registered, so no lookup finds it, and it holds one
  * reference for the caller. It is released with ocs::tom::release_descr().
  *
- * @param dp the entries of the descriptor, terminated by #lEndT
+ * @param dp the entries of the descriptor, terminated by #MT_END
  * @return the copy, or nullptr if dp is nullptr or memory is exhausted
  */
 const lDescr *ocs::tom::descr_private(const lDescr *dp) {
@@ -485,7 +485,7 @@ int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDe
       out[pos].mt = (src[pos].mt & ~CULL_DESCR_INTERNED) | CULL_IS_REDUCED;
       out[pos].off = keep[pos] ? slot++ - static_cast<int>(pos) : OCS_CULL_ABSENT;
    }
-   out[n] = {NoName, lEndT | CULL_IS_REDUCED, 0};
+   out[n] = {NoName, MT_END | CULL_IS_REDUCED, 0};
    if (static_cast<uint32_t>(slot) == n) {
       for (uint32_t pos = 0; pos <= n; pos++) {
          out[pos].mt &= ~CULL_IS_REDUCED;

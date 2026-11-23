@@ -20,7 +20,7 @@
             "GRU_SOFT_REQUEST_TYPE",
             "GRU_RESOURCE_MAP_TYPE"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -31,7 +31,7 @@
          "description": [
             "Name of the resource (complex variable name)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -42,7 +42,7 @@
          "description": [
             "How much of the resource has been granted."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -54,7 +54,7 @@
             "In case of resource maps: Which Ids and how much per Id has been granted",
             "For RSMAPs: Which ids have been granted."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RESL",
          "subCullPrefix": "RESL",
          "flags": [
@@ -67,7 +67,7 @@
          "description": [
             "Topology strings that show the granted core binding cores/threads."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
@@ -80,7 +80,7 @@
          "description": [
             "Host on which the resource has been granted (required in case of parallel jobs)."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "SPOOL"
          ]

@@ -13,7 +13,7 @@
          "description": [
             "The Name of the load variable / the complex variable."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL_SUBLIST"
@@ -25,7 +25,7 @@
          "description": [
             "A scaling factor as double value. Load values are multiplied by this factor."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]

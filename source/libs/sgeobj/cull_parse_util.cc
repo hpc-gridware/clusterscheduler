@@ -250,7 +250,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
             break;
 
          default:
-            // a 64 bit unsigned, bool, object or reference field, or one descr does not hold (type lEndT)
+            // a 64 bit unsigned, bool, object or reference field, or one descr does not hold (type MT_END)
             DPRINTF("encountered unknown list field type %d\n", ocs::tom::field_type(descr, *rule));
             DRETURN(-12);
 
@@ -453,7 +453,7 @@ int cull_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, 
  *         - -4/-5/-6: stream write error
  *         - -19: unknown field type encountered
  *
- * @note List-type fields (@c lListT) are currently skipped.
+ * @note List-type fields (@c MT_LIST) are currently skipped.
  *
  * @note Output is written directly to the stream without size limitations.
  *       Stream state should be checked by the caller if needed.
@@ -560,7 +560,7 @@ int uni_print_list(std::ostream &os, const ocs::tom::ConstRawList lp, const int 
                break;
 
             default:
-               // a 64 bit unsigned, bool, object or reference field, or one descr does not hold (type lEndT)
+               // a 64 bit unsigned, bool, object or reference field, or one descr does not hold (type MT_END)
                DPRINTF("encountered unknown list field type %d\n", ocs::tom::field_type(descr, *rule));
                DRETURN(-19);
          }

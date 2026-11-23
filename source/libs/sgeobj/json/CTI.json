@@ -12,7 +12,7 @@
          "description": [
             "The cluster queue or host to skip for this category."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "UNIQUE",
             "HASH"

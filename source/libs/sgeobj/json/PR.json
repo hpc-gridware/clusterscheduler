@@ -12,7 +12,7 @@
          "description": [
             "A unique name of the project."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "Configured override tickets."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -38,7 +38,7 @@
          "description": [
             "Configured functional shares."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -49,7 +49,7 @@
          "description": [
             "Job counter, used in scheduler thread only."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -58,7 +58,7 @@
          "description": [
             "Pending job counter, used in scheduler thread only."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -67,7 +67,7 @@
          "description": [
             "List of UA objects storing accumulated and decayed usage of jobs belonging to this project."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -80,7 +80,7 @@
          "description": [
             "Time stamp of last decay. Set when usage changes."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -91,7 +91,7 @@
          "description": [
             "Usage sequence number used in scheduler thread only."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -100,7 +100,7 @@
          "description": [
             "List of UA objects holding long term accumulated non-decayed usage."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -113,7 +113,7 @@
          "description": [
             "Usage on a project basis (?)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UPP",
          "subCullPrefix": "UPP",
          "flags": [
@@ -126,7 +126,7 @@
          "description": [
             "US but only names are filled configured excluded user access list used."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -139,7 +139,7 @@
          "description": [
             "US but only names are filled configured excluded user access list used."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
@@ -152,7 +152,7 @@
          "description": [
             "List of UPU, still debited usage per job."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UPU",
          "subCullPrefix": "UPU",
          "flags": [
@@ -165,7 +165,7 @@
          "description": [
             "project version, increments when usage is updated"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -174,7 +174,7 @@
          "description": [
             "True, if project plays role with categories."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -185,7 +185,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

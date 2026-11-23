@@ -17,7 +17,7 @@
          "description": [
             "Name of the configuration element (the left column of qconf -sconf)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -31,7 +31,7 @@
          "description": [
             "The value of a configuration element (the right column of qconf -sconf)."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -42,7 +42,7 @@
          "description": [
             "Recursive Sublist of CF. @todo is it still required? It is only used in libs/gdi/sge_qtcsh.cc."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []
@@ -53,7 +53,7 @@
          "description": [
             "Is it a local configuration (true) or the global configuration (false)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

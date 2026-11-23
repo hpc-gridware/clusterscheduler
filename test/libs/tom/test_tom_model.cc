@@ -181,7 +181,7 @@ test_type_names() {
          reduced != nullptr && reduced_name != nullptr && std::strcmp(reduced_name, "JB") == 0);
    ocs::tom::release_descr(reduced);
 
-   const lDescr empty[] = {{NoName, lEndT, 0}};
+   const lDescr empty[] = {{NoName, MT_END, 0}};
    CHECK(10, "type_name() of nullptr, of an empty descriptor and of the tail of a descriptor is nullptr",
          ocs::tom::type_name(nullptr) == nullptr && ocs::tom::type_name(empty) == nullptr &&
          ocs::tom::type_name(ocs::tom::JB::descriptor.e + 1) == nullptr);
@@ -313,13 +313,13 @@ namespace {
       {2, "TA_list", ocs::tom::FieldType::List, ocs::tom::Flag::None},
    };
    /** @brief The descriptor of type TA */
-   const lDescr ta_descr[] = {{1, lUlongT, 0}, {2, lListT, 0}, {NoName, lEndT, 0}};
+   const lDescr ta_descr[] = {{1, MT_UINT32, 0}, {2, MT_LIST, 0}, {NoName, MT_END, 0}};
    /** @brief The fields of type TB: a string */
    const ocs::tom::FieldInfo tb_fields[] = {
       {10, "TB_one", ocs::tom::FieldType::String, ocs::tom::Flag::None},
    };
    /** @brief The descriptor of type TB */
-   const lDescr tb_descr[] = {{10, lStringT, 0}, {NoName, lEndT, 0}};
+   const lDescr tb_descr[] = {{10, MT_STRING, 0}, {NoName, MT_END, 0}};
 
    /** @brief The valid model: TA and TB, TA_list holds TB */
    const ocs::tom::TypeTable valid_types[] = {{"TA", ta_descr, ta_fields, 2}, {"TB", tb_descr, tb_fields, 1}};
@@ -343,19 +343,19 @@ namespace {
       {1, "TA_one", ocs::tom::FieldType::Uint32, ocs::tom::Flag::None},
       {3, "TA_list", ocs::tom::FieldType::List, ocs::tom::Flag::None},
    };
-   const lDescr gap_descr[] = {{1, lUlongT, 0}, {3, lListT, 0}, {NoName, lEndT, 0}};
+   const lDescr gap_descr[] = {{1, MT_UINT32, 0}, {3, MT_LIST, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable gap_types[] = {{"TA", gap_descr, gap_fields, 2}};
 
    /** @brief A descriptor whose first entry is another field than the table's first */
-   const lDescr first_descr[] = {{5, lUlongT, 0}, {2, lListT, 0}, {NoName, lEndT, 0}};
+   const lDescr first_descr[] = {{5, MT_UINT32, 0}, {2, MT_LIST, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable first_types[] = {{"TA", first_descr, ta_fields, 2}};
 
    /** @brief A descriptor that agrees in entry 0, but declares entry 1 a string */
-   const lDescr later_descr[] = {{1, lUlongT, 0}, {2, lStringT, 0}, {NoName, lEndT, 0}};
+   const lDescr later_descr[] = {{1, MT_UINT32, 0}, {2, MT_STRING, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable later_types[] = {{"TA", later_descr, ta_fields, 2}};
 
    /** @brief A descriptor with one entry more than the table has fields */
-   const lDescr long_descr[] = {{1, lUlongT, 0}, {2, lListT, 0}, {3, lUlongT, 0}, {NoName, lEndT, 0}};
+   const lDescr long_descr[] = {{1, MT_UINT32, 0}, {2, MT_LIST, 0}, {3, MT_UINT32, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable long_types[] = {{"TA", long_descr, ta_fields, 2}};
 
    /** @brief Two types of the name TA, with field ranges and names of their own */
@@ -371,7 +371,7 @@ namespace {
    const ocs::tom::FieldInfo overlap_fields[] = {
       {2, "TC_one", ocs::tom::FieldType::Uint32, ocs::tom::Flag::None},
    };
-   const lDescr overlap_descr[] = {{2, lUlongT, 0}, {NoName, lEndT, 0}};
+   const lDescr overlap_descr[] = {{2, MT_UINT32, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable overlap_types[] = {
       {"TA", ta_descr, ta_fields, 2},
       {"TC", overlap_descr, overlap_fields, 1},
@@ -431,11 +431,11 @@ test_rules() {
    CHECK(29, "field numbers that are not consecutive are rejected",
          rejected_for({gap_types, {}}, "the field numbers are not consecutive"));
    CHECK(30, "a descriptor whose first entry is not the table's first field is rejected",
-         rejected_for({first_types, {}}, "field 0 (TA_one): the descriptor holds field 5 of type lUlongT"));
+         rejected_for({first_types, {}}, "field 0 (TA_one): the descriptor holds field 5 of type MT_UINT32"));
    CHECK(31, "a descriptor that differs from the table in a later entry is rejected, naming both types",
          rejected_for({later_types, {}},
-                      "field 1 (TA_list): the descriptor holds field 2 of type lStringT, the table field 2 of type "
-                      "lListT"));
+                      "field 1 (TA_list): the descriptor holds field 2 of type MT_STRING, the table field 2 of type "
+                      "MT_LIST"));
    CHECK(32, "a descriptor with more entries than the table has fields is rejected",
          rejected_for({long_types, {}}, "the descriptor has more entries than the 2 fields"));
    CHECK(33, "a type name that occurs twice is rejected",

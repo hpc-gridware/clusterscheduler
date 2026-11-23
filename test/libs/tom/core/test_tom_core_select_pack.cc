@@ -168,34 +168,34 @@ static bool elem_equal(const lListElem *a, const lListElem *b) {
       const int nm = da[i].nm;
       bool same = true;
       switch (mt_get_type(da[i].mt)) {
-         case lStringT:
+         case MT_STRING:
             same = sge_strnullcmp(ocs::tom::get<const char *>(a, nm), ocs::tom::get<const char *>(b, nm)) == 0;
             break;
-         case lHostT:
+         case MT_HOST:
             same = sge_strnullcmp(ocs::tom::get<ocs::tom::Host>(a, nm), ocs::tom::get<ocs::tom::Host>(b, nm)) == 0;
             break;
-         case lUlongT:
+         case MT_UINT32:
             same = ocs::tom::get<std::uint32_t>(a, nm) == ocs::tom::get<std::uint32_t>(b, nm);
             break;
-         case lUlong64T:
+         case MT_UINT64:
             same = ocs::tom::get<std::uint64_t>(a, nm) == ocs::tom::get<std::uint64_t>(b, nm);
             break;
-         case lDoubleT:
+         case MT_DOUBLE:
             same = ocs::tom::get<double>(a, nm) == ocs::tom::get<double>(b, nm);
             break;
-         case lBoolT:
+         case MT_BOOL:
             same = ocs::tom::get<bool>(a, nm) == ocs::tom::get<bool>(b, nm);
             break;
-         case lIntT:
+         case MT_INT32:
             same = ocs::tom::get<std::int32_t>(a, nm) == ocs::tom::get<std::int32_t>(b, nm);
             break;
-         case lLongT:
+         case MT_INT64:
             same = ocs::tom::get<std::int64_t>(a, nm) == ocs::tom::get<std::int64_t>(b, nm);
             break;
-         case lListT:
+         case MT_LIST:
             same = list_equal(ocs::tom::get<const lList *>(a, nm), ocs::tom::get<const lList *>(b, nm));
             break;
-         case lObjectT:
+         case MT_OBJECT:
             same = elem_equal(ocs::tom::get<const lListElem *>(a, nm), ocs::tom::get<const lListElem *>(b, nm));
             break;
          default:
@@ -597,7 +597,7 @@ static void test_partial_descr() {
    CHECK(15, "every field and the end mark carry CULL_IS_REDUCED", reduced);
 
    CHECK(16, "the field attributes of the source are kept",
-         mt_get_type(dp[pos_name].mt) == lStringT && (dp[pos_name].mt & CULL_HASH) != 0 &&
+         mt_get_type(dp[pos_name].mt) == MT_STRING && (dp[pos_name].mt & CULL_HASH) != 0 &&
          (dp[pos_name].mt & CULL_UNIQUE) != 0 && (dp[pos_group].mt & CULL_HASH) != 0 &&
          (dp[pos_group].mt & CULL_UNIQUE) == 0 && (dp[pos_spool].mt & CULL_SPOOL) != 0);
 

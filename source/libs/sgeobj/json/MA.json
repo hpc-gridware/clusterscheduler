@@ -14,7 +14,7 @@
          "description": [
             "Id of the individual request to associate request with result."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -23,7 +23,7 @@
          "description": [
             "A list of the requested type containing the result of the request."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []
@@ -34,7 +34,7 @@
          "description": [
             "A list of answers. This can be error, warning or info messages from processing the request."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "AN",
          "subCullPrefix": "AN",
          "flags": []

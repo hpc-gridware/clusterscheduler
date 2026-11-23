@@ -169,11 +169,11 @@ namespace ocs::tom {
          const lMultiType &operand = cp->operand.cmp.val;
          int result;
          switch (mt_get_type(cp->operand.cmp.mt)) {
-            case lIntT:
+            case MT_INT32:
                result = three_way(field_value(ep, cp).i, operand.i);
                break;
-            case lStringT:
-            case lHostT: {
+            case MT_STRING:
+            case MT_HOST: {
                const char *value = string_value(ep, cp);
                if (value == nullptr || operand.str == nullptr) {
                   return false;
@@ -184,29 +184,29 @@ namespace ocs::tom {
                result = (order > 0) - (order < 0);
                break;
             }
-            case lUlongT:
+            case MT_UINT32:
                result = three_way(field_value(ep, cp).ul, operand.ul);
                break;
-            case lUlong64T:
+            case MT_UINT64:
                result = three_way(field_value(ep, cp).ul64, operand.ul64);
                break;
-            case lListT: {
+            case MT_LIST: {
                const lList *sub = field_value(ep, cp).glp;
                if (sub == nullptr) {
                   return false;
                }
                return find_first(sub, operand.cp) != nullptr;
             }
-            case lDoubleT:
+            case MT_DOUBLE:
                result = three_way(field_value(ep, cp).db, operand.db);
                break;
-            case lLongT:
+            case MT_INT64:
                result = three_way(field_value(ep, cp).l, operand.l);
                break;
-            case lBoolT:
+            case MT_BOOL:
                result = three_way(field_value(ep, cp).b, operand.b);
                break;
-            case lRefT:
+            case MT_REF:
                result = three_way(field_value(ep, cp).ref, operand.ref);
                break;
             default:
@@ -296,7 +296,7 @@ namespace ocs::tom {
       }
       ep[i].pos = 0;
       ep[i].nm = NoName;
-      ep[i].mt = lEndT;
+      ep[i].mt = MT_END;
       ep[i].ep = nullptr;
       sort_what_by_pos(ep);
       return ep;
@@ -313,7 +313,7 @@ namespace ocs::tom {
       ep[0].ep = nullptr;
       ep[1].pos = 0;
       ep[1].nm = NoName;
-      ep[1].mt = lEndT;
+      ep[1].mt = MT_END;
       ep[1].ep = nullptr;
       return ep;
    }
@@ -357,7 +357,7 @@ namespace ocs::tom {
                             const lMultiType &value) {
       const int pos = descr_pos(descr, nm);
       const int field_type = mt_get_type(descr[pos].mt);
-      if (value_type != field_type && !(value_type == lStringT && field_type == lHostT)) {
+      if (value_type != field_type && !(value_type == MT_STRING && field_type == MT_HOST)) {
          throw_field_exception(FieldException::Reason::WrongType, nm, descr);
       }
       lCondition *cp = new_node();
@@ -366,8 +366,8 @@ namespace ocs::tom {
       cp->operand.cmp.pos = pos;
       cp->operand.cmp.mt = descr[pos].mt;
       switch (field_type) {
-         case lStringT:
-         case lHostT: {
+         case MT_STRING:
+         case MT_HOST: {
             // the union holds a string and a host at the same place
             const char *text = value.str;
             if (text != nullptr && (cp->operand.cmp.val.str = strdup(text)) == nullptr) {
@@ -387,7 +387,7 @@ namespace ocs::tom {
       int pos;
       try {
          pos = descr_pos(descr, nm);
-         if (mt_get_type(descr[pos].mt) != lListT) {
+         if (mt_get_type(descr[pos].mt) != MT_LIST) {
             throw_field_exception(FieldException::Reason::WrongType, nm, descr);
          }
       } catch (...) {
@@ -452,7 +452,7 @@ namespace ocs::tom {
          case STRCASECMP:
          case HOSTNAMECMP: {
             const int type = mt_get_type(cp->operand.cmp.mt);
-            if (type != lStringT && type != lHostT) {
+            if (type != MT_STRING && type != MT_HOST) {
                return false;
             }
             const char *value = string_value(ep, cp);
@@ -465,7 +465,7 @@ namespace ocs::tom {
 
          case PATTERNCMP: {
             const int type = mt_get_type(cp->operand.cmp.mt);
-            if (type != lStringT && type != lHostT) {
+            if (type != MT_STRING && type != MT_HOST) {
                return false;
             }
             const char *value = string_value(ep, cp);
@@ -478,7 +478,7 @@ namespace ocs::tom {
          }
 
          case BITMASK:
-            if (mt_get_type(cp->operand.cmp.mt) != lUlongT) {
+            if (mt_get_type(cp->operand.cmp.mt) != MT_UINT32) {
                return false;
             }
             return (field_value(ep, cp).ul & cp->operand.cmp.val.ul) == cp->operand.cmp.val.ul;
@@ -602,7 +602,7 @@ namespace ocs::tom {
       if (ep == nullptr) {
          return;
       }
-      for (int i = 0; mt_get_type(ep[i].mt) != lEndT; i++) {
+      for (int i = 0; mt_get_type(ep[i].mt) != MT_END; i++) {
          free_what(ep[i].ep);
       }
       ocs::tom::release_descr(ep[0].cache_dp);
@@ -615,7 +615,7 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
       int n = 0;
-      while (mt_get_type(ep[n].mt) != lEndT) {
+      while (mt_get_type(ep[n].mt) != MT_END) {
          n++;
       }
       // the cache of the reduced descriptor is not copied; the copy builds its own
@@ -654,12 +654,12 @@ namespace ocs::tom {
          case HOSTNAMECMP:
          case SUBSCOPE:
             switch (mt_get_type(cp->operand.cmp.mt)) {
-               case lStringT:
-               case lHostT:
+               case MT_STRING:
+               case MT_HOST:
                   // the union holds a string and a host at the same place
                   sge_free(&(cp->operand.cmp.val.str));
                   break;
-               case lListT:
+               case MT_LIST:
                   free_where(cp->operand.cmp.val.cp);
                   break;
                default:
@@ -703,26 +703,26 @@ namespace ocs::tom {
                copy->operand.cmp.mt = cp->operand.cmp.mt;
                copy->operand.cmp.nm = cp->operand.cmp.nm;
                switch (mt_get_type(cp->operand.cmp.mt)) {
-                  case lStringT:
-                  case lHostT:
+                  case MT_STRING:
+                  case MT_HOST:
                      if (cp->operand.cmp.val.str != nullptr &&
                          (copy->operand.cmp.val.str = strdup(cp->operand.cmp.val.str)) == nullptr) {
                         throw ListCoreError("out of memory copying the value of a condition");
                      }
                      break;
-                  case lListT:
+                  case MT_LIST:
                      copy->operand.cmp.val.cp = copy_where(cp->operand.cmp.val.cp);
                      break;
-                  case lObjectT:
-                  case lRefT:
+                  case MT_OBJECT:
+                  case MT_REF:
                      // as lCopyWhere() did, a reference is not taken over
                      break;
-                  case lIntT:
-                  case lUlongT:
-                  case lUlong64T:
-                  case lDoubleT:
-                  case lLongT:
-                  case lBoolT:
+                  case MT_INT32:
+                  case MT_UINT32:
+                  case MT_UINT64:
+                  case MT_DOUBLE:
+                  case MT_INT64:
+                  case MT_BOOL:
                      copy->operand.cmp.val = cp->operand.cmp.val;
                      break;
                   default:
@@ -856,7 +856,7 @@ namespace ocs::tom {
             }
             break;
          default:
-            for (int i = 0; mt_get_type(enp[i].mt) != lEndT; i++) {
+            for (int i = 0; mt_get_type(enp[i].mt) != MT_END; i++) {
                const int pos = enp[i].pos;
                if (pos < 0 || pos >= n || enp[i].nm != sdp[pos].nm || mt_get_type(enp[i].mt) != mt_get_type(sdp[pos].mt) ||
                    sdp[pos].off == OCS_CULL_ABSENT) {
@@ -910,11 +910,11 @@ namespace ocs::tom {
          free_what(what2);
       };
       try {
-         for (int i = 0; mt_get_type(what1[i].mt) != lEndT; i++) {
+         for (int i = 0; mt_get_type(what1[i].mt) != MT_END; i++) {
             entries.push_back({what1[i].pos, what1[i].mt, what1[i].nm, std::exchange(what1[i].ep, nullptr), nullptr,
                                nullptr});
          }
-         for (int i = 0; mt_get_type(what2[i].mt) != lEndT; i++) {
+         for (int i = 0; mt_get_type(what2[i].mt) != MT_END; i++) {
             auto same = std::ranges::find_if(entries, [&](const lEnumeration &entry) {
                return entry.nm == what2[i].nm;
             });
@@ -941,7 +941,7 @@ namespace ocs::tom {
       std::ranges::copy(entries, ep);
       ep[entries.size()].pos = 0;
       ep[entries.size()].nm = NoName;
-      ep[entries.size()].mt = lEndT;
+      ep[entries.size()].mt = MT_END;
       ep[entries.size()].ep = nullptr;
       free_what(what1);
       free_what(what2);
@@ -950,7 +950,7 @@ namespace ocs::tom {
    }
 
    void set_sub_what(lEnumeration *what, const int nm, lEnumeration *sub) {
-      for (int i = 0; mt_get_type(what[i].mt) != lEndT; i++) {
+      for (int i = 0; mt_get_type(what[i].mt) != MT_END; i++) {
          if (what[i].nm == nm) {
             free_what(what[i].ep);
             what[i].ep = sub;

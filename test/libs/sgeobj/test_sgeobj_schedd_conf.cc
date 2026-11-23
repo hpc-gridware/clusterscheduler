@@ -81,7 +81,7 @@ typedef struct {
 /** @brief Which scheduler configuration attribute a block of settings applies to */
 typedef struct {
    u_long      test_attribute;   ///< CULL attribute to set (e.g. SC_halflife_decay_list)
-   u_long      type;             ///< CULL attribute type (lStringT, lDoubleT, lUlongT)
+   u_long      type;             ///< CULL attribute type (MT_STRING, MT_DOUBLE, MT_UINT32)
 } schedd_conf_t;
 
 /**
@@ -103,12 +103,12 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
 
       if (schedd_conf) {
          switch (conf->type) {
-            case lStringT:
+            case MT_STRING:
                schedd_conf.set(static_cast<int>(conf->test_attribute), settings[i].test_value);
                break;
-            case lDoubleT:
+            case MT_DOUBLE:
                break;
-            case lUlongT:
+            case MT_UINT32:
                break;
             default:
                fprintf(stderr, "unsupported attribute type %d in test infrastructure\n",
@@ -130,7 +130,7 @@ static void run_tests(int *id, schedd_conf_t *conf, conf_settings_t *settings) {
 // format: "NONE" | "<key>=<val>[:<key>=<val>]*[:]"
 // invalid if any colon-delimited token is not in "key=number" form
 
-static schedd_conf_t halflife_conf = { SC_halflife_decay_list, lStringT };
+static schedd_conf_t halflife_conf = { SC_halflife_decay_list, MT_STRING };
 
 static conf_settings_t halflife_settings[] = {
    {"NONE",
@@ -159,7 +159,7 @@ static conf_settings_t halflife_settings[] = {
 // --- policy_hierarchy ---
 // valid chars: O, F, S — each may appear at most once; "NONE" and "" skip validation
 
-static schedd_conf_t policy_hierarchy_conf = { SC_policy_hierarchy, lStringT };
+static schedd_conf_t policy_hierarchy_conf = { SC_policy_hierarchy, MT_STRING };
 
 static conf_settings_t policy_hierarchy_settings[] = {
    {"OFS",
@@ -178,7 +178,7 @@ static conf_settings_t policy_hierarchy_settings[] = {
 // --- schedd_job_info ---
 // valid: "true", "false", "job_list <range>"
 
-static schedd_conf_t schedd_job_info_conf = { SC_schedd_job_info, lStringT };
+static schedd_conf_t schedd_job_info_conf = { SC_schedd_job_info, MT_STRING };
 
 static conf_settings_t schedd_job_info_settings[] = {
    {"true",
@@ -195,7 +195,7 @@ static conf_settings_t schedd_job_info_settings[] = {
 // --- algorithm ---
 // valid: "default" | "simple_sched" | "ext_<anything>"
 
-static schedd_conf_t algorithm_conf = { SC_algorithm, lStringT };
+static schedd_conf_t algorithm_conf = { SC_algorithm, MT_STRING };
 
 static conf_settings_t algorithm_settings[] = {
    {"default",
@@ -212,7 +212,7 @@ static conf_settings_t algorithm_settings[] = {
 // --- schedule_interval ---
 // time string in HH:MM:SS format, parsed by extended_parse_ulong_val(TIME)
 
-static schedd_conf_t schedule_interval_conf = { SC_schedule_interval, lStringT };
+static schedd_conf_t schedule_interval_conf = { SC_schedule_interval, MT_STRING };
 
 static conf_settings_t schedule_interval_settings[] = {
    {"0:0:15",
@@ -228,7 +228,7 @@ static conf_settings_t schedule_interval_settings[] = {
 // space/comma-delimited keywords; valid set: NONE, PROFILE, MONITOR,
 // DURATION_OFFSET, PE_RANGE_ALG — unknown keywords are rejected
 
-static schedd_conf_t params_conf = { SC_params, lStringT };
+static schedd_conf_t params_conf = { SC_params, MT_STRING };
 
 static conf_settings_t params_settings[] = {
    {"none",

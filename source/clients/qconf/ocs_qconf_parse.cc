@@ -408,7 +408,7 @@ ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cu
    const char *cp2 = sge_strtok(s, ",");
    bool first = true;
    do {
-      DPRINTF("parse_name_list_to_cull: Adding %s type element\n", is_host ? "lHostT" : "lStringT");
+      DPRINTF("parse_name_list_to_cull: Adding %s type element\n", is_host ? "MT_HOST" : "MT_STRING");
       auto ep = ocs::tom::ElementPtr<T>::create();
       if constexpr (is_host) {
          ep->template set<F>(ocs::tom::Host(cp2));

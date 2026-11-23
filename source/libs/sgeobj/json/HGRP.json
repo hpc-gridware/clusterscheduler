@@ -64,7 +64,7 @@
          "description": [
             "Name of the hostgroup. Always starts with '@', e.g. `@allhosts`."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -78,7 +78,7 @@
          "description": [
             "List of hosts and/or other host groups which are referenced by the host group."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "HR",
          "subCullPrefix": "HR",
          "flags": [
@@ -92,7 +92,7 @@
             "Temporary list of cluster queues referencing a host group",
             "while processing creation or modification requests for host groups."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "CQ",
          "subCullPrefix": "CQ",
          "flags": []
@@ -105,7 +105,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
@@ -125,7 +125,7 @@
             " ",
             "Only valid when cache_version is non-zero - see there."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "HR",
          "subCullPrefix": "HR",
          "flags": []
@@ -149,7 +149,7 @@
             "partially stale. Do not add logic that compares two version values - a",
             "consumer has nothing to compare against."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
          ,{
@@ -180,7 +180,7 @@
             "invalidation is a security property rather than a question of",
             "performance."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "MatchCacheEntry",
          "subCullPrefix": "HM",
          "flags": [

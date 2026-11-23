@@ -13,7 +13,7 @@
          "description": [
             "The set's name, as used by `qconf -mrqs`."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "Free text describing what the set is for."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -38,7 +38,7 @@
          "description": [
             "Whether the set is applied. A disabled set stays configured but limits nothing."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -49,7 +49,7 @@
          "description": [
             "The rules (`RQR`), in the order they are tried."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RQR",
          "subCullPrefix": "RQR",
          "flags": [
@@ -64,7 +64,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

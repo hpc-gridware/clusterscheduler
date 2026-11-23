@@ -12,7 +12,7 @@
          "description": [
             "Day of the month, 1-31 (@todo 32 in the old documentation, does it have a special meaning?)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "Month, 0-11."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -30,7 +30,7 @@
          "description": [
             "The number of years since 1900."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -39,7 +39,7 @@
          "description": [
             "Seconds, 0-59"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -48,7 +48,7 @@
          "description": [
             "Minutes, 0-59"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -57,7 +57,7 @@
          "description": [
             "Hour, 0-23"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -66,7 +66,7 @@
          "description": [
             "Week day, 0-6."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -75,7 +75,7 @@
          "description": [
             "Day in the year, 0-365."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -84,7 +84,7 @@
          "description": [
             "Whether daylight saving time is in effect (0 = false, 1 = true)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

@@ -20,7 +20,7 @@
             "See enum sge_object_type in libs/gdi/sge_mirror.h",
             "SGE_TYPE_ALL describes a default type entry for all object types."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "UNIQUE",
             "HASH"
@@ -32,7 +32,7 @@
          "description": [
             "Name of the type - used for informational messages etc."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -43,7 +43,7 @@
             "Does not reference the rules themselves, but contains mapping",
             "objects mapping between type and rule."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SPTR",
          "subCullPrefix": "SPTR",
          "flags": []

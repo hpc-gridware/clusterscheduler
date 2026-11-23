@@ -12,7 +12,7 @@
          "description": [
             "A unique name of the user."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "Configured override tickets."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -38,7 +38,7 @@
          "description": [
             "Configured functional shares."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -52,7 +52,7 @@
             "Whenever a user submits a job the delete time is updated.",
             "When set to 0 (via qconf) the user object is kept forever."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -63,7 +63,7 @@
          "description": [
             "Job counter, used in scheduler thread only."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -72,7 +72,7 @@
          "description": [
             "Pending job counter, used in scheduler thread only."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -81,7 +81,7 @@
          "description": [
             "List of UA objects storing accumulated and decayed usage of jobs belonging to this user."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -94,7 +94,7 @@
          "description": [
             "Time stamp of last decay. Set when usage changes."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": [
             "SPOOL"
          ]
@@ -105,7 +105,7 @@
          "description": [
             "Usage sequence number used in scheduler thread only."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -114,7 +114,7 @@
          "description": [
             "List of UA objects holding long term accumulated non-decayed usage."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
@@ -127,7 +127,7 @@
          "description": [
             "UPP list @todo add description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UPP",
          "subCullPrefix": "UPP",
          "flags": [
@@ -140,7 +140,7 @@
          "description": [
             "List of UPU, still debited usage per job."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UPU",
          "subCullPrefix": "UPU",
          "flags": [
@@ -154,7 +154,7 @@
             "The default project is the project to which jobs of the user are assigned",
             "if no project is specified at job submission time."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -165,7 +165,7 @@
          "description": [
             "Version of the user object, increments when usage is updated"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -174,7 +174,7 @@
          "description": [
             "True, if user plays role with categories."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -185,7 +185,7 @@
             "Its purpose is to be able to add new attributes without changing the spooling format.",
             "It is a list of arbitrary type and it is spooled."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [

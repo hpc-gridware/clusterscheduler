@@ -18,7 +18,7 @@
             "  - GNU_LOADSENSOR_NAME = qloadsensor",
             "@todo what's the purpose of the name?"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -27,7 +27,7 @@
          "description": [
             "Absolute path of the load sensor script / binary."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -36,7 +36,7 @@
          "description": [
             "Pid of the load sensor process."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -45,7 +45,7 @@
          "description": [
             "stdin filehandle to the loadsensor process (type FILE *)"
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -58,7 +58,7 @@
          "description": [
             "stdout filehandle of the loadsensor process (type FILE *)"
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -71,7 +71,7 @@
          "description": [
             "stderr filehandle of the loadsensor process (type FILE *)"
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -84,7 +84,7 @@
          "description": [
             "Do we have to restart the load sensor script?"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -93,7 +93,7 @@
          "description": [
             "Tag for internal use (@todo 1 means it is running, 0 it isn't running? Verify.)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -102,7 +102,7 @@
          "description": [
             "Current values we got from the load sensor script."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "LR",
          "subCullPrefix": "LR",
          "flags": []
@@ -113,7 +113,7 @@
          "description": [
             "Last complete set of the load sensor's values."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "LR",
          "subCullPrefix": "LR",
          "flags": []
@@ -125,7 +125,7 @@
             "Last modification time of the load sensor script.",
             "If the script is modified, then the load sensor will be re-started."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

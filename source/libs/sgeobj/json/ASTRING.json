@@ -14,7 +14,7 @@
          "description": [
             "Name of a host or a host group."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -28,7 +28,7 @@
          "description": [
             "The string value."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]

@@ -15,7 +15,7 @@
          "description": [
             "The job number. Usage of individual array tasks and/or PE tasks is accumulated."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -29,7 +29,7 @@
          "description": [
             "UA still debited usage set and used via orders by SGEEE ted_job_usageschedd by qmaster."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [

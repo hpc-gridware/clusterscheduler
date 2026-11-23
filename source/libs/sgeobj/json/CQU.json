@@ -12,7 +12,7 @@
          "description": [
             "The `QI_*` state to put the queue into - enabled, disabled or suspended."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "When this state ends and the next entry takes over."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       }
    ]

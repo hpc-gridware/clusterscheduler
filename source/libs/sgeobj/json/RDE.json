@@ -38,7 +38,7 @@
          "description": [
             "Time stamp (microseconds since epoch)."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -47,7 +47,7 @@
          "description": [
             "Amount of the resource which is used."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -56,7 +56,7 @@
          "description": [
             "Amount of Resource Maps which are used."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RESL",
          "subCullPrefix": "RESL",
          "flags": []
@@ -67,7 +67,7 @@
          "description": [
             "Cores/threads that are used by jobs. Filled only if the resource is slots and when bookkeeping is done on host level."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

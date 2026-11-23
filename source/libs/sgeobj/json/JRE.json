@@ -13,7 +13,7 @@
          "description": [
             "Job number of the referenced job."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL_SUBLIST"
@@ -25,7 +25,7 @@
          "description": [
             "Job name of the referenced job(s). Multiple jobs can be referenced by the same name."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]

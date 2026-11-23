@@ -15,7 +15,7 @@
          "description": [
             "The queue instance name."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -29,7 +29,7 @@
          "description": [
             "The qinstance's version. Is used to detect when a qinstance was changed during scheduling."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -39,7 +39,7 @@
             "The qualified host name of the queue instance.",
             "It is redundand (cached) information also contained in qname."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "HASH",
             "SPOOL_SUBLIST"
@@ -52,7 +52,7 @@
             "The amount of slots the job occupies in the queue instance.",
             "Always 1 for sequential jobs / tasks of array jobs, >= 1 for parallel jobs"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -67,7 +67,7 @@
             "names no sub-type: the structure check of an object compares a sub-object",
             "with the full descriptor of its sub-type, which a reduction does not match."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []
@@ -78,7 +78,7 @@
          "description": [
             "Tag used in the job delivery protocol, is set when a slave host acknowledged receipt of the start order."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -87,7 +87,7 @@
          "description": [
             "Total amount of tickets assigned to slots."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -96,7 +96,7 @@
          "description": [
             "Override tickets assigned to slots."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -105,7 +105,7 @@
          "description": [
             "Functional tickets assigned to slots."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -114,7 +114,7 @@
          "description": [
             "Sharetree tickets assigned to slots."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -123,7 +123,7 @@
          "description": [
             "Job class override tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -132,7 +132,7 @@
          "description": [
             "Job class functional tickets."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -141,7 +141,7 @@
          "description": [
             "Processor set the job is supposed to run on (Solaris only?)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -150,7 +150,7 @@
          "description": [
             "One entry for sequential jobs or multiple entries for PE jobs in case of host/task specific binding"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
@@ -164,7 +164,7 @@
             "List of RSMAP IDs granted to this job / specific tasks of a parallel job,",
             "which are running on the specific queue instance / host described by this object."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ResourceList",
          "subCullPrefix": "RESL",
          "flags": [

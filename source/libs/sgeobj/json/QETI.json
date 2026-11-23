@@ -13,7 +13,7 @@
          "description": [
             "The resource's full capacity, the value utilization is compared against."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Reference to the resource being walked (`RUE`), whose utilization diagram holds the bookings."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ResourceUtilization",
          "subCullPrefix": "RUE",
          "flags": [
@@ -35,7 +35,7 @@
          "description": [
             "Cursor into that utilization diagram: the next booking end this iterator will report."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ResourceDiagramEntry",
          "subCullPrefix": "RDE",
          "flags": [

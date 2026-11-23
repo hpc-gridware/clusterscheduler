@@ -12,7 +12,7 @@
          "description": [
             "JAPI job id."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "UNIQUE",
             "HASH"
@@ -24,7 +24,7 @@
          "description": [
             "Job type - analoguous to JB_type."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -33,7 +33,7 @@
          "description": [
             "List of finished job tasks."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JJAT",
          "subCullPrefix": "JJAT",
          "flags": []
@@ -44,7 +44,7 @@
          "description": [
             "Ids of not yet finished tasks."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": []
@@ -55,7 +55,7 @@
          "description": [
             "Ids of started tasks."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": []

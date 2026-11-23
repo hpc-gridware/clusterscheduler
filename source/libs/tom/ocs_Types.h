@@ -73,18 +73,18 @@ typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with
  *       to match — the array is indexed by these values.
  */
 enum _enum_lMultiType {
-   lEndT,      ///< marks the end of a descriptor; not a real type
-   lDoubleT,   ///< a double precision float
-   lUlongT,    ///< a 32 bit unsigned value
-   lLongT,     ///< a signed long
-   lBoolT,     ///< a boolean
-   lIntT,      ///< an int; not supported at GDI level
-   lStringT,   ///< a string, owned by the element
-   lListT,     ///< a sub-list, @ref lList
-   lObjectT,   ///< a single sub-object, an lListElem
-   lRefT,      ///< an opaque pointer; never spooled
-   lHostT,     ///< a host name, owned by the element
-   lUlong64T   ///< a 64 bit unsigned value
+   MT_END,     ///< marks the end of a descriptor; not a real type
+   MT_DOUBLE,  ///< a double precision float
+   MT_UINT32,  ///< a 32 bit unsigned value
+   MT_INT64,   ///< a signed long
+   MT_BOOL,    ///< a boolean
+   MT_INT32,   ///< an int; not supported at GDI level
+   MT_STRING,  ///< a string, owned by the element
+   MT_LIST,    ///< a sub-list, @ref lList
+   MT_OBJECT,  ///< a single sub-object, an lListElem
+   MT_REF,     ///< an opaque pointer; never spooled
+   MT_HOST,    ///< a host name, owned by the element
+   MT_UINT64   ///< a 64 bit unsigned value
 };
 
 /// Name of each @ref _enum_lMultiType, indexed by the enumerator; used in error messages and dumps
@@ -115,7 +115,7 @@ extern const char *multitypes[];
 
 /*
  * An object type is a static descriptor block: a cull_descr_header followed by the
- * fields and the terminating #lEndT entry, built at compile time by
+ * fields and the terminating #MT_END entry, built at compile time by
  * ocs::tom::descr_make() as an inline variable, so every translation unit sees the
  * same block and its contents are constant expressions. The descriptor of a type
  * points at its first field. The product types are generated (sgeobj/tom); the
@@ -134,7 +134,7 @@ extern const char *multitypes[];
  * @brief One field of an object type
  *
  * An object type is described by an array of these, terminated by a field
- * whose type is #lEndT. The array is what `LISTDEF`/`LISTEND` build.
+ * whose type is #MT_END. The array is what `LISTDEF`/`LISTEND` build.
  */
 struct _lDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
@@ -157,21 +157,21 @@ constexpr int OCS_CULL_ABSENT = INT32_MIN;
  */
 struct cull_descr_header {
    std::atomic<uint32_t> refs; ///< reference count; 0 for a static block, which is never released
-   uint32_t n;                 ///< number of fields, without the terminating #lEndT entry
+   uint32_t n;                 ///< number of fields, without the terminating #MT_END entry
    uint32_t np;                ///< number of fields that have a value, the slots of an element
    uint64_t hash;              ///< FNV-1a over field numbers, types and slot offsets, see ocs::tom::descr_hash()
 };
 static_assert(sizeof(cull_descr_header) == 24, "the fields must start 24 bytes after the header");
 
 /**
- * @brief A descriptor as one block: header, fields, terminating #lEndT entry
+ * @brief A descriptor as one block: header, fields, terminating #MT_END entry
  *
  * @tparam N number of entries including the terminating one
  */
 template<size_t N>
 struct cull_descr_block {
    cull_descr_header h; ///< header of the block
-   lDescr e[N];         ///< the fields, the last one is {#NoName, #lEndT}
+   lDescr e[N];         ///< the fields, the last one is {#NoName, #MT_END}
 };
 
 namespace ocs::tom {
@@ -204,7 +204,7 @@ namespace ocs::tom {
     *
     * @tparam N number of entries including the terminating one
     * @tparam I indices 0 .. N-1
-    * @param e the fields, terminated by {#NoName, #lEndT}
+    * @param e the fields, terminated by {#NoName, #MT_END}
     * @return the block with header and fields
     */
    template<size_t N, size_t... I>
@@ -218,7 +218,7 @@ namespace ocs::tom {
     * Used by #LISTDEF/#LISTEND; N is deduced from the braced field list.
     *
     * @tparam N number of entries including the terminating one
-    * @param e the fields, terminated by {#NoName, #lEndT}
+    * @param e the fields, terminated by {#NoName, #MT_END}
     * @return the block with header and fields
     */
    template<size_t N>

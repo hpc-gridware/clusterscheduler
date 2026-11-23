@@ -209,16 +209,16 @@ namespace ocs::tom {
             const lMultiType &value = ocs::tom::detail::value(ep, f.pos);
             const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
-               case lIntT:
+               case MT_INT32:
                   ret = fprintf(fp, "%s/* %-20.20s */ %d\n", space, name, value.i);
                   break;
-               case lUlongT:
+               case MT_UINT32:
                   ret = fprintf(fp, "%s/* %-20.20s */ " sge_u32 "\n", space, name, value.ul);
                   break;
-               case lUlong64T:
+               case MT_UINT64:
                   ret = fprintf(fp, "%s/* %-20.20s */ " sge_u64 "\n", space, name, value.ul64);
                   break;
-               case lStringT: {
+               case MT_STRING: {
                   // a " inside the string is escaped
                   char *tok;
                   if ((tok = sge_strtok(value.str, "\"")) != nullptr) {
@@ -233,22 +233,22 @@ namespace ocs::tom {
                   sge_dstring_clear(&dstr);
                   break;
                }
-               case lHostT:
+               case MT_HOST:
                   ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n", space, name, value.host != nullptr ? value.host : "");
                   break;
-               case lDoubleT:
+               case MT_DOUBLE:
                   ret = fprintf(fp, "%s/* %-20.20s */ %f\n", space, name, value.db);
                   break;
-               case lLongT:
+               case MT_INT64:
                   ret = fprintf(fp, "%s/* %-20.20s */%ld \n", space, name, value.l);
                   break;
-               case lBoolT:
+               case MT_BOOL:
                   ret = fprintf(fp, "%s/* %-20.20s */ %d\n", space, name, value.b);
                   break;
-               case lRefT:
+               case MT_REF:
                   ret = fprintf(fp, "%s/* %-20.20s */ %ld\n", space, name, reinterpret_cast<long>(value.ref));
                   break;
-               case lObjectT:
+               case MT_OBJECT:
                   if (value.obj == nullptr) {
                      ret = fprintf(fp, "%s/* %-20.20s */ none\n", space, name);
                   } else {
@@ -258,7 +258,7 @@ namespace ocs::tom {
                      }
                   }
                   break;
-               case lListT:
+               case MT_LIST:
                   if (value.glp == nullptr) {
                      ret = fprintf(fp, "%s/* %-20.20s */ empty\n", space, name);
                   } else {
@@ -600,44 +600,44 @@ namespace ocs::tom {
          for (const auto f : ocs::tom::present_fields(dp)) {
             lMultiType &value = ep->cont[f.slot];
             switch (mt_get_type(dp[f.pos].mt)) {
-               case lIntT:
+               case MT_INT32:
                   read_number(fp, "%d", &(value.i));
                   break;
-               case lUlongT:
+               case MT_UINT32:
                   read_number(fp, sge_u32, &(value.ul));
                   break;
-               case lUlong64T:
+               case MT_UINT64:
                   read_number(fp, sge_u64, &(value.ul64));
                   break;
-               case lStringT:
-               case lHostT: {
-                  OwnedChars str(mt_get_type(dp[f.pos].mt) == lStringT ? read_string(fp) : read_host(fp));
+               case MT_STRING:
+               case MT_HOST: {
+                  OwnedChars str(mt_get_type(dp[f.pos].mt) == MT_STRING ? read_string(fp) : read_host(fp));
                   store_string(ep, f.pos, str.get());
                   break;
                }
-               case lDoubleT:
+               case MT_DOUBLE:
                   read_number(fp, "%lf", &(value.db));
                   break;
-               case lLongT:
+               case MT_INT64:
                   read_number(fp, "%ld", &(value.l));
                   break;
-               case lBoolT: {
+               case MT_BOOL: {
                   int i = 0;
                   read_number(fp, "%d", &i);
                   value.b = i;
                   break;
                }
-               case lRefT: {
+               case MT_REF: {
                   // a reference is not read back, but its line is skipped
                   uint32_t dummy;
                   read_number(fp, sge_u32, &dummy);
                   value.ref = nullptr;
                   break;
                }
-               case lObjectT:
+               case MT_OBJECT:
                   value.obj = read_sub_object(fp);
                   break;
-               case lListT:
+               case MT_LIST:
                   value.glp = read_sub_list(fp);
                   break;
                default:
@@ -675,7 +675,7 @@ namespace ocs::tom {
             relabel("reading a descriptor entry", [&] { read_descr_entry(fp, &(dp[i])); });
          }
          dp[n].nm = NoName;
-         dp[n].mt = lEndT;
+         dp[n].mt = MT_END;
          dp[n].off = 0;
          if (!closes(fp)) {
             printf("ket is missing");

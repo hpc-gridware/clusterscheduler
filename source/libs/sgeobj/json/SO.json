@@ -20,7 +20,7 @@
          "description": [
             "Name of the subordinate queue."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL_SUBLIST"
@@ -32,7 +32,7 @@
          "description": [
             "The threshold (slots) defines when the subordination action (suspend) will be triggered."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -43,7 +43,7 @@
          "description": [
             "Used for slot-wise SOS."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -54,7 +54,7 @@
          "description": [
             "Used for slot-wise SOS."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -67,7 +67,7 @@
             "- SO_ACTION_SR: suspend the task with the shortest runtime",
             "- SO_ACTION_LR: suspend the task with the longest runtime"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]

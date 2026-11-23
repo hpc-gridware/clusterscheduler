@@ -453,9 +453,9 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    }
    
    while ((ep = cmdline.find_first<SPA_switch_val>("-c"))) {
-      if (ep.get<SPA_argtype>() == lLongT)
+      if (ep.get<SPA_argtype>() == MT_INT64)
          pjob->set<JB_checkpoint_interval>(ep.get<SPA_argval_lLongT>());
-      if (ep.get<SPA_argtype>() == lIntT) 
+      if (ep.get<SPA_argtype>() == MT_INT32) 
          pjob->set<JB_checkpoint_attr>(ep.get<SPA_argval_lIntT>());
 
       cmdline.erase(ep);
@@ -1149,15 +1149,15 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
       */
       if (!(flags & FLG_DONT_ADD_SCRIPT)) {
          if (!lpp_options->find_first<SPA_switch_val>(STR_PSEUDO_SCRIPT)) {
-            ep_opt = sge_add_arg(lp_new_opts, 0, lStringT, STR_PSEUDO_SCRIPT, nullptr);
+            ep_opt = sge_add_arg(lp_new_opts, 0, MT_STRING, STR_PSEUDO_SCRIPT, nullptr);
             ep_opt.set<SPA_argval_lStringT>(
                ((!script_file || !strcmp(script_file, "-")) ? "STDIN" : script_file));
          }
       }
-      ep_opt = sge_add_arg(lp_new_opts, 0, lUlongT, STR_PSEUDO_SCRIPTLEN, nullptr);
+      ep_opt = sge_add_arg(lp_new_opts, 0, MT_UINT32, STR_PSEUDO_SCRIPTLEN, nullptr);
       ep_opt.set<SPA_argval_lUlongT>(script_len);
 
-      ep_opt = sge_add_arg(lp_new_opts, 0, lStringT, STR_PSEUDO_SCRIPTPTR, nullptr);
+      ep_opt = sge_add_arg(lp_new_opts, 0, MT_STRING, STR_PSEUDO_SCRIPTPTR, nullptr);
       ep_opt.set<SPA_argval_lStringT>(filestrptr);
    }
 

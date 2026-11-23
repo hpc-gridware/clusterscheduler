@@ -18,7 +18,7 @@
          "description": [
             "Unique name of the rule."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "UNIQUE",
             "HASH"
@@ -30,7 +30,7 @@
          "description": [
             "An url, e.g. a spool directory, a database url etc."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
             "Function pointer to a function to set any database specific options,",
             "e.g. whether to do database recovery at startup or not."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -54,7 +54,7 @@
             "Function pointer to a startup function,",
             "e.g. establishing a connection to a database."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -68,7 +68,7 @@
             "Function pointer to a shutdown function,",
             "e.g. disconnecting from a database or closing file handles."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -86,7 +86,7 @@
             "- cleaning up / compressing database",
             "- etc."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -102,7 +102,7 @@
             "checkpointing and cleaning the transaction log in case of the",
             "Berkeley DB or vacuuming in case of PostgreSQL."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -116,7 +116,7 @@
             "Function pointer to a function beginning and ending transactions.",
             " "
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -130,7 +130,7 @@
             "Pointer to a function reading complete lists (master lists)",
             "from the spooling data source."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -144,7 +144,7 @@
             "Pointer to a function reading a single object from the",
             "spooling data source."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -159,7 +159,7 @@
             "matching beginning with a certain pattern.",
             "@see e.g. spool_berkeleydb_read_keys()"
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -172,7 +172,7 @@
          "description": [
             "Pointer to a function writing a single object."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -186,7 +186,7 @@
             "Pointer to a function deleting a single object.",
             " "
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -199,7 +199,7 @@
          "description": [
             "Pointer to a function validating a single object."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -213,7 +213,7 @@
             "Pointer to a function validating a list of objects.",
             " "
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -227,7 +227,7 @@
             "Clientdata; any pointer, can be used to store and",
             "reference rule specific data, e.g. file or database handles."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

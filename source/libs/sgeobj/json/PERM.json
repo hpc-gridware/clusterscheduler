@@ -12,7 +12,7 @@
          "description": [
             "true if user has manager role"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "true if user has operator role"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -30,7 +30,7 @@
          "description": [
             "true if the specified host is an admin host"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -39,7 +39,7 @@
          "description": [
             "true if the specified host is a submit host"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -48,7 +48,7 @@
          "description": [
             "name of the host with the specified permissions"
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -57,7 +57,7 @@
          "description": [
             "username with the specified permissions"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

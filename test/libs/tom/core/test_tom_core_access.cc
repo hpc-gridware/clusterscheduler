@@ -187,7 +187,7 @@ static V add_to(const ocs::tom::RawElement ep, const int nm, const V offset) {
 //
 // field_type_of() and field_type() map a position or a name to the data
 // type, field_pos() maps a name to its position, has() looks a name up through
-// an element. Unknown names yield lEndT, -1 or false.
+// an element. Unknown names yield MT_END, -1 or false.
 // ---------------------------------------------------------------------------
 
 /** @brief The descriptor queries of the core */
@@ -198,10 +198,10 @@ static void test_descriptor_queries() {
 
    CHECK(1, "field_type_of() of the entry of TEST_double is Double",
          ocs::tom::field_type_of(TEST_Type[pos_of(TEST_double)].mt) == ocs::tom::FieldType::Double);
-   CHECK(2, "field_type() of TEST_list is lListT", ocs::tom::field_type(TEST_Type, TEST_list) == lListT);
-   CHECK(3, "field_type() of TEST_ulong64_ukey is lUlong64T",
-         ocs::tom::field_type(TEST_Type, TEST_ulong64_ukey) == lUlong64T);
-   CHECK(4, "field_type() of an unknown name is lEndT", ocs::tom::field_type(TEST_Type, 4711) == lEndT);
+   CHECK(2, "field_type() of TEST_list is MT_LIST", ocs::tom::field_type(TEST_Type, TEST_list) == MT_LIST);
+   CHECK(3, "field_type() of TEST_ulong64_ukey is MT_UINT64",
+         ocs::tom::field_type(TEST_Type, TEST_ulong64_ukey) == MT_UINT64);
+   CHECK(4, "field_type() of an unknown name is MT_END", ocs::tom::field_type(TEST_Type, 4711) == MT_END);
    CHECK(5, "the entry at the position field_pos() gives holds the name",
          TEST_Type[pos_of(TEST_ref)].nm == TEST_ref);
    // CHECK 6 removed: lGetPosName() has no TOM counterpart (CS-3103)

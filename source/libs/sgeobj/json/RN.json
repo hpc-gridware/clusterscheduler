@@ -55,7 +55,7 @@
          "description": [
             "minimum or start value of an id range (e.g. 1)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL_SUBLIST"
@@ -67,7 +67,7 @@
          "description": [
             "maximum or end value of an id range (e.g. 9)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -78,7 +78,7 @@
          "description": [
             "stepsize (e.g. 2)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]

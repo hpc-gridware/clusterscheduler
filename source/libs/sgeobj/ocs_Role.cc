@@ -283,7 +283,7 @@ static bool fnmatch_nocase(const std::string &pattern, const std::string &str) {
  *   - a host name, which sge_hostcmp() folds and the cull host key normalises
  *     with sge_hostcpy() plus upper-casing. A rule naming `Node001` has to match
  *     a request from `node001`.
- *   - a host group name, because HGRP_name is an lHostT field and the object
+ *   - a host group name, because HGRP_name is an MT_HOST field and the object
  *     layer folds it too - `@casetest` and `@CASETEST` are one group, not two.
  *
  * **Only the case**, via fnmatch_nocase() above. A full host comparison would

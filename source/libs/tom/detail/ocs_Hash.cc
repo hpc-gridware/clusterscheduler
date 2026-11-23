@@ -215,16 +215,16 @@ cull_htable ocs::tom::detail::hash_create(const lDescr *dp, const int pos, int s
 
    /* create hash table for object keys */
    switch (mt_get_type(descr->mt)) {
-      case lStringT:
+      case MT_STRING:
          ht = sge_htable_create(size, dup_func_string, hash_func_string, hash_compare_string);
          break;
-      case lHostT:
+      case MT_HOST:
          ht = sge_htable_create(size, dup_func_string, hash_func_string, hash_compare_string);
          break;
-      case lUlongT:
+      case MT_UINT32:
          ht = sge_htable_create(size, dup_func_uint32_t, hash_func_uint32_t, hash_compare_uint32_t);
          break;
-      case lUlong64T:
+      case MT_UINT64:
          ht = sge_htable_create(size, dup_func_uint64_t, hash_func_uint64_t, hash_compare_uint64_t);
          break;
       default:
@@ -410,8 +410,8 @@ cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) 
       return ht;
    }
    const int type = mt_get_type(lp->descr[pos].mt);
-   const uint32_t min_elems = type == lHostT ? ocs::tom::detail::host_min_elems()
-                            : type == lStringT ? ocs::tom::detail::string_min_elems()
+   const uint32_t min_elems = type == MT_HOST ? ocs::tom::detail::host_min_elems()
+                            : type == MT_STRING ? ocs::tom::detail::string_min_elems()
                                                : ocs::tom::detail::hash_min_elems;
    if (nelem < min_elems) {
       CULL_STATS_FIELD(nm, LOOKUP_LINEAR, 1);
@@ -1124,19 +1124,19 @@ void *ocs::tom::detail::hash_key(const lListElem *ep, int pos, char *host_key) {
    const lMultiType &value = ocs::tom::detail::value(ep, pos);
 
    switch (mt_get_type(descr->mt)) {
-      case lUlongT:
+      case MT_UINT32:
          key = (void *) &(value.ul);
          break;
 
-      case lUlong64T:
+      case MT_UINT64:
          key = (void *) &(value.ul64);
          break;
 
-      case lStringT:
+      case MT_STRING:
          key = value.str;
          break;
 
-      case lHostT:
+      case MT_HOST:
          if (value.host != nullptr && host_key != nullptr) {
             sge_hostcpy(host_key, value.host);
             sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);

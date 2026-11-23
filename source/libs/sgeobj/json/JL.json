@@ -13,7 +13,7 @@
          "description": [
             "The Job Id."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "List of OS jobs (JO). There should be one per running Array/PE task having one os job id each."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JO",
          "subCullPrefix": "JO",
          "flags": []
@@ -37,7 +37,7 @@
          "description": [
             "Job State, one of JL_JOB_ACTIVE, JL_JOB_COMPLETE, JL_JOB_DELETED."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -46,7 +46,7 @@
          "description": [
             "Job Tickets. Used for reprioritization."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -55,7 +55,7 @@
          "description": [
             "ptf interval share"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -64,7 +64,7 @@
          "description": [
             "ptf job ticket share"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -73,7 +73,7 @@
          "description": [
             "ptf calculated timeslice (SX)"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -82,7 +82,7 @@
          "description": [
             "ptf interval combined usage"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -91,7 +91,7 @@
          "description": [
             "ptf interval combined usage"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -100,7 +100,7 @@
          "description": [
             "ptf interval adjusted usage"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -109,7 +109,7 @@
          "description": [
             "ptf last interval combined usage"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -118,7 +118,7 @@
          "description": [
             "prev interval combined usage"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -127,7 +127,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -136,7 +136,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -145,7 +145,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -154,7 +154,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -163,7 +163,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -172,7 +172,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -181,7 +181,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -190,7 +190,7 @@
          "description": [
             "@todo add description"
          ],
-         "type": "lLongT",
+         "type": "Int64",
          "flags": []
       },
       {
@@ -199,7 +199,7 @@
          "description": [
             "proc file descriptor"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -208,7 +208,7 @@
          "description": [
             "interactive flag"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

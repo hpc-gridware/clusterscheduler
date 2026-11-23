@@ -13,7 +13,7 @@
          "description": [
             "Job id of the job to start the task in."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Array task id of the ja_task to start the pe task in."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Optionally: Name of the queue to start the job in."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -40,7 +40,7 @@
          "description": [
             "Owner of the pe task."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -49,7 +49,7 @@
          "description": [
             "Current working directory for the execution of the task."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -58,7 +58,7 @@
          "description": [
             "Optional: Path alias configuration."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "PA",
          "subCullPrefix": "PA",
          "flags": []
@@ -69,7 +69,7 @@
          "description": [
             "Environment variables to set / to overwrite the job environment with (from qrsh -inherit -v)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "VA",
          "subCullPrefix": "VA",
          "flags": []
@@ -80,7 +80,7 @@
          "description": [
             "Time when qrsh -inherit was started in microseconds since epoch."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -90,7 +90,7 @@
             "Used with the TLS encryption to transport the credentials",
             "from qrsh to the sge_execd, which will store it in the pe_task's active_jobs directory."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

@@ -13,7 +13,7 @@
          "description": [
             "Identifies the limit this entry caches, built from the rule and resource being evaluated."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "The `dispatch_t` the limit returned last time it was asked in this run."
          ],
-         "type": "lIntT",
+         "type": "Int32",
          "flags": []
       },
       {
@@ -35,7 +35,7 @@
          "description": [
             "Earliest time the limit would allow the job to start, for reservation scheduling."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -44,7 +44,7 @@
          "description": [
             "How many slots the limit allows, cached alongside the result."
          ],
-         "type": "lIntT",
+         "type": "Int32",
          "flags": []
       },
       {
@@ -53,7 +53,7 @@
          "description": [
             "Marks the entry as belonging to the run in progress, so stale entries are not believed."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

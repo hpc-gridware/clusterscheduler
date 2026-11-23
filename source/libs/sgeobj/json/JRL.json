@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused JRL object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Part of the unused JRL object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -31,7 +31,7 @@
          "description": [
             "Part of the unused JRL object; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

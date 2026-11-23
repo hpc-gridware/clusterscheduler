@@ -144,7 +144,7 @@ namespace ocs::tom {
                return false;
             }
          }
-         if (table.descr[table.size].nm != NoName || mt_get_type(table.descr[table.size].mt) != lEndT) {
+         if (table.descr[table.size].nm != NoName || mt_get_type(table.descr[table.size].mt) != MT_END) {
             reason = "type " + type + ": the descriptor has more entries than the " + std::to_string(table.size) +
                      " fields of the table";
             return false;

@@ -20,7 +20,7 @@
             "  - sgeE_CALENDAR_LIST",
             "  - ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -32,7 +32,7 @@
             "Flushing of event data means that the event are sent to the client earlier than forseen",
             "by the event client's event delivery interval."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -42,7 +42,7 @@
             "Flushing interval in seconds.",
             "Events will be sent to the event client not later than current time + interval."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -52,7 +52,7 @@
             "Enumeration defining which attributes of an object will be sent to the event client (reduced objects).",
             "We can for example configure: We are only interested in job id, job name and job owner."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "PACK",
          "subCullPrefix": "PACK",
          "flags": []
@@ -64,7 +64,7 @@
             "Condition filtering objects to be sent.",
             "We can for example configure: Send only events for jobs of user xyz."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "PACK",
          "subCullPrefix": "PACK",
          "flags": []

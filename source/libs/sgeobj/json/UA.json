@@ -12,7 +12,7 @@
          "description": [
             "Name of the usage value, e.g. cpu, mem, vmem, maxvmem, ..."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "Usage value as a double."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "Usage value as a string, for custom usage values that are not numeric. Nullptr when the value is numeric — presence of svalue is the discriminator between string and numeric custom usage. Standard usage values (USAGE_ATTR_* names) never carry svalue. See CS-849."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]

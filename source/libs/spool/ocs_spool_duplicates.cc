@@ -49,7 +49,7 @@ namespace {
          // where lGetType() dereferenced the null element
          ocs::tom::throw_field_exception(ocs::tom::FieldException::Reason::NullElement, nm, nullptr);
       }
-      // a foreign attribute or one a reduced object leaves out has no key: lGetType() gave lEndT for both
+      // a foreign attribute or one a reduced object leaves out has no key: lGetType() gave MT_END for both
       if (!ep.has(nm)) {
          text.clear();
          return text;

@@ -12,7 +12,7 @@
          "description": [
             "this is the name of the complex variable representing the load value"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "value of the load variable as string"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "timestamp (seconds since epoch) when the load value was last updated"
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -51,7 +51,7 @@
             " - mem_total",
             "static load values are spooled and therefore are available even if an execution host is down"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       }
    ]

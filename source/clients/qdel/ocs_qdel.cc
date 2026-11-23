@@ -334,7 +334,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
          if (*sp) {
             auto user_list = str_list_parse_from_string(*sp, ",");
 
-            const auto ep_opt = sge_add_arg(cmdline, 0, lListT, *(sp - 1), *sp);
+            const auto ep_opt = sge_add_arg(cmdline, 0, MT_LIST, *(sp - 1), *sp);
             ep_opt.set<SPA_argval_lListT>(std::move(user_list));
             sp++;
          }
@@ -365,7 +365,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
             goto error;
          }
 
-         const auto ep_opt = sge_add_arg(cmdline, t_OPT, lListT, *(sp - 1), *sp);
+         const auto ep_opt = sge_add_arg(cmdline, t_OPT, MT_LIST, *(sp - 1), *sp);
          ep_opt.set<SPA_argval_lListT>(std::move(task_id_ranges));
 
          sp++;
@@ -383,7 +383,7 @@ static bool sge_parse_cmdline_qdel(char **argv, [[maybe_unused]] char **envp,
          for (const auto job : *del_list) {
             const char *job_name = job.get<ST_name>();
             if (!ep) {
-               ep = sge_add_arg(cmdline, 0, lListT, "jobs", nullptr);
+               ep = sge_add_arg(cmdline, 0, MT_LIST, "jobs", nullptr);
             }
             // a null name added nothing in the free emplace_back()
             if (job_name != nullptr) {

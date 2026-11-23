@@ -524,7 +524,7 @@ void opt_list_merge_command_lines(ocs::tom::ListPtr<ocs::tom::SPA> &opts_all,
 
    /* If -ar was requested add -w if it was not explicitly set */
    if (opts_all->find_first<SPA_switch_val>("-ar") && !opts_all->find_first<SPA_switch_val>("-w")) {
-      const auto ep_opt = sge_add_arg(opts_all, r_OPT, lIntT, "-w", "e");
+      const auto ep_opt = sge_add_arg(opts_all, r_OPT, MT_INT32, "-w", "e");
       ep_opt.set<SPA_argval_lIntT>(ERROR_VERIFY);
    }
    DRETURN_VOID;

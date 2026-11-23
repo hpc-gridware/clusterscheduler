@@ -323,7 +323,7 @@ ocs::tom::ListPtr<ocs::tom::AN> alp;
             goto error;
          }
 
-         const auto ep_opt = sge_add_arg(cmdline, t_OPT, lListT, *(sp - 1), *sp);
+         const auto ep_opt = sge_add_arg(cmdline, t_OPT, MT_LIST, *(sp - 1), *sp);
          ep_opt.set<SPA_argval_lListT>(std::move(task_id_ranges));
 
          sp++;

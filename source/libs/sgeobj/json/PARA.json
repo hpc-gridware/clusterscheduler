@@ -12,7 +12,7 @@
          "description": [
             "The parameter name, e.g. `profile`."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY"
          ]
@@ -23,7 +23,7 @@
          "description": [
             "Its value, always as text; the reader parses it."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

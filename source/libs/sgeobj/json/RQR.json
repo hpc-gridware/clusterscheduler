@@ -13,7 +13,7 @@
          "description": [
             "Optional rule name, so `qquota` and the error messages can say which rule bit."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "Which submitting users the rule applies to (`RQRF`)."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
@@ -40,7 +40,7 @@
          "description": [
             "Which projects the rule applies to."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
@@ -53,7 +53,7 @@
          "description": [
             "Which parallel environments the rule applies to."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
@@ -66,7 +66,7 @@
          "description": [
             "Which cluster queues the rule applies to."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
@@ -79,7 +79,7 @@
          "description": [
             "Which execution hosts the rule applies to."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
@@ -92,7 +92,7 @@
          "description": [
             "What the rule limits and by how much (`RQRL`), one entry per resource."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RQRL",
          "subCullPrefix": "RQRL",
          "flags": [
@@ -105,7 +105,7 @@
          "description": [
             "How far the limit is spread: shared by everything matched, or one limit each per host, cluster queue or queue instance. See the `RQR_*` values in `sge_resource_quota.h`."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

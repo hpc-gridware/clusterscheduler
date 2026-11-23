@@ -16,7 +16,7 @@
             "Normalized priority of the job/array task after applying all policies.",
             "The job list is sorted by priority descending as primary sort criterion."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -25,7 +25,7 @@
          "description": [
             "The job number. Third sort criterion."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -35,7 +35,7 @@
             "The job name.",
             "@todo can be removed, it is only set, never read."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -45,7 +45,7 @@
             "The job owner.",
             "@todo can be removed, it is only set, never read."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -55,7 +55,7 @@
             "The state of an enrolled array task (JAT_state).",
             "@todo can be removed, it is only set, never read."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -65,7 +65,7 @@
             "The master queue of an enrolled array task (JAT_master_queue).",
             "@todo can be removed, it is only set, never read."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -74,7 +74,7 @@
          "description": [
             "Reference (Pointer) to the job in the scheduler's job list."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -87,7 +87,7 @@
          "description": [
             "The job submission time. Secondary sort criterion."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       }
    ]

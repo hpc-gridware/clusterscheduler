@@ -13,7 +13,7 @@
          "description": [
             "Name of a host or a host group."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "The subordinate list (list of SO)."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SO",
          "subCullPrefix": "SO",
          "flags": [

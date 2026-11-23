@@ -12,7 +12,7 @@
          "description": [
             "Name of an user or a UNIX user group. Groups have the prefix @, e.g. `@tape`"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",

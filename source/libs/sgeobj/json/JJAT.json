@@ -12,7 +12,7 @@
          "description": [
             "Array Task Id (equal to JAT_task_number)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -21,7 +21,7 @@
          "description": [
             "Stat information provided by japi_wait()."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -30,7 +30,7 @@
          "description": [
             "Resource usage information provided by japi_wait()"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": []
@@ -41,7 +41,7 @@
          "description": [
             "Printable error text describing reason of job error."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

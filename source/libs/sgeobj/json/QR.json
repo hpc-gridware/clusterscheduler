@@ -12,7 +12,7 @@
          "description": [
             "Name of the Queue Instance in the form `cluster_queue_name@host_name`."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",

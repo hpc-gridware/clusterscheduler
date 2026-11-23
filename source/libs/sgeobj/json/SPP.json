@@ -12,7 +12,7 @@
          "description": [
             "Name of the parameter list."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "HASH"
@@ -24,7 +24,7 @@
          "description": [
             "One or more entries for this parameter. The content of the list is defined by the user of the parameter list and can be used to store any kind of information, e.g. a list of strings, a list of numbers, a list of references to other objects etc."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

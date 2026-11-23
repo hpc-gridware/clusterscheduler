@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused PGR object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Part of the unused PGR object; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "USR",
          "subCullPrefix": "USR",
          "flags": []
@@ -33,7 +33,7 @@
          "description": [
             "Part of the unused PGR object; see the object description."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -42,7 +42,7 @@
          "description": [
             "Part of the unused PGR object; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

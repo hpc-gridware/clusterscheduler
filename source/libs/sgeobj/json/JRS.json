@@ -17,7 +17,7 @@
          "description": [
             "Request scope: global, master, slaves."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -30,7 +30,7 @@
          "description": [
             "List of hard resource requests, from qsub -l name=value request."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ComplexEntry",
          "subCullPrefix": "CE",
          "flags": [
@@ -43,7 +43,7 @@
          "description": [
             "List of soft resource requests, from qsub -soft -l name=value request."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ComplexEntry",
          "subCullPrefix": "CE",
          "flags": [
@@ -56,7 +56,7 @@
          "description": [
             "List of hard queue requests, from qsub -q dest_identifier request."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "QueueReference",
          "subCullPrefix": "QR",
          "flags": [
@@ -69,7 +69,7 @@
          "description": [
             "List of soft queue requests, from qsub -soft -q dest_identifier request."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "QueueReference",
          "subCullPrefix": "QR",
          "flags": [
@@ -82,7 +82,7 @@
          "description": [
             "Overwrites the allocation rule of the parallel environment for this scope."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -93,7 +93,7 @@
          "description": [
             "Overwrites the ignore_slave_requests_on_master_host option of the parallel environment for this scope."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]

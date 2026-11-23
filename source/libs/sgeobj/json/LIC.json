@@ -13,7 +13,7 @@
          "description": [
             "Number of processors (nprocs = number of cores) on the execution host."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "The execution host's architecture, e.g. lx-amd64."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

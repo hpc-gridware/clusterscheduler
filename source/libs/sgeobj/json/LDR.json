@@ -13,7 +13,7 @@
          "description": [
             "Part of the scheduler's load threshold reference; see the object description."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "QueueReferenceList",
          "subCullPrefix": "QRL",
          "flags": []
@@ -24,7 +24,7 @@
          "description": [
             "Part of the scheduler's load threshold reference; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -33,7 +33,7 @@
          "description": [
             "Part of the scheduler's load threshold reference; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -46,7 +46,7 @@
          "description": [
             "Part of the scheduler's load threshold reference; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -59,7 +59,7 @@
          "description": [
             "Part of the scheduler's load threshold reference; see the object description."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

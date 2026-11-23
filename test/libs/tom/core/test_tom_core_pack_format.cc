@@ -72,7 +72,7 @@
 
 /** @brief The element type: every field type the pack format supports, hashed keys, a sublist and a sub-object
  *
- * lLongT and lIntT are not packed (PACK_FORMAT), lRefT is never sent.
+ * MT_INT64 and MT_INT32 are not packed (PACK_FORMAT), MT_REF is never sent.
  */
 enum {
    PF_name = 1, ///< unique hashed string

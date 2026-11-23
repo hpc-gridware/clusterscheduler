@@ -12,7 +12,7 @@
          "description": [
             "This field holds a boolean value."
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": [
             "SPOOL"
          ]
@@ -23,7 +23,7 @@
          "description": [
             "This field holds a uint32_t value."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL",
             "UNIQUE",
@@ -36,7 +36,7 @@
          "description": [
             "This field holds a uint64_t value."
          ],
-         "type": "lUlong64T",
+         "type": "Uint64",
          "flags": [
             "SPOOL",
             "HASH"
@@ -48,7 +48,7 @@
          "description": [
             "This field holds a int value."
          ],
-         "type": "lIntT",
+         "type": "Int32",
          "flags": [
             "SPOOL"
          ]
@@ -59,7 +59,7 @@
          "description": [
             "This field holds a long value."
          ],
-         "type": "lLongT",
+         "type": "Int64",
          "flags": [
             "SPOOL"
          ]
@@ -70,7 +70,7 @@
          "description": [
             "This field holds a double value."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": [
             "SPOOL"
          ]
@@ -81,7 +81,7 @@
          "description": [
             "This field holds a host name."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "SPOOL"
          ]
@@ -92,7 +92,7 @@
          "description": [
             "This field holds a string value."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -103,7 +103,7 @@
          "description": [
             "This filed hold a pointer"
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []
@@ -114,7 +114,7 @@
          "description": [
             "This filed hold a object reference."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "ANY",
          "subCullPrefix": "JB",
          "flags": []
@@ -125,7 +125,7 @@
          "description": [
             "This filed hold a object reference."
          ],
-         "type": "lObjectT",
+         "type": "Object",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": []

@@ -15,7 +15,7 @@
          "description": [
             "The name of the resource (= the name of the complex variable, e.g. slots)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -30,7 +30,7 @@
          "description": [
             "Currently used amount."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -39,7 +39,7 @@
          "description": [
             "Currently used amount of Resource Maps"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RESL",
          "subCullPrefix": "RESL",
          "flags": []
@@ -50,7 +50,7 @@
          "description": [
             "Topology string with lowercase core/threads that are currently in use."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -59,7 +59,7 @@
          "description": [
             "A resource diagram indicating future utilization."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RDE",
          "subCullPrefix": "RDE",
          "flags": []
@@ -70,7 +70,7 @@
          "description": [
             "Currently used amount of implicitly used exclusive resources."
          ],
-         "type": "lDoubleT",
+         "type": "Double",
          "flags": []
       },
       {
@@ -79,7 +79,7 @@
          "description": [
             "A resource diagram indicating future utilization of implicitly used exclusive resources."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "RDE",
          "subCullPrefix": "RDE",
          "flags": []

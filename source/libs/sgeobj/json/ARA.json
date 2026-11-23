@@ -12,7 +12,7 @@
          "description": [
             "The user or userset allowed, or denied, access to the reservation."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -26,7 +26,7 @@
          "description": [
             "The UNIX group the entry stands for, where the entry names a group."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]

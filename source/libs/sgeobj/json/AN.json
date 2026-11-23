@@ -17,7 +17,7 @@
             " - STATUS_EUNKNOWN",
             " - ..."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -26,7 +26,7 @@
          "description": [
             "printable answer text, e.g. an error message"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -39,7 +39,7 @@
             " - ANSWER_QUALITY_WARNING",
             " - ANSWER_QUALITY_INFO"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       }
    ]

@@ -12,7 +12,7 @@
          "description": [
             "The job number (from JB_job_number)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -23,7 +23,7 @@
          "description": [
             "The array task number (from JAT_task_number)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -40,7 +40,7 @@
             "RESCHEDULE_HANDLE_JR_WAIT",
             "@todo add more information, esp. about the meaning of the states."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL_SUBLIST"
          ]

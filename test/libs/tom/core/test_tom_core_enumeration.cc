@@ -286,13 +286,13 @@ static bool test_what_enumeration(const lEnumeration *what, const int *result,
  * @return true if the entries are the expected ones
  */
 static bool test_what_simple() {
-   // lIntT=5, lHostT=10, lObjectT=8 in current CULL enum
+   // MT_INT32=5, MT_HOST=10, MT_OBJECT=8 in current CULL enum
    const ocs::tom::RawWhatPtr what(make(TEST_Type, {{TEST_int, nullptr}, {TEST_host, nullptr},
                                                     {TEST_object, nullptr}}));
-   const int result[] = {1,       5,  0, 0,   // TEST_int:    nm=1, mt=lIntT=5,    pos=0
-                         2,      10,  1, 0,   // TEST_host:   nm=2, mt=lHostT=10,  pos=1
-                         10,      8,  9, 0,   // TEST_object: nm=10, mt=lObjectT=8, pos=9
-                         NoName, lEndT, 0, 0};
+   const int result[] = {1,       5,  0, 0,   // TEST_int:    nm=1, mt=MT_INT32=5,    pos=0
+                         2,      10,  1, 0,   // TEST_host:   nm=2, mt=MT_HOST=10,  pos=1
+                         10,      8,  9, 0,   // TEST_object: nm=10, mt=MT_OBJECT=8, pos=9
+                         NoName, MT_END, 0, 0};
    int pos_what = 0;
    int pos_result = 0;
    return test_what_enumeration(what.get(), result, &pos_what, &pos_result, 4);

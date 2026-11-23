@@ -14,7 +14,7 @@
          "description": [
             "The original path before applying aliasing."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "PRIMARY_KEY",
             "SPOOL"
@@ -26,7 +26,7 @@
          "description": [
             "The host from which the job was submitted."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "SPOOL"
          ]
@@ -37,7 +37,7 @@
          "description": [
             "The destination execution host."
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": [
             "SPOOL"
          ]
@@ -48,7 +48,7 @@
          "description": [
             "The path after applying path aliasing."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]

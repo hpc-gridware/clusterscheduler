@@ -14,7 +14,7 @@
          "description": [
             "Unique id requested by client or given by qmaster"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "PRIMARY_KEY",
             "UNIQUE",
@@ -27,7 +27,7 @@
          "description": [
             "name of event client (non unique)"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -36,7 +36,7 @@
          "description": [
             "Commlib address: The host name where the event client is running"
          ],
-         "type": "lHostT",
+         "type": "Host",
          "flags": []
       },
       {
@@ -45,7 +45,7 @@
          "description": [
             "Commlib address: The process name, e.g. qsub for the qsub -sync y event client"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -54,7 +54,7 @@
          "description": [
             "Commlib address: A unique id assigned by the sge_qmaster commlib"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -63,7 +63,7 @@
          "description": [
             "The user id of the user who started the event client."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -72,7 +72,7 @@
          "description": [
             "The time interval in seconds in which an event package is delivered to the client."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -81,7 +81,7 @@
          "description": [
             "a list of subscribed events"
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "EVS",
          "subCullPrefix": "EVS",
          "flags": []
@@ -93,7 +93,7 @@
             "true, if any configuration information of the event client has been changed.",
             "Requires then updating the event client information in the event master"
          ],
-         "type": "lBoolT",
+         "type": "Bool",
          "flags": []
       },
       {
@@ -102,7 +102,7 @@
          "description": [
             "Defines how the event master shall deal with busy event clients."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -111,7 +111,7 @@
          "description": [
             "Session key used tfor filtering subscribed events, used with job submission via the DRMAA interface"
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -120,7 +120,7 @@
          "description": [
             "Timestamp (microseconds since epoch) of the last communication between event client and event master."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -129,7 +129,7 @@
          "description": [
             "Timestamp (microseconds since epoch) when the last event package was sent to the event client."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -138,7 +138,7 @@
          "description": [
             "Timestamp (microseconds since epoch) when the next event package shall be sent to the event client."
          ],
-         "type": "lTimestampT",
+         "type": "Timestamp",
          "flags": []
       },
       {
@@ -147,7 +147,7 @@
          "description": [
             "Serial number of the next event which will be sent to the event client."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -157,7 +157,7 @@
             "true if the event client is considered busy, else false.",
             "no events will be sent to a busy client"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -166,7 +166,7 @@
          "description": [
             "List of events which will next be delivered to the event client."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ET",
          "subCullPrefix": "ET",
          "flags": []
@@ -177,7 +177,7 @@
          "description": [
             "Subscription information used in event master only."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -190,7 +190,7 @@
          "description": [
             "State of the event client, e.g. connected, closing, terminated."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -199,7 +199,7 @@
          "description": [
             "Pointer to an update function used for updating internal event clients (threads in sge_qmaster)."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
@@ -213,7 +213,7 @@
             "Pointer that is passed to the update_function when it is called.",
             "The pointer can be specified during mirror/evc initialize."
          ],
-         "type": "lRefT",
+         "type": "Ref",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [

@@ -36,7 +36,7 @@
          "description": [
             "Unique name of the spooling context."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "UNIQUE",
             "HASH"
@@ -48,7 +48,7 @@
          "description": [
             "List of spooling rules."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SPR",
          "subCullPrefix": "SPR",
          "flags": []
@@ -59,7 +59,7 @@
          "description": [
             "List of spoolable object types with references to rules."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "SPT",
          "subCullPrefix": "SPT",
          "flags": []

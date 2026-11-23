@@ -13,7 +13,7 @@
          "description": [
             "Part of the unused AT object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -22,7 +22,7 @@
          "description": [
             "Part of the unused AT object; see the object description."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       }
    ]

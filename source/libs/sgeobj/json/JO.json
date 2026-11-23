@@ -15,7 +15,7 @@
          "description": [
             "OS job id (lower 32 bits)"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -24,7 +24,7 @@
          "description": [
             "OS job id (upper 32 bits). @todo Replace the two id fields by one uint64_t?"
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -33,7 +33,7 @@
          "description": [
             "When the job is running in a systemd scope, this field contains the name of the scope."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -43,7 +43,7 @@
             "Usage collection mode used for the os job.",
             "One of 0 (FALSE), 1 (PDC), 2 (HYBRID), 3 (TRUE)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -52,7 +52,7 @@
          "description": [
             "In case of an array job: Task number of an array task."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -61,7 +61,7 @@
          "description": [
             "In case of a tightly integrated parallel job: Pe Task Id String."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": []
       },
       {
@@ -70,7 +70,7 @@
          "description": [
             "Job state (JL_JOB_* values)."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": []
       },
       {
@@ -79,7 +79,7 @@
          "description": [
             "PTF interval usage values."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": []
@@ -90,7 +90,7 @@
          "description": [
             "List of process Ids belonging to this job/task."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "JP",
          "subCullPrefix": "JP",
          "flags": []

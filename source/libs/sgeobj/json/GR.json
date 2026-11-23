@@ -12,7 +12,7 @@
          "description": [
             "The numeric group id. Read positionally by the process data collector."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "HASH"
          ]

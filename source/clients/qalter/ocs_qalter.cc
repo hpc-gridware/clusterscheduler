@@ -583,12 +583,12 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
       }
 
       while ((ep = cmdline.find_first<SPA_switch_val>("-c"))) {
-         if (ep.get<SPA_argtype>() == lLongT) {
+         if (ep.get<SPA_argtype>() == MT_INT64) {
             job.set<JB_checkpoint_interval>(
                         ep.get<SPA_argval_lLongT>());
             select_field(JB_checkpoint_interval);
          }
-         if (ep.get<SPA_argtype>() == lIntT) { 
+         if (ep.get<SPA_argtype>() == MT_INT32) { 
             job.set<JB_checkpoint_attr>(ep.get<SPA_argval_lIntT>());
             select_field(JB_checkpoint_attr);
          }

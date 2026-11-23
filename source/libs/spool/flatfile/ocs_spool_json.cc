@@ -1376,7 +1376,7 @@ bool spool_json_write_name_list_ex(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 /* ===== JSON reader (CS-2313a) ============================================= */
 
 /**
- * @brief Coerce a JSON value to a string (for lStringT/lHostT fields).
+ * @brief Coerce a JSON value to a string (for MT_STRING/MT_HOST fields).
  *
  * E.g. a typed complex-value number -> its decimal string, which qmaster re-types.
  *

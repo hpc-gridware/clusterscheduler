@@ -18,7 +18,7 @@
             "The ID value of the RSMAP consumable complex.",
             "@todo rename it to id? That's what it is in the RSMAP."
          ],
-         "type": "lStringT",
+         "type": "String",
          "flags": [
             "SPOOL"
          ]
@@ -31,7 +31,7 @@
             "To be able to distinguish between them, we store an instance number in this attribute.",
             "The first (possibly only) entry has instance 0."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -45,7 +45,7 @@
             "Where we don't need it (in the complex_values list of a host, or if it is a per HOST consumable),",
             "the value is 0."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -57,7 +57,7 @@
             "The number of resources with this name.",
             "@todo once we schedule individual RSMAP entries, we can probably remove this attribute - it will always be 1."
          ],
-         "type": "lUlongT",
+         "type": "Uint32",
          "flags": [
             "SPOOL"
          ]
@@ -73,7 +73,7 @@
             "They can have different types, e.g., string for a GPU model or the affinity mask,",
             "double for numerical values like the bandwidth or the memory amount."
          ],
-         "type": "lListT",
+         "type": "List",
          "subClassName": "ComplexEntry",
          "subCullPrefix": "CE",
          "flags": [

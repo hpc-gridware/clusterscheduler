@@ -817,7 +817,7 @@ namespace ocs::tom {
        * @param descr the descriptor of the type
        * @param nm the field
        * @param op the comparison
-       * @param value_type the list library type of @p value (lUlongT, lStringT, ...)
+       * @param value_type the list library type of @p value (MT_UINT32, MT_STRING, ...)
        * @param value the value
        * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold
        * @throw FieldException with reason WrongType if @p value_type does not fit the field
