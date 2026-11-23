@@ -374,4 +374,13 @@ namespace ocs::tom {
     */
    void set_thread_string_hash_threshold(std::uint32_t n);
 
+   /**
+    * @brief Set the list length below which the calling thread searches a host key field linearly
+    *
+    * The value holds for the calling thread only, like set_thread_string_hash_threshold().
+    *
+    * @param n the new threshold; 0 builds a hash table on the first lookup of any hashable list
+    */
+   void set_thread_host_hash_threshold(std::uint32_t n);
+
 } // namespace ocs::tom

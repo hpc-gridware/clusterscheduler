@@ -499,6 +499,17 @@ void ocs::tom::set_thread_string_hash_threshold(const std::uint32_t n) {
 }
 
 /**
+ * @brief Set the list length below which the calling thread searches a host key field linearly
+ *
+ * The public form of ocs::tom::detail::hash_set_min_elems_host() for product code outside the list core.
+ *
+ * @param n the new threshold; 0 builds a hash table on the first lookup of any hashable list
+ */
+void ocs::tom::set_thread_host_hash_threshold(const std::uint32_t n) {
+   ocs::tom::detail::hash_set_min_elems_host(n);
+}
+
+/**
  * @brief Insert a new element in a hash table
  *
  * Stores @p ep under @p key, honouring whether the table holds unique or non

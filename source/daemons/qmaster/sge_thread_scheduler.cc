@@ -523,6 +523,29 @@ ocs_scheduler_append_selection(ocs::tom::ListPtr<ocs::tom::QU> &dst,
    }
 }
 
+/// The list length from which the scheduler thread hashes a string key field (see sge_scheduler_main())
+static constexpr std::uint32_t SCHEDULER_STRING_HASH_MIN_ELEMS = 8;
+
+/**
+ * @brief Read a hash threshold of the scheduler thread from the environment
+ * @param name the name of the environment variable
+ * @param value receives the threshold if the variable holds a number
+ * @return true if the variable is set to a number below UINT32_MAX
+ */
+static bool scheduler_hash_threshold_from_env(const char *name, std::uint32_t *value) {
+   const char *env = getenv(name);
+   if (env == nullptr || *env == '\0') {
+      return false;
+   }
+   char *end = nullptr;
+   const unsigned long number = strtoul(env, &end, 10);
+   if (*end != '\0' || number >= UINT32_MAX) {
+      return false;
+   }
+   *value = static_cast<std::uint32_t>(number);
+   return true;
+}
+
 /**
  * @brief Main function of the scheduler thread
  *
@@ -576,15 +599,16 @@ sge_scheduler_main(void *arg) {
    /* initialize schedd_runlog logging */
    schedd_set_schedd_log_file();
 
-   // the run copies of this thread may hash short string-keyed lists apart from the other threads; the value
-   // comes from the environment, so that thresholds can be compared without rebuilding
-   if (const char *env = getenv("OCS_TOM_SCHED_HASH_MIN_ELEMS_STRING"); env != nullptr && *env != '\0') {
-      char *end = nullptr;
-      const unsigned long value = strtoul(env, &end, 10);
-      if (*end == '\0' && value < UINT32_MAX) {
-         ocs::tom::set_thread_string_hash_threshold(static_cast<uint32_t>(value));
-         DPRINTF("scheduler thread hashes string keys from %lu elements on\n", value);
-      }
+   // The run copies of this thread hash short string-keyed lists from 8 elements on, apart from the other threads:
+   // the scheduler looks up complex entries, queue and resource names in short lists over and over again (measured
+   // with the list API module test, CS-3103). OCS_TOM_SCHED_HASH_MIN_ELEMS_STRING and _HOST override the string and
+   // the host threshold of this thread, so that thresholds can be compared without rebuilding.
+   ocs::tom::set_thread_string_hash_threshold(SCHEDULER_STRING_HASH_MIN_ELEMS);
+   if (std::uint32_t value; scheduler_hash_threshold_from_env("OCS_TOM_SCHED_HASH_MIN_ELEMS_STRING", &value)) {
+      ocs::tom::set_thread_string_hash_threshold(value);
+   }
+   if (std::uint32_t value; scheduler_hash_threshold_from_env("OCS_TOM_SCHED_HASH_MIN_ELEMS_HOST", &value)) {
+      ocs::tom::set_thread_host_hash_threshold(value);
    }
 
 #ifdef WITH_GPERF
