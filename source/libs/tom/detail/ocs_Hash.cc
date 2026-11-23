@@ -101,8 +101,8 @@ namespace ocs::tom::detail {
     * @brief The threshold of the calling thread for a host field
     *
     * Until the thread sets one, it is taken once from the environment variable `OCS_TOM_HASH_MIN_ELEMS_HOST`,
-    * and without it from the general threshold of the thread. The variable makes builds comparable in a
-    * measurement without rebuilding.
+    * and without it from #OCS_CULL_HASH_MIN_ELEMS_HOST. The variable makes values comparable in a measurement
+    * without rebuilding.
     *
     * @return the list length below which a host field is searched linearly
     */
@@ -112,7 +112,7 @@ namespace ocs::tom::detail {
          char *end = nullptr;
          const unsigned long value = env != nullptr && *env != '\0' ? strtoul(env, &end, 10) : 0;
          hash_min_elems_host = env != nullptr && *env != '\0' && *end == '\0' && value < HASH_MIN_ELEMS_UNSET ?
-                                  static_cast<uint32_t>(value) : hash_min_elems;
+                                  static_cast<uint32_t>(value) : OCS_CULL_HASH_MIN_ELEMS_HOST;
       }
       return hash_min_elems_host;
    }
@@ -448,7 +448,7 @@ void ocs::tom::detail::hash_set_min_elems(const uint32_t n) {
  *
  * Host fields are compared after normalising the stored name, which makes a linear search dearer than for
  * other keys; their threshold can therefore differ. Without a call the environment variable
- * `OCS_TOM_HASH_MIN_ELEMS_HOST` decides, else the general threshold.
+ * `OCS_TOM_HASH_MIN_ELEMS_HOST` decides, else #OCS_CULL_HASH_MIN_ELEMS_HOST.
  *
  * @param n the new threshold for host fields; 0 builds a table on the first lookup of any hashable list
  */
