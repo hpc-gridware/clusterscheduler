@@ -49,6 +49,9 @@
 
 static char schedd_log_file[SGE_PATH_MAX + 1] = "";
 
+/// The run log while a monitored run writes it; opened by the first line, closed by schedd_log_close()
+static thread_local FILE *schedd_log_fp = nullptr;
+
 void schedd_set_schedd_log_file() {
    DENTER(TOP_LAYER);
 
@@ -61,8 +64,20 @@ void schedd_set_schedd_log_file() {
 }
 
 
-int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
-{
+/**
+ * @brief Writes one line to the scheduler run log
+ *
+ * The line goes to the answer list if one was passed, and to the run log file
+ * if `monitor_next_run` is set - both can happen in the same call, and
+ * neither is an error.
+ *
+ * @param[in]     logstr           the line to log
+ * @param[in,out] monitor_alpp     answer list for `qalter -w v`, or nullptr
+ * @param[in]     monitor_next_run whether to append to the run log file
+ *
+ * @return 0 on success, -1 if the run log file could not be written
+ */
+int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run) {
    DENTER(TOP_LAYER);
 
    if (monitor_alpp != nullptr) {
@@ -71,19 +86,43 @@ int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run)
    }
 
    if (monitor_next_run) {
-      /* do logging (-tsm) */
-      FILE *fp = fopen(schedd_log_file, "a");
-      if (fp == nullptr) {
-         DPRINTF("could not open schedd_log_file " SFQ "\n", schedd_log_file);
-         DRETURN(-1);
+      // do logging (-tsm): the file stays open for the run, a monitored run writes a line per decision and
+      // opening and closing it per line costs several round trips each on a network file system
+      if (schedd_log_fp == nullptr) {
+         schedd_log_fp = fopen(schedd_log_file, "a");
+         if (schedd_log_fp == nullptr) {
+            DPRINTF("could not open schedd_log_file " SFQ "\n", schedd_log_file);
+            DRETURN(-1);
+         }
       }
 
       DSTRING_STATIC(dstr, 64);
       const char *time_str = sge_ctime64(sge_get_gmt64(), &dstr);
-      fprintf(fp, "%s|%s\n", time_str, logstr);
-      FCLOSE(fp);
+      // flushed per line, a write into the page cache: a reader on this host sees the file grow as before, one on
+      // another host of a network file system sees the run when schedd_log_close() closes the file
+      fprintf(schedd_log_fp, "%s|%s\n", time_str, logstr);
+      fflush(schedd_log_fp);
    }
 
+   DRETURN(0);
+}
+
+/**
+ * @brief Close the scheduler run log after a monitored run
+ *
+ * schedd_log() opens the file with the first line of a run and keeps it open; the scheduler closes it here when
+ * the run is over. Nothing happens if the run wrote no line.
+ *
+ * @return 0 on success or if the file was not open, -1 if closing it failed
+ */
+int schedd_log_close() {
+   DENTER(TOP_LAYER);
+   if (schedd_log_fp == nullptr) {
+      DRETURN(0);
+   }
+   FILE *fp = schedd_log_fp;
+   schedd_log_fp = nullptr;
+   FCLOSE(fp);
    DRETURN(0);
 FCLOSE_ERROR:
    DPRINTF(MSG_FILE_ERRORCLOSEINGXY_SS, schedd_log_file, strerror(errno));

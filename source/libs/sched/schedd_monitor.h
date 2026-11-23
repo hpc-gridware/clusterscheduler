@@ -44,6 +44,8 @@ const char *job_descr(u_long32 jobid);
    registered answer list or writes to schedd runlog file otherwise */
 int schedd_log(const char *logstr, lList **monitor_alpp, bool monitor_next_run);
 
+int schedd_log_close();
+
 /* used for multiple calling schedd_log() and generating list of items such as jobids */
 int schedd_log_list(lList **monitor_alpp, bool monitor_next_run, const char *logstr, lList *lp, int nm);
 

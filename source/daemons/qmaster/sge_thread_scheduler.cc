@@ -926,6 +926,7 @@ sge_scheduler_main(void *arg) {
       evc->ec_commit(evc, nullptr);
 
       /* stop logging into schedd_runlog (enabled via -tsm) */
+      schedd_log_close();
       evc->monitor_next_run = false;
 
       // pthread cancellation point (functions are pushed in reverse order of execution)
