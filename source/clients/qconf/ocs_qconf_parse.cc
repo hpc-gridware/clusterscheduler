@@ -4217,7 +4217,9 @@ int sge_parse_qconf(char *argv[])
 /*-----------------------------------------------------------------------------*/
       /* "-secl" */
       if (strcmp("-secl", *spp) == 0) {
-         show_eventclients();
+         if (show_eventclients() != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -4234,7 +4236,9 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-sep" */
       if (strcmp("-sep", *spp) == 0) {
-         show_processors(has_binding_param);
+         if (show_processors(has_binding_param) != 0) {
+            sge_parse_return = 1;
+         }
          spp++;
          continue;
       }
@@ -4280,7 +4284,7 @@ int sge_parse_qconf(char *argv[])
 /*----------------------------------------------------------------------------*/
       /* "-stl " */
       if (strcmp("-stl", *spp) == 0) {
-         if (!show_thread_list()) {
+         if (show_thread_list() != 0) {
             sge_parse_return = 1;
          }
          spp++;
@@ -6001,6 +6005,8 @@ show_thread_list() {
    if (answer_get_status(ep) != STATUS_OK) {
       fprintf(stderr, "%s\n", lGetString(ep, AN_text));
       fprintf(stderr, "\n");
+      lFreeList(&alp);
+      lFreeList(&lp);
       DRETURN(-1);
    }
 
@@ -6020,22 +6026,23 @@ show_thread_list() {
 
 static int show_eventclients()
 {
-   lEnumeration *what = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   const lListElem *ep = nullptr;
-
    DENTER(TOP_LAYER);
 
-   what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EV_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, nullptr, what);
+   lEnumeration *what = lWhat("%T(%I %I %I)", EV_Type, EV_id, EV_name, EV_host);
+   lList *lp = nullptr;
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EV_LIST,
+                                          ocs::gdi::Command::SGE_GDI_GET,
+                                          ocs::gdi::SubCommand::SGE_GDI_SUB_NONE,
+                                          &lp, nullptr, what);
    lFreeWhat(&what);
 
-   ep = lFirstRW(alp);
+   const lListElem *ep = lFirstRW(alp);
    answer_exit_if_not_recoverable(ep);
    if (answer_get_status(ep) != STATUS_OK) {
       fprintf(stderr, "%s\n", lGetString(ep, AN_text));
       fprintf(stderr, "\n");
+      lFreeList(&alp);
+      lFreeList(&lp);
       DRETURN(-1);
    }
 
@@ -6063,29 +6070,29 @@ static int show_eventclients()
 
 static int show_processors(bool has_binding_param)
 {
-   lEnumeration *what = nullptr;
-   lCondition *where = nullptr;
-   lList *alp = nullptr, *lp = nullptr;
-   const lListElem *ep = nullptr;
+   DENTER(TOP_LAYER);
    const char *cp = nullptr;
    u_long32 sum = 0;
    u_long32 socket_sum = 0;
    u_long32 core_sum = 0;
 
-   DENTER(TOP_LAYER);
+   lEnumeration *what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
+   lCondition *where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name,
+                              SGE_TEMPLATE_NAME, EH_name, SGE_GLOBAL_NAME);
 
-   what = lWhat("%T(%I %I %I)", EH_Type, EH_name, EH_processors, EH_load_list);
-   where = lWhere("%T(!(%Ic=%s || %Ic=%s))", EH_Type, EH_name, 
-                  SGE_TEMPLATE_NAME, EH_name, SGE_GLOBAL_NAME);
-
-   alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EH_LIST, ocs::gdi::Command::SGE_GDI_GET, ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
+   lList *lp = nullptr;
+   lList *alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::SGE_EH_LIST,
+                                          ocs::gdi::Command::SGE_GDI_GET,
+                                          ocs::gdi::SubCommand::SGE_GDI_SUB_NONE, &lp, where, what);
    lFreeWhat(&what);
    lFreeWhere(&where);
 
-   ep = lFirst(alp);
+   const lListElem *ep = lFirst(alp);
    answer_exit_if_not_recoverable(ep);
    if (answer_get_status(ep) != STATUS_OK) {
       fprintf(stderr, "%s\n", lGetString(ep, AN_text));
+      lFreeList(&alp);
+      lFreeList(&lp);
       DRETURN(-1);
    }
 
