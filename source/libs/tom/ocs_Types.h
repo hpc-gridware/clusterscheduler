@@ -58,12 +58,12 @@
 #define NoName -1 ///< field name meaning "no field"; terminates a descriptor
 
 typedef struct _lDescr lDescr;             ///< one field of an object type; see @ref _lDescr
-typedef struct _lList lList;               ///< a cull list; see @ref _lList
-typedef struct _lListElem lListElem;       ///< one element of a cull list; see @ref _lListElem
-typedef struct _lCondition lCondition;     ///< a selection condition, built with `lWhere()`
-typedef struct _lEnumeration lEnumeration; ///< a field selection, built with `lWhat()`
-typedef union _lMultiType lMultiType;      ///< the value of one field, in any cull type
-typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with `lParseSortOrder()`
+typedef struct _lList lList;               ///< a list of elements; see @ref _lList
+typedef struct _lListElem lListElem;       ///< one element, in a list or on its own; see @ref _lListElem
+typedef struct _lCondition lCondition;     ///< a selection condition, built with `where()` or `where_compare()`
+typedef struct _lEnumeration lEnumeration; ///< a field selection, built with `what<...>()` or `what_of()`
+typedef union _lMultiType lMultiType;      ///< the value of one field, of any field type
+typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with `make_sort_order()`
 
 /**
  * @brief The data type of a cull field
