@@ -1215,7 +1215,7 @@ tom::ElementPtr<tom::EH> build_EH(const Variant variant) {
    map->push_back(std::move(characteristic));
    gpu->set<CE_stringval>("5");
 #else
-   tom::set<CE_stringval>(gpu, "4");
+   gpu->set<CE_stringval>("4");
 #endif
    gpu->set<CE_resource_map_list>(std::move(map));
    complex_values->push_back(std::move(gpu));

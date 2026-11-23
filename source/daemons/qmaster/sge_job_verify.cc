@@ -702,7 +702,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
 #if !defined(WITH_EXTENSIONS)
    if (ret == STATUS_OK) {
-      if (ocs::tom::get<JB_binding>(jep)) {
+      if (jep.get<JB_binding>()) {
          // in OCS bsort is not available
          std::string binding_sort = ocs::Job::binding_get_sort(jep);
          if (binding_sort != NONE_STR) {
