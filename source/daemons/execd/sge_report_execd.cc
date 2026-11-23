@@ -69,7 +69,7 @@ static const char* report_types[] = {
 #endif
 
 
-extern lUlong sge_execd_report_seqno;
+extern uint32_t sge_execd_report_seqno;
 
 
 /**

@@ -131,7 +131,7 @@ report_source execd_report_sources[] = {
    { 0, nullptr }
 };
 
-lUlong sge_execd_report_seqno = 0;   ///< Sequence number of the next report, so qmaster can spot a gap
+uint32_t sge_execd_report_seqno = 0;   ///< Sequence number of the next report, so qmaster can spot a gap
 uint64_t qmrestart_time = 0;         ///< When qmaster was last seen to restart; job reports are delayed after one
 static bool delay_job_reports = false;
 static bool send_all = true;

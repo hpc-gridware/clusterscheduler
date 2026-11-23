@@ -109,7 +109,7 @@ ocs::GrantedResources::add_binding_to_use(ocs::tom::ListPtr<ocs::tom::GRU> &gran
    }
    const auto gru = granted_resources_list->emplace_back<GRU_name>(SGE_ATTR_SLOTS);
    gru.set<GRU_host>(ocs::tom::Host(host_name));
-   gru.set<GRU_type>(static_cast<lUlong>(Type::GRU_BINDING_TYPE));
+   gru.set<GRU_type>(static_cast<uint32_t>(Type::GRU_BINDING_TYPE));
    gru.set<GRU_binding_inuse>(binding_touse_list.clone("binding_to_use"));
    DRETURN_VOID;
 }

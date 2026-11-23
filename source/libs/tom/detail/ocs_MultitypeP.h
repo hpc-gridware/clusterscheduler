@@ -51,18 +51,17 @@
  * check the type first and abort on a mismatch.
  */
 union _lMultiType {
-   lDouble db;        ///< value when the field is #lDoubleT
-   lUlong ul;         ///< value when the field is #lUlongT
-   lUlong64 ul64;     ///< value when the field is #lUlong64T
-   lLong l;           ///< value when the field is #lLongT
-   lChar c;           ///< value when the field is a single character
-   lBool b;           ///< value when the field is #lBoolT
-   lInt i;            ///< value when the field is #lIntT
-   lString str;       ///< value when the field is #lStringT; owned by the element
+   double db;         ///< value when the field is #lDoubleT
+   uint32_t ul;       ///< value when the field is #lUlongT
+   uint64_t ul64;     ///< value when the field is #lUlong64T
+   long l;            ///< value when the field is #lLongT
+   bool b;            ///< value when the field is #lBoolT
+   int i;             ///< value when the field is #lIntT
+   char *str;         ///< value when the field is #lStringT; owned by the element
    lList *glp;        ///< value when the field is #lListT; owned by the element
    lListElem *obj;    ///< value when the field is #lObjectT; owned by the element
-   lRef ref;          ///< value when the field is #lRefT; never owned, never spooled
-   lHost host;        ///< value when the field is #lHostT; owned by the element
+   void *ref;         ///< value when the field is #lRefT; never owned, never spooled
+   char *host;        ///< value when the field is #lHostT; owned by the element
    lCondition *cp;    ///< a condition, used when a descriptor carries a where clause
 };
 

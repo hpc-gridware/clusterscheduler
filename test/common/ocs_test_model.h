@@ -43,6 +43,7 @@
 #include "tom/ocs_Types.h"
 #include "tom/ocs_FieldTraits.h"
 #include "tom/ocs_Model.h"
+#include "ocs_test_listdef.h"
 
 namespace ocs::module_test {
 

@@ -662,7 +662,7 @@ namespace ocs::tom {
       return add_elem_at<FieldType::Host>(lp, pos, key, descr);
    }
 
-   lListElem *add_elem_ulong(lList *&lp, const int nm, const lUlong key, const lDescr *descr) {
+   lListElem *add_elem_ulong(lList *&lp, const int nm, const uint32_t key, const lDescr *descr) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
@@ -670,7 +670,7 @@ namespace ocs::tom {
       return add_elem_at<FieldType::Uint32>(lp, pos, key, descr);
    }
 
-   lListElem *add_elem_ulong64(lList *&lp, const int nm, const lUlong64 key, const lDescr *descr) {
+   lListElem *add_elem_ulong64(lList *&lp, const int nm, const uint64_t key, const lDescr *descr) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
@@ -716,14 +716,14 @@ namespace ocs::tom {
       return remove_elem_at<FieldType::Host>(lp, key_pos(lp->descr, nm, lHostT), key);
    }
 
-   bool remove_elem_ulong(lList *lp, const int nm, const lUlong key) {
+   bool remove_elem_ulong(lList *lp, const int nm, const uint32_t key) {
       if (lp == nullptr) {
          return false;
       }
       return remove_elem_at<FieldType::Uint32>(lp, key_pos(lp->descr, nm, lUlongT), key);
    }
 
-   bool remove_elem_ulong64(lList *lp, const int nm, const lUlong64 key) {
+   bool remove_elem_ulong64(lList *lp, const int nm, const uint64_t key) {
       if (lp == nullptr) {
          return false;
       }

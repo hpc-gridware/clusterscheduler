@@ -191,7 +191,7 @@ namespace ocs::tom {
    /**
     * @brief Build the descriptor of the list library from a field table
     *
-    * The block has the layout #LISTDEF/#LISTEND produce: header, one entry per
+    * The block has the layout of every static descriptor: header, one entry per
     * field, terminating entry.
     *
     * @tparam N number of fields
@@ -412,10 +412,9 @@ namespace ocs::tom {
                                        std::conditional_t<T == FieldType::Uint64, std::uint64_t, const char *>>;
 
    // The value types are stored in the slots of the list library; they must be the same size.
-   static_assert(sizeof(std::uint32_t) == sizeof(lUlong) && sizeof(std::uint64_t) == sizeof(lUlong64));
-   static_assert(sizeof(std::int32_t) == sizeof(lInt), "Int32 is stored as an lInt");
-   static_assert(sizeof(std::int64_t) == sizeof(lLong), "Int64 is stored as an lLong, which needs an LP64 platform");
-   static_assert(sizeof(Host) == sizeof(lHost), "a Host is a host name pointer");
+   static_assert(sizeof(std::int32_t) == sizeof(int), "Int32 is stored as an int");
+   static_assert(sizeof(std::int64_t) == sizeof(long), "Int64 is stored as an long, which needs an LP64 platform");
+   static_assert(sizeof(Host) == sizeof(char *), "a Host is a host name pointer");
 
    /**
     * @brief Everything known at compile time about one field

@@ -790,7 +790,7 @@ spool_type_search_default_rule(const ocs::tom::ConstElement<ocs::tom::SPT> spool
  */
 ocs::tom::Element<ocs::tom::SPTR>
 spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::Element<ocs::tom::SPT> spool_type,
-                    const ocs::tom::ConstElement<ocs::tom::SPR> rule, const lBool is_default) {
+                    const ocs::tom::ConstElement<ocs::tom::SPR> rule, const bool is_default) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::SPTR> ep;

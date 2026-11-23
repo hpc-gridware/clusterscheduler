@@ -997,7 +997,7 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
    const ocs::tom::Element<ocs::tom::JR> jr(raw_jr);
 
    ocs::tom::Element<ocs::tom::EH> global_host_ep;
-   lUlong jobid, jataskid;
+   uint32_t jobid, jataskid;
    int spool_job = !(commit_flags & COMMIT_NO_SPOOLING);
    int no_events = (commit_flags & COMMIT_NO_EVENTS);
    uint64_t now = sge_get_gmt64();

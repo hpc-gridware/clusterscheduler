@@ -90,7 +90,7 @@ static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 static double mem, cpu, io, ltmem, ltcpu, ltio, level, total,
        lt_share, st_share, actual_share, combined_usage;
 static uint64_t current_time, time_stamp;
-static lUlong shares, job_count;
+static uint32_t shares, job_count;
 static const char *node_name, *user_name, *project_name;
 
 static const item_t item[] = {

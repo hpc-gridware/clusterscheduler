@@ -629,7 +629,7 @@ namespace ocs::tom {
                }
                case lRefT: {
                   // a reference is not read back, but its line is skipped
-                  lUlong dummy;
+                  uint32_t dummy;
                   read_number(fp, sge_u32, &dummy);
                   value.ref = nullptr;
                   break;

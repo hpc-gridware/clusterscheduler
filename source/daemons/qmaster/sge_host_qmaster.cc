@@ -1576,7 +1576,7 @@ notify(const ocs::tom::Element<ocs::tom::EH> lel, ocs::gdi::Packet *packet, ocs:
                if (sge_hostcmp(gdil.front().get<JG_qhostname>(), hostname) == 0) {
                   /*   send mail to users if requested                  */
                   if (VALID(MAIL_AT_ABORT, mail_options) && !(jatep.get<JAT_state>() & JDELETED)) {
-                     lUlong jep_JB_job_number;
+                     uint32_t jep_JB_job_number;
                      const char *jep_JB_job_name;
 
                      jep_JB_job_number = jep.get<JB_job_number>();

@@ -351,7 +351,7 @@ namespace ocs::tom {
     * @param ep the element
     * @param pos the field's position
     * @param value the new value: a char pointer for a string or host field, a pointer to the
-    *        number for a Uint32 (lUlong) or Uint64 (lUlong64) field
+    *        number for a Uint32 (uint32_t) or Uint64 (uint64_t) field
     * @throw FieldException with reason DuplicateKey, naming type, field, key and list
     */
    inline void check_unique_on_set([[maybe_unused]] const lListElem *ep, [[maybe_unused]] const int pos,
@@ -387,9 +387,9 @@ namespace ocs::tom {
    // ships libc++ 18, which does not implement it at all (__cpp_lib_atomic_ref is not defined), so the build fails
    // on that platform. The builtins are understood by gcc and clang alike, need no library support and emit the
    // same instruction.
-   static_assert(__atomic_always_lock_free(sizeof(lUlong64), nullptr),
-                 "lUlong64 cannot be accessed atomically without a lock on this platform");
-   static_assert(alignof(lMultiType) >= sizeof(lUlong64),
+   static_assert(__atomic_always_lock_free(sizeof(uint64_t), nullptr),
+                 "uint64_t cannot be accessed atomically without a lock on this platform");
+   static_assert(alignof(lMultiType) >= sizeof(uint64_t),
                  "a cull value is not aligned well enough to be accessed atomically");
 
    /**

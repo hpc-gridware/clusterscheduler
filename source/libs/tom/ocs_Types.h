@@ -66,19 +66,6 @@ typedef struct _lEnumeration lEnumeration; ///< a field selection, built with `l
 typedef union _lMultiType lMultiType;      ///< the value of one field, in any cull type
 typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with `lParseSortOrder()`
 
-typedef float lFloat;        ///< cull single precision float field
-typedef double lDouble;      ///< cull double precision float field
-typedef uint32_t lUlong;     ///< cull 32 bit unsigned field
-typedef uint64_t lUlong64;   ///< cull 64 bit unsigned field
-typedef long lLong;          ///< cull signed long field
-typedef char lChar;          ///< cull single character field
-typedef bool lBool;          ///< cull boolean field
-typedef int lInt;            ///< cull integer field; not supported at GDI level
-typedef char *lString;       ///< cull string field, owned by the element
-typedef char *lHost;         ///< cull host name field, owned by the element
-typedef lListElem *lObject;  ///< cull field holding a single sub-object
-typedef void *lRef;          ///< cull field holding an opaque pointer; never spooled
-
 /**
  * @brief The data type of a cull field
  *
@@ -87,17 +74,17 @@ typedef void *lRef;          ///< cull field holding an opaque pointer; never sp
  */
 enum _enum_lMultiType {
    lEndT,      ///< marks the end of a descriptor; not a real type
-   lDoubleT,   ///< @ref lDouble
-   lUlongT,    ///< @ref lUlong
-   lLongT,     ///< @ref lLong
-   lBoolT,     ///< @ref lBool
-   lIntT,      ///< @ref lInt
-   lStringT,   ///< @ref lString
+   lDoubleT,   ///< a double precision float
+   lUlongT,    ///< a 32 bit unsigned value
+   lLongT,     ///< a signed long
+   lBoolT,     ///< a boolean
+   lIntT,      ///< an int; not supported at GDI level
+   lStringT,   ///< a string, owned by the element
    lListT,     ///< a sub-list, @ref lList
-   lObjectT,   ///< a single sub-object, @ref lObject
-   lRefT,      ///< @ref lRef
-   lHostT,     ///< @ref lHost
-   lUlong64T   ///< @ref lUlong64
+   lObjectT,   ///< a single sub-object, an lListElem
+   lRefT,      ///< an opaque pointer; never spooled
+   lHostT,     ///< a host name, owned by the element
+   lUlong64T   ///< a 64 bit unsigned value
 };
 
 /// Name of each @ref _enum_lMultiType, indexed by the enumerator; used in error messages and dumps
@@ -120,7 +107,6 @@ extern const char *multitypes[];
 #define CULL_SPOOL_PROJECT 0x00020000 ///< deprecated?
 #define CULL_SPOOL_USER    0x00040000 ///< deprecated?
 #define CULL_DESCR_INTERNED 0x00080000 ///< set in entry 0 of a reference counted descriptor (see tom/ocs_Descr.h); process local, never packed
-#define CULL_UNUSED2       0x00100000 ///< free for reuse
 #define CULL_IS_REDUCED    0x00200000 ///< the descriptor is a reduced one, holding only part of the type's fields
 /** @} */
 
@@ -129,39 +115,12 @@ extern const char *multitypes[];
 
 /*
  * An object type is a static descriptor block: a cull_descr_header followed by the
- * fields and the terminating #lEndT entry. LISTDEF/LISTEND build it at compile
- * time as an inline variable, so every translation unit sees the same block and
- * its contents are constant expressions. The descriptor of a type points at its first field.
+ * fields and the terminating #lEndT entry, built at compile time by
+ * ocs::tom::descr_make() as an inline variable, so every translation unit sees the
+ * same block and its contents are constant expressions. The descriptor of a type
+ * points at its first field. The product types are generated (sgeobj/tom); the
+ * types the module tests define by hand use the macros of test/common/ocs_test_listdef.h.
  */
-#define LISTDEF(name) inline constexpr auto name##_blk = ocs::tom::descr_make({           ///< opens an object type definition; ends with #LISTEND
-#define LISTEND(name) {NoName, lEndT}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF
-#define SGE_INT(name,flags)         { name, lIntT    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
-#define SGE_HOST(name,flags)        { name, lHostT   | flags },                 ///< declares a host name field
-#define SGE_STRING(name,flags)      { name, lStringT | flags },                 ///< declares a string field
-#define SGE_DOUBLE(name,flags)      { name, lDoubleT | flags },                 ///< declares a double field
-#define SGE_LONG(name,flags)        { name, lLongT   | flags },                 ///< declares a signed long field
-#define SGE_ULONG(name,flags)       { name, lUlongT  | flags },                 ///< declares a 32 bit unsigned field
-#define SGE_ULONG64(name,flags)     { name, lUlong64T  | flags },               ///< declares a 64 bit unsigned field
-#define SGE_BOOL(name,flags)        { name, lBoolT   | flags },                 ///< declares a boolean field
-#define SGE_LIST(name,type,flags)   { name, lListT   | flags },                 ///< declares a sub-list of another object type field
-#define SGE_MAP(name,type,flags)   { name, lListT   | flags },                  ///< declares a sub-list used as a key/value map field
-#define SGE_MAPLIST(name,type,flags)   { name, lListT   | flags },              ///< declares a sub-list used as a key/value-list map field
-#define SGE_OBJECT(name,type,flags) { name, lObjectT | flags },                 ///< declares a single sub-object field
-#define SGE_REF(name,type,flags)    { name, lRefT    | flags },                 ///< declares an opaque pointer field
-
-#define SGE_INT_D(name,flags,def)         { name, lIntT    | flags },           ///< declares an int (not supported at GDI level) field, with a default value
-#define SGE_HOST_D(name,flags,def)        { name, lHostT   | flags },           ///< declares a host name field, with a default value
-#define SGE_STRING_D(name,flags,def)      { name, lStringT | flags },           ///< declares a string field, with a default value
-#define SGE_DOUBLE_D(name,flags,def)      { name, lDoubleT | flags },           ///< declares a double field, with a default value
-#define SGE_LONG_D(name,flags,def)        { name, lLongT   | flags },           ///< declares a signed long field, with a default value
-#define SGE_ULONG_D(name,flags,def)       { name, lUlongT  | flags },           ///< declares a 32 bit unsigned field, with a default value
-#define SGE_ULONG64_D(name,flags,def)     { name, lUlong64T  | flags },         ///< declares a 64 bit unsigned field, with a default value
-#define SGE_BOOL_D(name,flags,def)        { name, lBoolT   | flags },           ///< declares a boolean field, with a default value
-#define SGE_LIST_D(name,type,flags,def)   { name, lListT   | flags },           ///< declares a sub-list of another object type field, with a default value
-#define SGE_MAP_D(name,type,flags,defkey,keyvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags }, ///< declares a sub-list used as a key/value map field, with a default value
-#define SGE_MAPLIST_D(name,type,flags,defkey,defvalue,jgdi_keyname,jgdi_valuename)   { name, lListT   | flags }, ///< declares a sub-list used as a key/value-list map field, with a default value
-#define SGE_OBJECT_D(name,type,flags,def) { name, lObjectT | flags },           ///< declares a single sub-object field, with a default value
-#define SGE_REF_D(name,type,flags,def)    { name, lRefT    | flags },           ///< declares an opaque pointer field, with a default value
 
 /* 
  * For lists, objects and references the type of the subordinate object(s) 
@@ -170,21 +129,6 @@ extern const char *multitypes[];
  * use the following define CULL_ANY_SUBTYPE as type
  */
 #define CULL_ANY_SUBTYPE 0
-
-/*
- * The field name tables of the object types written by hand in the module
- * tests; the field names of the generated types come from the object model
- * (tom/ocs_Model.h).
- */
-#ifdef __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
-#define NAMEDEF( name ) const char *name[] = {                                           ///< opens the field name table matching a #LISTDEF
-#define NAME( name ) name ,                                                              ///< one entry of a #NAMEDEF table
-#define NAMEEND    };                                                                    ///< closes a #NAMEDEF table
-#else
-#define NAMEDEF(name) extern const char *name[];                                         ///< declares a field name table defined elsewhere
-#define NAME(name)                                                                       ///< one entry of a forward declared #NAMEDEF table
-#define NAMEEND                                                                          ///< closes a forward declared name table
-#endif
 
 /**
  * @brief One field of an object type

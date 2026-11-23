@@ -251,7 +251,7 @@ static ocs::tom::RawListPtr make_hashed_list(const char *name, const bool unique
 static void fill_list(const ocs::tom::RawList lp, const int num_objects, const int num_names) {
    lList *raw = lp.raw();   // never nullptr, so add_elem_ulong() does not replace it
    for (int i = 0; i < num_objects; i++) {
-      lListElem *ep = ocs::tom::add_elem_ulong(raw, NM_ULONG, static_cast<lUlong>(i), DESCR);
+      lListElem *ep = ocs::tom::add_elem_ulong(raw, NM_ULONG, static_cast<uint32_t>(i), DESCR);
       ocs::tom::set(ep, NM_STRING, names[rand() % num_names]);
    }
 }

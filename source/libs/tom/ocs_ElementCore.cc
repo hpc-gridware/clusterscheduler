@@ -82,9 +82,9 @@ namespace ocs::tom {
       bool keys_equal(const int mt, const void *a, const void *b) {
          switch (mt_get_type(mt)) {
             case lUlongT:
-               return *static_cast<const lUlong *>(a) == *static_cast<const lUlong *>(b);
+               return *static_cast<const uint32_t *>(a) == *static_cast<const uint32_t *>(b);
             case lUlong64T:
-               return *static_cast<const lUlong64 *>(a) == *static_cast<const lUlong64 *>(b);
+               return *static_cast<const uint64_t *>(a) == *static_cast<const uint64_t *>(b);
             default:
                return strcmp(static_cast<const char *>(a), static_cast<const char *>(b)) == 0;
          }
@@ -128,9 +128,9 @@ namespace ocs::tom {
    std::string key_text(const int mt, const void *key) {
       switch (mt_get_type(mt)) {
          case lUlongT:
-            return std::to_string(*static_cast<const lUlong *>(key));
+            return std::to_string(*static_cast<const uint32_t *>(key));
          case lUlong64T:
-            return std::to_string(*static_cast<const lUlong64 *>(key));
+            return std::to_string(*static_cast<const uint64_t *>(key));
          default:
             return static_cast<const char *>(key);
       }
@@ -571,11 +571,11 @@ namespace ocs::tom {
    void store_hashed_number(lListElem *ep, const int pos, const std::uint64_t value) {
       lMultiType &slot = ocs::tom::detail::value(ep, pos);
       const bool is_32 = mt_get_type(ep->descr[pos].mt) == lUlongT;
-      if (is_32 ? slot.ul == static_cast<lUlong>(value) : slot.ul64 == value) {
+      if (is_32 ? slot.ul == static_cast<uint32_t>(value) : slot.ul64 == value) {
          return;
       }
       if (is_32) {
-         const lUlong value_32 = static_cast<lUlong>(value);
+         const uint32_t value_32 = static_cast<uint32_t>(value);
          check_unique_on_set(ep, pos, &value_32);
       } else {
          check_unique_on_set(ep, pos, &value);
@@ -585,7 +585,7 @@ namespace ocs::tom {
          ocs::tom::detail::hash_remove(ep, pos);
       }
       if (is_32) {
-         slot.ul = static_cast<lUlong>(value);
+         slot.ul = static_cast<uint32_t>(value);
       } else {
          slot.ul64 = value;
       }

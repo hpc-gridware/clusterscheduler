@@ -370,7 +370,7 @@ namespace {
           * slot-wise suspend on subordinate
           */
          char *end_ptr = nullptr;
-         lUlong slots_sum_value = 0;
+         uint32_t slots_sum_value = 0;
 
          /*
           * format of string: slots=8(queue1.q:3:sr, queue2.q:2:lr)

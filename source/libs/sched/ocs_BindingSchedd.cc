@@ -247,7 +247,7 @@ ocs::BindingSchedd::ignore_binding(const sge_assignment_t *a, const ocs::tom::Co
 
    if (a == nullptr || host == nullptr || !a->is_binding_enabled
       || host == nullptr
-      || a->job == nullptr || static_cast<lObject>(a->job.get<JB_binding>()) == nullptr) {
+      || a->job == nullptr || static_cast<lListElem *>(a->job.get<JB_binding>()) == nullptr) {
       DRETURN(true);
    }
 

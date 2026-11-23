@@ -258,7 +258,7 @@ namespace ocs::tom {
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
-   lListElem *add_elem_ulong(lList *&lp, int nm, lUlong key, const lDescr *descr);
+   lListElem *add_elem_ulong(lList *&lp, int nm, uint32_t key, const lDescr *descr);
 
    /**
     * @brief Add an element with a 64 bit key, as lAddElemUlong64(); see #add_elem_str
@@ -269,7 +269,7 @@ namespace ocs::tom {
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
-   lListElem *add_elem_ulong64(lList *&lp, int nm, lUlong64 key, const lDescr *descr);
+   lListElem *add_elem_ulong64(lList *&lp, int nm, uint64_t key, const lDescr *descr);
 
    /**
     * @brief Add an element with a key at a known position, without the checks of #add_elem_str
@@ -320,7 +320,7 @@ namespace ocs::tom {
     * @return true if an element was removed
     * @throw FieldException as #remove_elem_str, without NullKey
     */
-   bool remove_elem_ulong(lList *lp, int nm, lUlong key);
+   bool remove_elem_ulong(lList *lp, int nm, uint32_t key);
 
    /**
     * @brief Remove and free the first element with a 64 bit key, as lDelElemUlong64(); see #remove_elem_str
@@ -330,7 +330,7 @@ namespace ocs::tom {
     * @return true if an element was removed
     * @throw FieldException as #remove_elem_str, without NullKey
     */
-   bool remove_elem_ulong64(lList *lp, int nm, lUlong64 key);
+   bool remove_elem_ulong64(lList *lp, int nm, uint64_t key);
 
    /**
     * @brief Remove and free the first element with a key at a known position, without the checks of

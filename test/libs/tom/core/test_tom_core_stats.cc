@@ -46,6 +46,7 @@
 #include "tom/detail/ocs_Hash.h"
 #include "tom/detail/ocs_Stats.h"
 #include "tom/ocs_Types.h"
+#include "ocs_test_listdef.h"
 #include "tom/ocs_Descr.h"
 #include "tom/ocs_ElementCore.h"
 #include "tom/ocs_PackBuffer.h"

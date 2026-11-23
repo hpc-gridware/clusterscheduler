@@ -294,7 +294,7 @@ spool_type_search_default_rule(ocs::tom::ConstElement<ocs::tom::SPT> spool_type)
 
 ocs::tom::Element<ocs::tom::SPTR>
 spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Element<ocs::tom::SPT> spool_type,
-                    ocs::tom::ConstElement<ocs::tom::SPR> rule, lBool is_default);
+                    ocs::tom::ConstElement<ocs::tom::SPR> rule, bool is_default);
 
 bool
 spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, const char *option);

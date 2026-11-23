@@ -1551,7 +1551,7 @@ int main(int argc, const char **argv) {
    if (opt_list_has_X(*opts_cmdline, "-pty")) {
       pty_option = static_cast<ocs::Ternary>(opt_list_is_X_true(*opts_cmdline, "-pty"));
    }
-   job->set<JB_pty>(static_cast<lUlong>(pty_option));
+   job->set<JB_pty>(static_cast<uint32_t>(pty_option));
    /* remove the pty option from commandline before proceeding */
    while ((ep = opts_cmdline->find_first<SPA_switch_val>("-pty"))) {
       opts_cmdline->erase(ep);

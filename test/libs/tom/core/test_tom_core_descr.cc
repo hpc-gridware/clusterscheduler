@@ -318,7 +318,7 @@ static ocs::tom::RawListPtr make_list(const int n) {
    auto owner = ocs::tom::RawListPtr::create(TD_Type, ocs::tom::Hashing::On, "descr");
    lList *lp = owner.get();
    for (int i = 0; i < n; i++) {
-      const ocs::tom::RawElement ep = ocs::tom::add_elem_ulong(lp, TD_id, static_cast<lUlong>(i), TD_Type);
+      const ocs::tom::RawElement ep = ocs::tom::add_elem_ulong(lp, TD_id, static_cast<uint32_t>(i), TD_Type);
       ep.set(TD_name, ("n" + std::to_string(i)).c_str());
       ep.set(TD_value, static_cast<std::uint32_t>(2 * i));
    }

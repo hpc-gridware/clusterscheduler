@@ -97,7 +97,7 @@ static bool
 spool_json_write_list_value(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ConstRawList sub_list,
                             const spooling_field *sub_fields,
                             rapidjson::PrettyWriter<rapidjson::StringBuffer> &writer);
-static lUlong
+static uint32_t
 spool_json_value_to_ulong(const rapidjson::Value &v);
 
 /* the JSON token shown for the cqueue default host reference HOSTREF_DEFAULT ("@/") */
@@ -480,7 +480,7 @@ spool_json_write_enum_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wr
  * @param names  null-terminated value-name table
  * @return the enum value
  */
-static lUlong
+static uint32_t
 spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names) {
    if (v.IsString()) {
       for (uint32_t i = 0; names[i] != nullptr; i++) {
@@ -1402,12 +1402,12 @@ spool_json_value_to_string(const rapidjson::Value &v, dstring *out) {
  * @param v  the JSON value
  * @return the unsigned long value, or 0 if not coercible
  */
-static lUlong
+static uint32_t
 spool_json_value_to_ulong(const rapidjson::Value &v) {
-   if (v.IsUint64()) return static_cast<lUlong>(v.GetUint64());
-   if (v.IsInt64())  return static_cast<lUlong>(v.GetInt64());
-   if (v.IsDouble()) return static_cast<lUlong>(v.GetDouble());
-   if (v.IsString()) return static_cast<lUlong>(strtoul(v.GetString(), nullptr, 10));
+   if (v.IsUint64()) return static_cast<uint32_t>(v.GetUint64());
+   if (v.IsInt64())  return static_cast<uint32_t>(v.GetInt64());
+   if (v.IsDouble()) return static_cast<uint32_t>(v.GetDouble());
+   if (v.IsString()) return static_cast<uint32_t>(strtoul(v.GetString(), nullptr, 10));
    return 0;
 }
 
@@ -1498,11 +1498,11 @@ spool_json_set_field(const ocs::tom::RawElement ep, const spooling_field &field,
          break;
       case ocs::tom::FieldType::Uint64:
          ep.set(nm, static_cast<std::uint64_t>(v.IsUint64() ? v.GetUint64()
-                                                            : static_cast<lUlong64>(spool_json_value_to_ulong(v))));
+                                                            : static_cast<uint64_t>(spool_json_value_to_ulong(v))));
          break;
       case ocs::tom::FieldType::Int64:
          ep.set(nm, static_cast<std::int64_t>(v.IsInt64() ? v.GetInt64()
-                                                          : static_cast<lLong>(spool_json_value_to_ulong(v))));
+                                                          : static_cast<long>(spool_json_value_to_ulong(v))));
          break;
       case ocs::tom::FieldType::Int32:
          ep.set(nm, static_cast<std::int32_t>(v.IsInt() ? v.GetInt() : static_cast<int>(spool_json_value_to_ulong(v))));

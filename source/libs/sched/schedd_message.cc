@@ -64,9 +64,9 @@
 #include "sgeobj/sge_answer.h"
 
 static ocs::tom::ListPtr<ocs::tom::ULNG>
-schedd_mes_get_same_category_jids(lRef category, ocs::tom::ConstList<ocs::tom::JB> job_list, int ignore_category);
+schedd_mes_get_same_category_jids(void *category, ocs::tom::ConstList<ocs::tom::JB> job_list, int ignore_category);
 
-static lRef schedd_mes_get_category(uint32_t job_id, ocs::tom::ConstList<ocs::tom::JB> job_list);
+static void *schedd_mes_get_category(uint32_t job_id, ocs::tom::ConstList<ocs::tom::JB> job_list);
 
 /**
  * @brief Give every temporary message the ids of all jobs it applies to
@@ -83,7 +83,7 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
    DENTER(TOP_LAYER);
 
    if (tmp_sme && job_list) {
-      lRef category = nullptr;            /* Category pointer (void*) */
+      void *category = nullptr;            /* Category pointer (void*) */
       ocs::tom::ConstList<ocs::tom::ULNG> jid_cat_list;
 
       /*
@@ -119,11 +119,11 @@ static void schedd_mes_find_others(const ocs::tom::Element<ocs::tom::SME> tmp_sm
  * @param job_list the jobs to look in
  * @return the category (`CT`) of the job, nullptr if the job is not in @p job_list
  */
-static lRef schedd_mes_get_category(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom::JB> job_list) {
+static void *schedd_mes_get_category(const uint32_t job_id, const ocs::tom::ConstList<ocs::tom::JB> job_list) {
    DENTER(TOP_LAYER);
 
      /* JB */
-   lRef ret = nullptr;        /* Category pointer (void*) */
+   void *ret = nullptr;        /* Category pointer (void*) */
 
    auto job = job_list.find_first<JB_job_number>(job_id);
    if (job) {
@@ -140,7 +140,7 @@ static lRef schedd_mes_get_category(const uint32_t job_id, const ocs::tom::Const
  * @return the job ids, the caller owns them; empty if there are none or @p category is nullptr
  */
 static ocs::tom::ListPtr<ocs::tom::ULNG>
-schedd_mes_get_same_category_jids(const lRef category, const ocs::tom::ConstList<ocs::tom::JB> job_list,
+schedd_mes_get_same_category_jids(void *const category, const ocs::tom::ConstList<ocs::tom::JB> job_list,
                                   const int ignore_category) {
    DENTER(TOP_LAYER);
    ocs::tom::ListPtr<ocs::tom::ULNG> ret;

@@ -101,7 +101,7 @@ bool hgroup_update_cache(const ocs::tom::Element<ocs::tom::HGRP> hgroup, ocs::to
                          const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list) {
    DENTER(HGROUP_LAYER);
 
-   static lUlong next_version = 1;
+   static uint32_t next_version = 1;
 
    if (!hgroup || !master_hgroup_list) {
       DRETURN(false);

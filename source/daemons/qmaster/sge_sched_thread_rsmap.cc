@@ -294,9 +294,9 @@ gru_list_add_request(sge_assignment_t *a, ocs::tom::ListPtr<ocs::tom::GRU> &gran
          gru.set<GRU_host>(ocs::tom::Host(host_name));
 
          if (type == ocs::CEntry::Type::RSMAP) {
-            gru.set<GRU_type>(static_cast<lUlong>(ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE));
+            gru.set<GRU_type>(static_cast<uint32_t>(ocs::GrantedResources::Type::GRU_RESOURCE_MAP_TYPE));
          } else {
-            gru.set<GRU_type>(static_cast<lUlong>(ocs::GrantedResources::Type::GRU_HARD_REQUEST_TYPE));
+            gru.set<GRU_type>(static_cast<uint32_t>(ocs::GrantedResources::Type::GRU_HARD_REQUEST_TYPE));
          }
       }
    } else {

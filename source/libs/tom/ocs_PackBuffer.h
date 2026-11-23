@@ -60,7 +60,7 @@
  * | `0x10023000` | current; reduced descriptors go through a descriptor table per buffer (CS-2997) |
  * | `0x10022000` | a full descriptor is packed as a reference to its type (CS-2997) |
  * | `0x10021000` | raised for MUNGE authentication (CS-995) |
- * | `0x10020000` | fixed packing of the `lObject` type: the descriptor was sent twice |
+ * | `0x10020000` | fixed packing of the `lListElem *` type: the descriptor was sent twice |
  * | `0x10010000` | added information about attribute changes |
  * | `0x10000000` | introduction of version control |
  *
