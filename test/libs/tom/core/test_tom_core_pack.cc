@@ -96,15 +96,15 @@ enum {
 };
 
 LISTDEF(TEST_Type)
-                SGE_HOST   (TEST_host, CULL_DEFAULT | CULL_SPOOL)
-                SGE_STRING (TEST_string, CULL_DEFAULT)
-                SGE_DOUBLE (TEST_double, CULL_DEFAULT)
-                SGE_ULONG  (TEST_ulong, CULL_DEFAULT)
-                SGE_ULONG64 (TEST_ulong64, CULL_DEFAULT)
-                SGE_BOOL   (TEST_bool, CULL_DEFAULT)
-                SGE_LIST   (TEST_list, TEST_Type, CULL_DEFAULT | CULL_SPOOL)
-                SGE_OBJECT (TEST_object, TEST_Type, CULL_DEFAULT | CULL_SPOOL)
-                SGE_REF    (TEST_ref, TEST_Type, CULL_DEFAULT)
+                SGE_HOST   (TEST_host, MT_DEFAULT | MT_SPOOL)
+                SGE_STRING (TEST_string, MT_DEFAULT)
+                SGE_DOUBLE (TEST_double, MT_DEFAULT)
+                SGE_ULONG  (TEST_ulong, MT_DEFAULT)
+                SGE_ULONG64 (TEST_ulong64, MT_DEFAULT)
+                SGE_BOOL   (TEST_bool, MT_DEFAULT)
+                SGE_LIST   (TEST_list, TEST_Type, MT_DEFAULT | MT_SPOOL)
+                SGE_OBJECT (TEST_object, TEST_Type, MT_DEFAULT | MT_SPOOL)
+                SGE_REF    (TEST_ref, TEST_Type, MT_DEFAULT)
 LISTEND(TEST_Type)
 
 NAMEDEF(TEST_Name)
@@ -492,26 +492,26 @@ int main(int argc, char *argv[]) {
       }
    }
 
-   // --- partial pack/unpack (CULL_SPOOL fields only) ---
+   // --- partial pack/unpack (MT_SPOOL fields only) ---
    printf("\n--- partial pack/unpack ---\n");
    {
       pack_ret = ocs::tom::try_init_buffer(&pb, 100, false, false);
       if (pack_ret == PACK_SUCCESS) {
-         pack_ret = pack_elem_code(&pb, ep.get(), CULL_SPOOL);
-         CHECK(8, "pack_elem (CULL_SPOOL) succeeds", pack_ret == PACK_SUCCESS);
+         pack_ret = pack_elem_code(&pb, ep.get(), MT_SPOOL);
+         CHECK(8, "pack_elem (MT_SPOOL) succeeds", pack_ret == PACK_SUCCESS);
          if (pack_ret == PACK_SUCCESS) {
             sge_pack_buffer copy_pb;
             if (copy_for_reading(&pb, &copy_pb) == PACK_SUCCESS) {
-               pack_ret = unpack_elem_code(&copy_pb, copy, TEST_Type, CULL_SPOOL);
-               CHECK(9, "unpack_raw_elem (CULL_SPOOL) succeeds", pack_ret == PACK_SUCCESS);
+               pack_ret = unpack_elem_code(&copy_pb, copy, TEST_Type, MT_SPOOL);
+               CHECK(9, "unpack_raw_elem (MT_SPOOL) succeeds", pack_ret == PACK_SUCCESS);
                if (pack_ret == PACK_SUCCESS && copy) {
-                  CHECK(10, "CULL_SPOOL host field preserved after partial round-trip",
+                  CHECK(10, "MT_SPOOL host field preserved after partial round-trip",
                         sge_strnullcmp(copy->get<ocs::tom::Host>(TEST_host).c_str(), "test_host") == 0);
-                  CHECK(11, "non-CULL_SPOOL string field absent (nullptr) after partial round-trip",
+                  CHECK(11, "non-MT_SPOOL string field absent (nullptr) after partial round-trip",
                         copy->get<const char *>(TEST_string) == nullptr);
-                  CHECK(12, "non-CULL_SPOOL double field absent (0.0) after partial round-trip",
+                  CHECK(12, "non-MT_SPOOL double field absent (0.0) after partial round-trip",
                         copy->get<double>(TEST_double) == 0.0);
-                  CHECK(13, "CULL_SPOOL list field preserved (10000 elements) after partial round-trip",
+                  CHECK(13, "MT_SPOOL list field preserved (10000 elements) after partial round-trip",
                         static_cast<int>(copy->get<ocs::tom::ConstRawList>(TEST_list).size()) == 10000);
                }
                copy.reset();

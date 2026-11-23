@@ -26,7 +26,7 @@
  * compile-time block of an object type (ocs::tom::descr_make()); it lives as long as
  * the program, and reference operations on it do nothing. A counted descriptor
  * is allocated together with its #cull_descr_header, carries
- * #CULL_DESCR_INTERNED in entry 0 and is freed by the release of its last
+ * #MT_DESCR_INTERNED in entry 0 and is freed by the release of its last
  * reference.
  *
  * ocs::tom::descr_intern() returns the registered descriptor equal to its

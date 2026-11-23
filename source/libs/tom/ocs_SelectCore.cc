@@ -290,7 +290,7 @@ namespace ocs::tom {
       for (const WhatEntry &entry : entries) {
          ep[i].pos = present_pos(descr, entry.nm);
          ep[i].nm = entry.nm;
-         ep[i].mt = descr[ep[i].pos].mt & ~CULL_DESCR_INTERNED;
+         ep[i].mt = descr[ep[i].pos].mt & ~MT_DESCR_INTERNED;
          ep[i].ep = entry.sub;
          i++;
       }

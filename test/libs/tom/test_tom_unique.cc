@@ -350,7 +350,7 @@ test_lookup() {
                         .c_str(), other);
    }
 
-   // a field hashed without CULL_UNIQUE holds a key several times by design: found first, then the next
+   // a field hashed without MT_UNIQUE holds a key several times by design: found first, then the next
    auto changes = ListPtr<CX>::create("changes");
    for (std::uint32_t i = 0; i < LONG_LIST; i++) {
       changes->emplace_back<CX_variable>(i % 2 == 0 ? "a" : "b");

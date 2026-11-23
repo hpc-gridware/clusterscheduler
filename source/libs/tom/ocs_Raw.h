@@ -871,7 +871,7 @@ namespace ocs::tom {
          // the core copies the string; it does not change it
          v.str = const_cast<char *>(value);
       }
-      return detail::raw_where_compare(descr, nm, op, cull_type_of(detail::field_type_for<V>()), v);
+      return detail::raw_where_compare(descr, nm, op, mt_type_of(detail::field_type_for<V>()), v);
    }
 
    /**

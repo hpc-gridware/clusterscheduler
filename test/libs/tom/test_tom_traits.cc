@@ -119,7 +119,7 @@ test_entries() {
       const lDescr *dp = table.descr;
       for (std::size_t i = 0; i < table.size; i++, n_fields++) {
          const ocs::tom::FieldInfo &f = table.fields[i];
-         const int mt = ocs::tom::cull_type_of(f.type) | ocs::tom::cull_flags_of(f.flags);
+         const int mt = ocs::tom::mt_type_of(f.type) | ocs::tom::mt_flags_of(f.flags);
          if (dp[i].nm != f.nm || dp[i].mt != mt || dp[i].off != 0 ||
              (i > 0 && f.nm != table.fields[i - 1].nm + 1)) {
             std::printf("%s: entry %zu (%s) is not held as declared\n", table.name, i, ocs::tom::field_name(f.nm));

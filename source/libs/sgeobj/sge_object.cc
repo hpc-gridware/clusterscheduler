@@ -1134,7 +1134,7 @@ object_get_type(const lListElem *object) {
  *
  * @note Only implemented for selected object types.
  *       It would be better to have the necessary data in the object
- *       description, e.g. via a field property CULL_PRIMARY_KEY.
+ *       description, e.g. via a field property MT_PRIMARY_KEY.
  *
  *       Function interface breaks style guide - either we would have to
  *       pass an object, or call it descr_get_primary_key.
@@ -1145,7 +1145,7 @@ object_get_primary_key(const lDescr *descr) {
 
    if (descr != nullptr) {
       for (const auto f : ocs::tom::present_fields(descr)) {
-         if (descr[f.pos].mt & CULL_PRIMARY_KEY) {
+         if (descr[f.pos].mt & MT_PRIMARY_KEY) {
             ret = descr[f.pos].nm;
             break;
          }
@@ -2011,7 +2011,7 @@ namespace {
 /**
  * @brief Find every key that a unique attribute of an object's sub-lists holds twice
  *
- * Walks every sub-list and sub-object of the object. In each list, every attribute flagged #CULL_UNIQUE must
+ * Walks every sub-list and sub-object of the object. In each list, every attribute flagged #MT_UNIQUE must
  * hold a key at most once. String keys compare by exact string, host keys as the hash table of the list
  * compares them, normalised as `sge_hostcmp()` does, and ulong keys by value. Elements without a key are
  * skipped. The lists of a list are checked before the sub-lists of its elements.

@@ -79,11 +79,11 @@ enum {
 };
 
 LISTDEF(TEST_Type)
-   SGE_ULONG  (TEST_ulong,   CULL_HASH)
-   SGE_ULONG64(TEST_ulong64, CULL_HASH)
-   SGE_HOST   (TEST_host,    CULL_HASH)
-   SGE_STRING (TEST_string,  CULL_HASH)
-   SGE_LIST   (TEST_list,    TEST_Type, CULL_DEFAULT)
+   SGE_ULONG  (TEST_ulong,   MT_HASH)
+   SGE_ULONG64(TEST_ulong64, MT_HASH)
+   SGE_HOST   (TEST_host,    MT_HASH)
+   SGE_STRING (TEST_string,  MT_HASH)
+   SGE_LIST   (TEST_list,    TEST_Type, MT_DEFAULT)
 LISTEND(TEST_Type)
 
 NAMEDEF(TEST_Name)

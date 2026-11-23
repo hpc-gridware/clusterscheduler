@@ -89,8 +89,7 @@
 #include "msg_common.h"
 
 #if 1
-static const int pack_part = CULL_SPOOL | CULL_SUBLIST | CULL_SPOOL_PROJECT | 
-                             CULL_SPOOL_USER;
+static const int pack_part = MT_SPOOL | MT_SPOOL_SUBLIST | MT_SPOOL_PROJECT;
 #else
 static const int pack_part = 0;
 #endif

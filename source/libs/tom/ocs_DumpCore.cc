@@ -825,7 +825,7 @@ namespace ocs::tom {
             }
             for (int i = 0; i < n; i++) {
                if (dp[i].nm == from.nm && dp[i].off != OCS_CULL_ABSENT &&
-                   (dp[i].mt & ~(CULL_DESCR_INTERNED | CULL_IS_REDUCED)) == (from.mt & ~CULL_IS_REDUCED)) {
+                   (dp[i].mt & ~(MT_DESCR_INTERNED | MT_IS_REDUCED)) == (from.mt & ~MT_IS_REDUCED)) {
                   found[i] = j;
                   break;
                }

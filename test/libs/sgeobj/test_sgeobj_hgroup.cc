@@ -1156,7 +1156,7 @@ cache_holds(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup, const char *hos
 /** @brief Send an element through a pack buffer and read it back
  *
  * What a client asking for all fields receives, which is the boundary
- * #CULL_NO_TRANSFER takes effect at.
+ * #MT_NO_TRANSFER takes effect at.
  *
  * @param ep the element to pack
  *
@@ -1294,7 +1294,7 @@ test_match_cache() {
    }
 
    // T112-T116: the matching cache is process-local derived state and must not
-   // leave the object. The property that says so, CULL_NO_TRANSFER, is covered
+   // leave the object. The property that says so, MT_NO_TRANSFER, is covered
    // generically by the cull tests on a synthetic type; what is checked here is
    // its first real user, because this is the field where a regression would
    // actually confer - qconf asks for all fields.
@@ -1507,7 +1507,7 @@ test_split_members() {
 // A group can be reached both directly and through another group. The walk then
 // meets it twice: once among the direct referencees, once among those found by
 // the recursion. Merging the two by concatenating the lists put two entries
-// under one key -- and HR_name is CULL_UNIQUE | CULL_HASH, so the second entry
+// under one key -- and HR_name is MT_UNIQUE | MT_HASH, so the second entry
 // displaces the first in the hash and the list starts answering differently
 // depending on whether it is scanned or looked up. The deduplication that
 // follows in hgroup_refresh_caches() then removed the key altogether.

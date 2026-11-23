@@ -62,10 +62,10 @@ namespace ocs::module_test {
     */
    inline ocs::tom::Flag test_flags_of(const int mt) {
       const std::pair<int, ocs::tom::Flag> map[] = {
-         {CULL_PRIMARY_KEY, ocs::tom::Flag::PrimaryKey}, {CULL_HASH, ocs::tom::Flag::Hash},
-         {CULL_UNIQUE, ocs::tom::Flag::Unique}, {CULL_NO_TRANSFER, ocs::tom::Flag::NoTransfer},
-         {CULL_CONFIGURE, ocs::tom::Flag::Configure}, {CULL_SPOOL, ocs::tom::Flag::Spool},
-         {CULL_SUBLIST, ocs::tom::Flag::SpoolSublist}, {CULL_SPOOL_PROJECT, ocs::tom::Flag::SpoolProject},
+         {MT_PRIMARY_KEY, ocs::tom::Flag::PrimaryKey}, {MT_HASH, ocs::tom::Flag::Hash},
+         {MT_UNIQUE, ocs::tom::Flag::Unique}, {MT_NO_TRANSFER, ocs::tom::Flag::NoTransfer},
+         {MT_CONFIGURE, ocs::tom::Flag::Configure}, {MT_SPOOL, ocs::tom::Flag::Spool},
+         {MT_SPOOL_SUBLIST, ocs::tom::Flag::SpoolSublist}, {MT_SPOOL_PROJECT, ocs::tom::Flag::SpoolProject},
       };
       ocs::tom::Flag flags = ocs::tom::Flag::None;
       for (const auto &[bit, flag] : map) {

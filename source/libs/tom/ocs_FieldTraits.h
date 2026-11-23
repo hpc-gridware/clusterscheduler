@@ -62,17 +62,17 @@ namespace ocs::tom {
       Ref      ///< an opaque pointer the element does not own
    };
 
-   /** @brief The flags of a field */
+   /** @brief The flags of a field; the values are the field flag bits of the mt word, without the type byte */
    enum class Flag : std::uint16_t {
-      None = 0,               ///< no flag
-      PrimaryKey = 1 << 0,    ///< the field is part of the primary key; implies neither uniqueness nor hashing
-      Hash = 1 << 1,          ///< lookups by this field use a hash table
-      Unique = 1 << 2,        ///< no two elements of a list hold the same value in this field
-      NoTransfer = 1 << 3,    ///< the value stays inside the process; it is neither packed nor sent in events
-      Configure = 1 << 4,     ///< the field may be changed by configuration functions
-      Spool = 1 << 5,         ///< the field is written when the object is spooled
-      SpoolSublist = 1 << 6,  ///< the field is spooled when the type is the sub-type of another one
-      SpoolProject = 1 << 7   ///< the field is spooled with a project
+      None = 0,                                         ///< no flag
+      PrimaryKey = MT_PRIMARY_KEY >> MT_FLAG_SHIFT,     ///< the field is part of the primary key
+      Hash = MT_HASH >> MT_FLAG_SHIFT,                  ///< lookups by this field use a hash table
+      Unique = MT_UNIQUE >> MT_FLAG_SHIFT,              ///< no two elements of a list hold the same value in this field
+      NoTransfer = MT_NO_TRANSFER >> MT_FLAG_SHIFT,     ///< the value stays inside the process
+      Configure = MT_CONFIGURE >> MT_FLAG_SHIFT,        ///< the field may be changed by configuration functions
+      Spool = MT_SPOOL >> MT_FLAG_SHIFT,                ///< the field is written when the object is spooled
+      SpoolSublist = MT_SPOOL_SUBLIST >> MT_FLAG_SHIFT, ///< spooled where the type is the sub-type of another one
+      SpoolProject = MT_SPOOL_PROJECT >> MT_FLAG_SHIFT  ///< the field is spooled with a project
    };
 
    /**
@@ -108,7 +108,7 @@ namespace ocs::tom {
     * @param type the field type
     * @return the tag, an @ref _enum_lMultiType value
     */
-   constexpr int cull_type_of(const FieldType type) {
+   constexpr int mt_type_of(const FieldType type) {
       switch (type) {
          case FieldType::Uint32:
             return MT_UINT32;
@@ -169,23 +169,12 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief The attribute bits of the list library for a set of flags
+    * @brief The flag bits of the mt word for a set of flags
     * @param flags the flags
-    * @return the bits, @ref cull_field_attributes or-ed together
+    * @return the bits, @ref mt_field_attributes or-ed together
     */
-   constexpr int cull_flags_of(const Flag flags) {
-      constexpr std::pair<Flag, int> map[] = {
-         {Flag::PrimaryKey, CULL_PRIMARY_KEY}, {Flag::Hash, CULL_HASH}, {Flag::Unique, CULL_UNIQUE},
-         {Flag::NoTransfer, CULL_NO_TRANSFER}, {Flag::Configure, CULL_CONFIGURE}, {Flag::Spool, CULL_SPOOL},
-         {Flag::SpoolSublist, CULL_SUBLIST}, {Flag::SpoolProject, CULL_SPOOL_PROJECT},
-      };
-      int bits = CULL_DEFAULT;
-      for (const auto &[flag, bit] : map) {
-         if (has_flag(flags, flag)) {
-            bits |= bit;
-         }
-      }
-      return bits;
+   constexpr int mt_flags_of(const Flag flags) {
+      return static_cast<int>(flags) << MT_FLAG_SHIFT;
    }
 
    /**
@@ -201,7 +190,7 @@ namespace ocs::tom {
     */
    template <std::size_t N, std::size_t... I>
    consteval cull_descr_block<N + 1> make_descriptor_impl(const FieldInfo (&fields)[N], std::index_sequence<I...>) {
-      const lDescr entries[N + 1] = {{fields[I].nm, cull_type_of(fields[I].type) | cull_flags_of(fields[I].flags), 0}...,
+      const lDescr entries[N + 1] = {{fields[I].nm, mt_type_of(fields[I].type) | mt_flags_of(fields[I].flags), 0}...,
                                      {NoName, MT_END, 0}};
       return ocs::tom::descr_make(entries);
    }

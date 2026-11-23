@@ -298,7 +298,7 @@ const int SOURCE_LIST[LIST_MAX][3] = {
 /**
  * @brief What every event payload copy passes for lCopyElemHash()'s last argument
  *
- * CS-2634. A field marked #CULL_NO_TRANSFER holds state that is meaningful only
+ * CS-2634. A field marked #MT_NO_TRANSFER holds state that is meaningful only
  * in the process that built it, so it must not travel as event payload either.
  * The copy that builds the payload is told to leave such a field at what
  * lCreateElem() gave it, which costs nothing: the copy walks the whole object
@@ -1261,7 +1261,7 @@ int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, ocs::tom:
  * @brief Copy an object for an event payload
  *
  * The copy every event payload is built with: without hash tables and without the fields marked
- * #CULL_NO_TRANSFER (#SKIP_NO_TRANSFER). The typed handles have no clone() with these two choices, so the copy
+ * #MT_NO_TRANSFER (#SKIP_NO_TRANSFER). The typed handles have no clone() with these two choices, so the copy
  * of the list core is taken over; it has the type of the original.
  *
  * Hot path: no DENTER.
@@ -2905,7 +2905,7 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
 
       if (type == sgeE_SCHED_CONF) {
          /* the only payload not built by the copy below, so a
-          * CULL_NO_TRANSFER field on SC would need handling here */
+          * MT_NO_TRANSFER field on SC would need handling here */
          payload = ocs::tom::RawListPtr(sconf_get_config_list());
       } else {
          const sge_object_type object_type = ocs_total_update_object_type(type);
@@ -2913,7 +2913,7 @@ static void total_update_event(const ocs::tom::Element<ocs::tom::EV> event_clien
             using E = ocs_object_type_entry_t<decltype(entry)>;
             const auto master_list = ocs::DataStore::master_list<E::value>();
             if (master_list) {
-               // the typed handles have no clone() without the CULL_NO_TRANSFER fields, see
+               // the typed handles have no clone() without the MT_NO_TRANSFER fields, see
                // ocs_event_payload_clone(); the copy keeps the name of the master list
                payload = ocs::tom::RawListPtr(ocs::tom::copy_list(nullptr, master_list, false, SKIP_NO_TRANSFER));
             }

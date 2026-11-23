@@ -92,7 +92,7 @@ int g_validated = 0;         ///< calls of the object validation callback
 int g_validated_lists = 0;   ///< calls of the list validation callback
 
 /// the pack flags of the backend (pack_part in sge_bdb.cc)
-constexpr int PACK_PART = CULL_SPOOL | CULL_SUBLIST | CULL_SPOOL_PROJECT | CULL_SPOOL_USER;
+constexpr int PACK_PART = MT_SPOOL | MT_SPOOL_SUBLIST | MT_SPOOL_PROJECT;
 
 constexpr uint32_t JOB_ID = 4711;          ///< the job number of the array job
 constexpr const char *QUEUE = "bdb.q";     ///< the cluster queue name

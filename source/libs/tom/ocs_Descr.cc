@@ -129,7 +129,7 @@ namespace {
    /**
     * @brief Whether two descriptors have the same entries
     *
-    * Process-local flags (#CULL_DESCR_INTERNED) are not part of the comparison.
+    * Process-local flags (#MT_DESCR_INTERNED) are not part of the comparison.
     *
     * @param a the entries of one descriptor
     * @param b the entries of the other
@@ -138,7 +138,7 @@ namespace {
     */
    bool same_entries(const lDescr *a, const lDescr *b, const uint32_t n) {
       for (uint32_t i = 0; i < n; i++) {
-         if (a[i].nm != b[i].nm || (a[i].mt & ~CULL_DESCR_INTERNED) != (b[i].mt & ~CULL_DESCR_INTERNED) ||
+         if (a[i].nm != b[i].nm || (a[i].mt & ~MT_DESCR_INTERNED) != (b[i].mt & ~MT_DESCR_INTERNED) ||
              a[i].off != b[i].off) {
             return false;
          }
@@ -192,7 +192,7 @@ namespace {
       auto *h = new (mem) cull_descr_header{1, n, np, hash};
       lDescr *e = entries_of(h);
       memcpy(e, dp, (n + 1) * sizeof(lDescr));
-      e[0].mt |= CULL_DESCR_INTERNED;
+      e[0].mt |= MT_DESCR_INTERNED;
       if (np < n) {
          auto *rmap = reinterpret_cast<int16_t *>(e + n + 1);
          for (uint32_t pos = 0; pos < n; pos++) {
@@ -250,7 +250,7 @@ namespace {
  * @return true for a counted descriptor, false for a static one, one without header and nullptr
  */
 bool ocs::tom::descr_is_counted(const lDescr *dp) {
-   return dp != nullptr && (dp[0].mt & CULL_DESCR_INTERNED) != 0;
+   return dp != nullptr && (dp[0].mt & MT_DESCR_INTERNED) != 0;
 }
 
 /**
@@ -387,7 +387,7 @@ const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
  * @param n their number, without the terminating one
  */
 static void check_full_length(const lDescr *dp, const uint32_t n) {
-   if ((dp[0].mt & CULL_IS_REDUCED) == 0 || !ocs::tom::has_model()) {
+   if ((dp[0].mt & MT_IS_REDUCED) == 0 || !ocs::tom::has_model()) {
       return;
    }
    int pos = 0;
@@ -463,7 +463,7 @@ const lDescr *ocs::tom::descr_private(const lDescr *dp) {
  * Every entry of @p src is copied, so the result has the length of the type.
  * The kept fields get their slots in type order; all others are marked
  * #OCS_CULL_ABSENT. Unless every field is kept, every entry is marked
- * #CULL_IS_REDUCED. The process-local #CULL_DESCR_INTERNED stays with the source.
+ * #MT_IS_REDUCED. The process-local #MT_DESCR_INTERNED stays with the source.
  *
  * @param src a full-length descriptor: a type or a reduction of it
  * @param keep one flag per entry of src, true for the fields to keep; each must be present in src
@@ -482,13 +482,13 @@ int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDe
          return -1;
       }
       out[pos].nm = src[pos].nm;
-      out[pos].mt = (src[pos].mt & ~CULL_DESCR_INTERNED) | CULL_IS_REDUCED;
+      out[pos].mt = (src[pos].mt & ~MT_DESCR_INTERNED) | MT_IS_REDUCED;
       out[pos].off = keep[pos] ? slot++ - static_cast<int>(pos) : OCS_CULL_ABSENT;
    }
-   out[n] = {NoName, MT_END | CULL_IS_REDUCED, 0};
+   out[n] = {NoName, MT_END | MT_IS_REDUCED, 0};
    if (static_cast<uint32_t>(slot) == n) {
       for (uint32_t pos = 0; pos <= n; pos++) {
-         out[pos].mt &= ~CULL_IS_REDUCED;
+         out[pos].mt &= ~MT_IS_REDUCED;
       }
    }
    return slot;

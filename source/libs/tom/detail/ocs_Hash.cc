@@ -71,16 +71,16 @@
  * @defgroup cull_hash Hash tables for cull lists
  * @brief An abstraction layer between cull and the hash tables in libuti
  *
- * A field marked #CULL_HASH gets a hash table over its values, so looking an
+ * A field marked #MT_HASH gets a hash table over its values, so looking an
  * element up by that field does not have to walk the list.
  *
  * libuti's hash tables store one value per key. Cull needs **non unique** keys
  * as well, so for those the table stores a pointer to a chain of
  * @ref _non_unique_hash nodes rather than to the element itself. The wrapper
  * functions here hide that difference: insert, remove and search behave the
- * same whether the field was declared #CULL_UNIQUE or not.
+ * same whether the field was declared #MT_UNIQUE or not.
  *
- * @see @ref cull_field_attributes
+ * @see @ref mt_field_attributes
  */
 
 
@@ -270,7 +270,7 @@ cull_htable ocs::tom::detail::hash_create(const lDescr *dp, const int pos, int s
 /**
  * @brief Allocate the slot array of a hashable list, with no table in it
  *
- * One slot per field of the list's descriptor that is marked #CULL_HASH, in
+ * One slot per field of the list's descriptor that is marked #MT_HASH, in
  * descriptor order. That includes a field added by ocs::tom::detail::hash_new(), which marks
  * it in the descriptor.
  *
@@ -523,7 +523,7 @@ void ocs::tom::set_thread_host_hash_threshold(const std::uint32_t n) {
  * @param ep the cull object to be stored in a hash list
  * @param key the hash key, from #ocs::tom::detail::hash_key
  * @param ht the table to insert into
- * @param unique true when the field was declared #CULL_UNIQUE
+ * @param unique true when the field was declared #MT_UNIQUE
  */
 void ocs::tom::detail::hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique) {
    if (ht == nullptr || ep == nullptr || key == nullptr) {
@@ -1089,7 +1089,7 @@ int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
    /* The descriptor is shared with other lists, or is the static block of the
     * type, so the hashing information goes into a private copy that only this
     * list and its elements hold (copy on write). */
-   const int mt = descr[pos].mt | CULL_HASH | (unique ? CULL_UNIQUE : 0);
+   const int mt = descr[pos].mt | MT_HASH | (unique ? MT_UNIQUE : 0);
    if (mt != descr[pos].mt) {
       const lDescr *copy = ocs::tom::descr_private(descr);
       if (copy == nullptr) {
@@ -1097,7 +1097,7 @@ int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
       }
       // the copy is not registered and nobody holds it yet, so it may still be written; the flags are added, so
       // that the reference count mark the copy carries in its first entry stays
-      const_cast<lDescr *>(copy)[pos].mt |= CULL_HASH | (unique ? CULL_UNIQUE : 0);
+      const_cast<lDescr *>(copy)[pos].mt |= MT_HASH | (unique ? MT_UNIQUE : 0);
       for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
          ep->descr = copy;
       }

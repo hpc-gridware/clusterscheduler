@@ -156,7 +156,7 @@ namespace ocs::tom {
             // the core copies the string; it does not change it
             v.str = const_cast<char *>(value);
          }
-         return make_compare(Tr::Type::descriptor.e, static_cast<int>(F), op, ocs::tom::cull_type_of(Tr::type), v);
+         return make_compare(Tr::Type::descriptor.e, static_cast<int>(F), op, ocs::tom::mt_type_of(Tr::type), v);
       }
 
    } // namespace detail

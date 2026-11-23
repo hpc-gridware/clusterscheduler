@@ -167,9 +167,9 @@ namespace ocs::tom {
       // need be, normalised; creating an element must not walk the fields of a shared one, twice, each time.
       const bool shared = ocs::tom::descr_is_counted(descr) || ocs::tom::descr_static_for(descr[0].nm) == descr;
 #if defined(ENABLE_DEBUG_CHECKS)
-      if (shared && (descr->mt & CULL_IS_REDUCED) != 0) {
+      if (shared && (descr->mt & MT_IS_REDUCED) != 0) {
          for (int i = 0; mt_get_type(descr[i].mt) != MT_END; i++) {
-            if ((descr[i].mt & CULL_IS_REDUCED) == 0) {
+            if ((descr[i].mt & MT_IS_REDUCED) == 0) {
                abort();
             }
          }
@@ -179,10 +179,10 @@ namespace ocs::tom {
       // every field inherits the reduced flag of the type; a descriptor that does
       // not carry it in every field yet is normalised in a temporary copy
       lDescr *normalised = nullptr;
-      if (!shared && (descr->mt & CULL_IS_REDUCED) != 0) {
+      if (!shared && (descr->mt & MT_IS_REDUCED) != 0) {
          const int n = descr_length(descr);
          for (int i = 0; i <= n; i++) {
-            if ((descr[i].mt & CULL_IS_REDUCED) == 0) {
+            if ((descr[i].mt & MT_IS_REDUCED) == 0) {
                normalised = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (n + 1)));
                if (normalised == nullptr) {
                   sge_free(&ep);
@@ -192,7 +192,7 @@ namespace ocs::tom {
                CULL_STATS_TYPE(descr[0].nm, DCOPY_ELEM, 1);
                CULL_STATS_TYPE(descr[0].nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
                for (int j = 0; j <= n; j++) {
-                  normalised[j].mt |= CULL_IS_REDUCED;
+                  normalised[j].mt |= MT_IS_REDUCED;
                }
                break;
             }
@@ -391,7 +391,7 @@ namespace ocs::tom {
       lMultiType &to = ocs::tom::detail::value(dst, dst_pos);
       const lMultiType &from = ocs::tom::detail::value(src, src_pos);
 
-      // A field marked CULL_NO_TRANSFER holds state that is meaningful only in the process that built it.
+      // A field marked MT_NO_TRANSFER holds state that is meaningful only in the process that built it.
       // A copy that will be handed out, an event payload, keeps what create_elem() gave it.
       if (skip_no_transfer && !mt_do_transfer(dst->descr[dst_pos].mt)) {
          to = lMultiType{};

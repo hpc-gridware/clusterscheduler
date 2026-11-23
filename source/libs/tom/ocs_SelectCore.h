@@ -217,7 +217,7 @@ namespace ocs::tom {
     * @param cp the condition, or nullptr for every element
     * @param what the selection of fields
     * @param hash true if the new list may be hashed
-    * @param skip_no_transfer true if fields marked CULL_NO_TRANSFER are not copied
+    * @param skip_no_transfer true if fields marked MT_NO_TRANSFER are not copied
     * @return the new list, owned by the caller
     * @throw FieldException with reason NullList if @p lp is null, NullElement if @p what is null
     * @throw ListCoreError if the reduction or a copy fails
@@ -261,7 +261,7 @@ namespace ocs::tom {
     * @param src the element copied from; it must hold every selected field
     * @param what the selection; ALL copies every present field, NONE none
     * @param hash true to build the hash tables of copied sub-lists
-    * @param skip_no_transfer true if fields marked CULL_NO_TRANSFER are not copied
+    * @param skip_no_transfer true if fields marked MT_NO_TRANSFER are not copied
     * @throw FieldException with reason NullElement if an argument is null
     * @throw ListCoreError if a selected field is absent or a copy fails
     */
@@ -273,7 +273,7 @@ namespace ocs::tom {
     * @param ep the element
     * @param what the selection of fields
     * @param hash true to build the hash tables of copied sub-lists
-    * @param skip_no_transfer true if fields marked CULL_NO_TRANSFER are not copied
+    * @param skip_no_transfer true if fields marked MT_NO_TRANSFER are not copied
     * @return the copy, a free element owned by the caller
     * @throw FieldException with reason NullElement if an argument is null
     * @throw ListCoreError if the reduction or a copy fails

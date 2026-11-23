@@ -388,7 +388,7 @@ test_layout() {
          reduced_list.get().size() == 3 && more_full.get().size() == 1 && other_full && other_full->size() == 1);
 
    // a list that got a hash table later holds a private copy of the type's descriptor whose flags differ
-   // (CULL_HASH); elements of the type itself still have its layout and must be linked in
+   // (MT_HASH); elements of the type itself still have its layout and must be linked in
    auto hashed = ListPtr<JB>::create("hashed", Hashing::Off);
    const bool hash_created = ocs::tom::detail::hash_new(hashed.get().raw(), JB_owner, false) == 1;
    const bool private_copy = hashed->descr() != ocs::tom::JB::descriptor.e;

@@ -129,7 +129,7 @@ namespace ocs::tom {
     * a sub-list or sub-object copied deeply, or reduced to a selection when
     * one is given. A sub-list that a selection empties is no list when the
     * copy may be hashed, as the old selection gave it. With skip_no_transfer a
-    * field marked CULL_NO_TRANSFER is left at its default.
+    * field marked MT_NO_TRANSFER is left at its default.
     *
     * @param src the element copied from
     * @param dst the element copied to; the field's old value is overwritten, not freed

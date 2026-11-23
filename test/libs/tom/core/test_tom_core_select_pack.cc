@@ -87,21 +87,21 @@ enum {
 };
 
 LISTDEF(SP_Type)
-   SGE_STRING(SP_name, CULL_DEFAULT | CULL_HASH | CULL_UNIQUE)
-   SGE_ULONG(SP_group, CULL_DEFAULT | CULL_HASH)
-   SGE_HOST(SP_host, CULL_DEFAULT)
-   SGE_DOUBLE(SP_value, CULL_DEFAULT)
-   SGE_BOOL(SP_flag, CULL_DEFAULT)
-   SGE_ULONG64(SP_big, CULL_DEFAULT)
-   SGE_STRING(SP_spool, CULL_DEFAULT | CULL_SPOOL)
-   SGE_LIST(SP_sub, SPS_Type, CULL_DEFAULT | CULL_SPOOL)
-   SGE_OBJECT(SP_obj, SPS_Type, CULL_DEFAULT)
+   SGE_STRING(SP_name, MT_DEFAULT | MT_HASH | MT_UNIQUE)
+   SGE_ULONG(SP_group, MT_DEFAULT | MT_HASH)
+   SGE_HOST(SP_host, MT_DEFAULT)
+   SGE_DOUBLE(SP_value, MT_DEFAULT)
+   SGE_BOOL(SP_flag, MT_DEFAULT)
+   SGE_ULONG64(SP_big, MT_DEFAULT)
+   SGE_STRING(SP_spool, MT_DEFAULT | MT_SPOOL)
+   SGE_LIST(SP_sub, SPS_Type, MT_DEFAULT | MT_SPOOL)
+   SGE_OBJECT(SP_obj, SPS_Type, MT_DEFAULT)
 LISTEND(SP_Type)
 
 LISTDEF(SPS_Type)
-   SGE_STRING(SPS_name, CULL_DEFAULT | CULL_HASH | CULL_UNIQUE | CULL_SPOOL)
-   SGE_ULONG(SPS_count, CULL_DEFAULT | CULL_SPOOL)
-   SGE_STRING(SPS_note, CULL_DEFAULT)
+   SGE_STRING(SPS_name, MT_DEFAULT | MT_HASH | MT_UNIQUE | MT_SPOOL)
+   SGE_ULONG(SPS_count, MT_DEFAULT | MT_SPOOL)
+   SGE_STRING(SPS_note, MT_DEFAULT)
 LISTEND(SPS_Type)
 
 NAMEDEF(SP_Name)
@@ -592,14 +592,14 @@ static void test_partial_descr() {
 
    bool reduced = true;
    for (size_t i = 0; i <= SP_Size; i++) {
-      reduced = reduced && (dp[i].mt & CULL_IS_REDUCED) != 0;
+      reduced = reduced && (dp[i].mt & MT_IS_REDUCED) != 0;
    }
-   CHECK(15, "every field and the end mark carry CULL_IS_REDUCED", reduced);
+   CHECK(15, "every field and the end mark carry MT_IS_REDUCED", reduced);
 
    CHECK(16, "the field attributes of the source are kept",
-         mt_get_type(dp[pos_name].mt) == MT_STRING && (dp[pos_name].mt & CULL_HASH) != 0 &&
-         (dp[pos_name].mt & CULL_UNIQUE) != 0 && (dp[pos_group].mt & CULL_HASH) != 0 &&
-         (dp[pos_group].mt & CULL_UNIQUE) == 0 && (dp[pos_spool].mt & CULL_SPOOL) != 0);
+         mt_get_type(dp[pos_name].mt) == MT_STRING && (dp[pos_name].mt & MT_HASH) != 0 &&
+         (dp[pos_name].mt & MT_UNIQUE) != 0 && (dp[pos_group].mt & MT_HASH) != 0 &&
+         (dp[pos_group].mt & MT_UNIQUE) == 0 && (dp[pos_spool].mt & MT_SPOOL) != 0);
 
    ocs::tom::RawWhatPtr all = ocs::tom::what_all();
    std::vector<lDescr> dp_all(SP_Size + 1);
@@ -607,7 +607,7 @@ static void test_partial_descr() {
    const int ret_all = ocs::tom::partial_descr(all.get(), SP_Type, dp_all.data(), &index);
    CHECK(17, "what ALL copies the descriptor without marking it reduced",
          ret_all == 0 && index == static_cast<int>(SP_Size) &&
-         ocs::tom::layout_difference(dp_all.data(), SP_Type) == 0 && (dp_all[0].mt & CULL_IS_REDUCED) == 0);
+         ocs::tom::layout_difference(dp_all.data(), SP_Type) == 0 && (dp_all[0].mt & MT_IS_REDUCED) == 0);
 
    lDescr dummy[1];
    index = 0;
@@ -625,13 +625,13 @@ static void test_pack_list_partial() {
    int ret = PACK_FORMAT;
    try {
       ocs::tom::PackBuffer pb(false, 1024);
-      ocs::tom::pack_list(&pb.raw(), source.get(), nullptr, CULL_SPOOL);
-      ret = unpack_list_from(pb, lp, CULL_SPOOL);
+      ocs::tom::pack_list(&pb.raw(), source.get(), nullptr, MT_SPOOL);
+      ret = unpack_list_from(pb, lp, MT_SPOOL);
    } catch (const ocs::tom::PackException &e) {
       ret = e.code();
    }
    const ocs::tom::ConstRawElement e2 = lp ? lp->front().next().next() : ocs::tom::ConstRawElement();
-   CHECK(19, "with CULL_SPOOL only the spooled fields arrive, the others stay empty",
+   CHECK(19, "with MT_SPOOL only the spooled fields arrive, the others stay empty",
          ret == PACK_SUCCESS && lp->size() == SOURCE_SIZE && e2 &&
          sge_strnullcmp(e2.get<const char *>(SP_spool), "spool2") == 0 && e2.get<const char *>(SP_name) == nullptr &&
          e2.get<std::uint32_t>(SP_group) == 0 && e2.get<const lListElem *>(SP_obj) == nullptr);
@@ -669,7 +669,7 @@ static void test_reduced_and_free() {
    CHECK(22, "a reduced list survives the round trip",
          ret == PACK_SUCCESS && lp->size() == SOURCE_SIZE && list_equal(reduced.get(), lp.get()));
    const lDescr *dp = descr_of(lp.get());
-   CHECK(23, "the unpacked list is still marked reduced", dp != nullptr && (dp[0].mt & CULL_IS_REDUCED) != 0);
+   CHECK(23, "the unpacked list is still marked reduced", dp != nullptr && (dp[0].mt & MT_IS_REDUCED) != 0);
    lp.reset();
 
    // a free element, not bound to any list, with a sub-object
@@ -875,13 +875,13 @@ int main(int argc, char *argv[]) {
        "partial_descr() takes the fields of a what in descriptor order, marks them reduced and keeps their attributes",
        {"build a descriptor from a what of three fields in non-descriptor order",
         "build one from what ALL", "call it without a what"},
-       "the fields come in type order, at the length of the type, with CULL_IS_REDUCED and their hash, unique and "
+       "the fields come in type order, at the length of the type, with MT_IS_REDUCED and their hash, unique and "
        "spool attributes; what ALL "
        "gives the unmarked source descriptor; a missing what is rejected",
        {{"CLN-03", "covers"}}, {14, 15, 16, 17, 18}, test_partial_descr},
       {"SELPACK-06", "pack_list with flags and with a what",
        "pack_list() packs only the flagged fields, sublists included, or the fields of a what",
-       {"pack the source list with CULL_SPOOL and unpack it with the same flags",
+       {"pack the source list with MT_SPOOL and unpack it with the same flags",
         "pack it with a nested what and compare with select_as"},
        "only the spooled fields arrive, down into the sublist; with a what the result equals select_as",
        {{"CLN-03", "covers"}}, {19, 20, 21}, test_pack_list_partial},

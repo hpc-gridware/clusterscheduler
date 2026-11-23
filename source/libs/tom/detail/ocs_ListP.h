@@ -175,7 +175,7 @@ namespace ocs::tom {
     * element holds. A counted descriptor with absent fields is walked over its
     * slots through the reverse map in its header, so a reduction to a few fields
     * of a long type costs a few steps (N-B-6). A full descriptor, one without
-    * #CULL_IS_REDUCED, has no absent field, and its slots are its positions. Any
+    * #MT_IS_REDUCED, has no absent field, and its slots are its positions. Any
     * other descriptor is walked over its entries, skipping absent ones.
     *
     * @code
@@ -272,10 +272,10 @@ namespace ocs::tom {
        */
       iterator begin() const {
          // only a reduced descriptor has absent fields (N-B-1)
-         if ((dp_[0].mt & CULL_IS_REDUCED) == 0) {
+         if ((dp_[0].mt & MT_IS_REDUCED) == 0) {
             return {dp_, nullptr, 0, true};
          }
-         if ((dp_[0].mt & CULL_DESCR_INTERNED) != 0) {
+         if ((dp_[0].mt & MT_DESCR_INTERNED) != 0) {
             const cull_descr_header *h = ocs::tom::descr_header_of(dp_);
             if (h->np < h->n) {
                return {dp_, ocs::tom::descr_rmap(dp_), static_cast<int>(h->np), false};
@@ -301,7 +301,7 @@ namespace ocs::tom {
  * @brief The hash table of one hashed field of a list
  *
  * A list that may be hashed holds one slot per field of its type that is marked
- * #CULL_HASH. The slot array is allocated by the first table build of the list,
+ * #MT_HASH. The slot array is allocated by the first table build of the list,
  * so a list that is never searched has none; the table in a slot exists only
  * once it is built. The slot carries the field's descriptor position, which
  * maps a position to its table by a scan over the few hashed fields of a type.

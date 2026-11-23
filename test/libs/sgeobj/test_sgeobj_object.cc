@@ -715,7 +715,7 @@ static bool pack_job_as_shorter(sge_pack_buffer *pb, const ocs::tom::ConstElemen
    const size_t start = pb->bytes_used;
    bool ok = true;
    try {
-      ocs::tom::pack_elem(pb, job, what.get(), CULL_SPOOL);
+      ocs::tom::pack_elem(pb, job, what.get(), MT_SPOOL);
    } catch (const ocs::tom::PackException &) {
       ok = false;
    }
@@ -724,7 +724,7 @@ static bool pack_job_as_shorter(sge_pack_buffer *pb, const ocs::tom::ConstElemen
       char *mt_word = pb->head_ptr + start + 8 + 8 * i + 4;
       uint32_t mt;
       memcpy(&mt, mt_word, sizeof(mt));
-      mt = htonl(ntohl(mt) & ~CULL_IS_REDUCED);
+      mt = htonl(ntohl(mt) & ~MT_IS_REDUCED);
       memcpy(mt_word, &mt, sizeof(mt));
    }
    return ok;
@@ -750,7 +750,7 @@ static void test_spooled_job_of_shorter_type() {
          if (ocs::tom::try_init_buffer_from(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
             try {
                read = ocs::tom::ElementPtr<ocs::tom::JB>(
-                  ocs::tom::unpack_elem(&in, ocs::tom::JB::descriptor.e, CULL_SPOOL));
+                  ocs::tom::unpack_elem(&in, ocs::tom::JB::descriptor.e, MT_SPOOL));
                ret = PACK_SUCCESS;
             } catch (const ocs::tom::PackException &e) {
                ret = e.code();

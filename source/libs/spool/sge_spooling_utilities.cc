@@ -99,42 +99,42 @@
 #include "msg_common.h"
 
 const spool_instr_t spool_config_subinstr = {
-        CULL_SUBLIST,
+        MT_SPOOL_SUBLIST,
         false,
         false,
         nullptr
 };
 
 const spool_instr_t spool_config_instr = {
-        CULL_SPOOL,
+        MT_SPOOL,
         true,
         true,
         &spool_config_subinstr
 };
 
 const spool_instr_t spool_complex_subinstr = {
-        CULL_SPOOL,
+        MT_SPOOL,
         false,
         false,
         nullptr
 };
 
 const spool_instr_t spool_complex_instr = {
-        CULL_SPOOL,
+        MT_SPOOL,
         false,
         false,
         &spool_complex_subinstr
 };
 
 const spool_instr_t spool_userprj_subinstr = {
-        CULL_SUBLIST,
+        MT_SPOOL_SUBLIST,
         false,
         false,
         &spool_userprj_subinstr
 };
 
 const spool_instr_t spool_user_instr = {
-        CULL_SPOOL | CULL_SPOOL_USER,
+        MT_SPOOL,
         true,
         true,
         &spool_userprj_subinstr
@@ -152,7 +152,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * definition given in `descr` and the spooling instruction `instr`.
  * For each attribute the function checks if the attribute information
  * fulfils the selection given in `instr` (e.g. attribute property
- * CULL_SPOOL).
+ * MT_SPOOL).
  * If `instr` contains an instruction for sublists, the function will
  * take the CULL object definition of the sublists from the spooling record
  * of the list field (the sub-type `ocs::tom::sub_type()` names) and call itself

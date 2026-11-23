@@ -100,8 +100,8 @@ enum {
 };
 
 LISTDEF(TEST_Type)
-                SGE_ULONG (TEST_ulong, CULL_DEFAULT)
-                SGE_STRING (TEST_string, CULL_DEFAULT)
+                SGE_ULONG (TEST_ulong, MT_DEFAULT)
+                SGE_STRING (TEST_string, MT_DEFAULT)
 LISTEND(TEST_Type)
 
 NAMEDEF(TEST_Name)

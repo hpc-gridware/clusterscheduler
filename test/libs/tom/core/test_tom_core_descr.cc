@@ -75,10 +75,10 @@ enum {
 };
 
 LISTDEF(TD_Type)
-   SGE_ULONG(TD_id, CULL_DEFAULT | CULL_HASH | CULL_UNIQUE)
-   SGE_STRING(TD_name, CULL_DEFAULT)
-   SGE_ULONG(TD_value, CULL_DEFAULT)
-   SGE_BOOL(TD_flag, CULL_DEFAULT)
+   SGE_ULONG(TD_id, MT_DEFAULT | MT_HASH | MT_UNIQUE)
+   SGE_STRING(TD_name, MT_DEFAULT)
+   SGE_ULONG(TD_value, MT_DEFAULT)
+   SGE_BOOL(TD_flag, MT_DEFAULT)
 LISTEND(TD_Type)
 
 NAMEDEF(TD_Name)
@@ -99,10 +99,10 @@ enum {
 };
 
 LISTDEF(GR_Type)
-   SGE_ULONG(GR_id, CULL_SPOOL)
-   SGE_STRING(GR_name, CULL_SPOOL)
-   SGE_ULONG(GR_value, CULL_SPOOL)
-   SGE_BOOL(GR_flag, CULL_SPOOL)
+   SGE_ULONG(GR_id, MT_SPOOL)
+   SGE_STRING(GR_name, MT_SPOOL)
+   SGE_ULONG(GR_value, MT_SPOOL)
+   SGE_BOOL(GR_flag, MT_SPOOL)
 LISTEND(GR_Type)
 
 NAMEDEF(GR_Name)
@@ -121,21 +121,21 @@ enum {
 };
 
 LISTDEF(UR_Type)
-   SGE_ULONG(UR_id, CULL_DEFAULT)
-   SGE_STRING(UR_text, CULL_DEFAULT)
+   SGE_ULONG(UR_id, MT_DEFAULT)
+   SGE_STRING(UR_text, MT_DEFAULT)
 LISTEND(UR_Type)
 
 /// a reduction of TD_Type to id and name
-static const lDescr RED_A[] = {{TD_id, MT_UINT32 | CULL_HASH | CULL_UNIQUE | CULL_IS_REDUCED},
-                               {TD_name, MT_STRING | CULL_IS_REDUCED},
+static const lDescr RED_A[] = {{TD_id, MT_UINT32 | MT_HASH | MT_UNIQUE | MT_IS_REDUCED},
+                               {TD_name, MT_STRING | MT_IS_REDUCED},
                                {NoName, MT_END}};
 /// a reduction of TD_Type to id and value
-static const lDescr RED_B[] = {{TD_id, MT_UINT32 | CULL_HASH | CULL_UNIQUE | CULL_IS_REDUCED},
-                               {TD_value, MT_UINT32 | CULL_IS_REDUCED},
+static const lDescr RED_B[] = {{TD_id, MT_UINT32 | MT_HASH | MT_UNIQUE | MT_IS_REDUCED},
+                               {TD_value, MT_UINT32 | MT_IS_REDUCED},
                                {NoName, MT_END}};
 /// RED_A in the other field order
-static const lDescr RED_A_SWAPPED[] = {{TD_name, MT_STRING | CULL_IS_REDUCED},
-                                       {TD_id, MT_UINT32 | CULL_HASH | CULL_UNIQUE | CULL_IS_REDUCED},
+static const lDescr RED_A_SWAPPED[] = {{TD_name, MT_STRING | MT_IS_REDUCED},
+                                       {TD_id, MT_UINT32 | MT_HASH | MT_UNIQUE | MT_IS_REDUCED},
                                        {NoName, MT_END}};
 
 /**
@@ -156,15 +156,15 @@ static lDescr *heap_copy(const lDescr *dp) {
 /**
  * @brief The n-th of many distinct reductions: TD_id and TD_value with a varying type flag
  *
- * The descriptors differ in the CULL_HASH bit of entry 1 and in a
+ * The descriptors differ in the MT_HASH bit of entry 1 and in a
  * per-n field number, so each n yields a different key.
  *
  * @param n the index
  * @param out room for three entries
  */
 static void distinct_reduction(const int n, lDescr out[3]) {
-   out[0] = {TD_id, MT_UINT32 | CULL_IS_REDUCED};
-   out[1] = {TD_value + 100 * n, MT_UINT32 | CULL_IS_REDUCED};
+   out[0] = {TD_id, MT_UINT32 | MT_IS_REDUCED};
+   out[1] = {TD_value + 100 * n, MT_UINT32 | MT_IS_REDUCED};
    out[2] = {NoName, MT_END};
 }
 
@@ -194,7 +194,7 @@ static void test_intern() {
          a1 != nullptr && a1 == a2 && a2 == a3 && a1 != built1 && ocs::tom::descr_is_counted(a1) &&
          ocs::tom::descr_refs(a1) == 3 && ocs::tom::descr_registry_size() == base + 1);
    CHECK(5, "the shared descriptor has the entries of its source",
-         a1[0].nm == TD_id && (a1[0].mt & ~CULL_DESCR_INTERNED) == RED_A[0].mt && a1[1].nm == TD_name &&
+         a1[0].nm == TD_id && (a1[0].mt & ~MT_DESCR_INTERNED) == RED_A[0].mt && a1[1].nm == TD_name &&
          a1[1].mt == RED_A[1].mt && mt_get_type(a1[2].mt) == MT_END);
 
    const lDescr *b = ocs::tom::descr_intern(RED_B);
@@ -606,7 +606,7 @@ static void test_type_ref() {
          "goes field by field",
          first_word_of_packed(TD_Type, 0) == CULL_PACK_DESCR_TYPE_REF &&
          first_word_of_packed(heap, 0) == CULL_PACK_DESCR_TYPE_REF &&
-         first_word_of_packed(TD_Type, CULL_SPOOL) == 4 &&
+         first_word_of_packed(TD_Type, MT_SPOOL) == 4 &&
          first_word_of_packed(reduced, 0) == CULL_PACK_DESCR_TABLE_DEF);
    ocs::tom::release_descr(reduced);
    sge_free(&heap);
@@ -749,7 +749,7 @@ static int unpack_forged_elem(const std::vector<lDescr> &fields, const bool type
       }
       ocs::tom::put_uint32(raw, trailer);
       ocs::tom::PackBuffer in = reader_of(pb);
-      out = ocs::tom::unpack_raw_elem(&in.raw(), expected, type_ref ? 0 : CULL_SPOOL);
+      out = ocs::tom::unpack_raw_elem(&in.raw(), expected, type_ref ? 0 : MT_SPOOL);
       *trailer_ok = ocs::tom::get_uint32(&in.raw()) == trailer;
    } catch (const ocs::tom::PackException &e) {
       return e.code();
@@ -775,7 +775,7 @@ static void test_grown_types() {
    const std::vector<lDescr> full(GR_Type, GR_Type + 4);
    const std::vector<lDescr> shorter(GR_Type, GR_Type + 2);
    std::vector<lDescr> longer = full;
-   longer.push_back({GR_flag + 1, MT_UINT32 | CULL_SPOOL});
+   longer.push_back({GR_flag + 1, MT_UINT32 | MT_SPOOL});
    const std::vector<lDescr> gap = {GR_Type[0], GR_Type[2]};
 
    ocs::tom::RawElementPtr ep;
@@ -802,7 +802,7 @@ static void test_grown_types() {
    const int gap_expected = unpack_forged_elem(gap, false, GR_Type, ep, &trailer_a);
    const int other_expected = unpack_forged_elem(shorter, false, TD_Type, ep, &trailer_a);
    const int gap_free = unpack_forged_elem(gap, false, nullptr, ep, &trailer_b);
-   const bool gap_reduced = gap_free == PACK_SUCCESS && ep && (ep->descr()[0].mt & CULL_IS_REDUCED) != 0;
+   const bool gap_reduced = gap_free == PACK_SUCCESS && ep && (ep->descr()[0].mt & MT_IS_REDUCED) != 0;
    ep.reset();
    CHECK(43, "on the spool path a descriptor that is not a version of the expected type is a format error, "
          "without an expected type it stays a reduced element",
@@ -816,15 +816,15 @@ static void test_grown_types() {
    ocs::tom::RawElementPtr copy;
    try {
       ocs::tom::PackBuffer pb(false, 256);
-      ocs::tom::pack_elem(&pb.raw(), src.get(), what.get(), CULL_SPOOL);
+      ocs::tom::pack_elem(&pb.raw(), src.get(), what.get(), MT_SPOOL);
       ocs::tom::PackBuffer in = reader_of(pb);
-      copy = ocs::tom::unpack_raw_elem(&in.raw(), nullptr, CULL_SPOOL);
+      copy = ocs::tom::unpack_raw_elem(&in.raw(), nullptr, MT_SPOOL);
    } catch (const ocs::tom::PackException &) {
       copy.reset();
    }
    CHECK(44, "a selection of the leading fields packed with flags stays a reduced element",
          copy && lCountPresent(copy->descr()) == 2 && ocs::tom::descr_length(copy->descr()) == 4 &&
-         (copy->descr()[0].mt & CULL_IS_REDUCED) != 0 &&
+         (copy->descr()[0].mt & MT_IS_REDUCED) != 0 &&
          copy->get<std::uint32_t>(GR_id) == 3);
    copy.reset();
    what.reset();
@@ -841,11 +841,11 @@ static void test_grown_types() {
  * @param flag_first true to put TD_flag into slot 0 and TD_name into slot 1
  */
 static void full_length_name_flag(lDescr out[5], const bool flag_first) {
-   out[0] = {TD_id, MT_UINT32 | CULL_HASH | CULL_UNIQUE | CULL_IS_REDUCED, OCS_CULL_ABSENT};
-   out[1] = {TD_name, MT_STRING | CULL_IS_REDUCED, flag_first ? 0 : -1};
-   out[2] = {TD_value, MT_UINT32 | CULL_IS_REDUCED, OCS_CULL_ABSENT};
-   out[3] = {TD_flag, MT_BOOL | CULL_IS_REDUCED, flag_first ? -3 : -2};
-   out[4] = {NoName, MT_END | CULL_IS_REDUCED, 0};
+   out[0] = {TD_id, MT_UINT32 | MT_HASH | MT_UNIQUE | MT_IS_REDUCED, OCS_CULL_ABSENT};
+   out[1] = {TD_name, MT_STRING | MT_IS_REDUCED, flag_first ? 0 : -1};
+   out[2] = {TD_value, MT_UINT32 | MT_IS_REDUCED, OCS_CULL_ABSENT};
+   out[3] = {TD_flag, MT_BOOL | MT_IS_REDUCED, flag_first ? -3 : -2};
+   out[4] = {NoName, MT_END | MT_IS_REDUCED, 0};
 }
 
 /** @brief DESCR-13: slots of a full-length descriptor with absent fields */
@@ -918,8 +918,8 @@ static void test_reduce() {
    }
    bool order_ok = a != nullptr && a == b && lCountPresent(a) == 2 && ocs::tom::descr_length(a) == 4 &&
                    seen == (std::vector<std::pair<int, int>>{{1, 0}, {3, 1}}) && a[0].off == OCS_CULL_ABSENT &&
-                   mt_get_type(a[1].mt) == MT_STRING && (a[0].mt & CULL_IS_REDUCED) != 0 &&
-                   (a[4].mt & CULL_IS_REDUCED) != 0 && ocs::tom::descr_refs(a) == 2 &&
+                   mt_get_type(a[1].mt) == MT_STRING && (a[0].mt & MT_IS_REDUCED) != 0 &&
+                   (a[4].mt & MT_IS_REDUCED) != 0 && ocs::tom::descr_refs(a) == 2 &&
                    ocs::tom::descr_registry_size() == base + 1;
    CHECK(53, "a field list in any order and with duplicates yields one descriptor in type order", order_ok);
 
@@ -975,7 +975,7 @@ static void test_wire_order() {
 
    ocs::tom::RawElementPtr ep;
    bool trailer = false;
-   const int ret = unpack_forged_elem({{TD_value, MT_UINT32 | CULL_SPOOL}, {TD_id, MT_UINT32 | CULL_SPOOL}}, false,
+   const int ret = unpack_forged_elem({{TD_value, MT_UINT32 | MT_SPOOL}, {TD_id, MT_UINT32 | MT_SPOOL}}, false,
                                       nullptr, ep, &trailer);
    ep.reset();
    CHECK(59, "a descriptor packed field by field out of type order is a format error", ret == PACK_FORMAT);

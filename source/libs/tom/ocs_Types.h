@@ -90,25 +90,30 @@ enum _enum_lMultiType {
 /// Name of each @ref _enum_lMultiType, indexed by the enumerator; used in error messages and dumps
 extern const char *multitypes[];
 
-/* flags for the field definition
- * reserve 8 bit for data types (currently only 4 bit in use) */
 /**
- * @addtogroup cull_field_attributes
+ * @addtogroup mt_field_attributes
  * @{
+ *
+ * The flags of a field, in the bits of its mt word above the type byte (#mt_get_type()), without gaps. The
+ * field flags come first, in the order of ocs::tom::Flag, which takes its values from them; the two bits after
+ * them are kept by the list core itself. 9.2 may renumber them: the mt word is packed and spooled, and lines of
+ * different minor releases do not talk to each other.
  */
-#define CULL_DEFAULT       0x00000000 ///< no special settings, default behaviour
-#define CULL_PRIMARY_KEY   0x00000100 ///< the field is part of the primary key; implies neither uniqueness nor hashing
-#define CULL_HASH          0x00000200 ///< build a hash table on this field; non unique unless #CULL_UNIQUE is also given
-#define CULL_UNIQUE        0x00000400 ///< the value must be unique across a list; currently only used when defining hash tables
-#define CULL_NO_TRANSFER   0x00000800 ///< the value stays inside the process; it is neither packed nor delivered as event payload
-#define CULL_CONFIGURE     0x00001000 ///< the field may be changed by configuration functions; not yet implemented
-#define CULL_SPOOL         0x00002000 ///< the field is written when the object is spooled
-#define CULL_SUBLIST       0x00010000 ///< the field is spooled when the type appears as a subtype of another, where fewer fields are written
-#define CULL_SPOOL_PROJECT 0x00020000 ///< deprecated?
-#define CULL_SPOOL_USER    0x00040000 ///< deprecated?
-#define CULL_DESCR_INTERNED 0x00080000 ///< set in entry 0 of a reference counted descriptor (see tom/ocs_Descr.h); process local, never packed
-#define CULL_IS_REDUCED    0x00200000 ///< the descriptor is a reduced one, holding only part of the type's fields
+inline constexpr int MT_FLAG_SHIFT = 8;                                   ///< bit of the first flag, above the type byte
+inline constexpr int MT_DEFAULT = 0;                                      ///< no flag
+inline constexpr int MT_PRIMARY_KEY = 1 << (MT_FLAG_SHIFT + 0);           ///< part of the primary key; implies neither uniqueness nor hashing
+inline constexpr int MT_HASH = 1 << (MT_FLAG_SHIFT + 1);                  ///< lookups by this field use a hash table; non unique unless #MT_UNIQUE is also given
+inline constexpr int MT_UNIQUE = 1 << (MT_FLAG_SHIFT + 2);                ///< the value is unique across a list
+inline constexpr int MT_NO_TRANSFER = 1 << (MT_FLAG_SHIFT + 3);           ///< the value stays inside the process; neither packed nor sent in events
+inline constexpr int MT_CONFIGURE = 1 << (MT_FLAG_SHIFT + 4);             ///< the field may be changed by configuration functions; not yet implemented
+inline constexpr int MT_SPOOL = 1 << (MT_FLAG_SHIFT + 5);                 ///< the field is written when the object is spooled
+inline constexpr int MT_SPOOL_SUBLIST = 1 << (MT_FLAG_SHIFT + 6);         ///< spooled also where the type is the sub-type of another one
+inline constexpr int MT_SPOOL_PROJECT = 1 << (MT_FLAG_SHIFT + 7);         ///< the field is spooled with a project
+inline constexpr int MT_FIELD_FLAGS = (1 << (MT_FLAG_SHIFT + 8)) - (1 << MT_FLAG_SHIFT);   ///< the bits of the field flags
+inline constexpr int MT_DESCR_INTERNED = 1 << (MT_FLAG_SHIFT + 8);        ///< entry 0 of a reference counted descriptor (tom/ocs_Descr.h); process local, never packed
+inline constexpr int MT_IS_REDUCED = 1 << (MT_FLAG_SHIFT + 9);            ///< the descriptor holds only part of the type's fields
 /** @} */
+static_assert(MT_IS_REDUCED < (1 << 30), "the flags fit into the mt word");
 
 #define BASIC_UNIT 50 ///< growth unit of a descriptor; don't touch
 #define MAX_DESCR_SIZE  (4*BASIC_UNIT) ///< largest number of fields an object type may have
@@ -138,7 +143,7 @@ extern const char *multitypes[];
  */
 struct _lDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
-   int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref cull_field_attributes flags
+   int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref mt_field_attributes flags
    int off;        ///< the field's value slot relative to its index (slot = index + off), or #OCS_CULL_ABSENT; 0 in a full descriptor (CS-439)
 };
 static_assert(sizeof(lDescr) == 12, "a descriptor entry is field number, type and slot offset without padding");
@@ -178,7 +183,7 @@ namespace ocs::tom {
    /**
     * @brief FNV-1a hash over the field numbers, types and slot offsets of a descriptor
     *
-    * The process-local flag #CULL_DESCR_INTERNED is not hashed, so a counted copy
+    * The process-local flag #MT_DESCR_INTERNED is not hashed, so a counted copy
     * hashes like its source.
     *
     * @param e the fields
@@ -188,7 +193,7 @@ namespace ocs::tom {
    constexpr uint64_t descr_hash(const lDescr *e, const size_t n) {
       uint64_t h = 0xcbf29ce484222325ULL;
       for (size_t i = 0; i < n; i++) {
-         for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~CULL_DESCR_INTERNED),
+         for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~MT_DESCR_INTERNED),
                                   static_cast<uint32_t>(e[i].off)}) {
             for (int b = 0; b < 4; b++) {
                h ^= (v >> (8 * b)) & 0xff;
@@ -229,9 +234,9 @@ namespace ocs::tom {
 } // namespace ocs::tom
 
 #define mt_get_type(mt) ((mt) & 0x000000FF) ///< the @ref _enum_lMultiType out of a field's flags
-#define mt_do_hashing(mt) (((mt) & CULL_HASH) ? true : false) ///< is #CULL_HASH set on this field?
-#define mt_is_unique(mt) (((mt) & CULL_UNIQUE) ? true : false) ///< is #CULL_UNIQUE set on this field?
-#define mt_do_transfer(mt) (((mt) & CULL_NO_TRANSFER) ? false : true) ///< may the value of this field leave the process? (#CULL_NO_TRANSFER not set)
+#define mt_do_hashing(mt) (((mt) & MT_HASH) ? true : false) ///< is #MT_HASH set on this field?
+#define mt_is_unique(mt) (((mt) & MT_UNIQUE) ? true : false) ///< is #MT_UNIQUE set on this field?
+#define mt_do_transfer(mt) (((mt) & MT_NO_TRANSFER) ? false : true) ///< may the value of this field leave the process? (#MT_NO_TRANSFER not set)
 
 #define WHAT_ALL                        -1 ///< _lEnumeration::pos value meaning "every field of the type"
 #define WHAT_NONE                       -2 ///< _lEnumeration::pos value meaning "no field at all"

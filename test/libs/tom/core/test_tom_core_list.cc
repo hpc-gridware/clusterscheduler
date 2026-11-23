@@ -71,19 +71,19 @@ enum {
 };
 
 LISTDEF(TEST_Type)
-   SGE_INT    (TEST_int,    CULL_DEFAULT)
-   SGE_HOST   (TEST_host,   CULL_DEFAULT)
-   SGE_STRING (TEST_string, CULL_DEFAULT)
-   SGE_DOUBLE (TEST_double, CULL_DEFAULT)
-   SGE_LONG   (TEST_long,   CULL_DEFAULT)
-   SGE_ULONG  (TEST_ulong,  CULL_DEFAULT)
-   SGE_BOOL   (TEST_bool,   CULL_DEFAULT)
-   SGE_LIST   (TEST_list,   TEST_Type, CULL_DEFAULT)
-   SGE_OBJECT (TEST_object, TEST_Type, CULL_DEFAULT)
-   SGE_REF    (TEST_ref,    TEST_Type, CULL_DEFAULT)
-   SGE_ULONG64(TEST_ulong64, CULL_DEFAULT)
-   SGE_ULONG64(TEST_ulong64_hashed, CULL_HASH)
-   SGE_STRING (TEST_string_ukey, CULL_UNIQUE | CULL_HASH)
+   SGE_INT    (TEST_int,    MT_DEFAULT)
+   SGE_HOST   (TEST_host,   MT_DEFAULT)
+   SGE_STRING (TEST_string, MT_DEFAULT)
+   SGE_DOUBLE (TEST_double, MT_DEFAULT)
+   SGE_LONG   (TEST_long,   MT_DEFAULT)
+   SGE_ULONG  (TEST_ulong,  MT_DEFAULT)
+   SGE_BOOL   (TEST_bool,   MT_DEFAULT)
+   SGE_LIST   (TEST_list,   TEST_Type, MT_DEFAULT)
+   SGE_OBJECT (TEST_object, TEST_Type, MT_DEFAULT)
+   SGE_REF    (TEST_ref,    TEST_Type, MT_DEFAULT)
+   SGE_ULONG64(TEST_ulong64, MT_DEFAULT)
+   SGE_ULONG64(TEST_ulong64_hashed, MT_HASH)
+   SGE_STRING (TEST_string_ukey, MT_UNIQUE | MT_HASH)
 LISTEND(TEST_Type)
 
 NAMEDEF(TEST_Name)
@@ -692,7 +692,7 @@ static void test_atomic_ulong64() {
 // ---------------------------------------------------------------------------
 // Integrity of a unique hashed key  [T61–T70]
 //
-// CS-2755. A list whose key field is CULL_UNIQUE | CULL_HASH answers two
+// CS-2755. A list whose key field is MT_UNIQUE | MT_HASH answers two
 // different things depending on how it is asked: a linear scan walks the
 // elements, a keyed lookup goes through the hash table (lookup_first(),
 // ocs_ElementCore.cc). The two must not disagree.
@@ -716,7 +716,7 @@ static void test_atomic_ulong64() {
  * that the lookup and the walk are two different paths to the same answer.
  *
  * @param lp the list to check
- * @param nm the CULL_UNIQUE | CULL_HASH string field acting as the key
+ * @param nm the MT_UNIQUE | MT_HASH string field acting as the key
  * @return true when every key resolves to an element of lp that carries it
  */
 static bool all_keys_resolve(const ocs::tom::ConstRawList lp, const int nm) {

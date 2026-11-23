@@ -69,10 +69,10 @@ enum {
 };
 
 LISTDEF(ST_Type)
-   SGE_STRING(ST_name, CULL_DEFAULT | CULL_HASH | CULL_UNIQUE)
-   SGE_ULONG(ST_group, CULL_DEFAULT | CULL_HASH)
-   SGE_ULONG(ST_value, CULL_DEFAULT)
-   SGE_STRING(ST_note, CULL_DEFAULT)
+   SGE_STRING(ST_name, MT_DEFAULT | MT_HASH | MT_UNIQUE)
+   SGE_ULONG(ST_group, MT_DEFAULT | MT_HASH)
+   SGE_ULONG(ST_value, MT_DEFAULT)
+   SGE_STRING(ST_note, MT_DEFAULT)
 LISTEND(ST_Type)
 
 /** @brief The field table of ST_Type, for the object model that names the fields in the dump */

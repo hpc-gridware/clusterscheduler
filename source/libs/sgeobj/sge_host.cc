@@ -142,9 +142,9 @@ host_list_locate(const ocs::tom::ConstRawList host_list, const char *hostname) {
  * hgroup_contains_host(), which honours the CS-2451 contract (cache when
  * there is one, tree walk when there is not) and is shared with the
  * delete-semantics check in the qmaster.
- * Both steps are O(1) in the normal case: HGRP_name carries CULL_HASH, so
+ * Both steps are O(1) in the normal case: HGRP_name carries MT_HASH, so
  * locating the group is a hash lookup, and so is the membership test
- * against HGRP_cached_hosts (HR_name, CULL_HASH). That matters because this
+ * against HGRP_cached_hosts (HR_name, MT_HASH). That matters because this
  * runs on every GDI request -- it is the bar the classic flat AH_LIST set,
  * which was itself a hashed lookup.
  *

@@ -948,8 +948,8 @@ namespace ocs::tom {
                format_error("a descriptor whose fields are not in type order");
             }
             // a sender never packs the process local reference count flag; clear it anyway
-            dp[i].mt = static_cast<int>(get_uint32(pb)) & ~CULL_DESCR_INTERNED;
-            wire_reduced = wire_reduced || (dp[i].mt & CULL_IS_REDUCED) != 0;
+            dp[i].mt = static_cast<int>(get_uint32(pb)) & ~MT_DESCR_INTERNED;
+            wire_reduced = wire_reduced || (dp[i].mt & MT_IS_REDUCED) != 0;
          }
          *wire_n = n;
 
@@ -1063,14 +1063,14 @@ namespace ocs::tom {
          for (const auto f : ocs::tom::present_fields(dp)) {
             // the reference count flag is process local and never leaves the process
             put_uint32(pb, dp[f.pos].nm);
-            put_uint32(pb, dp[f.pos].mt & ~CULL_DESCR_INTERNED);
+            put_uint32(pb, dp[f.pos].mt & ~MT_DESCR_INTERNED);
          }
       }
 
       /**
        * @brief Write the values of an element
        *
-       * A field marked CULL_NO_TRANSFER keeps its place, so the receiver sees
+       * A field marked MT_NO_TRANSFER keeps its place, so the receiver sees
        * an object of unchanged shape; only its value is that of a new element.
        *
        * @param pb the buffer
@@ -1088,7 +1088,7 @@ namespace ocs::tom {
          if (what == nullptr) {
             for (const auto f : ocs::tom::present_fields(dp)) {
                const lDescr &d = dp[f.pos];
-               // with flags only the fields matching them, e.g. CULL_SPOOL
+               // with flags only the fields matching them, e.g. MT_SPOOL
                if (flags == 0 || (d.mt & flags) != 0) {
                   const lMultiType *value = mt_do_transfer(d.mt) ? &cp[f.slot] : &no_transfer_value;
                   CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
@@ -1142,7 +1142,7 @@ namespace ocs::tom {
             if (i++ == wire_n) {
                break;
             }
-            // with flags only the fields matching them, e.g. CULL_SPOOL
+            // with flags only the fields matching them, e.g. MT_SPOOL
             if (flags == 0 || (dp[f.pos].mt & flags) != 0) {
                unpack_value(pb, &(ep->cont[f.slot]), mt_get_type(dp[f.pos].mt), flags);
             }
@@ -1280,7 +1280,7 @@ namespace ocs::tom {
       for (const auto f : ocs::tom::present_fields(descr)) {
          put_uint32(pb, descr[f.pos].nm);
          // the reference count flag is process local and never leaves the process
-         put_uint32(pb, descr[f.pos].mt & ~CULL_DESCR_INTERNED);
+         put_uint32(pb, descr[f.pos].mt & ~MT_DESCR_INTERNED);
       }
       CULL_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
    }
@@ -1312,7 +1312,7 @@ namespace ocs::tom {
          case WHAT_ALL:
             for (const auto f : ocs::tom::present_fields(descr)) {
                put_uint32(pb, descr[f.pos].nm);
-               put_uint32(pb, descr[f.pos].mt & ~CULL_DESCR_INTERNED);
+               put_uint32(pb, descr[f.pos].mt & ~MT_DESCR_INTERNED);
             }
             break;
          case WHAT_NONE:
@@ -1320,10 +1320,10 @@ namespace ocs::tom {
          default: {
             // the fields like those of a descriptor; a selection of some fields is reduced, so that the receiver
             // never takes its leading fields for a shorter version of the type (N-W-6)
-            const std::uint32_t reduced = count_what(what, descr) < descr_length(descr) ? CULL_IS_REDUCED : 0;
+            const std::uint32_t reduced = count_what(what, descr) < descr_length(descr) ? MT_IS_REDUCED : 0;
             for (int i = 0; what[i].nm != NoName; i++) {
                put_uint32(pb, what[i].nm);
-               put_uint32(pb, (what[i].mt & ~CULL_DESCR_INTERNED) | reduced);
+               put_uint32(pb, (what[i].mt & ~MT_DESCR_INTERNED) | reduced);
             }
             break;
          }

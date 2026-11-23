@@ -60,7 +60,7 @@
  * A cull object has more attributes than belong in a spool file: runtime
  * state, cached values, things derived on load. Which ones survive is not
  * decided here but in the object's own definition - every field carries a
- * `mt` bitmask, and #CULL_SPOOL is the bit that says "write me".
+ * `mt` bitmask, and #MT_SPOOL is the bit that says "write me".
  *
  * This module turns that bitmask into something the backends can iterate.
  * #spool_get_fields_to_spool walks a `lDescr` under a #spool_instr_t and
@@ -72,7 +72,7 @@
 
 /** @brief How to select the fields of one object type for spooling */
 typedef struct spool_instr {
-   int selection;             ///< Bitmask ANDed with each field's `mt`, e.g. #CULL_SPOOL - a non-zero result means the field is spooled
+   int selection;             ///< Bitmask ANDed with each field's `mt`, e.g. #MT_SPOOL - a non-zero result means the field is spooled
    bool copy_field_names;     ///< Copy the attribute name into the #spooling_field instead of pointing into the descriptor
    bool strip_field_prefix;   ///< Drop the `XX_` type prefix from the name, so `QU_qname` is spooled as `qname`
    const struct spool_instr *sub_instr;   ///< The instruction to apply to elements of sublist fields
@@ -85,13 +85,13 @@ typedef struct spool_instr {
  * points at the matching `*_subinstr` for whatever sublists it contains.
  * @{
  */
-extern const spool_instr_t spool_config_instr;      ///< The default: #CULL_SPOOL fields, names copied and un-prefixed
-extern const spool_instr_t spool_config_subinstr;   ///< Sublists of the above: #CULL_SUBLIST fields, names left alone
+extern const spool_instr_t spool_config_instr;      ///< The default: #MT_SPOOL fields, names copied and un-prefixed
+extern const spool_instr_t spool_config_subinstr;   ///< Sublists of the above: #MT_SPOOL_SUBLIST fields, names left alone
 
-extern const spool_instr_t spool_complex_instr;     ///< Complex entries: #CULL_SPOOL fields, names kept verbatim
+extern const spool_instr_t spool_complex_instr;     ///< Complex entries: #MT_SPOOL fields, names kept verbatim
 extern const spool_instr_t spool_complex_subinstr;  ///< Sublists of a complex entry
 
-extern const spool_instr_t spool_user_instr;        ///< Users and projects: #CULL_SPOOL plus #CULL_SPOOL_USER
+extern const spool_instr_t spool_user_instr;        ///< Users and projects: the #MT_SPOOL fields
 extern const spool_instr_t spool_userprj_subinstr;  ///< Sublists of a user or project - it names *itself* as its own `sub_instr`, so nesting to any depth uses the same selection
 /** @} */
 

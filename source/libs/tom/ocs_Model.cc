@@ -137,10 +137,10 @@ namespace ocs::tom {
                return false;
             }
             const lDescr &entry = table.descr[i];
-            if (entry.nm != field.nm || mt_get_type(entry.mt) != cull_type_of(field.type)) {
+            if (entry.nm != field.nm || mt_get_type(entry.mt) != mt_type_of(field.type)) {
                reason = where(i) + " (" + field.name + "): the descriptor holds field " + std::to_string(entry.nm) +
                         " of type " + type_name(mt_get_type(entry.mt)) + ", the table field " +
-                        std::to_string(field.nm) + " of type " + type_name(cull_type_of(field.type));
+                        std::to_string(field.nm) + " of type " + type_name(mt_type_of(field.type));
                return false;
             }
          }

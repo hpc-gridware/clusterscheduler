@@ -19,9 +19,9 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for #CULL_NO_TRANSFER (CS-2634)
+ * @brief Unit tests for #MT_NO_TRANSFER (CS-2634)
  *
- * A field marked #CULL_NO_TRANSFER carries process-local derived state. It
+ * A field marked #MT_NO_TRANSFER carries process-local derived state. It
  * keeps its place in the descriptor, so the object keeps its shape, but the
  * value handed out is the one a freshly created element carries. Ordinary
  * copies made inside the process are not affected; only a copy that is
@@ -73,20 +73,20 @@ enum {
 };
 
 LISTDEF(TNT_Type)
-                SGE_HOST    (TNT_name, CULL_DEFAULT | CULL_SPOOL)
-                SGE_STRING  (TNT_text, CULL_DEFAULT | CULL_SPOOL)
-                SGE_ULONG   (TNT_number, CULL_DEFAULT | CULL_SPOOL)
-                SGE_LIST    (TNT_sub, TNT_Type, CULL_DEFAULT | CULL_SPOOL)
-                SGE_OBJECT  (TNT_child, TNT_Type, CULL_DEFAULT | CULL_SPOOL)
-                SGE_STRING  (TNT_cache_text, CULL_NO_TRANSFER)
-                SGE_HOST    (TNT_cache_host, CULL_NO_TRANSFER)
-                SGE_LIST    (TNT_cache_list, TNT_Type, CULL_NO_TRANSFER)
-                SGE_OBJECT  (TNT_cache_object, TNT_Type, CULL_NO_TRANSFER)
-                SGE_ULONG   (TNT_cache_number, CULL_NO_TRANSFER)
-                SGE_ULONG64 (TNT_cache_number64, CULL_NO_TRANSFER)
-                SGE_BOOL    (TNT_cache_flag, CULL_NO_TRANSFER)
-                SGE_DOUBLE  (TNT_cache_value, CULL_NO_TRANSFER)
-                SGE_REF     (TNT_cache_ref, TNT_Type, CULL_NO_TRANSFER)
+                SGE_HOST    (TNT_name, MT_DEFAULT | MT_SPOOL)
+                SGE_STRING  (TNT_text, MT_DEFAULT | MT_SPOOL)
+                SGE_ULONG   (TNT_number, MT_DEFAULT | MT_SPOOL)
+                SGE_LIST    (TNT_sub, TNT_Type, MT_DEFAULT | MT_SPOOL)
+                SGE_OBJECT  (TNT_child, TNT_Type, MT_DEFAULT | MT_SPOOL)
+                SGE_STRING  (TNT_cache_text, MT_NO_TRANSFER)
+                SGE_HOST    (TNT_cache_host, MT_NO_TRANSFER)
+                SGE_LIST    (TNT_cache_list, TNT_Type, MT_NO_TRANSFER)
+                SGE_OBJECT  (TNT_cache_object, TNT_Type, MT_NO_TRANSFER)
+                SGE_ULONG   (TNT_cache_number, MT_NO_TRANSFER)
+                SGE_ULONG64 (TNT_cache_number64, MT_NO_TRANSFER)
+                SGE_BOOL    (TNT_cache_flag, MT_NO_TRANSFER)
+                SGE_DOUBLE  (TNT_cache_value, MT_NO_TRANSFER)
+                SGE_REF     (TNT_cache_ref, TNT_Type, MT_NO_TRANSFER)
 LISTEND(TNT_Type)
 
 NAMEDEF(TNT_Name)
@@ -131,7 +131,7 @@ static int s_fail = 0;
    } while (0)
 
 
-/** @brief Give every #CULL_NO_TRANSFER field of an element a value
+/** @brief Give every #MT_NO_TRANSFER field of an element a value
  *
  * @param ep the element to fill
  */
@@ -153,7 +153,7 @@ static void set_cache(const ocs::tom::RawElement ep) {
    ep.set(TNT_cache_ref, static_cast<void *>(ep.raw()));
 }
 
-/** @brief Does the element still carry every #CULL_NO_TRANSFER value?
+/** @brief Does the element still carry every #MT_NO_TRANSFER value?
  *
  * @param ep the element to inspect, may be empty
  * @return true when all of them are set
@@ -171,7 +171,7 @@ static bool cache_is_set(const ocs::tom::ConstRawElement ep) {
           ep.get<void *>(TNT_cache_ref) != nullptr;
 }
 
-/** @brief Is every #CULL_NO_TRANSFER field of the element empty?
+/** @brief Is every #MT_NO_TRANSFER field of the element empty?
  *
  * Empty means what a freshly created element carries: nullptr for the pointer
  * valued types, 0 for the scalar ones.
