@@ -15,9 +15,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "HASH"
-            }
+            "HASH"
          ]
       },
       {

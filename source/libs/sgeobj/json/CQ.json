@@ -20,21 +20,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -46,11 +35,7 @@
          "type": "lListT",
          "subClassName": "HR",
          "subCullPrefix": "HR",
-         "flags": [
-            {
-               "name": "JGDI_CONF"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "qinstances",
@@ -61,11 +46,7 @@
          "type": "lListT",
          "subClassName": "QU",
          "subCullPrefix": "QU",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "seq_no",
@@ -77,12 +58,7 @@
          "subClassName": "AULNG",
          "subCullPrefix": "AULNG",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -95,12 +71,7 @@
          "subClassName": "AULNG",
          "subCullPrefix": "AULNG",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -113,12 +84,7 @@
          "subClassName": "AULNG",
          "subCullPrefix": "AULNG",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -131,12 +97,7 @@
          "subClassName": "ABOOL",
          "subCullPrefix": "ABOOL",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -149,12 +110,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -167,12 +123,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -185,12 +136,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -203,12 +149,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -221,12 +162,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -239,12 +175,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -257,12 +188,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -275,12 +201,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -293,12 +214,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -311,12 +227,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -329,12 +240,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -347,12 +253,7 @@
          "subClassName": "AMEM",
          "subCullPrefix": "AMEM",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -365,12 +266,7 @@
          "subClassName": "ATIME",
          "subCullPrefix": "ATIME",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -383,12 +279,7 @@
          "subClassName": "ATIME",
          "subCullPrefix": "ATIME",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -401,12 +292,7 @@
          "subClassName": "ATIME",
          "subCullPrefix": "ATIME",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -419,12 +305,7 @@
          "subClassName": "ATIME",
          "subCullPrefix": "ATIME",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -437,12 +318,7 @@
          "subClassName": "AINTER",
          "subCullPrefix": "AINTER",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -455,12 +331,7 @@
          "subClassName": "AINTER",
          "subCullPrefix": "AINTER",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -473,12 +344,7 @@
          "subClassName": "AINTER",
          "subCullPrefix": "AINTER",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -491,12 +357,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -509,12 +370,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -527,12 +383,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -545,12 +396,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -564,12 +410,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -582,12 +423,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -600,12 +436,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -618,12 +449,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -636,12 +462,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -654,12 +475,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -672,12 +488,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -690,12 +501,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -708,12 +514,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -726,12 +527,7 @@
          "subClassName": "ASTRLIST",
          "subCullPrefix": "ASTRLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -744,12 +540,7 @@
          "subClassName": "ASTRLIST",
          "subCullPrefix": "ASTRLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -762,12 +553,7 @@
          "subClassName": "AUSRLIST",
          "subCullPrefix": "AUSRLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -780,12 +566,7 @@
          "subClassName": "AUSRLIST",
          "subCullPrefix": "AUSRLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -798,12 +579,7 @@
          "subClassName": "AUSRLIST",
          "subCullPrefix": "AUSRLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -816,12 +592,7 @@
          "subClassName": "APRJLIST",
          "subCullPrefix": "APRJLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -834,12 +605,7 @@
          "subClassName": "APRJLIST",
          "subCullPrefix": "APRJLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -852,12 +618,7 @@
          "subClassName": "ACELIST",
          "subCullPrefix": "ACELIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -870,12 +631,7 @@
          "subClassName": "ACELIST",
          "subCullPrefix": "ACELIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -888,12 +644,7 @@
          "subClassName": "ACELIST",
          "subCullPrefix": "ACELIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -906,12 +657,7 @@
          "subClassName": "ASOLIST",
          "subCullPrefix": "ASOLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -924,12 +670,7 @@
          "subClassName": "AQTLIST",
          "subCullPrefix": "AQTLIST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -939,11 +680,7 @@
             "Queue tag used in scheduler thread to mark certain queues."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_CONF"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "joker",
@@ -957,7 +694,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            "SPOOL"
          ]
       }
    ]

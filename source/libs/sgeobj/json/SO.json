@@ -22,12 +22,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -38,9 +34,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -51,9 +45,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -64,9 +56,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -79,9 +69,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       }
    ]

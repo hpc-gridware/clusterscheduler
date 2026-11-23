@@ -14,9 +14,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            }
+            "PRIMARY_KEY"
          ]
       },
       {

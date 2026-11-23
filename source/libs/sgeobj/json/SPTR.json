@@ -28,9 +28,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "UNIQUE"
-            }
+            "UNIQUE"
          ]
       },
       {
@@ -43,9 +41,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       }
    ]

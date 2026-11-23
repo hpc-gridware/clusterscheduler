@@ -16,12 +16,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "SPOOL"
          ]
       },
       {
@@ -32,9 +28,7 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -45,9 +39,7 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -58,9 +50,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

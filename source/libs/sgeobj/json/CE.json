@@ -17,24 +17,11 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -46,18 +33,9 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -74,12 +52,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -90,15 +63,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -108,11 +74,7 @@
             "Value of the complex variable as double, from old docs: parsed CE_stringval"
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "relop",
@@ -127,12 +89,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -148,12 +105,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -164,12 +116,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -179,11 +126,7 @@
             "@todo add description"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "pj_stringval",
@@ -192,11 +135,7 @@
             "Per job string value, @todo add more information"
          ],
          "type": "lStringT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "pj_doubleval",
@@ -205,11 +144,7 @@
             "Per job double values, parsed from CE_stringval (?)"
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "pj_dominant",
@@ -218,11 +153,7 @@
             "@todo add description"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "requestable",
@@ -232,15 +163,8 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -250,11 +174,7 @@
             "Used for tagging variables, e.g. during the scheduling process."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "urgency_weight",
@@ -264,12 +184,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -282,12 +197,7 @@
          "subClassName": "ResourceList",
          "subCullPrefix": "RESL",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

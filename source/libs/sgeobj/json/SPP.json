@@ -14,12 +14,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "HASH"
-            }
+            "PRIMARY_KEY",
+            "HASH"
          ]
       },
       {
@@ -32,9 +28,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

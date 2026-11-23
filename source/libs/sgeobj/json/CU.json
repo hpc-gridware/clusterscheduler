@@ -15,15 +15,9 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -36,9 +30,7 @@
          "subClassName": "ASTR",
          "subCullPrefix": "ASTR",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {

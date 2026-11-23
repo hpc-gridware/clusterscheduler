@@ -14,18 +14,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -36,9 +28,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -49,9 +39,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -64,9 +52,7 @@
          "subClassName": "JG",
          "subCullPrefix": "JG",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -119,9 +105,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -134,9 +118,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -151,9 +133,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -175,9 +155,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -188,9 +166,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -201,9 +177,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -215,9 +189,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -252,9 +224,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -279,9 +249,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

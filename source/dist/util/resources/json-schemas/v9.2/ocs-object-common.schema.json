@@ -15,9 +15,6 @@
          "enum": [
             "CONFIGURE",
             "HASH",
-            "JGDI_CONF",
-            "JGDI_HIDDEN",
-            "JGDI_RO",
             "NO_TRANSFER",
             "PRIMARY_KEY",
             "SPOOL",
@@ -26,23 +23,11 @@
             "UNIQUE"
          ]
       },
-      "flag": {
-         "type": "object",
-         "required": [
-            "name"
-         ],
-         "properties": {
-            "name": {
-               "$ref": "#/$defs/flagName"
-            }
-         },
-         "additionalProperties": false
-      },
       "flags": {
          "type": "array",
          "uniqueItems": true,
          "items": {
-            "$ref": "#/$defs/flag"
+            "$ref": "#/$defs/flagName"
          }
       },
       "attributeType": {

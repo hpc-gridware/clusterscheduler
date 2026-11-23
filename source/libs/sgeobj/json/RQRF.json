@@ -14,12 +14,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -32,12 +27,7 @@
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -50,12 +40,7 @@
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

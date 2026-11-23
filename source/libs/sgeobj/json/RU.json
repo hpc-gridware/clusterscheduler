@@ -14,9 +14,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -27,9 +25,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -46,9 +42,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       }
    ]

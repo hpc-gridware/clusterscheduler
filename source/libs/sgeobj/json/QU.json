@@ -14,15 +14,8 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -33,15 +26,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -52,18 +38,9 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH"
          ]
       },
       {
@@ -73,11 +50,7 @@
             "Scratch marker used while a cluster queue change is applied, holding SGE_QI_TAG_ADD, _MOD or _DEL for this instance. Not persistent."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "available_at",
@@ -86,11 +59,7 @@
             "Earliest time this instance could run the job being scheduled, set during resource matching and used to order the candidates."
          ],
          "type": "lTimestampT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "seq_no",
@@ -100,12 +69,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -116,12 +80,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -132,12 +91,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -148,12 +102,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -164,12 +113,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -180,12 +124,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -196,12 +135,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -212,12 +146,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -228,12 +157,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -244,12 +168,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -260,12 +179,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -276,12 +190,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -292,12 +201,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -308,12 +212,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -324,12 +223,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -340,12 +234,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -356,12 +245,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -372,12 +256,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -388,12 +267,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -404,12 +278,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -420,12 +289,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -436,12 +300,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -452,12 +311,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -468,12 +322,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -484,12 +333,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -500,12 +344,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -516,12 +355,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -532,12 +366,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -548,12 +377,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -564,12 +388,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -580,12 +399,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -596,12 +410,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -612,12 +421,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -628,12 +432,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -644,12 +443,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -660,12 +454,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -676,12 +465,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -694,12 +478,7 @@
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -712,12 +491,7 @@
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -730,12 +504,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -748,12 +517,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -766,12 +530,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -784,12 +543,7 @@
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -802,12 +556,7 @@
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -820,12 +569,7 @@
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -838,12 +582,7 @@
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -856,12 +595,7 @@
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -874,12 +608,7 @@
          "subClassName": "SO",
          "subCullPrefix": "SO",
          "flags": [
-            {
-               "name": "CONFIGURE"
-            },
-            {
-               "name": "JGDI_RO"
-            }
+            "CONFIGURE"
          ]
       },
       {
@@ -890,12 +619,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -909,11 +633,7 @@
             "2 - can be used as master for now and reservation"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "cache_version",
@@ -922,11 +642,7 @@
             "@warning Read and written nowhere in either repository. Kept because removing an attribute changes the spooled format."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "pending_signal",
@@ -936,12 +652,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -952,12 +663,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -968,12 +674,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -983,11 +684,7 @@
             "How many superordinate queues currently demand that this one be suspended. A count, not a flag, so releasing one does not resume a queue another still holds down."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "last_suspend_threshold_ckeck",
@@ -996,11 +693,7 @@
             "When the suspend thresholds were last evaluated, so they are not acted on more often than QU_suspend_interval."
          ],
          "type": "lTimestampT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "job_cnt",
@@ -1009,11 +702,7 @@
             "@warning Read and written nowhere in either repository. Kept because removing an attribute changes the spooled format."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "pending_job_cnt",
@@ -1022,11 +711,7 @@
             "@warning Read and written nowhere in either repository. Kept because removing an attribute changes the spooled format."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "soft_violation",
@@ -1035,11 +720,7 @@
             "How many of the job's soft requests this instance cannot satisfy. The scheduler sorts candidates by this ascending, so a queue that grants more soft requests wins."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "host_seq_no",
@@ -1048,11 +729,7 @@
             "The host's position in the scheduler's host sort order, copied onto the instance while tagging so queues on a better host sort first."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "resource_utilization",
@@ -1063,11 +740,7 @@
          "type": "lListT",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "message_list",
@@ -1079,12 +752,7 @@
          "subClassName": "QIM",
          "subCullPrefix": "QIM",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1094,11 +762,7 @@
             "Marks the instance as having a change that is applied after the current request rather than during it."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "state_changes",
@@ -1109,11 +773,7 @@
          "type": "lListT",
          "subClassName": "CQU",
          "subCullPrefix": "CQU",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "joker",
@@ -1127,9 +787,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

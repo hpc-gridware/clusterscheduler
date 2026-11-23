@@ -17,9 +17,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "HASH"
-            }
+            "HASH"
          ]
       },
       {

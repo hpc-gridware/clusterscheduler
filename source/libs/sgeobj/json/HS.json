@@ -15,12 +15,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -31,9 +27,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       }
    ]

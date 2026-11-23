@@ -16,9 +16,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -29,9 +27,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

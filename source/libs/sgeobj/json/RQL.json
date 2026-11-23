@@ -15,15 +15,9 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH"
          ]
       },
       {

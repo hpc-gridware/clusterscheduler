@@ -15,9 +15,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "HASH"
-            }
+            "HASH"
          ]
       },
       {
@@ -62,9 +60,7 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "HASH"
-            }
+            "HASH"
          ]
       }
    ]

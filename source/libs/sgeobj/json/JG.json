@@ -17,18 +17,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -38,11 +30,7 @@
             "The qinstance's version. Is used to detect when a qinstance was changed during scheduling."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "qhostname",
@@ -53,12 +41,8 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "HASH",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -70,9 +54,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -88,14 +70,7 @@
          "type": "lObjectT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "tag_slave_job",
@@ -104,11 +79,7 @@
             "Tag used in the job delivery protocol, is set when a slave host acknowledged receipt of the start order."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "ticket",
@@ -117,11 +88,7 @@
             "Total amount of tickets assigned to slots."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "oticket",
@@ -130,11 +97,7 @@
             "Override tickets assigned to slots."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "fticket",
@@ -143,11 +106,7 @@
             "Functional tickets assigned to slots."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "sticket",
@@ -156,11 +115,7 @@
             "Sharetree tickets assigned to slots."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "jcoticket",
@@ -169,11 +124,7 @@
             "Job class override tickets."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "jcfticket",
@@ -182,11 +133,7 @@
             "Job class functional tickets."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "processors",
@@ -195,11 +142,7 @@
             "Processor set the job is supposed to run on (Solaris only?)"
          ],
          "type": "lStringT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "binding_to_use",
@@ -211,9 +154,7 @@
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -227,9 +168,7 @@
          "subClassName": "ResourceList",
          "subCullPrefix": "RESL",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       }
    ]

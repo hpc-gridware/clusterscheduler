@@ -15,18 +15,10 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -39,9 +31,7 @@
          "subClassName": "SO",
          "subCullPrefix": "SO",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       }
    ]

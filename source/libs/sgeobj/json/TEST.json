@@ -14,9 +14,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -27,15 +25,9 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "PRIMARY_KEY"
-            }
+            "SPOOL",
+            "UNIQUE",
+            "PRIMARY_KEY"
          ]
       },
       {
@@ -46,12 +38,8 @@
          ],
          "type": "lUlong64T",
          "flags": [
-            {
-               "name": "SPOOL"
-            },
-            {
-               "name": "HASH"
-            }
+            "SPOOL",
+            "HASH"
          ]
       },
       {
@@ -62,9 +50,7 @@
          ],
          "type": "lIntT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -75,9 +61,7 @@
          ],
          "type": "lLongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -88,9 +72,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -101,9 +83,7 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -114,9 +94,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {

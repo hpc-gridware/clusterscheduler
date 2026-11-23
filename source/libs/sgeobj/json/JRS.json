@@ -19,15 +19,9 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "SPOOL"
          ]
       },
       {
@@ -40,9 +34,7 @@
          "subClassName": "ComplexEntry",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -55,9 +47,7 @@
          "subClassName": "ComplexEntry",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -70,9 +60,7 @@
          "subClassName": "QueueReference",
          "subCullPrefix": "QR",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -85,9 +73,7 @@
          "subClassName": "QueueReference",
          "subCullPrefix": "QR",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -98,9 +84,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -111,9 +95,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

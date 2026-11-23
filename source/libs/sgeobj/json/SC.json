@@ -17,12 +17,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -33,12 +28,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -49,12 +39,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -67,12 +52,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -85,12 +65,7 @@
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -101,12 +76,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -117,12 +87,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -133,12 +98,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -149,12 +109,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -165,12 +120,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -181,12 +131,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -197,12 +142,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -213,12 +153,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -231,12 +166,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -247,12 +177,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -263,12 +188,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -279,12 +199,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -295,12 +210,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -311,12 +221,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -327,12 +232,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -343,12 +243,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -359,12 +254,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -376,12 +266,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -393,12 +278,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -409,12 +289,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -425,12 +300,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -441,12 +311,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -457,12 +322,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -473,12 +333,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -489,12 +344,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -505,12 +355,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -521,12 +366,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -537,12 +377,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -553,12 +388,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -569,12 +399,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -585,12 +410,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

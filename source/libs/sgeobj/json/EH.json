@@ -16,21 +16,10 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -44,12 +33,7 @@
          "subClassName": "HS",
          "subCullPrefix": "HS",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -62,12 +46,7 @@
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -80,12 +59,7 @@
          "subClassName": "HS",
          "subCullPrefix": "HS",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -98,12 +72,7 @@
          "subClassName": "HL",
          "subCullPrefix": "HL",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -113,11 +82,7 @@
             "timestamp when the sge_execd on the host last communicated with sge_qmaster"
          ],
          "type": "lTimestampT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "processors",
@@ -128,12 +93,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -146,12 +106,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -164,12 +119,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -182,12 +132,7 @@
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -200,12 +145,7 @@
          "subClassName": "PR",
          "subCullPrefix": "PR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -215,11 +155,7 @@
             "sort value which is only used in the scheduler thread"
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "tagged",
@@ -228,11 +164,7 @@
             "used in scheduler to tag hosts"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "load_correction_factor",
@@ -241,11 +173,7 @@
             "Artificial load added for jobs that have just started, decaying over `load_adjustment_decay_time`. Stops the scheduler overloading a host by dispatching to it faster than the reported load can rise."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "seq_no",
@@ -254,11 +182,7 @@
             "suitability of this host for a job, scheduler only"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "sge_load",
@@ -267,11 +191,7 @@
             "calculated from load values, scheduler only"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "sge_ticket_pct",
@@ -280,11 +200,7 @@
             "percentage of total SGEEE tickets, scheduler only"
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "sge_load_pct",
@@ -293,11 +209,7 @@
             "percentage of total SGEEE tickets, scheduler only"
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "load_report_interval",
@@ -306,11 +218,7 @@
             "used for caching from global/local configuration"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "resource_utilization",
@@ -321,11 +229,7 @@
          "type": "lListT",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "cached_complexes",
@@ -336,11 +240,7 @@
          "type": "lListT",
          "subClassName": "CE",
          "subCullPrefix": "CE",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "cache_version",
@@ -349,11 +249,7 @@
             "used to decide whether QU_cached_complexes needs a refresh"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "reschedule_unknown",
@@ -362,11 +258,7 @@
             "used for caching from global/local conf; timout after which jobs will be rescheduled automatically"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "reschedule_unknown_list",
@@ -378,12 +270,7 @@
          "subClassName": "RU",
          "subCullPrefix": "RU",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -395,11 +282,7 @@
             "and we have no guarantee that they arrive in order at qmaster"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "report_variables",
@@ -411,12 +294,7 @@
          "subClassName": "STU",
          "subCullPrefix": "STU",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -428,11 +306,7 @@
          "type": "lListT",
          "subClassName": "STU",
          "subCullPrefix": "STU",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "joker",
@@ -446,9 +320,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -461,11 +333,7 @@
             "and attributes for those nodes (size, speed etc.)"
          ],
          "type": "lStringT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "auto_added_time",
@@ -477,9 +345,7 @@
          ],
          "type": "lUlong64T",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

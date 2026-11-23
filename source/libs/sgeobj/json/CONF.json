@@ -16,21 +16,10 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -41,12 +30,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -59,12 +43,7 @@
          "subClassName": "CF",
          "subCullPrefix": "CF",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

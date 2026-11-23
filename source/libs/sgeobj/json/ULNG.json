@@ -14,12 +14,8 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            }
+            "UNIQUE",
+            "HASH"
          ]
       }
    ]

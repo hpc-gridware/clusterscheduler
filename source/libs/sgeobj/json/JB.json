@@ -34,15 +34,9 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -53,9 +47,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -66,12 +58,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -85,9 +72,7 @@
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -100,12 +85,7 @@
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -117,11 +97,7 @@
          "type": "lListT",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "ja_ad_request_list",
@@ -136,9 +112,7 @@
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -151,12 +125,7 @@
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -168,11 +137,7 @@
          "type": "lListT",
          "subClassName": "JRE",
          "subCullPrefix": "JRE",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "session",
@@ -182,9 +147,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -195,9 +158,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -208,9 +169,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -222,9 +181,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -237,9 +194,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -251,9 +206,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -264,9 +217,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -286,12 +237,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -303,9 +249,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -317,9 +261,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -331,12 +273,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -347,12 +284,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -363,12 +295,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -379,12 +306,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -395,9 +317,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -408,9 +328,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -421,9 +339,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -435,9 +351,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -457,9 +371,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -470,9 +382,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -483,9 +393,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -499,9 +407,7 @@
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -512,12 +418,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -530,9 +431,7 @@
          "subClassName": "VA",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -546,9 +445,7 @@
          "subClassName": "VA",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -561,9 +458,7 @@
          "subClassName": "ST",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -575,12 +470,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -591,9 +481,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -606,11 +494,7 @@
          "type": "lObjectT",
          "subClassName": "CK",
          "subCullPrefix": "CK",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "checkpoint_interval",
@@ -620,12 +504,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -637,9 +516,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -652,9 +529,7 @@
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -667,9 +542,7 @@
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -682,9 +555,7 @@
          "subClassName": "PN",
          "subCullPrefix": "PN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -695,9 +566,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -713,9 +582,7 @@
          "subClassName": "JobRequestSet",
          "subCullPrefix": "JRS",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -726,9 +593,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -742,9 +607,7 @@
          "subClassName": "MR",
          "subCullPrefix": "MR",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -756,9 +619,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -772,9 +633,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -808,9 +667,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -823,9 +680,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -840,9 +695,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -856,9 +709,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -872,9 +723,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -888,9 +737,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -904,9 +751,7 @@
          "subClassName": "JAT",
          "subCullPrefix": "JAT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -920,9 +765,7 @@
          "subClassName": "JAT",
          "subCullPrefix": "JAT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -934,11 +777,7 @@
             "@todo still used?"
          ],
          "type": "lHostT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "category",
@@ -950,9 +789,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       },
       {
@@ -980,11 +817,7 @@
          "type": "lListT",
          "subClassName": "ID",
          "subCullPrefix": "ID",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "verify_suitable_queues",
@@ -1003,12 +836,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1019,12 +847,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1036,9 +859,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1051,9 +872,7 @@
          "subClassName": "PA",
          "subCullPrefix": "PA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1078,11 +897,7 @@
             "Not spooled."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "nppri",
@@ -1094,11 +909,7 @@
             "Not spooled."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "rrcontr",
@@ -1111,11 +922,7 @@
             "Not spooled."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "dlcontr",
@@ -1127,11 +934,7 @@
             "Not spooled."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "wtcontr",
@@ -1143,11 +946,7 @@
             "Not spooled."
          ],
          "type": "lDoubleT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "ar",
@@ -1157,9 +956,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1170,9 +967,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1183,9 +978,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1198,9 +991,7 @@
          "subClassName": "BN",
          "subCullPrefix": "BN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1213,9 +1004,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1228,9 +1017,7 @@
          "subClassName": "String",
          "subCullPrefix": "ST",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1245,9 +1032,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1258,9 +1043,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -1271,9 +1054,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "HASH"
-            }
+            "HASH"
          ]
       },
       {

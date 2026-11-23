@@ -15,21 +15,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -42,12 +31,7 @@
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -60,12 +44,7 @@
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -78,12 +57,7 @@
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -96,12 +70,7 @@
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -114,12 +83,7 @@
          "subClassName": "RQRF",
          "subCullPrefix": "RQRF",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -132,12 +96,7 @@
          "subClassName": "RQRL",
          "subCullPrefix": "RQRL",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -147,11 +106,7 @@
             "How far the limit is spread: shared by everything matched, or one limit each per host, cluster queue or queue instance. See the `RQR_*` values in `sge_resource_quota.h`."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       }
    ]
 }

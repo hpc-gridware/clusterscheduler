@@ -19,21 +19,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -44,12 +33,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -61,11 +45,7 @@
          "type": "lListT",
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
-         "flags": [
-            {
-               "name": "JGDI_CONF"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "local",
@@ -74,11 +54,7 @@
             "Is it a local configuration (true) or the global configuration (false)."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       }
    ]
 }

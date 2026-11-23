@@ -17,18 +17,10 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -39,12 +31,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -55,12 +42,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -71,12 +53,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -87,12 +64,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -103,9 +75,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -116,12 +86,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -132,12 +97,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -148,12 +108,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -164,12 +119,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -180,12 +130,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -196,12 +141,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -212,12 +152,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -231,12 +166,7 @@
          "subClassName": "CE",
          "subCullPrefix": "CE",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -248,11 +178,7 @@
          "type": "lListT",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "queue_list",
@@ -265,12 +191,7 @@
          "subClassName": "QR",
          "subCullPrefix": "QR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -283,12 +204,7 @@
          "subClassName": "JG",
          "subCullPrefix": "JG",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -303,12 +219,7 @@
          "subClassName": "ExecHost",
          "subCullPrefix": "EH",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -322,12 +233,7 @@
          "subClassName": "QU",
          "subCullPrefix": "QU",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -338,12 +244,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -356,12 +257,7 @@
          "subClassName": "MR",
          "subCullPrefix": "MR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -372,12 +268,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -390,12 +281,7 @@
          "subClassName": "RN",
          "subCullPrefix": "RN",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -406,12 +292,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -424,9 +305,7 @@
          "subClassName": "QR",
          "subCullPrefix": "QR",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -439,12 +318,7 @@
          "subClassName": "ARA",
          "subCullPrefix": "ARA",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -457,12 +331,7 @@
          "subClassName": "ARA",
          "subCullPrefix": "ARA",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -473,12 +342,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -488,11 +352,7 @@
             "Number of queue instances which are in some error state."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "request_set_list",
@@ -508,9 +368,7 @@
          "subClassName": "JobRequestSet",
          "subCullPrefix": "JRS",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -525,9 +383,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -540,9 +396,7 @@
          "subClassName": "GrantedResource",
          "subCullPrefix": "GRU",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -555,9 +409,7 @@
          "subClassName": "BN",
          "subCullPrefix": "BN",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -568,9 +420,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -583,9 +433,7 @@
          "subClassName": "ParallelEnvironment",
          "subCullPrefix": "PE",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -598,9 +446,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       }
    ]

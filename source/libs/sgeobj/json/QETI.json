@@ -26,9 +26,7 @@
          "subClassName": "ResourceUtilization",
          "subCullPrefix": "RUE",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       },
       {
@@ -41,9 +39,7 @@
          "subClassName": "ResourceDiagramEntry",
          "subCullPrefix": "RDE",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       }
    ]

@@ -15,11 +15,7 @@
          "type": "lListT",
          "subClassName": "MES",
          "subCullPrefix": "MES",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "global_message_list",
@@ -30,11 +26,7 @@
          "type": "lListT",
          "subClassName": "MES",
          "subCullPrefix": "MES",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       }
    ]
 }

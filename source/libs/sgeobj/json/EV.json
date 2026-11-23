@@ -16,15 +16,9 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH"
          ]
       },
       {
@@ -187,9 +181,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       },
       {
@@ -211,9 +203,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       },
       {
@@ -227,9 +217,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       }
    ]

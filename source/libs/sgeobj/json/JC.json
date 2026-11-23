@@ -16,12 +16,8 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            }
+            "UNIQUE",
+            "HASH"
          ]
       },
       {

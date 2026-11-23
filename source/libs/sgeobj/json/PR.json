@@ -14,24 +14,11 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -42,12 +29,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -58,12 +40,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -73,11 +50,7 @@
             "Job counter, used in scheduler thread only."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "pending_job_cnt",
@@ -86,11 +59,7 @@
             "Pending job counter, used in scheduler thread only."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "usage",
@@ -102,12 +71,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -118,12 +82,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -133,11 +92,7 @@
             "Usage sequence number used in scheduler thread only."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "long_term_usage",
@@ -149,12 +104,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -167,12 +117,7 @@
          "subClassName": "UPP",
          "subCullPrefix": "UPP",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -185,12 +130,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL_PROJECT"
-            }
+            "SPOOL_PROJECT"
          ]
       },
       {
@@ -203,12 +143,7 @@
          "subClassName": "US",
          "subCullPrefix": "US",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL_PROJECT"
-            }
+            "SPOOL_PROJECT"
          ]
       },
       {
@@ -221,12 +156,7 @@
          "subClassName": "UPU",
          "subCullPrefix": "UPU",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -236,11 +166,7 @@
             "project version, increments when usage is updated"
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "consider_with_categories",
@@ -249,11 +175,7 @@
             "True, if project plays role with categories."
          ],
          "type": "lBoolT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "joker",
@@ -267,7 +189,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            "SPOOL"
          ]
       }
    ]

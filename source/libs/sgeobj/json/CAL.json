@@ -15,21 +15,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -40,12 +29,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -56,12 +40,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -73,11 +52,7 @@
          "type": "lListT",
          "subClassName": "CA",
          "subCullPrefix": "CA",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "parsed_week_calendar",
@@ -88,11 +63,7 @@
          "type": "lListT",
          "subClassName": "CA",
          "subCullPrefix": "CA",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "joker",
@@ -106,7 +77,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            "SPOOL"
          ]
       }
    ]

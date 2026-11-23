@@ -66,21 +66,10 @@
          ],
          "type": "lHostT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -93,12 +82,7 @@
          "subClassName": "HR",
          "subCullPrefix": "HR",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -111,11 +95,7 @@
          "type": "lListT",
          "subClassName": "CQ",
          "subCullPrefix": "CQ",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "joker",
@@ -129,9 +109,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -150,11 +128,7 @@
          "type": "lListT",
          "subClassName": "HR",
          "subCullPrefix": "HR",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "cache_version",
@@ -176,11 +150,7 @@
             "consumer has nothing to compare against."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       }
          ,{
          "name": "match_cache",
@@ -214,12 +184,7 @@
          "subClassName": "MatchCacheEntry",
          "subCullPrefix": "HM",
          "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            },
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       }
 ]

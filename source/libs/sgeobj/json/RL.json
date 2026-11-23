@@ -23,10 +23,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            { "name": "PRIMARY_KEY" },
-            { "name": "UNIQUE" },
-            { "name": "HASH" },
-            { "name": "SPOOL" }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -42,7 +42,7 @@
          ],
          "type": "lBoolT",
          "flags": [
-            { "name": "SPOOL" }
+            "SPOOL"
          ]
       },
       {
@@ -60,7 +60,7 @@
          "subClassName": "UserSet",
          "subCullPrefix": "US",
          "flags": [
-            { "name": "SPOOL" }
+            "SPOOL"
          ]
       },
       {
@@ -80,7 +80,7 @@
          "subClassName": "String",
          "subCullPrefix": "ST",
          "flags": [
-            { "name": "SPOOL" }
+            "SPOOL"
          ]
       },
       {
@@ -98,7 +98,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            { "name": "SPOOL" }
+            "SPOOL"
          ]
       },
       {
@@ -113,7 +113,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            { "name": "SPOOL" }
+            "SPOOL"
          ]
       }
    ]

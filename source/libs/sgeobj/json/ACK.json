@@ -13,11 +13,7 @@
             "What is being acknowledged, e.g. a job report or a signal. Dispatched on by the receiver."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "id",
@@ -26,11 +22,7 @@
             "Primary key of the acknowledged thing, usually a job id."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "id2",
@@ -39,11 +31,7 @@
             "Secondary key, usually an array task id."
          ],
          "type": "lUlongT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "str",
@@ -52,11 +40,7 @@
             "String key, used where the acknowledged thing is named rather than numbered."
          ],
          "type": "lStringT",
-         "flags": [
-            {
-               "name": "JGDI_HIDDEN"
-            }
-         ]
+         "flags": []
       }
    ]
 }

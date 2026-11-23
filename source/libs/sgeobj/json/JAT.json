@@ -37,18 +37,10 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -60,9 +52,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -73,9 +63,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -87,9 +75,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -101,9 +87,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -114,9 +98,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -128,9 +110,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -144,9 +124,7 @@
          "subClassName": "JG",
          "subCullPrefix": "JG",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -159,9 +137,7 @@
          "subClassName": "GrantedResource",
          "subCullPrefix": "GRU",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -173,9 +149,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -187,9 +161,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -201,9 +173,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -214,9 +184,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -228,9 +196,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -241,9 +207,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -260,9 +224,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -276,9 +238,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -293,9 +253,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -319,9 +277,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -335,9 +291,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -352,9 +306,7 @@
          "subClassName": "UA",
          "subCullPrefix": "UA",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -365,9 +317,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -378,9 +328,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -391,9 +339,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -404,9 +350,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -417,9 +361,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -430,9 +372,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -454,9 +394,7 @@
          "subClassName": "PET",
          "subCullPrefix": "PET",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -469,9 +407,7 @@
          "subClassName": "FPET",
          "subCullPrefix": "FPET",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -496,9 +432,7 @@
          "subClassName": "ParallelEnvironment",
          "subCullPrefix": "PE",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -519,9 +453,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -552,9 +484,7 @@
          ],
          "type": "lTimestampT",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -568,9 +498,7 @@
          "subClassName": "QIM",
          "subCullPrefix": "QIM",
          "flags": [
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -583,9 +511,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "SPOOL_SUBLIST"
-            }
+            "SPOOL_SUBLIST"
          ]
       },
       {
@@ -600,7 +526,7 @@
          "subClassName": "Variable",
          "subCullPrefix": "VA",
          "flags": [
-            {"name": "SPOOL"}
+            "SPOOL"
          ]
       }
    ]

@@ -64,9 +64,7 @@
          "subClassName": "ANY",
          "subCullPrefix": "ANY",
          "flags": [
-            {
-               "name": "NO_TRANSFER"
-            }
+            "NO_TRANSFER"
          ]
       }
    ]

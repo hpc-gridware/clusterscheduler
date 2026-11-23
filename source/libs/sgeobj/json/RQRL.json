@@ -14,21 +14,10 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "PRIMARY_KEY"
-            },
-            {
-               "name": "UNIQUE"
-            },
-            {
-               "name": "HASH"
-            },
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "PRIMARY_KEY",
+            "UNIQUE",
+            "HASH",
+            "SPOOL"
          ]
       },
       {
@@ -39,12 +28,7 @@
          ],
          "type": "lStringT",
          "flags": [
-            {
-               "name": "JGDI_CONF"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -55,12 +39,7 @@
          ],
          "type": "lUlongT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -71,12 +50,7 @@
          ],
          "type": "lDoubleT",
          "flags": [
-            {
-               "name": "JGDI_RO"
-            },
-            {
-               "name": "SPOOL"
-            }
+            "SPOOL"
          ]
       },
       {
@@ -88,11 +62,7 @@
          "type": "lListT",
          "subClassName": "RUE",
          "subCullPrefix": "RUE",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       },
       {
          "name": "dynamic",
@@ -101,11 +71,7 @@
             "The limit is a formula over host complexes rather than a constant, so RQRL_dvalue has to be recomputed per host instead of read once."
          ],
          "type": "lBoolT",
-         "flags": [
-            {
-               "name": "JGDI_RO"
-            }
-         ]
+         "flags": []
       }
    ]
 }
