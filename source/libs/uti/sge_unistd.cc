@@ -40,6 +40,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <fcntl.h>
 #include <sys/time.h>
 
 #if defined(LINUX)
@@ -341,19 +342,94 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
 }
 
 /**
- * Remove a directory tree. In case of errors a message may be found in
- * 'error' afterwards.
- * Unless parameter 'recursive' is set to true, only empty directories can be
- * deleted. If 'recursive' is set to true, the directory and all files and directories
- * it contains will be deleted.
+ * @brief Remove everything inside an open directory without following symbolic links
  *
- * @param[in] cp path to the directory to be deleted
- * @param[in] error destination for error message if non-nullptr
- * @param[in] recursive if true (default), delete the directory recursively
- * @param[in] ignore_notempty
+ * Every entry is examined with fstatat(AT_SYMLINK_NOFOLLOW) and removed relative to
+ * @p dir_fd with unlinkat(), a subdirectory is opened with openat(O_DIRECTORY | O_NOFOLLOW)
+ * and emptied the same way. Nothing is ever looked up by its full path, so a directory
+ * that is replaced by a symbolic link while the tree is removed is not followed: the
+ * open fails and the removal stops with an error, the link's target is not touched.
+ *
+ * @param dir_fd descriptor of the directory, opened with O_DIRECTORY and O_NOFOLLOW;
+ *               it is always closed when the function returns
+ * @param path path of the directory, used in error messages only
+ * @param error destination for an error message, may be nullptr
+ * @return 0 when the directory is empty afterwards, -1 on error
+ */
+static int ocs_rmdir_contents(const int dir_fd, const char *path, dstring *error) {
+   DENTER(TOP_LAYER);
+
+   DIR *dir = fdopendir(dir_fd);
+   if (dir == nullptr) {
+      sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path, strerror(errno));
+      close(dir_fd);
+      DRETURN(-1);
+   }
+
+   int ret = 0;
+   SGE_STRUCT_DIRENT *dent;
+   char dirent[SGE_PATH_MAX * 2];
+   while (ret == 0 && SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
+      const char *name = dent->d_name;
+      if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
+         continue;
+      }
+
+      char fname[SGE_PATH_MAX];
+      snprintf(fname, sizeof(fname), "%s/%s", path, name);
+
+      struct stat stat_buffer{};
+      if (fstatat(dirfd(dir), name, &stat_buffer, AT_SYMLINK_NOFOLLOW) != 0) {
+         sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, fname, strerror(errno));
+         ret = -1;
+      } else if (S_ISDIR(stat_buffer.st_mode)) {
+         // O_NOFOLLOW: a directory swapped for a symbolic link since the fstatat() is not entered
+         const int sub_fd = openat(dirfd(dir), name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+         if (sub_fd < 0) {
+            sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, fname, strerror(errno));
+            ret = -1;
+         } else if (ocs_rmdir_contents(sub_fd, fname, error) != 0) {
+            sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
+            ret = -1;
+         } else if (unlinkat(dirfd(dir), name, AT_REMOVEDIR) != 0) {
+            sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
+            ret = -1;
+         }
+      } else {
+         // a symbolic link is removed itself, never its target
+         DPRINTF("sge_rmdir: unlink %s\n", fname);
+         if (unlinkat(dirfd(dir), name, 0) != 0) {
+            sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS, fname, strerror(errno));
+            ret = -1;
+         }
+      }
+   }
+
+   closedir(dir);
+   DRETURN(ret);
+}
+
+/**
+ * @brief Remove a directory, optionally with everything it contains
+ *
+ * Unless @p recursive is true, only an empty directory can be removed. With @p recursive the
+ * directory and all files and directories it contains are removed.
+ *
+ * The removal never follows a symbolic link, neither at @p cp itself nor anywhere inside the
+ * tree: a symbolic link inside the tree is removed, its target stays untouched, and a
+ * symbolic link at @p cp is an error. The tree is walked with descriptors (openat(),
+ * fstatat(), unlinkat() relative to the open parent), so a directory that is replaced by a
+ * symbolic link while the tree is removed cannot redirect the removal to the link's target,
+ * even when the caller runs as root on a tree that belongs to another user (CS-3202).
+ *
+ * @param[in] cp path of the directory to remove
+ * @param[out] error destination for an error message, may be nullptr
+ * @param[in] recursive if true (default), remove the directory with its contents
+ * @param[in] ignore_notempty if true, a directory that is not empty at the final rmdir() is
+ *            no error
  * @return 0 on success, -1 on error
  */
-int sge_rmdir(const char *cp, dstring *error, bool recursive, bool ignore_notempty) {
+int sge_rmdir(const char *cp, dstring *error, const bool recursive, const bool ignore_notempty) {
    DENTER(TOP_LAYER);
 
    if (cp == nullptr) {
@@ -362,55 +438,16 @@ int sge_rmdir(const char *cp, dstring *error, bool recursive, bool ignore_notemp
    }
 
    if (recursive) {
-      DIR *dir = opendir(cp);
-      if (dir == nullptr) {
+      const int dir_fd = SGE_OPEN2(cp, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+      if (dir_fd < 0) {
          sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, cp, strerror(errno));
          DRETURN(-1);
       }
-
-      SGE_STRUCT_DIRENT *dent;
-      char dirent[SGE_PATH_MAX * 2];
-      while (SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
-         if (strcmp(dent->d_name, ".") != 0 && strcmp(dent->d_name, "..") != 0) {
-
-            char fname[SGE_PATH_MAX];
-            snprintf(fname, sizeof(fname), "%s/%s", cp, dent->d_name);
-
-            SGE_STRUCT_STAT stat_buffer{};
-            if (SGE_LSTAT(fname, &stat_buffer)) {
-               sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, fname, strerror(errno));
-               closedir(dir);
-               DRETURN(-1);
-            }
-
-            if (S_ISDIR(stat_buffer.st_mode) && !S_ISLNK(stat_buffer.st_mode)) {
-               if (sge_rmdir(fname, error)) {
-                  sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
-                  closedir(dir);
-                  DRETURN(-1);
-               }
-            } else {
-#ifdef TEST
-               printf("unlink %s\n", fname);
-#else
-               DPRINTF("sge_rmdir: unlink %s\n", fname);
-               if (unlink(fname)) {
-                  sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS,
-                                      fname, strerror(errno));
-                  closedir(dir);
-                  DRETURN(-1);
-               }
-#endif
-            }
-         }
+      if (ocs_rmdir_contents(dir_fd, cp, error) != 0) {
+         DRETURN(-1);
       }
-
-      closedir(dir);
    }
 
-#ifdef TEST
-   printf("rmdir %s\n", cp);
-#else
    if (rmdir(cp) != 0) {
       if (errno == ENOTEMPTY && ignore_notempty) {
          DPRINTF("rmdir %s: not empty, ignoring\n", cp);
@@ -419,9 +456,8 @@ int sge_rmdir(const char *cp, dstring *error, bool recursive, bool ignore_notemp
          DRETURN(-1);
       }
    }
-#endif
 
-   return 0;
+   DRETURN(0);
 }
 
 /** @brief Is the path an executable file?
@@ -492,19 +528,3 @@ uint32_t sge_sysconf(sge_sysconf_t id) {
    }
    DRETURN(ret);
 }
-
-#ifdef TEST
-int main(int argc, char **argv) {
-   char err_str[1024];
- 
-   if (argc!=2) {
-      fprintf(stderr, "usage: rmdir <dir>\n");
-      exit(1);
-   }
-   if (sge_rmdir(argv[1], err_str)) {
-      fprintf(stderr, "%s", err_str);
-      return 1;
-   }
-   return 0;
-}
-#endif   

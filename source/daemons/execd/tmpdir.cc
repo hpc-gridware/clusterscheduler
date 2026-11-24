@@ -108,18 +108,21 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
    DRETURN(tmpdir);
 }
 
-/************************************************************************/
-/** @brief Delete a job's temporary directory when it ends
+/**
+ * @brief Delete a job's temporary directory when it ends
  *
- * Done as the job owner where possible, so that a job cannot make the daemon
- * delete something it should not.
+ * The directory belongs to the job owner, but it is removed as root (the start user of the
+ * daemon): files that a prolog or epilog running as root left in it have to go as well, and
+ * root can remove a subdirectory the owner made read-only. That is safe because sge_rmdir()
+ * never follows a symbolic link, also not one the owner swaps in for a subdirectory while the
+ * tree is being removed (CS-3202).
  *
- * @param dir the directory
- * @param job_owner the job owner
+ * @param dir the configured parent of the temporary directories (QU_tmpdir), may be nullptr
+ * @param job_owner the job owner (unused)
  * @param jobid the job
  * @param jataskid the array task
- * @param queue_name the queue instance, for the error message
- * @return 0 on success
+ * @param queue_name the queue instance, part of the directory's name
+ * @return 0 on success or when no parent is configured, -1 when the directory could not be removed
  */
 int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, uint32_t jataskid, const char *queue_name) {
    DENTER(TOP_LAYER);
