@@ -435,7 +435,9 @@ static bool get_queue_resource(const ocs::tom::Element<ocs::tom::CE> queue_elem,
    DENTER(BASIS_LAYER);
    double dval=0.0;
    const char *value=nullptr;
-   char as_str[100];
+   // CS-3185: an attribute without a value (or of a type not rendered below) is stored as an empty string,
+   // not as whatever the stack held
+   char as_str[100] = "";
    ocs::CEntry::Type type;
    int field;
 
