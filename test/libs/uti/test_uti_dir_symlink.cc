@@ -27,6 +27,10 @@
  * during the removal cannot be provoked deterministically; the tests pin the invariant the
  * descriptor-based walk guarantees: nothing outside the tree is ever touched.
  *
+ * CS-3203: ocs_mkdir_for_owner() creates the job's TMPDIR at a predictable path and hands it to
+ * the job owner. Whatever a user planted at that path (a symbolic link, a file, a directory of
+ * someone else) is refused, and nothing outside the directory it creates is ever changed.
+ *
  * Everything runs as the calling user inside a scratch directory under $TMPDIR or /tmp.
  */
 
@@ -209,6 +213,121 @@ static void test_rmdir(const std::string &base, int &id) {
          sge_rmdir(target_file.c_str(), &err) != 0 && exists(target_file));
 }
 
+/**
+ * @brief Owner, group and mode of a path, without following a symbolic link at its end
+ * @param path the path
+ * @param[out] st receives the result
+ * @return true when lstat() succeeds
+ */
+static bool get_stat(const std::string &path, struct stat &st) {
+   return lstat(path.c_str(), &st) == 0;
+}
+
+/**
+ * @brief Test ocs_mkdir_for_owner() against whatever a user planted at the path (CS-3203)
+ *
+ * The test runs unprivileged, so the new owner is the calling user and the group is one of its
+ * other groups when it has one: a chown through a planted link would then show as a changed group
+ * of the link's target. The invariant is that nothing but a directory created by the call or one
+ * of the caller or the new owner is ever changed.
+ *
+ * @param base scratch directory
+ * @param id running test number
+ */
+static void test_mkdir_for_owner(const std::string &base, int &id) {
+   printf("\n--- MKDIR-FOR-OWNER: a planted path is refused, never followed (CS-3203) ---\n");
+
+   const uid_t uid = getuid();
+   gid_t gid = getgid();
+   gid_t groups[256];
+   const int ngroups = getgroups(256, groups);
+   for (int i = 0; i < ngroups; i++) {
+      if (groups[i] != gid) {
+         gid = groups[i];
+         break;
+      }
+   }
+   printf("      new owner uid %d, gid %d (primary gid %d)\n", (int) uid, (int) gid, (int) getgid());
+
+   const std::string parent = base + "/parent";
+   const std::string victim_dir = base + "/victim_dir";
+   const std::string victim_file = base + "/victim_file";
+   CHECK(id++, "setup of the parent and the link targets",
+         make_dir(parent) && make_dir(victim_dir) && make_file(victim_file));
+   struct stat before_dir{};
+   struct stat before_file{};
+   get_stat(victim_dir, before_dir);
+   get_stat(victim_file, before_file);
+
+   DSTRING_STATIC(err, 1024);
+
+   // the normal case: a new directory, owned by uid and gid
+   const std::string fresh = parent + "/1.1.all.q";
+   struct stat st{};
+   CHECK(id++, "a new directory is created and handed over",
+         ocs_mkdir_for_owner(fresh.c_str(), 0755, uid, gid, &err) == 0 && get_stat(fresh, st) && S_ISDIR(st.st_mode) &&
+         st.st_uid == uid && st.st_gid == gid);
+
+   // a directory left behind by an earlier attempt is used again
+   sge_dstring_clear(&err);
+   CHECK(id++, "an existing directory of the caller or the new owner is accepted",
+         ocs_mkdir_for_owner(fresh.c_str(), 0755, uid, gid, &err) == 0 && get_stat(fresh, st) && S_ISDIR(st.st_mode));
+
+   // a planted link to a directory
+   const std::string link_dir = parent + "/2.1.all.q";
+   CHECK(id++, "setup of a planted link to a directory", make_link(victim_dir, link_dir));
+   sge_dstring_clear(&err);
+   CHECK(id++, "a planted link to a directory is refused",
+         ocs_mkdir_for_owner(link_dir.c_str(), 0755, uid, gid, &err) != 0 && sge_dstring_strlen(&err) > 0);
+   printf("      error: %s\n", sge_dstring_get_string(&err));
+   CHECK(id++, "the planted link stays a link", is_symlink(link_dir));
+   CHECK(id++, "the link's target keeps owner, group and mode",
+         get_stat(victim_dir, st) && st.st_uid == before_dir.st_uid && st.st_gid == before_dir.st_gid &&
+         st.st_mode == before_dir.st_mode);
+
+   // a planted link to a file
+   const std::string link_file = parent + "/3.1.all.q";
+   CHECK(id++, "setup of a planted link to a file", make_link(victim_file, link_file));
+   sge_dstring_clear(&err);
+   CHECK(id++, "a planted link to a file is refused",
+         ocs_mkdir_for_owner(link_file.c_str(), 0755, uid, gid, &err) != 0);
+   CHECK(id++, "the file keeps owner, group and mode",
+         get_stat(victim_file, st) && st.st_uid == before_file.st_uid && st.st_gid == before_file.st_gid &&
+         st.st_mode == before_file.st_mode);
+
+   // a dangling link: mkdir() must not create its target
+   const std::string dangling_target = base + "/created_through_link";
+   const std::string dangling = parent + "/4.1.all.q";
+   CHECK(id++, "setup of a planted dangling link", make_link(dangling_target, dangling));
+   sge_dstring_clear(&err);
+   CHECK(id++, "a planted dangling link is refused and nothing is created at its target",
+         ocs_mkdir_for_owner(dangling.c_str(), 0755, uid, gid, &err) != 0 && !exists(dangling_target));
+
+   // a planted regular file
+   const std::string file = parent + "/5.1.all.q";
+   CHECK(id++, "setup of a planted regular file", make_file(file));
+   sge_dstring_clear(&err);
+   CHECK(id++, "a planted regular file is refused and stays",
+         ocs_mkdir_for_owner(file.c_str(), 0755, uid, gid, &err) != 0 && exists(file) && !is_symlink(file));
+
+   // a directory of another user (root's /): refused, not handed over
+   if (uid != 0) {
+      struct stat root_before{};
+      get_stat("/", root_before);
+      sge_dstring_clear(&err);
+      CHECK(id++, "a directory of another user is refused",
+            ocs_mkdir_for_owner("/", 0755, uid, gid, &err) != 0);
+      CHECK(id++, "that directory keeps its owner",
+            get_stat("/", st) && st.st_uid == root_before.st_uid && st.st_gid == root_before.st_gid);
+   }
+
+   // a missing parent and a nullptr are errors
+   sge_dstring_clear(&err);
+   CHECK(id++, "a missing parent is an error",
+         ocs_mkdir_for_owner((base + "/missing/1.1.all.q").c_str(), 0755, uid, gid, &err) != 0);
+   CHECK(id++, "nullptr is an error", ocs_mkdir_for_owner(nullptr, 0755, uid, gid, &err) != 0);
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_uti_dir_symlink");
 
@@ -222,6 +341,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    int id = 1;
 
    test_rmdir(base, id);
+   test_mkdir_for_owner(base, id);
 
    cleanup(base);
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

@@ -157,6 +157,8 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
 
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);
 
+int ocs_mkdir_for_owner(const char *path, int fmode, uid_t uid, gid_t gid, dstring *error);
+
 int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true, bool ignore_notempty = false);
 
 bool sge_unlink(const char *prefix, const char *suffix);

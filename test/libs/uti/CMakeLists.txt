@@ -156,7 +156,7 @@ target_include_directories(test_uti_parse_num PRIVATE "./")
 target_link_libraries(test_uti_parse_num PRIVATE uti commlists ${SGE_LIBS})
 add_test(NAME test_uti_parse_num COMMAND test_uti_parse_num)
 
-# CS-3202: sge_rmdir() never follows a symbolic link
+# CS-3202, CS-3203: sge_rmdir() and ocs_mkdir_for_owner() never follow a symbolic link
 add_executable(test_uti_dir_symlink test_uti_dir_symlink.cc)
 target_include_directories(test_uti_dir_symlink PRIVATE "./")
 target_link_libraries(test_uti_dir_symlink PRIVATE uti commlists ${SGE_LIBS})

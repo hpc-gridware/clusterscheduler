@@ -342,6 +342,70 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
 }
 
 /**
+ * @brief Create a directory and hand it over to a user without following a symbolic link
+ *
+ * Meant for a directory at a predictable path in a parent that users can write to, created by a
+ * privileged caller, like the job's TMPDIR made by execd as root (CS-3203). The directory is
+ * created with mkdir(), opened with O_DIRECTORY | O_NOFOLLOW and handed over with fchown() on the
+ * descriptor, so whatever a user planted at the path cannot redirect the chown:
+ * - a symbolic link, a regular file or any other non-directory is an error, its target is not touched;
+ * - an existing directory is accepted only when it belongs to the caller (the effective user id) or
+ *   already to @p uid, for example the directory left behind by an earlier attempt of the same job;
+ *   a directory of any other user is an error.
+ *
+ * @param path the directory to create
+ * @param fmode the mode for mkdir(), the umask applies
+ * @param uid the new owner
+ * @param gid the new group
+ * @param[out] error destination for an error message, may be nullptr
+ * @return 0 when @p path is a directory owned by @p uid and @p gid, -1 on error; a directory this
+ *         call created is removed again on error
+ */
+int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, const gid_t gid, dstring *error) {
+   DENTER(TOP_LAYER);
+
+   if (path == nullptr) {
+      sge_dstring_sprintf(error, MSG_POINTER_NULLPARAMETER);
+      DRETURN(-1);
+   }
+
+   bool created = true;
+   if (mkdir(path, static_cast<mode_t>(fmode)) != 0) {
+      if (errno != EEXIST) {
+         sge_dstring_sprintf(error, MSG_FILE_CREATEDIRFAILED_SS, path, strerror(errno));
+         DRETURN(-1);
+      }
+      created = false;
+   }
+
+   // O_NOFOLLOW | O_DIRECTORY: a symbolic link or a non-directory at the path is not opened
+   const int fd = SGE_OPEN2(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+   if (fd < 0) {
+      sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path, strerror(errno));
+      DRETURN(-1);
+   }
+
+   int ret = 0;
+   struct stat stat_buffer{};
+   if (fstat(fd, &stat_buffer) != 0) {
+      sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path, strerror(errno));
+      ret = -1;
+   } else if (!S_ISDIR(stat_buffer.st_mode) || (stat_buffer.st_uid != geteuid() && stat_buffer.st_uid != uid)) {
+      sge_dstring_sprintf(error, MSG_FILE_DIRNOTOURS_S, path);
+      ret = -1;
+   } else if (fchown(fd, uid, gid) != 0) {
+      sge_dstring_sprintf(error, MSG_FILE_FCHOWNFAILED_SS, path, strerror(errno));
+      ret = -1;
+   }
+   close(fd);
+
+   if (ret != 0 && created) {
+      rmdir(path);
+   }
+   DRETURN(ret);
+}
+
+/**
  * @brief Remove everything inside an open directory without following symbolic links
  *
  * Every entry is examined with fstatat(AT_SYMLINK_NOFOLLOW) and removed relative to

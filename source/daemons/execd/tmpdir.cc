@@ -55,8 +55,13 @@
 /**
  * @brief Create the temporary directory a job runs with as `$TMPDIR`
  *
- * Created as the daemon and then handed to the job owner, because the parent
- * directory is usually not writable by users.
+ * Created as root (the start user of the daemon) and then handed to the job owner, because the
+ * parent directory is usually not writable by users. The parent (QU_tmpdir) is often world
+ * writable and the name is predictable, so a user may have planted something at the path:
+ * ocs_mkdir_for_owner() never follows a symbolic link and changes the owner through the open
+ * descriptor, a link, a file or another user's directory at the path makes the job fail
+ * (CS-3203). A directory that already belongs to root or to the job owner, for example one left
+ * behind by an earlier start of the same task, is used as before.
  *
  * @param qep the queue instance, which configures where temporary directories live
  * @param jobid the job
@@ -72,38 +77,30 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
                 const uid_t uid, const gid_t gid, char *tmpdir, const size_t tmpdir_size) {
    DENTER(TOP_LAYER);
 
-   const char *t;
-
-   t = qep.get<QU_tmpdir>();
+   const char *t = qep.get<QU_tmpdir>();
    if (t == nullptr) {
       DRETURN(nullptr);
    }
 
-   /* Note could have multiple instantiations of same job, */
-   /* on same machine, under same queue */
-   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, qep.get<QU_qname>());
+   // the same job may run in several queue instances of the same host
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32 "." sge_u32 ".%s", t, jobid, jataskid, qep.get<QU_qname>());
 
    DPRINTF("making TMPDIR=%s\n", tmpdir);
 
    sge_switch2start_user();
-   sge_mkdir(tmpdir, 0755, false, false);
 
-   /*
-    * chown is considered to be a security flaw, as an attacker might move the 
-    * directory between the mkdir and chown.
-    * This is both nearly impossible here and would have no effect.
-    * Make flawfinder ignore it
-    */
-   /* Flawfinder: ignore */
-   if (chown(tmpdir, uid, gid) != 0) {
-      DSTRING_STATIC(ds, MAX_STRING_SIZE);
-      ERROR(MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds));
-      rmdir(tmpdir);
-      sge_switch2admin_user();
-      DRETURN(nullptr);
-   }
+   // the configured parent is created when missing, as before; it is the administrator's path
+   sge_mkdir(t, 0755, false, false);
+
+   DSTRING_STATIC(err, MAX_STRING_SIZE);
+   const int ret = ocs_mkdir_for_owner(tmpdir, 0755, uid, gid, &err);
 
    sge_switch2admin_user();
+
+   if (ret != 0) {
+      ERROR(SFNMAX, sge_dstring_get_string(&err));
+      DRETURN(nullptr);
+   }
 
    DRETURN(tmpdir);
 }
