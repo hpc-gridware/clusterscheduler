@@ -158,5 +158,6 @@
 #define MSG_TLS_CERTIFICATE_RENEWED             _MESSAGE(27105, _("TLS server certificate was renewed"))
 #define MSG_TLS_CERT_RENEWAL_FAILED_S           _MESSAGE(27106, _("TLS server certificate renewal failed: " SFN2))
 #define MSG_TLS_CERT_LIFETIME_D                 _MESSAGE(27107, _("TLS certificate lifetime: %ds"))
+#define MSG_ALIAS_FIELDTOOLONG_SI               _MESSAGE(27108, _("a field of path alias file " PFQMAX " exceeds %d characters"))
 
 // clang-format on

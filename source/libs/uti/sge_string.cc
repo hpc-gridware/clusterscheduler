@@ -1008,28 +1008,25 @@ stra_from_str(const char *source_str, const char *delim) {
 /**
  * @brief Compresses sequences of slashes
  *
- * Compresses sequences of slashes in str to one slash
+ * Compresses sequences of slashes in str to one slash, in place. The string is
+ * copied onto itself from left to right; the former strcat() of the string's own
+ * tail onto it was undefined behaviour for the overlapping buffers and garbled
+ * the result ("/home//user" became "/home/ueer").
  *
- * @param str string (e.g. path)
+ * @param str string (e.g. path), modified in place
  *
  * @note MT-NOTE: sge_compress_slashes() is MT safe
  */
 void sge_compress_slashes(char *str) {
    DENTER(BASIS_LAYER);
 
-   char *p;
-   int compressed = 0;
-   for (p = str; *p; p++) {
-      while (*p == '/' && *(p + 1) == '/') {
-         compressed = 1;
-         *p = '\0';
-         p++;
-      }
-      if (compressed) {
-         strcat(str, p);
-         compressed = 0;
+   char *dst = str;
+   for (const char *src = str; *src != '\0'; ++src) {
+      if (*src != '/' || src[1] != '/') {
+         *dst++ = *src;
       }
    }
+   *dst = '\0';
    DRETURN_VOID;
 }
 

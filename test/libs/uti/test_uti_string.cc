@@ -434,7 +434,7 @@ static void test_replace_substring() {
 }
 
 // ---------------------------------------------------------------------------
-// sge_compress_slashes  [T54–T56]
+// sge_compress_slashes  [T54–T56, T82–T83]
 //
 // sge_compress_slashes() collapses runs of consecutive '/' characters into a
 // single '/' in-place.  A string with no consecutive slashes is unchanged.
@@ -462,6 +462,20 @@ static void test_compress_slashes() {
       char buf[] = "a///b";
       sge_compress_slashes(buf);
       CHECK(56, "triple slash compressed to single", strcmp(buf, "a/b") == 0);
+   }
+
+   // T82: runs in a longer string; the old code appended the string's own tail with an overlapping strcat()
+   {
+      char buf[] = "//home//user///dir/file//";
+      sge_compress_slashes(buf);
+      CHECK(82, "runs in a longer string compressed", strcmp(buf, "/home/user/dir/file/") == 0);
+   }
+
+   // T83: the old code garbled this one to "/home/ueer" (glibc, x86_64)
+   {
+      std::string str = "/home//user";
+      sge_compress_slashes(str.data());
+      CHECK(83, "tail after a run is copied correctly", strcmp(str.c_str(), "/home/user") == 0);
    }
 }
 

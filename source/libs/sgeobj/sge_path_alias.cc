@@ -54,9 +54,13 @@
  * @see sge_path_alias.h
  */
 
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <cerrno>
 #include <cstring>
 #include <pwd.h>
-#include <cerrno>
+#include <string>
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -88,6 +92,70 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
                                      ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *file_name);
 
 /**
+ * @brief Read one line of an alias file, of any length
+ *
+ * Reads up to the next newline or the end of the file. Unlike ocs_read_line(), the line is returned
+ * as it is: empty lines and leading whitespace are kept, because a '#' only starts a comment in the
+ * first column and a line of blanks is a syntax error of the alias file format.
+ *
+ * @param fp the alias file
+ * @param[out] line the line without its newline
+ *
+ * @return false at the end of the file with nothing read, true otherwise
+ *
+ * @note MT-NOTE: ocs_path_alias_read_line() is MT safe
+ */
+static bool
+ocs_path_alias_read_line(FILE *fp, std::string &line) {
+   DENTER(BASIS_LAYER);
+   line.clear();
+   int c;
+   while ((c = getc(fp)) != EOF && c != '\n') {
+      line.push_back(static_cast<char>(c));
+   }
+   DRETURN(c != EOF || !line.empty());
+}
+
+/**
+ * @brief Split a line of an alias file into its first four fields
+ *
+ * Fields are separated by any number of whitespace characters (as with sscanf's `%s`). Fields after
+ * the fourth are ignored.
+ *
+ * @param line the line
+ * @param[out] fields the fields found, empty strings for missing ones
+ *
+ * @return the number of fields found, at most the size of `fields`
+ *
+ * @note MT-NOTE: ocs_path_alias_split_line() is MT safe
+ */
+static size_t
+ocs_path_alias_split_line(const std::string &line, std::array<std::string, 4> &fields) {
+   DENTER(BASIS_LAYER);
+   const auto is_blank = [](const char c) { return std::isspace(static_cast<unsigned char>(c)) != 0; };
+   size_t count = 0;
+   size_t pos = 0;
+
+   for (auto &field : fields) {
+      field.clear();
+   }
+   while (count < fields.size()) {
+      while (pos < line.size() && is_blank(line[pos])) {
+         ++pos;
+      }
+      if (pos == line.size()) {
+         break;
+      }
+      const size_t begin = pos;
+      while (pos < line.size() && !is_blank(line[pos])) {
+         ++pos;
+      }
+      fields[count++] = line.substr(begin, pos - begin);
+   }
+   DRETURN(count);
+}
+
+/**
  * @brief Read file content to list
  *
  * Read and parse the file with the name "file_name" and append
@@ -97,12 +165,16 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
  *   column are skipped.
  * - Each line - other than a blank line or a line preceded by # -
  *   must contain four strings separated by any number of blanks
- *   or tabs.
+ *   or tabs. Further strings are ignored.
  * - The first string specifies a source path, the second a submit
  *   host, the third an execution host, and the fourth the source
  *   path replacement.
  * - Both the submit and the execution host entries may consist
  *   of only a * sign, which matches any host.
+ *
+ * Lines may have any length. Each of the four strings must be shorter than
+ * SGE_PATH_MAX; a longer one is rejected with an error, as such a path or host
+ * name is not usable (path_alias_verify() rejects such paths on the execution side).
  *
  * @param[in,out] path_alias_list PA list, created if the handle is empty and the file holds an entry
  * @param alpp AN list pointer
@@ -117,12 +189,9 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
    DENTER(GDI_LAYER);
 
    FILE *fd;
-   char buf[10000];
    char err[MAX_STRING_SIZE];
-   char origin[SGE_PATH_MAX];
-   char submit_host[SGE_PATH_MAX];
-   char exec_host[SGE_PATH_MAX];
-   char translation[SGE_PATH_MAX];
+   std::string line;
+   std::array<std::string, 4> fields;
    SGE_STRUCT_STAT sb;
    int ret = 0;
 
@@ -140,66 +209,58 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
       DRETURN(-1);
    }
 
-   while (fgets(buf, sizeof(buf), fd)) {
-      char *crp;
-
-      /* strip \n */
-      if ((crp = strchr(buf, (int)'\n')))
-         *crp = '\0';
-
-      DPRINTF("Path Alias: >%s<\n",buf);
+   while (ocs_path_alias_read_line(fd, line)) {
+      DPRINTF("Path Alias: >%s<\n", line.c_str());
 
       /* skip empty lines and comments */
-      if (!strlen(buf) || (*buf == '#' )) {
+      if (line.empty() || line[0] == '#') {
          continue;
       }
 
       /*
-       * reset
-       */
-      origin[0]      = '\0';
-      submit_host[0] = '\0';
-      exec_host[0]   = '\0';
-      translation[0] = '\0';   
-
-      sscanf(buf, "%s %s %s %s", origin, submit_host, exec_host, translation);
-
-      /*
        * check for correctness of path alias file
        */
-      if (*origin == '\0' || *submit_host == '\0' || *exec_host == '\0' || *translation == '\0') {
+      if (ocs_path_alias_split_line(line, fields) < fields.size()) {
          snprintf(err, sizeof(err), MSG_ALIAS_INVALIDSYNTAXOFPATHALIASFILEX_S, file_name);
          answer_list_add(alpp, err, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret = -1;
          break;
       }
+      if (std::ranges::any_of(fields, [](const std::string &field) { return field.size() >= SGE_PATH_MAX; })) {
+         snprintf(err, sizeof(err), MSG_ALIAS_FIELDTOOLONG_SI, file_name,
+                  static_cast<int>(SGE_PATH_MAX - 1));
+         answer_list_add(alpp, err, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+         ret = -1;
+         break;
+      }
+      auto &[origin, submit_host, exec_host, translation] = fields;
 
       /*
        * compress multiple slashes to one slash
        */
-      sge_compress_slashes(origin);
-      sge_compress_slashes(translation);
-            
-      
+      sge_compress_slashes(origin.data());
+      origin.resize(strlen(origin.c_str()));
+      sge_compress_slashes(translation.data());
+      translation.resize(strlen(translation.c_str()));
+
       if (!path_alias_list) {
          path_alias_list = ocs::tom::ListPtr<ocs::tom::PA>::create("");
       }
-      const auto pal = path_alias_list->emplace_back<PA_origin>(origin);
+      const auto pal = path_alias_list->emplace_back<PA_origin>(origin.c_str());
 
       /*
        * set the values of the element
        */
-      pal.set<PA_submit_host>(ocs::tom::Host(submit_host));
-      if ( strcmp(submit_host, "*") && (ocs_resolve_host<PA_submit_host>(pal) != CL_RETVAL_OK)) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_CANTRESOLVEHOST_S, submit_host);
+      pal.set<PA_submit_host>(ocs::tom::Host(submit_host.c_str()));
+      if (submit_host != "*" && (ocs_resolve_host<PA_submit_host>(pal) != CL_RETVAL_OK)) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SGETEXT_CANTRESOLVEHOST_S, submit_host.c_str());
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
          ret = -1;
          break;
       }
-      pal.set<PA_exec_host>(ocs::tom::Host(exec_host));
-      pal.set<PA_translation>(translation);
-
-   } /* while (fgets) */
+      pal.set<PA_exec_host>(ocs::tom::Host(exec_host.c_str()));
+      pal.set<PA_translation>(translation.c_str());
+   }
 
    FCLOSE(fd);
 
