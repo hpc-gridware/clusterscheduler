@@ -364,10 +364,11 @@ sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::
       answer_list_output(&spool_answer_list);
       ERROR(MSG_JOB_NOWRITE_U, job.get<JB_job_number>());
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      if ((job.get<JB_exec_file>() != nullptr)) {
+      // CS-3134: only the file qmaster named itself is removed
+      if (ocs_job_exec_file_is_valid(job.get<JB_exec_file>(), job.get<JB_job_number>())) {
          unlink(job.get<JB_exec_file>());
-         job.set<JB_exec_file>(nullptr);
       }
+      job.set<JB_exec_file>(nullptr);
       DRETURN(STATUS_EDISK);
    }
 

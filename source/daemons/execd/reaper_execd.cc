@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <sys/types.h>
 #include <cerrno>
 #include <cfloat>
@@ -65,6 +66,7 @@
 #include "sgeobj/config.h"
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_pe.h"
@@ -1133,8 +1135,15 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
                 */
                if (count_master_tasks(ocs::DataStore::master_list<SGE_TYPE_JOB>(),
                                       job_id) <= 1) {
-                  DPRINTF("unlinking script file %s\n", jep.get<JB_exec_file>());
-                  unlink(jep.get<JB_exec_file>());
+                  // CS-3134: only the file qmaster named itself is removed
+                  const char *exec_file = jep.get<JB_exec_file>();
+                  if (ocs_job_exec_file_is_valid(exec_file, job_id)) {
+                     DPRINTF("unlinking script file %s\n", exec_file);
+                     unlink(exec_file);
+                  } else {
+                     const std::string job_str = std::to_string(job_id);
+                     WARNING(MSG_JOB_INVALIDEXECFILE_SS, exec_file, job_str.c_str());
+                  }
                }
             }
          }
@@ -1205,8 +1214,14 @@ void remove_acked_job_exit(const uint32_t job_id, const uint32_t ja_task_id, con
             /* do not remove xterm or qlogin starter ! */
             if ((script_file = get_conf_val("script_file")) && strcasecmp(script_file, "INTERACTIVE") && strcasecmp(script_file, "QLOGIN")) {
                if ((exec_file = get_conf_val("exec_file"))) {
-                  DPRINTF("removing exec_file %s\n", exec_file);
-                  unlink(exec_file);
+                  // CS-3134: only the file qmaster named itself is removed
+                  if (ocs_job_exec_file_is_valid(exec_file, job_id)) {
+                     DPRINTF("removing exec_file %s\n", exec_file);
+                     unlink(exec_file);
+                  } else {
+                     const std::string job_str = std::to_string(job_id);
+                     WARNING(MSG_JOB_INVALIDEXECFILE_SS, exec_file, job_str.c_str());
+                  }
                }
             }
             

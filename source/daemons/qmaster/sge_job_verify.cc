@@ -784,14 +784,18 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
       jep.set<JB_submission_time>(sge_get_gmt64());
    }
 
-   /*      
-    * with interactive jobs, JB_exec_file is not set
+   /*
+    * JB_exec_file is the file qmaster spools the job script to, and execd writes and removes the script under
+    * that name. It is always set here, never taken from the client (CS-3134): job_scripts/<job id> for a job
+    * with a script, empty for one without (interactive jobs).
     */
    if (jep.get<JB_script_file>()) {
       dstring string = DSTRING_INIT;
       sge_dstring_sprintf(&string, "%s/" sge_u32, EXEC_DIR, jep.get<JB_job_number>());
       jep.set<JB_exec_file>(sge_dstring_get_string(&string));
       sge_dstring_free(&string);
+   } else {
+      jep.set<JB_exec_file>(nullptr);
    }
 
    /* check max_jobs */

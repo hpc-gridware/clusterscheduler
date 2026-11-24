@@ -448,6 +448,10 @@ const char *jobscript_get_key(ocs::tom::ConstElement<ocs::tom::JB> jep, dstring 
 
 char *jobscript_parse_key(char *key,const char **exec_file);
 
+bool ocs_job_exec_file_is_valid(const char *exec_file, uint32_t job_id);
+
+bool ocs_jobscript_key_is_valid(const char *db_key, const char *exec_file);
+
 bool job_parse_key(char *key, uint32_t *job_id, uint32_t *ja_task_id,
                    char **pe_task_id, bool *only_job);
 

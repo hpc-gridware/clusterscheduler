@@ -27,6 +27,9 @@
  * a_h had its condition inverted: its id replaced the result instead of being
  * compared with it, so qdel and the removal of an advance reservation left
  * tasks behind when tasks were held by -hold_jid_ad.
+ *
+ * CS-3134: ocs_job_exec_file_is_valid() and ocs_jobscript_key_is_valid() accept only the script file name
+ * qmaster gives a job.
  */
 
 #include <cstdio>
@@ -174,6 +177,43 @@ test_parse_jobtasks() {
 }
 
 /**
+ * @brief Only the script file name qmaster gives a job is accepted (CS-3134)
+ *
+ * ocs_job_exec_file_is_valid() accepts exactly `job_scripts/<job id>`; ocs_jobscript_key_is_valid() takes the
+ * job id from the spooling key `JOBSCRIPT:<job id>`. Everything else is a name a client could have sent.
+ */
+static void
+test_exec_file_is_valid() {
+   printf("\n--- ocs_job_exec_file_is_valid ---\n");
+
+   CHECK(17, "job_scripts/<job id> of the job is accepted", ocs_job_exec_file_is_valid("job_scripts/42", 42));
+   CHECK(18, "the name of another job is refused", !ocs_job_exec_file_is_valid("job_scripts/43", 42) &&
+                                                    !ocs_job_exec_file_is_valid("job_scripts/420", 42) &&
+                                                    !ocs_job_exec_file_is_valid("job_scripts/042", 42));
+   CHECK(19, "absolute paths and path tricks are refused",
+         !ocs_job_exec_file_is_valid("/etc/passwd", 42) &&
+            !ocs_job_exec_file_is_valid("/tmp/job_scripts/42", 42) &&
+            !ocs_job_exec_file_is_valid("job_scripts/../42", 42) &&
+            !ocs_job_exec_file_is_valid("job_scripts/42/x", 42) &&
+            !ocs_job_exec_file_is_valid("job_scripts/42/", 42) &&
+            !ocs_job_exec_file_is_valid("./job_scripts/42", 42));
+   CHECK(20, "an empty name, nullptr and job id 0 are refused",
+         !ocs_job_exec_file_is_valid("", 42) && !ocs_job_exec_file_is_valid(nullptr, 42) &&
+            !ocs_job_exec_file_is_valid("job_scripts/0", 0));
+
+   CHECK(21, "a spooling key with the job's own script is accepted",
+         ocs_jobscript_key_is_valid("JOBSCRIPT:42", "job_scripts/42"));
+   CHECK(22, "a spooling key with a forged script or a bad job id is refused",
+         !ocs_jobscript_key_is_valid("JOBSCRIPT:42", "/etc/passwd") &&
+            !ocs_jobscript_key_is_valid("JOBSCRIPT:41", "job_scripts/42") &&
+            !ocs_jobscript_key_is_valid("JOBSCRIPT:", "job_scripts/42") &&
+            !ocs_jobscript_key_is_valid("JOBSCRIPT:42x", "job_scripts/42") &&
+            !ocs_jobscript_key_is_valid("JOBSCRIPT42", "job_scripts/42") &&
+            !ocs_jobscript_key_is_valid(nullptr, "job_scripts/42") &&
+            !ocs_jobscript_key_is_valid("JOBSCRIPT:42", nullptr));
+}
+
+/**
  * @brief Entry point
  * @param argc unused
  * @param argv unused
@@ -185,6 +225,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_unenrolled_extremes();
    test_mailrec_unparse();
    test_parse_jobtasks();
+   test_exec_file_is_valid();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

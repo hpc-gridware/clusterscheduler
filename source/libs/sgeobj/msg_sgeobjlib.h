@@ -433,4 +433,7 @@
 // CS-3053: a unique attribute holds the same key twice
 #define MSG_OBJ_DUPLICATEKEY_SSS               _MESSAGE(64597, _("duplicate key " SFQ " of attribute " SFQ " in " SFQ))
 
+// CS-3134: a job script file name that qmaster did not set is never read, written or deleted
+#define MSG_JOB_INVALIDEXECFILE_SS             _MESSAGE(64601, _("refusing script file " SFQ " of job " SFQ ": it is not the job's spooled script"))
+
 // clang-format on

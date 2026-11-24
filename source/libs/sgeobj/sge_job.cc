@@ -1897,6 +1897,58 @@ char *jobscript_parse_key(char *key, const char **exec_file) {
 }
 
 /**
+ * @brief Check that a job's script file name is the one qmaster gives it
+ *
+ * qmaster stores the script of a job as `job_scripts/<job id>`, relative to the spool directory of qmaster and
+ * of execd (`EXEC_DIR`). No client sets `JB_exec_file`, so any other name was not set by qmaster, and neither
+ * qmaster nor execd may read, write or delete a file under it (CS-3134).
+ *
+ * @param exec_file the script file name (`JB_exec_file`)
+ * @param job_id the job number
+ * @return true if `exec_file` is exactly `job_scripts/<job_id>`, false otherwise, also for `nullptr` and job id 0
+ *
+ * @note MT-NOTE: ocs_job_exec_file_is_valid() is MT safe
+ */
+bool ocs_job_exec_file_is_valid(const char *exec_file, const uint32_t job_id) {
+   if (exec_file == nullptr || job_id == 0) {
+      return false;
+   }
+   char expected[sizeof(EXEC_DIR) + 16];
+   snprintf(expected, sizeof(expected), "%s/" sge_u32, EXEC_DIR, job_id);
+   return strcmp(exec_file, expected) == 0;
+}
+
+/**
+ * @brief Check the script file name taken from a job script spooling key
+ *
+ * The key built by jobscript_get_key() and split by jobscript_parse_key() is `JOBSCRIPT:<job id>` plus the
+ * script file name. The job id is taken from the key and the name checked with ocs_job_exec_file_is_valid().
+ *
+ * @param db_key the first part of the key, `JOBSCRIPT:<job id>`
+ * @param exec_file the script file name from the key
+ * @return true if the name is `job_scripts/<job id>` of the key's job
+ *
+ * @note MT-NOTE: ocs_jobscript_key_is_valid() is MT safe
+ *
+ * @see #jobscript_parse_key, #ocs_job_exec_file_is_valid
+ */
+bool ocs_jobscript_key_is_valid(const char *db_key, const char *exec_file) {
+   if (db_key == nullptr) {
+      return false;
+   }
+   const char *colon = strchr(db_key, ':');
+   if (colon == nullptr || colon[1] < '1' || colon[1] > '9') {
+      return false;
+   }
+   char *end = nullptr;
+   const unsigned long job_id = strtoul(colon + 1, &end, 10);
+   if (end == nullptr || *end != '\0' || job_id > UINT32_MAX) {
+      return false;
+   }
+   return ocs_job_exec_file_is_valid(exec_file, static_cast<uint32_t>(job_id));
+}
+
+/**
  * @brief Resolves hostnames in path lists
  *
  * Resolves hostnames in path lists.
