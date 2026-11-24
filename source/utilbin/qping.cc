@@ -656,7 +656,9 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         try {
                            ack = ocs::tom::unpack_raw_elem(&buf, nullptr);
                         } catch (const ocs::tom::PackException &) {
+                           // CS-3176: the rest of the buffer is not readable either, reading on would loop forever
                            printf("TAG_ACK_REQUEST: unpack error\n");
+                           break;
                         }
                         if (ack) {
                            ocs::tom::write_to(stdout, *ack); /* ack */
