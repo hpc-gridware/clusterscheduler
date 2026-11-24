@@ -526,6 +526,7 @@ assignment_init_pe(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::PE> pe
  * keeps the owned lists: with true they move to `dst`, freeing what `dst`
  * held, and are empty in `src` afterwards; with false they stay in `src` and
  * the lists `dst` held are freed. Either way exactly one of the two owns them.
+ * The scratch elements (default request, limit offer) are no state of the assignment; each keeps its own.
  *
  * @param[out]    dst        the assignment to copy into
  * @param[in,out] src        the assignment to copy from
@@ -580,6 +581,8 @@ void assignment_release(sge_assignment_t *a) {
    a->skip_cqueue_list.reset();
    a->skip_host_list.reset();
    a->rsmap_job_keys.reset();
+   a->default_request.reset();
+   a->limit_offer.reset();
 
    DRETURN_VOID;
 }
@@ -1331,7 +1334,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
 bool
 sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::tom::ConstElement<ocs::tom::QU> queue,
                  ocs::tom::ConstElement<ocs::tom::EH> host, const ocs::tom::List<ocs::tom::EH> exechost_list,
-                 const ocs::tom::List<ocs::tom::CE> centry_list, const bool allow_non_requestable,
+                 const ocs::tom::ConstList<ocs::tom::CE> centry_list, const bool allow_non_requestable,
                  const int slots, const ocs::tom::ConstList<ocs::tom::ST> queue_user_list,
                  const ocs::tom::ConstList<ocs::tom::US> acl_list, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
@@ -6784,7 +6787,8 @@ rsmap_same_slots(sge_assignment_t *a, const ocs::tom::ConstList<ocs::tom::CE> to
  *     host_slot          = min(host_slot_max_by_T, host_slot_max_by_R)
  *
  * The implicit slots request is a cache that lives as long as the process; it stays raw, a static owning
- * handle would free it in the static destruction at exit.
+ * handle would free it in the static destruction at exit. A default request is evaluated in the scratch
+ * element a->default_request: a->centry_list is read only, in qmaster it is the master complex list.
  *
  * @param[in,out] a                 the assignment
  * @param[in,out] slots             in: the slots wanted, out: the slots
@@ -6881,7 +6885,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
       if (strcmp(name, SGE_ATTR_SLOTS) == 0) {
          continue;
       }
-      // the default request is written into the complex definition of a->centry_list itself
+      // the complex definition is read only: in qmaster a->centry_list is the master complex list
       const auto cep = centry_list_locate(a->centry_list, name);
 
       // we need to check how much would give us a default request if the attribute is not requested
@@ -6895,11 +6899,19 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
                             0);
 
             if (request != 0 || cep.get<CE_relop>() == CMPLXEXCL_OP) {
-               cep.set<CE_stringval>(def_req);
-               cep.set<CE_doubleval>(request);
+               // the request is built in the scratch element of the assignment, with the fields
+               // ri_slots_by_time() reads of a request
+               if (!a->default_request) {
+                  a->default_request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+               }
+               a->default_request->set<CE_name>(name);
+               a->default_request->set<CE_valtype>(cep.get<CE_valtype>());
+               a->default_request->set<CE_relop>(cep.get<CE_relop>());
+               a->default_request->set<CE_stringval>(def_req);
+               a->default_request->set<CE_doubleval>(request);
 
-               result = ri_slots_by_time(a, &available, rue_list, cep, load_attr, total_list, nullptr,
-                                         host, queue, layer, lc_factor,
+               result = ri_slots_by_time(a, &available, rue_list, *a->default_request, load_attr, total_list,
+                                         nullptr, host, queue, layer, lc_factor,
                                          &reason, allow_non_requestable, false, object_name, binding_inuse);
                if (result != DISPATCH_OK) {
                   if (!isRQ) {

@@ -130,7 +130,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
    for (const auto limit : rule.get<RQR_limit>()) {
       bool       is_forced = false;
       const char *limit_name = limit.get<RQRL_name>();
-      // the default request is written into the complex definition of a->centry_list itself
+      // the complex definition is read only: in qmaster a->centry_list is the master complex list
       const auto raw_centry = centry_list_locate(a->centry_list, limit_name);
 
       if (raw_centry == nullptr) {
@@ -143,7 +143,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
       is_forced = raw_centry.get<CE_requestable>() == REQU_FORCED;
       const auto job_centry_list = job_get_hard_resource_listRW(a->job);
       // @todo CS-400: we only need job_centry. Have a function searching it in the 3 possible request lists
-      auto job_centry = ocs::tom::Element<ocs::tom::CE>::from_typed(centry_list_locate(job_centry_list, limit_name));
+      ocs::tom::ConstElement<ocs::tom::CE> job_centry = centry_list_locate(job_centry_list, limit_name);
 
       /* check for implicit slot and default request */
       if (job_centry == nullptr) {
@@ -159,9 +159,17 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
             if (request == 0.0 && raw_centry.get<CE_relop>() != CMPLXEXCL_OP) {
                continue;
             }
-            raw_centry.set<CE_stringval>(raw_centry.get<CE_defaultval>());
-            raw_centry.set<CE_doubleval>(request);
-            job_centry = raw_centry;
+            // the request is built in the scratch element of the assignment, with the fields
+            // ri_time_by_slots() reads of a request
+            if (!a->default_request) {
+               a->default_request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+            }
+            a->default_request->set<CE_name>(raw_centry.get<CE_name>());
+            a->default_request->set<CE_valtype>(raw_centry.get<CE_valtype>());
+            a->default_request->set<CE_relop>(raw_centry.get<CE_relop>());
+            a->default_request->set<CE_stringval>(raw_centry.get<CE_defaultval>());
+            a->default_request->set<CE_doubleval>(request);
+            job_centry = *a->default_request;
             DPRINTF("using default request for %s!\n", raw_centry.get<CE_name>());
          } else if (is_forced) {
             schedd_mes_add(a->monitor_alpp, a->monitor_next_run, a->job_id,
@@ -176,7 +184,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
       }
 
       if (rqs_set_dynamical_limit(limit, ocs::tom::ConstElement<ocs::tom::EH>::from_typed(a->gep), exec_host,
-                                  ocs::tom::ConstList<ocs::tom::CE>::from_typed(a->centry_list))) {
+                                  a->centry_list)) {
          const auto rue_list = limit.get<RQRL_usage>();
          uint64_t tmp_time = a->start;
 
@@ -442,7 +450,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
                      rqs_get_rue_string(&dstr_rue_string, rule, user, project, host, queue, pe);
 
                      if (rqs_set_dynamical_limit(limit, ocs::tom::ConstElement<ocs::tom::EH>::from_typed(a->gep), exec_host,
-                                                 ocs::tom::ConstList<ocs::tom::CE>::from_typed(a->centry_list))) {
+                                                 a->centry_list)) {
                         int tttslots = INT_MAX;
                         result = parallel_limit_slots_by_time(a, &tttslots, raw_centry,
                                                               limit, &dstr_rue_string, qep,
@@ -471,7 +479,7 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
                      // branch above and the sequential path in rqs_limitation_reached() both
                      // evaluate the limit before using it.
                      if (!rqs_set_dynamical_limit(limit, ocs::tom::ConstElement<ocs::tom::EH>::from_typed(a->gep), exec_host,
-                                                  ocs::tom::ConstList<ocs::tom::CE>::from_typed(a->centry_list))) {
+                                                  a->centry_list)) {
                         result = DISPATCH_NEVER_CAT;
                         break;
                      }
@@ -488,10 +496,21 @@ parallel_rqs_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Elem
                      //
                      // Both values have to be set: compare_complexes() compares against
                      // CE_pj_doubleval and against CE_doubleval and ANDs the two results.
-                     raw_centry.set<CE_stringval>(limit.get<RQRL_value>());
-                     raw_centry.set<CE_doubleval>(limit.get<RQRL_dvalue>());
-                     raw_centry.set<CE_pj_doubleval>(limit.get<RQRL_dvalue>());
-                     if (compare_complexes(1, job_centry, raw_centry, availability_text, false, false) != 1) {
+                     // The offer is built in the scratch element a->limit_offer: in qmaster
+                     // raw_centry is an element of the master complex list, which is read only
+                     // (CS-3196). It gets exactly the fields compare_complexes() reads of an offer.
+                     if (!a->limit_offer) {
+                        a->limit_offer = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+                     }
+                     a->limit_offer->set<CE_name>(raw_centry.get<CE_name>());
+                     a->limit_offer->set<CE_valtype>(raw_centry.get<CE_valtype>());
+                     a->limit_offer->set<CE_relop>(raw_centry.get<CE_relop>());
+                     a->limit_offer->set<CE_dominant>(raw_centry.get<CE_dominant>());
+                     a->limit_offer->set<CE_pj_dominant>(raw_centry.get<CE_pj_dominant>());
+                     a->limit_offer->set<CE_stringval>(limit.get<RQRL_value>());
+                     a->limit_offer->set<CE_doubleval>(limit.get<RQRL_dvalue>());
+                     a->limit_offer->set<CE_pj_doubleval>(limit.get<RQRL_dvalue>());
+                     if (compare_complexes(1, job_centry, *a->limit_offer, availability_text, false, false) != 1) {
                         result = DISPATCH_NEVER_CAT;
                         break;
                      }

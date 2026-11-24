@@ -111,7 +111,7 @@ int rc_add_job_utilization(ocs::tom::ConstElement<ocs::tom::JG> gdil, ocs::tom::
 void prepare_resource_schedules(ocs::tom::List<ocs::tom::JB> running_jobs, ocs::tom::List<ocs::tom::JB> suspended_jobs,
                                 ocs::tom::List<ocs::tom::PE> pe_list, ocs::tom::List<ocs::tom::EH> host_list,
                                 ocs::tom::List<ocs::tom::QU> queue_list, ocs::tom::List<ocs::tom::RQS> rqs_list,
-                                ocs::tom::List<ocs::tom::CE> centry_list,
+                                ocs::tom::ConstList<ocs::tom::CE> centry_list,
                                 ocs::tom::ConstList<ocs::tom::US> acl_list,
                                 ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list, ocs::tom::List<ocs::tom::AR> ar_list,
                                 bool for_job_scheduling, uint64_t now);

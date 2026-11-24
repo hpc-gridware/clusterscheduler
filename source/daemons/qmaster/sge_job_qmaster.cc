@@ -3471,7 +3471,7 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
    int verify_mode = jep.get<JB_verify_suitable_queues>();
    bool verify_only = (verify_mode == JUST_VERIFY || verify_mode == POKE_VERIFY) ? true : false;
    const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
-   const auto master_centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();

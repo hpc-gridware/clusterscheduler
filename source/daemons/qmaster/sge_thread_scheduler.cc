@@ -720,7 +720,7 @@ sge_scheduler_main(void *arg) {
          const auto master_project_list = ocs::DataStore::master_list<SGE_TYPE_PROJECT>();
          const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
          const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
-         const auto master_centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
+         const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
          const auto master_ckpt_list = ocs::DataStore::master_list<SGE_TYPE_CKPT>();
          const auto master_user_list = ocs::DataStore::master_list<SGE_TYPE_USER>();
          const auto master_ar_list = ocs::DataStore::master_list<SGE_TYPE_AR>();

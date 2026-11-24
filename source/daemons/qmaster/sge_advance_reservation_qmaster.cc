@@ -1051,7 +1051,7 @@ ar_reserve_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::Element
    const auto master_cqueue_list = ocs::DataStore::master_list<SGE_TYPE_CQUEUE>();
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
-   const auto master_centry_list = ocs::DataStore::master_list_rw<SGE_TYPE_CENTRY>();
+   const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_cal_list = ocs::DataStore::master_list<SGE_TYPE_CALENDAR>();
 
