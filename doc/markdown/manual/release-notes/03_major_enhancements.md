@@ -10,7 +10,7 @@ For details see the *Installation Guide*, chapter **"Enabling TLS Encryption"**.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
-### 5.1.2 Cluster State and Search in Qontrol
+### Cluster State and Search in Qontrol
 
 Qontrol, the web-based replacement for qmon, so far covered the configuration of a cluster. With 9.1.8 it also
 shows what the cluster is doing right now, and lets an administrator act on what they see. The new Cluster State
