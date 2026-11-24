@@ -4,7 +4,7 @@
    "description": [
       "Object used to request given permissions of user and host."
    ],
-   "cullPrefix": "PERM",
+   "fieldPrefix": "PERM",
    "attributes": [
       {
          "name": "is_manager",

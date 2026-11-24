@@ -57,7 +57,7 @@
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_BindingInstance.h"
 #include "sgeobj/ocs_TopologyString.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_mailrec.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_range.h"
@@ -83,7 +83,7 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 #include "parse_qsub.h"
 #include "sge_options.h"
 #include "msg_common.h"
@@ -99,7 +99,7 @@ static int ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_
 /** @brief Turn an argument vector into a list of options
  *
  * The first half of submitting: this recognises the switches and their
- * arguments without interpreting them, and #cull_parse_job_parameter then
+ * arguments without interpreting them, and #ocs_parse_job_parameter then
  * builds the job from the result.
  *
  * @param prog_number the client being parsed for, which decides the option set
@@ -120,9 +120,9 @@ static int ocs_parse_sync_switch(ocs::tom::ListPtr<ocs::tom::SPA> &opts, uint32_
  *         - `STATUS_ESEMANTIC` - an option that needs an argument had none
  *         - `STATUS_ESYNTAX` - an option argument could not be parsed
  *
- * @note MT-NOTE: cull_parse_cmdline() is MT safe
+ * @note MT-NOTE: ocs_parse_cmdline() is MT safe
  */
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
+ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_cmdline(const uint32_t prog_number, const char **arg_list, char **envp,
                                                    ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, const uint32_t flags) {
    DENTER(TOP_LAYER);
 
@@ -967,7 +967,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
             ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
          } else {
             /* next field is path_name */
-            auto [path_list_ret, path_list] = cull_parse_path_list(*sp);
+            auto [path_list_ret, path_list] = ocs_parse_path_list(*sp);
             i_ret = path_list_ret;
             if (i_ret) {
                 answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -997,7 +997,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-i %s\"\n", *sp);
 
-         auto [path_list_ret, path_list] = cull_parse_path_list(*sp);
+         auto [path_list_ret, path_list] = ocs_parse_path_list(*sp);
          i_ret = path_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1119,7 +1119,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          DPRINTF("\"-hold_jid %s\"\n", *sp);
-         auto [jid_hold_list_ret, jid_hold_list] = cull_parse_jid_hold_list(*sp);
+         auto [jid_hold_list_ret, jid_hold_list] = ocs_parse_jid_hold_list(*sp);
          i_ret = jid_hold_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1146,7 +1146,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          DPRINTF("\"-hold_jid_ad %s\"\n", *sp);
-         auto [jid_ad_hold_list_ret, jid_ad_hold_list] = cull_parse_jid_hold_list(*sp);
+         auto [jid_ad_hold_list_ret, jid_ad_hold_list] = ocs_parse_jid_hold_list(*sp);
          i_ret = jid_ad_hold_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1345,8 +1345,8 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
 
          DPRINTF("\"-masterq %s\"\n", *sp);
          lList *ids_out = nullptr;
-         i_ret = cull_parse_destination_identifier_list(&ids_out, *sp);
-         /* cull_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
+         i_ret = ocs_parse_destination_identifier_list(&ids_out, *sp);
+         /* ocs_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
          auto id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(ids_out);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1479,7 +1479,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(const uint32_t prog_number, c
          }
 
          DPRINTF("\"-o %s\"\n", *sp);
-         auto [stdout_path_list_ret, stdout_path_list] = cull_parse_path_list(*sp);
+         auto [stdout_path_list_ret, stdout_path_list] = ocs_parse_path_list(*sp);
          i_ret = stdout_path_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1670,8 +1670,8 @@ DTRACE;
 
          DPRINTF("\"-q %s\"\n", *sp);
          lList *ids_out = nullptr;
-         i_ret = cull_parse_destination_identifier_list(&ids_out, *sp);
-         /* cull_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
+         i_ret = ocs_parse_destination_identifier_list(&ids_out, *sp);
+         /* ocs_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
          auto id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(ids_out);
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1891,7 +1891,7 @@ DTRACE;
 
          DPRINTF("\"-S %s\"\n", *sp);
 
-         auto [shell_list_ret, shell_list] = cull_parse_path_list(*sp);
+         auto [shell_list_ret, shell_list] = ocs_parse_path_list(*sp);
          i_ret = shell_list_ret;
          if (i_ret) {
              answer_list_add_sprintf(&answer, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -1990,12 +1990,12 @@ DTRACE;
             int rule[] = {ARA_name, 0};
             char **dest = nullptr;
             char *tmp;
-            // cull_parse_string_list() works on any descriptor and has no typed form
+            // ocs_parse_string_list() works on any descriptor and has no typed form
             lList *user_list = nullptr;
 
             tmp = sge_strdup(nullptr, *sp);
             dest = string_list(tmp, ",", nullptr);
-            cull_parse_string_list(dest, "user_list", ocs::tom::ARA::descriptor.e, rule, &user_list);
+            ocs_parse_string_list(dest, "user_list", ocs::tom::ARA::descriptor.e, rule, &user_list);
             sge_free(&tmp);
             sge_free(&dest);
             ep_opt = sge_add_arg(pcmdline, u_OPT, MT_LIST, *(sp - 1), *sp);
@@ -2356,7 +2356,7 @@ DTRACE;
                ep_opt = sge_add_noarg(pcmdline, 0, *sp, nullptr);
                break;
             }
-            auto [jid_list_ret, jid_list] = cull_parse_jid_hold_list(*sp);
+            auto [jid_list_ret, jid_list] = ocs_parse_jid_hold_list(*sp);
             i_ret = jid_list_ret;
 
             if (i_ret) {

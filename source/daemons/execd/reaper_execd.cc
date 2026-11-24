@@ -2405,7 +2405,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
                   exit_status);
       }
 
-      cull_mail(EXECD, mail_users, sge_mail_subj, sge_mail_body, MSG_MAIL_TYPE_COMP);
+      mail_to_users(EXECD, mail_users, sge_mail_subj, sge_mail_body, MSG_MAIL_TYPE_COMP);
       sge_dstring_free(&utime_string);
       sge_dstring_free(&stime_string);
       sge_dstring_free(&wtime_string);
@@ -2457,7 +2457,7 @@ reaper_sendmail(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs::tom::
                      (ru_maxvmem == 0.0) ? "NA":sge_dstring_get_string(&maxvmem_string),
                      get_sstate_description(failed), err_str, comment);
          }
-         cull_mail(EXECD, mail_users, sge_mail_subj, sge_mail_body, MSG_MAIL_TYPE_STATE);
+         mail_to_users(EXECD, mail_users, sge_mail_subj, sge_mail_body, MSG_MAIL_TYPE_STATE);
       }
    }
 

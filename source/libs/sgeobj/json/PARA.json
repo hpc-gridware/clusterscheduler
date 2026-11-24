@@ -4,7 +4,7 @@
    "description": [
       "A name/value pair, used for the free-form `params` settings of the scheduler configuration."
    ],
-   "cullPrefix": "PARA",
+   "fieldPrefix": "PARA",
    "attributes": [
       {
          "name": "name",

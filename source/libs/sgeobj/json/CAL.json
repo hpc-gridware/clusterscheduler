@@ -4,7 +4,7 @@
    "description": [
       "This data structure represents the SGE calendar object."
    ],
-   "cullPrefix": "CAL",
+   "fieldPrefix": "CAL",
    "attributes": [
       {
          "name": "name",
@@ -51,7 +51,7 @@
          ],
          "type": "List",
          "subClassName": "CA",
-         "subCullPrefix": "CA",
+         "subFieldPrefix": "CA",
          "flags": []
       },
       {
@@ -62,7 +62,7 @@
          ],
          "type": "List",
          "subClassName": "CA",
-         "subCullPrefix": "CA",
+         "subFieldPrefix": "CA",
          "flags": []
       },
       {
@@ -75,7 +75,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

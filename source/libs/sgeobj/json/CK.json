@@ -5,7 +5,7 @@
       "This is the list type to hold the checkpointing object",
       "for the interfaces to the various supported checkpointing mechanisms."
    ],
-   "cullPrefix": "CK",
+   "fieldPrefix": "CK",
    "attributes": [
       {
          "name": "name",
@@ -139,7 +139,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

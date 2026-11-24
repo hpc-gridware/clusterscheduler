@@ -4,7 +4,7 @@
    "description": [
       "Used in the DRMAA library to implement vector job template attributes."
    ],
-   "cullPrefix": "NSV",
+   "fieldPrefix": "NSV",
    "attributes": [
       {
          "name": "name",
@@ -23,7 +23,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": []
       }
    ]

@@ -4,7 +4,7 @@
    "description": [
       "A LoadReport object represents the value for a single load variable on a specific host."
    ],
-   "cullPrefix": "LR",
+   "fieldPrefix": "LR",
    "attributes": [
       {
          "name": "name",

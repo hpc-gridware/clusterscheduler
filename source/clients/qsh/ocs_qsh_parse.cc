@@ -47,7 +47,7 @@
 
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/ocs_Job.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
@@ -75,7 +75,7 @@
 
 /** @brief Fill in a job object from a parsed `qsh`/`qlogin`/`qrsh` command line
  *
- * The interactive counterpart of #cull_parse_job_parameter. It differs mainly
+ * The interactive counterpart of #ocs_parse_job_parameter. It differs mainly
  * in the defaults: an interactive job is not rerunnable, gets no output files,
  * and is submitted with `-now yes` unless told otherwise.
  *
@@ -95,7 +95,7 @@
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_number, [[maybe_unused]] uint32_t uid,
+ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_qsh_parameter(const uint32_t prog_number, [[maybe_unused]] uint32_t uid,
                                                          const char *username,
                                                          const char *cell_root, const char *unqualified_hostname,
                                                          const char *qualified_hostname,

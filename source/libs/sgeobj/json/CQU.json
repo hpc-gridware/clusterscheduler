@@ -4,7 +4,7 @@
    "description": [
       "One state change a calendar schedules: the state to take, and until when."
    ],
-   "cullPrefix": "CQU",
+   "fieldPrefix": "CQU",
    "attributes": [
       {
          "name": "state",

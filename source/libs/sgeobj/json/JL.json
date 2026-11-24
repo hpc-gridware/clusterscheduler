@@ -5,7 +5,7 @@
       "This is the list type we use to hold the jobs which are running under the local execution daemon.",
       "@todo This is a very old module and probably noone really knows its details any more. Add better documentation."
    ],
-   "cullPrefix": "JL",
+   "fieldPrefix": "JL",
    "attributes": [
       {
          "name": "job_ID",
@@ -28,7 +28,7 @@
          ],
          "type": "List",
          "subClassName": "JO",
-         "subCullPrefix": "JO",
+         "subFieldPrefix": "JO",
          "flags": []
       },
       {

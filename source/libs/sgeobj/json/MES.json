@@ -5,7 +5,7 @@
       "An individual scheduling message,",
       "e.g. explaining why a specific request of a certain job cannot be granted."
    ],
-   "cullPrefix": "MES",
+   "fieldPrefix": "MES",
    "attributes": [
       {
          "name": "job_number_list",
@@ -16,7 +16,7 @@
          ],
          "type": "List",
          "subClassName": "ULNG",
-         "subCullPrefix": "ULNG",
+         "subFieldPrefix": "ULNG",
          "flags": []
       },
       {

@@ -59,7 +59,7 @@
 struct qconf_attr_entry {
    ocs::gdi::Target target;                  ///< which master list the object lives in
    const char *object_name;                  ///< the name the switches take, e.g. "queue"
-   const lDescr *cull_descriptor;                  ///< the CULL type of the object
+   const lDescr *object_descr;                  ///< the object type of the object
    const char *attribute_name;               ///< the attribute carrying the object's name, for the messages
    int nm_name;                              ///< the field holding the object's name, its key
    spooling_field *fields;                   ///< which fields the attribute text is read with
@@ -217,7 +217,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
 
    if (from_file) {
       first_name = 2;
-      ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr,
+      ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->object_descr, nullptr,
                                                               info_entry->fields, fields, true, info_entry->instr,
                                                               qconf_opt_format, nullptr, op.args[1].c_str()));
       if (answer_list_has_error(alpp)) {
@@ -245,7 +245,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
          answer_list_add_sprintf(alpp, STATUS_EDISK, ANSWER_QUALITY_ERROR, "%s",
                                  sge_dstring_get_string(&write_attr_tmp_file_error));
       } else if (filename != nullptr) {
-         ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->cull_descriptor, nullptr,
+         ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->object_descr, nullptr,
                                                                  info_entry->fields, fields, true, info_entry->instr,
                                                                  SP_FORM_ASCII, nullptr, filename));
          unlink(filename);
@@ -293,7 +293,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
    for (size_t i = first_name; i < op.args.size(); i++) {
       const char *object = op.args[i].c_str();
       if (!qlp) {
-         qlp = ocs::tom::create_raw_list(info_entry->cull_descriptor, ocs::tom::Hashing::On, "list");
+         qlp = ocs::tom::create_raw_list(info_entry->object_descr, ocs::tom::Hashing::On, "list");
       }
       auto add_qp = ep.clone();
       // every name field of the attribute table is a String or a Host; a field the element lacks ends in default

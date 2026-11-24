@@ -12,7 +12,7 @@
       "If SO_slots_sum is 0, it's queue instance-wise, otherwise slot-wise",
       "suspend on subordinate that is configured."
    ],
-   "cullPrefix": "SO",
+   "fieldPrefix": "SO",
    "attributes": [
       {
          "name": "name",

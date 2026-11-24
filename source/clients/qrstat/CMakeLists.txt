@@ -22,7 +22,7 @@
 add_executable(
         qrstat
         ocs_qrstat.cc
-        ../../common/parse_job_cull.cc
+        ../../common/ocs_parse_job.cc
         ../../common/parse_qsub.cc
         ../../common/sig_handlers.cc
         ../../common/sge_options.cc

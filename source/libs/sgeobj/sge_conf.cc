@@ -589,7 +589,7 @@ typedef struct {
 } tConfEntry;
 
 static ocs::tom::ListPtr<ocs::tom::CF> sge_set_defined_defaults(const char *cell_root);
-static void setConfFromCull(ocs::tom::ConstList<ocs::tom::CF> lpCfg);
+static void setConfFromList(ocs::tom::ConstList<ocs::tom::CF> lpCfg);
 static tConfEntry *getConfEntry(const char *name, tConfEntry conf_entries[]);
 static void clean_conf();
 
@@ -948,10 +948,10 @@ chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, 
  * @param lpCfg The configuration list.
  *
  * @note
- * MT-NOTE: setConfFromCull() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
+ * MT-NOTE: setConfFromList() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
  */
 static void
-setConfFromCull(const ocs::tom::ConstList<ocs::tom::CF> lpCfg) {
+setConfFromList(const ocs::tom::ConstList<ocs::tom::CF> lpCfg) {
    DENTER(BASIS_LAYER);
 
    /* get following logging entries logged if log_info is selected */
@@ -1093,7 +1093,7 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
    clean_conf();
-   setConfFromCull(*merged);
+   setConfFromList(*merged);
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
 
    /* put contents of qmaster_params and execd_params

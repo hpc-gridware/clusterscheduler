@@ -397,7 +397,7 @@ int sge_parse_qconf(char *argv[]) {
  * @return the new list, never an empty handle
  */
 template <auto F>
-ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cull(const char *name, char *s) {
+ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_list(const char *name, char *s) {
    DENTER(TOP_LAYER);
 
    using T = typename ocs::tom::FieldTraits<F>::Type;
@@ -408,7 +408,7 @@ ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cu
    const char *cp2 = sge_strtok(s, ",");
    bool first = true;
    do {
-      DPRINTF("parse_name_list_to_cull: Adding %s type element\n", is_host ? "MT_HOST" : "MT_STRING");
+      DPRINTF("parse_name_list_to_list: Adding %s type element\n", is_host ? "MT_HOST" : "MT_STRING");
       auto ep = ocs::tom::ElementPtr<T>::create();
       if constexpr (is_host) {
          ep->template set<F>(ocs::tom::Host(cp2));
@@ -429,7 +429,7 @@ ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cu
    DRETURN(list);
 }
 
-template ocs::tom::ListPtr<ocs::tom::EH> parse_name_list_to_cull<EH_name>(const char *name, char *s);
-template ocs::tom::ListPtr<ocs::tom::US> parse_name_list_to_cull<US_name>(const char *name, char *s);
-template ocs::tom::ListPtr<ocs::tom::HR> parse_name_list_to_cull<HR_name>(const char *name, char *s);
-template ocs::tom::ListPtr<ocs::tom::HGRP> parse_name_list_to_cull<HGRP_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::EH> parse_name_list_to_list<EH_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::US> parse_name_list_to_list<US_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::HR> parse_name_list_to_list<HR_name>(const char *name, char *s);
+template ocs::tom::ListPtr<ocs::tom::HGRP> parse_name_list_to_list<HGRP_name>(const char *name, char *s);

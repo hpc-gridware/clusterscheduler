@@ -5,7 +5,7 @@
       "Used for boolean attributes in the cluster queues.",
       "Used for the queue rerun attribute."
    ],
-   "cullPrefix": "ABOOL",
+   "fieldPrefix": "ABOOL",
    "attributes": [
       {
          "name": "href",

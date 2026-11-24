@@ -6,7 +6,7 @@
       "It is used by client commands like qalter, qconf, qdel, qrdel, ...",
       "@todo the same goal could be achieved by using a lWhere condition, why do we have this type in the first place?"
    ],
-   "cullPrefix": "ID",
+   "fieldPrefix": "ID",
    "attributes": [
       {
          "name": "str",
@@ -25,7 +25,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": []
       },
       {
@@ -54,7 +54,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": []
       }
    ]

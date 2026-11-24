@@ -5,7 +5,7 @@
       "Used for date/time attributes in the cluster queues.",
       "E.g. used for the queue h_rt, s_rt, h_cpu, ..."
    ],
-   "cullPrefix": "ATIME",
+   "fieldPrefix": "ATIME",
    "attributes": [
       {
          "name": "href",

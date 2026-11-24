@@ -4,7 +4,7 @@
    "description": [
       "A short acknowledgement message, identifying what is being acknowledged rather than carrying data."
    ],
-   "cullPrefix": "ACK",
+   "fieldPrefix": "ACK",
    "attributes": [
       {
          "name": "type",

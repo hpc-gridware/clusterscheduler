@@ -91,7 +91,7 @@ static const char*  cl_description[] = {
           /* 08 */               "message response id",
           /* 09 */               "message length",
           /* 10 */               "time when message was sent/received",
-          /* 11 */               "message content dump (xml/bin/cull)",
+          /* 11 */               "message content dump (xml/bin/packed)",
           /* 12 */               "additional information",
           /* 13 */               "commlib linger time",
           /* 14 */               "nr. of connections"

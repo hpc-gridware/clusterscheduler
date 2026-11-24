@@ -7,7 +7,7 @@
       "For different hosts different paths can be specified in the form [host:]path[,[host:]path...].",
       "There is some simple file staging facility, to be evaluated."
    ],
-   "cullPrefix": "PN",
+   "fieldPrefix": "PN",
    "attributes": [
       {
          "name": "path",

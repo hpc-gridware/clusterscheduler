@@ -57,7 +57,7 @@
 #include "qstat/msg_qstat.h"
 
 #include "parse_qsub.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/ocs_BindingStrategy.h"
 #include "sgeobj/ocs_BindingType.h"
 #include "tom/ocs_Element.h"
@@ -119,7 +119,7 @@ void ocs::QStatJobViewPlain::show_ce_type_list(std::ostream &os, const ocs::tom:
  * @param job the job (`JB`)
  * @param flags which parts of the listing were requested
  */
-void ocs::QStatJobViewPlain::cull_show_job(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
+void ocs::QStatJobViewPlain::show_job_details(std::ostream &os, const ocs::tom::ConstList<ocs::tom::SME> ilp,
                                            const ocs::tom::ConstElement<ocs::tom::JB> job, const int flags) {
    DENTER(TOP_LAYER);
    // create dummy params and view so that we can call virtual methods in this static function

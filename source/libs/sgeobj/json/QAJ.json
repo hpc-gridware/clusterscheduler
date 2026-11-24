@@ -6,7 +6,7 @@
       "It contains some of the fields which can appear in the qacct -j job_id output.",
       "See also the sge_accounting(5) man page."
    ],
-   "cullPrefix": "QAJ",
+   "fieldPrefix": "QAJ",
    "attributes": [
       {
          "name": "host",

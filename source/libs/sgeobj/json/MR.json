@@ -7,7 +7,7 @@
       "It is used e.g. when submitting jobs via `qsub -M user[@host][,user[@host],...]`",
       "@todo why do we split it into user and host? We could just have a single string holding an email address."
    ],
-   "cullPrefix": "MR",
+   "fieldPrefix": "MR",
    "attributes": [
       {
          "name": "user",

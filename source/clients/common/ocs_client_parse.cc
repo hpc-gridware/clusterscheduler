@@ -56,7 +56,7 @@
 #include "msg_clients_common.h"
 #include "msg_common.h"
 #include "ocs_client_parse.h"
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 #include "parse_qsub.h"
 #include "sge_options.h"
 
@@ -304,7 +304,7 @@ void opt_list_append_opts_from_qsub_cmdline(const uint32_t prog_number, ocs::tom
    if (answer_list != nullptr) {
       answer_list->reset();
    }
-   *answer_list = cull_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS);
+   *answer_list = ocs_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS);
    DRETURN_VOID;
 }
 
@@ -331,7 +331,7 @@ void opt_list_append_opts_from_qalter_cmdline(const uint32_t prog_number,
    if (answer_list != nullptr) {
       answer_list->reset();
    }
-   *answer_list = cull_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS | FLG_QALTER);
+   *answer_list = ocs_parse_cmdline(prog_number, argv, envp, opts_cmdline, FLG_USE_PSEUDOS | FLG_QALTER);
    DRETURN_VOID;
 }
 

@@ -175,7 +175,7 @@ test_variable_parser() {
 static void
 test_set_lists() {
    lList *raw_qrefs = nullptr;
-   const int ret = cull_parse_destination_identifier_list(&raw_qrefs, "a.q,b.q,a.q");
+   const int ret = ocs_parse_destination_identifier_list(&raw_qrefs, "a.q,b.q,a.q");
    ocs::tom::ListPtr<ocs::tom::QR> qrefs(raw_qrefs);
    CHECK(11, "-q a.q,b.q,a.q holds a.q once, in its first position",
          ret == 0 && qrefs->size() == 2 && strcmp(qrefs->front().get<QR_name>(), "a.q") == 0);

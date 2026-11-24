@@ -7,7 +7,7 @@
       "context variables following it; names repeat by design, so the name is not unique.",
       "@see set_context()"
    ],
-   "cullPrefix": "CX",
+   "fieldPrefix": "CX",
    "attributes": [
       {
          "name": "variable",

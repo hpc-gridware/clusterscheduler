@@ -4,7 +4,7 @@
    "description": [
       "A report from sge_execd to sge_qmaster, e.g. a load report, a job report, ..."
    ],
-   "cullPrefix": "REP",
+   "fieldPrefix": "REP",
    "attributes": [
       {
          "name": "type",
@@ -37,7 +37,7 @@
          ],
          "type": "List",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       },
       {

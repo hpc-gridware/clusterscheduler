@@ -5,7 +5,7 @@
       "Used in clients for parsing the commandline.",
       "One commandline argument (including data) is one SPA object."
    ],
-   "cullPrefix": "SPA",
+   "fieldPrefix": "SPA",
    "attributes": [
       {
          "name": "number",
@@ -137,7 +137,7 @@
          ],
          "type": "List",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       }
    ]

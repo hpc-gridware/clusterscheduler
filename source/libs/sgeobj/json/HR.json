@@ -4,7 +4,7 @@
    "description": [
       "Used to reference a host by name."
    ],
-   "cullPrefix": "HR",
+   "fieldPrefix": "HR",
    "attributes": [
       {
          "name": "name",

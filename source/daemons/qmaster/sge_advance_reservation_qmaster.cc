@@ -2392,7 +2392,7 @@ sge_ar_send_mail(const ocs::tom::ConstElement<ocs::tom::AR> ar, const int type) 
          break;
    }
 
-   cull_mail(QMASTER, ar.get<AR_mail_list>(), sge_dstring_get_string(&subject), sge_dstring_get_string(&body),
+   mail_to_users(QMASTER, ar.get<AR_mail_list>(), sge_dstring_get_string(&subject), sge_dstring_get_string(&body),
              mail_type);
 
    sge_dstring_free(&buffer);

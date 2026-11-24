@@ -6,7 +6,7 @@
       "For more information about the event client interface see the documentation in",
       "source/libs/evc/sge_event_client.cc"
    ],
-   "cullPrefix": "EV",
+   "fieldPrefix": "EV",
    "attributes": [
       {
          "name": "id",
@@ -83,7 +83,7 @@
          ],
          "type": "List",
          "subClassName": "EVS",
-         "subCullPrefix": "EVS",
+         "subFieldPrefix": "EVS",
          "flags": []
       },
       {
@@ -168,7 +168,7 @@
          ],
          "type": "List",
          "subClassName": "ET",
-         "subCullPrefix": "ET",
+         "subFieldPrefix": "ET",
          "flags": []
       },
       {
@@ -179,7 +179,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -201,7 +201,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -215,7 +215,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

@@ -4,7 +4,7 @@
    "description": [
       "One resource a rule limits, the configured ceiling, and what is currently booked against it."
    ],
-   "cullPrefix": "RQRL",
+   "fieldPrefix": "RQRL",
    "attributes": [
       {
          "name": "name",
@@ -61,7 +61,7 @@
          ],
          "type": "List",
          "subClassName": "RUE",
-         "subCullPrefix": "RUE",
+         "subFieldPrefix": "RUE",
          "flags": []
       },
       {

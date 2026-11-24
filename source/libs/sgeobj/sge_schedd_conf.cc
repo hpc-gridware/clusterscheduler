@@ -76,7 +76,7 @@
 #include "sgeobj/sge_usage.h"
 #include "sgeobj/sge_range.h"
 #include "sgeobj/sge_schedd_conf.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "tom/ocs_Raw.h"

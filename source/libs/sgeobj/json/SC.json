@@ -5,7 +5,7 @@
       "In the corresponding master list there is exactly one element holding the scheduler configuration.",
       "See also man page sge_sched_conf(5)."
    ],
-   "cullPrefix": "SC",
+   "fieldPrefix": "SC",
    "attributes": [
       {
          "name": "algorithm",
@@ -63,7 +63,7 @@
          ],
          "type": "List",
          "subClassName": "CE",
-         "subCullPrefix": "CE",
+         "subFieldPrefix": "CE",
          "flags": [
             "SPOOL"
          ]
@@ -164,7 +164,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL"
          ]

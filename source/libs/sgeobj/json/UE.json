@@ -4,7 +4,7 @@
    "description": [
       "An object of this type represents one entry in an user set."
    ],
-   "cullPrefix": "UE",
+   "fieldPrefix": "UE",
    "attributes": [
       {
          "name": "name",

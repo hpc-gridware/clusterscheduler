@@ -404,7 +404,7 @@ static void test_object_type_dispatch() {
 }
 
 // ---------------------------------------------------------------------------
-// object_verify_cull — structural type check on a single element  [T32–T37]
+// object_verify_structure — structural type check on a single element  [T32–T37]
 //
 // With a nullptr descriptor the call verifies only that every sub-list in
 // the element contains the right element type (as declared in the descriptor).
@@ -412,58 +412,59 @@ static void test_object_type_dispatch() {
 // ---------------------------------------------------------------------------
 
 /**
- * @brief object_verify_cull() on a queue with sub-lists of the right and of the wrong type [T32-T37]
+ * @brief object_verify_structure() on a queue with sub-lists of the right and of the wrong type [T32-T37]
  * @param queue the queue; T37 leaves a sub-list of the wrong type in it
  * @param st_list a string list, copied into the sub-lists
  */
-static void test_object_verify_cull(const ocs::tom::Element<ocs::tom::QU> queue,
+static void test_object_verify_structure(const ocs::tom::Element<ocs::tom::QU> queue,
                                     const ocs::tom::ConstList<ocs::tom::ST> st_list) {
-   printf("\n--- object_verify_cull ---\n");
+   printf("\n--- object_verify_structure ---\n");
 
    // T32: both pointers nullptr → false
-   CHECK(32, "nullptr elem, nullptr descr → false",  object_verify_cull(nullptr, nullptr) == false);
+   CHECK(32, "nullptr elem, nullptr descr → false",  object_verify_structure(nullptr, nullptr) == false);
 
    // T33: valid element with nullptr descriptor → true (sub-list check only, no type guard)
-   CHECK(33, "queue, nullptr descr → true",           object_verify_cull(queue, nullptr) == true);
+   CHECK(33, "queue, nullptr descr → true",           object_verify_structure(queue, nullptr) == true);
 
    // T34: element type matches the given descriptor → true
-   CHECK(34, "queue matches QU → true",          object_verify_cull(queue, ocs::tom::QU::descriptor.e) == true);
+   CHECK(34, "queue matches QU → true",          object_verify_structure(queue, ocs::tom::QU::descriptor.e) == true);
 
    // T35: element type does NOT match the given descriptor → false
-   CHECK(35, "queue vs JB → false",              object_verify_cull(queue, ocs::tom::JB::descriptor.e) == false);
+   CHECK(35, "queue vs JB → false",              object_verify_structure(queue, ocs::tom::JB::descriptor.e) == false);
 
    // T36: sub-list with the correct element type (QU_pe_list expects ST) → true
    queue.set<QU_pe_list>(st_list.clone("pe_list"));
-   CHECK(36, "QU_pe_list with ST elements → true",  object_verify_cull(queue, ocs::tom::QU::descriptor.e) == true);
+   CHECK(36, "QU_pe_list with ST elements → true",  object_verify_structure(queue, ocs::tom::QU::descriptor.e) == true);
 
    // T37: sub-list with wrong element type — QU_owner_list expects US, not ST → false
    // handed over raw, which stores the list of another type unchecked
    ocs::tom::set<QU_owner_list>(queue.raw(), st_list.clone("owner_list").release());
-   CHECK(37, "QU_owner_list with ST elements → false", object_verify_cull(queue, ocs::tom::QU::descriptor.e) == false);
+   CHECK(37, "QU_owner_list with ST elements → false",
+         object_verify_structure(queue, ocs::tom::QU::descriptor.e) == false);
 }
 
 // ---------------------------------------------------------------------------
-// object_list_verify_cull — structural type check on a list  [T38–T41]
+// object_list_verify_structure — structural type check on a list  [T38–T41]
 // ---------------------------------------------------------------------------
 
 /**
- * @brief object_list_verify_cull() on a string list [T38-T41]
+ * @brief object_list_verify_structure() on a string list [T38-T41]
  * @param st_list the string list
  */
-static void test_object_list_verify_cull(const ocs::tom::ConstList<ocs::tom::ST> st_list) {
-   printf("\n--- object_list_verify_cull ---\n");
+static void test_object_list_verify_structure(const ocs::tom::ConstList<ocs::tom::ST> st_list) {
+   printf("\n--- object_list_verify_structure ---\n");
 
    // T38: both pointers nullptr → false
-   CHECK(38, "nullptr list, nullptr descr → false",   object_list_verify_cull(nullptr, nullptr) == false);
+   CHECK(38, "nullptr list, nullptr descr → false",   object_list_verify_structure(nullptr, nullptr) == false);
 
    // T39: valid list with nullptr descriptor → true (type inferred from elements)
-   CHECK(39, "st_list, nullptr descr → true",         object_list_verify_cull(st_list, nullptr) == true);
+   CHECK(39, "st_list, nullptr descr → true",         object_list_verify_structure(st_list, nullptr) == true);
 
    // T40: list element type matches the expected descriptor → true
-   CHECK(40, "st_list matches ST → true",        object_list_verify_cull(st_list, ocs::tom::ST::descriptor.e) == true);
+   CHECK(40, "st_list matches ST → true", object_list_verify_structure(st_list, ocs::tom::ST::descriptor.e) == true);
 
    // T41: list element type does NOT match the expected descriptor → false
-   CHECK(41, "st_list vs QU → false",            object_list_verify_cull(st_list, ocs::tom::QU::descriptor.e) == false);
+   CHECK(41, "st_list vs QU → false", object_list_verify_structure(st_list, ocs::tom::QU::descriptor.e) == false);
 }
 
 // ---------------------------------------------------------------------------
@@ -1155,8 +1156,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_object_name_get_type();
    test_object_type_get_descr_and_key();
    test_object_type_dispatch();
-   test_object_verify_cull(*queue, *st_list);
-   test_object_list_verify_cull(*st_list);
+   test_object_verify_structure(*queue, *st_list);
+   test_object_list_verify_structure(*st_list);
    test_object_name_get_type_extended();
    test_object_has_differences();
    test_object_list_has_differences();

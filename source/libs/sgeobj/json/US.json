@@ -5,7 +5,7 @@
       "A named set of users and groups, used either as an access list or as a department.",
       "One type serves both: `US_type` says which. As an access list it decides who may use a queue, project or parallel environment; as a department it carries the share-tree and override tickets its members get. A userset may be both at once."
    ],
-   "cullPrefix": "US",
+   "fieldPrefix": "US",
    "attributes": [
       {
          "name": "name",
@@ -81,7 +81,7 @@
          ],
          "type": "List",
          "subClassName": "UE",
-         "subCullPrefix": "UE",
+         "subFieldPrefix": "UE",
          "flags": [
             "SPOOL"
          ]
@@ -105,7 +105,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

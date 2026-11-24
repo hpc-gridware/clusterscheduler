@@ -75,7 +75,7 @@
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_subordinate.h"
 #include "sgeobj/sge_utility.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_eval_expression.h"
 #include "sgeobj/msg_sgeobjlib.h"
@@ -310,9 +310,9 @@ namespace {
          DRETURN(false);
       }
 
-      // raw out-parameter of cull_parse_definition_list(), which creates the list with CE
+      // raw out-parameter of ocs_parse_definition_list(), which creates the list with CE
       lList *tmp_list = nullptr;
-      const int parse_ret = cull_parse_definition_list(const_cast<char *>(string), &tmp_list, "",
+      const int parse_ret = ocs_parse_definition_list(const_cast<char *>(string), &tmp_list, "",
                                                        ocs::tom::CE::descriptor.e, rule);
       auto list = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(tmp_list);
       if (parse_ret != 0) {
@@ -1667,12 +1667,12 @@ object_list_has_differences(const ocs::tom::ConstRawList this_list, ocs::tom::Li
  *
  * @return true, if the object is OK, else false
  *
- * @note MT-NOTE: object_list_verify_cull() is MT safe
+ * @note MT-NOTE: object_list_verify_structure() is MT safe
  *
- * @see #object_verify_cull, `ocs::tom::layout_difference()`
+ * @see #object_verify_structure, `ocs::tom::layout_difference()`
  */
 bool
-object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
+object_list_verify_structure(const ocs::tom::ConstRawList lp, const lDescr *descr) {
    bool ret = true;
 
    /*
@@ -1695,7 +1695,7 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
    /* recursively check sublists and subobjects */
    if (ret) {
       for (const auto ep : lp) {
-         if (!object_verify_cull(ep, nullptr)) {
+         if (!object_verify_structure(ep, nullptr)) {
             ret = false;
             break;
          }
@@ -1713,7 +1713,7 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
  *
  * The type (descr) argument may be zero in two cases:
  *    - the descriptor has already been checked. This is the case when called
- *      from object_list_verify_cull().
+ *      from object_list_verify_structure().
  *    - we don't know the type of a subobject (if it is defined as
  *      no sub-type in the object model
  *
@@ -1725,12 +1725,12 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
  *
  * @return true on success, else false
  *
- * @note MT-NOTE: object_verify_cull() is MT safe
+ * @note MT-NOTE: object_verify_structure() is MT safe
  *
- * @see #object_list_verify_cull, `ocs::tom::layout_difference()`
+ * @see #object_list_verify_structure, `ocs::tom::layout_difference()`
  */
 bool
-object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
+object_verify_structure(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
    bool ret = true;
 
    /*
@@ -1760,7 +1760,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
             const auto lp = ep.get<ocs::tom::ConstRawList>(nm);
             if (lp) {
                const lDescr *subdescr = ocs::tom::sub_type(nm);
-               if (!object_list_verify_cull(lp, subdescr)) {
+               if (!object_list_verify_structure(lp, subdescr)) {
                   ret = false;
                   break;
                }
@@ -1769,7 +1769,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
             const auto sub_ep = ep.get<ocs::tom::ConstRawElement>(nm);
             if (sub_ep) {
                const lDescr *subdescr = ocs::tom::sub_type(nm);
-               if (!object_verify_cull(sub_ep, subdescr)) {
+               if (!object_verify_structure(sub_ep, subdescr)) {
                   ret = false;
                   break;
                }
@@ -1784,7 +1784,7 @@ object_verify_cull(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
 /**
  * @brief Verify that a list received from a client is of the expected type, recursively (CS-3125)
  *
- * Unlike object_list_verify_cull(), which requires the full descriptor of
+ * Unlike object_list_verify_structure(), which requires the full descriptor of
  * the type, a reduced descriptor of the type is accepted: request data is
  * often reduced (qalter, qconf -mattr, the bridge). Checked are the type of
  * the list, that every element has the layout of the list, and, through
@@ -2221,7 +2221,7 @@ ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repa
       // the list belongs to ep, which the caller holds for writing
       const ocs::tom::RawList lp(const_cast<lList *>(it->list.raw()));
       if (repair == Repair::KeepLast) {
-         cull_compress_definition_list(lp, nm, value_nm, 0);
+         ocs_compress_definition_list(lp, nm, value_nm, 0);
       } else {
          ocs_object_list_remove_repeated_keys(lp, nm);
       }
@@ -2249,7 +2249,7 @@ ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repa
  * A unique attribute of another type, a host name for instance, is not a key here: such a list is appended as
  * it is (none of the input paths merges such a list today).
  *
- * The pointers stay raw: the callers in cull_parse_util hand the lists over raw.
+ * The pointers stay raw: the callers in ocs_parse_util hand the lists over raw.
  *
  * @param[in,out] lpp the target list, created if nullptr
  * @param[in,out] src the elements to move; the list is freed and set to nullptr
@@ -2711,7 +2711,7 @@ int compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::L
  *
  * @note MT-NOTE: object_unpack_elem_verify() is MT safe
  *
- * @see #object_verify_cull
+ * @see #object_verify_structure
  */
 bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, lListElem **epp,
                                const lDescr *descr) {
@@ -2737,7 +2737,7 @@ bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge
    }
 
    if (ret) {
-      if (!object_verify_cull(*epp, descr)) {
+      if (!object_verify_structure(*epp, descr)) {
          // the element that failed the check is freed, the caller gets nullptr
          ocs::tom::RawElementPtr rejected(std::exchange(*epp, nullptr));
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRUCTURE_ERROR);

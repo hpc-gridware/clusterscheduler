@@ -4,7 +4,7 @@
    "description": [
       "Represents one node of the share tree."
    ],
-   "cullPrefix": "STN",
+   "fieldPrefix": "STN",
    "attributes": [
       {
          "name": "name",
@@ -60,7 +60,7 @@
          ],
          "type": "List",
          "subClassName": "STN",
-         "subCullPrefix": "STN",
+         "subFieldPrefix": "STN",
          "flags": [
             "SPOOL"
          ]
@@ -291,7 +291,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": []
       },
       {
@@ -313,7 +313,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

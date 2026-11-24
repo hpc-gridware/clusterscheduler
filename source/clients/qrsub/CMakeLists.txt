@@ -23,7 +23,7 @@ add_executable(
       qrsub
         ocs_qrsub.cc
         ocs_qrsub_parse.cc
-      ../../common/parse_job_cull.cc
+      ../../common/ocs_parse_job.cc
       ../../common/parse_qsub.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc

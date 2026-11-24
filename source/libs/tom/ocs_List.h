@@ -1426,7 +1426,7 @@ namespace ocs::tom {
       // the run-time behaviour of its free form, also for an empty handle.
 
       /**
-       * @brief Keep only the last element of each key, as cull_compress_definition_list() did
+       * @brief Keep only the last element of each key, as ocs_compress_definition_list() did
        *
        * Removes every earlier element with the key of a later one, so the order of the elements that stay is
        * kept; a string or host key that is nullptr is never a repetition, host names compare as host names.
@@ -1444,7 +1444,7 @@ namespace ocs::tom {
 
       /**
        * @brief Merge another list into this one by key: a known key takes the new value, a new key is appended
-       *        as a copy, as cull_merge_definition_list() did
+       *        as a copy, as ocs_merge_definition_list() did
        *
        * This list is the destination, the argument the source: `dst.merge_by_key<K, V>(src)` in the order of
        * the free form `merge_by_key<K, V>(dst, src)`. The source stays as it is. Two string or host keys that

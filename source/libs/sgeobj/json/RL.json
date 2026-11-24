@@ -10,7 +10,7 @@
       "of the Role, including all transitively inherited Permissions, and are enforced by the",
       "qmaster GDI request handler according to the default-deny principle."
    ],
-   "cullPrefix": "RL",
+   "fieldPrefix": "RL",
    "attributes": [
       {
          "name": "name",
@@ -58,7 +58,7 @@
          ],
          "type": "List",
          "subClassName": "UserSet",
-         "subCullPrefix": "US",
+         "subFieldPrefix": "US",
          "flags": [
             "SPOOL"
          ]
@@ -78,7 +78,7 @@
          ],
          "type": "List",
          "subClassName": "String",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL"
          ]
@@ -111,7 +111,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

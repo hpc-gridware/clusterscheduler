@@ -52,7 +52,7 @@
 #include "sgeobj/ocs_Job.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/parse.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_answer.h"
@@ -211,7 +211,7 @@ int main(int argc, const char **argv) {
          show_job()
       */
       std::stringstream ss;
-      ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), request_list->front(),
+      ocs::QStatJobViewPlain::show_job_details(ss, ocs::tom::ConstList<ocs::tom::SME>(), request_list->front(),
                                             FLG_QALTER);
       printf("%s", ss.str().c_str());
       sge_exit(0);

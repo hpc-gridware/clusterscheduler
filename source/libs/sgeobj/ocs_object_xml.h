@@ -36,7 +36,7 @@
 /** @file
  * @brief Declarations for rendering objects as XML
  *
- * @see sge_cull_xml.cc
+ * @see ocs_object_xml.cc
  */
 
 #include <cstdio>

@@ -4,7 +4,7 @@
    "description": [
       "Element holding per job array task information about JAPI session"
    ],
-   "cullPrefix": "JJAT",
+   "fieldPrefix": "JJAT",
    "attributes": [
       {
          "name": "task_id",
@@ -32,7 +32,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": []
       },
       {

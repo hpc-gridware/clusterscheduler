@@ -66,7 +66,7 @@ bool calendar_is_referenced(ocs::tom::ConstElement<ocs::tom::CAL> calendar,
 
 [[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CAL> sge_generic_cal(const char *cal_name);
 
-void cullify_tm(ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now);
-void uncullify_tm(ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now);
+void tm_to_element(ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now);
+void element_to_tm(ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now);
 
 bool calendar_open_in_time_frame(ocs::tom::ConstElement<ocs::tom::CAL> cep, uint64_t start_time, uint64_t duration);

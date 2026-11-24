@@ -47,7 +47,7 @@
       "@see gdi/range/range_set_all_ids()",
       "@see gdi/range/range_sort_uniq_compress()"
    ],
-   "cullPrefix": "RN",
+   "fieldPrefix": "RN",
    "attributes": [
       {
          "name": "min",

@@ -4,7 +4,7 @@
    "description": [
       "One stylesheet processing instruction for the document header."
    ],
-   "cullPrefix": "XMLS",
+   "fieldPrefix": "XMLS",
    "attributes": [
       {
          "name": "Name",

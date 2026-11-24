@@ -6,7 +6,7 @@
       "Host specific configurations inherit values from the global configuration.",
       "@todo there is an overlap with the exec host type (EH), can this be unified?"
    ],
-   "cullPrefix": "CONF",
+   "fieldPrefix": "CONF",
    "attributes": [
       {
          "name": "name",
@@ -41,7 +41,7 @@
          ],
          "type": "List",
          "subClassName": "CF",
-         "subCullPrefix": "CF",
+         "subFieldPrefix": "CF",
          "flags": [
             "SPOOL"
          ]

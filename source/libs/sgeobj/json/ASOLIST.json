@@ -5,7 +5,7 @@
       "Used for subordinate list attributes in the cluster queues.",
       "Used for the queue subordinate_list."
    ],
-   "cullPrefix": "ASOLIST",
+   "fieldPrefix": "ASOLIST",
    "attributes": [
       {
          "name": "href",
@@ -29,7 +29,7 @@
          ],
          "type": "List",
          "subClassName": "SO",
-         "subCullPrefix": "SO",
+         "subFieldPrefix": "SO",
          "flags": [
             "SPOOL_SUBLIST"
          ]

@@ -6,7 +6,7 @@
       "this list is used by scheduler thread to keep the number",
       "of running jobs per user/group efficiently"
    ],
-   "cullPrefix": "JC",
+   "fieldPrefix": "JC",
    "attributes": [
       {
          "name": "name",

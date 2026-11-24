@@ -5,7 +5,7 @@
       "One request queued for the event master thread.",
       "Every change to the event master - a client registering, changing its subscription, leaving, or an event being added - is posted as one of these rather than applied directly, so the callers never block on the event master's lock."
    ],
-   "cullPrefix": "EVR",
+   "fieldPrefix": "EVR",
    "attributes": [
       {
          "name": "operation",
@@ -60,7 +60,7 @@
          ],
          "type": "Object",
          "subClassName": "EV",
-         "subCullPrefix": "EV",
+         "subFieldPrefix": "EV",
          "flags": []
       },
       {
@@ -71,7 +71,7 @@
          ],
          "type": "List",
          "subClassName": "ET",
-         "subCullPrefix": "ET",
+         "subFieldPrefix": "ET",
          "flags": []
       }
    ]

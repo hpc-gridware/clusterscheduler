@@ -55,7 +55,7 @@
 
 #include "sgeobj/ocs_Session.h"
 #include "sgeobj/sge_conf.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"

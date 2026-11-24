@@ -202,7 +202,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(const ocs::tom::Lis
  * @bug The function is far from being complete.
  *      Currently, only the structure is verified, not the contents.
  *
- * @see `object_verify_cull()`
+ * @see `object_verify_structure()`
  */
 bool
 pe_task_verify_request(const ocs::tom::ConstElement<ocs::tom::PETR> petr,

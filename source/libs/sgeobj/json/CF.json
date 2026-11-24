@@ -9,7 +9,7 @@
       "- load_sensor",
       "- ..."
    ],
-   "cullPrefix": "CF",
+   "fieldPrefix": "CF",
    "attributes": [
       {
          "name": "name",
@@ -44,7 +44,7 @@
          ],
          "type": "List",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       },
       {

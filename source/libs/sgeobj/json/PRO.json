@@ -4,7 +4,7 @@
    "description": [
       "Used in sge_execd to keep track of all processes on the machine."
    ],
-   "cullPrefix": "PRO",
+   "fieldPrefix": "PRO",
    "attributes": [
       {
          "name": "pid",
@@ -63,7 +63,7 @@
          ],
          "type": "List",
          "subClassName": "Group",
-         "subCullPrefix": "GR",
+         "subFieldPrefix": "GR",
          "flags": []
       },
       {

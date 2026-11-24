@@ -55,7 +55,7 @@
 
 #include "comm/commlib.h"
 
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_centry.h"
@@ -824,9 +824,9 @@ ocs_qref_resolved_name(const char *name) {
  *
  * @return error state
  *
- * @note MT-NOTE: cull_parse_destination_identifier_list() is MT safe
+ * @note MT-NOTE: ocs_parse_destination_identifier_list() is MT safe
  */
-int cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
+int ocs_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
    DENTER(TOP_LAYER);
 
    int rule[] = {QR_name, 0};
@@ -864,7 +864,7 @@ int cull_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
       *kept = nullptr;
    }
 
-   i_ret = cull_parse_string_list(str_str, "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
+   i_ret = ocs_parse_string_list(str_str, "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
    if (i_ret) {
       sge_free(&s);
       sge_free(&str_str);

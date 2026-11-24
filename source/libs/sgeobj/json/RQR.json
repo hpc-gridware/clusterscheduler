@@ -5,7 +5,7 @@
       "One rule of a resource quota set: what it matches, and what it then limits.",
       "The five filters are ANDed. An empty filter matches everything, so a rule with no filters is the catch-all."
    ],
-   "cullPrefix": "RQR",
+   "fieldPrefix": "RQR",
    "attributes": [
       {
          "name": "name",
@@ -29,7 +29,7 @@
          ],
          "type": "Object",
          "subClassName": "RQRF",
-         "subCullPrefix": "RQRF",
+         "subFieldPrefix": "RQRF",
          "flags": [
             "SPOOL"
          ]
@@ -42,7 +42,7 @@
          ],
          "type": "Object",
          "subClassName": "RQRF",
-         "subCullPrefix": "RQRF",
+         "subFieldPrefix": "RQRF",
          "flags": [
             "SPOOL"
          ]
@@ -55,7 +55,7 @@
          ],
          "type": "Object",
          "subClassName": "RQRF",
-         "subCullPrefix": "RQRF",
+         "subFieldPrefix": "RQRF",
          "flags": [
             "SPOOL"
          ]
@@ -68,7 +68,7 @@
          ],
          "type": "Object",
          "subClassName": "RQRF",
-         "subCullPrefix": "RQRF",
+         "subFieldPrefix": "RQRF",
          "flags": [
             "SPOOL"
          ]
@@ -81,7 +81,7 @@
          ],
          "type": "Object",
          "subClassName": "RQRF",
-         "subCullPrefix": "RQRF",
+         "subFieldPrefix": "RQRF",
          "flags": [
             "SPOOL"
          ]
@@ -94,7 +94,7 @@
          ],
          "type": "List",
          "subClassName": "RQRL",
-         "subCullPrefix": "RQRL",
+         "subFieldPrefix": "RQRL",
          "flags": [
             "SPOOL"
          ]

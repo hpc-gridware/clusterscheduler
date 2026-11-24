@@ -4,7 +4,7 @@
    "description": [
       "A bare reference to a queue instance, for building the scheduler's temporary candidate lists."
    ],
-   "cullPrefix": "QRL",
+   "fieldPrefix": "QRL",
    "attributes": [
       {
          "name": "queue",
@@ -14,7 +14,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

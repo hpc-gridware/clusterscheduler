@@ -6,7 +6,7 @@
       "Every such request gets a unique number.",
       "A list of MA is used to return the answers to a multi GDI request."
    ],
-   "cullPrefix": "MA",
+   "fieldPrefix": "MA",
    "attributes": [
       {
          "name": "id",
@@ -25,7 +25,7 @@
          ],
          "type": "List",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       },
       {
@@ -36,7 +36,7 @@
          ],
          "type": "List",
          "subClassName": "AN",
-         "subCullPrefix": "AN",
+         "subFieldPrefix": "AN",
          "flags": []
       }
    ]

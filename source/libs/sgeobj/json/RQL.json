@@ -5,7 +5,7 @@
       "Per-scheduling-run cache of what a resource quota limit answered, so an expensive limit is evaluated once rather than once per queue instance.",
       "Not configuration and not spooled: it lives in the scheduler's assignment structure for the duration of one run."
    ],
-   "cullPrefix": "RQL",
+   "fieldPrefix": "RQL",
    "attributes": [
       {
          "name": "name",

@@ -69,7 +69,7 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, ocs::to
       char *file_as_string = sge_file2string(file, &file_as_string_length);
       if (file_as_string != nullptr) {
          auto token = const_cast<const char **>(stra_from_str(file_as_string, " \n\t"));
-         *alpp = cull_parse_cmdline(QRSTAT, token, environ, cmdline, FLG_USE_PSEUDOS);
+         *alpp = ocs_parse_cmdline(QRSTAT, token, environ, cmdline, FLG_USE_PSEUDOS);
          sge_free(&file_as_string);
          sge_free(&token);
       } else {
@@ -214,7 +214,7 @@ ocs::QRStatParameterClient::parse_parameters(ocs::tom::ListPtr<ocs::tom::AN> *an
 
    sge_dstring_free(&file);
 
-   *answer_list = cull_parse_cmdline(QRSTAT, argv+1, environ, pcmdline, FLG_USE_PSEUDOS);
+   *answer_list = ocs_parse_cmdline(QRSTAT, argv+1, environ, pcmdline, FLG_USE_PSEUDOS);
    if (*answer_list != nullptr) {
       pcmdline.reset();
       DRETURN(false);

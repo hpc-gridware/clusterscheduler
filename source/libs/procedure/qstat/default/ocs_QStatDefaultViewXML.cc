@@ -34,7 +34,7 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 
 #include "sgeobj/parse.h"
-#include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/ocs_object_xml.h"
 #include "sgeobj/sge_job.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"

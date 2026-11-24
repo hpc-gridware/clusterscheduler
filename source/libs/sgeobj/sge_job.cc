@@ -2426,7 +2426,7 @@ job_get_context_change(ocs::tom::ConstElement<ocs::tom::JB> job);
  *
  * @param job the job object to verify (JB), may be an empty handle
  * @param answer_list answer list to pass back error messages
- * @param do_cull_verify verify the structure against the JB descriptor.
+ * @param do_structure_verify verify the structure against the JB descriptor.
  *
  * @return true on success, false on error with error message in answer_list
  *
@@ -2435,11 +2435,11 @@ job_get_context_change(ocs::tom::ConstElement<ocs::tom::JB> job);
  * @bug The function is far from being complete.
  *      Currently, only the structure is verified, not the contents.
  *
- * @see `object_verify_cull()`, #job_verify_submitted_job, `job_verify_execd_job()`
+ * @see `object_verify_structure()`, #job_verify_submitted_job, `job_verify_execd_job()`
  */
 bool
 job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-           const bool do_cull_verify) {
+           const bool do_structure_verify) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
@@ -2449,7 +2449,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
       DRETURN(false);
    }
 
-   if (do_cull_verify && !object_verify_cull(job, ocs::tom::JB::descriptor.e)) {
+   if (do_structure_verify && !object_verify_structure(job, ocs::tom::JB::descriptor.e)) {
       answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_OBJECT_STRUCTURE_ERROR);
       DRETURN(false);
    }

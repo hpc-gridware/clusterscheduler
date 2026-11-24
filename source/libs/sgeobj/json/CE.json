@@ -7,7 +7,7 @@
       "as well as defining fixed values of resources and the capacity of consumable resources.",
       "@todo should be we better split definition and values into two objects?"
    ],
-   "cullPrefix": "CE",
+   "fieldPrefix": "CE",
    "attributes": [
       {
          "name": "name",
@@ -195,7 +195,7 @@
          ],
          "type": "List",
          "subClassName": "ResourceList",
-         "subCullPrefix": "RESL",
+         "subFieldPrefix": "RESL",
          "flags": [
             "SPOOL"
          ]

@@ -5,7 +5,7 @@
       "Every JSON object describes one object type.",
       "Per object type we store the following data:",
       "  - className - name of the type / class, e.g. Job",
-      "  - cullPrefix - prefix used in cull objects, e.g. JB",
+      "  - fieldPrefix - prefix used in cull objects, e.g. JB",
       "  - size_in_basic_units - size forseen for the object type in the name space",
       "    we set the size in chunks of BASIC_UNITs, a BASIC_UNIT is 50 entries",
       "    and leave ample space"
@@ -13,782 +13,782 @@
    "types": [
       {
          "className": "Job",
-         "cullPrefix": "JB",
-         "cullNameSpec": "job",
+         "fieldPrefix": "JB",
+         "nameSpec": "job",
          "size_in_basic_units": 3
       },
       {
          "className": "JobRequestSet",
-         "cullPrefix": "JRS",
-         "cullNameSpec": "job",
+         "fieldPrefix": "JRS",
+         "nameSpec": "job",
          "size_in_basic_units": 2
       },
       {
          "className": "QueueInstance",
-         "cullPrefix": "QU",
-         "cullNameSpec": "qinstance",
+         "fieldPrefix": "QU",
+         "nameSpec": "qinstance",
          "size_in_basic_units": 3
       },
       {
          "className": "ExecHost",
-         "cullPrefix": "EH",
-         "cullNameSpec": "host",
+         "fieldPrefix": "EH",
+         "nameSpec": "host",
          "size_in_basic_units": 2
       },
       {
          "className": "Answer",
-         "cullPrefix": "AN",
-         "cullNameSpec": "answer",
+         "fieldPrefix": "AN",
+         "nameSpec": "answer",
          "size_in_basic_units": 2
       },
       {
          "className": "HostLoad",
-         "cullPrefix": "HL",
-         "cullNameSpec": "host",
+         "fieldPrefix": "HL",
+         "nameSpec": "host",
          "size_in_basic_units": 2
       },
       {
          "className": "HostScaling",
-         "cullPrefix": "HS",
-         "cullNameSpec": "host",
+         "fieldPrefix": "HS",
+         "nameSpec": "host",
          "size_in_basic_units": 2
       },
       {
          "className": "Event",
-         "cullPrefix": "ET",
-         "cullNameSpec": "event",
+         "fieldPrefix": "ET",
+         "nameSpec": "event",
          "size_in_basic_units": 2
       },
       {
          "className": "EventClient",
-         "cullPrefix": "EV",
-         "cullNameSpec": "event",
+         "fieldPrefix": "EV",
+         "nameSpec": "event",
          "size_in_basic_units": 2
       },
       {
          "className": "EventSubscription",
-         "cullPrefix": "EVS",
-         "cullNameSpec": "event",
+         "fieldPrefix": "EVS",
+         "nameSpec": "event",
          "size_in_basic_units": 2
       },
       {
          "className": "ComplexEntry",
-         "cullPrefix": "CE",
-         "cullNameSpec": "centry",
+         "fieldPrefix": "CE",
+         "nameSpec": "centry",
          "size_in_basic_units": 2
       },
       {
          "className": "LoadReport",
-         "cullPrefix": "LR",
-         "cullNameSpec": "report",
+         "fieldPrefix": "LR",
+         "nameSpec": "report",
          "size_in_basic_units": 2
       },
       {
          "className": "Order",
-         "cullPrefix": "OR",
-         "cullNameSpec": "order",
+         "fieldPrefix": "OR",
+         "nameSpec": "order",
          "size_in_basic_units": 2
       },
       {
          "className": "OrderQueue",
-         "cullPrefix": "OQ",
-         "cullNameSpec": "order",
+         "fieldPrefix": "OQ",
+         "nameSpec": "order",
          "size_in_basic_units": 2
       },
       {
          "className": "UserSet",
-         "cullPrefix": "US",
-         "cullNameSpec": "userset",
+         "fieldPrefix": "US",
+         "nameSpec": "userset",
          "size_in_basic_units": 2
       },
       {
          "className": "UserSetEntry",
-         "cullPrefix": "UE",
-         "cullNameSpec": "userset",
+         "fieldPrefix": "UE",
+         "nameSpec": "userset",
          "size_in_basic_units": 2
       },
       {
          "className": "Range",
-         "cullPrefix": "RN",
-         "cullNameSpec": "range",
+         "fieldPrefix": "RN",
+         "nameSpec": "range",
          "size_in_basic_units": 2
       },
       {
          "className": "PathName",
-         "cullPrefix": "PN",
-         "cullNameSpec": "job",
+         "fieldPrefix": "PN",
+         "nameSpec": "job",
          "size_in_basic_units": 2
       },
       {
          "className": "Variable",
-         "cullPrefix": "VA",
-         "cullNameSpec": "var",
+         "fieldPrefix": "VA",
+         "nameSpec": "var",
          "size_in_basic_units": 2
       },
       {
          "className": "MailReceiver",
-         "cullPrefix": "MR",
-         "cullNameSpec": "mailrec",
+         "fieldPrefix": "MR",
+         "nameSpec": "mailrec",
          "size_in_basic_units": 2
       },
       {
          "className": "ParallelEnvironment",
-         "cullPrefix": "PE",
-         "cullNameSpec": "pe",
+         "fieldPrefix": "PE",
+         "nameSpec": "pe",
          "size_in_basic_units": 2
       },
       {
          "className": "QueueReference",
-         "cullPrefix": "QR",
-         "cullNameSpec": "qref",
+         "fieldPrefix": "QR",
+         "nameSpec": "qref",
          "size_in_basic_units": 2
       },
       {
          "className": "UserJobCount",
-         "cullPrefix": "JC",
-         "cullNameSpec": "userset",
+         "fieldPrefix": "JC",
+         "nameSpec": "userset",
          "size_in_basic_units": 2
       },
       {
          "className": "Configuration",
-         "cullPrefix": "CONF",
-         "cullNameSpec": "conf",
+         "fieldPrefix": "CONF",
+         "nameSpec": "conf",
          "size_in_basic_units": 2
       },
       {
          "className": "ConfigurationElement",
-         "cullPrefix": "CF",
-         "cullNameSpec": "conf",
+         "fieldPrefix": "CF",
+         "nameSpec": "conf",
          "size_in_basic_units": 2
       },
       {
          "className": "String",
-         "cullPrefix": "ST",
-         "cullNameSpec": "str",
+         "fieldPrefix": "ST",
+         "nameSpec": "str",
          "size_in_basic_units": 2
       },
       {
          "className": "UniqueString",
-         "cullPrefix": "STU",
-         "cullNameSpec": "str",
+         "fieldPrefix": "STU",
+         "nameSpec": "str",
          "size_in_basic_units": 2
       },
       {
          "className": "JobGrantedDestinationIdentifier",
-         "cullPrefix": "JG",
-         "cullNameSpec": "job",
+         "fieldPrefix": "JG",
+         "nameSpec": "job",
          "size_in_basic_units": 2
       },
       {
          "className": "SubordinateQueue",
-         "cullPrefix": "SO",
-         "cullNameSpec": "subordinate",
+         "fieldPrefix": "SO",
+         "nameSpec": "subordinate",
          "size_in_basic_units": 2
       },
       {
          "className": "AccountingSummary",
-         "cullPrefix": "QAJ",
-         "cullNameSpec": "helper",
+         "fieldPrefix": "QAJ",
+         "nameSpec": "helper",
          "size_in_basic_units": 2
       },
       {
          "className": "CommandLineArgument",
-         "cullPrefix": "SPA",
-         "cullNameSpec": "parse",
+         "fieldPrefix": "SPA",
+         "nameSpec": "parse",
          "size_in_basic_units": 2
       },
       {
          "className": "Report",
-         "cullPrefix": "REP",
-         "cullNameSpec": "report",
+         "fieldPrefix": "REP",
+         "nameSpec": "report",
          "size_in_basic_units": 2
       },
       {
          "className": "UsageValue",
-         "cullPrefix": "UA",
-         "cullNameSpec": "usage",
+         "fieldPrefix": "UA",
+         "nameSpec": "usage",
          "size_in_basic_units": 2
       },
       {
          "className": "Project",
-         "cullPrefix": "PR",
-         "cullNameSpec": "userprj",
+         "fieldPrefix": "PR",
+         "nameSpec": "userprj",
          "size_in_basic_units": 2
       },
       {
          "className": "User",
-         "cullPrefix": "UU",
-         "cullNameSpec": "userprj",
+         "fieldPrefix": "UU",
+         "nameSpec": "userprj",
          "size_in_basic_units": 2
       },
       {
          "className": "GrantedResource",
-         "cullPrefix": "GRU",
-         "cullNameSpec": "grantedres",
+         "fieldPrefix": "GRU",
+         "nameSpec": "grantedres",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceList",
-         "cullPrefix": "RESL",
-         "cullNameSpec": "host",
+         "fieldPrefix": "RESL",
+         "nameSpec": "host",
          "size_in_basic_units": 2
       },
       {
          "className": "ShareTreeNode",
-         "cullPrefix": "STN",
-         "cullNameSpec": "sharetree",
+         "fieldPrefix": "STN",
+         "nameSpec": "sharetree",
          "size_in_basic_units": 2
       },
       {
          "className": "SchedulerConfiguration",
-         "cullPrefix": "SC",
-         "cullNameSpec": "schedd_conf",
+         "fieldPrefix": "SC",
+         "nameSpec": "schedd_conf",
          "size_in_basic_units": 2
       },
       {
          "className": "PETask",
-         "cullPrefix": "PET",
-         "cullNameSpec": "pe_task",
+         "fieldPrefix": "PET",
+         "nameSpec": "pe_task",
          "size_in_basic_units": 2
       },
       {
          "className": "PETaskRequest",
-         "cullPrefix": "PETR",
-         "cullNameSpec": "pe_task",
+         "fieldPrefix": "PETR",
+         "nameSpec": "pe_task",
          "size_in_basic_units": 2
       },
       {
          "className": "PETaskFinished",
-         "cullPrefix": "FPET",
-         "cullNameSpec": "pe_task",
+         "fieldPrefix": "FPET",
+         "nameSpec": "pe_task",
          "size_in_basic_units": 2
       },
       {
          "className": "JobReport",
-         "cullPrefix": "JR",
-         "cullNameSpec": "report",
+         "fieldPrefix": "JR",
+         "nameSpec": "report",
          "size_in_basic_units": 2
       },
       {
          "className": "LicenseReport",
-         "cullPrefix": "LIC",
-         "cullNameSpec": "report",
+         "fieldPrefix": "LIC",
+         "nameSpec": "report",
          "size_in_basic_units": 2
       },
       {
          "className": "PtfJob",
-         "cullPrefix": "JL",
-         "cullNameSpec": "ptf",
+         "fieldPrefix": "JL",
+         "nameSpec": "ptf",
          "size_in_basic_units": 2
       },
       {
          "className": "JobPid",
-         "cullPrefix": "JP",
-         "cullNameSpec": "ptf",
+         "fieldPrefix": "JP",
+         "nameSpec": "ptf",
          "size_in_basic_units": 2
       },
       {
          "className": "OsJob",
-         "cullPrefix": "JO",
-         "cullNameSpec": "ptf",
+         "fieldPrefix": "JO",
+         "nameSpec": "ptf",
          "size_in_basic_units": 2
       },
       {
          "className": "JobUsage",
-         "cullPrefix": "UPU",
-         "cullNameSpec": "userprj",
+         "fieldPrefix": "UPU",
+         "nameSpec": "userprj",
          "size_in_basic_units": 2
       },
       {
          "className": "Checkpoint",
-         "cullPrefix": "CK",
-         "cullNameSpec": "ckpt",
+         "fieldPrefix": "CK",
+         "nameSpec": "ckpt",
          "size_in_basic_units": 2
       },
       {
          "className": "PathAlias",
-         "cullPrefix": "PA",
-         "cullNameSpec": "path_alias",
+         "fieldPrefix": "PA",
+         "nameSpec": "path_alias",
          "size_in_basic_units": 2
       },
       {
          "className": "JobReference",
-         "cullPrefix": "JRE",
-         "cullNameSpec": "job_ref",
+         "fieldPrefix": "JRE",
+         "nameSpec": "job_ref",
          "size_in_basic_units": 2
       },
       {
          "className": "JobIdForAction",
-         "cullPrefix": "ID",
-         "cullNameSpec": "id",
+         "fieldPrefix": "ID",
+         "nameSpec": "id",
          "size_in_basic_units": 2
       },
       {
          "className": "MultiGdiId",
-         "cullPrefix": "MA",
-         "cullNameSpec": "multi",
+         "fieldPrefix": "MA",
+         "nameSpec": "multi",
          "size_in_basic_units": 2
       },
       {
          "className": "TimeEvent",
-         "cullPrefix": "TE",
-         "cullNameSpec": "time_event",
+         "fieldPrefix": "TE",
+         "nameSpec": "time_event",
          "size_in_basic_units": 2
       },
       {
          "className": "Calendar",
-         "cullPrefix": "CAL",
-         "cullNameSpec": "calendar",
+         "fieldPrefix": "CAL",
+         "nameSpec": "calendar",
          "size_in_basic_units": 2
       },
       {
          "className": "ParsedCalendar",
-         "cullPrefix": "CA",
-         "cullNameSpec": "calendar",
+         "fieldPrefix": "CA",
+         "nameSpec": "calendar",
          "size_in_basic_units": 2
       },
       {
          "className": "TimeRange",
-         "cullPrefix": "TMR",
-         "cullNameSpec": "calendar",
+         "fieldPrefix": "TMR",
+         "nameSpec": "calendar",
          "size_in_basic_units": 2
       },
       {
          "className": "DateTime",
-         "cullPrefix": "TM",
-         "cullNameSpec": "calendar",
+         "fieldPrefix": "TM",
+         "nameSpec": "calendar",
          "size_in_basic_units": 2
       },
       {
          "className": "RemoteTask",
-         "cullPrefix": "RT",
-         "cullNameSpec": "qexec",
+         "fieldPrefix": "RT",
+         "nameSpec": "qexec",
          "size_in_basic_units": 2
       },
       {
          "className": "ProjectUsage",
-         "cullPrefix": "UPP",
-         "cullNameSpec": "userprj",
+         "fieldPrefix": "UPP",
+         "nameSpec": "userprj",
          "size_in_basic_units": 2
       },
       {
          "className": "JobSchedulingInfo",
-         "cullPrefix": "SME",
-         "cullNameSpec": "message",
+         "fieldPrefix": "SME",
+         "nameSpec": "message",
          "size_in_basic_units": 2
       },
       {
          "className": "JobSchedulingMessage",
-         "cullPrefix": "MES",
-         "cullNameSpec": "message",
+         "fieldPrefix": "MES",
+         "nameSpec": "message",
          "size_in_basic_units": 2
       },
       {
          "className": "JobArrayTask",
-         "cullPrefix": "JAT",
-         "cullNameSpec": "ja_task",
+         "fieldPrefix": "JAT",
+         "nameSpec": "ja_task",
          "size_in_basic_units": 2
       },
       {
          "className": "Category",
-         "cullPrefix": "CT",
-         "cullNameSpec": "ct",
+         "fieldPrefix": "CT",
+         "nameSpec": "ct",
          "size_in_basic_units": 2
       },
       {
          "className": "JobSortObject",
-         "cullPrefix": "SGEJ",
-         "cullNameSpec": "eejob",
+         "fieldPrefix": "SGEJ",
+         "nameSpec": "eejob",
          "size_in_basic_units": 2
       },
       {
          "className": "UnsignedLong",
-         "cullPrefix": "ULNG",
-         "cullNameSpec": "ulong",
+         "fieldPrefix": "ULNG",
+         "nameSpec": "ulong",
          "size_in_basic_units": 2
       },
       {
          "className": "HostGroup",
-         "cullPrefix": "HGRP",
-         "cullNameSpec": "hgroup",
+         "fieldPrefix": "HGRP",
+         "nameSpec": "hgroup",
          "size_in_basic_units": 2
       },
       {
          "className": "HostReference",
-         "cullPrefix": "HR",
-         "cullNameSpec": "href",
+         "fieldPrefix": "HR",
+         "nameSpec": "href",
          "size_in_basic_units": 2
       },
       {
          "className": "Permission",
-         "cullPrefix": "PERM",
-         "cullNameSpec": "permission",
+         "fieldPrefix": "PERM",
+         "nameSpec": "permission",
          "size_in_basic_units": 2
       },
       {
          "className": "LoadSensor",
-         "cullPrefix": "LS",
-         "cullNameSpec": "loadsensor",
+         "fieldPrefix": "LS",
+         "nameSpec": "loadsensor",
          "size_in_basic_units": 2
       },
       {
          "className": "RescheduleUnknown",
-         "cullPrefix": "RU",
-         "cullNameSpec": "host",
+         "fieldPrefix": "RU",
+         "nameSpec": "host",
          "size_in_basic_units": 2
       },
       {
          "className": "SubmitUser",
-         "cullPrefix": "SU",
-         "cullNameSpec": "suser",
+         "fieldPrefix": "SU",
+         "nameSpec": "suser",
          "size_in_basic_units": 2
       },
       {
          "className": "SpoolingContext",
-         "cullPrefix": "SPC",
-         "cullNameSpec": "spooling",
+         "fieldPrefix": "SPC",
+         "nameSpec": "spooling",
          "size_in_basic_units": 2
       },
       {
          "className": "SpoolingRule",
-         "cullPrefix": "SPR",
-         "cullNameSpec": "spooling",
+         "fieldPrefix": "SPR",
+         "nameSpec": "spooling",
          "size_in_basic_units": 2
       },
       {
          "className": "SpoolingType",
-         "cullPrefix": "SPT",
-         "cullNameSpec": "spooling",
+         "fieldPrefix": "SPT",
+         "nameSpec": "spooling",
          "size_in_basic_units": 2
       },
       {
          "className": "SpoolingTypeRule",
-         "cullPrefix": "SPTR",
-         "cullNameSpec": "spooling",
+         "fieldPrefix": "SPTR",
+         "nameSpec": "spooling",
          "size_in_basic_units": 2
       },
       {
          "className": "JAPIJob",
-         "cullPrefix": "JJ",
-         "cullNameSpec": "japi",
+         "fieldPrefix": "JJ",
+         "nameSpec": "japi",
          "size_in_basic_units": 2
       },
       {
          "className": "JAPIArrayTask",
-         "cullPrefix": "JJAT",
-         "cullNameSpec": "japi",
+         "fieldPrefix": "JJAT",
+         "nameSpec": "japi",
          "size_in_basic_units": 2
       },
       {
          "className": "NamedStringVector",
-         "cullPrefix": "NSV",
-         "cullNameSpec": "japi",
+         "fieldPrefix": "NSV",
+         "nameSpec": "japi",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeString",
-         "cullPrefix": "ASTR",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ASTR",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeUlong",
-         "cullPrefix": "AULNG",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "AULNG",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeBoolean",
-         "cullPrefix": "ABOOL",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ABOOL",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeTime",
-         "cullPrefix": "ATIME",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ATIME",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeMemory",
-         "cullPrefix": "AMEM",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "AMEM",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeInterval",
-         "cullPrefix": "AINTER",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "AINTER",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeString",
-         "cullPrefix": "ASTRING",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ASTRING",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeStringList",
-         "cullPrefix": "ASTRLIST",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ASTRLIST",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeUserSetList",
-         "cullPrefix": "AUSRLIST",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "AUSRLIST",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeProjectList",
-         "cullPrefix": "APRJLIST",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "APRJLIST",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeCentryList",
-         "cullPrefix": "ACELIST",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ACELIST",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeSubordinateList",
-         "cullPrefix": "ASOLIST",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "ASOLIST",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "AttributeQueueTypeList",
-         "cullPrefix": "AQTLIST",
-         "cullNameSpec": "attr",
+         "fieldPrefix": "AQTLIST",
+         "nameSpec": "attr",
          "size_in_basic_units": 2
       },
       {
          "className": "ClusterQueue",
-         "cullPrefix": "CQ",
-         "cullNameSpec": "cqueue",
+         "fieldPrefix": "CQ",
+         "nameSpec": "cqueue",
          "size_in_basic_units": 3
       },
       {
          "className": "QueueInstanceMessage",
-         "cullPrefix": "QIM",
-         "cullNameSpec": "mesobj",
+         "fieldPrefix": "QIM",
+         "nameSpec": "mesobj",
          "size_in_basic_units": 2
       },
       {
          "className": "FunctionalCategory",
-         "cullPrefix": "FCAT",
-         "cullNameSpec": "eejob",
+         "fieldPrefix": "FCAT",
+         "nameSpec": "eejob",
          "size_in_basic_units": 2
       },
       {
          "className": "SkipListEntry",
-         "cullPrefix": "CTI",
-         "cullNameSpec": "ct",
+         "fieldPrefix": "CTI",
+         "nameSpec": "ct",
          "size_in_basic_units": 2
       },
       {
          "className": "SchedulerConfigParameter",
-         "cullPrefix": "PARA",
-         "cullNameSpec": "schedd_conf",
+         "fieldPrefix": "PARA",
+         "nameSpec": "schedd_conf",
          "size_in_basic_units": 2
       },
       {
          "className": "XMLAttribute",
-         "cullPrefix": "XMLA",
-         "cullNameSpec": "cull_xml",
+         "fieldPrefix": "XMLA",
+         "nameSpec": "cull_xml",
          "size_in_basic_units": 2
       },
       {
          "className": "XMLDocumentHead",
-         "cullPrefix": "XMLH",
-         "cullNameSpec": "cull_xml",
+         "fieldPrefix": "XMLH",
+         "nameSpec": "cull_xml",
          "size_in_basic_units": 2
       },
       {
          "className": "XMLSchema",
-         "cullPrefix": "XMLS",
-         "cullNameSpec": "cull_xml",
+         "fieldPrefix": "XMLS",
+         "nameSpec": "cull_xml",
          "size_in_basic_units": 2
       },
       {
          "className": "XMLDocumentEntry",
-         "cullPrefix": "XMLE",
-         "cullNameSpec": "cull_xml",
+         "fieldPrefix": "XMLE",
+         "nameSpec": "cull_xml",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceDiagramEntry",
-         "cullPrefix": "RDE",
-         "cullNameSpec": "resource_utilization",
+         "fieldPrefix": "RDE",
+         "nameSpec": "resource_utilization",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceUtilization",
-         "cullPrefix": "RUE",
-         "cullNameSpec": "resource_utilization",
+         "fieldPrefix": "RUE",
+         "nameSpec": "resource_utilization",
          "size_in_basic_units": 2
       },
       {
          "className": "QueueEndTimeIterator",
-         "cullPrefix": "QETI",
-         "cullNameSpec": "qeti",
+         "fieldPrefix": "QETI",
+         "nameSpec": "qeti",
          "size_in_basic_units": 2
       },
       {
          "className": "LoadReference",
-         "cullPrefix": "LDR",
-         "cullNameSpec": "select_queue",
+         "fieldPrefix": "LDR",
+         "nameSpec": "select_queue",
          "size_in_basic_units": 2
       },
       {
          "className": "QueueReferenceList",
-         "cullPrefix": "QRL",
-         "cullNameSpec": "select_queue",
+         "fieldPrefix": "QRL",
+         "nameSpec": "select_queue",
          "size_in_basic_units": 2
       },
       {
          "className": "CategoryCache",
-         "cullPrefix": "CCT",
-         "cullNameSpec": "ct",
+         "fieldPrefix": "CCT",
+         "nameSpec": "ct",
          "size_in_basic_units": 2
       },
       {
          "className": "CalendarQueueState",
-         "cullPrefix": "CQU",
-         "cullNameSpec": "calendar",
+         "fieldPrefix": "CQU",
+         "nameSpec": "calendar",
          "size_in_basic_units": 2
       },
       {
          "className": "SchedulerCategory",
-         "cullPrefix": "SCT",
-         "cullNameSpec": "ct",
+         "fieldPrefix": "SCT",
+         "nameSpec": "ct",
          "size_in_basic_units": 2
       },
       {
          "className": "ReferenceToAnObject",
-         "cullPrefix": "REF",
-         "cullNameSpec": "ct",
+         "fieldPrefix": "REF",
+         "nameSpec": "ct",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaSet",
-         "cullPrefix": "RQS",
-         "cullNameSpec": "resource_quota",
+         "fieldPrefix": "RQS",
+         "nameSpec": "resource_quota",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaRule",
-         "cullPrefix": "RQR",
-         "cullNameSpec": "resource_quota",
+         "fieldPrefix": "RQR",
+         "nameSpec": "resource_quota",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaRuleFilter",
-         "cullPrefix": "RQRF",
-         "cullNameSpec": "resource_quota",
+         "fieldPrefix": "RQRF",
+         "nameSpec": "resource_quota",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaRuleLimit",
-         "cullPrefix": "RQRL",
-         "cullNameSpec": "resource_quota",
+         "fieldPrefix": "RQRL",
+         "nameSpec": "resource_quota",
          "size_in_basic_units": 2
       },
       {
          "className": "ResourceQuotaLimit",
-         "cullPrefix": "RQL",
-         "cullNameSpec": "resource_quota",
+         "fieldPrefix": "RQL",
+         "nameSpec": "resource_quota",
          "size_in_basic_units": 2
       },
       {
          "className": "AdvanceReservation",
-         "cullPrefix": "AR",
-         "cullNameSpec": "advance_reservation",
+         "fieldPrefix": "AR",
+         "nameSpec": "advance_reservation",
          "size_in_basic_units": 2
       },
       {
          "className": "AdvanceReservationACLEntryObject",
-         "cullPrefix": "ARA",
-         "cullNameSpec": "advance_reservation",
+         "fieldPrefix": "ARA",
+         "nameSpec": "advance_reservation",
          "size_in_basic_units": 2
       },
       {
          "className": "Acknowledge",
-         "cullPrefix": "ACK",
-         "cullNameSpec": "ack",
+         "fieldPrefix": "ACK",
+         "nameSpec": "ack",
          "size_in_basic_units": 2
       },
       {
          "className": "EventRequest",
-         "cullPrefix": "EVR",
-         "cullNameSpec": "event_request",
+         "fieldPrefix": "EVR",
+         "nameSpec": "event_request",
          "size_in_basic_units": 2
       },
       {
          "className": "JobSubmissionVerifier",
-         "cullPrefix": "JSV",
-         "cullNameSpec": "jsv",
+         "fieldPrefix": "JSV",
+         "nameSpec": "jsv",
          "size_in_basic_units": 2
       },
       {
          "className": "ReprioritizeTickets",
-         "cullPrefix": "RTIC",
-         "cullNameSpec": "order",
+         "fieldPrefix": "RTIC",
+         "nameSpec": "order",
          "size_in_basic_units": 2
       },
       {
          "className": "Process",
-         "cullPrefix": "PRO",
-         "cullNameSpec": "proc",
+         "fieldPrefix": "PRO",
+         "nameSpec": "proc",
          "size_in_basic_units": 2
       },
       {
          "className": "Group",
-         "cullPrefix": "GR",
-         "cullNameSpec": "proc",
+         "fieldPrefix": "GR",
+         "nameSpec": "proc",
          "size_in_basic_units": 2
       },
       {
          "className": "Binding",
-         "cullPrefix": "BN",
-         "cullNameSpec": "binding",
+         "fieldPrefix": "BN",
+         "nameSpec": "binding",
          "size_in_basic_units": 2
       },
       {
          "className": "Test",
-         "cullPrefix": "TEST",
-         "cullNameSpec": "test",
+         "fieldPrefix": "TEST",
+         "nameSpec": "test",
          "size_in_basic_units": 2
       },
       {
          "className": "Packing",
-         "cullPrefix": "PACK",
-         "cullNameSpec": "pack",
+         "fieldPrefix": "PACK",
+         "nameSpec": "pack",
          "size_in_basic_units": 2
       },
       {
          "className": "StoredProcdureParameter",
-         "cullPrefix": "SPP",
-         "cullNameSpec": "param",
+         "fieldPrefix": "SPP",
+         "nameSpec": "param",
          "size_in_basic_units": 2
       },
       {
          "className": "Role",
-         "cullPrefix": "RL",
-         "cullNameSpec": "role",
+         "fieldPrefix": "RL",
+         "nameSpec": "role",
          "size_in_basic_units": 2
       },
       {
          "className": "MatchCacheEntry",
-         "cullPrefix": "HM",
-         "cullNameSpec": "matchcache",
+         "fieldPrefix": "HM",
+         "nameSpec": "matchcache",
          "size_in_basic_units": 2
       },
       {
          "className": "ContextChange",
-         "cullPrefix": "CX",
-         "cullNameSpec": "job",
+         "fieldPrefix": "CX",
+         "nameSpec": "job",
          "size_in_basic_units": 2
       }
    ]

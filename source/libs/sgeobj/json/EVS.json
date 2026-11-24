@@ -6,7 +6,7 @@
       "and additional information for flushing and filtering",
       "see also the documentation in source/libs/evc/sge_event_client.cc"
    ],
-   "cullPrefix": "EVS",
+   "fieldPrefix": "EVS",
    "attributes": [
       {
          "name": "id",
@@ -54,7 +54,7 @@
          ],
          "type": "Object",
          "subClassName": "PACK",
-         "subCullPrefix": "PACK",
+         "subFieldPrefix": "PACK",
          "flags": []
       },
       {
@@ -66,7 +66,7 @@
          ],
          "type": "Object",
          "subClassName": "PACK",
-         "subCullPrefix": "PACK",
+         "subFieldPrefix": "PACK",
          "flags": []
       }
    ]

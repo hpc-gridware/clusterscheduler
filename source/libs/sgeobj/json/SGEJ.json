@@ -7,7 +7,7 @@
       "It is sorted by priorty ASC, submission time ASC, job number DESC.",
       "Jobs in this list will then be scheduled one after the other."
    ],
-   "cullPrefix": "SGEJ",
+   "fieldPrefix": "SGEJ",
    "attributes": [
       {
          "name": "priority",
@@ -76,7 +76,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

@@ -5,7 +5,7 @@
       "Walks the points in time at which a resource frees up, newest first.",
       "Reservation scheduling has to answer \"when could this job start\". Rather than sampling time, the iterator visits only the instants at which some booking ends, because the answer can only change there."
    ],
-   "cullPrefix": "QETI",
+   "fieldPrefix": "QETI",
    "attributes": [
       {
          "name": "total",
@@ -24,7 +24,7 @@
          ],
          "type": "Ref",
          "subClassName": "ResourceUtilization",
-         "subCullPrefix": "RUE",
+         "subFieldPrefix": "RUE",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -37,7 +37,7 @@
          ],
          "type": "Ref",
          "subClassName": "ResourceDiagramEntry",
-         "subCullPrefix": "RDE",
+         "subFieldPrefix": "RDE",
          "flags": [
             "NO_TRANSFER"
          ]

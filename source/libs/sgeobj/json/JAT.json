@@ -27,7 +27,7 @@
       "these elements during the submition of a (array) job but",
       "after the job has been dispatched."
    ],
-   "cullPrefix": "JAT",
+   "fieldPrefix": "JAT",
    "attributes": [
       {
          "name": "task_number",
@@ -122,7 +122,7 @@
          ],
          "type": "List",
          "subClassName": "JG",
-         "subCullPrefix": "JG",
+         "subFieldPrefix": "JG",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -135,7 +135,7 @@
          ],
          "type": "List",
          "subClassName": "GrantedResource",
-         "subCullPrefix": "GRU",
+         "subFieldPrefix": "GRU",
          "flags": [
             "SPOOL"
          ]
@@ -275,7 +275,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -289,7 +289,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -304,7 +304,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -392,7 +392,7 @@
          ],
          "type": "List",
          "subClassName": "PET",
-         "subCullPrefix": "PET",
+         "subFieldPrefix": "PET",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -405,7 +405,7 @@
          ],
          "type": "List",
          "subClassName": "FPET",
-         "subCullPrefix": "FPET",
+         "subFieldPrefix": "FPET",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -419,7 +419,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": []
       },
       {
@@ -430,7 +430,7 @@
          ],
          "type": "Object",
          "subClassName": "ParallelEnvironment",
-         "subCullPrefix": "PE",
+         "subFieldPrefix": "PE",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -496,7 +496,7 @@
          ],
          "type": "List",
          "subClassName": "QIM",
-         "subCullPrefix": "QIM",
+         "subFieldPrefix": "QIM",
          "flags": [
             "SPOOL"
          ]
@@ -524,7 +524,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

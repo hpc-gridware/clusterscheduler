@@ -5,7 +5,7 @@
       "A named, enableable set of rules that limit resource use across the object model.",
       "Where a queue or host limits what it can give, a resource quota set limits what a *combination* may take - \"this project may use 100 slots in total, wherever they are\". The rules are tried in order and the first that matches decides."
    ],
-   "cullPrefix": "RQS",
+   "fieldPrefix": "RQS",
    "attributes": [
       {
          "name": "name",
@@ -51,7 +51,7 @@
          ],
          "type": "List",
          "subClassName": "RQR",
-         "subCullPrefix": "RQR",
+         "subFieldPrefix": "RQR",
          "flags": [
             "SPOOL"
          ]
@@ -66,7 +66,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

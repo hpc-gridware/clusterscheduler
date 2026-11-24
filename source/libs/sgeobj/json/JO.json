@@ -7,7 +7,7 @@
       "will normally only be one OS job per PTF job,",
       "except in the case of tightly integrated parallel jobs or jobs with multiple tasks."
    ],
-   "cullPrefix": "JO",
+   "fieldPrefix": "JO",
    "attributes": [
       {
          "name": "OS_job_ID",
@@ -81,7 +81,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": []
       },
       {
@@ -92,7 +92,7 @@
          ],
          "type": "List",
          "subClassName": "JP",
-         "subCullPrefix": "JP",
+         "subFieldPrefix": "JP",
          "flags": []
       }
    ]

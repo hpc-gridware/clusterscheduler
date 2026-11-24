@@ -5,7 +5,7 @@
       "Used for string attributes in the cluster queues.",
       "E.g. used for the queue tmpdir, shell, calendar, prolog, ..."
    ],
-   "cullPrefix": "ASTR",
+   "fieldPrefix": "ASTR",
    "attributes": [
       {
          "name": "href",

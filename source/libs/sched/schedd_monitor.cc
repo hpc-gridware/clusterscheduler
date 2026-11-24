@@ -45,7 +45,7 @@
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_time.h"
 
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_QU.h"

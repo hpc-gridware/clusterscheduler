@@ -7,7 +7,7 @@
       "tickets to them and as usage accumulators. There are no real differences",
       "at the moment, so putting them together is convenient."
    ],
-   "cullPrefix": "UPU",
+   "fieldPrefix": "UPU",
    "attributes": [
       {
          "name": "job_number",
@@ -31,7 +31,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]

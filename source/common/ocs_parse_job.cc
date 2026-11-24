@@ -53,7 +53,7 @@
 
 #include "sgeobj/ocs_Binding.h"
 #include "sgeobj/ocs_Job.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_path_alias.h"
 #include "sgeobj/parse.h"
 #include "sgeobj/sge_str.h"
@@ -77,7 +77,7 @@
 
 #include "symbols.h"
 #include "parse_qsub.h"
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 
 #include "msg_common.h"
 
@@ -110,7 +110,7 @@ const char *default_prefix = "#$";
 
 /** @brief Fill in a job object from a parsed command line
  *
- * The second half of submitting: #cull_parse_cmdline turns the argument vector
+ * The second half of submitting: #ocs_parse_cmdline turns the argument vector
  * into a list of options, and this turns that list into the job. Called with
  * `cmdline` as an empty handle it produces a job carrying nothing but the defaults,
  * which is how a template job is made.
@@ -130,7 +130,7 @@ const char *default_prefix = "#$";
  *         - `STATUS_EDISK` - `getcwd()` failed
  *         - `STATUS_ENOIMP` - an unknown switch, or `-help`
  */
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const uint32_t uid, const char *username,
+ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_job_parameter([[maybe_unused]] const uint32_t uid, const char *username,
                                                          const char *cell_root, const char *unqualified_hostname,
                                                          const char *qualified_hostname,
                                                          const ocs::tom::List<ocs::tom::SPA> cmdline,
@@ -362,7 +362,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
     */
    ep = cmdline.find_first<SPA_switch_val>("-t");
    if (ep != nullptr) {
-      /* the -t argument is a range list (RN), parsed by cull_parse_cmdline() or drmaa_set_bulk_range() */
+      /* the -t argument is a range list (RN), parsed by ocs_parse_cmdline() or drmaa_set_bulk_range() */
       const auto range_list = ep.get_as<SPA_argval_lListT, ocs::tom::RN>();
       pjob->set<JB_ja_structure>(range_list.clone("task_id_range"));
       cmdline.erase(ep);
@@ -478,7 +478,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    }
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-jsv"))) {
-      /* the -jsv argument is a path list (PN) built by cull_parse_cmdline() */
+      /* the -jsv argument is a path list (PN) built by ocs_parse_cmdline() */
       const auto list = ep.get_as<SPA_argval_lListT, ocs::tom::PN>();
       const char *file = list.front().get<PN_path>();
 
@@ -533,7 +533,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    if (cmdline.find_first<SPA_switch_val>("-hold_jid")) {
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid"))) {
-         /* the argument is a job name list (ST) built by cull_parse_jid_hold_list() */
+         /* the argument is a job name list (ST) built by ocs_parse_jid_hold_list() */
          for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             DPRINTF("-hold_jid %s\n", sep.get<ST_name>());
             if (!jref_list) {
@@ -551,7 +551,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    if (cmdline.find_first<SPA_switch_val>("-hold_jid_ad")) {
       ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
       while ((ep = cmdline.find_first<SPA_switch_val>("-hold_jid_ad"))) {
-         /* the argument is a job name list (ST) built by cull_parse_jid_hold_list() */
+         /* the argument is a job name list (ST) built by ocs_parse_jid_hold_list() */
          for (const auto sep : ep.get_as<SPA_argval_lListT, ocs::tom::ST>()) {
             DPRINTF("-hold_jid_ad %s\n", sep.get<ST_name>());
             if (!jref_list) {
@@ -663,7 +663,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    while ((ep = cmdline.find_first<SPA_switch_val>("-pe"))) {
       pjob->set<JB_pe>(ep.get<SPA_argval_lStringT>());
       // SPA_argval_lListT carries lists of several types; for -pe it is the range list (RN) built by
-      // cull_parse_cmdline(), which is adopted checked; the old range list is freed by the set
+      // ocs_parse_cmdline(), which is adopted checked; the old range list is freed by the set
       pjob->set<JB_pe_range>(
          ocs::tom::adopt<ocs::tom::RN>(ep.exchange<SPA_argval_lListT>(ocs::tom::ListPtr<ocs::tom::RN>{})));
       cmdline.erase(ep);
@@ -725,7 +725,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
           !strcmp(ep.get<SPA_switch_val>(), "-sc")) {
          // the switches are concatenated in their order, as instructions for the qmaster (CS-3058)
          auto change = pjob->exchange<JB_context_change>(nullptr);
-         // the argument of -ac/-dc/-sc is a variable list (VA) built by cull_parse_cmdline()
+         // the argument of -ac/-dc/-sc is a variable list (VA) built by ocs_parse_cmdline()
          ocs_context_change_add(change, ep.get_as<SPA_argval_lListT, ocs::tom::VA>());
          pjob->set<JB_context_change>(std::move(change));
          const auto temp = ep.next();
@@ -1077,7 +1077,7 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
                DPRINTF("parameter in script: %s\n", parameters);
 
                /*
-               ** here cull comes in 
+               ** here the list comes in 
                */
 
                /* so str_table has to be freed afterwards */
@@ -1096,7 +1096,7 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
                /*
                ** problem: error handling missing here and above
                */
-               alp = cull_parse_cmdline(prog_number, (const char **)str_table, envp, lp_new_opts, 0);
+               alp = ocs_parse_cmdline(prog_number, (const char **)str_table, envp, lp_new_opts, 0);
 
                for (const auto aep : *alp) {
                   answer_quality_t quality;

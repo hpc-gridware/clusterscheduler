@@ -4,7 +4,7 @@
    "description": [
       "One of a rule's five filters: the set of names it matches, and whether the limit is shared or per name."
    ],
-   "cullPrefix": "RQRF",
+   "fieldPrefix": "RQRF",
    "attributes": [
       {
          "name": "expand",
@@ -25,7 +25,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL"
          ]
@@ -38,7 +38,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL"
          ]

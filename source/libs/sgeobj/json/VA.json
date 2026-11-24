@@ -5,7 +5,7 @@
       "One variable objects holds a name/value pair (variable=[value]).",
       "@see libs/sgeobj/sge_var.h"
    ],
-   "cullPrefix": "VA",
+   "fieldPrefix": "VA",
    "attributes": [
       {
          "name": "variable",

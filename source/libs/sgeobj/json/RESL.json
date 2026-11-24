@@ -9,7 +9,7 @@
       "granted to a job / array task / pe task; referenced in GRU, which in turn",
       "is referenced in gdil (JG) and in ja_tasks' granted_resources list (JAT)."
    ],
-   "cullPrefix": "RESL",
+   "fieldPrefix": "RESL",
    "attributes": [
       {
          "name": "value",
@@ -75,7 +75,7 @@
          ],
          "type": "List",
          "subClassName": "ComplexEntry",
-         "subCullPrefix": "CE",
+         "subFieldPrefix": "CE",
          "flags": [
             "SPOOL"
          ]

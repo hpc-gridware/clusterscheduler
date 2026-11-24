@@ -42,5 +42,5 @@
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "tom/ocs_List.h"
 
-void cull_mail(uint32_t progid, ocs::tom::ConstList<ocs::tom::MR> user_list, const char *subj, const char *buf,
+void mail_to_users(uint32_t progid, ocs::tom::ConstList<ocs::tom::MR> user_list, const char *subj, const char *buf,
                const char *mail_type);

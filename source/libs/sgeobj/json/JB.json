@@ -24,7 +24,7 @@
       "concerning their data structures. Both consist of one 'JB'",
       "and one 'JAT' element"
    ],
-   "cullPrefix": "JB",
+   "fieldPrefix": "JB",
    "attributes": [
       {
          "name": "job_number",
@@ -70,7 +70,7 @@
          ],
          "type": "List",
          "subClassName": "JRE",
-         "subCullPrefix": "JRE",
+         "subFieldPrefix": "JRE",
          "flags": [
             "SPOOL"
          ]
@@ -83,7 +83,7 @@
          ],
          "type": "List",
          "subClassName": "JRE",
-         "subCullPrefix": "JRE",
+         "subFieldPrefix": "JRE",
          "flags": [
             "SPOOL"
          ]
@@ -96,7 +96,7 @@
          ],
          "type": "List",
          "subClassName": "JRE",
-         "subCullPrefix": "JRE",
+         "subFieldPrefix": "JRE",
          "flags": []
       },
       {
@@ -110,7 +110,7 @@
          ],
          "type": "List",
          "subClassName": "JRE",
-         "subCullPrefix": "JRE",
+         "subFieldPrefix": "JRE",
          "flags": [
             "SPOOL"
          ]
@@ -123,7 +123,7 @@
          ],
          "type": "List",
          "subClassName": "JRE",
-         "subCullPrefix": "JRE",
+         "subFieldPrefix": "JRE",
          "flags": [
             "SPOOL"
          ]
@@ -136,7 +136,7 @@
          ],
          "type": "List",
          "subClassName": "JRE",
-         "subCullPrefix": "JRE",
+         "subFieldPrefix": "JRE",
          "flags": []
       },
       {
@@ -405,7 +405,7 @@
          ],
          "type": "List",
          "subClassName": "PN",
-         "subCullPrefix": "PN",
+         "subFieldPrefix": "PN",
          "flags": [
             "SPOOL"
          ]
@@ -429,7 +429,7 @@
          ],
          "type": "List",
          "subClassName": "VA",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]
@@ -443,7 +443,7 @@
          ],
          "type": "List",
          "subClassName": "VA",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]
@@ -456,7 +456,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL"
          ]
@@ -493,7 +493,7 @@
          ],
          "type": "Object",
          "subClassName": "CK",
-         "subCullPrefix": "CK",
+         "subFieldPrefix": "CK",
          "flags": []
       },
       {
@@ -527,7 +527,7 @@
          ],
          "type": "List",
          "subClassName": "PN",
-         "subCullPrefix": "PN",
+         "subFieldPrefix": "PN",
          "flags": [
             "SPOOL"
          ]
@@ -540,7 +540,7 @@
          ],
          "type": "List",
          "subClassName": "PN",
-         "subCullPrefix": "PN",
+         "subFieldPrefix": "PN",
          "flags": [
             "SPOOL"
          ]
@@ -553,7 +553,7 @@
          ],
          "type": "List",
          "subClassName": "PN",
-         "subCullPrefix": "PN",
+         "subFieldPrefix": "PN",
          "flags": [
             "SPOOL"
          ]
@@ -580,7 +580,7 @@
          ],
          "type": "List",
          "subClassName": "JobRequestSet",
-         "subCullPrefix": "JRS",
+         "subFieldPrefix": "JRS",
          "flags": [
             "SPOOL"
          ]
@@ -605,7 +605,7 @@
          ],
          "type": "List",
          "subClassName": "MR",
-         "subCullPrefix": "MR",
+         "subFieldPrefix": "MR",
          "flags": [
             "SPOOL"
          ]
@@ -631,7 +631,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -665,7 +665,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -678,7 +678,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -693,7 +693,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -707,7 +707,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -721,7 +721,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -735,7 +735,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -749,7 +749,7 @@
          ],
          "type": "List",
          "subClassName": "JAT",
-         "subCullPrefix": "JAT",
+         "subFieldPrefix": "JAT",
          "flags": [
             "SPOOL"
          ]
@@ -763,7 +763,7 @@
          ],
          "type": "List",
          "subClassName": "JAT",
-         "subCullPrefix": "JAT",
+         "subFieldPrefix": "JAT",
          "flags": [
             "SPOOL"
          ]
@@ -787,7 +787,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -804,7 +804,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": []
       },
       {
@@ -816,7 +816,7 @@
          ],
          "type": "List",
          "subClassName": "ID",
-         "subCullPrefix": "ID",
+         "subFieldPrefix": "ID",
          "flags": []
       },
       {
@@ -870,7 +870,7 @@
          ],
          "type": "List",
          "subClassName": "PA",
-         "subCullPrefix": "PA",
+         "subFieldPrefix": "PA",
          "flags": [
             "SPOOL"
          ]
@@ -989,7 +989,7 @@
          ],
          "type": "Object",
          "subClassName": "BN",
-         "subCullPrefix": "BN",
+         "subFieldPrefix": "BN",
          "flags": [
             "SPOOL"
          ]
@@ -1015,7 +1015,7 @@
          ],
          "type": "List",
          "subClassName": "String",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL"
          ]
@@ -1030,7 +1030,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]
@@ -1075,7 +1075,7 @@
          ],
          "type": "List",
          "subClassName": "CX",
-         "subCullPrefix": "CX",
+         "subFieldPrefix": "CX",
          "flags": []
       }
    ]

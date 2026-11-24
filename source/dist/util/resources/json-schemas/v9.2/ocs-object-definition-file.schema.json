@@ -6,7 +6,7 @@
       "className",
       "summary",
       "description",
-      "cullPrefix",
+      "fieldPrefix",
       "attributes"
    ],
    "properties": {
@@ -20,7 +20,7 @@
       "description": {
          "$ref": "../v9.2/ocs-object-common.schema.json#/$defs/descriptionBlock"
       },
-      "cullPrefix": {
+      "fieldPrefix": {
          "type": "string",
          "pattern": "^[A-Z]{2,8}$",
          "not": {
@@ -67,7 +67,7 @@
             "subClassName": {
                "type": "string"
             },
-            "subCullPrefix": {
+            "subFieldPrefix": {
                "type": "string",
                "pattern": "^[A-Z]{2,8}$"
             }
@@ -89,14 +89,14 @@
                "then": {
                   "required": [
                      "subClassName",
-                     "subCullPrefix"
+                     "subFieldPrefix"
                   ]
                },
                "else": {
                   "not": {
                      "anyOf": [
                         { "required": ["subClassName"] },
-                        { "required": ["subCullPrefix"] }
+                        { "required": ["subFieldPrefix"] }
                      ]
                   }
                }

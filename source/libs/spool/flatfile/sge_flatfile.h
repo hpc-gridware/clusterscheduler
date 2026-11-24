@@ -87,7 +87,7 @@ typedef enum {
 typedef enum {
    SP_FORM_ASCII,    ///< The traditional `name value` layout, shaped by the #spool_flatfile_instr
    SP_FORM_XML,      ///< XML
-   SP_FORM_CULL,     ///< The cull representation
+   SP_FORM_PACKED,   ///< The packed representation
    SP_FORM_JSON      ///< Structured JSON, `qconf -fmt json` (CS-2313a)
 } spool_flatfile_format;
 

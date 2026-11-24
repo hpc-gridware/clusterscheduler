@@ -4,7 +4,7 @@
    "description": [
       "Reference to a queue instance by name."
    ],
-   "cullPrefix": "QR",
+   "fieldPrefix": "QR",
    "attributes": [
       {
          "name": "name",

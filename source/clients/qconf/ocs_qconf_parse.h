@@ -100,7 +100,7 @@ extern spool_flatfile_format qconf_opt_format;
  * @return the new list, never an empty handle
  */
 template <auto F>
-ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_cull(const char *name, char *s);
+ocs::tom::ListPtr<typename ocs::tom::FieldTraits<F>::Type> parse_name_list_to_list(const char *name, char *s);
 
 
 /** @brief Work through the `qconf` command line, one switch at a time

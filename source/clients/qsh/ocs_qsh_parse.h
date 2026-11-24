@@ -43,7 +43,7 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_SPA.h"
 
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(uint32_t prog_name, uint32_t uid, const char *username,
+ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_qsh_parameter(uint32_t prog_name, uint32_t uid, const char *username,
                                                          const char *cell_root, const char *unqualified_hostname,
                                                          const char *qualified_hostname,
                                                          ocs::tom::List<ocs::tom::SPA> cmdline,

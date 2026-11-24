@@ -4,7 +4,7 @@
    "description": [
       "Used for lists / sublists holding 32bit ulong values, e.g. job ids."
    ],
-   "cullPrefix": "ULNG",
+   "fieldPrefix": "ULNG",
    "attributes": [
       {
          "name": "value",

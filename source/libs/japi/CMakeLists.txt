@@ -36,7 +36,7 @@ target_include_directories(${LIBRARY_NAME} PUBLIC ${SGE_INCLUDES} ${JNI_INCLUDE}
 
 set(DRMAA_LIB_NAME drmaa)
 set(DRMAA_LIB_SOURCES drmaa.cc
-        ../../common/parse_job_cull.cc
+        ../../common/ocs_parse_job.cc
         ../../common/parse_qsub.cc
         ${JNI_CODE}
 )

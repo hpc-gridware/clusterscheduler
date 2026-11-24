@@ -33,14 +33,14 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Parsing textual lists into CULL lists, and printing them back
+ * @brief Parsing textual lists into lists, and printing them back
  *
  * The two forms users write are a plain list (`a,b,c`) and a definition list
  * (`name=value,name=value`). Both are parsed through an *interpretation rule*:
  * an array of attribute numbers saying which attribute each parsed word goes
  * into, which is what lets one parser fill any element type.
  *
- * @see cull_parse_util.h
+ * @see ocs_parse_util.h
  */
 
 #include <cstdio>
@@ -59,7 +59,7 @@
 #include "uti/sge_component.h"
 #include "uti/sge_stdlib.h"
 
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_centry.h"
@@ -97,7 +97,7 @@ static std::optional<ocs::tom::FieldType> ocs_parse_field_type(const lDescr *des
  * @brief Whether a field type is printed as a number
  * @param type the field type, or std::nullopt for a field the descriptor does not hold
  * @return true for a double and the 32 bit unsigned, 64 bit signed and 32 bit signed numbers, as
- *         L_IS_NUM_TYPE() decides for the CULL types
+ *         L_IS_NUM_TYPE() decides for the field types
  */
 static bool ocs_parse_is_num_type(const std::optional<ocs::tom::FieldType> type) {
    return type == ocs::tom::FieldType::Double || type == ocs::tom::FieldType::Uint32 ||
@@ -105,7 +105,7 @@ static bool ocs_parse_is_num_type(const std::optional<ocs::tom::FieldType> type)
 }
 
 /**
- * @brief Parse an argv style array of strings into a CULL list
+ * @brief Parse an argv style array of strings into a list
  *
  * Each word goes into the field the interpretation rule names at its place;
  * when the rule is used up, a new element is started and the rule starts
@@ -124,18 +124,18 @@ static bool ocs_parse_is_num_type(const std::optional<ocs::tom::FieldType> type)
  *         long or int, -12 for a field of another type than these, a string, a host or a list, or one
  *         @p descr does not hold, -13 if the words do not fill the last element
  *
- * @note MT-NOTE: cull_parse_string_list() is MT safe
+ * @note MT-NOTE: ocs_parse_string_list() is MT safe
  */
-int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
+int ocs_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
                            lList **pplist) {
    DENTER(BASIS_LAYER);
 
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
-      DPRINTF("cull_parse_string_list: nullptr pointer received\n");
+      DPRINTF("ocs_parse_string_list: nullptr pointer received\n");
       DRETURN(-1);
    }
    if (*interpretation_rule == 0) {
-      DPRINTF("cull_parse_string_list: zero interpretation rule\n");
+      DPRINTF("ocs_parse_string_list: zero interpretation rule\n");
       DRETURN(-2);
    }
    // the creations report a failure by an exception, the codes of the former nullptr results are kept
@@ -148,7 +148,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
       // list stays empty
    }
    if (!list) {
-      DPRINTF("cull_parse_string_list: cannot create list\n");
+      DPRINTF("ocs_parse_string_list: cannot create list\n");
       DRETURN(-3);
    }
    ocs::tom::RawElement ep;
@@ -160,7 +160,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
       ep = nullptr;
    }
    if (!ep) {
-      DPRINTF("cull_parse_string_list: cannot create element\n");
+      DPRINTF("ocs_parse_string_list: cannot create element\n");
       DRETURN(-4);
    }
    /*
@@ -178,7 +178,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
             ep = nullptr;
          }
          if (!ep) {
-            DPRINTF("cull_parse_string_list: cannot create another element\n");
+            DPRINTF("ocs_parse_string_list: cannot create another element\n");
             DRETURN(-5);
          }
       }
@@ -187,14 +187,14 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
       const std::optional<ocs::tom::FieldType> type = ocs_parse_field_type(descr, *rule);
       switch (type.value_or(ocs::tom::FieldType::Ref)) {
          /*
-         ** the format specifiers were copied from some cull routines
+         ** the format specifiers were copied from the old list library
          ** where similar things happen
          */
          case ocs::tom::FieldType::Double: {
             double dd;
 
             if (sscanf(*pstrlist, "%99lg", &dd) != 1) {
-               DPRINTF("cull_parse_string_list: error interpreting double: %s\n", *pstrlist);
+               DPRINTF("ocs_parse_string_list: error interpreting double: %s\n", *pstrlist);
                DRETURN(-7);
             }
             ep.set(*rule, dd);
@@ -204,7 +204,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
             std::uint32_t ul;
 
             if (sscanf(*pstrlist, sge_u32, &ul) != 1) {
-               DPRINTF("cull_parse_string_list: error interpreting ulong: %s\n", *pstrlist);
+               DPRINTF("ocs_parse_string_list: error interpreting ulong: %s\n", *pstrlist);
                DRETURN(-8);
             }
             ep.set(*rule, ul);
@@ -214,7 +214,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
             long l;
 
             if (sscanf(*pstrlist, "%ld", &l) != 1) {
-               DPRINTF("cull_parse_string_list: error interpreting long: %s\n", *pstrlist);
+               DPRINTF("ocs_parse_string_list: error interpreting long: %s\n", *pstrlist);
                DRETURN(-9);
             }
             ep.set(*rule, static_cast<std::int64_t>(l));
@@ -224,7 +224,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
             std::int32_t i;
 
             if (sscanf(*pstrlist, "%d", &i) != 1) {
-               DPRINTF("cull_parse_string_list: error interpreting int: %s\n", *pstrlist);
+               DPRINTF("ocs_parse_string_list: error interpreting int: %s\n", *pstrlist);
                DRETURN(-11);
             }
             ep.set(*rule, i);
@@ -271,13 +271,13 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
 
 /*
 ** NAME
-**   cull_parse_definition_list
+**   ocs_parse_definition_list
 ** PARAMETER
 **   str                 - string to be parsed
 **   lpp                 - list pointer-pointer to be set the list,
 **                         or nullptr if first token is NONE
-**   name                - name for the cull list
-**   descr               - type of the cull list
+**   name                - name for the list
+**   descr               - type of the list
 **   interpretation_rule - fields to be filled, normally 2 entries
 ** RETURN
 **
@@ -287,7 +287,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
 **   parses list of form var=value,var=value,...
 */
 /**
- * @brief Parse a `name=value,name=value` string into a CULL list
+ * @brief Parse a `name=value,name=value` string into a list
  *
  * @param str the text to parse; it is modified in place by the tokenizer
  * @param[out] lpp receives the list
@@ -296,7 +296,7 @@ int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *
  * @param interpretation_rule the attributes the name and the value are stored in
  * @return 0 on success
  */
-int cull_parse_definition_list(
+int ocs_parse_definition_list(
 char *str,
 lList **lpp,
 const char *name,
@@ -320,7 +320,7 @@ int *interpretation_rule
       sge_free(&pstr);
       DRETURN(0);
    }
-   ret = cull_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
+   ret = ocs_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
    sge_free(&pstr);
    if (ret) {
       DRETURN(-3);
@@ -344,7 +344,7 @@ int *interpretation_rule
  * @return 0 on success, -4 for a list field @p nm_var, -5 for a 64 bit unsigned, bool, object or reference field
  *         or one the list does not hold; the errors are found only for a list of two elements or more
  */
-int cull_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, const int nm_value,
+int ocs_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, const int nm_value,
                                   const int double_keys) {
    DENTER(BASIS_LAYER);
 
@@ -399,11 +399,11 @@ int cull_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, 
                break;
 
             case ocs::tom::FieldType::List:
-               DPRINTF(("cull_compress_definition_list: " \
+               DPRINTF(("ocs_compress_definition_list: " \
                   "list type not implemented with this function\n"));
                DRETURN(-4);
             default:
-               DPRINTF("cull_compress_definition_list: invalid type\n");
+               DPRINTF("ocs_compress_definition_list: invalid type\n");
                DRETURN(-5);
          } /* end switch */
 
@@ -756,9 +756,9 @@ template void parse_list_hardsoft<JRS_hard_queue_list, NoName>(
  *
  * @return error code 0 = okay 1 = error, and the parsed list (`PN`), an empty handle on an error
  *
- * @note MT-NOTE: cull_parse_path_list() is MT safe
+ * @note MT-NOTE: ocs_parse_path_list() is MT safe
  */
-std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char *path_str) {
+std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> ocs_parse_path_list(const char *path_str) {
    DENTER(TOP_LAYER);
 
    char **str_str = nullptr;
@@ -818,9 +818,9 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char 
  * @return 0 on success, 2 when the string holds no job id, 3 when it could not be parsed; and the
  *         `ST` result list, an empty handle on an error
  *
- * @note MT-NOTE: cull_parse_jid_hold_list() is MT safe
+ * @note MT-NOTE: ocs_parse_jid_hold_list() is MT safe
  */
-std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const char *str) {
+std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> ocs_parse_jid_hold_list(const char *str) {
    DENTER(TOP_LAYER);
 
    int rule[] = {ST_name, 0};
@@ -834,9 +834,9 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const c
       sge_free(&s);
       DRETURN(std::make_pair(2, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
-   // cull_parse_string_list() is generic over the descriptor; it fills the list only on success
+   // ocs_parse_string_list() is generic over the descriptor; it fills the list only on success
    lList *parsed = nullptr;
-   const int i_ret = cull_parse_string_list(str_str, "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
+   const int i_ret = ocs_parse_string_list(str_str, "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
    // the list was created with ST above, so it is taken over unchecked
    auto list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(parsed);
 

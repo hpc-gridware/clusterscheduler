@@ -60,7 +60,7 @@
  */
 extern const char *default_prefix;
 
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root,
+ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_job_parameter(uint32_t uid, const char *username, const char *cell_root,
                                                          const char *unqualified_hostname,
                                                          const char *qualified_hostname,
                                                          ocs::tom::List<ocs::tom::SPA> cmdline,

@@ -7,7 +7,7 @@
       "Jobs which are submitted into the AR can use these resources.",
       "See also man pages qrsub.1, qrstat.1, and qrdel.1"
    ],
-   "cullPrefix": "AR",
+   "fieldPrefix": "AR",
    "attributes": [
       {
          "name": "id",
@@ -164,7 +164,7 @@
          ],
          "type": "List",
          "subClassName": "CE",
-         "subCullPrefix": "CE",
+         "subFieldPrefix": "CE",
          "flags": [
             "SPOOL"
          ]
@@ -177,7 +177,7 @@
          ],
          "type": "List",
          "subClassName": "RUE",
-         "subCullPrefix": "RUE",
+         "subFieldPrefix": "RUE",
          "flags": []
       },
       {
@@ -189,7 +189,7 @@
          ],
          "type": "List",
          "subClassName": "QR",
-         "subCullPrefix": "QR",
+         "subFieldPrefix": "QR",
          "flags": [
             "SPOOL"
          ]
@@ -202,7 +202,7 @@
          ],
          "type": "List",
          "subClassName": "JG",
-         "subCullPrefix": "JG",
+         "subFieldPrefix": "JG",
          "flags": [
             "SPOOL"
          ]
@@ -217,7 +217,7 @@
          ],
          "type": "List",
          "subClassName": "ExecHost",
-         "subCullPrefix": "EH",
+         "subFieldPrefix": "EH",
          "flags": [
             "SPOOL"
          ]
@@ -231,7 +231,7 @@
          ],
          "type": "List",
          "subClassName": "QU",
-         "subCullPrefix": "QU",
+         "subFieldPrefix": "QU",
          "flags": [
             "SPOOL"
          ]
@@ -255,7 +255,7 @@
          ],
          "type": "List",
          "subClassName": "MR",
-         "subCullPrefix": "MR",
+         "subFieldPrefix": "MR",
          "flags": [
             "SPOOL"
          ]
@@ -279,7 +279,7 @@
          ],
          "type": "List",
          "subClassName": "RN",
-         "subCullPrefix": "RN",
+         "subFieldPrefix": "RN",
          "flags": [
             "SPOOL"
          ]
@@ -303,7 +303,7 @@
          ],
          "type": "List",
          "subClassName": "QR",
-         "subCullPrefix": "QR",
+         "subFieldPrefix": "QR",
          "flags": [
             "SPOOL"
          ]
@@ -316,7 +316,7 @@
          ],
          "type": "List",
          "subClassName": "ARA",
-         "subCullPrefix": "ARA",
+         "subFieldPrefix": "ARA",
          "flags": [
             "SPOOL"
          ]
@@ -329,7 +329,7 @@
          ],
          "type": "List",
          "subClassName": "ARA",
-         "subCullPrefix": "ARA",
+         "subFieldPrefix": "ARA",
          "flags": [
             "SPOOL"
          ]
@@ -366,7 +366,7 @@
          ],
          "type": "List",
          "subClassName": "JobRequestSet",
-         "subCullPrefix": "JRS",
+         "subFieldPrefix": "JRS",
          "flags": [
             "SPOOL"
          ]
@@ -381,7 +381,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]
@@ -394,7 +394,7 @@
          ],
          "type": "List",
          "subClassName": "GrantedResource",
-         "subCullPrefix": "GRU",
+         "subFieldPrefix": "GRU",
          "flags": [
             "SPOOL"
          ]
@@ -407,7 +407,7 @@
          ],
          "type": "Object",
          "subClassName": "BN",
-         "subCullPrefix": "BN",
+         "subFieldPrefix": "BN",
          "flags": [
             "SPOOL"
          ]
@@ -431,7 +431,7 @@
          ],
          "type": "Object",
          "subClassName": "ParallelEnvironment",
-         "subCullPrefix": "PE",
+         "subFieldPrefix": "PE",
          "flags": [
             "SPOOL"
          ]

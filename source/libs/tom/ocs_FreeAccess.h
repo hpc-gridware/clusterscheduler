@@ -1827,7 +1827,7 @@ namespace ocs::tom {
     * Walks the list front to back and removes every earlier element with the key of the
     * current one, so the order of the elements that stay is kept. A string or host key that
     * is nullptr is never a repetition. Host names compare as host names (as find_first()
-    * does), strings with strcmp(). This is what `cull_compress_definition_list()` did, which
+    * does), strings with strcmp(). This is what `ocs_compress_definition_list()` did, which
     * compared host names with strcmp().
     *
     * @tparam Key the key field of the list's type: a number (also Int32, Int64, Double, Bool), string or host
@@ -1859,7 +1859,7 @@ namespace ocs::tom {
     * value of @p Value; an element whose key @p dst does not hold is appended as a copy.
     * Two string or host keys that are both nullptr are equal. Host names compare as host
     * names (as find_first() does), strings with strcmp(). This is what
-    * `cull_merge_definition_list()` did, which compared host names with strcmp().
+    * `ocs_merge_definition_list()` did, which compared host names with strcmp().
     *
     * @tparam Key the key field of the lists' type: a key-capable field (Uint32, Uint64, String or Host), as
     *         find_first() takes

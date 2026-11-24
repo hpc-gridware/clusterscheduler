@@ -4,7 +4,7 @@
    "description": [
       "An object of this type holds user configuration data as well as usage accumulators."
    ],
-   "cullPrefix": "UU",
+   "fieldPrefix": "UU",
    "attributes": [
       {
          "name": "name",
@@ -83,7 +83,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL"
          ]
@@ -116,7 +116,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL"
          ]
@@ -129,7 +129,7 @@
          ],
          "type": "List",
          "subClassName": "UPP",
-         "subCullPrefix": "UPP",
+         "subFieldPrefix": "UPP",
          "flags": [
             "SPOOL"
          ]
@@ -142,7 +142,7 @@
          ],
          "type": "List",
          "subClassName": "UPU",
-         "subCullPrefix": "UPU",
+         "subFieldPrefix": "UPU",
          "flags": [
             "SPOOL"
          ]
@@ -187,7 +187,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

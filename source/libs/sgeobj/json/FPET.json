@@ -7,7 +7,7 @@
       "A ja task will contain a list of finished pe tasks.",
       "Only the task id of finished tasks will be stored."
    ],
-   "cullPrefix": "FPET",
+   "fieldPrefix": "FPET",
    "attributes": [
       {
          "name": "id",

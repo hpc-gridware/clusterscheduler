@@ -5,7 +5,7 @@
       "Objects of this type are used to sort the job list in the scheduler.",
       "All attributes are references to objects in other lists."
    ],
-   "cullPrefix": "FCAT",
+   "fieldPrefix": "FCAT",
    "attributes": [
       {
          "name": "job_share",
@@ -33,7 +33,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -55,7 +55,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -77,7 +77,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -90,7 +90,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -103,7 +103,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

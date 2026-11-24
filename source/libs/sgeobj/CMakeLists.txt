@@ -80,7 +80,7 @@ endif()
 set(LIBRARY_NAME sgeobj)
 set(LIBRARY_SOURCES
         config.cc
-        cull_parse_util.cc
+        ocs_parse_util.cc
         ocs_AdvanceReservation.cc
         ocs_AutoAddHosts.cc
         ocs_AnswerException.cc
@@ -121,7 +121,7 @@ set(LIBRARY_SOURCES
         sge_conf.cc
         sge_cqueue.cc
         sge_cqueue_verify.cc
-        sge_cull_xml.cc
+        ocs_object_xml.cc
         sge_daemonize.cc
         sge_eval_expression.cc
         sge_event.cc

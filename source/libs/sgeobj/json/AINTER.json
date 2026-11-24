@@ -5,7 +5,7 @@
       "Used for interval attributes in the cluster queues.",
       "E.g. used for the queue suspend_interval and the notify interval."
    ],
-   "cullPrefix": "AINTER",
+   "fieldPrefix": "AINTER",
    "attributes": [
       {
          "name": "href",

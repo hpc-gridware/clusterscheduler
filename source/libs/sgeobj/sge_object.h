@@ -339,10 +339,10 @@ object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack
                           const lDescr *descr);
 
 bool
-object_list_verify_cull(ocs::tom::ConstRawList lp, const lDescr *descr);
+object_list_verify_structure(ocs::tom::ConstRawList lp, const lDescr *descr);
 
 bool
-object_verify_cull(ocs::tom::ConstRawElement ep, const lDescr *descr);
+object_verify_structure(ocs::tom::ConstRawElement ep, const lDescr *descr);
 
 bool
 ocs_object_list_verify_type(ocs::tom::ConstRawList lp, const lDescr *descr);

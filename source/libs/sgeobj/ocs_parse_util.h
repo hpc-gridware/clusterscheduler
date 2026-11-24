@@ -34,9 +34,9 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Declarations for parsing textual lists into CULL lists
+ * @brief Declarations for parsing textual lists into lists
  *
- * @see cull_parse_util.cc
+ * @see ocs_parse_util.cc
  */
 
 #include <ostream>
@@ -56,7 +56,7 @@
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/sge_object.h"
 
-/// Is this CULL type one whose value is printed as a number?
+/// Is this field type one whose value is printed as a number?
 #define L_IS_NUM_TYPE(x) ((x == MT_DOUBLE) || (x == MT_UINT32) || (x == MT_INT64)  || (x == MT_INT32))
 
 /**
@@ -73,12 +73,12 @@ template <auto Hard, auto Soft = NoName>
 void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
                          uint32_t scope);
 
-int cull_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
+int ocs_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
 
 
-int cull_compress_definition_list(ocs::tom::RawList lp, int nm_var, int nm_value, int double_keys);
+int ocs_compress_definition_list(ocs::tom::RawList lp, int nm_var, int nm_value, int double_keys);
 
-int cull_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
+int ocs_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
                            lList **pplist);
 
 int uni_print_list(std::ostream &os, ocs::tom::ConstRawList lp, const int *which_elements_rule, const char *pdelis[],
@@ -181,8 +181,8 @@ void parse_list_merge(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
    DRETURN_VOID;
 }
 
-std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> cull_parse_path_list(const char *path_str);
+std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> ocs_parse_path_list(const char *path_str);
 
-std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> cull_parse_jid_hold_list(const char *str);
+std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> ocs_parse_jid_hold_list(const char *str);
 
 int sge_parse_hold_list(const char *hold_str, uint32_t prog_number);

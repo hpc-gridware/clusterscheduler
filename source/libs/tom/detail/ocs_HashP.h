@@ -56,8 +56,8 @@ constexpr uint32_t TOM_HASH_MIN_ELEMS = 16;
  * @brief Default list length below which no hash table is built for a host field
  *
  * A host key is compared after normalising the stored name, so a linear search costs more than for other keys.
- * Measured with CULL_PERF on 2026-11-23 (thresholds 16, 4 and 0, three runs each): 0 lowered the scheduler CPU
- * by 4.4 % against 16, with job lifecycle, queries and memory unchanged. Each thread can choose its own value with
+ * Measured with the qmaster_tom_perf check on 2026-11-23 (thresholds 16, 4 and 0, three runs each): 0 lowered the
+ * scheduler CPU by 4.4 % against 16, with job lifecycle, queries and memory unchanged. Each thread can choose its own value with
  * ocs::tom::detail::hash_set_min_elems_host(), a process with the environment variable
  * `OCS_TOM_HASH_MIN_ELEMS_HOST`.
  */

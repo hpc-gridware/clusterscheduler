@@ -5,7 +5,7 @@
       "Objects of PETR are used to request the start of a task in a",
       "tightly integrated parallel job."
    ],
-   "cullPrefix": "PETR",
+   "fieldPrefix": "PETR",
    "attributes": [
       {
          "name": "jobid",
@@ -60,7 +60,7 @@
          ],
          "type": "List",
          "subClassName": "PA",
-         "subCullPrefix": "PA",
+         "subFieldPrefix": "PA",
          "flags": []
       },
       {
@@ -71,7 +71,7 @@
          ],
          "type": "List",
          "subClassName": "VA",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": []
       },
       {

@@ -420,7 +420,7 @@ qconf_names_host_list(const qconf_op &op, std::vector<std::string> &names, bool 
    DENTER(TOP_LAYER);
 
    std::string arg = op.args[0];
-   const auto hosts = parse_name_list_to_cull<EH_name>("hosts to change", arg.data());
+   const auto hosts = parse_name_list_to_list<EH_name>("hosts to change", arg.data());
    for (const auto host_ep : *hosts) {
       if (ocs_resolve_host<EH_name>(host_ep) != CL_RETVAL_OK) {
          qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_SGETEXT_CANTRESOLVEHOST_S,
@@ -440,7 +440,7 @@ qconf_names_userset_list(const qconf_op &op, std::vector<std::string> &names, [[
    DENTER(TOP_LAYER);
 
    std::string arg = op.args[0];
-   const auto usersets = parse_name_list_to_cull<US_name>("usersets", arg.data());
+   const auto usersets = parse_name_list_to_list<US_name>("usersets", arg.data());
    for (const auto us_ep : *usersets) {
       const char *name = us_ep.get<US_name>();
       names.emplace_back(name != nullptr ? name : "");

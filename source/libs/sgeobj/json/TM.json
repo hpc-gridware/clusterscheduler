@@ -4,7 +4,7 @@
    "description": [
       "An object of this type represents a timestamp (date and time). It mostly corresponds to the struct tm, see man."
    ],
-   "cullPrefix": "TM",
+   "fieldPrefix": "TM",
    "attributes": [
       {
          "name": "mday",

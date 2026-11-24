@@ -276,9 +276,9 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
    /* convert time_t format into struct tm format */
    tm_now = localtime_r(&now, &res);
 
-   /* cullify struct tm */
+   /* struct tm into an element */
    auto tm = ocs::tom::ElementPtr<ocs::tom::TM>::create();
-   cullify_tm(*tm, tm_now);
+   tm_to_element(*tm, tm_now);
 
    DPRINTF("now: sec: %d min: %d hour: %d mday: %d mon: %d year:%d wday: %d yday: %d isdst: %d\n",
          tm_now->tm_sec,
@@ -336,7 +336,7 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
                   visited[counter] = true;
                   temp_next_event += 1;
                   tm_now = localtime_r(&temp_next_event, &res);
-                  cullify_tm(*tm, tm_now);
+                  tm_to_element(*tm, tm_now);
 
                   temp_next_event = 0;
                   std::tie(w_is_active, limit, next_state) = is_week_entry_active(*tm, wc, 0);
@@ -435,9 +435,9 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
       /* convert time_t format into struct tm format */
       tm_now = localtime_r(&limit, &res);
 
-      /* cullify struct tm */
+      /* struct tm into an element */
       auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
-      cullify_tm(*new_tm, tm_now);
+      tm_to_element(*new_tm, tm_now);
 
       /* more than 2 recursion should never be needed, we allow 4 to be save.*/
       if (rec_count < 4) {
@@ -514,9 +514,9 @@ is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
       /* convert time_t format into struct tm format */
       tm_now = localtime_r(&limit, &res);
 
-      /* cullify struct tm */
+      /* struct tm into an element */
       auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
-      cullify_tm(*new_tm, tm_now);
+      tm_to_element(*new_tm, tm_now);
 
       auto [next_day_state, next_day_limit] = is_year_entry_active(*new_tm, year_entry);
 
@@ -833,7 +833,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
       }
 
       if (is_new_cal_entry) {
-         uncullify_tm(*lep, &tm_limit);
+         element_to_tm(*lep, &tm_limit);
          if (is_full_day) {/* a full day calendar, nothing else is needed. */
             lep.reset();
          }
@@ -898,7 +898,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          lep->set<TM_min>(59);
          lep->set<TM_sec>(59);
       }
-      uncullify_tm(new_now, &tm_limit);
+      element_to_tm(new_now, &tm_limit);
       tm_limit.tm_hour = lep->get<TM_hour>();
       tm_limit.tm_min = lep->get<TM_min>();
       tm_limit.tm_sec = lep->get<TM_sec>();
@@ -2307,7 +2307,7 @@ static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
  * @param[out] tm_ep the element to fill (TM)
  * @param tm_now the time to copy
  */
-void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now) {
+void tm_to_element(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm_now) {
    DENTER(TOP_LAYER);
 
    tm_ep.set<TM_mday>(tm_now->tm_mday);
@@ -2329,7 +2329,7 @@ void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm
  * @param tm_ep the element to read (TM)
  * @param[out] tm_now the structure to fill
  */
-void uncullify_tm(const ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now) {
+void element_to_tm(const ocs::tom::ConstElement<ocs::tom::TM> tm_ep, struct tm *tm_now) {
    DENTER(TOP_LAYER);
 
    tm_now->tm_mday =  tm_ep.get<TM_mday>();

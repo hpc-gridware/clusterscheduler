@@ -5,7 +5,7 @@
       "Time Event objects are used by the timed event thread in sge_qmaster.",
       "Time Event Objects store one time or recurring events which trigger predefined actions."
    ],
-   "cullPrefix": "TE",
+   "fieldPrefix": "TE",
    "attributes": [
       {
          "name": "when",

@@ -4,7 +4,7 @@
    "description": [
       "Objects of this type are used for testing purposes with modules tests."
    ],
-   "cullPrefix": "TEST",
+   "fieldPrefix": "TEST",
    "attributes": [
       {
          "name": "bool",
@@ -105,7 +105,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       },
       {
@@ -116,7 +116,7 @@
          ],
          "type": "Object",
          "subClassName": "ANY",
-         "subCullPrefix": "JB",
+         "subFieldPrefix": "JB",
          "flags": []
       },
       {
@@ -127,7 +127,7 @@
          ],
          "type": "Object",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       }
    ]

@@ -5,7 +5,7 @@
       "Used for string list attributes in the cluster queues.",
       "E.g. used for the queue pe_list and ckpt_list."
    ],
-   "cullPrefix": "ASTRLIST",
+   "fieldPrefix": "ASTRLIST",
    "attributes": [
       {
          "name": "href",
@@ -29,7 +29,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL_SUBLIST"
          ]

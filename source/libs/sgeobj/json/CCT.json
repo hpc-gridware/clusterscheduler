@@ -5,7 +5,7 @@
       "What the scheduler learned about one category while scheduling for one parallel environment.",
       "Jobs in a category make identical requests, so a queue or host that rejected the first job rejects them all. Remembering those rejections turns a per-job search into a per-category one, which is where most of the scheduler's speed on a large pending list comes from."
    ],
-   "cullPrefix": "CCT",
+   "fieldPrefix": "CCT",
    "attributes": [
       {
          "name": "pe_name",
@@ -24,7 +24,7 @@
          ],
          "type": "List",
          "subClassName": "SkipListEntry",
-         "subCullPrefix": "CTI",
+         "subFieldPrefix": "CTI",
          "flags": []
       },
       {
@@ -35,7 +35,7 @@
          ],
          "type": "List",
          "subClassName": "SkipListEntry",
-         "subCullPrefix": "CTI",
+         "subFieldPrefix": "CTI",
          "flags": []
       },
       {
@@ -46,7 +46,7 @@
          ],
          "type": "List",
          "subClassName": "JobSchedulingMessage",
-         "subCullPrefix": "MES",
+         "subFieldPrefix": "MES",
          "flags": []
       },
       {
@@ -57,7 +57,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

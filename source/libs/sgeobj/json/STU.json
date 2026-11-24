@@ -4,7 +4,7 @@
    "description": [
       "An object of this type holds a string which is unique in a List of STU."
    ],
-   "cullPrefix": "STU",
+   "fieldPrefix": "STU",
    "attributes": [
       {
          "name": "name",

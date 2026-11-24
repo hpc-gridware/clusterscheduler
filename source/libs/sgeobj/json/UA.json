@@ -4,7 +4,7 @@
    "description": [
       "Usage values hold the job usage information retrieved by sge_execd per job / array task / pe task."
    ],
-   "cullPrefix": "UA",
+   "fieldPrefix": "UA",
    "attributes": [
       {
          "name": "name",

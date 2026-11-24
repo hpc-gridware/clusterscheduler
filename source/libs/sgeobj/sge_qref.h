@@ -79,4 +79,4 @@ bool qref_list_eh_rejected(ocs::tom::ConstList<ocs::tom::QR> qref_list, const ch
 bool qref_list_host_rejected(const char *href, const char *hostname, ocs::tom::ConstList<ocs::tom::HGRP> hgroup_list);
 
 int
-cull_parse_destination_identifier_list(lList **lpp, const char *dest_str);
+ocs_parse_destination_identifier_list(lList **lpp, const char *dest_str);

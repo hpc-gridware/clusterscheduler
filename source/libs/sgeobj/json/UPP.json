@@ -5,7 +5,7 @@
       "This is the project usage list type we use to hold the usage for a user on a project basis.",
       "Each entry contains a project name and a usage list."
    ],
-   "cullPrefix": "UPP",
+   "fieldPrefix": "UPP",
    "attributes": [
       {
          "name": "name",
@@ -30,7 +30,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -44,7 +44,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]

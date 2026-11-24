@@ -1586,7 +1586,7 @@ notify(const ocs::tom::Element<ocs::tom::EH> lel, ocs::gdi::Packet *packet, ocs:
                               jep_JB_job_number, jep_JB_job_name);
                      snprintf(sge_mail_body, sizeof(sge_mail_body), MSG_MAIL_JOBKILLEDBODY_USS,
                               jep_JB_job_number, jep_JB_job_name, hostname);
-                     cull_mail(QMASTER, mail_users, sge_mail_subj, sge_mail_body, "job abortion");
+                     mail_to_users(QMASTER, mail_users, sge_mail_subj, sge_mail_body, "job abortion");
                   }
 
                   /* this job has the killed exechost as master host */

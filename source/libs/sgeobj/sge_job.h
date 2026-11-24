@@ -500,7 +500,7 @@ bool sge_unparse_acl_dstring(dstring *category_str, const char *owner, const cha
                              const char *option);
 
 bool job_verify(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                bool do_cull_verify);
+                bool do_structure_verify);
 
 bool job_verify_submitted_job(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 

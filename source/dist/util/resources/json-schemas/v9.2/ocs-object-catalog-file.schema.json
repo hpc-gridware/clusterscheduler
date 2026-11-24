@@ -27,18 +27,18 @@
          "type": "object",
          "required": [
             "className",
-            "cullPrefix",
-            "cullNameSpec",
+            "fieldPrefix",
+            "nameSpec",
             "size_in_basic_units"
          ],
          "properties": {
             "className": {
                "type": "string"
             },
-            "cullPrefix": {
+            "fieldPrefix": {
                "type": "string"
             },
-            "cullNameSpec": {
+            "nameSpec": {
                "type": "string"
             },
             "size_in_basic_units": {

@@ -4,7 +4,7 @@
    "description": [
       "element holding information for an answer to a request"
    ],
-   "cullPrefix": "AN",
+   "fieldPrefix": "AN",
    "attributes": [
       {
          "name": "status",

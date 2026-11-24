@@ -5,7 +5,7 @@
       "A bare pointer to another element, for building temporary reference lists.",
       "@warning No attribute of this type is read or written anywhere in either repository, and `REF` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
-   "cullPrefix": "REF",
+   "fieldPrefix": "REF",
    "attributes": [
       {
          "name": "ref",
@@ -15,7 +15,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

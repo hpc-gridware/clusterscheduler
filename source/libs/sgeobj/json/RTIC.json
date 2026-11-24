@@ -4,7 +4,7 @@
    "description": [
       "The tickets granted on one host, as the scheduler reports them back with its orders."
    ],
-   "cullPrefix": "RTIC",
+   "fieldPrefix": "RTIC",
    "attributes": [
       {
          "name": "host",
@@ -27,7 +27,7 @@
          ],
          "type": "List",
          "subClassName": "OR",
-         "subCullPrefix": "OR",
+         "subFieldPrefix": "OR",
          "flags": []
       }
    ]

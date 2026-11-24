@@ -10,7 +10,7 @@
       "It can be a list of objects or an individual object",
       "An event has a unique serial number."
    ],
-   "cullPrefix": "ET",
+   "fieldPrefix": "ET",
    "attributes": [
       {
          "name": "unique_id",
@@ -108,7 +108,7 @@
          ],
          "type": "List",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": []
       }
    ]

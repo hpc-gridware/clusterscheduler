@@ -306,7 +306,7 @@ qconf_run_reserved_hgroup(std::ostream &os, const ocs::QConfParameterClient &par
    }
 
    std::string arg = op.args[0];
-   auto names = parse_name_list_to_cull<HR_name>(entry.add ? "host to add" : "host to del", arg.data());
+   auto names = parse_name_list_to_list<HR_name>(entry.add ? "host to add" : "host to del", arg.data());
 
    bool ok = true;
    std::vector<std::string> members;

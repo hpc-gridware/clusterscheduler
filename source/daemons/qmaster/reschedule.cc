@@ -565,7 +565,7 @@ int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
             ocs::tom::ConstList<ocs::tom::MR> mail_users = jep.get<JB_mail_list>();
             snprintf(mail_subject, sizeof(mail_subject), MSG_RU_MAILSUB_SS, mail_type, mail_ids);
             snprintf(mail_body, sizeof(mail_body), MSG_RU_MAILBODY_SSSS, mail_type, mail_ids, hostname, mail_action, mail_type);
-            cull_mail(QMASTER, mail_users, mail_subject, mail_body, MSG_RU_MAILTYPE);
+            mail_to_users(QMASTER, mail_users, mail_subject, mail_body, MSG_RU_MAILTYPE);
          }
 
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_RU_MSGFILEINFO, mail_action, mail_type, mail_ids, hostname);

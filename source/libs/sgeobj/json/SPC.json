@@ -28,7 +28,7 @@
       "| SPR |>----------------------+",
       "+----------+"
    ],
-   "cullPrefix": "SPC",
+   "fieldPrefix": "SPC",
    "attributes": [
       {
          "name": "name",
@@ -50,7 +50,7 @@
          ],
          "type": "List",
          "subClassName": "SPR",
-         "subCullPrefix": "SPR",
+         "subFieldPrefix": "SPR",
          "flags": []
       },
       {
@@ -61,7 +61,7 @@
          ],
          "type": "List",
          "subClassName": "SPT",
-         "subCullPrefix": "SPT",
+         "subFieldPrefix": "SPT",
          "flags": []
       }
    ]

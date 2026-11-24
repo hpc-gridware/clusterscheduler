@@ -388,7 +388,7 @@ namespace ocs::tom {
     * per host and/or per host group
     * @see man page sge_queue_conf.5
     * @todo the attribute lists (starting below with seq_no) have a certain type, e.g. AULNG, but
-    *       but their SubClassName and SubCullPrefix are all ANY.
+    *       but their SubClassName and SubFieldPrefix are all ANY.
     */
    struct CQ {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */

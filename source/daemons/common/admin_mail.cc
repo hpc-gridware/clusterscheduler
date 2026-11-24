@@ -342,7 +342,7 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          sge_free(&shepherd_file_buf);
       }
 
-      cull_mail(progid, *lp_mail, sge_mail_subj, sge_dstring_get_string(&dstr_sge_mail_body_total),
+      mail_to_users(progid, *lp_mail, sge_mail_subj, sge_dstring_get_string(&dstr_sge_mail_body_total),
                 MSG_MAIL_TYPE_ADMIN);
 
       sge_dstring_free(&dstr_sge_mail_body_total);

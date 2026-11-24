@@ -5,7 +5,7 @@
       "The attributes of this element show the state of a load sensor.",
       "A list of these elements is used in the execd."
    ],
-   "cullPrefix": "LS",
+   "fieldPrefix": "LS",
    "attributes": [
       {
          "name": "name",
@@ -47,7 +47,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -60,7 +60,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -73,7 +73,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -104,7 +104,7 @@
          ],
          "type": "List",
          "subClassName": "LR",
-         "subCullPrefix": "LR",
+         "subFieldPrefix": "LR",
          "flags": []
       },
       {
@@ -115,7 +115,7 @@
          ],
          "type": "List",
          "subClassName": "LR",
-         "subCullPrefix": "LR",
+         "subFieldPrefix": "LR",
          "flags": []
       },
       {

@@ -2308,7 +2308,7 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                                 master_q.get<QU_qhostname>().c_str(), sge_dstring_get_string(&ds));
          }
 
-         cull_mail(EXECD, jep.get<JB_mail_list>(), sge_dstring_get_string(&subject),
+         mail_to_users(EXECD, jep.get<JB_mail_list>(), sge_dstring_get_string(&subject),
                    sge_dstring_get_string(&body), MSG_MAIL_TYPE_START);
          sge_dstring_free(&ds);
          sge_dstring_free(&subject);

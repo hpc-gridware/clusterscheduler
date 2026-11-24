@@ -4,7 +4,7 @@
    "description": [
       "An Object of this type stores a string."
    ],
-   "cullPrefix": "ST",
+   "fieldPrefix": "ST",
    "attributes": [
       {
          "name": "name",

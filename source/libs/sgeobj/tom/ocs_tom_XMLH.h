@@ -79,7 +79,7 @@ namespace ocs::tom {
     * @brief XML Document Header
     *
     * The head of a generated XML document: its version, root element name, stylesheets and attributes.
-    * Used by the clients' `-xml` output. See `sge_cull_xml.cc`.
+    * Used by the clients' `-xml` output. See `ocs_object_xml.cc`.
     */
    struct XMLH {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */

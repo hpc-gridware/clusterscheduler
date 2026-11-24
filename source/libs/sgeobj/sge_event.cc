@@ -528,7 +528,7 @@ bool event_client_verify(const ocs::tom::ConstElement<ocs::tom::EV> event_client
 
 #if 1
    if (ret) {
-      if (!object_verify_cull(event_client, ocs::tom::EV::descriptor.e)) {
+      if (!object_verify_structure(event_client, ocs::tom::EV::descriptor.e)) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, 
                                  MSG_OBJECT_STRUCTURE_ERROR);
          DTRACE;

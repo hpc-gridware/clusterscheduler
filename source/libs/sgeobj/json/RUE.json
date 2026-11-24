@@ -7,7 +7,7 @@
       "future utilization (due to currently running jobs,",
       "advance reservations and resource reservations)."
    ],
-   "cullPrefix": "RUE",
+   "fieldPrefix": "RUE",
    "attributes": [
       {
          "name": "name",
@@ -41,7 +41,7 @@
          ],
          "type": "List",
          "subClassName": "RESL",
-         "subCullPrefix": "RESL",
+         "subFieldPrefix": "RESL",
          "flags": []
       },
       {
@@ -61,7 +61,7 @@
          ],
          "type": "List",
          "subClassName": "RDE",
-         "subCullPrefix": "RDE",
+         "subFieldPrefix": "RDE",
          "flags": []
       },
       {
@@ -81,7 +81,7 @@
          ],
          "type": "List",
          "subClassName": "RDE",
-         "subCullPrefix": "RDE",
+         "subFieldPrefix": "RDE",
          "flags": []
       }
    ]

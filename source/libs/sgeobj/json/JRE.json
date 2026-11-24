@@ -5,7 +5,7 @@
       "Reference to a job by job id or job name.",
       "It is for example used to reference successor or predecessor jobs in job dependencies."
    ],
-   "cullPrefix": "JRE",
+   "fieldPrefix": "JRE",
    "attributes": [
       {
          "name": "job_number",

@@ -992,11 +992,11 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          }
          break;
       case SP_FORM_XML:
-      case SP_FORM_CULL:
+      case SP_FORM_PACKED:
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_SPOOL_FORMATNOTSUPPORTED_S,
-                                 "XML and CULL");
+                                 "XML and packed");
          break;
    }
 
@@ -1039,7 +1039,7 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  *                       when nullptr
  * @param instr          the layout to write in
  * @param destination    stdout, stderr, a temporary file or a named file
- * @param format         ASCII, XML, CULL or JSON
+ * @param format         ASCII, XML, packed or JSON
  * @param filepath       the file to write when `destination` is #SP_DEST_SPOOL
  * @param print_header   prepend the product version as a comment line; ASCII
  *                       output only
@@ -1141,11 +1141,11 @@ spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
          break;
       }
       case SP_FORM_XML:
-      case SP_FORM_CULL:
+      case SP_FORM_PACKED:
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                  ANSWER_QUALITY_ERROR,
                                  MSG_SPOOL_FORMATNOTSUPPORTED_S,
-                                 "XML and CULL");
+                                 "XML and packed");
          break;
    }
 

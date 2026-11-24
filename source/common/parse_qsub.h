@@ -68,9 +68,9 @@
 #define FLG_QALTER      2   ///< parse for `qalter`, where options that only make sense at submit time are rejected
 
 
-/* I've added a -wd option to cull_parse_job_parameter() to deal with the
+/* I've added a -wd option to ocs_parse_job_parameter() to deal with the
  * DRMAA_WD attribute.  It makes sense to me that since -wd exists and is
- * handled by cull_parse_job_parameter() that -cwd should just become an alias
+ * handled by ocs_parse_job_parameter() that -cwd should just become an alias
  * for -wd.  Code to do that is ifdef'ed out below just in case we decide
  * it's a good idea. */
 #if 0
@@ -80,7 +80,7 @@
 #define SGE_HOME_DIRECTORY "$$HOME$$"   ///< marks a `-wd` that was originally a `-cwd`, so it can still be resolved relative to the home directory
 #endif
 
-ocs::tom::ListPtr<ocs::tom::AN> cull_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp,
+ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_cmdline(uint32_t prog_number, const char **arg_list, char **envp,
                                                    ocs::tom::ListPtr<ocs::tom::SPA> &pcmdline, uint32_t flags);
 
 char *reroot_path(ocs::tom::ConstElement<ocs::tom::JB> pjob, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *alpp);

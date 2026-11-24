@@ -8,7 +8,7 @@
       "One object type will be read using one (the default) spooling rule.",
       "One spooling rule can be referenced by multiple object types."
    ],
-   "cullPrefix": "SPTR",
+   "fieldPrefix": "SPTR",
    "attributes": [
       {
          "name": "is_default",
@@ -39,7 +39,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

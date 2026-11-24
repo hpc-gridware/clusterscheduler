@@ -397,7 +397,7 @@ void sge_send_suspend_mail(const uint32_t signal, const ocs::tom::ConstElement<o
        snprintf(mail_body, sizeof(mail_body), MSG_MAIL_BODY_SSSSS, mail_subject, job_master_queue, job_owner, job_sub_time_str, job_exec_time_str);
        snprintf(mail_body, sizeof(mail_body), "\n");
 
-       cull_mail(EXECD, mail_users, mail_subject, mail_body, mail_type );
+       mail_to_users(EXECD, mail_users, mail_subject, mail_body, mail_type );
    }
    DRETURN_VOID;
 }

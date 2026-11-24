@@ -5,7 +5,7 @@
       "A limit with references to the global, host and queue objects it was resolved against.",
       "The scheduler builds one per load threshold that depends on a consumable (sge_create_load_list() in libs/sched/sge_select_queue.cc) and checks the queues of the list for load alarm after each dispatch."
    ],
-   "cullPrefix": "LDR",
+   "fieldPrefix": "LDR",
    "attributes": [
       {
          "name": "queue_ref_list",
@@ -15,7 +15,7 @@
          ],
          "type": "List",
          "subClassName": "QueueReferenceList",
-         "subCullPrefix": "QRL",
+         "subFieldPrefix": "QRL",
          "flags": []
       },
       {
@@ -35,7 +35,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -48,7 +48,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]
@@ -61,7 +61,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

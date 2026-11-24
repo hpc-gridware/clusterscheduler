@@ -66,7 +66,7 @@
 #include "sgeobj/ocs_BindingType.h"
 #include "sgeobj/ocs_BindingUnit.h"
 #include "sgeobj/ocs_Job.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_centry.h"
@@ -112,7 +112,7 @@
  * @def JOB_NAME_DEL
  * @brief Separates the job name from what follows it in a JSV parameter
  *
- * Defined inside `jsv_cull_attr2switch_name` rather than at file scope, so it
+ * Defined inside `jsv_field2switch_name` rather than at file scope, so it
  * is documented here explicitly - doxygen does not attach a preceding comment
  * to a macro defined in a function body.
  */
@@ -232,7 +232,7 @@ ocs_jsv_set_path_list_param(const ocs::tom::Element<ocs::tom::JB> new_job, ocs::
    ocs::tom::ListPtr<ocs::tom::PN> path_list;
 
    if (value != nullptr) {
-      auto [local_ret, parsed] = cull_parse_path_list(value);
+      auto [local_ret, parsed] = ocs_parse_path_list(value);
       path_list = std::move(parsed);
       if (local_ret != 0) {
          answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param, value);
@@ -263,7 +263,7 @@ ocs_jsv_parse_jid_request_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
    ocs::tom::ListPtr<ocs::tom::JRE> jref_list;
 
    if (value != nullptr) {
-      auto [local_ret, parsed] = cull_parse_jid_hold_list(value);
+      auto [local_ret, parsed] = ocs_parse_jid_hold_list(value);
       hold_list = std::move(parsed);
       if (local_ret != 0) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param, value);
@@ -759,8 +759,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             ocs::tom::ListPtr<ocs::tom::QR> id_list;
 
             if (value != nullptr) {
-               lList *parsed = nullptr; // cull_parse_destination_identifier_list() has no typed form
-               const int local_ret = cull_parse_destination_identifier_list(&parsed, value);
+               lList *parsed = nullptr; // ocs_parse_destination_identifier_list() has no typed form
+               const int local_ret = ocs_parse_destination_identifier_list(&parsed, value);
                id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(parsed);
                if (local_ret != 0) {
                   answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
@@ -2250,58 +2250,58 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
  *
  * The attribute comes from the descriptor of the job at run time, so it stays a field number.
  *
- * @param cull_attr the field
+ * @param field_nm the field
  * @param job A JB object
  * @return Pointer to a static string with the switch name or nullptr if the attribute is not supported.
  */
 static const char *
-jsv_cull_attr2switch_name(const int cull_attr, const ocs::tom::ConstElement<ocs::tom::JB> job) {
+jsv_field2switch_name(const int field_nm, const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
    const char *ret = nullptr;
 
-   if (cull_attr == JB_execution_time) {
+   if (field_nm == JB_execution_time) {
       ret = "a";
-   } else if (cull_attr == JB_context || cull_attr == JB_context_change) {
+   } else if (field_nm == JB_context || field_nm == JB_context_change) {
       ret = "ac"; // although it might also be a ds or sc request we return ac here
-   } else if (cull_attr == JB_ar) {
+   } else if (field_nm == JB_ar) {
       ret = "ar";
-   } else if (cull_attr == JB_account) {
+   } else if (field_nm == JB_account) {
       ret = "A";
-   } else if (cull_attr == JB_binding) {
+   } else if (field_nm == JB_binding) {
       ret = "binding";
-   } else if (cull_attr == JB_checkpoint_interval) {
+   } else if (field_nm == JB_checkpoint_interval) {
       ret = "c_interval";
-   } else if (cull_attr == JB_checkpoint_attr) {
+   } else if (field_nm == JB_checkpoint_attr) {
       ret = "c_occasion";
-   } else if (cull_attr == JB_checkpoint_name) {
+   } else if (field_nm == JB_checkpoint_name) {
       ret = "ckpt";
-   } else if (cull_attr == JB_cwd) {
+   } else if (field_nm == JB_cwd) {
       ret = "cwd";
-   } else if (cull_attr == JB_deadline) {
+   } else if (field_nm == JB_deadline) {
       ret = "dl";
-   } else if (cull_attr == JB_stderr_path_list) {
+   } else if (field_nm == JB_stderr_path_list) {
       ret = "e";
-   } else if (cull_attr == JB_jid_request_list) {
+   } else if (field_nm == JB_jid_request_list) {
       ret = "hold_jid";
-   } else if (cull_attr == JB_ja_ad_request_list) {
+   } else if (field_nm == JB_ja_ad_request_list) {
       ret = "hold_jid_ad";
-   } else if (cull_attr == JB_ja_tasks) {
+   } else if (field_nm == JB_ja_tasks) {
       ret = "h";
-   } else if (cull_attr == JB_stdin_path_list) {
+   } else if (field_nm == JB_stdin_path_list) {
       ret = "i";
-   } else if (cull_attr == JB_merge_stderr) {
+   } else if (field_nm == JB_merge_stderr) {
       ret = "j";
-   } else if (cull_attr == JB_jobshare) {
+   } else if (field_nm == JB_jobshare) {
       ret = "js";
-   } else if (cull_attr == JB_request_set_list) {
+   } else if (field_nm == JB_request_set_list) {
       ret = nullptr;
-   } else if (cull_attr == JB_mail_options) {
+   } else if (field_nm == JB_mail_options) {
       ret = "m";
-   } else if (cull_attr == JB_notify) {
+   } else if (field_nm == JB_notify) {
       ret = "notify";
-   } else if (cull_attr == JB_mail_list) {
+   } else if (field_nm == JB_mail_list) {
       ret = "M";
-   } else if (cull_attr == JB_job_name) {
+   } else if (field_nm == JB_job_name) {
       // This is a special case for JB_job_name parameter.
       // A) null
       //    qalter ... <jid>         => qalter with job id
@@ -2323,29 +2323,29 @@ jsv_cull_attr2switch_name(const int cull_attr, const ocs::tom::ConstElement<ocs:
             ret = "N"; // case B
          }
       }
-   } else if (cull_attr == JB_stdout_path_list) {
+   } else if (field_nm == JB_stdout_path_list) {
       ret = "o";
-   } else if (cull_attr == JB_project) {
+   } else if (field_nm == JB_project) {
       ret = "P";
-   } else if (cull_attr == JB_priority) {
+   } else if (field_nm == JB_priority) {
       ret = "p";
-   } else if (cull_attr == JB_pe) {
+   } else if (field_nm == JB_pe) {
       ret = "pe_name";
-   } else if (cull_attr == JB_pe_range) {
+   } else if (field_nm == JB_pe_range) {
       ret = "pe_min";
-   } else if (cull_attr == JB_reserve) {
+   } else if (field_nm == JB_reserve) {
       ret = "R";
-   } else if (cull_attr == JB_restart) {
+   } else if (field_nm == JB_restart) {
       ret = "r";
-   } else if (cull_attr == JB_shell_list) {
+   } else if (field_nm == JB_shell_list) {
       ret = "S";
-   } else if (cull_attr == JB_ja_structure) {
+   } else if (field_nm == JB_ja_structure) {
       ret = "t";
-   } else if (cull_attr == JB_env_list) {
+   } else if (field_nm == JB_env_list) {
       ret = "v"; /* v will be returned even if V was specified */
-   } else if (cull_attr == JB_verify_suitable_queues) {
+   } else if (field_nm == JB_verify_suitable_queues) {
       ret = "w";
-   } else if (cull_attr == JB_script_file) {
+   } else if (field_nm == JB_script_file) {
       ret = "CMDNAME";
    }
    DRETURN(ret);
@@ -2384,7 +2384,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
             const lDescr *descr = job.descr();
             for (const auto f : ocs::tom::present_fields(descr)) {
                // JB_context and JB_context_change both map to ac, which is listed once
-               if (const char *switch_name = jsv_cull_attr2switch_name(descr[f.pos].nm, job);
+               if (const char *switch_name = jsv_field2switch_name(descr[f.pos].nm, job);
                    switch_name != nullptr && !got_switches->find_first<ST_name>(switch_name)) {
                   got_switches->emplace_back<ST_name>(switch_name);
                }

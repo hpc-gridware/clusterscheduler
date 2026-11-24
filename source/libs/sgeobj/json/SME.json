@@ -4,7 +4,7 @@
    "description": [
       "Root object for scheduler messages enabled by scheduler config attribute schedd_job_info."
    ],
-   "cullPrefix": "SME",
+   "fieldPrefix": "SME",
    "attributes": [
       {
          "name": "message_list",
@@ -14,7 +14,7 @@
          ],
          "type": "List",
          "subClassName": "MES",
-         "subCullPrefix": "MES",
+         "subFieldPrefix": "MES",
          "flags": []
       },
       {
@@ -25,7 +25,7 @@
          ],
          "type": "List",
          "subClassName": "MES",
-         "subCullPrefix": "MES",
+         "subFieldPrefix": "MES",
          "flags": []
       }
    ]

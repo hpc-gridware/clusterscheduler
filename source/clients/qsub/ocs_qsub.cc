@@ -67,7 +67,7 @@
 #include "sig_handlers.h"
 #include <cinttypes>
 #include "usage.h"
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 #include "ocs_client_parse.h"
 #include "msg_clients_common.h"
 #include "msg_qsub.h"
@@ -228,7 +228,7 @@ int main(int argc, const char **argv) {
    uint32_t sync_opt = SYNC_NO;
    // the job is created by the parser
    job.reset();
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, *opts_all,
+   alp = ocs_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname, *opts_all,
                                   job, &sync_opt);
 
    job_set_command_line(*job, argc, argv);
@@ -257,7 +257,7 @@ int main(int argc, const char **argv) {
 
    if (job->get<JB_verify>()) {
       std::stringstream ss;
-      ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
+      ocs::QStatJobViewPlain::show_job_details(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
       printf("%s", ss.str().c_str());
       sge_exit(0);
    }

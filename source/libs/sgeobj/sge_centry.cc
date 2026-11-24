@@ -74,7 +74,7 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_centry_rsmap.h"
 #include "sgeobj/sge_object.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_ACELIST.h"
 #include "sgeobj/tom/ocs_tom_CE.h"

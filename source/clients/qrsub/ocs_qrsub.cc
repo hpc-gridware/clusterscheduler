@@ -56,7 +56,7 @@
 
 #include "ocs_client_parse.h"
 #include "parse_qsub.h"
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 #include "usage.h"
 #include "sig_handlers.h"
 #include "ocs_qrsub_parse.h"
@@ -120,7 +120,7 @@ int main(int argc, const char **argv) {
          goto error_exit;
       }
 
-      alp = cull_parse_cmdline(QRSUB, argv+1, environ, pcmdline, FLG_USE_PSEUDOS);
+      alp = ocs_parse_cmdline(QRSUB, argv+1, environ, pcmdline, FLG_USE_PSEUDOS);
    }
 
    if (answer_list_print_err_warn(&alp, nullptr, "qrsub: ", MSG_WARNING) > 0) {

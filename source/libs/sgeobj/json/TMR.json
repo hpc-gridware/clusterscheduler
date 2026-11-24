@@ -4,7 +4,7 @@
    "description": [
       "Used for time ranges represented by two (begin and end) timestamps (TM)."
    ],
-   "cullPrefix": "TMR",
+   "fieldPrefix": "TMR",
    "attributes": [
       {
          "name": "begin",
@@ -14,7 +14,7 @@
          ],
          "type": "List",
          "subClassName": "TM",
-         "subCullPrefix": "TM",
+         "subFieldPrefix": "TM",
          "flags": []
       },
       {
@@ -25,7 +25,7 @@
          ],
          "type": "List",
          "subClassName": "TM",
-         "subCullPrefix": "TM",
+         "subFieldPrefix": "TM",
          "flags": []
       }
    ]

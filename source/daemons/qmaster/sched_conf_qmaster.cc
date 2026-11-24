@@ -122,7 +122,7 @@ sge_mod_sched_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task, cons
       answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_EUNKNOWN);
    }
-   if (!object_verify_cull(confp, ocs::tom::SC::descriptor.e)) {
+   if (!object_verify_structure(confp, ocs::tom::SC::descriptor.e)) {
       answer_list_add(alpp, MSG_INCOMPLETE_SCHEDD_CONFIG, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       DRETURN(STATUS_ESYNTAX);
    }

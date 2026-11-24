@@ -40,7 +40,7 @@
  * Values are XML escaped as they are added, so callers pass plain text
  * throughout.
  *
- * @see sge_cull_xml.h
+ * @see ocs_object_xml.h
  */
 
 #include <cstdio>
@@ -60,7 +60,7 @@
 
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_EscapedString.h"
-#include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/ocs_object_xml.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Model.h"
 #include "tom/ocs_Raw.h"

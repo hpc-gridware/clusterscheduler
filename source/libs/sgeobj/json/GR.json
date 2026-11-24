@@ -4,7 +4,7 @@
    "description": [
       "A single UNIX group id, used where a list of supplementary groups is needed."
    ],
-   "cullPrefix": "GR",
+   "fieldPrefix": "GR",
    "attributes": [
       {
          "name": "group",

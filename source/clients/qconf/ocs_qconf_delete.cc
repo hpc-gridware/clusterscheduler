@@ -289,7 +289,7 @@ struct qconf_delete_entry {
 
 /** @brief "-dhgrp group,...": the host groups of the list (CS-2306 C4)
  *
- * The list is taken apart by parse_name_list_to_cull(), as it always was.
+ * The list is taken apart by parse_name_list_to_list(), as it always was.
  *
  * @param os unused
  * @param op the operation
@@ -299,13 +299,13 @@ struct qconf_delete_entry {
 static int
 qconf_delete_hgroup_list([[maybe_unused]] std::ostream &os, const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::string arg = op.args[0];
-   const auto groups = parse_name_list_to_cull<HGRP_name>("host groups to del", arg.data());
+   const auto groups = parse_name_list_to_list<HGRP_name>("host groups to del", arg.data());
    return qconf_delete_send(QConfObj::HGRP, qconf_delete_names_of<HGRP_name>(*groups), {}, alpp);
 }
 
 /** @brief "-de host,...": the execution hosts of the list
  *
- * The list is taken apart by parse_name_list_to_cull(), as the block that
+ * The list is taken apart by parse_name_list_to_list(), as the block that
  * served it did; qmaster resolves each host (CS-2753 made it one request).
  *
  * @param os unused
@@ -317,7 +317,7 @@ static int
 qconf_delete_exechost_list([[maybe_unused]] std::ostream &os, const qconf_op &op,
                            ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    std::string arg = op.args[0];
-   const auto hosts = parse_name_list_to_cull<EH_name>("host to del", arg.data());
+   const auto hosts = parse_name_list_to_list<EH_name>("host to del", arg.data());
    return qconf_delete_send(QConfObj::EH, qconf_delete_names_of<EH_name>(*hosts), {}, alpp);
 }
 

@@ -6,7 +6,7 @@
       "@todo Why to we have an ASTR type and an ASTRING type? They have the same definition.",
       "      Looks as if ASTRING is not used at all, delete it."
    ],
-   "cullPrefix": "ASTRING",
+   "fieldPrefix": "ASTRING",
    "attributes": [
       {
          "name": "href",

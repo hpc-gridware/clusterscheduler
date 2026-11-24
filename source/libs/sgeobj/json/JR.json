@@ -5,7 +5,7 @@
       "Definition of a job report sent from sge_execd to sge_qmaster.",
       "Job reports are sent for every running array task and every task of a tightly integrated parallel job."
    ],
-   "cullPrefix": "JR",
+   "fieldPrefix": "JR",
    "attributes": [
       {
          "name": "job_number",
@@ -80,7 +80,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": []
       },
       {

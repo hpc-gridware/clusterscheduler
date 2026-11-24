@@ -5,7 +5,7 @@
       "Per-user counts of running jobs, split by deadline and non-deadline, with scheduler sort state.",
       "@warning No attribute of this type is read or written anywhere in either repository, and `USR` itself is referenced nowhere. Left in place because removing a type changes the spooled object model."
    ],
-   "cullPrefix": "USR",
+   "fieldPrefix": "USR",
    "attributes": [
       {
          "name": "name",
@@ -42,7 +42,7 @@
          ],
          "type": "List",
          "subClassName": "JRL",
-         "subCullPrefix": "JRL",
+         "subFieldPrefix": "JRL",
          "flags": []
       },
       {
@@ -62,7 +62,7 @@
          ],
          "type": "Ref",
          "subClassName": "ANY",
-         "subCullPrefix": "ANY",
+         "subFieldPrefix": "ANY",
          "flags": [
             "NO_TRANSFER"
          ]

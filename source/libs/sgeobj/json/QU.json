@@ -4,7 +4,7 @@
    "description": [
       "Queue Instance: Instance of a cluster queue on an execution host"
    ],
-   "cullPrefix": "QU",
+   "fieldPrefix": "QU",
    "attributes": [
       {
          "name": "qhostname",
@@ -476,7 +476,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "CONFIGURE"
          ]
@@ -489,7 +489,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "CONFIGURE"
          ]
@@ -502,7 +502,7 @@
          ],
          "type": "List",
          "subClassName": "US",
-         "subCullPrefix": "US",
+         "subFieldPrefix": "US",
          "flags": [
             "CONFIGURE"
          ]
@@ -515,7 +515,7 @@
          ],
          "type": "List",
          "subClassName": "US",
-         "subCullPrefix": "US",
+         "subFieldPrefix": "US",
          "flags": [
             "CONFIGURE"
          ]
@@ -528,7 +528,7 @@
          ],
          "type": "List",
          "subClassName": "US",
-         "subCullPrefix": "US",
+         "subFieldPrefix": "US",
          "flags": [
             "CONFIGURE"
          ]
@@ -541,7 +541,7 @@
          ],
          "type": "List",
          "subClassName": "PR",
-         "subCullPrefix": "PR",
+         "subFieldPrefix": "PR",
          "flags": [
             "CONFIGURE"
          ]
@@ -554,7 +554,7 @@
          ],
          "type": "List",
          "subClassName": "PR",
-         "subCullPrefix": "PR",
+         "subFieldPrefix": "PR",
          "flags": [
             "CONFIGURE"
          ]
@@ -567,7 +567,7 @@
          ],
          "type": "List",
          "subClassName": "CE",
-         "subCullPrefix": "CE",
+         "subFieldPrefix": "CE",
          "flags": [
             "CONFIGURE"
          ]
@@ -580,7 +580,7 @@
          ],
          "type": "List",
          "subClassName": "CE",
-         "subCullPrefix": "CE",
+         "subFieldPrefix": "CE",
          "flags": [
             "CONFIGURE"
          ]
@@ -593,7 +593,7 @@
          ],
          "type": "List",
          "subClassName": "CE",
-         "subCullPrefix": "CE",
+         "subFieldPrefix": "CE",
          "flags": [
             "CONFIGURE"
          ]
@@ -606,7 +606,7 @@
          ],
          "type": "List",
          "subClassName": "SO",
-         "subCullPrefix": "SO",
+         "subFieldPrefix": "SO",
          "flags": [
             "CONFIGURE"
          ]
@@ -739,7 +739,7 @@
          ],
          "type": "List",
          "subClassName": "RUE",
-         "subCullPrefix": "RUE",
+         "subFieldPrefix": "RUE",
          "flags": []
       },
       {
@@ -750,7 +750,7 @@
          ],
          "type": "List",
          "subClassName": "QIM",
-         "subCullPrefix": "QIM",
+         "subFieldPrefix": "QIM",
          "flags": [
             "SPOOL"
          ]
@@ -772,7 +772,7 @@
          ],
          "type": "List",
          "subClassName": "CQU",
-         "subCullPrefix": "CQU",
+         "subFieldPrefix": "CQU",
          "flags": []
       },
       {
@@ -785,7 +785,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

@@ -22,7 +22,7 @@
 set(LIBRARY_NAME common)
 set(LIBRARY_SOURCES
       execution_states.cc
-      parse_job_cull.cc
+      ocs_parse_job.cc
       parse_qsub.cc
       sge_ijs_comm.cc
       sge_ijs_threads.cc

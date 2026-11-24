@@ -4,7 +4,7 @@
    "description": [
       "Defines the runtime environment for running shared memory or distributed memory parallelized applications"
    ],
-   "cullPrefix": "PE",
+   "fieldPrefix": "PE",
    "attributes": [
       {
          "name": "name",
@@ -39,7 +39,7 @@
          ],
          "type": "List",
          "subClassName": "US",
-         "subCullPrefix": "US",
+         "subFieldPrefix": "US",
          "flags": [
             "SPOOL"
          ]
@@ -52,7 +52,7 @@
          ],
          "type": "List",
          "subClassName": "US",
-         "subCullPrefix": "US",
+         "subFieldPrefix": "US",
          "flags": [
             "SPOOL"
          ]
@@ -136,7 +136,7 @@
          ],
          "type": "List",
          "subClassName": "RUE",
-         "subCullPrefix": "RUE",
+         "subFieldPrefix": "RUE",
          "flags": []
       },
       {
@@ -216,7 +216,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

@@ -4,7 +4,7 @@
    "description": [
       "A PET object describes one task of a tightly integrated parallel job."
    ],
-   "cullPrefix": "PET",
+   "fieldPrefix": "PET",
    "attributes": [
       {
          "name": "id",
@@ -50,7 +50,7 @@
          ],
          "type": "List",
          "subClassName": "JG",
-         "subCullPrefix": "JG",
+         "subFieldPrefix": "JG",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -103,7 +103,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -116,7 +116,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -131,7 +131,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": [
             "SPOOL_SUBLIST"
          ]
@@ -144,7 +144,7 @@
          ],
          "type": "List",
          "subClassName": "UA",
-         "subCullPrefix": "UA",
+         "subFieldPrefix": "UA",
          "flags": []
       },
       {
@@ -200,7 +200,7 @@
          ],
          "type": "List",
          "subClassName": "PA",
-         "subCullPrefix": "PA",
+         "subFieldPrefix": "PA",
          "flags": []
       },
       {
@@ -212,7 +212,7 @@
          ],
          "type": "List",
          "subClassName": "VA",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": []
       },
       {
@@ -247,7 +247,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

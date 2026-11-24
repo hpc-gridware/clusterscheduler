@@ -107,7 +107,7 @@
 #include "uti/sge_arch.h"
 #include "uti/sge_signal.h"
 
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_feature.h"
 #include "sgeobj/sge_jsv.h"
 #include "tom/ocs_Element.h"
@@ -1018,7 +1018,7 @@ static void set_job_info(const ocs::tom::Element<ocs::tom::JB> job, const char *
    job.set<JB_type>(jb_now);
    job.set<JB_job_name>(job_name);
 
-   [[maybe_unused]] const auto [path_ret, stdout_stderr_path] = cull_parse_path_list("/dev/null");
+   [[maybe_unused]] const auto [path_ret, stdout_stderr_path] = ocs_parse_path_list("/dev/null");
    job.set<JB_stdout_path_list>(stdout_stderr_path->clone("stdout_path_list"));
    job.set<JB_stderr_path_list>(stdout_stderr_path->clone("stderr_path_list"));
 
@@ -1493,7 +1493,7 @@ int main(int argc, const char **argv) {
    */
    // the option list is created by the parser
    opts_cmdline.reset();
-   alp = cull_parse_cmdline(my_who, argv + 1, environ, opts_cmdline, FLG_USE_PSEUDOS);
+   alp = ocs_parse_cmdline(my_who, argv + 1, environ, opts_cmdline, FLG_USE_PSEUDOS);
    do_exit = parse_result_list(alp, &alp_error);
    alp.reset();
 
@@ -1724,7 +1724,7 @@ int main(int argc, const char **argv) {
       sge_exit(1);
    }
 
-   alp = cull_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname,
+   alp = ocs_parse_qsh_parameter(my_who, myuid, username, cell_root, unqualified_hostname, qualified_hostname,
                                   *opts_all, *job);
    do_exit = parse_result_list(alp, &alp_error);
    alp.reset();
@@ -1733,7 +1733,7 @@ int main(int argc, const char **argv) {
       sge_exit(1);
    }
 
-   // For X11 forwarding: remove the statically-forwarded DISPLAY (added by cull_parse_qsh_parameter
+   // For X11 forwarding: remove the statically-forwarded DISPLAY (added by ocs_parse_qsh_parameter
    // from the user's DISPLAY env var) and inject SGE_X11_FORWARD=1 instead. The shepherd will
    // create a local proxy display and inject the real DISPLAY into the job's environment.
    if (forward_x11) {
@@ -1756,7 +1756,7 @@ int main(int argc, const char **argv) {
 
       if (job->get<JB_verify>()) {
          std::stringstream ss;
-         ocs::QStatJobViewPlain::cull_show_job(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
+         ocs::QStatJobViewPlain::show_job_details(ss, ocs::tom::ConstList<ocs::tom::SME>(), *job, 0);
          printf("%s", ss.str().c_str());
          sge_exit(0);
       }

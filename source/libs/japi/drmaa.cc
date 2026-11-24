@@ -79,7 +79,7 @@
 
 /* COMMON */
 #include "msg_common.h"
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 #include "parse_qsub.h"
 #include "sge_options.h"
 #include "symbols.h"
@@ -2601,7 +2601,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
    }
 
    uint32_t sync_option = SYNC_NO;
-   alp = cull_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname,
+   alp = ocs_parse_job_parameter(myuid, username, cell_root, unqualified_hostname, qualified_hostname,
                                   *opts_all, jt, &sync_option);
 
    if (answer_list_has_error(&alp)) {
@@ -2619,7 +2619,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
  * @brief Covert the DRMAA attributes
  *
  * All DRMAA job template attributes are translated into qsub style option
- * lListElem for parsing by cull_parse_job_parameter()
+ * lListElem for parsing by ocs_parse_job_parameter()
  *
  * @param args list to which options will be appended
  * @param attrs list of DRMAA scalar attributes
@@ -2910,7 +2910,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
  * @brief Append the DRMAA default setting
  *
  * All DRMAA default settings are translated into qsub style option
- * lListElem for parsing by cull_parse_job_parameter()
+ * lListElem for parsing by ocs_parse_job_parameter()
  *
  * @param opts list to which options will be appended, created when it is an empty handle
  *
@@ -3004,7 +3004,7 @@ merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default_in,
     * the sge_request default instead of overriding it — regression fixed by
     * CS-2404. Every other switch is simply concatenated; the "last value
     * per variable wins" behaviour for -l et al. is handled later in
-    * cull_parse_job_parameter.
+    * ocs_parse_job_parameter.
     */
    if (opts_default) {
       DPRINTF("Adding default options\n");

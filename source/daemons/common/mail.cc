@@ -83,7 +83,7 @@ static void sge_send_mail(uint32_t progid,
  * @param buf message contents
  * @param mail_type what the mail is about, used in the log
  */
-void cull_mail(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR> user_list, const char *subj,
+void mail_to_users(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR> user_list, const char *subj,
                const char *buf, const char *mail_type) {
    DENTER(TOP_LAYER);
 

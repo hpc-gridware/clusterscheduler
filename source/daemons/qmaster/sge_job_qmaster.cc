@@ -72,7 +72,7 @@
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_advance_reservation.h"
 #include "sgeobj/sge_userset.h"
-#include "sgeobj/cull_parse_util.h"
+#include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/sge_id.h"
 #include "sgeobj/sge_ulong.h"
 #include "sgeobj/sge_range.h"
@@ -1044,7 +1044,7 @@ void job_ja_task_send_abort_mail(const ocs::tom::ConstElement<ocs::tom::JB> job,
          sge_dstring_append(&body, MSG_MAIL_BECAUSE);
          sge_dstring_append(&body, err_str);
       }
-      cull_mail(QMASTER, users, sge_dstring_get_string(&subject),
+      mail_to_users(QMASTER, users, sge_dstring_get_string(&subject),
                 sge_dstring_get_string(&body), "job abortion");
    }
 

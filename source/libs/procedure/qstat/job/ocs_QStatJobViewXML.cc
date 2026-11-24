@@ -26,7 +26,7 @@
 #include "uti/sge_rmon_macros.h"
 
 #include "sgeobj/tom/ocs_tom_all.h"
-#include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/ocs_object_xml.h"
 #include "sgeobj/sge_job.h"
 #include "sgeobj/sge_mesobj.h"
 #include "sgeobj/sge_ulong.h"

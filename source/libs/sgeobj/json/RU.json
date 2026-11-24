@@ -4,7 +4,7 @@
    "description": [
       "Objects of this types are created for jobs which are rescheduled when a host goes into unknown state."
    ],
-   "cullPrefix": "RU",
+   "fieldPrefix": "RU",
    "attributes": [
       {
          "name": "job_number",

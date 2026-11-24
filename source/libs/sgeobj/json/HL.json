@@ -4,7 +4,7 @@
    "description": [
       "an object of this type represents a single load value"
    ],
-   "cullPrefix": "HL",
+   "fieldPrefix": "HL",
    "attributes": [
       {
          "name": "name",

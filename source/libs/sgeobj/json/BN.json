@@ -5,7 +5,7 @@
       "How a job is to be bound to the cores of its execution host.",
       "Holds what the user asked for with `qsub -binding`: the strategy, how much to bind, and the starting point. What was actually granted is recorded on the granted destination identifier."
    ],
-   "cullPrefix": "BN",
+   "fieldPrefix": "BN",
    "attributes": [
       {
          "name": "new_type",
@@ -137,7 +137,7 @@
          ],
          "type": "List",
          "subClassName": "SpecificBindingList",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": [
             "SPOOL"
          ]
@@ -152,7 +152,7 @@
          ],
          "type": "List",
          "subClassName": "Variable",
-         "subCullPrefix": "VA",
+         "subFieldPrefix": "VA",
          "flags": [
             "SPOOL"
          ]

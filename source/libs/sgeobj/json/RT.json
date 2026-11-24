@@ -5,7 +5,7 @@
       "An object of this type represents a remote task.",
       "It is used in qrsh -inherit starting tasks within a tightly integrated parallel job."
    ],
-   "cullPrefix": "RT",
+   "fieldPrefix": "RT",
    "attributes": [
       {
          "name": "tid",

@@ -7,7 +7,7 @@
       "This information will be copied to the JAT_granted_destin_identifier_list of a running",
       "job (array task)."
    ],
-   "cullPrefix": "OQ",
+   "fieldPrefix": "OQ",
    "attributes": [
       {
          "name": "slots",
@@ -81,7 +81,7 @@
          ],
          "type": "List",
          "subClassName": "ST",
-         "subCullPrefix": "ST",
+         "subFieldPrefix": "ST",
          "flags": []
       },
       {
@@ -93,7 +93,7 @@
          ],
          "type": "List",
          "subClassName": "ResourceList",
-         "subCullPrefix": "RESL",
+         "subFieldPrefix": "RESL",
          "flags": []
       }
    ]

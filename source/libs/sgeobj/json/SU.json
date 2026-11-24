@@ -5,7 +5,7 @@
       "The list of these objects defines which users are allowed to submit jobs into Cluster Scheduler.",
       "It is also used to count the number of active jobs of the user."
    ],
-   "cullPrefix": "SU",
+   "fieldPrefix": "SU",
    "attributes": [
       {
          "name": "name",

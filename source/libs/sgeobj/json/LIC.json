@@ -5,7 +5,7 @@
       "Definition for a license report.",
       "There is no license management or license enforcement in Cluster Scheduler."
    ],
-   "cullPrefix": "LIC",
+   "fieldPrefix": "LIC",
    "attributes": [
       {
          "name": "processors",

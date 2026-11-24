@@ -5,7 +5,7 @@
       "used for scaling host load values",
       "per load variable a scaling factor can be defined"
    ],
-   "cullPrefix": "HS",
+   "fieldPrefix": "HS",
    "attributes": [
       {
          "name": "name",

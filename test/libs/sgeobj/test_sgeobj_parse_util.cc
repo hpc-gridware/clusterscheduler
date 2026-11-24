@@ -19,8 +19,8 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Unit tests for the generic converters of `libs/sgeobj`: cull_parse_util.cc and the XML writer of
- *        sge_cull_xml.cc
+ * @brief Unit tests for the generic converters of `libs/sgeobj`: ocs_parse_util.cc and the XML writer of
+ *        ocs_object_xml.cc
  *
  * The converters take their fields as an `int` table or walk the descriptor of
  * an element of any type. The expected results are those of the former
@@ -39,8 +39,8 @@
 
 #include "basis_types.h"
 #include "sgeobj/tom/ocs_tom_all.h"
-#include "sgeobj/cull_parse_util.h"
-#include "sgeobj/sge_cull_xml.h"
+#include "sgeobj/ocs_parse_util.h"
+#include "sgeobj/ocs_object_xml.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_RDE.h"
@@ -70,12 +70,12 @@ static bool same(const char *a, const char *b) {
 }
 
 /**
- * @brief Parse words with cull_parse_string_list()
+ * @brief Parse words with ocs_parse_string_list()
  * @param words the words, without the terminating nullptr
  * @param descr the descriptor of the elements
  * @param rule the interpretation rule, terminated by 0
  * @param[out] lpp receives the list on success
- * @return the result of cull_parse_string_list()
+ * @return the result of ocs_parse_string_list()
  */
 static int parse_words(const std::initializer_list<const char *> words, const lDescr *descr, int *rule,
                        lList **lpp) {
@@ -85,7 +85,7 @@ static int parse_words(const std::initializer_list<const char *> words, const lD
       argv.push_back(word.data());
    }
    argv.push_back(nullptr);
-   return cull_parse_string_list(argv.data(), "parsed", descr, rule, lpp);
+   return ocs_parse_string_list(argv.data(), "parsed", descr, rule, lpp);
 }
 
 /**
@@ -172,7 +172,7 @@ static std::string join_strings(const ocs::tom::ConstRawList list, const int nm)
 // ---------------------------------------------------------------------------
 
 /**
- * @brief cull_parse_string_list() and cull_parse_definition_list() [T01-T12]
+ * @brief ocs_parse_string_list() and ocs_parse_definition_list() [T01-T12]
  * @return nothing; CHECK records the results
  */
 static void test_parse_string_list() {
@@ -268,10 +268,10 @@ static void test_parse_string_list() {
       char text[] = "a=1,b=2";
       char none[] = "NONE";
       lList *lp = nullptr;
-      const int ret = cull_parse_definition_list(text, &lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
+      const int ret = ocs_parse_definition_list(text, &lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       const ocs::tom::ListPtr<ocs::tom::CE> list(lp);
       lList *none_lp = reinterpret_cast<lList *>(1);
-      const int none_ret = cull_parse_definition_list(none, &none_lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
+      const int none_ret = ocs_parse_definition_list(none, &none_lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       CHECK(12, "a definition list gives name and value pairs, NONE gives no list",
             ret == 0 && join_strings(list.get(), CE_name) == "a b" &&
                join_strings(list.get(), CE_stringval) == "1 2" && none_ret == 0 && none_lp == nullptr);
@@ -279,7 +279,7 @@ static void test_parse_string_list() {
 }
 
 /**
- * @brief cull_compress_definition_list() [T13-T17, T33]
+ * @brief ocs_compress_definition_list() [T13-T17, T33]
  * @return nothing; CHECK records the results
  */
 static void test_compress() {
@@ -288,7 +288,7 @@ static void test_compress() {
       add_st(*list, "a", 1);
       add_st(*list, "b", 2);
       add_st(*list, "a", 3);
-      const int ret = cull_compress_definition_list(*list, ST_name, ST_id, 0);
+      const int ret = ocs_compress_definition_list(*list, ST_name, ST_id, 0);
       CHECK(13, "a string key held twice keeps the later element",
             ret == 0 && join_strings(*list, ST_name) == "b a" && list->front().get<ST_id>() == 2);
    }
@@ -297,7 +297,7 @@ static void test_compress() {
       add_st(*list, "x", 5);
       add_st(*list, "y", 6);
       add_st(*list, "z", 5);
-      const int ret = cull_compress_definition_list(list->raw(), ST_id, ST_name, 0);
+      const int ret = ocs_compress_definition_list(list->raw(), ST_id, ST_name, 0);
       CHECK(14, "an unsigned key held twice keeps the later element",
             ret == 0 && join_strings(*list, ST_name) == "y z");
    }
@@ -306,7 +306,7 @@ static void test_compress() {
       add_spa(*list, "a", "1");
       add_spa(*list, "a", "2");
       add_spa(*list, "a", "1");
-      const int ret = cull_compress_definition_list(*list, SPA_switch_val, SPA_switch_arg, 1);
+      const int ret = ocs_compress_definition_list(*list, SPA_switch_val, SPA_switch_arg, 1);
       CHECK(15, "double keys remove only an element with the same name and value",
             ret == 0 && join_strings(*list, SPA_switch_arg) == "2 1");
    }
@@ -317,12 +317,12 @@ static void test_compress() {
       add_pn(*list, "p2", "h2", "f2");
       add_pn(*list, "p3", "h1", "f1");
       add_pn(*list, "p4", nullptr, nullptr);
-      const int ret = cull_compress_definition_list(*list, PN_host, PN_file_host, 0);
+      const int ret = ocs_compress_definition_list(*list, PN_host, PN_file_host, 0);
       auto double_list = ocs::tom::ListPtr<ocs::tom::PN>::create("pn");
       add_pn(*double_list, "q1", "h1", "f1");
       add_pn(*double_list, "q2", "h1", "f2");
       add_pn(*double_list, "q3", "h1", "f1");
-      const int double_ret = cull_compress_definition_list(*double_list, PN_host, PN_file_host, 1);
+      const int double_ret = ocs_compress_definition_list(*double_list, PN_host, PN_file_host, 1);
       CHECK(16, "host keys compare as strings, an unset host is no key; double keys compare both hosts",
             ret == 0 && join_strings(*list, PN_path) == "p0 p2 p3 p4" && double_ret == 0 &&
                join_strings(*double_list, PN_path) == "q2 q3");
@@ -334,11 +334,11 @@ static void test_compress() {
       add_spa(*single, "a", "1");
       add_spa(*list, "b", "2");
       CHECK(17, "a list key gives -4, a 64 bit unsigned or foreign key -5, both only from two elements on",
-            cull_compress_definition_list(*list, SPA_argval_lListT, SPA_switch_arg, 0) == -4 &&
-               cull_compress_definition_list(*list, SPA_argval_lUlong64T, SPA_switch_arg, 0) == -5 &&
-               cull_compress_definition_list(*list, ST_name, SPA_switch_arg, 0) == -5 &&
-               cull_compress_definition_list(*single, ST_name, SPA_switch_arg, 0) == 0 &&
-               cull_compress_definition_list(nullptr, ST_name, ST_id, 0) == 0 && list->size() == 2);
+            ocs_compress_definition_list(*list, SPA_argval_lListT, SPA_switch_arg, 0) == -4 &&
+               ocs_compress_definition_list(*list, SPA_argval_lUlong64T, SPA_switch_arg, 0) == -5 &&
+               ocs_compress_definition_list(*list, ST_name, SPA_switch_arg, 0) == -5 &&
+               ocs_compress_definition_list(*single, ST_name, SPA_switch_arg, 0) == 0 &&
+               ocs_compress_definition_list(nullptr, ST_name, ST_id, 0) == 0 && list->size() == 2);
    }
    {
       // the marker in SPA_argval_lStringT tells the elements apart, it is no part of the key
@@ -358,14 +358,14 @@ static void test_compress() {
       add(*double_list, "a", "1", "p3");
       add(*double_list, nullptr, nullptr, "p4");
       add(*double_list, nullptr, nullptr, "p5");
-      const int double_ret = cull_compress_definition_list(*double_list, SPA_switch_val, SPA_switch_arg, 1);
+      const int double_ret = ocs_compress_definition_list(*double_list, SPA_switch_val, SPA_switch_arg, 1);
       // a single key needs a name in the later element: two unset names stay, a repeated set name does not
       auto single_list = ocs::tom::ListPtr<ocs::tom::SPA>::create("spa");
       add(*single_list, nullptr, "x", "q1");
       add(*single_list, nullptr, "y", "q2");
       add(*single_list, "a", "z", "q3");
       add(*single_list, "a", "w", "q4");
-      const int single_ret = cull_compress_definition_list(*single_list, SPA_switch_val, SPA_switch_arg, 0);
+      const int single_ret = ocs_compress_definition_list(*single_list, SPA_switch_val, SPA_switch_arg, 0);
       CHECK(33, "string keys with unset values: double keys take two nullptr as equal, a single key needs a name",
             double_ret == 0 && join_strings(*double_list, SPA_argval_lStringT) == "p2 p3 p5" && single_ret == 0 &&
                join_strings(*single_list, SPA_argval_lStringT) == "q1 q2 q4");
@@ -670,7 +670,7 @@ int main(int argc, char *argv[]) {
 
    return ocs::module_test::run(argc, argv, {
       {"PARSE-01", "parsing words into a list by an interpretation rule",
-       "cull_parse_string_list() and cull_parse_definition_list() fill the fields of the rule by their type and "
+       "ocs_parse_string_list() and ocs_parse_definition_list() fill the fields of the rule by their type and "
        "give the former return codes for every error",
        {"parse typed words into one and into two elements", "parse NONE for a string and a host",
         "parse words of a wrong form, too few words, no words",
@@ -679,7 +679,7 @@ int main(int argc, char *argv[]) {
        "the lists hold the parsed values, the errors give -1, -2, -7, -8, -9, -11, -12 and -13 and no list",
        {}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, test_parse_string_list},
       {"PARSE-02", "collapsing repeated keys of a definition list",
-       "cull_compress_definition_list() keeps the last element of a key for string, unsigned and host keys, with "
+       "ocs_compress_definition_list() keeps the last element of a key for string, unsigned and host keys, with "
        "single and double keys",
        {"compress string, unsigned and host keys", "compress with double keys",
         "compress by a list, 64 bit unsigned and foreign key, and an empty handle"},

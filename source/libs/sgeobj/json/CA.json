@@ -4,7 +4,7 @@
    "description": [
       "This data structure is used for storing a parsed calendar."
    ],
-   "cullPrefix": "CA",
+   "fieldPrefix": "CA",
    "attributes": [
       {
          "name": "yday_range_list",
@@ -14,7 +14,7 @@
          ],
          "type": "List",
          "subClassName": "TMR",
-         "subCullPrefix": "TMR",
+         "subFieldPrefix": "TMR",
          "flags": []
       },
       {
@@ -25,7 +25,7 @@
          ],
          "type": "List",
          "subClassName": "TMR",
-         "subCullPrefix": "TMR",
+         "subFieldPrefix": "TMR",
          "flags": []
       },
       {
@@ -36,7 +36,7 @@
          ],
          "type": "List",
          "subClassName": "TMR",
-         "subCullPrefix": "TMR",
+         "subFieldPrefix": "TMR",
          "flags": []
       },
       {

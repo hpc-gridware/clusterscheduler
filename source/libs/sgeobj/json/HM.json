@@ -15,7 +15,7 @@
       "data store holds what its own threads have learned. The entry cannot be",
       "a bare name because it expires by the time of its last use."
    ],
-   "cullPrefix": "HM",
+   "fieldPrefix": "HM",
    "attributes": [
       {
          "name": "name",

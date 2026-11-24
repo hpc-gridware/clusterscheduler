@@ -30,7 +30,7 @@
       " ",
       " "
    ],
-   "cullPrefix": "RDE",
+   "fieldPrefix": "RDE",
    "attributes": [
       {
          "name": "time",
@@ -58,7 +58,7 @@
          ],
          "type": "List",
          "subClassName": "RESL",
-         "subCullPrefix": "RESL",
+         "subFieldPrefix": "RESL",
          "flags": []
       },
       {

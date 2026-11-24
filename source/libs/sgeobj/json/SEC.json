@@ -5,7 +5,7 @@
       "State of one secured connection in the Sun-era security layer: the peer, the session key in eight parts, the sequence numbers and the expiry.",
       "@warning Nothing in either repository reads or writes this type or any of its attributes - not even the `source/security` trees, which are themselves unbuilt. It is the object model's counterpart to that dead code. Left in place because removing a type changes the spooled object model; see task 41."
    ],
-   "cullPrefix": "SEC",
+   "fieldPrefix": "SEC",
    "attributes": [
       {
          "name": "ConnectionID",
