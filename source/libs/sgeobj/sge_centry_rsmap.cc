@@ -714,7 +714,7 @@ bool centry_rsmap_request_is_job_scope(const ocs::tom::ConstElement<ocs::tom::CE
  *
  * The parameters live in CE_stringval after the amount, "4[same=id,memory=40G]". They are read
  * back out on demand rather than stored anywhere, because a request is a spooled object and
- * caching the parsed form in a field of it would be a cull change - which the maintenance branch
+ * caching the parsed form in a field of it would be a change of the object model - which the maintenance branch
  * cannot take.
  *
  * That makes the call site responsible for the cost. This is a scan of the value, so it is cheap
@@ -1469,7 +1469,7 @@ const char *centry_rsmap_best_free_id(const ocs::tom::ConstElement<ocs::tom::CE>
  * A value that already carries ids is left untouched, and so is an amount of 0, which
  * legitimately means "no instances at all".
  *
- * The expansion is bounded. An RSMAP materialises one CULL element per id, all of which
+ * The expansion is bounded. An RSMAP materialises one element per id, all of which
  * are spooled and travel with the exec host object, so a mistyped or simply large amount
  * would otherwise cost the qmaster a lot of memory. Beyond max_ids the value is rejected
  * and the administrator has to list the ids or raise the limit. max_ids of 0 turns the

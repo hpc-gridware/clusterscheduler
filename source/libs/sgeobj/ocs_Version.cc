@@ -38,7 +38,7 @@
 #  include "copyright.h"
 #endif
 
-// @todo CHANGE THE VERSION NUMBERS HERE. ADD A NEW VERSION TO THE LIST BELOW IF PACKING OR CULL CHANGES.
+// @todo CHANGE THE VERSION NUMBERS HERE. ADD A NEW VERSION TO THE LIST BELOW IF PACKING OR THE OBJECT MODEL CHANGES.
 // change dist/inst_sge also!
 /// Major release number; the first component of the version string
 #define OCS_VERSION_MAJOR 9

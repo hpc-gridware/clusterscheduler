@@ -198,7 +198,7 @@ bool str_list_transform_user_list(ocs::tom::ListPtr<ocs::tom::ST> &this_list,
 }
 
 /**
- * @brief Turn a supplementary group array into a CULL list
+ * @brief Turn a supplementary group array into a list
  *
  * @param amount how many entries `grp_array` has
  * @param grp_array the groups to convert

@@ -663,7 +663,7 @@ namespace ocs::tom {
     * 'JB_ja_tasks' sublist of a 'JB' element. This list will
     * contain all belonging JAT elements.
     *  
-    * The 'JAT' CULL element containes all attributes in which
+    * The 'JAT' element contains all attributes in which
     * one array task may differ from another array task of the
     * same array job. The 'JB' element defines all attributes
     * wich are equivalent for all tasks of an array job.

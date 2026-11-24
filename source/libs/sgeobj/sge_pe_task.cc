@@ -200,7 +200,7 @@ ocs::tom::Element<ocs::tom::PET> pe_task_sum_past_usage_list(const ocs::tom::Lis
  * @note MT-NOTE: pe_task_verify_request() is MT safe
  *
  * @bug The function is far from being complete.
- *      Currently, only the CULL structure is verified, not the contents.
+ *      Currently, only the structure is verified, not the contents.
  *
  * @see `object_verify_cull()`
  */

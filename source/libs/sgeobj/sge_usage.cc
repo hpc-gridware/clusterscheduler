@@ -458,7 +458,7 @@ usage_parse_value(const char *name, const char *value) {
    ep->set<UA_name>(name);
 
    // (1) quote-prefix rule — matched pair strips.
-   // Empty quoted pair ("" or '') is a special case: CULL's wire format
+   // Empty quoted pair ("" or '') is a special case: the pack format
    // (ocs::tom::put_str() / ocs::tom::get_str()) cannot distinguish an empty string from nullptr,
    // so an empty svalue would silently become nullptr after execd → qmaster
    // GDI transport and the downstream writer would fall through to the

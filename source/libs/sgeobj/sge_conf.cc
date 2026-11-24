@@ -37,7 +37,7 @@
 /** @file
  * @brief The cluster configuration: defaults, merging, and thread safe access
  *
- * The global and each host's local configuration arrive as CULL lists.
+ * The global and each host's local configuration arrive as lists.
  * #merge_configuration layers them - compiled in defaults, then the global
  * configuration, then the local one - and writes the result into the file
  * static `Master_Config`, which the rest of the component reads through the
@@ -157,7 +157,7 @@
 /* This list is *ONLY* used by the execd and should be moved eventually */
 lList *Execd_Config_List = nullptr;
 
-/// The cluster configuration, as one C struct rather than a CULL element
+/// The cluster configuration, as one C struct rather than an element
 struct confel {
    char        *execd_spool_dir;     ///< sge_spool directory base path
    char        *mailer;              ///< path to e-mail delivery agent
@@ -940,10 +940,10 @@ chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, 
 }
 
 /**
- * @brief set the master configuration from cull
+ * @brief set the master configuration from its element
  *
  * @details
- * This function sets the master configuration from cull.
+ * This function sets the master configuration from its element.
  *
  * @param lpCfg The configuration list.
  *

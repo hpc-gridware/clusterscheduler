@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/       
 
 /** @file
- * @brief Generic access to any CULL object, without knowing its type
+ * @brief Generic access to any object, without knowing its type
  *
  * Code that has to treat every object alike - spooling, the flat file
  * readers/writers, the GDI verification layer - cannot name each attribute.

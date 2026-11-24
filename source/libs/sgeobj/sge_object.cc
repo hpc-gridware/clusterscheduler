@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Generic access to any CULL object, without knowing its type
+ * @brief Generic access to any object, without knowing its type
  *
  * The implementation behind `sge_object.h`: the type table, the attribute
  * conversion helpers, and the verification the GDI layer runs on incoming
@@ -1083,7 +1083,7 @@ object_has_type(const ocs::tom::ConstRawElement object, const lDescr *descr) {
 /**
  * @brief Return type (descriptor) for object
  *
- * Returns the cull type (descriptor) for a certain object.
+ * Returns the object type (descriptor) for a certain object.
  * This descriptor can be different from the objects descriptor,
  * as the objects descriptor can come from an object created from
  * communication, can be a partial descriptor etc.
@@ -1161,7 +1161,7 @@ object_get_primary_key(const lDescr *descr) {
 }
 
 /**
- * @brief Get prefix of cull attribute name
+ * @brief Get prefix of a field name
  *
  * Returns the prefix that is used in attribute names characterizing
  * the object type (e.g. "QU_" for the QU).
@@ -1435,7 +1435,7 @@ sge_object_type object_name_get_type(const char *name) {
 /**
  * @brief Get the descriptor for an event type
  *
- * Returns the CULL element descriptor for the object type
+ * Returns the element descriptor for the object type
  * associated with the given event.
  *
  * @code
@@ -1652,9 +1652,9 @@ object_list_has_differences(const ocs::tom::ConstRawList this_list, ocs::tom::Li
 }
 
 /**
- * @brief Verify cull list structure
+ * @brief Verify the structure of a list
  *
- * Verifies that a cull list, including all its objects and sublists,
+ * Verifies that a list, including all its objects and sublists,
  * is a valid object of a defined type.
  *
  * There are cases, where the type of a list cannot be verified, when the
@@ -1706,9 +1706,9 @@ object_list_verify_cull(const ocs::tom::ConstRawList lp, const lDescr *descr) {
 }
 
 /**
- * @brief Verify cull object structure
+ * @brief Verify the structure of an object
  *
- * Verifies that a cull object, including all its sublists and subobjects,
+ * Verifies that an object, including all its sublists and subobjects,
  * is a valid object of a defined type.
  *
  * The type (descr) argument may be zero in two cases:

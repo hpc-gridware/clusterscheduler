@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Pulls in every generated CULL header
+ * @brief Pulls in every generated object type header
  *
  * Exists so the generated descriptors have exactly one translation unit that
  * defines them.

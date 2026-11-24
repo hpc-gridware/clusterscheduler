@@ -87,7 +87,7 @@
 /**
  * @brief Parse a RQRF Object from string
  *
- * Converts a spooled RQRF Object to a CULL Element
+ * Converts a spooled RQRF object to an element
  *
  * @param buffer string to be converted
  * @param alp answer_list

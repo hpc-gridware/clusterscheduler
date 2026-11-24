@@ -100,7 +100,7 @@ bool hgroup_list_update_caches(ocs::tom::List<ocs::tom::HGRP> master_hgroup_list
  * that arrived through a GDI "what" filter without the fields.
  *
  * Two functions rather than one returning the list, because an EMPTY cache is
- * valid: a group can legitimately resolve to no hosts, and cull stores an empty
+ * valid: a group can legitimately resolve to no hosts, and the list library stores an empty
  * list as nullptr. "No hosts" and "no cache" must not collapse into one answer.
  */
 bool hgroup_has_host_cache(ocs::tom::ConstElement<ocs::tom::HGRP> hgroup);

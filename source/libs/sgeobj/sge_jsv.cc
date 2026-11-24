@@ -763,7 +763,7 @@ bool jsv_list_update(const char *name, const char *context,
                /* 
                 * did we get a JSV URL or "none" as new setting? 
                 * depending on that either change the jsv settings and trigger a restart
-                * or trigger termination of jsv process and remove the jsv cull structure
+                * or trigger termination of jsv process and remove the jsv element
                 */
                if (strcasecmp(jsv_url, "none") != 0) {
                   if (not_parsed) {

@@ -54,7 +54,7 @@
 /**
  * @brief Add a new entry (uniq) entry into a list
  *
- * This function creates a new CULL element for the user "susername"
+ * This function creates a new element for the user "susername"
  * into the "suser_list". The newly created element will be returned.
  * If an element for this user already exists than this element will
  * be returned.

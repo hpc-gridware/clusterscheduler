@@ -86,7 +86,7 @@ enum HGRP_Field {
     * cached_hosts is authoritative.
     *  
     * This is a PRESENCE FLAG, not a stamp to compare against anything. The
-    * field is needed because cull cannot distinguish an empty list from a
+    * field is needed because the list library cannot distinguish an empty list from a
     * missing one - both are nullptr - so an empty cached_hosts would otherwise
     * be indistinguishable from an uncomputed one.
     *  

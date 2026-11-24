@@ -42,7 +42,7 @@
  *
  *     variable[=value][,variable[=value],...]
  *
- * The `VA` CULL element holds one such pair; the functions here work on
+ * The `VA` element holds one such pair; the functions here work on
  * lists of them.
  */
 

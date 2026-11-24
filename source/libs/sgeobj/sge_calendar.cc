@@ -36,7 +36,7 @@
  * @brief Calendars: when a queue disables or suspends itself on its own
  *
  * A calendar is written as a `year` and a `week` specification, both parsed
- * here into CULL lists. The scheduler then asks
+ * here into lists. The scheduler then asks
  * #calender_state_changes what the queue's state is now and when it changes
  * next, so the timed event thread knows when to look again.
  *
@@ -667,7 +667,7 @@ calender_state_changes(const ocs::tom::ConstElement<ocs::tom::CAL> cep, const ui
  * @param year_time year_time structure or nullptr, if week_time is set
  * @param week_time week_time strucutre or nullptr, if year_time is set
  * @param day_time day_time changes, if the exist
- * @param now a now cull representation
+ * @param now the current time as an element
  *
  * @return time of the next change or end of the day, and whether the end of the day is reached
  *
@@ -891,7 +891,7 @@ compute_limit(bool today, const bool active, const ocs::tom::ConstList<ocs::tom:
          lep->set<TM_sec>(0);
       }
 
-      /* convert from cull struct tm into time_t */
+      /* convert from the struct tm of the element into time_t */
       end_of_day = (lep->get<TM_hour>()==24) ? true : false;
       if (end_of_day) {
          lep->set<TM_hour>(23);
@@ -2299,9 +2299,9 @@ static int tm_daytime_cmp(const ocs::tom::ConstElement<ocs::tom::TM> t1,
 }
 
 /**
- * @brief Copy a `struct tm` into a CULL element
+ * @brief Copy a `struct tm` into an element
  *
- * The calendar computation works on CULL elements so intermediate results can
+ * The calendar computation works on elements so intermediate results can
  * be put into a list; this is the conversion in.
  *
  * @param[out] tm_ep the element to fill (TM)
@@ -2324,7 +2324,7 @@ void cullify_tm(const ocs::tom::Element<ocs::tom::TM> tm_ep, const struct tm *tm
 }
 
 /**
- * @brief Copy a CULL element back into a `struct tm`
+ * @brief Copy an element back into a `struct tm`
  *
  * @param tm_ep the element to read (TM)
  * @param[out] tm_now the structure to fill

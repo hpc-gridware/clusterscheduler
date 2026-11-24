@@ -280,7 +280,7 @@ static bool fnmatch_nocase(const std::string &pattern, const std::string &str) {
  * (CS-2761), because both name things this product compares case-insensitively
  * everywhere else:
  *
- *   - a host name, which sge_hostcmp() folds and the cull host key normalises
+ *   - a host name, which sge_hostcmp() folds and the host key of the lists normalises
  *     with sge_hostcpy() plus upper-casing. A rule naming `Node001` has to match
  *     a request from `node001`.
  *   - a host group name, because HGRP_name is an MT_HOST field and the object

@@ -2426,14 +2426,14 @@ job_get_context_change(ocs::tom::ConstElement<ocs::tom::JB> job);
  *
  * @param job the job object to verify (JB), may be an empty handle
  * @param answer_list answer list to pass back error messages
- * @param do_cull_verify do cull verification against the JB descriptor.
+ * @param do_cull_verify verify the structure against the JB descriptor.
  *
  * @return true on success, false on error with error message in answer_list
  *
  * @note MT-NOTE: job_verify() is MT safe
  *
  * @bug The function is far from being complete.
- *      Currently, only the CULL structure is verified, not the contents.
+ *      Currently, only the structure is verified, not the contents.
  *
  * @see `object_verify_cull()`, #job_verify_submitted_job, `job_verify_execd_job()`
  */
@@ -2527,7 +2527,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
  * @brief Verify a just submitted job
  *
  * Verifies a just submitted job object.
- * Does generic tests by calling job_verify, like verifying the cull
+ * Does generic tests by calling job_verify, like verifying the list
  * structure, and makes sure a number of job attributes are set
  * correctly.
  *
@@ -2539,7 +2539,7 @@ job_verify(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ListPtr<ocs
  * @note MT-NOTE: job_verify_submitted_job() is MT safe
  *
  * @bug The function is far from being complete.
- *      Currently, only the CULL structure is verified, not the contents.
+ *      Currently, only the structure is verified, not the contents.
  *
  * @see #job_verify
  */

@@ -161,7 +161,7 @@ bool hgroup_list_update_caches(const ocs::tom::List<ocs::tom::HGRP> master_hgrou
  *
  * CS-2451. True when HGRP_cache_version is non-zero, i.e. qmaster has
  * resolved this group and the result travelled with the element.
- * The version is what makes the answer possible at all: cull stores an empty
+ * The version is what makes the answer possible at all: the list library stores an empty
  * list as nullptr, so HGRP_cached_hosts alone cannot distinguish a group that
  * resolves to no hosts from one that was never resolved.
  *
@@ -192,7 +192,7 @@ bool hgroup_has_host_cache(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) 
  * CS-2451. Answers the membership question with a single hash lookup instead
  * of a walk of the nested group tree.
  * The lookup is equivalent to the walk's sge_hostcmp() comparison, not merely
- * similar: cull normalises host keys with sge_hostcpy() + sge_strtoupper()
+ * similar: the list library normalises host keys with sge_hostcpy() + sge_strtoupper()
  * (cull_multitype.cc), and sge_hostcpy() honours the same ignore_fqdn and
  * default_domain rules as sge_hostcmp() (sge_hostname.cc). HR_name carries
  * the HASH flag, so the lookup is O(1).

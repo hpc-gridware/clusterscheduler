@@ -2246,11 +2246,11 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
 }
 
 /**
- * @brief Convert a CULL attribute into a switch name as used in the JSV protocol (usually a qalter switch).
+ * @brief Convert a field into a switch name as used in the JSV protocol (usually a qalter switch).
  *
  * The attribute comes from the descriptor of the job at run time, so it stays a field number.
  *
- * @param cull_attr CULL attribute
+ * @param cull_attr the field
  * @param job A JB object
  * @return Pointer to a static string with the switch name or nullptr if the attribute is not supported.
  */
@@ -2378,7 +2378,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
             }
             auto got_switches = ocs::tom::ListPtr<ocs::tom::ST>::create("");
 
-            // Transform CULL fields into a list of corresponding qalter switch names
+            // Transform fields into a list of corresponding qalter switch names
             // or switch combinations as accepted in JSV scripts. There are some exceptions that are handled
             // in the following code. The fields come from the descriptor of the (reduced) job at run time.
             const lDescr *descr = job.descr();
@@ -2424,7 +2424,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
                allowed_switches->emplace_back<ST_name>("w");
             }
 
-            // Allow -t switch automatically if -h is used. The corresponding information of -t in the CULL
+            // Allow -t switch automatically if -h is used. The corresponding information of -t in the job
             // data structure is used to send the information of -h.
             if (allowed_switches->find_first<ST_name>("h")) {
                if (!allowed_switches->find_first<ST_name>("t")) {

@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Packing CULL conditions for transport
+ * @brief Packing conditions for transport
  *
  * @see sge_pack.h
  */

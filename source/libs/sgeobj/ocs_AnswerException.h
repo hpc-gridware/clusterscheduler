@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Carrying a cull answer list as a C++ exception
+ * @brief Carrying an answer list as a C++ exception
  */
 
 #include <atomic>

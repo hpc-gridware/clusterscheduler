@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Rendering CULL objects as XML, for the clients' `-xml` switch
+ * @brief Rendering objects as XML, for the clients' `-xml` switch
  *
  * Values are XML escaped as they are added, so callers pass plain text
  * throughout.
@@ -139,7 +139,7 @@ static void ocs_xml_add_attribute(const ocs::tom::Element<T> xml_elem, const cha
    DENTER(CULL_LAYER);
 
    if (!xml_elem) {
-      CRITICAL("xml_addAttribute() called on wrong cull structure");
+      CRITICAL("xml_addAttribute() called on an element of the wrong type");
       ocs::TerminationManager::trigger_abort();
       DRETURN_VOID;
    }

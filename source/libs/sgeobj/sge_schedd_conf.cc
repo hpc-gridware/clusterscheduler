@@ -35,7 +35,7 @@
 /** @file
  * @brief The scheduler configuration: cached access to what `qconf -msconf` sets
  *
- * The configuration itself lives in the master list as a single CULL element.
+ * The configuration itself lives in the master list as a single element.
  * #config_pos_type caches the parsed form of the attributes that would
  * otherwise be re-parsed on every read.
  *
@@ -92,18 +92,18 @@
 
 /******************************************************
  *
- * All configuration values are stored in one cull
+ * All configuration values are stored in one
  * master list: Master_Sched_Config_List. This list
  * has only one element: the config element (SC).
  *
- * The configuratin is stored in a CULL list due to the
+ * The configuration is stored in a list due to the
  * current configuration handling in the system. There
  * are methods outside this module, which need complete
  * access to the list. Therefore a method exists to
  * access the whole configuration:
  *
  * - sconf_get_config_list
- *     (returns a pointer to the cull list
+ *     (returns a pointer to the list
  *
  * It should only be used, when there is no
  * other way. Usualy the values in the configuration
@@ -112,7 +112,7 @@
  * pre-computes some values to return them in the right
  * way.
  *
- * If the configuration is changed directly in the CULL
+ * If the configuration is changed directly in the
  * list without using
  *                "sconf_set_config"
  * , the
