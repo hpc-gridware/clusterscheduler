@@ -171,7 +171,7 @@ struct _tom_htable {
    htable ht;   ///< maps a field value to an element, or to a @ref non_unique_header
    htable nuht; ///< maps an element back to its chain node, so removal need not search
    int pos;            ///< descriptor position of the field the table is built on, for diagnostics
-#ifdef OCS_CULL_STATS
+#ifdef OCS_TOM_STATS
    int nm;             ///< the field the table is built on, for the statistics
    bool looked_up;     ///< the table was looked up at least once, for the statistics
 #endif
@@ -1032,7 +1032,7 @@ int ocs::tom::detail::hash_new_check(lList *lp, int nm, bool unique) {
  * @return 1 on success, else 0
  */
 int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    const lDescr *descr;
    int pos;

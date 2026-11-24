@@ -77,7 +77,7 @@ ocs_pack_soft(sge_pack_buffer *pb, F &&pack) {
  * @return the element of type `SGE_WHERE`, or an empty handle when the condition cannot be packed
  */
 ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::PACK> where_elem;
    sge_pack_buffer pb;
@@ -101,7 +101,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
  * @return the condition, to be released with `lFreeWhere()`, or nullptr on error
  */
 lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> where) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    lCondition *cond = nullptr;
 
@@ -140,7 +140,7 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
  * @return the element of type `SGE_WHAT`, or an empty handle when the selection cannot be packed
  */
 ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::PACK> what_elem;
    sge_pack_buffer pb;
@@ -165,7 +165,7 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
  * @return the selection, to be released with `lFreeWhat()`, or nullptr on error
  */
 lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> what) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    lEnumeration *cond = nullptr;
 

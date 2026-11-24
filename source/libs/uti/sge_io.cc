@@ -427,7 +427,7 @@ int sge_string2bin(FILE *fp, const char *buf) {
  * @see #sge_string2file, #sge_stream2string
  */
 char *sge_file2string(const char *fname, int *len) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    FILE *fp;
    SGE_STRUCT_STAT statbuf;

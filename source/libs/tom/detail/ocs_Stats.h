@@ -22,13 +22,13 @@
 /** @file
  * @brief Counters on the hash tables, descriptors and packing of the list library (CS-2993)
  *
- * Built only with the CMake option `ENABLE_CULL_STATS`, which defines
- * `OCS_CULL_STATS`. Without it the hook macros below expand to nothing, so a
+ * Built only with the CMake option `ENABLE_TOM_STATS`, which defines
+ * `OCS_TOM_STATS`. Without it the hook macros below expand to nothing, so a
  * default build carries neither the counting code nor its symbols.
  *
  * The counters are kept per thread and merged when a thread ends. At process
  * exit the merged counters are written as one JSON document to the directory named
- * by `OCS_CULL_STATS_DIR`; nothing is written when the variable is unset.
+ * by `OCS_TOM_STATS_DIR`; nothing is written when the variable is unset.
  *
  * A counter is booked either on an object type or on a field:
  * - type counters (#TOM_STATS_TYPE) take the field number of the first field
@@ -48,7 +48,7 @@
  * temporary or plain copies, plus `descr_intern_new` and `descr_private`.
  */
 
-#ifdef OCS_CULL_STATS
+#ifdef OCS_TOM_STATS
 
 #include <cstdint>
 #include <string>

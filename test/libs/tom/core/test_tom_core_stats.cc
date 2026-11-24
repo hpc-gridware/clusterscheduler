@@ -21,7 +21,7 @@
 /** @file
  * @brief Module test of the statistics counters of the list library (CS-2993)
  *
- * Built only with `ENABLE_CULL_STATS`. Each scenario runs a list operation
+ * Built only with `ENABLE_TOM_STATS`. Each scenario runs a list operation
  * whose cost is known and compares the counters before and after it. The test
  * type has no generated traits, so the operations go through the run-time
  * typed interface (tom/ocs_Raw.h) and the core of the typed object model.

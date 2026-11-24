@@ -440,7 +440,7 @@ namespace ocs::tom {
    }
 
    void legacy_abort(const char *function, const FieldException &e) {
-      DENTER(CULL_LAYER);
+      DENTER(TOM_LAYER);
       CRITICAL("%s: %s", function, e.what());
       ocs::TerminationManager::trigger_abort();
       std::abort();

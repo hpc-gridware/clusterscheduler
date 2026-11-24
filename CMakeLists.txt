@@ -129,12 +129,12 @@ endif()
 # BUILD OPTIONS
 option(ENABLE_LTO "Enable to add Link Time Optimization in Release Build." ON)
 
-# CS-2993: counters on the CULL hash tables, descriptors and packing, written
-# per process at exit to $OCS_CULL_STATS_DIR. For measuring only; without the
+# CS-2993: counters on the hash tables, descriptors and packing of the list library, written
+# per process at exit to $OCS_TOM_STATS_DIR. For measuring only; without the
 # option no counting code is compiled.
-option(ENABLE_CULL_STATS "Enable the CULL statistics counters" OFF)
-if (ENABLE_CULL_STATS)
-   add_compile_definitions(OCS_CULL_STATS)
+option(ENABLE_TOM_STATS "Enable the statistics counters of the list library" OFF)
+if (ENABLE_TOM_STATS)
+   add_compile_definitions(OCS_TOM_STATS)
 endif ()
 option(ENABLE_SANITIZERS "Enable address, leak and undefined behaviour sanitizer" OFF)
 

@@ -45,7 +45,7 @@ constexpr int N_LAYER = 8;
 /* different layers for monitoring; the letter is the one the user types in a
  * debug level string, e.g. "t" turns on the top layer */
 #define TOP_LAYER        0 ///< general code, selected by `t`
-#define CULL_LAYER       1 ///< the cull list library, selected by `c`
+#define TOM_LAYER        1 ///< the list library of the typed object model, selected by `c`
 #define BASIS_LAYER      2 ///< low level helpers, selected by `b`
 #define GUI_LAYER        3 ///< the qmon GUI, selected by `g`
 #define UNUSED0_LAYER    4 ///< unused; kept so the layer numbering stays stable

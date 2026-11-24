@@ -2125,7 +2125,7 @@ static void eat_token() {
 }
 
 static int scan(const char *s, token_set_t token_set[]) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    static const char *t = nullptr;
    static token_set_t *ts = nullptr;

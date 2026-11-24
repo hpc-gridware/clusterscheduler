@@ -902,7 +902,7 @@ const char *offer) {
 }
 
 static int resource_cmp(uint32_t relop, double req, double src_dl) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    int match;
 

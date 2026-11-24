@@ -47,7 +47,7 @@ target_sources(tom PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ocs_SortCore.cc
 )
 
-if (ENABLE_CULL_STATS)
+if (ENABLE_TOM_STATS)
    target_sources(tom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/detail/ocs_Stats.cc)
 endif ()
 

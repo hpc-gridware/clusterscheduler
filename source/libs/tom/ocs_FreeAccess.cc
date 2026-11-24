@@ -40,7 +40,7 @@ namespace ocs::tom {
    }
 
    void missing_key_field(const KeyOp op, const char *function, const int nm, const lDescr *descr) {
-      DENTER(CULL_LAYER);
+      DENTER(TOM_LAYER);
       report_missing_field(function, nm, descr);
       switch (op) {
          case KeyOp::FindStr:

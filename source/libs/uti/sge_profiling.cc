@@ -1271,7 +1271,7 @@ static void prof_info_level_init(prof_level i, int thread_num) {
  * @note MT-NOTE: init_array() is MT safe
  */
 static void init_array(pthread_t num) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    int i, c;
 

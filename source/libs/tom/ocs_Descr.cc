@@ -316,7 +316,7 @@ bool ocs::tom::descr_is_static(const lDescr *dp) {
  *         or nullptr if dp is nullptr or memory is exhausted
  */
 const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    if (dp == nullptr) {
       DRETURN(nullptr);
@@ -508,7 +508,7 @@ int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDe
  *         if keep does not match src, selects no field, or memory is exhausted
  */
 const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &keep) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    const uint32_t n = src != nullptr ? count_entries(src) : 0;
    std::vector<lDescr> entries(n + 1);
@@ -543,7 +543,7 @@ const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &
  *         if a field does not belong to the type, none is given, or memory is exhausted
  */
 const lDescr *ocs::tom::descr_reduce(const lDescr *type, const std::initializer_list<int> fields) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    const uint32_t n = type != nullptr ? count_entries(type) : 0;
    std::vector<bool> keep(n, false);
@@ -668,7 +668,7 @@ size_t ocs::tom::descr_registry_size() {
    return reg.map.size();
 }
 
-#ifdef OCS_CULL_STATS
+#ifdef OCS_TOM_STATS
 /**
  * @brief The largest number of descriptors the registry held at once
  * @return the peak size of the registry since the process started

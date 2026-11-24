@@ -188,7 +188,7 @@ read_config_list(FILE *fp, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const bool sub
  */
 const char *get_conf_value(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstList<ocs::tom::CF> config,
                            const char *key) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    const auto ep = config.find_first<CF_name>(key);
    if (ep == nullptr) {
@@ -221,7 +221,7 @@ int add_nm_to_set(
 int fields[],
 int name_nm 
 ) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    int i = 0;
 

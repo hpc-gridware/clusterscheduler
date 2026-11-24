@@ -507,7 +507,7 @@ void var_list_split_prefix_vars(const ocs::tom::List<ocs::tom::VA> list, ocs::to
  * @return error state 0 - OK -1 - Error
  */
 int var_list_add_as_set(const ocs::tom::List<ocs::tom::VA> lp0, ocs::tom::ListPtr<ocs::tom::VA> &&lp1) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    // taken over on every path, also the early returns
    const auto vars = std::move(lp1);

@@ -418,7 +418,7 @@ void sge_init_language_func(gettext_func_type new_gettext,
  * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
  */
 void sge_set_message_id_output(int flag) {
-   DENTER_(CULL_LAYER);
+   DENTER_(TOM_LAYER);
 
    int *buf = nullptr;
 
@@ -473,7 +473,7 @@ int sge_get_message_id_output() {
  * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
  */
 static int sge_get_message_id_output_implementation() {
-   DENTER_(CULL_LAYER);
+   DENTER_(TOM_LAYER);
 
    int *buf;
    if (sge_enable_msg_id_to_every_message == 1) {
@@ -531,7 +531,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
 #ifndef __SGE_COMPILE_WITH_GETTEXT__
    return msg_str;
 #else
-   DENTER_(CULL_LAYER);
+   DENTER_(TOM_LAYER);
 
    union {
       sge_error_message_t *l;

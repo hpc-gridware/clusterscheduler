@@ -107,7 +107,7 @@ add_dependencies(test_tom_core_plugin test_tom_core_plugin_shared test_tom_core_
 add_test(NAME test_tom_core_plugin COMMAND test_tom_core_plugin)
 
 # CS-2993: the counters exist only in a statistics build
-if (ENABLE_CULL_STATS)
+if (ENABLE_TOM_STATS)
    add_executable(test_tom_core_stats test_tom_core_stats.cc)
    target_include_directories(test_tom_core_stats PRIVATE "./")
    target_link_libraries(test_tom_core_stats PRIVATE tom uti commlists ${SGE_LIBS})
@@ -173,7 +173,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_tom_core_lazy DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_core_descr DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_tom_core_plugin test_tom_core_plugin_shared test_tom_core_plugin_split DESTINATION testbin/${SGE_ARCH})
-   if (ENABLE_CULL_STATS)
+   if (ENABLE_TOM_STATS)
       install(TARGETS test_tom_core_stats DESTINATION testbin/${SGE_ARCH})
    endif ()
 endif ()

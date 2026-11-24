@@ -92,7 +92,7 @@ static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(ocs::tom::List<ocs::tom::
  */
 ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
                                                          ocs::tom::ListPtr<ocs::tom::XMLA> &&attributes) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    auto attribute_list = std::move(attributes);
    auto xml_head = ocs::tom::ElementPtr<ocs::tom::XMLH>::create();
 
@@ -114,7 +114,7 @@ ocs::tom::ElementPtr<ocs::tom::XMLH> ocs_xml_create_head(const char *name,
  * @param value the value, rendered with `%f`
  */
 void xml_addAttributeD(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, const double value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    DSTRING_STATIC(string, 512);
    xml_addAttribute(xml_elem, name, sge_dstring_sprintf(&string, "%f", value));
    DRETURN_VOID;
@@ -136,7 +136,7 @@ void xml_addAttributeD(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const c
  */
 template <auto F, ocs::tom::ObjectType T>
 static void ocs_xml_add_attribute(const ocs::tom::Element<T> xml_elem, const char *name, const char *value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    if (!xml_elem) {
       CRITICAL("xml_addAttribute() called on an element of the wrong type");
@@ -166,7 +166,7 @@ static void ocs_xml_add_attribute(const ocs::tom::Element<T> xml_elem, const cha
  * @param value the value
  */
 void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLH> xml_elem, const char *name, const char *value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    ocs_xml_add_attribute<XMLH_Attribute>(xml_elem, name, value);
    DRETURN_VOID;
 }
@@ -181,7 +181,7 @@ void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLH> xml_elem, const ch
  * @param value the value
  */
 void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const char *name, const char *value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    ocs_xml_add_attribute<XMLE_Attribute>(xml_elem, name, value);
    DRETURN_VOID;
 }
@@ -200,7 +200,7 @@ void xml_addAttribute(const ocs::tom::Element<ocs::tom::XMLE> xml_elem, const ch
  * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
 static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_level, std::ostream &os) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    char indent[128];
    int i;
    bool is_XML_elem = false;
@@ -276,7 +276,7 @@ static void lWriteListXML_(const ocs::tom::ConstRawList lp, const int nesting_le
  * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
 void lWriteElemXMLTo(const ocs::tom::ConstRawElement ep, std::ostream &os) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    lWriteElemXML_(ep, 0, os);
    DRETURN_VOID;
 }
@@ -289,7 +289,7 @@ void lWriteElemXMLTo(const ocs::tom::ConstRawElement ep, std::ostream &os) {
  * @note MT-NOTE: is thread safe, works only on the objects which are passed in
  */
 void lWriteElemXMLTo(const ocs::tom::ConstRawElement ep, FILE *fp) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    std::ostringstream os;
    lWriteElemXML_(ep, 0, os);
    fprintf(fp, "%s", os.str().c_str());
@@ -398,7 +398,7 @@ static void ocs_xml_write_field_value(const ocs::tom::ConstRawElement ep, const 
  * @param os the stream to write to
  */
 static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting_level, std::ostream &os) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    int i;
    char space[128];
@@ -471,7 +471,7 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
  */
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D(const ocs::tom::List<ocs::tom::XMLE> attributeList,
                                                     const char *name, const double value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%.5f", value);
    DRETURN(append_Attr_S(attributeList, name, buffer));
@@ -488,7 +488,7 @@ ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D(const ocs::tom::List<ocs::to
  */
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D8(const ocs::tom::List<ocs::tom::XMLE> attributeList,
                                                      const char *name, const double value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    char buffer[20];
    if (value > 99999999)
       snprintf(buffer, sizeof(buffer), "%.3g", value);
@@ -507,7 +507,7 @@ ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_D8(const ocs::tom::List<ocs::t
  */
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_S(const ocs::tom::List<ocs::tom::XMLE> attributeList,
                                                     const char *name, const char *value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    dstring string = DSTRING_INIT;
    ocs::tom::Element<ocs::tom::XMLE> xml_Elem;
    
@@ -531,7 +531,7 @@ ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_S(const ocs::tom::List<ocs::to
  */
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_I(const ocs::tom::List<ocs::tom::XMLE> attributeList,
                                                     const char *name, const int value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    char buffer[20];
    snprintf(buffer, sizeof(buffer), "%d", value);
    DRETURN(append_Attr_S(attributeList, name, buffer));
@@ -547,7 +547,7 @@ ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_I(const ocs::tom::List<ocs::to
  */
 ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_U(const ocs::tom::List<ocs::tom::XMLE> attributeList,
                                                     const char *name, const uint32_t value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    char buffer[20];
    snprintf(buffer, sizeof(buffer), sge_u32, value);
    DRETURN(append_Attr_S(attributeList, name, buffer));
@@ -561,7 +561,7 @@ ocs::tom::Element<ocs::tom::XMLE> xml_append_Attr_U(const ocs::tom::List<ocs::to
  * @return true when there was an attribute to render, false for none or a missing @p attr
  */
 static bool lAttributesToString_(const ocs::tom::ConstList<ocs::tom::XMLA> attr_list, dstring *attr) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    if (attr == nullptr) {
       DRETURN(false);
    }
@@ -587,7 +587,7 @@ static bool lAttributesToString_(const ocs::tom::ConstList<ocs::tom::XMLA> attr_
  */
 static void lWriteXMLHead_(const ocs::tom::ConstElement<ocs::tom::XMLH> ep, const int nesting_level,
                            std::ostream &os) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    if (!ep){
       DRETURN_VOID;
@@ -622,7 +622,7 @@ static void lWriteXMLHead_(const ocs::tom::ConstElement<ocs::tom::XMLH> ep, cons
  */
 static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(const ocs::tom::List<ocs::tom::XMLE> attributeList,
                                                        const char *name, const char *value) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
    if (value == nullptr || !attributeList) {
       DRETURN(nullptr);
    }
@@ -644,7 +644,7 @@ static ocs::tom::Element<ocs::tom::XMLE> append_Attr_S(const ocs::tom::List<ocs:
  * @return true when something was written
  */
 bool escape_string(const char *string, dstring *target){
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    if (target == nullptr) {
       DPRINTF("no target string in excape_string()\n");

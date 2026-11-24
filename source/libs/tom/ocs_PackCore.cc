@@ -538,7 +538,7 @@ namespace ocs::tom {
          fail(PACK_ENOMEM, what);
       }
 
-#ifdef OCS_CULL_STATS
+#ifdef OCS_TOM_STATS
       /**
        * @brief Count a packed descriptor or field selection (CS-2993); nothing in counting mode
        * @param pb the buffer it was packed into

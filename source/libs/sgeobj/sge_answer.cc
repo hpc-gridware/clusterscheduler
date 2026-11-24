@@ -81,7 +81,7 @@
 #include "tom/ocs_List.h"
 
 /// Debug layer the answer list traces are written to
-#define ANSWER_LAYER CULL_LAYER
+#define ANSWER_LAYER TOM_LAYER
 
 static bool answer_log(ocs::tom::ConstElement<ocs::tom::AN> answer, bool show_info);
 

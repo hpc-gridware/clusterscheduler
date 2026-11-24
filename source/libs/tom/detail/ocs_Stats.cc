@@ -176,9 +176,9 @@ namespace {
 
    thread_local Retirer retirer; ///< constructed with the calling thread's table
 
-   /** @brief Write the counters at exit, if `OCS_CULL_STATS_DIR` is set */
+   /** @brief Write the counters at exit, if `OCS_TOM_STATS_DIR` is set */
    void exit_handler() {
-      const char *dir = getenv("OCS_CULL_STATS_DIR");
+      const char *dir = getenv("OCS_TOM_STATS_DIR");
       if (dir != nullptr && *dir != '\0') {
          ocs::tom::stats::write(dir);
       }

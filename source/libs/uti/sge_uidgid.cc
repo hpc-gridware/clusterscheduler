@@ -68,7 +68,7 @@
 #include "msg_common.h"
 
 /// debug layer used by every DENTER/DPRINTF in this file
-#define UIDGID_LAYER CULL_LAYER
+#define UIDGID_LAYER TOM_LAYER
 /// longest line accepted when reading a passwd or group file
 #define MAX_LINE_LENGTH 10000
 

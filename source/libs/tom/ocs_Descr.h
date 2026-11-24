@@ -91,7 +91,7 @@ namespace ocs::tom {
 
    size_t descr_registry_size();
 
-#ifdef OCS_CULL_STATS
+#ifdef OCS_TOM_STATS
    size_t descr_registry_peak();
 #endif
 

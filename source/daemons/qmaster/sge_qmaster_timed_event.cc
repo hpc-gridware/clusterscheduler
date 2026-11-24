@@ -62,7 +62,7 @@
 #include "msg_qmaster.h"
 
 /** @brief Debug layer the timed event code logs under */
-#define EVENT_LAYER CULL_LAYER
+#define EVENT_LAYER TOM_LAYER
 
 event_control_t Event_Control = {
         PTHREAD_MUTEX_INITIALIZER,

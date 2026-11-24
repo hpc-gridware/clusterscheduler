@@ -387,7 +387,7 @@ int kupdate(int avenrun[3]) {
    }
 
 double get_cpu_load() {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    int cpus_found, i, j;
    double cpu_load = -1.0;
@@ -665,7 +665,7 @@ int sge_getcpuload(double *cpu_load) {
 }
 
 static long percentages(int cnt, double *out, long *new_value, long *old_value, long *diffs) {
-   DENTER(CULL_LAYER);
+   DENTER(TOM_LAYER);
 
    int i;
    long change;
