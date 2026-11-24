@@ -27,6 +27,23 @@ target_include_directories(test_qmaster_timed_event PRIVATE "./")
 target_link_libraries(test_qmaster_timed_event PRIVATE sched mir evc sgeobj gdi cull comm commlists uti ${SGE_LIBS})
 add_test(NAME test_qmaster_timed_event COMMAND test_qmaster_timed_event)
 
+# CS-3134: qmaster must set the script file name of a submitted job itself and
+# never keep one a client sent. Checked through real GDI submissions with a
+# forged JB_exec_file, built the way qsub builds a job -- so it needs a RUNNING
+# qmaster. Registered DISABLED (a plain ctest run has no cluster) and installed
+# into testbin/, the testsuite check module_test_cluster drives it.
+add_executable(test_qmaster_job_exec_file
+      test_qmaster_job_exec_file.cc
+      ../../../source/common/parse_job_cull.cc
+      ../../../source/common/parse_qsub.cc
+      ../../../source/common/sig_handlers.cc
+      ../../../source/common/sge_options.cc
+      ../../../source/common/usage.cc)
+target_include_directories(test_qmaster_job_exec_file PRIVATE "./" ${SGE_INCLUDES})
+target_link_libraries(test_qmaster_job_exec_file PRIVATE clientscommon gdi sched sgeobj cull comm commlists uti ${SGE_LIBS})
+add_test(NAME test_qmaster_job_exec_file COMMAND test_qmaster_job_exec_file)
+set_tests_properties(test_qmaster_job_exec_file PROPERTIES DISABLED TRUE)
+
 add_executable(test_qmaster_rusage
       test_qmaster_rusage.cc
       ../../../source/daemons/qmaster/sge_rusage.cc)
@@ -109,5 +126,6 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_foreign_requests DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_rusage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_job_exec_file DESTINATION testbin/${SGE_ARCH})
 endif ()
 

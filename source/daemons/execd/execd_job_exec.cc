@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "uti/ocs_Systemd.h"
 #include "uti/sge_bootstrap_env.h"
@@ -57,6 +58,7 @@
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_var.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/sge_object.h"
@@ -314,7 +316,16 @@ static int handle_job(lListElem *jelem, lListElem *jatep, int slave) {
              if (count_master_tasks(*ocs::DataStore::get_master_list(SGE_TYPE_JOB), job_id) == 0) {
                int fd;
 
-               /* We are root. Make the scriptfile readable for the jobs submitter,
+               /* CS-3134: only the file qmaster named itself is written */
+               if (!ocs_job_exec_file_is_valid(lGetString(jelem, JB_exec_file), job_id)) {
+                  const std::string job_str = std::to_string(job_id);
+                  sge_dstring_sprintf(&err_str, MSG_JOB_INVALIDEXECFILE_SS,
+                                      lGetString(jelem, JB_exec_file) != nullptr ? lGetString(jelem, JB_exec_file) : "",
+                                      job_str.c_str());
+                  goto Error;
+               }
+
+               /* We run as the admin user here. Make the script readable and executable for the job owner,
                   so shepherd can open (execute) it after changing to the user. */
                fd = SGE_OPEN3(lGetString(jelem, JB_exec_file), O_CREAT | O_WRONLY, 0755);
                if (fd < 0) {

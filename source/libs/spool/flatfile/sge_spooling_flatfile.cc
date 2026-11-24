@@ -35,6 +35,7 @@
 /* system */
 #include <cerrno>
 #include <cstring>
+#include <string>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -55,6 +56,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_str.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/ocs_DataStore.h"
 
 #include "uti/sge.h"
@@ -948,8 +950,12 @@ spool_classic_default_read_func(lList **answer_list,
          {
             const char *exec_file = nullptr;
             char *dup=strdup(key);
-            jobscript_parse_key(dup, &exec_file);
-            if (exec_file != nullptr ) {
+            const char *db_key = jobscript_parse_key(dup, &exec_file);
+            if (exec_file != nullptr && !ocs_jobscript_key_is_valid(db_key, exec_file)) {
+               // CS-3134: only the file qmaster named itself is read
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_JOB_INVALIDEXECFILE_SS, exec_file, db_key != nullptr ? db_key : "");
+            } else if (exec_file != nullptr) {
                int len;
                char *str = sge_file2string(exec_file, &len);
                if (str != nullptr) {
@@ -1198,10 +1204,22 @@ spool_classic_default_write_func(lList **answer_list,
          }
          break;
       case SGE_TYPE_JOBSCRIPT:
-         // job scripts may contain confidential data, only sge_qmaster reads them
-         ret = sge_string2file(lGetString(object, JB_script_ptr),
-                               lGetUlong(object, JB_script_size),
-                               lGetString(object, JB_exec_file), 0600) ? false : true;
+         {
+            // job scripts may contain confidential data, only sge_qmaster reads them
+            const char *exec_file = lGetString(object, JB_exec_file);
+            if (!ocs_job_exec_file_is_valid(exec_file, lGetUlong(object, JB_job_number))) {
+               // CS-3134: only the file qmaster named itself is written
+               const std::string job_id = std::to_string(lGetUlong(object, JB_job_number));
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_JOB_INVALIDEXECFILE_SS, exec_file != nullptr ? exec_file : "",
+                                       job_id.c_str());
+               ret = false;
+            } else {
+               ret = sge_string2file(lGetString(object, JB_script_ptr),
+                                     lGetUlong(object, JB_script_size),
+                                     exec_file, 0600) ? false : true;
+            }
+         }
          break;
       case SGE_TYPE_RQS:
          directory = RESOURCEQUOTAS_DIR;
@@ -1385,10 +1403,18 @@ spool_classic_default_delete_func(lList **answer_list,
          break;
       case SGE_TYPE_JOBSCRIPT:
         {
-            const char *exec_file;
+            const char *exec_file = nullptr;
             char *dup = strdup(key);
-            jobscript_parse_key(dup, &exec_file);
-            ret = (unlink(exec_file) != 0) ? false: true;
+            const char *db_key = jobscript_parse_key(dup, &exec_file);
+            if (!ocs_jobscript_key_is_valid(db_key, exec_file)) {
+               // CS-3134: only the file qmaster named itself is removed
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_JOB_INVALIDEXECFILE_SS, exec_file != nullptr ? exec_file : "",
+                                       db_key != nullptr ? db_key : "");
+               ret = false;
+            } else {
+               ret = (unlink(exec_file) != 0) ? false: true;
+            }
             sge_free(&dup);
          }
          break;

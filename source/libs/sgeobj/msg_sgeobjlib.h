@@ -406,4 +406,7 @@
 #define MSG_AUTOADDHOSTS_PREFIX_S              _MESSAGE(64592, _("AUTO_ADD_HOSTS: " SFQ " does not contain a prefix length between 0 and 32"))
 #define MSG_AUTOADDHOSTS_NETWORK_S             _MESSAGE(64593, _("AUTO_ADD_HOSTS: " SFQ " is not a valid IPv4 network in CIDR notation"))
 
+// CS-3134: a job script file name that qmaster did not set is never read, written or deleted
+#define MSG_JOB_INVALIDEXECFILE_SS             _MESSAGE(64601, _("refusing script file " SFQ " of job " SFQ ": it is not the job's spooled script"))
+
 // clang-format on

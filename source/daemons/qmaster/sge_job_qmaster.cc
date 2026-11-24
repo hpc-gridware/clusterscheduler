@@ -308,10 +308,11 @@ sge_gdi_add_job(lListElem **jep, lList **alpp, lList **lpp,
       answer_list_output(&spool_answer_list);
       ERROR(MSG_JOB_NOWRITE_U, lGetUlong(*jep, JB_job_number));
       answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      if ((lGetString(*jep, JB_exec_file) != nullptr)) {
+      // CS-3134: only the file qmaster named itself is removed
+      if (ocs_job_exec_file_is_valid(lGetString(*jep, JB_exec_file), lGetUlong(*jep, JB_job_number))) {
          unlink(lGetString(*jep, JB_exec_file));
-         lSetString(*jep, JB_exec_file, nullptr);
       }
+      lSetString(*jep, JB_exec_file, nullptr);
       DRETURN(STATUS_EDISK);
    }
 
