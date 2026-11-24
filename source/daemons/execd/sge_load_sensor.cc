@@ -61,6 +61,7 @@
 #include "sgeobj/tom/ocs_tom_LS.h"
 
 #include "execd.h"
+#include "ocs_load_sensor_line.h"
 #include "sge_load_sensor.h"
 #include "sge_report_execd.h"
 #include "msg_execd.h"
@@ -393,11 +394,11 @@ static void sge_ls_stop_ls(const ocs::tom::Element<ocs::tom::LS> this_ls, const 
  */
 static int read_ls() {
    DENTER(TOP_LAYER);
-   char input[10000];
-   char host[1000];
-   char name[1000];
-   char value[1000];
-   bool flag = true;
+   // lines and fields of any length (CS-3209)
+   std::string input;
+   std::string host;
+   std::string name;
+   std::string value;
 
    for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       if (sge_ls_get_pid(ls_elem) == -1) {
@@ -408,37 +409,40 @@ static int read_ls() {
 
       DPRINTF("receiving from %s\n", ls_elem.get<LS_command>());
 
-      while (flag) {
-         if (fscanf(file, "%[^\n]\n", input) != 1) {
-            break;
-         }
-         DPRINTF("received: >>%s<<\n", input);
-
-         if (!strcmp(input, "begin") || !strcmp(input, "start")) {
-            /* remove last possibly incomplete load report */
-            ls_elem.set<LS_incomplete>(ocs::tom::ListPtr<ocs::tom::LR>::create(""));
-            continue;
+      bool done = false;
+      while (!done) {
+         const ocs_ls_line_type type = ocs_ls_read_line(file, input, host, name, value);
+         if (type != ocs_ls_line_type::NONE) {
+            DPRINTF("received: >>%s<<\n", input.c_str());
          }
 
-         if (!strcmp(input, "end")) {
-            /* replace old load report by new one; LS_incomplete is left nullptr, the old one is freed */
-            auto tmp_list = ls_elem.exchange<LS_incomplete>(nullptr);
-            tmp_list = ls_elem.exchange<LS_complete>(std::move(tmp_list));
+         switch (type) {
+            case ocs_ls_line_type::NONE:
+               done = true;
+               break;
+            case ocs_ls_line_type::BEGIN:
+               /* remove last possibly incomplete load report */
+               ls_elem.set<LS_incomplete>(ocs::tom::ListPtr<ocs::tom::LR>::create(""));
+               break;
+            case ocs_ls_line_type::END: {
+               /* replace old load report by new one; LS_incomplete is left nullptr, the old one is freed */
+               auto tmp_list = ls_elem.exchange<LS_incomplete>(nullptr);
+               tmp_list = ls_elem.exchange<LS_complete>(std::move(tmp_list));
 
-            /* request next load report from ls */
-            ls_send_command(ls_elem, "\n");
-            break;
-         }
-
-         /* add a newline for pattern matching in sscanf */
-         strcat(input, "\n");
-         if (sscanf(input, "%[^:]:%[^:]:%[^\n]", host, name, value) != 3) {
-            DPRINTF("format error in line: \"%100s\"\n", input);
-            ERROR(MSG_LS_FORMAT_ERROR_SS, ls_elem.get<LS_command>(), input);
-         } else {
-            // after "end" and before the next "begin" there is no incomplete report: the value is dropped, as it
-            // was before when it went into a list created on the fly and lost
-            sge_add_str2load_report(ls_elem.get<LS_incomplete>(), name, value, host);
+               /* request next load report from ls */
+               ls_send_command(ls_elem, "\n");
+               done = true;
+               break;
+            }
+            case ocs_ls_line_type::VALUE:
+               // after "end" and before the next "begin" there is no incomplete report: the value is dropped, as it
+               // was before when it went into a list created on the fly and lost
+               sge_add_str2load_report(ls_elem.get<LS_incomplete>(), name.c_str(), value.c_str(), host.c_str());
+               break;
+            case ocs_ls_line_type::FORMAT_ERROR:
+               DPRINTF("format error in line: \"%.100s\"\n", input.c_str());
+               ERROR(MSG_LS_FORMAT_ERROR_SS, ls_elem.get<LS_command>(), input.c_str());
+               break;
          }
       }
    }

@@ -21,4 +21,5 @@
 # test/daemons
 
 add_subdirectory(common)
+add_subdirectory(execd)
 add_subdirectory(qmaster)

@@ -49,6 +49,7 @@
  *    SGE_MODE_COPY   - copy the file
  */
 #include <cstdio>
+#include <string>
 
 typedef enum {
    SGE_MODE_APPEND = 1,   ///< append to the target file
@@ -73,3 +74,5 @@ char *sge_file2string(const char *fname, int *len);
 char *sge_stream2string(FILE *fp, int *len);
 
 int sge_string2file(const char *str, int len, const char *fname); 
+
+bool ocs_read_line(FILE *fp, std::string &line);

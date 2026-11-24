@@ -41,6 +41,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cerrno>
+#include <cctype>
+#include <string>
 
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
@@ -613,3 +615,41 @@ int sge_string2file(const char *str, int len, const char *fname) {
    DRETURN(-1);
 }          
 
+/**
+ * @brief Read one line of a line based protocol from a stream, whatever its length
+ *
+ * Used for what JSV scripts (CS-3208) and load sensors (CS-3209) write. Lines can have any length,
+ * there is no fixed-size buffer. The reader keeps the protocol of the former
+ * `fscanf(fp, "%[^\n]\n", buffer)`: whitespace between two lines - the newline, empty lines and
+ * the indentation of the next line - is skipped, and a line that is cut off by the end of
+ * the data available at the moment (EOF or EAGAIN on the non-blocking pipe) is returned as it is.
+ * The whitespace is skipped in front of a line instead of after it, so different from fscanf(),
+ * an empty line at the start of the stream, or one that arrives after the preceding line had
+ * been read, no longer blocks the stream for good.
+ *
+ * @param fp the stream to read from
+ * @param line receives the line without the newline; it is left unchanged if there was none
+ * @return true if a line was read, false if no data was available
+ *
+ * @note MT-NOTE: ocs_read_line() is MT safe
+ */
+bool
+ocs_read_line(FILE *fp, std::string &line) {
+   DENTER(TOP_LAYER);
+   std::string read;
+   int c;
+
+   // skip empty lines and leading whitespace
+   while ((c = getc(fp)) != EOF && isspace(c)) {
+   }
+   while (c != EOF && c != '\n') {
+      read.push_back(static_cast<char>(c));
+      c = getc(fp);
+   }
+
+   const bool ret = !read.empty();
+   if (ret) {
+      line = std::move(read);
+   }
+   DRETURN(ret);
+}
