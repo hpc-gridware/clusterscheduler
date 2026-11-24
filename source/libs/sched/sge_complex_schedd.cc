@@ -1214,51 +1214,6 @@ get_attribute_by_name(const ocs::tom::ConstElement<ocs::tom::EH> global, const o
    DRETURN(ret_el);
 }
 
-#ifdef TEST
-/* 
-for testing purposes compile (on linux) with:
-gcc -Wall -DLINUX -DTEST -o complex complex.c ../LINUX/sge_parse_num_par.o ../LINUX/log.o ../LINUX/utility.o  ../LINUX/pack.o ../LINUX/free.o ../LINUX/io.o ../LINUX/libcull.a 
-*/
-
-int main(int argc, char *argv[], char *envp[]) {
-   lListElem *l;
-   ocs::tom::ListPtr<ocs::tom::AN> alp;
-  
-#ifdef __SGE_COMPILE_WITH_GETTEXT__   
-   /* init language output for gettext() , it will use the right language */
-   sge_init_language_func((gettext_func_type)        gettext,
-                         (setlocale_func_type)      setlocale,
-                         (bindtextdomain_func_type) bindtextdomain,
-                         (textdomain_func_type)     textdomain);
-   sge_init_language(nullptr,nullptr);
-#endif /* __SGE_COMPILE_WITH_GETTEXT__  */
- 
-
-   if (argc!=3) {
-      fprintf(stdout, "usage: complex read_file write_file\n");
-      exit(1);
-   }
-
-   l = read_cmplx(argv[1], "cmplx_name", &alp);
-
-   if (answer_list_has_error(&alp)) {
-      answer_list_output(&alp);
-      DRETURN(1);
-   }
-   
-
-   write_cmplx(1, argv[2], l, nullptr, &alp);
-
-   if (answer_list_has_error(&alp)) {
-      answer_list_output(&alp);
-      DRETURN(1);
-   }
-
-   alp.reset();
-   DRETURN(0);
-}
-#endif
-
 /**
  * @brief Check, if -l request forecloses cluster queue
  *
