@@ -238,8 +238,8 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
       DRETURN(nullptr);
    }
 
-   /* initialize fields */
-   for (i = 0; i < size; i++) {
+   /* initialize fields, the terminating entry included, so an error path can free a partial array */
+   for (i = 0; i <= size; i++) {
       fields[i].nm = NoName;
       fields[i].width = 0;
       fields[i].name = nullptr;
@@ -316,6 +316,11 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
             } else {
                sub_fields = _spool_get_fields_to_spool(answer_list, sub_descr,
                                                        instr->sub_instr);
+               if (sub_fields == nullptr) {
+                  // CS-3168: the error is in the answer list, a field without its sub-table would hide it
+                  fields = spool_free_spooling_fields(fields);
+                  DRETURN(nullptr);
+               }
             }
          }
 

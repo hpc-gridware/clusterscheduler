@@ -119,6 +119,21 @@ int main(int /*argc*/, char * /*argv*/[]) {
    alp.reset();
    CHECK(id, "spool_get_fields_to_spool(null descriptor) returns null", null_fields == nullptr); id++;
 
+   // CS-3168: a sub-list whose field list cannot be built fails the whole field list. The sharetree node holds
+   // its children as a spooled sub-list; the instruction for the second level has no sub-instruction, so the
+   // field list of the children's children cannot be built.
+   {
+      static const spool_instr_t second_level = {MT_SPOOL, true, true, nullptr, nullptr};
+      static const spool_instr_t first_level = {MT_SPOOL, true, true, &second_level, nullptr};
+      spooling_field *nested = spool_get_fields_to_spool(&alp, ocs::tom::STN::descriptor.e, &first_level);
+      CHECK(id, "spool_get_fields_to_spool(): a sub-list that fails fails the field list", nested == nullptr);
+      id++;
+      CHECK(id, "spool_get_fields_to_spool(): the failure of the sub-list is reported", answer_list_has_error(&alp));
+      id++;
+      nested = spool_free_spooling_fields(nested);
+      alp.reset();
+   }
+
    // --- field-value round-trip ---
    printf("\n--- field-value round-trip ---\n");
 
