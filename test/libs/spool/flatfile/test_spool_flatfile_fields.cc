@@ -23,6 +23,7 @@
  *
  * - The load formula of the scheduler configuration is validated as it is stored, without blanks (CS-3166).
  * - A field the writer cannot render is left out instead of crashing the writer (CS-3167).
+ * - A configuration entry admin_user followed only by blanks is refused, not read through a null pointer (CS-3165).
  * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170), also of a
  *   bit field and of an enumeration.
  */
@@ -44,6 +45,7 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_AQTLIST.h"
+#include "sgeobj/tom/ocs_tom_CONF.h"
 #include "sgeobj/tom/ocs_tom_CQ.h"
 #include "sgeobj/sge_qinstance.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
@@ -188,6 +190,48 @@ test_write_unrenderable_field() {
    check("T14", "nothing is written for the object field", text.find("JG_queue") == std::string::npos);
    check("T15", "leaving out a field without a text form is no error", !answer_list_has_error(&alp));
    sge_free(&name);
+}
+
+/**
+ * @brief A configuration entry admin_user with only blanks as its value is refused (CS-3165)
+ *
+ * The JSON reader hands the text of a configuration value to read_CF_value() as it is, so `"   "` reaches it;
+ * the tokenizer gives no token for it, and the value was dereferenced without a null check. (The ASCII reader
+ * does not get there: it does not call read_CF_value() for a name without a value.)
+ */
+static void
+test_conf_admin_user_without_value() {
+   spooling_field *fields = sge_build_CONF_field_list(true);
+   check("T31", "the spooling fields of CONF exist", fields != nullptr);
+   if (fields == nullptr) {
+      return;
+   }
+
+   auto conf = ocs::tom::ElementPtr<ocs::tom::CONF>::create();
+   conf->set<CONF_name>(ocs::tom::Host("global"));
+   auto entries = ocs::tom::ListPtr<ocs::tom::CF>::create("entries");
+   const auto cf = entries->emplace_back<CF_name>("admin_user");
+   cf.set<CF_value>("test_admin");
+   conf->set<CONF_entries>(std::move(entries));
+
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   dstring out = DSTRING_INIT;
+   const bool written = spool_json_write_object(&alp, conf.get(), fields, &out);
+   std::string json = written ? sge_dstring_get_string(&out) : "";
+   sge_dstring_free(&out);
+   print_answers(alp);
+
+   const std::string value = "\"test_admin\"";
+   const std::size_t pos = json.find(value);
+   check("T32", "admin_user is written as JSON", pos != std::string::npos);
+   if (pos != std::string::npos) {
+      json.replace(pos, value.size(), "\"   \"");
+      alp.reset();
+      auto ep = spool_json_read_object(&alp, ocs::tom::CONF::descriptor.e, fields, nullptr, json.c_str());
+      print_answers(alp);
+      check("T33", "admin_user with only blanks is refused, the reader does not crash", !ep);
+   }
+   sge_free(&fields);
 }
 
 /**
@@ -357,6 +401,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_json_by_name_unknown_word();
    test_json_bitfield_enum_unknown_word();
    test_json_sublist_bitfield_unknown_word();
+   test_conf_admin_user_without_value();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);
