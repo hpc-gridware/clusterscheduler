@@ -1767,19 +1767,21 @@ spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
                                     key_dbt.data,
                                     ocs::tom::pack_error_text(pack_ret));
             ret.reset();
-         }
-         DPRINTF("init_packbuffer succeeded\n");
+         } else {
+            // CS-3173: unpack only from a pack buffer that could be initialised
+            DPRINTF("init_packbuffer succeeded\n");
 
-         descr = object_type_get_descr(object_name_get_type((const char *)key_dbt.data));
-         try {
-            ret = ocs::tom::unpack_raw_elem(&pb, descr, pack_part);
-         } catch (const ocs::tom::PackException &e) {
-            answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
-                                    ANSWER_QUALITY_ERROR, 
-                                    MSG_BERKELEY_UNPACKERROR_SS,
-                                    key_dbt.data,
-                                    ocs::tom::pack_error_text(e.code()));
-            ret.reset();
+            descr = object_type_get_descr(object_name_get_type((const char *)key_dbt.data));
+            try {
+               ret = ocs::tom::unpack_raw_elem(&pb, descr, pack_part);
+            } catch (const ocs::tom::PackException &e) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
+                                       ANSWER_QUALITY_ERROR,
+                                       MSG_BERKELEY_UNPACKERROR_SS,
+                                       key_dbt.data,
+                                       ocs::tom::pack_error_text(e.code()));
+               ret.reset();
+            }
          }
 
          /* We specified DB_DBT_MALLOC - BDB will malloc memory for each
