@@ -22,6 +22,7 @@
  * @brief Unit tests for single fields of the flatfile reader and writer in `libs/spool/flatfile`
  *
  * - A field the writer cannot render is left out instead of crashing the writer (CS-3167).
+ * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170).
  */
 
 #include <cstdio>
@@ -37,7 +38,9 @@
 #include "uti/sge_unistd.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_centry.h"
 #include "sgeobj/tom/ocs_tom_all.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "tom/ocs_Element.h"
@@ -45,6 +48,7 @@
 #include "spool/sge_spooling_utilities.h"
 #include "spool/flatfile/sge_flatfile.h"
 #include "spool/flatfile/sge_flatfile_obj.h"
+#include "spool/flatfile/ocs_spool_json.h"
 
 static int failures = 0;
 
@@ -141,6 +145,59 @@ test_write_unrenderable_field() {
 }
 
 /**
+ * @brief The JSON reader rejects an unknown word of a field written by name (CS-3170)
+ *
+ * A complex entry is written as JSON, its requestable word `FORCED` is replaced by an unknown one. The
+ * reader used to ignore the failure of the parser and left the field at 0, which the complex code treats
+ * like `YES`: a resource that must not be requested became requestable. The read has to fail with a message.
+ */
+static void
+test_json_by_name_unknown_word() {
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   spooling_field *fields = spool_get_fields_to_spool(&alp, ocs::tom::CE::descriptor.e, &spool_config_instr);
+   check("T21", "the spooling fields of CE exist", fields != nullptr);
+   if (fields == nullptr) {
+      return;
+   }
+
+   auto ce = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ce->set<CE_name>("test_ce");
+   ce->set<CE_shortcut>("tc");
+   ce->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
+   ce->set<CE_relop>(CMPLXLE_OP);
+   ce->set<CE_requestable>(REQU_FORCED);
+   ce->set<CE_consumable>(CONSUMABLE_NO);
+   ce->set<CE_defaultval>("0");
+   ce->set<CE_urgency_weight>("0");
+
+   dstring out = DSTRING_INIT;
+   const bool written = spool_json_write_object(&alp, ce.get(), fields, &out);
+   const std::string json = written ? sge_dstring_get_string(&out) : "";
+   sge_dstring_free(&out);
+   print_answers(alp);
+
+   const std::string word = "\"FORCED\"";
+   const std::size_t pos = json.find(word);
+   check("T22", "the requestable word is written as FORCED", pos != std::string::npos);
+   if (pos != std::string::npos) {
+      alp.reset();
+      auto ep = spool_json_read_object(&alp, ocs::tom::CE::descriptor.e, fields, nullptr, json.c_str());
+      check("T23", "the unchanged JSON reads back as FORCED",
+            ep && ep->get<std::uint32_t>(CE_requestable) == REQU_FORCED);
+
+      std::string bad = json;
+      bad.replace(pos, word.size(), "\"BOGUS\"");
+      alp.reset();
+      ep = spool_json_read_object(&alp, ocs::tom::CE::descriptor.e, fields, nullptr, bad.c_str());
+      print_answers(alp);
+      check("T24", "an unknown requestable word fails the read with a message",
+            !ep && answer_list_has_error(&alp));
+   }
+
+   spool_free_spooling_fields(fields);
+}
+
+/**
  * @brief Run the tests
  * @return 0 if all checks held, 1 otherwise
  */
@@ -151,6 +208,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_write_unrenderable_field();
+   test_json_by_name_unknown_word();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);

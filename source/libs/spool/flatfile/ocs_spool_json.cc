@@ -2014,10 +2014,14 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
             return false;
          }
       } else if (field.ops->json == ocs_spool_render::by_name) {
-         /* symbolic enum token ("INT", "<=", "YES", ...) -> enum value */
+         /* symbolic enum token ("INT", "<=", "YES", ...) -> enum value; CS-3170: an unknown token fails the
+          * object with the message of the parser instead of leaving the field at 0 */
          dstring s = DSTRING_INIT;
-         ocs_spool_parse_value(*field.ops, ep, nullptr, spool_json_value_to_string(m->value, &s));
+         const bool ok = ocs_spool_parse_value(*field.ops, ep, answer_list, spool_json_value_to_string(m->value, &s));
          sge_dstring_free(&s);
+         if (!ok) {
+            return false;
+         }
       } else if (!spool_json_set_field(ep, field, m->value, answer_list)) {
          return false;
       }

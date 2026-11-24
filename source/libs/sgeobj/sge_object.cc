@@ -568,8 +568,8 @@ ocs_object_append_symbolic(dstring *buffer, const ocs_object_symbolic kind, cons
  * Shared by the typed ocs_object_parse_field() and by the spooling walkers. What a failure reports and stores
  * differs by kind: an unknown complex type, operator, requestable or consumable word reports and stores nothing
  * (CS-3170: the operator and the requestable and consumable words used to fail without a message, the latter two
- * storing `NO`), a bad queue or userset type of an object stores the bits understood before, a bad queue type of a cluster queue
- * attribute reports and stores nothing.
+ * storing `NO`), a bad queue or userset type of an object stores the bits understood before, a bad queue type of
+ * a cluster queue attribute reports and stores nothing.
  *
  * @param[out] answer_list receives the messages
  * @param kind the kind of the field, not ocs_object_symbolic::none
