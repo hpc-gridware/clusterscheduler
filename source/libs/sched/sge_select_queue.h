@@ -269,6 +269,11 @@ struct sge_assignment_t : sge_assignment_base_t {
                                                       ///< created on first use; the complex entries stay read only
    ocs::tom::ElementPtr<ocs::tom::CE> limit_offer;     ///< scratch offer a non consumable resource quota limit is
                                                       ///< compared in, created on first use
+   ocs::tom::ElementPtr<ocs::tom::CE> implicit_slots_request; ///< the implicit request slots=1 every job makes,
+                                                      ///< created on first use, see
+                                                      ///< ocs_assignment_implicit_slots_request()
+   ocs::tom::ListPtr<ocs::tom::CE> implicit_total_list; ///< scratch capacity list holding the slots of the parallel
+                                                      ///< environment, created on first use
    // -------------------- this section is the resulting assignment --------------------
    ocs::tom::ListPtr<ocs::tom::JG> gdil;              ///< the resources
    ocs::tom::ListPtr<ocs::tom::BN> binding_to_use;    ///< Core/thread binding information
@@ -281,6 +286,8 @@ void assignment_init_ar(sge_assignment_t *a, ocs::tom::List<ocs::tom::AR> ar_lis
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);
 void assignment_release(sge_assignment_t *a);
 void assignment_clear_cache(sge_assignment_t *a);
+
+ocs::tom::ConstElement<ocs::tom::CE> ocs_assignment_implicit_slots_request(sge_assignment_t *a);
 
 bool rsmap_request_has_job_scope(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom::CE> req);
 

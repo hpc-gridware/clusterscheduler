@@ -93,38 +93,28 @@ static bool rqs_set_dynamical_limit(ocs::tom::Element<ocs::tom::RQRL> limit,
  * The function verifies no limitation is reached for the specific job request
  * and queue instance
  *
- * @param a job info structure
- * @param rule rqsource quota rule (RQR)
- * @param host host name
- * @param queue queue name
- * @param start start time of job
+ * The implicit slots request and a default request are kept in the assignment, see
+ * ocs_assignment_implicit_slots_request() and #sge_assignment_t::default_request.
  *
- * @return DISPATCH_OK job can be scheduled DISPATCH_NEVER_CAT no jobs of this category will be scheduled DISPATCH_NOT_AT_TIME job can be scheduled later DISPATCH_MISSING_ATTR rule does not match requested attributes
+ * @param[in,out] a     job info structure
+ * @param[in]     rule  resource quota rule (RQR)
+ * @param[in]     host  host name
+ * @param[in]     queue queue name
+ * @param[out]    start start time of job
  *
- * @note MT-NOTE: rqs_limitation_reached() is not MT safe
+ * @return #DISPATCH_OK job can be scheduled, #DISPATCH_NEVER_CAT no jobs of this category will be scheduled,
+ *         #DISPATCH_NOT_AT_TIME job can be scheduled later, #DISPATCH_MISSING_ATTR rule does not match the
+ *         requested attributes
+ *
+ * @note MT-NOTE: rqs_limitation_reached() is MT safe as long as each thread uses its own assignment
  */
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::RQR> rule,
                                          const char *host, const char *queue, uint64_t *start) {
    DENTER(TOP_LAYER);
    dispatch_t ret = DISPATCH_MISSING_ATTR;
-   // created once and kept for the life of the process, as before: a static owning handle would free it at exit,
-   // when the descriptors it needs may be gone already
-   static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
    const auto exec_host = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(a->host_list, host));
    dstring rue_name = DSTRING_INIT;
    dstring reason = DSTRING_INIT;
-
-   if (implicit_slots_request == nullptr) {
-      implicit_slots_request =
-         ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
-      implicit_slots_request.set<CE_name>(SGE_ATTR_SLOTS);
-      // slots is an INT; the type has to be set like on any other request, both
-      // because it is true and because a CE_valtype of 0 is what marks a request
-      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-      implicit_slots_request.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
-      implicit_slots_request.set<CE_stringval>("1");
-      implicit_slots_request.set<CE_doubleval>(1);
-   }
 
    // the limits are changed: rqs_set_dynamical_limit() caches the evaluated value of a dynamic limit in RQRL_dvalue
    for (const auto limit : rule.get<RQR_limit>()) {
@@ -148,7 +138,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
       /* check for implicit slot and default request */
       if (job_centry == nullptr) {
          if (strcmp(raw_centry.get<CE_name>(), SGE_ATTR_SLOTS) == 0) {
-            job_centry = implicit_slots_request;
+            job_centry = ocs_assignment_implicit_slots_request(a);
          } else if (raw_centry.get<CE_defaultval>() != nullptr && raw_centry.get<CE_consumable>()) {
             double request;
             parse_ulong_val(&request, nullptr,

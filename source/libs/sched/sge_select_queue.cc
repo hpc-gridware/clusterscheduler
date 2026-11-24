@@ -197,7 +197,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 #endif
 
 static dispatch_t
-parallel_available_slots(const sge_assignment_t *a, int *slots);
+parallel_available_slots(sge_assignment_t *a, int *slots);
 
 static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *assignment, category_use_t *use_category, int *available_slots);
@@ -526,7 +526,8 @@ assignment_init_pe(sge_assignment_t *a, const ocs::tom::Element<ocs::tom::PE> pe
  * keeps the owned lists: with true they move to `dst`, freeing what `dst`
  * held, and are empty in `src` afterwards; with false they stay in `src` and
  * the lists `dst` held are freed. Either way exactly one of the two owns them.
- * The scratch elements (default request, limit offer) are no state of the assignment; each keeps its own.
+ * The scratch elements (default request, limit offer, implicit slots request, implicit total list) are no state
+ * of the assignment; each keeps its own.
  *
  * @param[out]    dst        the assignment to copy into
  * @param[in,out] src        the assignment to copy from
@@ -583,6 +584,8 @@ void assignment_release(sge_assignment_t *a) {
    a->rsmap_job_keys.reset();
    a->default_request.reset();
    a->limit_offer.reset();
+   a->implicit_slots_request.reset();
+   a->implicit_total_list.reset();
 
    DRETURN_VOID;
 }
@@ -615,6 +618,62 @@ void assignment_clear_cache(sge_assignment_t *a) {
    a->granted_rsmaps.reset();
 
    DRETURN_VOID;
+}
+
+/**
+ * @brief The implicit request slots=1 every job makes
+ *
+ * The request is created on first use and kept in the assignment, so each thread matching jobs has its own;
+ * it is never changed afterwards.
+ *
+ * @param[in,out] a the assignment
+ *
+ * @return the request, owned by `a`
+ */
+ocs::tom::ConstElement<ocs::tom::CE>
+ocs_assignment_implicit_slots_request(sge_assignment_t *a) {
+   DENTER(TOP_LAYER);
+
+   if (!a->implicit_slots_request) {
+      a->implicit_slots_request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+      a->implicit_slots_request->set<CE_name>(SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      a->implicit_slots_request->set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
+      a->implicit_slots_request->set<CE_stringval>("1");
+      a->implicit_slots_request->set<CE_doubleval>(1);
+   }
+
+   DRETURN(*a->implicit_slots_request);
+}
+
+/**
+ * @brief A capacity list holding the slots of the parallel environment
+ *
+ * The list is created on first use and kept in the assignment; its only entry is set to `total` on every call.
+ *
+ * @param[in,out] a     the assignment
+ * @param[in]     total the slots of the parallel environment
+ *
+ * @return the list, owned by `a`
+ */
+static ocs::tom::ConstList<ocs::tom::CE>
+ocs_assignment_implicit_total_list(sge_assignment_t *a, const int total) {
+   DENTER(TOP_LAYER);
+
+   if (!a->implicit_total_list) {
+      a->implicit_total_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+      a->implicit_total_list->emplace_back<CE_name>(SGE_ATTR_SLOTS);
+   }
+   const auto tep = a->implicit_total_list->find_first<CE_name>(SGE_ATTR_SLOTS);
+
+   DSTRING_STATIC(slots_as_str, 100);
+   sge_dstring_sprintf(&slots_as_str, "%d", total);
+   tep.set<CE_doubleval>(total);
+   tep.set<CE_stringval>(sge_dstring_get_string(&slots_as_str));
+
+   DRETURN(*a->implicit_total_list);
 }
 
 static dispatch_t
@@ -1497,8 +1556,8 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
  * resource container is the maximum of the earliest start times for all
  * resources comprised by the resource container that requested by a job.
  *
- * The implicit slots request is a cache that lives as long as the process; it stays raw, a static owning
- * handle would free it in the static destruction at exit.
+ * The implicit slots request and a default request are kept in the assignment, see
+ * ocs_assignment_implicit_slots_request() and #sge_assignment_t::default_request.
  *
  * @param a the assignment
  * @param requested list of attribute requests (`CE`), their tags are updated
@@ -1520,7 +1579,7 @@ sge_select_queue(const ocs::tom::List<ocs::tom::CE> requested_attr, const ocs::t
  *         #DISPATCH_NOT_AT_TIME when they are not fulfilled at that time, or
  *         #DISPATCH_NEVER_CAT when they can never be fulfilled here
  *
- * @note MT-NOTES: is not thread save. uses a static buffer
+ * @note MT-NOTE: MT safe as long as each thread uses its own assignment
  *
  *       Important:
  *       we have some special behavior, when slots is set to -1.
@@ -1533,8 +1592,6 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
                  int slots, const uint32_t layer, const double lc_factor, const uint32_t tag, uint64_t *start_time,
                  const char *object_name) {
    DENTER(TOP_LAYER);
-   // created once and kept for the life of the process
-   static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
    uint64_t latest_time = DISPATCH_TIME_NOW;
    uint64_t tmp_start;
    dispatch_t ret;
@@ -1544,23 +1601,10 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
 
    clear_resource_tags(requested, QUEUE_TAG);
 
-   /* ensure availability of implicit slot request */
-   if (!implicit_slots_request) {
-      implicit_slots_request =
-         ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
-      implicit_slots_request.set<CE_name>(SGE_ATTR_SLOTS);
-      // slots is an INT; the type has to be set like on any other request, both
-      // because it is true and because a CE_valtype of 0 is what marks a request
-      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-      implicit_slots_request.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
-      implicit_slots_request.set<CE_stringval>("1");
-      implicit_slots_request.set<CE_doubleval>(1);
-   }
-
    /* match number of free slots */
    if (slots != -1) {
       tmp_start = *start_time;
-      ret = ri_time_by_slots(a, implicit_slots_request, load_attr, config_attr,
+      ret = ri_time_by_slots(a, ocs_assignment_implicit_slots_request(a), load_attr, config_attr,
                              actual_attr, host, queue, reason, allow_non_requestable, slots, layer, lc_factor,
                              &tmp_start, object_name, binding_inuse);
 
@@ -1586,10 +1630,9 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
          dispatch_t ff;
          const char *name;
          double dval=0.0;
-         // the default request is built in an element of our own. a->centry_list holds the
-         // complex definitions of the cluster, which other threads read while we match and
+         // the default request is built in the scratch element of the assignment. a->centry_list holds
+         // the complex definitions of the cluster, which other threads read while we match and
          // which the qmaster spools - a request must not be written into one of them.
-         ocs::tom::ElementPtr<ocs::tom::CE> default_request;
 
          for (auto attr : actual_attr) {
             name = attr.get<RUE_name>();
@@ -1613,16 +1656,17 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
                   sge_dstring_init(&tmp_reason, tmp_reason_buf, sizeof(tmp_reason_buf));
 
                   /* build the default request - the same element serves every attribute */
-                  if (!default_request) {
-                     default_request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+                  if (!a->default_request) {
+                     a->default_request = ocs::tom::ElementPtr<ocs::tom::CE>::create();
                   }
-                  default_request->set<CE_name>(name);
-                  default_request->set<CE_valtype>(static_cast<uint32_t>(valtype));
-                  default_request->set<CE_stringval>(def_req);
-                  default_request->set<CE_doubleval>(dval);
+                  a->default_request->set<CE_name>(name);
+                  a->default_request->set<CE_valtype>(static_cast<uint32_t>(valtype));
+                  a->default_request->set<CE_relop>(centry.get<CE_relop>());
+                  a->default_request->set<CE_stringval>(def_req);
+                  a->default_request->set<CE_doubleval>(dval);
 
                   tmp_start = *start_time;
-                  ff = ri_time_by_slots(a, *default_request, load_attr, config_attr, actual_attr,
+                  ff = ri_time_by_slots(a, *a->default_request, load_attr, config_attr, actual_attr,
                                         host, queue, &tmp_reason, true, slots,
                                         layer, lc_factor, &tmp_start, object_name, binding_inuse);
 
@@ -5810,31 +5854,24 @@ parallel_global_slots(sge_assignment_t *a, int *slots) {
 /**
  * @brief Check if number of PE slots is available
  *
- * The implicit slots request and the PE's total are kept in two caches that live as long as the process; they
- * stay raw, a static owning handle would free them in the static destruction at exit.
+ * The implicit slots request and the PE's total are kept in the assignment, see
+ * ocs_assignment_implicit_slots_request() and ocs_assignment_implicit_total_list().
  *
- * @param a the assignment
- * @param slots out: the number of slots the PE has free
+ * @param[in,out] a     the assignment
+ * @param[out]    slots the number of slots the PE has free
  *
- * @return 0 ok got an assignment, 1 no assignment at the specified time, -1 assignment will never be possible
- *         for all jobs of that category
+ * @return #DISPATCH_OK when the PE can offer slots, otherwise the result of pe_match_static() or
+ *         #DISPATCH_NEVER_CAT
  *
- * @note MT-NOTE: parallel_available_slots() is not MT safe
+ * @note MT-NOTE: parallel_available_slots() is MT safe as long as each thread uses its own assignment
  */
 static dispatch_t
-parallel_available_slots(const sge_assignment_t *a, int *slots) {
+parallel_available_slots(sge_assignment_t *a, int *slots) {
    DENTER(TOP_LAYER);
 
    dstring reason;
    char reason_buf[1024];
    dispatch_t result;
-   int total = a->pe.get<PE_slots>();
-   // created once and kept for the life of the process
-   static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
-   static ocs::tom::List<ocs::tom::CE> implicit_total_list;
-   ocs::tom::Element<ocs::tom::CE> tep = nullptr;
-   char strbuf[100];
-   dstring slots_as_str;
 
    sge_dstring_init(&reason, reason_buf, sizeof(reason_buf));
 
@@ -5842,40 +5879,12 @@ parallel_available_slots(const sge_assignment_t *a, int *slots) {
       DRETURN(result);
    }
 
-   // @todo CS-482 we should have the implicit slots request once, e.g. in the assignment structure
-   if (implicit_slots_request == nullptr) {
-      implicit_slots_request =
-         ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
-      implicit_slots_request.set<CE_name>(SGE_ATTR_SLOTS);
-      // slots is an INT; the type has to be set like on any other request, both
-      // because it is true and because a CE_valtype of 0 is what marks a request
-      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-      implicit_slots_request.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
-      implicit_slots_request.set<CE_stringval>("1");
-      implicit_slots_request.set<CE_doubleval>(1);
-   }
-
-   // @todo CS-482 PE slots should be stored in a PE_consumable_config_list
-   if (!implicit_total_list) {
-      // created as the free emplace_back() creates a missing list
-      implicit_total_list =
-         ocs::tom::List<ocs::tom::CE>::from_typed(ocs::tom::ListPtr<ocs::tom::CE>::create("").release());
-      tep = implicit_total_list.emplace_back<CE_name>(SGE_ATTR_SLOTS);
-   }
-
-   if (!tep && !(tep = implicit_total_list.find_first<CE_name>(SGE_ATTR_SLOTS))) {
-      DRETURN(DISPATCH_NEVER_CAT);
-   }
-
-   total = a->pe.get<PE_slots>();
-   tep.set<CE_doubleval>(total);
-   sge_dstring_init(&slots_as_str, strbuf, sizeof(strbuf));
-   sge_dstring_sprintf(&slots_as_str, "%d", total);
-   tep.set<CE_stringval>(strbuf);
+   // @todo PE slots should be stored in a PE_consumable_config_list
+   const auto implicit_total_list = ocs_assignment_implicit_total_list(a, static_cast<int>(a->pe.get<PE_slots>()));
 
    ocs::TopologyString binding_inuse;
    if (ri_slots_by_time(a, slots, a->pe.get<PE_resource_utilization>(),
-                        implicit_slots_request, nullptr,
+                        ocs_assignment_implicit_slots_request(a), nullptr,
                         implicit_total_list, nullptr, nullptr, nullptr,
                         0, 0, &reason, true, true, a->pe_name, binding_inuse) != DISPATCH_OK) {
       DRETURN(DISPATCH_NEVER_CAT);
@@ -6786,8 +6795,8 @@ rsmap_same_slots(sge_assignment_t *a, const ocs::tom::ConstList<ocs::tom::CE> to
  *     host_slot_max_by_R = min over all requested R of avail(R)
  *     host_slot          = min(host_slot_max_by_T, host_slot_max_by_R)
  *
- * The implicit slots request is a cache that lives as long as the process; it stays raw, a static owning
- * handle would free it in the static destruction at exit. A default request is evaluated in the scratch
+ * The implicit slots request is kept in the assignment, see ocs_assignment_implicit_slots_request().
+ * A default request is evaluated in the scratch
  * element a->default_request: a->centry_list is read only, in qmaster it is the master complex list.
  *
  * @param[in,out] a                 the assignment
@@ -6842,22 +6851,7 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
 
    // if slots is defined on host level then check how much is available
    if (tep) {
-      // @todo CS-482 not thread safe
-      // created once and kept for the life of the process
-      static ocs::tom::Element<ocs::tom::CE> implicit_slots_request;
-      if (!implicit_slots_request) {
-         implicit_slots_request =
-            ocs::tom::Element<ocs::tom::CE>::from_typed(ocs::tom::ElementPtr<ocs::tom::CE>::create().release());
-         implicit_slots_request.set<CE_name>(SGE_ATTR_SLOTS);
-         // slots is an INT; the type has to be set like on any other request, both
-         // because it is true and because a CE_valtype of 0 is what marks a request
-         // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-         implicit_slots_request.set<CE_valtype>(static_cast<uint32_t>(ocs::CEntry::Type::INT));
-         implicit_slots_request.set<CE_stringval>("1");
-         implicit_slots_request.set<CE_doubleval>(1);
-      }
-
-      result = ri_slots_by_time(a, &available, rue_list, implicit_slots_request,
+      result = ri_slots_by_time(a, &available, rue_list, ocs_assignment_implicit_slots_request(a),
                                 load_attr, total_list, nullptr, host, queue, layer, lc_factor,
                                 &reason, allow_non_requestable, false, object_name, binding_inuse);
       if (result != DISPATCH_OK) {

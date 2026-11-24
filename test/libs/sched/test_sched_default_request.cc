@@ -29,6 +29,11 @@
  *
  * The tests pin both halves of the contract: the complex definitions are not touched, and the
  * default requests still limit the slots exactly as before.
+ *
+ * The implicit request slots=1 was a function-local static, created on first use without any
+ * synchronisation while the qmaster worker threads and the scheduler thread match jobs at the
+ * same time (CS-482). It is kept in the assignment now; the tests pin that each assignment owns
+ * its own request, that it limits the slots as before and that assignment_release() frees it.
  */
 
 #include <climits>
@@ -192,6 +197,73 @@ test_default_request_leaves_centry_untouched() {
 }
 
 /**
+ * @brief The implicit slots request is owned by the assignment and still limits the slots
+ *
+ * The global level offers 2 slots and the consumable `dr_a` (default 2, capacity 10) enough for 5,
+ * so the implicit slots request is the one that limits the job to 2 slots.
+ */
+static void
+test_implicit_slots_request_in_assignment() {
+   auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   add_consumable(*centry_list, SGE_ATTR_SLOTS, "0");
+   add_consumable(*centry_list, "dr_a", "2");
+
+   auto total_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   auto rue_list = ocs::tom::ListPtr<ocs::tom::RUE>::create("");
+   add_capacity(*total_list, *rue_list, SGE_ATTR_SLOTS, 2.0);
+   add_capacity(*total_list, *rue_list, "dr_a", 10.0);
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
+   pe->set<PE_name>("test_pe");
+
+   sge_assignment_t a{};
+   a.job = *job;
+   a.pe = *pe;
+   a.pe_name = "test_pe";
+   a.centry_list = *centry_list;
+   a.start = DISPATCH_TIME_NOW;
+   a.now = 1000;
+   a.duration = 60;
+
+   check("T31", "a new assignment has no implicit slots request", !a.implicit_slots_request);
+
+   for (int round = 1; round <= 2; round++) {
+      int slots = 0;
+      bool found_master_host = false;
+      const auto result = parallel_rc_slots_by_time(&a, &slots, *total_list, *rue_list,
+                                                    ocs::tom::ConstList<ocs::tom::HL>(), false,
+                                                    ocs::tom::ConstElement<ocs::tom::EH>(),
+                                                    ocs::tom::Element<ocs::tom::QU>(), DOMINANT_LAYER_GLOBAL, 0.0,
+                                                    GLOBAL_TAG, false, false, found_master_host, false,
+                                                    SGE_GLOBAL_NAME, false);
+      char id[16];
+      snprintf(id, sizeof(id), "T%02d", 30 + round * 2);
+      check(id, "the implicit slots request matches", result == DISPATCH_OK);
+      snprintf(id, sizeof(id), "T%02d", 31 + round * 2);
+      check(id, "the implicit slots request limits the slots to the global slots (2)", slots == 2);
+   }
+
+   check("T36", "the implicit slots request is created in the assignment", static_cast<bool>(a.implicit_slots_request));
+   const auto request = ocs_assignment_implicit_slots_request(&a);
+   check("T37", "the implicit slots request is slots=1 of type INT",
+         same_string(request.get<CE_name>(), SGE_ATTR_SLOTS) && same_string(request.get<CE_stringval>(), "1") &&
+         request.get<CE_doubleval>() == 1.0 &&
+         request.get<CE_valtype>() == static_cast<uint32_t>(ocs::CEntry::Type::INT));
+   check("T38", "the assignment keeps one implicit slots request",
+         ocs_assignment_implicit_slots_request(&a).raw() == request.raw());
+
+   sge_assignment_t b{};
+   check("T39", "another assignment has an implicit slots request of its own",
+         ocs_assignment_implicit_slots_request(&b).raw() != request.raw());
+
+   assignment_release(&a);
+   assignment_release(&b);
+   check("T40", "assignment_release() frees the implicit slots request",
+         !a.implicit_slots_request && !b.implicit_slots_request);
+}
+
+/**
  * @brief Run the tests
  * @return 0 if all checks held, 1 otherwise
  */
@@ -201,6 +273,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    test_default_request_leaves_centry_untouched();
+   test_implicit_slots_request_in_assignment();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);
