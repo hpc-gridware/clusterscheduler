@@ -98,7 +98,7 @@ typedef enum {
 typedef void (*event_client_update_func_t)(
    uint32_t id,                /* event client id */
    ocs::tom::ListPtr<ocs::tom::AN> *alpp,               /* answer list */
-   lList *event_list,          /* list of new events stored in the report list */
+   ocs::tom::ListData *event_list,          /* list of new events stored in the report list */
    void *arg                   ///< argument passed via sge_mirror_initialize
 );
 
@@ -114,7 +114,7 @@ typedef void (*event_client_update_func_t)(
  * @see `sge_mod_event_client`
  */
 typedef int (*evm_mod_func_t)(
-   lListElem *clio,  /* the new event client structure with a set update_func */
+   ocs::tom::ElementData *clio,  /* the new event client structure with a set update_func */
    ocs::tom::ListPtr<ocs::tom::AN> *alpp,     /* a answer list */
    char* ruser,      /* calling user */
    char* rhost       /* calling host */
@@ -135,9 +135,9 @@ typedef int (*evm_mod_func_t)(
  */
 typedef int (*evm_add_func_t)(
    const ocs::gdi::Packet *packet,
-   lListElem *clio,                        /* the new event client */
+   ocs::tom::ElementData *clio,                        /* the new event client */
    ocs::tom::ListPtr<ocs::tom::AN> *alpp,                           /* the answer list */
-   lList **eclpp,                          /* list with added event client elem */
+   ocs::tom::ListData **eclpp,                          /* list with added event client elem */
    event_client_update_func_t update_func, /* the event client update_func */
    void *update_func_arg                   /* additional argument passed to update_func */
 );

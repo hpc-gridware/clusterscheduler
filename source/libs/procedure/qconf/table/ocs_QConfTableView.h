@@ -55,6 +55,6 @@ namespace ocs {
                           [[maybe_unused]] const qconf_object_desc &desc) override {
       }
 
-      void show_table(std::ostream &os, const lList *list, const qconf_object_desc &desc);
+      void show_table(std::ostream &os, const ocs::tom::ListData *list, const qconf_object_desc &desc);
    };
 }

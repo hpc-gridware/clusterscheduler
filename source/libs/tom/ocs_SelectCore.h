@@ -22,7 +22,7 @@
 /** @file
  * @brief Selections in the core of the typed object model
  *
- * Building field selections (lEnumeration) and conditions (lCondition) from
+ * Building field selections (ocs::tom::WhatData) and conditions (ocs::tom::WhereData) from
  * their parts, evaluating a condition on an element, finding the elements of a
  * list that fulfil one, and selecting a reduced copy of a list. The functions
  * are untyped and throw on every error; the typed selections of ocs_Select.h
@@ -76,7 +76,7 @@ namespace ocs::tom {
     */
    struct WhatEntry {
       int nm;              ///< the field
-      lEnumeration *sub;   ///< the selection inside a list or object field, or nullptr; owned by the entry
+      ocs::tom::WhatData *sub;   ///< the selection inside a list or object field, or nullptr; owned by the entry
    };
 
    /**
@@ -94,7 +94,7 @@ namespace ocs::tom {
     *        hold or for no field at all, AbsentField for a field a reduced descriptor does not hold
     * @throw ListCoreError if there is no memory
     */
-   lEnumeration *make_what(const lDescr *descr, std::span<const WhatEntry> entries);
+   ocs::tom::WhatData *make_what(const ocs::tom::FieldDescr *descr, std::span<const WhatEntry> entries);
 
    /**
     * @brief Build the selection of every field or of none
@@ -102,13 +102,13 @@ namespace ocs::tom {
     * @return the selection, owned by the caller, freed with lFreeWhat()
     * @throw ListCoreError if there is no memory
     */
-   lEnumeration *make_what_special(int pos);
+   ocs::tom::WhatData *make_what_special(int pos);
 
    /**
     * @brief Bring the fields of a selection into the order of the descriptor and keep each once
     * @param ep the selection, terminated by NoName; may be nullptr
     */
-   void sort_what_by_pos(lEnumeration *ep) noexcept;
+   void sort_what_by_pos(ocs::tom::WhatData *ep) noexcept;
 
    /**
     * @brief Build the comparison of a field with a value
@@ -129,7 +129,8 @@ namespace ocs::tom {
     *        is not the field's type
     * @throw ListCoreError if there is no memory
     */
-   lCondition *make_compare(const lDescr *descr, int nm, CompareOp op, int value_type, const lMultiType &value);
+   ocs::tom::WhereData *make_compare(const ocs::tom::FieldDescr *descr, int nm, CompareOp op, int value_type,
+                                     const ocs::tom::FieldValue &value);
 
    /**
     * @brief Build the condition that an element of a list field fulfils a condition
@@ -141,7 +142,7 @@ namespace ocs::tom {
     *        not a list
     * @throw ListCoreError if there is no memory
     */
-   lCondition *make_subscope(const lDescr *descr, int nm, lCondition *sub);
+   ocs::tom::WhereData *make_subscope(const ocs::tom::FieldDescr *descr, int nm, ocs::tom::WhereData *sub);
 
    /**
     * @brief Combine conditions with AND, OR or NOT
@@ -152,7 +153,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if an operand the operator needs is null
     * @throw ListCoreError if there is no memory
     */
-   lCondition *make_logic(LogicOp op, lCondition *first, lCondition *second);
+   ocs::tom::WhereData *make_logic(LogicOp op, ocs::tom::WhereData *first, ocs::tom::WhereData *second);
 
    /**
     * @brief Whether an element fulfils a condition, as lCompare() decided it
@@ -165,7 +166,7 @@ namespace ocs::tom {
     * @return true if @p ep fulfils @p cp
     * @throw FieldException with reason NullElement if @p ep is null
     */
-   bool compare(const lListElem *ep, const lCondition *cp);
+   bool compare(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp);
 
    /**
     * @brief The first element of a list that fulfils a condition
@@ -174,7 +175,7 @@ namespace ocs::tom {
     * @return the element, or nullptr if none fulfils it
     * @throw FieldException with reason NullList if @p lp is null
     */
-   lListElem *find_first(const lList *lp, const lCondition *cp);
+   ocs::tom::ElementData *find_first(const ocs::tom::ListData *lp, const ocs::tom::WhereData *cp);
 
    /**
     * @brief The last element of a list that fulfils a condition
@@ -183,7 +184,7 @@ namespace ocs::tom {
     * @return the element, or nullptr if none fulfils it
     * @throw FieldException with reason NullList if @p lp is null
     */
-   lListElem *find_last(const lList *lp, const lCondition *cp);
+   ocs::tom::ElementData *find_last(const ocs::tom::ListData *lp, const ocs::tom::WhereData *cp);
 
    /**
     * @brief The next element after an element that fulfils a condition
@@ -192,7 +193,7 @@ namespace ocs::tom {
     * @return the element, or nullptr if none fulfils it
     * @throw FieldException with reason NullElement if @p ep is null
     */
-   lListElem *find_next(const lListElem *ep, const lCondition *cp);
+   ocs::tom::ElementData *find_next(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp);
 
    /**
     * @brief The element before an element that fulfils a condition
@@ -201,7 +202,7 @@ namespace ocs::tom {
     * @return the element, or nullptr if none fulfils it
     * @throw FieldException with reason NullElement if @p ep is null
     */
-   lListElem *find_prev(const lListElem *ep, const lCondition *cp);
+   ocs::tom::ElementData *find_prev(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp);
 
    /**
     * @brief Copy the elements of a list that fulfil a condition, reduced to a selection of fields
@@ -219,14 +220,15 @@ namespace ocs::tom {
     * @throw FieldException with reason NullList if @p lp is null, NullElement if @p what is null
     * @throw ListCoreError if the reduction or a copy fails
     */
-   lList *select_list(const char *name, const lList *lp, const lCondition *cp, const lEnumeration *what, bool hash,
+   ocs::tom::ListData *select_list(const char *name, const ocs::tom::ListData *lp, const ocs::tom::WhereData *cp,
+                                   const ocs::tom::WhatData *what, bool hash,
                       bool skip_no_transfer);
 
    /**
     * @brief Free a selection and its nested selections, as lFreeWhat() does
     * @param ep the selection, or nullptr; nullptr afterwards
     */
-   void free_what(lEnumeration *&ep) noexcept;
+   void free_what(ocs::tom::WhatData *&ep) noexcept;
 
    /**
     * @brief A deep copy of a selection, as lCopyWhat() makes it; the cached reduction is not copied
@@ -235,13 +237,13 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if @p ep is null
     * @throw ListCoreError if there is no memory
     */
-   lEnumeration *copy_what(const lEnumeration *ep);
+   ocs::tom::WhatData *copy_what(const ocs::tom::WhatData *ep);
 
    /**
     * @brief Free a condition with its values and operands, as lFreeWhere() does
     * @param cp the condition, or nullptr; nullptr afterwards
     */
-   void free_where(lCondition *&cp) noexcept;
+   void free_where(ocs::tom::WhereData *&cp) noexcept;
 
    /**
     * @brief A deep copy of a condition, as lCopyWhere() makes it; a reference value is not copied
@@ -249,7 +251,7 @@ namespace ocs::tom {
     * @return the copy, owned by the caller, or nullptr for nullptr
     * @throw ListCoreError if there is no memory or the condition is corrupt
     */
-   lCondition *copy_where(const lCondition *cp);
+   ocs::tom::WhereData *copy_where(const ocs::tom::WhereData *cp);
 
    /**
     * @brief Copy the fields a selection names from one element to another, as lCopyElemPartialPack() without a
@@ -262,8 +264,8 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if an argument is null
     * @throw ListCoreError if a selected field is absent or a copy fails
     */
-   void copy_elem_partial(lListElem *dst, const lListElem *src, const lEnumeration *what, bool hash,
-                          bool skip_no_transfer);
+   void copy_elem_partial(ocs::tom::ElementData *dst, const ocs::tom::ElementData *src, const ocs::tom::WhatData *what,
+                          bool hash, bool skip_no_transfer);
 
    /**
     * @brief A copy of one element reduced to a selection of fields, as lSelectElemPack() without a pack buffer
@@ -275,7 +277,8 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if an argument is null
     * @throw ListCoreError if the reduction or a copy fails
     */
-   lListElem *select_elem(const lListElem *ep, const lEnumeration *what, bool hash, bool skip_no_transfer);
+   ocs::tom::ElementData *select_elem(const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what, bool hash,
+                                      bool skip_no_transfer);
 
 
    /**
@@ -286,7 +289,7 @@ namespace ocs::tom {
     * @return the number of fields, every present one for WHAT_ALL, 0 for WHAT_NONE; -1 if an argument is null
     *         or the descriptor cannot be counted
     */
-   int count_what(const lEnumeration *enp, const lDescr *dp) noexcept;
+   int count_what(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *dp) noexcept;
 
    /**
     * @brief Lay out the descriptor a selection reduces another one to, as lPartialDescr() did
@@ -301,7 +304,8 @@ namespace ocs::tom {
     * @param indexp set to the number of entries written, without the terminating one
     * @return 0 on success, -1 on error
     */
-   int partial_descr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp) noexcept;
+   int partial_descr(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *sdp, ocs::tom::FieldDescr *ddp,
+                     int *indexp) noexcept;
 
    /**
     * @brief Whether every field a condition compares belongs to a type
@@ -313,7 +317,7 @@ namespace ocs::tom {
     * @param descr the descriptor of the type
     * @return true if every field compared at the top belongs to @p descr, and for nullptr
     */
-   bool condition_fits(const lCondition *cp, const lDescr *descr) noexcept;
+   bool condition_fits(const ocs::tom::WhereData *cp, const ocs::tom::FieldDescr *descr) noexcept;
 
    /**
     * @brief Merge two selections into one selecting the fields of both, as lMergeWhat() does
@@ -332,7 +336,7 @@ namespace ocs::tom {
     * @return the merged selection, owned by the caller; nullptr if both are nullptr
     * @throw ListCoreError if there is no memory; both selections are freed then
     */
-   lEnumeration *merge_what(lEnumeration *what1, lEnumeration *what2);
+   ocs::tom::WhatData *merge_what(ocs::tom::WhatData *what1, ocs::tom::WhatData *what2);
 
    /**
     * @brief Give a selected list or object field a nested selection, as lWhatSetSubWhat() does
@@ -344,7 +348,7 @@ namespace ocs::tom {
     * @param sub the nested selection, or nullptr for the whole sub-list or sub-object; taken over
     * @throw FieldException with reason ForeignField if @p what does not select @p nm; @p sub is freed then
     */
-   void set_sub_what(lEnumeration *what, int nm, lEnumeration *sub);
+   void set_sub_what(ocs::tom::WhatData *what, int nm, ocs::tom::WhatData *sub);
 
    /**
     * @brief The shared reduced descriptor a selection makes of a type, as lGetReducedDescr() gives it
@@ -353,6 +357,7 @@ namespace ocs::tom {
     * @return the descriptor, holding a reference for the caller, who gives it up with
     *         ocs::tom::release_descr(); nullptr if the selection selects nothing of the type
     */
-   const lDescr *reduced_descr(const lDescr *descr, const lEnumeration *what) noexcept;
+   const ocs::tom::FieldDescr *reduced_descr(const ocs::tom::FieldDescr *descr,
+                                             const ocs::tom::WhatData *what) noexcept;
 
 } // namespace ocs::tom

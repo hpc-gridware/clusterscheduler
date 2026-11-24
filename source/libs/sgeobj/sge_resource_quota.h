@@ -92,7 +92,7 @@ bool rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS> rqs, ocs::tom::ListP
 
 ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(ocs::tom::List<ocs::tom::RQR> lp, const char *name);
 
-bool rqs_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+bool rqs_xattr_pre_gdi(ocs::tom::ListData *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool rqs_get_rue_string(dstring *name, ocs::tom::ConstElement<ocs::tom::RQR> rule, const char *user,
                         const char *project, const char *host, const char *queue, const char *pe);

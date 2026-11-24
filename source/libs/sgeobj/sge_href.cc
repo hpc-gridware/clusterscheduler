@@ -411,7 +411,7 @@ ocs::tom::ConstElement<ocs::tom::HR> href_list_locate(const ocs::tom::ConstList<
  */
 ocs::tom::Element<ocs::tom::HR> href_list_locate(const ocs::tom::List<ocs::tom::HR> this_list, const char *name) {
    const auto ret = href_list_locate(ocs::tom::ConstList<ocs::tom::HR>(this_list), name);
-   return ocs::tom::Element<ocs::tom::HR>::from_typed(const_cast<lListElem *>(ret.raw()));
+   return ocs::tom::Element<ocs::tom::HR>::from_typed(const_cast<ocs::tom::ElementData *>(ret.raw()));
 }
 
 

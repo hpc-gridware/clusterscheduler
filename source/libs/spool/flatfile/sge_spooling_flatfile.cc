@@ -128,7 +128,7 @@ const char *get_classic_spooling_method()
  *                          "<common_dir>;<spool_dir>" form is rejected)
  * @return on success the new spooling context (SPC), else nullptr
  */
-lListElem *
+ocs::tom::ElementData *
 spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args) {
    DENTER(TOP_LAYER);
 
@@ -565,12 +565,11 @@ static bool read_validate_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  */
 bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                      const ocs::tom::ConstElement<ocs::tom::SPT> type,
-                                     const ocs::tom::ConstElement<ocs::tom::SPR> rule,
-                                     lList **list,
+                                     const ocs::tom::ConstElement<ocs::tom::SPR> rule, ocs::tom::ListData **list,
                                      const sge_object_type object_type) {
    DENTER(TOP_LAYER);
 
-   const lDescr *descr;
+   const ocs::tom::FieldDescr *descr;
 
    const char *filename  = nullptr;
    const char *directory = nullptr;
@@ -782,7 +781,7 @@ bool spool_classic_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
  *
  * @see `spool_read_object()`
  */
-lListElem *
+ocs::tom::ElementData *
 spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                 const ocs::tom::ConstElement<ocs::tom::SPT> type,
                                 const ocs::tom::ConstElement<ocs::tom::SPR> rule,
@@ -793,10 +792,10 @@ spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    const char *url = nullptr;
    const char *directory = nullptr;
    const char *filename = nullptr;
-   const lDescr *descr = nullptr;
+   const ocs::tom::FieldDescr *descr = nullptr;
    flatfile_info *rule_clientdata;
    flatfile_info *field_info;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementData *ep = nullptr;
    bool parse_values = true;
 
    rule_clientdata = (flatfile_info *)rule.get<SPR_clientdata>();
@@ -1093,7 +1092,7 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
                     pe_task_id != nullptr ? pe_task_id : "<null>");
 
             if (object_type == SGE_TYPE_JOB) {
-               job = ocs::tom::Element<ocs::tom::JB>(const_cast<lListElem *>(object.raw()));
+               job = ocs::tom::Element<ocs::tom::JB>(const_cast<ocs::tom::ElementData *>(object.raw()));
 
                /* we only want to spool the job object */
                if (only_job) {

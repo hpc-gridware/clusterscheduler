@@ -49,6 +49,7 @@ bool st_get_flag_new_global_conf();
 
 int subscribe_scheduler(sge_evc_class_t *evc, sge_where_what_t *where_what);
 
-void event_update_func(uint32_t ec_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList *event_list, void * arg);
+void event_update_func(uint32_t ec_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListData *event_list,
+                       void * arg);
 
 void set_job_flushing(sge_evc_class_t *evc);

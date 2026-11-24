@@ -82,7 +82,7 @@ static pthread_mutex_t jsv_mutex = PTHREAD_MUTEX_INITIALIZER;
  * of the corresponding JSV. The order of the elements in the list 
  * is important because the JSV's are executed in that order.
  */
-static lList *jsv_list = nullptr;   /* JSV; process lifetime, read through checked handles */
+static ocs::tom::ListData *jsv_list = nullptr;   /* JSV; process lifetime, read through checked handles */
 
 /**
  * @brief Creates a new JSV object and initializes its attributes

@@ -82,7 +82,7 @@ debit_all_jobs_from_pes(ocs::tom::List<ocs::tom::PE> pe_list);
  *          change; see the dead-declaration list.
  */
 void
-debit_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
+debit_job_from_pe(ocs::tom::ElementData *pep, int slots, uint32_t job_id);
 
 /** @brief Give a job's slots back to a parallel environment
  *
@@ -95,7 +95,7 @@ debit_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
  *          change; see the dead-declaration list.
  */
 void
-reverse_job_from_pe(lListElem *pep, int slots, uint32_t job_id);
+reverse_job_from_pe(ocs::tom::ElementData *pep, int slots, uint32_t job_id);
 
 void
 pe_diff_usersets(ocs::tom::ConstElement<ocs::tom::PE> new_pe, ocs::tom::ConstElement<ocs::tom::PE> old_pe,

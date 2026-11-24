@@ -44,4 +44,5 @@
 #include "gdi/ocs_gdi_Packet.h"
 
 
-void sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *aHost, char *aCommproc, int anId, lList *aReport, monitoring_t *monitor);
+void sge_c_report(ocs::gdi::Packet *packet, ocs::gdi::Task *task, char *aHost, char *aCommproc, int anId,
+                  ocs::tom::ListData *aReport, monitoring_t *monitor);

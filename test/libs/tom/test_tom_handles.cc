@@ -55,10 +55,13 @@ static_assert(sizeof(ConstList<JB>) == sizeof(void *) && std::is_trivially_copya
 static_assert(sizeof(List<JB>) == sizeof(void *) && std::is_trivially_copyable_v<List<JB>>);
 // constness: a mutable handle converts to the read-only one and to both pointers, never the other way round
 static_assert(std::is_convertible_v<Element<JB>, ConstElement<JB>> && !std::is_convertible_v<ConstElement<JB>, Element<JB>>);
-static_assert(std::is_convertible_v<Element<JB>, lListElem *> && std::is_convertible_v<Element<JB>, const lListElem *>);
-static_assert(std::is_convertible_v<ConstElement<JB>, const lListElem *> && !std::is_convertible_v<ConstElement<JB>, lListElem *>);
+static_assert(std::is_convertible_v<Element<JB>, ocs::tom::ElementData *> && std::is_convertible_v<Element<JB>,
+              const ocs::tom::ElementData *>);
+static_assert(std::is_convertible_v<ConstElement<JB>,
+              const ocs::tom::ElementData *> && !std::is_convertible_v<ConstElement<JB>, ocs::tom::ElementData *>);
 // a raw pointer becomes a handle only explicitly
-static_assert(!std::is_convertible_v<lListElem *, Element<JB>> && std::is_constructible_v<Element<JB>, lListElem *>);
+static_assert(!std::is_convertible_v<ocs::tom::ElementData *, Element<JB>> && std::is_constructible_v<Element<JB>,
+              ocs::tom::ElementData *>);
 
 /**
  * @brief One of an overload pair, taking the read-only handle
@@ -74,7 +77,7 @@ static int pick(ConstElement<JB> job) {
  * @param job the element
  * @return 2, which says that this overload was chosen
  */
-static int pick(const lListElem *job) {
+static int pick(const ocs::tom::ElementData *job) {
    return job != nullptr ? 2 : -2;
 }
 
@@ -83,7 +86,7 @@ static int pick(const lListElem *job) {
  * @param job the element
  * @return its job number
  */
-static std::uint32_t old_style(const lListElem *job) {
+static std::uint32_t old_style(const ocs::tom::ElementData *job) {
    return ocs::tom::get<JB_job_number>(job);
 }
 
@@ -116,7 +119,7 @@ static void
 test_pointer_like() {
    auto owner = ElementPtr<JB>::create();
    owner->set<JB_job_number>(42u);
-   lListElem *raw = owner.get().raw();
+   ocs::tom::ElementData *raw = owner.get().raw();
    const Element<JB> h{raw};
    const Element<JB> h1 = h;
    const Element<JB> h2{nullptr};
@@ -125,7 +128,7 @@ test_pointer_like() {
          !h2 && static_cast<bool>(h));
    CHECK(2, "a handle is passed to a function taking a raw pointer", old_style(h) == 42);
    CHECK(3, "an overload pair resolves to the read-only handle, and to the pointer for a pointer",
-         pick(h) == 1 && pick(static_cast<const lListElem *>(raw)) == 2);
+         pick(h) == 1 && pick(static_cast<const ocs::tom::ElementData *>(raw)) == 2);
    const ConstElement<JB> c = h;
    CHECK(4, "the read-only handle holds the same element", c == h && c.raw() == raw);
 }
@@ -138,7 +141,7 @@ test_pointer_like() {
 static void
 test_accessors() {
    auto list = ListPtr<TEST>::create("test");
-   lListElem *raw = list->push_back(ElementPtr<TEST>::create()).raw();
+   ocs::tom::ElementData *raw = list->push_back(ElementPtr<TEST>::create()).raw();
    const Element<TEST> t{raw};
 
    t.set<TEST_bool>(true);
@@ -161,7 +164,7 @@ test_accessors() {
 
    // the free getters on the raw pointer replaced the old getters; the host name reads back as written, as
    // lGetHost() gave it
-   const lListElem *craw = raw;
+   const ocs::tom::ElementData *craw = raw;
    const bool free_path = ocs::tom::get<TEST_bool>(craw) && ocs::tom::get<TEST_uint32>(craw) == 4000000000u &&
                           ocs::tom::get<TEST_uint64>(craw) == (UINT64_C(1) << 40) &&
                           ocs::tom::get<TEST_int>(craw) == -7 &&
@@ -200,9 +203,9 @@ test_errors() {
    auto list = ListPtr<TEST>::create("test");
    list->push_back(ElementPtr<TEST>::create());
    auto reduced = list->select(what<TEST_uint32>(), "reduced");
-   lListElem *r = reduced->front().raw();
+   ocs::tom::ElementData *r = reduced->front().raw();
    auto queue_owner = ElementPtr<QU>::create();
-   lListElem *queue = queue_owner.get().raw();
+   ocs::tom::ElementData *queue = queue_owner.get().raw();
 
    CHECK(10, "reading an absent field throws, naming field and type",
          throws_field_exception([&] { static_cast<void>(ConstElement<TEST>{r}.get<TEST_string>()); },
@@ -239,8 +242,8 @@ test_errors() {
 
    // the object a field holds already is set again without an error since CS-3062 (N-L-4)
    auto full_owner = ElementPtr<TEST>::create();
-   lListElem *full = full_owner.get().raw();
-   lListElem *held = ElementPtr<JB>::create().release();
+   ocs::tom::ElementData *full = full_owner.get().raw();
+   ocs::tom::ElementData *held = ElementPtr<JB>::create().release();
    const bool same = ocs::tom::set<TEST_obj_jb>(full, held) == 0 && ocs::tom::set<TEST_obj_jb>(full, held) == 0 &&
                      full_owner->get<TEST_obj_jb>().raw() == held;
    CHECK(24, "the free setter sets the object a field holds again without an error", same);
@@ -265,7 +268,8 @@ test_hash_tables() {
    five.set<TEST_int>(-5);
    CHECK(21, "after a change of a hashed field, the lookup finds the new key and not the old one",
          list.get().find_first<TEST_uint32>(1000u) == five && !list.get().find_first<TEST_uint32>(5u) &&
-         static_cast<const lListElem *>(ocs::tom::find_first<TEST_uint32>(list.get().raw(), 1000u)) == five.raw());
+         static_cast<const ocs::tom::ElementData *>(ocs::tom::find_first<TEST_uint32>(list.get().raw(),
+                                                                                      1000u)) == five.raw());
    CHECK(22, "a change of an unhashed field leaves the lookups alone",
          list.get().find_first<TEST_uint32>(1000u).get<TEST_int>() == -5 && list.get().find_first<TEST_uint32>(6u));
 }
@@ -277,7 +281,8 @@ test_hash_tables() {
  */
 static void
 test_create_with_descriptor() {
-   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
+   const ocs::tom::FieldDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number,
+                                                                                             JB_job_name});
 
    auto full_list = ListPtr<JB>::create("full", ocs::tom::JB::descriptor.e);
    auto full_job = ElementPtr<JB>::create(ocs::tom::JB::descriptor.e);
@@ -320,14 +325,15 @@ test_create_with_descriptor() {
  */
 static void
 test_layout() {
-   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number, JB_job_name});
+   const ocs::tom::FieldDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_number,
+                                                                                             JB_job_name});
 
    // emplace_back and the free emplace_back (which replaced lAddElemUlong) on an existing reduced list create the
    // element with the list's descriptor
    auto reduced_list = ListPtr<JB>::create("reduced", reduced);
    const Element<JB> emplaced = reduced_list.get().emplace_back<JB_job_number>(7u);
-   lList *other_list = ListPtr<JB>::create("other reduced", reduced).release();
-   const lListElem *added = ocs::tom::emplace_back<JB_job_number>(&other_list, 8u);
+   ocs::tom::ListData *other_list = ListPtr<JB>::create("other reduced", reduced).release();
+   const ocs::tom::ElementData *added = ocs::tom::emplace_back<JB_job_number>(&other_list, 8u);
    const ListPtr<JB> other_owner(other_list);
    CHECK(29, "emplace_back and the free emplace_back on a reduced list give an element with the list's descriptor",
          emplaced.descr() == reduced_list->descr() && emplaced.get<JB_job_number>() == 7 &&
@@ -360,7 +366,7 @@ test_layout() {
    // the same pointer, and an equal descriptor at another address, are accepted
    reduced_job.get().set<JB_job_number>(9u);
    const Element<JB> same = reduced_list.get().push_back(std::move(reduced_job));
-   const lDescr *copy = ocs::tom::descr_private(reduced);
+   const ocs::tom::FieldDescr *copy = ocs::tom::descr_private(reduced);
    auto copied_job = ElementPtr<JB>::create(copy);
    const bool other_address = copied_job->descr() != reduced_list->descr();
    copied_job.get().set<JB_job_number>(10u);
@@ -395,7 +401,7 @@ test_layout() {
    auto plain_owner = ElementPtr<JB>::create();
    plain_owner->set<JB_job_number>(13u);
    plain_owner->set<JB_owner>("someone");
-   const lListElem *plain_job = plain_owner.get().raw();
+   const ocs::tom::ElementData *plain_job = plain_owner.get().raw();
    // the free append on the raw list, which replaced lAppendElem(), and the typed push_back
    ocs::tom::append(hashed.get().raw(), std::move(plain_owner));
    auto typed_job = ElementPtr<JB>::create();
@@ -417,8 +423,8 @@ static void
 test_correct_counterparts() {
    auto job_owner = ElementPtr<JB>::create();
    auto queue_owner = ElementPtr<QU>::create();
-   lListElem *raw = job_owner.get().raw();
-   lListElem *raw_queue = queue_owner.get().raw();
+   ocs::tom::ElementData *raw = job_owner.get().raw();
+   ocs::tom::ElementData *raw_queue = queue_owner.get().raw();
    const Element<JB> job{raw};
    const ConstElement<JB> const_job = job;
    const Element<QU> queue{raw_queue};
@@ -428,7 +434,7 @@ test_correct_counterparts() {
    const char *qname = queue.get<QU_qname>();               // compile_fail/job_field_on_queue.cc
    const Element<JB> from_raw{raw};                          // compile_fail/raw_pointer_assigned.cc
    job.set<JB_job_number>(1u);                              // compile_fail/setter_on_const.cc
-   const lListElem *const_raw = const_job;                   // compile_fail/const_to_mutable_pointer.cc
+   const ocs::tom::ElementData *const_raw = const_job;                   // compile_fail/const_to_mutable_pointer.cc
    CHECK(23, "the correct counterparts compile and work",
          std::strcmp(name, "name") == 0 && qname == nullptr && from_raw == job && const_raw == raw &&
          const_job.get<JB_job_number>() == 1);
@@ -460,9 +466,9 @@ test_add() {
 static void
 test_free_add() {
    ListPtr<JAT> tasks = ListPtr<JAT>::create("tasks");
-   lListElem *full = tasks->push_back(ElementPtr<JAT>::create()).raw();
+   ocs::tom::ElementData *full = tasks->push_back(ElementPtr<JAT>::create()).raw();
    std::vector<int> seen;
-   for (lListElem *ep : {static_cast<lListElem *>(nullptr), full}) {
+   for (ocs::tom::ElementData *ep : {static_cast<ocs::tom::ElementData *>(nullptr), full}) {
       seen.push_back(ocs::tom::add<JAT_status>(ep, 1));
       seen.push_back(ocs::tom::add<JAT_tix>(ep, 1.0));
    }
@@ -521,7 +527,7 @@ test_no_sub_type() {
    ElementPtr<SPA> opt = ElementPtr<SPA>::create();
    ListPtr<PN> paths = ListPtr<PN>::create("paths");
    paths->emplace_back<PN_path>("/tmp/out");
-   const lList *paths_raw = paths.get().raw();
+   const ocs::tom::ListData *paths_raw = paths.get().raw();
    opt->set<SPA_argval_lListT>(std::move(paths));
    const bool list_pn = !paths && opt->get<SPA_argval_lListT>().raw() == paths_raw &&
                         std::strcmp(opt->get_as<SPA_argval_lListT, PN>().front().get<PN_path>(), "/tmp/out") == 0;
@@ -625,20 +631,20 @@ test_no_sub_type() {
 
 // a raw pointer and nullptr still reach the raw setter of a field without a sub-type: the setters taking owners
 // cannot deduce the owner's type from them
-static_assert(requires(const Element<SPA> opt, lList *lp) {
+static_assert(requires(const Element<SPA> opt, ocs::tom::ListData *lp) {
    opt.set<SPA_argval_lListT>(nullptr);
    opt.set<SPA_argval_lListT>(lp);
 });
-static_assert(requires(const Element<TEST> test, lListElem *ep) {
+static_assert(requires(const Element<TEST> test, ocs::tom::ElementData *ep) {
    test.set<TEST_obj_any>(nullptr);
    test.set<TEST_obj_any>(ep);
 });
-static_assert(std::is_same_v<detail::SetterArg<SPA_argval_lListT>::type, lList *>);
-static_assert(std::is_same_v<detail::SetterArg<TEST_obj_any>::type, lListElem *>);
+static_assert(std::is_same_v<detail::SetterArg<SPA_argval_lListT>::type, ocs::tom::ListData *>);
+static_assert(std::is_same_v<detail::SetterArg<TEST_obj_any>::type, ocs::tom::ElementData *>);
 // the raw setter is the one with the raw pointer parameter
-[[maybe_unused]] static constexpr void (Element<SPA>::*raw_list_setter)(lList *) const =
+[[maybe_unused]] static constexpr void (Element<SPA>::*raw_list_setter)(ocs::tom::ListData *) const =
         &Element<SPA>::set<SPA_argval_lListT>;
-[[maybe_unused]] static constexpr void (Element<TEST>::*raw_object_setter)(lListElem *) const =
+[[maybe_unused]] static constexpr void (Element<TEST>::*raw_object_setter)(ocs::tom::ElementData *) const =
         &Element<TEST>::set<TEST_obj_any>;
 
 /**
@@ -652,7 +658,7 @@ test_no_sub_type_edges() {
    const ElementPtr<TEST> reduced = ElementPtr<TEST>::create(layout<TEST_uint32>());
    ElementPtr<JB> job = ElementPtr<JB>::create();
    job->set<JB_job_number>(3u);
-   const lListElem *job_raw = job.get().raw();
+   const ocs::tom::ElementData *job_raw = job.get().raw();
    const bool absent = throws_field_exception([&] { reduced->set<TEST_obj_any>(std::move(job)); },
                                               FieldException::Reason::AbsentField, "TEST_obj_any") &&
                        job && job.get().raw() == job_raw && job->get<JB_job_number>() == 3 &&
@@ -697,9 +703,9 @@ test_no_sub_type_edges() {
          !job_view.has<JB_job_number>());
 
    // the raw setter takes a raw list or element over and nullptr empties the field
-   lList *raw_list = ListPtr<ST>::create("names").release();
+   ocs::tom::ListData *raw_list = ListPtr<ST>::create("names").release();
    opt->set<SPA_argval_lListT>(raw_list);
-   lListElem *raw_elem = ElementPtr<QU>::create().release();
+   ocs::tom::ElementData *raw_elem = ElementPtr<QU>::create().release();
    test->set<TEST_obj_any>(raw_elem);
    const bool raw_taken =
            opt->get<SPA_argval_lListT>().raw() == raw_list && test->get<TEST_obj_any>().raw() == raw_elem;
@@ -749,7 +755,7 @@ test_exchange_members() {
    // a list field without a sub-type with a raw owner: the list taken out goes back in the same way
    const ElementPtr<SPA> opt = ElementPtr<SPA>::create();
    opt->set<SPA_argval_lListT>(ListPtr<ST>::create("names"));
-   lList *const names = opt->get<SPA_argval_lListT>().raw();
+   ocs::tom::ListData *const names = opt->get<SPA_argval_lListT>().raw();
    RawListPtr out = opt->exchange<SPA_argval_lListT>({});
    const bool out_taken = out.get().raw() == names && !opt->get<SPA_argval_lListT>();
    const RawListPtr previous = opt->exchange<SPA_argval_lListT>(std::move(out));

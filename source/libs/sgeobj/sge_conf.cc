@@ -155,7 +155,7 @@
 /** @} */
 
 /* This list is *ONLY* used by the execd and should be moved eventually */
-lList *Execd_Config_List = nullptr;
+ocs::tom::ListData *Execd_Config_List = nullptr;
 
 /// The cluster configuration, as one C struct rather than an element
 struct confel {
@@ -176,10 +176,10 @@ struct confel {
    char        *enforce_user;        ///< SGEEE attribute: "true" or "false"
    char        *administrator_mail;  ///< list of mail addresses
    char        *mail_tag;            ///< mail tag
-   lList       *user_lists;          ///< allowed user lists
-   lList       *xuser_lists;         ///< forbidden users lists
-   lList       *projects;            ///< allowed project list
-   lList       *xprojects;           ///< forbiddent project list
+   ocs::tom::ListData       *user_lists;          ///< allowed user lists
+   ocs::tom::ListData       *xuser_lists;         ///< forbidden users lists
+   ocs::tom::ListData       *projects;            ///< allowed project list
+   ocs::tom::ListData       *xprojects;           ///< forbiddent project list
    char        *set_token_cmd;       ///< command that acquires an AFS token, from `set_token_cmd`
    char        *pag_cmd;             ///< command that puts the job into its own PAG, from `pag_cmd`
    uint32_t    token_extend_time;    ///< how long an AFS token is extended for, in seconds
@@ -920,7 +920,7 @@ chg_conf_val(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, c
  */
 template <typename T, auto F>
 static void
-chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, lList *&target) {
+chg_conf_list(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, ocs::tom::ListData *&target) {
    DENTER(BASIS_LAYER);
 
    const auto ep = lp_cfg.find_first<CF_name>(name);

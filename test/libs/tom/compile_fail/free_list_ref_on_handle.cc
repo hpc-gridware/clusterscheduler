@@ -43,7 +43,7 @@
  * @param job the job
  * @return never compiles
  */
-lList **wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
+ocs::tom::ListData **wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
    // the member job.list_ref<F>() is the only way on a handle
    return ocs::tom::list_ref<JB_env_list>(job);
 }

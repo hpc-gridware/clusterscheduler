@@ -35,7 +35,7 @@
  * @param ep the element
  * @return whether a bit is set
  */
-bool wrong_use(const lListElem *ep) {
+bool wrong_use(const ocs::tom::ElementData *ep) {
    // the bit mask functions work on 32 bit fields only
    return ocs::tom::has_any_bits<TEST_uint64>(ep, 1);
 }

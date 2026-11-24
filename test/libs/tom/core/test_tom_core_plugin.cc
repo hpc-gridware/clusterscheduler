@@ -41,7 +41,7 @@
 #include "ocs_module_test.h"
 
 /// a reduced descriptor both sides intern
-static const lDescr RED[] = {{1, MT_UINT32 | MT_IS_REDUCED}, {NoName, MT_END}};
+static const ocs::tom::FieldDescr RED[] = {{1, MT_UINT32 | MT_IS_REDUCED}, {NoName, MT_END}};
 
 /**
  * @brief The path of a test module, next to this executable
@@ -85,8 +85,8 @@ static module_result probe_module(const char *name) {
    r.shared = ocs::tom::descr_registry_shared(handle, r.own, r.seen);
    printf("%s: own registry in %s, module uses the one in %s\n", name, r.own.c_str(), r.seen.c_str());
 
-   using intern_func = const lDescr *(*)(const lDescr *);
-   using release_func = void (*)(const lDescr **);
+   using intern_func = const ocs::tom::FieldDescr *(*)(const ocs::tom::FieldDescr *);
+   using release_func = void (*)(const ocs::tom::FieldDescr **);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
    const auto intern = reinterpret_cast<intern_func>(dlsym(handle, "test_tom_core_plugin_intern"));
@@ -94,8 +94,8 @@ static module_result probe_module(const char *name) {
 #pragma GCC diagnostic pop
    if (intern != nullptr && release != nullptr) {
       const size_t base = ocs::tom::descr_registry_size();
-      const lDescr *mine = ocs::tom::descr_intern(RED);
-      const lDescr *theirs = intern(RED);
+      const ocs::tom::FieldDescr *mine = ocs::tom::descr_intern(RED);
+      const ocs::tom::FieldDescr *theirs = intern(RED);
       r.same_descr = mine != nullptr && mine == theirs;
       r.growth = ocs::tom::descr_registry_size() - base;
       release(&theirs);

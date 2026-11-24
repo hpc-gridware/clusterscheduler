@@ -1344,7 +1344,7 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_cmdline(const uint32_t prog_number, co
          }
 
          DPRINTF("\"-masterq %s\"\n", *sp);
-         lList *ids_out = nullptr;
+         ocs::tom::ListData *ids_out = nullptr;
          i_ret = ocs_parse_destination_identifier_list(&ids_out, *sp);
          /* ocs_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
          auto id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(ids_out);
@@ -1669,7 +1669,7 @@ DTRACE;
          }
 
          DPRINTF("\"-q %s\"\n", *sp);
-         lList *ids_out = nullptr;
+         ocs::tom::ListData *ids_out = nullptr;
          i_ret = ocs_parse_destination_identifier_list(&ids_out, *sp);
          /* ocs_parse_destination_identifier_list() creates the list with QR, so it is taken over unchecked */
          auto id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(ids_out);
@@ -1991,7 +1991,7 @@ DTRACE;
             char **dest = nullptr;
             char *tmp;
             // ocs_parse_string_list() works on any descriptor and has no typed form
-            lList *user_list = nullptr;
+            ocs::tom::ListData *user_list = nullptr;
 
             tmp = sge_strdup(nullptr, *sp);
             dest = string_list(tmp, ",", nullptr);

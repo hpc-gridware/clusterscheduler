@@ -153,7 +153,7 @@ namespace {
     * @param nm the string field
     * @return the keys followed by a blank each, "null" for a null list
     */
-   std::string keys(const lList *lp, const int nm) {
+   std::string keys(const ocs::tom::ListData *lp, const int nm) {
       if (lp == nullptr) {
          return "null";
       }
@@ -171,7 +171,7 @@ namespace {
     * @param nm the 32 bit field
     * @return the numbers followed by a blank each, "null" for a null list
     */
-   std::string numbers(const lList *lp, const int nm) {
+   std::string numbers(const ocs::tom::ListData *lp, const int nm) {
       if (lp == nullptr) {
          return "null";
       }
@@ -251,8 +251,8 @@ void test_find_all() {
    bool same = true;
    for (const int n : Lengths) {
       auto owner = make_test_list(n);
-      lList *lp = owner.get().raw();
-      const lList *clp = lp;
+      ocs::tom::ListData *lp = owner.get().raw();
+      const ocs::tom::ListData *clp = lp;
       same = same &&
              walk([&](const void **it) { return ocs::tom::find_first<TEST_string>(clp, "s1", it); },
                   [&](const void **it) { return ocs::tom::find_next<TEST_string>(clp, "s1", it); }) ==
@@ -277,8 +277,8 @@ void test_find_all() {
  */
 void test_find_string() {
    auto owner = make_test_list(10);
-   lList *lp = owner.get().raw();
-   const lList *clp = lp;
+   ocs::tom::ListData *lp = owner.get().raw();
+   const ocs::tom::ListData *clp = lp;
    const auto number = [](const auto ep) { return ep ? static_cast<int>(ep.template get<TEST_uint32>()) : -1; };
    // "S2" matches "s2" without regard to case: element 2 is the first; "s*" is a prefix pattern, element 0 the first
    const bool same = number(ocs::tom::find_first_nocase<TEST_string>(clp, "S2")) == 2 &&
@@ -297,9 +297,9 @@ void test_find_string() {
  */
 void test_find_in() {
    auto job_owner = make_job();
-   lListElem *job = job_owner.get().raw();
-   const lListElem *b = job_owner->get<JB_env_list>().back().raw();
-   const lListElem *task2 = job_owner->get<JB_ja_tasks>().back().raw();
+   ocs::tom::ElementData *job = job_owner.get().raw();
+   const ocs::tom::ElementData *b = job_owner->get<JB_env_list>().back().raw();
+   const ocs::tom::ElementData *task2 = job_owner->get<JB_ja_tasks>().back().raw();
    const bool found = ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "b") == b &&
                       ocs::tom::find_first_in_rw<JB_env_list, VA_variable>(job, "x") == nullptr &&
                       ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 2) == task2 &&
@@ -311,7 +311,7 @@ void test_find_in() {
 
    // a job without the list field: the free form throws, which nothing catches
    auto rjob_owner = make_reduced_job();
-   const lListElem *rjob = rjob_owner.get().raw();
+   const ocs::tom::ElementData *rjob = rjob_owner.get().raw();
    const bool aborts =
       in_child([&] { return ocs::tom::find_first_in<JB_env_list, VA_variable>(rjob, "b") != nullptr; }) == Aborted;
    CHECK(4, "an element without the list field ends the process", aborts);
@@ -322,8 +322,8 @@ void test_find_in() {
  */
 void test_add_erase() {
    std::vector<std::string> seen;
-   lList *strings = nullptr;
-   lList *ulongs = nullptr;
+   ocs::tom::ListData *strings = nullptr;
+   ocs::tom::ListData *ulongs = nullptr;
    const auto added = [](const auto ep) { return std::string(ep != nullptr ? "added" : "null"); };
    seen.push_back(added(ocs::tom::emplace_back<TEST_string>(&strings, "a")));
    seen.push_back(added(ocs::tom::emplace_back<TEST_string>(&strings, "b")));
@@ -359,7 +359,7 @@ void test_add_erase() {
    // a list of another type: the old message, the soft path and nullptr, a delete finds nothing
    auto tasks_owner = ocs::tom::ListPtr<ocs::tom::JAT>::create("tasks");
    tasks_owner->push_back(ocs::tom::ElementPtr<ocs::tom::JAT>::create());
-   lList *tasks = tasks_owner.get().raw();
+   ocs::tom::ListData *tasks = tasks_owner.get().raw();
    const std::vector<int> foreign{
       in_child([&] { return ocs::tom::emplace_back<TEST_host>(&tasks, "h") == nullptr ? 0 : 1; }),
       in_child([&] { return ocs::tom::erase<TEST_host>(&tasks, "h"); })};
@@ -373,7 +373,7 @@ void test_add_erase() {
 void test_add_erase_in() {
    std::vector<std::string> seen;
    auto job_owner = make_job();
-   lListElem *job = job_owner.get().raw();
+   ocs::tom::ElementData *job = job_owner.get().raw();
    seen.push_back(ocs::tom::emplace_back_in<JB_env_list, VA_variable>(job, "C") != nullptr ? "added" : "null");
    seen.push_back(ocs::tom::emplace_back_in<JB_env_list, VA_variable>(nullptr, "D") != nullptr ? "added" : "null");
    seen.push_back(std::to_string(ocs::tom::erase_in<JB_env_list, VA_variable>(job, "A")));
@@ -392,7 +392,7 @@ void test_add_erase_in() {
 
    // a job without the list field: the free forms throw, which nothing catches
    auto rjob_owner = make_reduced_job();
-   lListElem *rjob = rjob_owner.get().raw();
+   ocs::tom::ElementData *rjob = rjob_owner.get().raw();
    const bool aborts =
       in_child([&] { return ocs::tom::emplace_back_in<JB_env_list, VA_variable>(rjob, "X") != nullptr; }) ==
          Aborted &&
@@ -406,11 +406,11 @@ void test_add_erase_in() {
 void test_has() {
    auto job = make_job();
    auto rjob = make_reduced_job();
-   const lListElem *task = job->get<JB_ja_tasks>().front().raw();
+   const ocs::tom::ElementData *task = job->get<JB_ja_tasks>().front().raw();
    std::vector<bool> seen;
-   for (const lListElem *ep : {static_cast<const lListElem *>(job.get().raw()),
-                               static_cast<const lListElem *>(rjob.get().raw()), task,
-                               static_cast<const lListElem *>(nullptr)}) {
+   for (const ocs::tom::ElementData *ep : {static_cast<const ocs::tom::ElementData *>(job.get().raw()),
+                               static_cast<const ocs::tom::ElementData *>(rjob.get().raw()), task,
+                               static_cast<const ocs::tom::ElementData *>(nullptr)}) {
       seen.push_back(ocs::tom::has<JB_env_list>(ep));
       seen.push_back(ocs::tom::has<JB_job_number>(ep));
    }
@@ -428,9 +428,9 @@ void test_exchange() {
    auto a_owner = make_job();
    auto b_owner = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    b_owner->set<JB_env_list>(make_names({"Z"}));
-   lListElem *a = a_owner.get().raw();
-   lListElem *b = b_owner.get().raw();
-   lList *other = make_names({"Q"}).release();
+   ocs::tom::ElementData *a = a_owner.get().raw();
+   ocs::tom::ElementData *b = b_owner.get().raw();
+   ocs::tom::ListData *other = make_names({"Q"}).release();
    const auto env = [](const ocs::tom::ElementPtr<ocs::tom::JB> &job) {
       return keys(job->get<JB_env_list>().raw(), VA_variable);
    };
@@ -466,21 +466,22 @@ void test_exchange() {
 void test_small() {
    std::vector<std::string> seen;
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   lList *created = ocs::tom::get_or_create<JB_env_list>(job.get().raw(), "env");
+   ocs::tom::ListData *created = ocs::tom::get_or_create<JB_env_list>(job.get().raw(), "env");
    seen.push_back(created != nullptr && created == job->get<JB_env_list>().raw() ? "created" : "none");
    seen.push_back(ocs::tom::get_or_create<JB_env_list>(job.get().raw(), "env") == created ? "same" : "other");
    seen.push_back(ocs::tom::get_or_create<JB_env_list>(nullptr, "env") == nullptr ? "null" : "list");
-   lList **ref = ocs::tom::list_ref<JB_env_list>(static_cast<const lListElem *>(job.get().raw()));
+   ocs::tom::ListData **ref =
+         ocs::tom::list_ref<JB_env_list>(static_cast<const ocs::tom::ElementData *>(job.get().raw()));
    seen.push_back(ref != nullptr && *ref == created ? "ref" : "other");
 
    auto t = ocs::tom::ElementPtr<ocs::tom::TEST>::create();
-   const lListElem *t_raw = t.get().raw();
+   const ocs::tom::ElementData *t_raw = t.get().raw();
    seen.push_back(std::string("[") + ocs::tom::get_or_empty<TEST_string>(t_raw) + "]");
    t->set<TEST_string>("x");
    seen.push_back(std::string("[") + ocs::tom::get_or_empty<TEST_string>(t_raw) + "]");
 
    auto task_owner = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
-   lListElem *task = task_owner.get().raw();
+   ocs::tom::ElementData *task = task_owner.get().raw();
    task_owner->set<JAT_status>(0x5);
    const auto status = [&] { return task_owner->get<JAT_status>(); };
    seen.push_back(ocs::tom::has_any_bits<JAT_status>(task, 0x4) ? "match" : "no");
@@ -488,7 +489,7 @@ void test_small() {
    seen.push_back(then(ocs::tom::or_bits<JAT_status>(task, 0x2), status));
    seen.push_back(then(ocs::tom::and_bits<JAT_status>(task, 0x6), status));
    seen.push_back(then(ocs::tom::clear_bits<JAT_status>(task, 0x2), status));
-   seen.push_back(std::to_string(ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2)));
+   seen.push_back(std::to_string(ocs::tom::clear_bits<JAT_status>(static_cast<ocs::tom::ElementData *>(nullptr), 0x2)));
 
    // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4
    const std::vector<std::string> expected{"created", "same", "null",  "ref",  "[]",
@@ -540,11 +541,11 @@ void test_owning() {
          same);
 
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
-   lListElem *const held = job.get().raw();
+   ocs::tom::ElementData *const held = job.get().raw();
    ocs::tom::append(jobs.get().raw(), std::move(job));
    const bool appended = job == nullptr && jobs->front().raw() == held;
    auto second = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   lListElem *const second_raw = second.get().raw();
+   ocs::tom::ElementData *const second_raw = second.get().raw();
    ocs::tom::insert_after(jobs.get().raw(), nullptr, std::move(second));
    const bool inserted = second == nullptr && jobs->front().raw() == second_raw;
    auto kept = ocs::tom::ElementPtr<ocs::tom::JB>::create();
@@ -559,24 +560,24 @@ void test_owning() {
          appended && inserted && not_taken);
 
    auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
-   lListElem *const pe_raw = pe.get().raw();
+   ocs::tom::ElementData *const pe_raw = pe.get().raw();
    auto env = ocs::tom::ListPtr<ocs::tom::VA>::create("env");
-   lList *const env_raw = env.get().raw();
+   ocs::tom::ListData *const env_raw = env.get().raw();
    bool stored = ocs::tom::set<JAT_pe_object>(task.get().raw(), std::move(pe)) == 0 && pe == nullptr &&
                  task->get<JAT_pe_object>().raw() == pe_raw;
-   lListElem *const first = jobs->front().raw();
+   ocs::tom::ElementData *const first = jobs->front().raw();
    stored = stored && ocs::tom::set<JB_env_list>(first, std::move(env)) == 0 && env == nullptr &&
             jobs->front().get<JB_env_list>().raw() == env_raw;
    CHECK(14, "set<F> takes a moved list or element over", stored);
 
    auto bound = task->get<JAT_pe_object>().clone();
-   lListElem *const bound_raw = bound.get().raw();
+   ocs::tom::ElementData *const bound_raw = bound.get().raw();
    auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    const bool first_store =
       ocs::tom::set<JAT_pe_object>(other_task.get().raw(), std::move(bound)) == 0 && bound == nullptr;
    // an element bound to a field is refused by a second one: the moved-in handle gives it up, the element stays
    // bound to other_task (which frees it), and the refusing field keeps its own element
-   lListElem *const kept_raw = task->get<JAT_pe_object>().raw();
+   ocs::tom::ElementData *const kept_raw = task->get<JAT_pe_object>().raw();
    auto rebound = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(bound_raw);
    const bool refused = ocs::tom::set<JAT_pe_object>(task.get().raw(), std::move(rebound)) == -1 &&
                         rebound == nullptr &&
@@ -598,7 +599,7 @@ void test_owning() {
    vars->push_back(std::move(var));
    const ocs::tom::ConstList<ocs::tom::VA> view = vars;
    const ocs::tom::List<ocs::tom::VA> rw_view = vars;
-   const lListElem *const front = view.front();
+   const ocs::tom::ElementData *const front = view.front();
    const bool views = view.raw() == vars.get().raw() && rw_view.raw() == vars.get().raw() && view.size() == 1 &&
                       view.back().raw() == front && rw_view.front().raw() == front && rw_view.back().raw() == front;
    const bool empty_views = ocs::tom::ConstList<ocs::tom::VA>(empty_list).raw() == nullptr;
@@ -812,7 +813,7 @@ test_completed_contracts() {
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    auto other_task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
-   lListElem *const pe_raw = pe.get().raw();
+   ocs::tom::ElementData *const pe_raw = pe.get().raw();
    other_task->set<JAT_pe_object>(std::move(pe));
    auto rebound = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(pe_raw);
    bool bound_refused = false;
@@ -838,7 +839,8 @@ test_completed_contracts() {
          empty_refused && rebound_empty == nullptr && other_task->get<JAT_pe_object>().raw() == pe_raw);
 
    auto rebound_null = ocs::tom::ElementPtr<ocs::tom::PE>::from_typed(pe_raw);
-   const int null_rc = ocs::tom::set<JAT_pe_object>(static_cast<lListElem *>(nullptr), std::move(rebound_null));
+   const int null_rc = ocs::tom::set<JAT_pe_object>(static_cast<ocs::tom::ElementData *>(nullptr),
+                                                    std::move(rebound_null));
    CHECK(27, "the free set on a null element returns -1 and leaves a bound element where it is bound",
          null_rc == -1 && rebound_null == nullptr && other_task->get<JAT_pe_object>().raw() == pe_raw);
 }
@@ -852,7 +854,7 @@ test_take_object() {
    auto task = ocs::tom::ElementPtr<ocs::tom::JAT>::create();
    auto pe = ocs::tom::ElementPtr<ocs::tom::PE>::create();
    pe->set<PE_name>("make");
-   lListElem *const pe_raw = pe.get().raw();
+   ocs::tom::ElementData *const pe_raw = pe.get().raw();
    task->set<JAT_pe_object>(std::move(pe));
 
    auto taken = task->take<JAT_pe_object>();
@@ -1126,7 +1128,7 @@ test_member_element_forms() {
              ta->get<JAT_status>() == eb.get<JAT_status>() && eb.get<JAT_status>() == 0x4;
       // 5 | 2 = 7, 7 & 6 = 6, 6 & ~2 = 4; an empty handle gives -1 in both forms
       const int member_null = ocs::tom::Element<ocs::tom::JAT>().clear_bits<JAT_status>(0x2);
-      const int free_null = ocs::tom::clear_bits<JAT_status>(static_cast<lListElem *>(nullptr), 0x2);
+      const int free_null = ocs::tom::clear_bits<JAT_status>(static_cast<ocs::tom::ElementData *>(nullptr), 0x2);
       same = same && member_null == -1 && member_null == free_null;
 
       auto ha = ocs::tom::ElementPtr<ocs::tom::HM>::create();

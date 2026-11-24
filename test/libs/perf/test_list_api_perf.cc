@@ -77,6 +77,17 @@
 #else
 #include "cull/cull.h"
 #include "sgeobj/cull/sge_all_listsL.h"
+// the old list library (9.1) names its structures lList, lListElem, ...; the code below uses the names of the typed
+// object model (9.2), which these aliases give the old library
+namespace ocs::tom {
+   using ListData = lList;
+   using ElementData = lListElem;
+   using FieldDescr = lDescr;
+   using WhereData = lCondition;
+   using WhatData = lEnumeration;
+   using FieldValue = lMultiType;
+   using SortOrderData = lSortOrder;
+} // namespace ocs::tom
 #endif
 #include "uti/sge_stdlib.h"
 
@@ -646,34 +657,34 @@ static void free_fixture(Fixture &f) {
 
 /// the data set, built once
 struct Fixture {
-   lList *jobs_short;      ///< short_n plain jobs
-   lList *jobs_long;       ///< long_n plain jobs, unsorted priority, owner, name, submission time
-   lList *jobs_100;        ///< 100 plain jobs
-   lList *jobs_pack;       ///< 100 jobs with 10 env entries, 10 tasks and a checkpoint object each
-   lList *tasks_short;     ///< short_n tasks, JAT_task_number 1...
-   lList *tasks_long;      ///< long_n tasks
-   lList *rde_short;       ///< short_n diagram entries, RDE_time base_u64...
-   lList *rde_long;        ///< long_n diagram entries
-   lList *ce_short;        ///< short_n complex entries, CE_name g_names
-   lList *ce_long;         ///< long_n complex entries
-   lList *eh_short;        ///< short_n hosts, EH_name g_hosts
-   lList *eh_long;         ///< long_n hosts
-   lList *qu_short;        ///< short_n queue instances on 2 hosts and 2 queue names
-   lList *qu_long;         ///< long_n queue instances on 100 hosts and 100 queue names
-   lList *st_dup;          ///< long_n strings, 100 distinct
-   lList *va_add;          ///< short_n variables new0000 ... for lAddSubList()
-   lListElem *job;         ///< a job with 10 env entries, 10 tasks and a checkpoint object
-   lListElem *scratch_a;   ///< a job like job, changed by the operations
-   lListElem *scratch_b;   ///< a job like job, changed by the operations
-   lListElem *sub_short;   ///< a job with short_n env entries and tasks
-   lListElem *sub_long;    ///< a job with long_n env entries and tasks
-   lListElem *rue_short;   ///< a resource utilization with short_n diagram entries
-   lListElem *rue_long;    ///< a resource utilization with long_n diagram entries
-   lListElem *cq_short;    ///< a cluster queue with short_n queue instances on distinct hosts
-   lListElem *cq_long;     ///< a cluster queue with long_n queue instances on distinct hosts
-   lListElem *host;        ///< a host
-   lListElem *ce;          ///< a complex entry
-   lListElem *qu;          ///< a queue instance
+   ocs::tom::ListData *jobs_short;      ///< short_n plain jobs
+   ocs::tom::ListData *jobs_long;       ///< long_n plain jobs, unsorted priority, owner, name, submission time
+   ocs::tom::ListData *jobs_100;        ///< 100 plain jobs
+   ocs::tom::ListData *jobs_pack;       ///< 100 jobs with 10 env entries, 10 tasks and a checkpoint object each
+   ocs::tom::ListData *tasks_short;     ///< short_n tasks, JAT_task_number 1...
+   ocs::tom::ListData *tasks_long;      ///< long_n tasks
+   ocs::tom::ListData *rde_short;       ///< short_n diagram entries, RDE_time base_u64...
+   ocs::tom::ListData *rde_long;        ///< long_n diagram entries
+   ocs::tom::ListData *ce_short;        ///< short_n complex entries, CE_name g_names
+   ocs::tom::ListData *ce_long;         ///< long_n complex entries
+   ocs::tom::ListData *eh_short;        ///< short_n hosts, EH_name g_hosts
+   ocs::tom::ListData *eh_long;         ///< long_n hosts
+   ocs::tom::ListData *qu_short;        ///< short_n queue instances on 2 hosts and 2 queue names
+   ocs::tom::ListData *qu_long;         ///< long_n queue instances on 100 hosts and 100 queue names
+   ocs::tom::ListData *st_dup;          ///< long_n strings, 100 distinct
+   ocs::tom::ListData *va_add;          ///< short_n variables new0000 ... for lAddSubList()
+   ocs::tom::ElementData *job;         ///< a job with 10 env entries, 10 tasks and a checkpoint object
+   ocs::tom::ElementData *scratch_a;   ///< a job like job, changed by the operations
+   ocs::tom::ElementData *scratch_b;   ///< a job like job, changed by the operations
+   ocs::tom::ElementData *sub_short;   ///< a job with short_n env entries and tasks
+   ocs::tom::ElementData *sub_long;    ///< a job with long_n env entries and tasks
+   ocs::tom::ElementData *rue_short;   ///< a resource utilization with short_n diagram entries
+   ocs::tom::ElementData *rue_long;    ///< a resource utilization with long_n diagram entries
+   ocs::tom::ElementData *cq_short;    ///< a cluster queue with short_n queue instances on distinct hosts
+   ocs::tom::ElementData *cq_long;     ///< a cluster queue with long_n queue instances on distinct hosts
+   ocs::tom::ElementData *host;        ///< a host
+   ocs::tom::ElementData *ce;          ///< a complex entry
+   ocs::tom::ElementData *qu;          ///< a queue instance
 };
 
 /**
@@ -681,7 +692,7 @@ struct Fixture {
  * @param job the job
  * @param i the index of the job
  */
-static void fill_job(lListElem *job, const std::uint32_t i) {
+static void fill_job(ocs::tom::ElementData *job, const std::uint32_t i) {
    lSetUlong(job, JB_job_number, i + 1);
    lSetString(job, JB_job_name, job_name(i));
    lSetString(job, JB_owner, job_owner(i));
@@ -699,26 +710,26 @@ static void fill_job(lListElem *job, const std::uint32_t i) {
  * @param n_tasks the tasks, JAT_task_number 1...
  * @return the job
  */
-static lListElem *make_job(const std::uint32_t i, const std::size_t n_env, const std::size_t n_tasks) {
-   lListElem *job = lCreateElem(JB_Type);
+static ocs::tom::ElementData *make_job(const std::uint32_t i, const std::size_t n_env, const std::size_t n_tasks) {
+   ocs::tom::ElementData *job = lCreateElem(JB_Type);
    fill_job(job, i);
    if (n_env > 0) {
-      lList *env = lCreateList("env", VA_Type);
+      ocs::tom::ListData *env = lCreateList("env", VA_Type);
       for (std::size_t k = 0; k < n_env; k++) {
-         lListElem *ep = lCreateElem(VA_Type);
+         ocs::tom::ElementData *ep = lCreateElem(VA_Type);
          lSetString(ep, VA_variable, g_vars[k].c_str());
          lSetString(ep, VA_value, "value");
          lAppendElem(env, ep);
       }
       lSetList(job, JB_env_list, env);
-      lListElem *ckpt = lCreateElem(CK_Type);
+      ocs::tom::ElementData *ckpt = lCreateElem(CK_Type);
       lSetString(ckpt, CK_name, "ckpt");
       lSetObject(job, JB_checkpoint_object, ckpt);
    }
    if (n_tasks > 0) {
-      lList *tasks = lCreateList("tasks", JAT_Type);
+      ocs::tom::ListData *tasks = lCreateList("tasks", JAT_Type);
       for (std::size_t k = 0; k < n_tasks; k++) {
-         lListElem *ep = lCreateElem(JAT_Type);
+         ocs::tom::ElementData *ep = lCreateElem(JAT_Type);
          lSetUlong(ep, JAT_task_number, static_cast<u_long32>(k + 1));
          lAppendElem(tasks, ep);
       }
@@ -737,10 +748,11 @@ static lListElem *make_job(const std::uint32_t i, const std::size_t n_env, const
  * @return the list
  */
 template <typename Fill>
-static lList *make_list(const char *name, const lDescr *descr, const std::size_t n, Fill &&fill) {
-   lList *list = lCreateList(name, descr);
+static ocs::tom::ListData *make_list(const char *name, const ocs::tom::FieldDescr *descr, const std::size_t n,
+                                     Fill &&fill) {
+   ocs::tom::ListData *list = lCreateList(name, descr);
    for (std::size_t i = 0; i < n; i++) {
-      lListElem *ep = lCreateElem(descr);
+      ocs::tom::ElementData *ep = lCreateElem(descr);
       fill(ep, static_cast<std::uint32_t>(i));
       lAppendElem(list, ep);
    }
@@ -754,8 +766,8 @@ static lList *make_list(const char *name, const lDescr *descr, const std::size_t
  * @param n_tasks the tasks per job
  * @return the list
  */
-static lList *make_jobs(const std::size_t n, const std::size_t n_env, const std::size_t n_tasks) {
-   lList *list = lCreateList("jobs", JB_Type);
+static ocs::tom::ListData *make_jobs(const std::size_t n, const std::size_t n_env, const std::size_t n_tasks) {
+   ocs::tom::ListData *list = lCreateList("jobs", JB_Type);
    for (std::size_t i = 0; i < n; i++) {
       lAppendElem(list, make_job(static_cast<std::uint32_t>(i), n_env, n_tasks));
    }
@@ -767,10 +779,10 @@ static lList *make_jobs(const std::size_t n, const std::size_t n_env, const std:
  * @param n the number of diagram entries, RDE_time base_u64...
  * @return the resource utilization
  */
-static lListElem *make_rue(const std::size_t n) {
-   lListElem *rue = lCreateElem(RUE_Type);
+static ocs::tom::ElementData *make_rue(const std::size_t n) {
+   ocs::tom::ElementData *rue = lCreateElem(RUE_Type);
    lSetString(rue, RUE_name, "slots");
-   lSetList(rue, RUE_utilized, make_list("utilized", RDE_Type, n, [](lListElem *ep, const std::uint32_t k) {
+   lSetList(rue, RUE_utilized, make_list("utilized", RDE_Type, n, [](ocs::tom::ElementData *ep, const std::uint32_t k) {
                lSetUlong64(ep, RDE_time, base_u64 + k);
                lSetDouble(ep, RDE_amount, 1.0);
             }));
@@ -782,10 +794,11 @@ static lListElem *make_rue(const std::size_t n) {
  * @param n the number of queue instances, QU_qhostname g_hosts
  * @return the cluster queue
  */
-static lListElem *make_cq(const std::size_t n) {
-   lListElem *cq = lCreateElem(CQ_Type);
+static ocs::tom::ElementData *make_cq(const std::size_t n) {
+   ocs::tom::ElementData *cq = lCreateElem(CQ_Type);
    lSetString(cq, CQ_name, "all.q");
-   lSetList(cq, CQ_qinstances, make_list("qinstances", QU_Type, n, [](lListElem *ep, const std::uint32_t k) {
+   lSetList(cq, CQ_qinstances, make_list("qinstances", QU_Type, n, [](ocs::tom::ElementData *ep,
+                                                                      const std::uint32_t k) {
                lSetHost(ep, QU_qhostname, g_hosts[k].c_str());
                lSetString(ep, QU_qname, "all.q");
             }));
@@ -801,36 +814,38 @@ static void build_fixture(Fixture &f) {
    f.jobs_long = make_jobs(long_n, 0, 0);
    f.jobs_100 = make_jobs(100, 0, 0);
    f.jobs_pack = make_jobs(100, 10, 10);
-   const auto fill_task = [](lListElem *ep, const std::uint32_t i) { lSetUlong(ep, JAT_task_number, i + 1); };
+   const auto fill_task = [](ocs::tom::ElementData *ep, const std::uint32_t i) { lSetUlong(ep, JAT_task_number,
+                                                                                           i + 1); };
    f.tasks_short = make_list("tasks", JAT_Type, short_n, fill_task);
    f.tasks_long = make_list("tasks", JAT_Type, long_n, fill_task);
-   const auto fill_rde = [](lListElem *ep, const std::uint32_t i) {
+   const auto fill_rde = [](ocs::tom::ElementData *ep, const std::uint32_t i) {
       lSetUlong64(ep, RDE_time, base_u64 + i);
       lSetDouble(ep, RDE_amount, 1.0);
    };
    f.rde_short = make_list("rde", RDE_Type, short_n, fill_rde);
    f.rde_long = make_list("rde", RDE_Type, long_n, fill_rde);
-   const auto fill_ce = [](lListElem *ep, const std::uint32_t i) {
+   const auto fill_ce = [](ocs::tom::ElementData *ep, const std::uint32_t i) {
       lSetString(ep, CE_name, g_names[i].c_str());
       lSetDouble(ep, CE_doubleval, 1.0);
    };
    f.ce_short = make_list("ce", CE_Type, short_n, fill_ce);
    f.ce_long = make_list("ce", CE_Type, long_n, fill_ce);
-   const auto fill_eh = [](lListElem *ep, const std::uint32_t i) { lSetHost(ep, EH_name, g_hosts[i].c_str()); };
+   const auto fill_eh = [](ocs::tom::ElementData *ep, const std::uint32_t i) { lSetHost(ep, EH_name,
+                                                                                        g_hosts[i].c_str()); };
    f.eh_short = make_list("eh", EH_Type, short_n, fill_eh);
    f.eh_long = make_list("eh", EH_Type, long_n, fill_eh);
-   f.qu_short = make_list("qu", QU_Type, short_n, [](lListElem *ep, const std::uint32_t i) {
+   f.qu_short = make_list("qu", QU_Type, short_n, [](ocs::tom::ElementData *ep, const std::uint32_t i) {
       lSetHost(ep, QU_qhostname, g_hosts[i % 2].c_str());
       lSetString(ep, QU_qname, g_qnames[i % 2].c_str());
    });
-   f.qu_long = make_list("qu", QU_Type, long_n, [](lListElem *ep, const std::uint32_t i) {
+   f.qu_long = make_list("qu", QU_Type, long_n, [](ocs::tom::ElementData *ep, const std::uint32_t i) {
       lSetHost(ep, QU_qhostname, g_hosts[i % 100].c_str());
       lSetString(ep, QU_qname, g_qnames[i % 100].c_str());
    });
-   f.st_dup = make_list("st", ST_Type, long_n, [](lListElem *ep, const std::uint32_t i) {
+   f.st_dup = make_list("st", ST_Type, long_n, [](ocs::tom::ElementData *ep, const std::uint32_t i) {
       lSetString(ep, ST_name, g_names[(i * 7U) % 100U].c_str());
    });
-   f.va_add = make_list("add", VA_Type, short_n, [](lListElem *ep, const std::uint32_t i) {
+   f.va_add = make_list("add", VA_Type, short_n, [](ocs::tom::ElementData *ep, const std::uint32_t i) {
       lSetString(ep, VA_variable, g_new_names[i].c_str());
       lSetString(ep, VA_value, "value");
    });
@@ -857,12 +872,13 @@ static void build_fixture(Fixture &f) {
  * @param f the fixture
  */
 static void free_fixture(Fixture &f) {
-   for (lList **lpp : {&f.jobs_short, &f.jobs_long, &f.jobs_100, &f.jobs_pack, &f.tasks_short, &f.tasks_long,
+   for (ocs::tom::ListData **lpp : {&f.jobs_short, &f.jobs_long, &f.jobs_100, &f.jobs_pack, &f.tasks_short,
+                                    &f.tasks_long,
                        &f.rde_short, &f.rde_long, &f.ce_short, &f.ce_long, &f.eh_short, &f.eh_long, &f.qu_short,
                        &f.qu_long, &f.st_dup, &f.va_add}) {
       lFreeList(lpp);
    }
-   for (lListElem **epp : {&f.job, &f.scratch_a, &f.scratch_b, &f.sub_short, &f.sub_long, &f.rue_short,
+   for (ocs::tom::ElementData **epp : {&f.job, &f.scratch_a, &f.scratch_b, &f.sub_short, &f.sub_long, &f.rue_short,
                            &f.rue_long, &f.cq_short, &f.cq_long, &f.host, &f.ce, &f.qu}) {
       lFreeElem(epp);
    }
@@ -895,7 +911,7 @@ static void op_elem_create_free_jb(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    run("elem_create_free_jb", [&](std::uint64_t) {
-      lListElem *ep = lCreateElem(JB_Type);
+      ocs::tom::ElementData *ep = lCreateElem(JB_Type);
       g_sink += ep != nullptr ? 1 : 0;
       lFreeElem(&ep);
    });
@@ -924,7 +940,7 @@ static void op_elem_create_free_ce(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    run("elem_create_free_ce", [&](std::uint64_t) {
-      lListElem *ep = lCreateElem(CE_Type);
+      ocs::tom::ElementData *ep = lCreateElem(CE_Type);
       g_sink += ep != nullptr ? 1 : 0;
       lFreeElem(&ep);
    });
@@ -953,7 +969,7 @@ static void op_list_create_free(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    run("list_create_free", [&](std::uint64_t) {
-      lList *lp = lCreateList("jobs", JB_Type);
+      ocs::tom::ListData *lp = lCreateList("jobs", JB_Type);
       g_sink += lp != nullptr ? 1 : 0;
       lFreeList(&lp);
    });
@@ -992,9 +1008,9 @@ static void op_list_fill_free_100(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    run("list_fill_free_100", [&](std::uint64_t) {
-      lList *lp = lCreateList("ce", CE_Type);
+      ocs::tom::ListData *lp = lCreateList("ce", CE_Type);
       for (std::size_t k = 0; k < 100; k++) {
-         lListElem *ep = lCreateElem(CE_Type);
+         ocs::tom::ElementData *ep = lCreateElem(CE_Type);
          lSetString(ep, CE_name, g_names[k].c_str());
          lAppendElem(lp, ep);
       }
@@ -1018,12 +1034,12 @@ static void op_get_u32(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_u32", [&](std::uint64_t) { g_sink += job.get<JB_job_number>(); });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_u32", [&](std::uint64_t) { g_sink += ocs::tom::get<JB_job_number>(ep); });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_u32", [&](std::uint64_t) { g_sink += lGetUlong(ep, JB_job_number); });
 #endif
 }
@@ -1039,12 +1055,12 @@ static void op_set_u32(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("set_u32", [&](std::uint64_t i) { job.set<JB_priority>(static_cast<std::uint32_t>(i & 1023)); });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("set_u32", [&](std::uint64_t i) { ocs::tom::set<JB_priority>(ep, static_cast<std::uint32_t>(i & 1023)); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("set_u32", [&](std::uint64_t i) { lSetUlong(ep, JB_priority, static_cast<u_long32>(i & 1023)); });
 #endif
 }
@@ -1063,7 +1079,7 @@ static void op_set_u32_hashed(Fixture &f, const Form form) {
       });
       job.set<JB_job_number>(long_hit + 1);
    } else {
-      lListElem *ep = ocs::tom::find_first_rw<JB_job_number>(f.jobs_long.get().raw(), long_hit + 1);
+      ocs::tom::ElementData *ep = ocs::tom::find_first_rw<JB_job_number>(f.jobs_long.get().raw(), long_hit + 1);
       run("set_u32_hashed", [&](std::uint64_t i) {
          ocs::tom::set<JB_job_number>(ep, static_cast<std::uint32_t>(2000000 + (i & 1)));
       });
@@ -1071,7 +1087,7 @@ static void op_set_u32_hashed(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = lGetElemUlongRW(f.jobs_long, JB_job_number, long_hit + 1);
+   ocs::tom::ElementData *ep = lGetElemUlongRW(f.jobs_long, JB_job_number, long_hit + 1);
    run("set_u32_hashed", [&](std::uint64_t i) {
       lSetUlong(ep, JB_job_number, static_cast<u_long32>(2000000 + (i & 1)));
    });
@@ -1090,12 +1106,12 @@ static void op_get_u64(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_u64", [&](std::uint64_t) { g_sink += job.get<JB_submission_time>(); });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_u64", [&](std::uint64_t) { g_sink += ocs::tom::get<JB_submission_time>(ep); });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_u64", [&](std::uint64_t) { g_sink += lGetUlong64(ep, JB_submission_time); });
 #endif
 }
@@ -1111,12 +1127,12 @@ static void op_set_u64(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("set_u64", [&](std::uint64_t i) { job.set<JB_submission_time>(i); });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("set_u64", [&](std::uint64_t i) { ocs::tom::set<JB_submission_time>(ep, i); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("set_u64", [&](std::uint64_t i) { lSetUlong64(ep, JB_submission_time, i); });
 #endif
 }
@@ -1132,12 +1148,12 @@ static void op_get_str(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_str", [&](std::uint64_t) { g_sink += job.get<JB_owner>()[0]; });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_str", [&](std::uint64_t) { g_sink += ocs::tom::get<JB_owner>(ep)[0]; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_str", [&](std::uint64_t) { g_sink += lGetString(ep, JB_owner)[0]; });
 #endif
 }
@@ -1154,12 +1170,12 @@ static void op_set_str(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("set_str", [&](std::uint64_t i) { job.set<JB_owner>(values[i & 1]); });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("set_str", [&](std::uint64_t i) { ocs::tom::set<JB_owner>(ep, values[i & 1]); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("set_str", [&](std::uint64_t i) { lSetString(ep, JB_owner, values[i & 1]); });
 #endif
 }
@@ -1175,12 +1191,12 @@ static void op_get_host(Fixture &f, const Form form) {
       const Element<EH> host = *f.host;
       run("get_host", [&](std::uint64_t) { g_sink += static_cast<const char *>(host.get<EH_name>())[0]; });
    } else {
-      const lListElem *ep = f.host.get().raw();
+      const ocs::tom::ElementData *ep = f.host.get().raw();
       run("get_host", [&](std::uint64_t) { g_sink += static_cast<const char *>(ocs::tom::get<EH_name>(ep))[0]; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.host;
+   const ocs::tom::ElementData *ep = f.host;
    run("get_host", [&](std::uint64_t) { g_sink += lGetHost(ep, EH_name)[0]; });
 #endif
 }
@@ -1197,12 +1213,12 @@ static void op_set_host(Fixture &f, const Form form) {
       const Element<EH> host = *f.host;
       run("set_host", [&](std::uint64_t i) { host.set<EH_name>(ocs::tom::Host(values[i & 1])); });
    } else {
-      lListElem *ep = f.host.get().raw();
+      ocs::tom::ElementData *ep = f.host.get().raw();
       run("set_host", [&](std::uint64_t i) { ocs::tom::set<EH_name>(ep, values[i & 1]); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.host;
+   ocs::tom::ElementData *ep = f.host;
    run("set_host", [&](std::uint64_t i) { lSetHost(ep, EH_name, values[i & 1]); });
 #endif
 }
@@ -1218,12 +1234,12 @@ static void op_get_double(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_double", [&](std::uint64_t) { g_sink += static_cast<std::uint64_t>(job.get<JB_urg>()); });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_double", [&](std::uint64_t) { g_sink += static_cast<std::uint64_t>(ocs::tom::get<JB_urg>(ep)); });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_double", [&](std::uint64_t) { g_sink += static_cast<std::uint64_t>(lGetDouble(ep, JB_urg)); });
 #endif
 }
@@ -1239,12 +1255,12 @@ static void op_set_double(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("set_double", [&](std::uint64_t i) { job.set<JB_urg>(static_cast<double>(i & 7)); });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("set_double", [&](std::uint64_t i) { ocs::tom::set<JB_urg>(ep, static_cast<double>(i & 7)); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("set_double", [&](std::uint64_t i) { lSetDouble(ep, JB_urg, static_cast<double>(i & 7)); });
 #endif
 }
@@ -1260,12 +1276,12 @@ static void op_get_bool(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_bool", [&](std::uint64_t) { g_sink += job.get<JB_notify>() ? 1 : 0; });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_bool", [&](std::uint64_t) { g_sink += ocs::tom::get<JB_notify>(ep) ? 1 : 0; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_bool", [&](std::uint64_t) { g_sink += lGetBool(ep, JB_notify) ? 1 : 0; });
 #endif
 }
@@ -1281,12 +1297,12 @@ static void op_set_bool(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("set_bool", [&](std::uint64_t i) { job.set<JB_notify>((i & 1) != 0); });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("set_bool", [&](std::uint64_t i) { ocs::tom::set<JB_notify>(ep, (i & 1) != 0); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("set_bool", [&](std::uint64_t i) { lSetBool(ep, JB_notify, (i & 1) != 0); });
 #endif
 }
@@ -1302,12 +1318,12 @@ static void op_get_list(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_list", [&](std::uint64_t) { g_sink += job.get<JB_env_list>() ? 1 : 0; });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_list", [&](std::uint64_t) { g_sink += ocs::tom::get<JB_env_list>(ep) ? 1 : 0; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_list", [&](std::uint64_t) { g_sink += lGetList(ep, JB_env_list) != nullptr ? 1 : 0; });
 #endif
 }
@@ -1324,16 +1340,16 @@ static void op_set_list(Fixture &f, const Form form) {
       run("set_list", [&](std::uint64_t) { job.set<JB_context>(ListPtr<VA>::create("context")); });
       job.set<JB_context>(nullptr);
    } else {
-      lListElem *ep = f.scratch_a.get().raw();
+      ocs::tom::ElementData *ep = f.scratch_a.get().raw();
       run("set_list", [&](std::uint64_t) {
          ocs::tom::set<JB_context>(ep, ocs::tom::create_raw_list(VA::descriptor.e, ocs::tom::Hashing::On,
                                                                  "context").release());
       });
-      ocs::tom::set<JB_context>(ep, static_cast<lList *>(nullptr));
+      ocs::tom::set<JB_context>(ep, static_cast<ocs::tom::ListData *>(nullptr));
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.scratch_a;
+   ocs::tom::ElementData *ep = f.scratch_a;
    run("set_list", [&](std::uint64_t) { lSetList(ep, JB_context, lCreateList("context", VA_Type)); });
    lSetList(ep, JB_context, nullptr);
 #endif
@@ -1350,12 +1366,12 @@ static void op_get_object(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("get_object", [&](std::uint64_t) { g_sink += job.get<JB_checkpoint_object>() ? 1 : 0; });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_object", [&](std::uint64_t) { g_sink += ocs::tom::get<JB_checkpoint_object>(ep) ? 1 : 0; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("get_object", [&](std::uint64_t) { g_sink += lGetObject(ep, JB_checkpoint_object) != nullptr ? 1 : 0; });
 #endif
 }
@@ -1371,14 +1387,14 @@ static void op_set_object(Fixture &f, const Form form) {
       const Element<JB> job = *f.scratch_a;
       run("set_object", [&](std::uint64_t) { job.set<JB_checkpoint_object>(ElementPtr<CK>::create()); });
    } else {
-      lListElem *ep = f.scratch_a.get().raw();
+      ocs::tom::ElementData *ep = f.scratch_a.get().raw();
       run("set_object", [&](std::uint64_t) {
          ocs::tom::set<JB_checkpoint_object>(ep, ocs::tom::create_raw_elem(CK::descriptor.e).release());
       });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.scratch_a;
+   ocs::tom::ElementData *ep = f.scratch_a;
    run("set_object", [&](std::uint64_t) { lSetObject(ep, JB_checkpoint_object, lCreateElem(CK_Type)); });
 #endif
 }
@@ -1394,12 +1410,12 @@ static void op_add_u32(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("add_u32", [&](std::uint64_t) { g_sink += job.add<JB_priority>(1U); });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("add_u32", [&](std::uint64_t) { g_sink += ocs::tom::add<JB_priority>(ep, 1U); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("add_u32", [&](std::uint64_t) { g_sink += lAddUlong(ep, JB_priority, 1); });
 #endif
 }
@@ -1415,12 +1431,12 @@ static void op_add_double(Fixture &f, const Form form) {
       const Element<CE> ce = *f.ce;
       run("add_double", [&](std::uint64_t) { g_sink += static_cast<std::uint64_t>(ce.add<CE_doubleval>(0.5)); });
    } else {
-      lListElem *ep = f.ce.get().raw();
+      ocs::tom::ElementData *ep = f.ce.get().raw();
       run("add_double", [&](std::uint64_t) { g_sink += ocs::tom::add<CE_doubleval>(ep, 0.5); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.ce;
+   ocs::tom::ElementData *ep = f.ce;
    run("add_double", [&](std::uint64_t) { g_sink += lAddDouble(ep, CE_doubleval, 0.5); });
 #endif
 }
@@ -1442,7 +1458,7 @@ static void op_copy_elem_ce(Fixture &f, const Form form) {
          g_sink += copy ? 1 : 0;
       });
    } else {
-      const lListElem *ep = f.ce.get().raw();
+      const ocs::tom::ElementData *ep = f.ce.get().raw();
       run("copy_elem_ce", [&](std::uint64_t) {
          auto copy = ocs::tom::clone(ep);
          g_sink += copy ? 1 : 0;
@@ -1450,9 +1466,9 @@ static void op_copy_elem_ce(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.ce;
+   const ocs::tom::ElementData *ep = f.ce;
    run("copy_elem_ce", [&](std::uint64_t) {
-      lListElem *copy = lCopyElem(ep);
+      ocs::tom::ElementData *copy = lCopyElem(ep);
       g_sink += copy != nullptr ? 1 : 0;
       lFreeElem(&copy);
    });
@@ -1473,7 +1489,7 @@ static void op_copy_elem_job(Fixture &f, const Form form) {
          g_sink += copy ? 1 : 0;
       });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("copy_elem_job", [&](std::uint64_t) {
          auto copy = ocs::tom::clone(ep);
          g_sink += copy ? 1 : 0;
@@ -1481,9 +1497,9 @@ static void op_copy_elem_job(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("copy_elem_job", [&](std::uint64_t) {
-      lListElem *copy = lCopyElem(ep);
+      ocs::tom::ElementData *copy = lCopyElem(ep);
       g_sink += copy != nullptr ? 1 : 0;
       lFreeElem(&copy);
    });
@@ -1507,7 +1523,7 @@ static void copy_list_case(const std::string &op, const Form form, const ListTyp
          g_sink += copy ? 1 : 0;
       });
    } else {
-      const lList *lp = list.get().raw();
+      const ocs::tom::ListData *lp = list.get().raw();
       run(op, [&](std::uint64_t) {
          auto copy = ocs::tom::clone(lp);
          g_sink += copy ? 1 : 0;
@@ -1515,9 +1531,9 @@ static void copy_list_case(const std::string &op, const Form form, const ListTyp
    }
 #else
    static_cast<void>(form);
-   const lList *lp = list;
+   const ocs::tom::ListData *lp = list;
    run(op, [&](std::uint64_t) {
-      lList *copy = lCopyList("copy", lp);
+      ocs::tom::ListData *copy = lCopyList("copy", lp);
       g_sink += copy != nullptr ? 1 : 0;
       lFreeList(&copy);
    });
@@ -1570,19 +1586,19 @@ static void op_append_dechain(Fixture &f, const Form form) {
          spare = list.extract(e);
       });
    } else {
-      lList *lp = f.jobs_long.get().raw();
+      ocs::tom::ListData *lp = f.jobs_long.get().raw();
       auto spare = ocs::tom::create_raw_elem(JB::descriptor.e);
       ocs::tom::set<JB_job_number>(spare.get().raw(), std::uint32_t{999999});
       run("append_dechain", [&](std::uint64_t) {
-         lListElem *ep = spare.get().raw();
+         ocs::tom::ElementData *ep = spare.get().raw();
          ocs::tom::append(lp, std::move(spare));
          spare = ocs::tom::take(lp, ep);
       });
    }
 #else
    static_cast<void>(form);
-   lList *lp = f.jobs_long;
-   lListElem *spare = lCreateElem(JB_Type);
+   ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::ElementData *spare = lCreateElem(JB_Type);
    lSetUlong(spare, JB_job_number, 999999);
    run("append_dechain", [&](std::uint64_t) {
       lAppendElem(lp, spare);
@@ -1608,19 +1624,19 @@ static void op_insert_front_dechain(Fixture &f, const Form form) {
          spare = list.extract(e);
       });
    } else {
-      lList *lp = f.jobs_long.get().raw();
+      ocs::tom::ListData *lp = f.jobs_long.get().raw();
       auto spare = ocs::tom::create_raw_elem(JB::descriptor.e);
       ocs::tom::set<JB_job_number>(spare.get().raw(), std::uint32_t{999999});
       run("insert_front_dechain", [&](std::uint64_t) {
-         lListElem *ep = spare.get().raw();
+         ocs::tom::ElementData *ep = spare.get().raw();
          ocs::tom::insert_after(lp, nullptr, std::move(spare));
          spare = ocs::tom::take(lp, ep);
       });
    }
 #else
    static_cast<void>(form);
-   lList *lp = f.jobs_long;
-   lListElem *spare = lCreateElem(JB_Type);
+   ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::ElementData *spare = lCreateElem(JB_Type);
    lSetUlong(spare, JB_job_number, 999999);
    run("insert_front_dechain", [&](std::uint64_t) {
       lInsertElem(lp, nullptr, spare);
@@ -1647,21 +1663,21 @@ static void op_insert_middle_dechain(Fixture &f, const Form form) {
          spare = list.extract(e);
       });
    } else {
-      lList *lp = f.jobs_long.get().raw();
-      lListElem *after = ocs::tom::find_first_rw<JB_job_number>(lp, long_hit);
+      ocs::tom::ListData *lp = f.jobs_long.get().raw();
+      ocs::tom::ElementData *after = ocs::tom::find_first_rw<JB_job_number>(lp, long_hit);
       auto spare = ocs::tom::create_raw_elem(JB::descriptor.e);
       ocs::tom::set<JB_job_number>(spare.get().raw(), std::uint32_t{999999});
       run("insert_middle_dechain", [&](std::uint64_t) {
-         lListElem *ep = spare.get().raw();
+         ocs::tom::ElementData *ep = spare.get().raw();
          ocs::tom::insert_after(lp, after, std::move(spare));
          spare = ocs::tom::take(lp, ep);
       });
    }
 #else
    static_cast<void>(form);
-   lList *lp = f.jobs_long;
-   lListElem *after = lGetElemUlongRW(lp, JB_job_number, long_hit);
-   lListElem *spare = lCreateElem(JB_Type);
+   ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::ElementData *after = lGetElemUlongRW(lp, JB_job_number, long_hit);
+   ocs::tom::ElementData *spare = lCreateElem(JB_Type);
    lSetUlong(spare, JB_job_number, 999999);
    run("insert_middle_dechain", [&](std::uint64_t) {
       lInsertElem(lp, after, spare);
@@ -1685,19 +1701,19 @@ static void op_append_remove(Fixture &f, const Form form) {
          list.erase(e);
       });
    } else {
-      lList *lp = f.jobs_long.get().raw();
+      ocs::tom::ListData *lp = f.jobs_long.get().raw();
       run("append_remove", [&](std::uint64_t) {
          auto spare = ocs::tom::create_raw_elem(JB::descriptor.e);
-         lListElem *ep = spare.get().raw();
+         ocs::tom::ElementData *ep = spare.get().raw();
          ocs::tom::append(lp, std::move(spare));
          ocs::tom::erase(lp, ep);
       });
    }
 #else
    static_cast<void>(form);
-   lList *lp = f.jobs_long;
+   ocs::tom::ListData *lp = f.jobs_long;
    run("append_remove", [&](std::uint64_t) {
-      lListElem *ep = lCreateElem(JB_Type);
+      ocs::tom::ElementData *ep = lCreateElem(JB_Type);
       lAppendElem(lp, ep);
       lRemoveElem(lp, &ep);
    });
@@ -1728,9 +1744,9 @@ static void op_walk_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lList *lp = f.jobs_long;
+   const ocs::tom::ListData *lp = f.jobs_long;
    run("walk_1000", [&](std::uint64_t) {
-      const lListElem *ep;
+      const ocs::tom::ElementData *ep;
       for_each_ep(ep, lp) {
          g_sink += lGetUlong(ep, JB_job_number);
       }
@@ -1749,12 +1765,12 @@ static void op_size(Fixture &f, const Form form) {
       const List<JB> list = *f.jobs_long;
       run("size", [&](std::uint64_t) { g_sink += list.size(); });
    } else {
-      const lList *lp = f.jobs_long.get().raw();
+      const ocs::tom::ListData *lp = f.jobs_long.get().raw();
       run("size", [&](std::uint64_t) { g_sink += ocs::tom::size(lp); });
    }
 #else
    static_cast<void>(form);
-   const lList *lp = f.jobs_long;
+   const ocs::tom::ListData *lp = f.jobs_long;
    run("size", [&](std::uint64_t) { g_sink += lGetNumberOfElem(lp); });
 #endif
 }
@@ -1779,7 +1795,7 @@ static void find_case(const std::string &op, const Form form, const List<T> list
       const auto typed = typed_key<F>(key);
       run(op, [&](std::uint64_t) { g_sink += list.template find_first<F>(typed) ? 1 : 0; });
    } else {
-      const lList *lp = list.raw();
+      const ocs::tom::ListData *lp = list.raw();
       run(op, [&](std::uint64_t) { g_sink += ocs::tom::find_first<F>(lp, key) ? 1 : 0; });
    }
 }
@@ -1803,7 +1819,7 @@ static void find_all_case(const std::string &op, const Form form, const List<T> 
          }
       });
    } else {
-      const lList *lp = list.raw();
+      const ocs::tom::ListData *lp = list.raw();
       run(op, [&](std::uint64_t) {
          const void *it = nullptr;
          for (auto e = ocs::tom::find_first<F>(lp, key, &it); e; e = ocs::tom::find_next<F>(lp, key, &it)) {
@@ -1831,7 +1847,7 @@ static void add_del_case(const std::string &op, const Form form, const List<T> l
          g_sink += list.template erase<F>(typed);
       });
    } else {
-      lList *lp = list.raw();
+      ocs::tom::ListData *lp = list.raw();
       run(op, [&](std::uint64_t) {
          g_sink += ocs::tom::emplace_back<F>(&lp, key) ? 1 : 0;
          g_sink += ocs::tom::erase<F>(&lp, key);
@@ -1876,22 +1892,22 @@ static void op_find(Fixture &f, const Form form, const Kind kind, const Size siz
    static_cast<void>(form);
    switch (kind) {
       case Kind::Str: {
-         const lList *lp = s ? f.ce_short : f.ce_long;
+         const ocs::tom::ListData *lp = s ? f.ce_short : f.ce_long;
          run(op, [&](std::uint64_t) { g_sink += lGetElemStr(lp, CE_name, str) != nullptr ? 1 : 0; });
          break;
       }
       case Kind::U32: {
-         const lList *lp = s ? f.tasks_short : f.tasks_long;
+         const ocs::tom::ListData *lp = s ? f.tasks_short : f.tasks_long;
          run(op, [&](std::uint64_t) { g_sink += lGetElemUlong(lp, JAT_task_number, u32) != nullptr ? 1 : 0; });
          break;
       }
       case Kind::U64: {
-         const lList *lp = s ? f.rde_short : f.rde_long;
+         const ocs::tom::ListData *lp = s ? f.rde_short : f.rde_long;
          run(op, [&](std::uint64_t) { g_sink += lGetElemUlong64(lp, RDE_time, u64) != nullptr ? 1 : 0; });
          break;
       }
       case Kind::Host: {
-         const lList *lp = s ? f.eh_short : f.eh_long;
+         const ocs::tom::ListData *lp = s ? f.eh_short : f.eh_long;
          run(op, [&](std::uint64_t) { g_sink += lGetElemHost(lp, EH_name, host) != nullptr ? 1 : 0; });
          break;
       }
@@ -1919,11 +1935,11 @@ static void op_find_all(Fixture &f, const Form form, const Kind kind, const Size
    }
 #else
    static_cast<void>(form);
-   const lList *lp = s ? f.qu_short : f.qu_long;
+   const ocs::tom::ListData *lp = s ? f.qu_short : f.qu_long;
    if (kind == Kind::Str) {
       run(op, [&](std::uint64_t) {
          const void *it = nullptr;
-         for (const lListElem *ep = lGetElemStrFirst(lp, QU_qname, str, &it); ep != nullptr;
+         for (const ocs::tom::ElementData *ep = lGetElemStrFirst(lp, QU_qname, str, &it); ep != nullptr;
               ep = lGetElemStrNext(lp, QU_qname, str, &it)) {
             g_sink += 1;
          }
@@ -1931,7 +1947,7 @@ static void op_find_all(Fixture &f, const Form form, const Kind kind, const Size
    } else {
       run(op, [&](std::uint64_t) {
          const void *it = nullptr;
-         for (const lListElem *ep = lGetElemHostFirst(lp, QU_qhostname, host, &it); ep != nullptr;
+         for (const ocs::tom::ElementData *ep = lGetElemHostFirst(lp, QU_qhostname, host, &it); ep != nullptr;
               ep = lGetElemHostNext(lp, QU_qhostname, host, &it)) {
             g_sink += 1;
          }
@@ -1964,7 +1980,7 @@ static void op_hash_build_1000(Fixture &f, const Form form) {
                   },
                   [&] { lp.reset(); });
    } else {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       run_batched("hash_build_1000", 1,
                   [&] { lp = ocs::tom::create_raw_list(CE::descriptor.e, ocs::tom::Hashing::On, "ce").release(); },
                   [&](std::uint64_t) {
@@ -1977,7 +1993,7 @@ static void op_hash_build_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lList *lp = nullptr;
+   ocs::tom::ListData *lp = nullptr;
    run_batched("hash_build_1000", 1, [&] { lp = lCreateList("ce", CE_Type); },
                [&](std::uint64_t) {
                   for (std::size_t k = 0; k < long_n; k++) {
@@ -2023,7 +2039,7 @@ static void op_add_del(Fixture &f, const Form form, const Kind kind, const Size 
    static_cast<void>(form);
    switch (kind) {
       case Kind::Str: {
-         lList *lp = s ? f.ce_short : f.ce_long;
+         ocs::tom::ListData *lp = s ? f.ce_short : f.ce_long;
          run(op, [&](std::uint64_t) {
             g_sink += lAddElemStr(&lp, CE_name, str, CE_Type) != nullptr ? 1 : 0;
             g_sink += lDelElemStr(&lp, CE_name, str);
@@ -2031,7 +2047,7 @@ static void op_add_del(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::U32: {
-         lList *lp = s ? f.tasks_short : f.tasks_long;
+         ocs::tom::ListData *lp = s ? f.tasks_short : f.tasks_long;
          run(op, [&](std::uint64_t) {
             g_sink += lAddElemUlong(&lp, JAT_task_number, new_u32, JAT_Type) != nullptr ? 1 : 0;
             g_sink += lDelElemUlong(&lp, JAT_task_number, new_u32);
@@ -2039,7 +2055,7 @@ static void op_add_del(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::U64: {
-         lList *lp = s ? f.rde_short : f.rde_long;
+         ocs::tom::ListData *lp = s ? f.rde_short : f.rde_long;
          run(op, [&](std::uint64_t) {
             g_sink += lAddElemUlong64(&lp, RDE_time, new_u64, RDE_Type) != nullptr ? 1 : 0;
             g_sink += lDelElemUlong64(&lp, RDE_time, new_u64);
@@ -2047,7 +2063,7 @@ static void op_add_del(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::Host: {
-         lList *lp = s ? f.eh_short : f.eh_long;
+         ocs::tom::ListData *lp = s ? f.eh_short : f.eh_long;
          run(op, [&](std::uint64_t) {
             g_sink += lAddElemHost(&lp, EH_name, host, EH_Type) != nullptr ? 1 : 0;
             g_sink += lDelElemHost(&lp, EH_name, host);
@@ -2078,7 +2094,7 @@ static void sub_find_case(const std::string &op, const Form form, const Element<
    if (form == Form::Typed) {
       run(op, [&](std::uint64_t) { g_sink += elem.template find_first_in<LF, F>(key) ? 1 : 0; });
    } else {
-      const lListElem *ep = elem.raw();
+      const ocs::tom::ElementData *ep = elem.raw();
       run(op, [&](std::uint64_t) { g_sink += ocs::tom::find_first_in<LF, F>(ep, key) ? 1 : 0; });
    }
 }
@@ -2107,7 +2123,7 @@ static void sub_add_case(const std::string &op, const Form form, const Element<T
                      }
                   });
    } else {
-      lListElem *ep = elem.raw();
+      ocs::tom::ElementData *ep = elem.raw();
       run_batched(op, batch, [] {},
                   [&](std::uint64_t i) { g_sink += ocs::tom::emplace_back_in<LF, F>(ep, key_at(i)) ? 1 : 0; },
                   [&] {
@@ -2142,7 +2158,7 @@ static void sub_del_case(const std::string &op, const Form form, const Element<T
                   },
                   [&](std::uint64_t i) { g_sink += elem.template erase_in<LF, F>(key_at(i)); }, [] {});
    } else {
-      lListElem *ep = elem.raw();
+      ocs::tom::ElementData *ep = elem.raw();
       run_batched(op, batch,
                   [&] {
                      for (std::size_t i = 0; i < batch; i++) {
@@ -2191,24 +2207,24 @@ static void op_sub_find(Fixture &f, const Form form, const Kind kind, const Size
    static_cast<void>(form);
    switch (kind) {
       case Kind::Str: {
-         const lListElem *ep = s ? f.sub_short : f.sub_long;
+         const ocs::tom::ElementData *ep = s ? f.sub_short : f.sub_long;
          run(op, [&](std::uint64_t) { g_sink += lGetSubStr(ep, VA_variable, str, JB_env_list) != nullptr ? 1 : 0; });
          break;
       }
       case Kind::U32: {
-         const lListElem *ep = s ? f.sub_short : f.sub_long;
+         const ocs::tom::ElementData *ep = s ? f.sub_short : f.sub_long;
          run(op, [&](std::uint64_t) {
             g_sink += lGetSubUlong(ep, JAT_task_number, u32, JB_ja_tasks) != nullptr ? 1 : 0;
          });
          break;
       }
       case Kind::U64: {
-         const lListElem *ep = s ? f.rue_short : f.rue_long;
+         const ocs::tom::ElementData *ep = s ? f.rue_short : f.rue_long;
          run(op, [&](std::uint64_t) { g_sink += lGetSubUlong64(ep, RDE_time, u64, RUE_utilized) != nullptr ? 1 : 0; });
          break;
       }
       case Kind::Host: {
-         const lListElem *ep = s ? f.cq_short : f.cq_long;
+         const ocs::tom::ElementData *ep = s ? f.cq_short : f.cq_long;
          run(op, [&](std::uint64_t) {
             g_sink += lGetSubHost(ep, QU_qhostname, host, CQ_qinstances) != nullptr ? 1 : 0;
          });
@@ -2255,7 +2271,7 @@ static void op_sub_add(Fixture &f, const Form form, const Kind kind, const Size 
    static_cast<void>(form);
    switch (kind) {
       case Kind::Str: {
-         lListElem *ep = s ? f.sub_short : f.sub_long;
+         ocs::tom::ElementData *ep = s ? f.sub_short : f.sub_long;
          run_batched(op, batch, [] {},
                      [&](std::uint64_t i) {
                         g_sink += lAddSubStr(ep, VA_variable, str_at(i), JB_env_list, VA_Type) != nullptr ? 1 : 0;
@@ -2268,10 +2284,11 @@ static void op_sub_add(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::U32: {
-         lListElem *ep = s ? f.sub_short : f.sub_long;
+         ocs::tom::ElementData *ep = s ? f.sub_short : f.sub_long;
          run_batched(op, batch, [] {},
                      [&](std::uint64_t i) {
-                        lListElem *added = lAddSubUlong(ep, JAT_task_number, u32_at(i), JB_ja_tasks, JAT_Type);
+                        ocs::tom::ElementData *added = lAddSubUlong(ep, JAT_task_number, u32_at(i), JB_ja_tasks,
+                                                                    JAT_Type);
                         g_sink += added != nullptr ? 1 : 0;
                      },
                      [&] {
@@ -2282,7 +2299,7 @@ static void op_sub_add(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::U64: {
-         lListElem *ep = s ? f.rue_short : f.rue_long;
+         ocs::tom::ElementData *ep = s ? f.rue_short : f.rue_long;
          run_batched(op, batch, [] {},
                      [&](std::uint64_t i) {
                         g_sink += lAddSubUlong64(ep, RDE_time, u64_at(i), RUE_utilized, RDE_Type) != nullptr ? 1 : 0;
@@ -2296,7 +2313,7 @@ static void op_sub_add(Fixture &f, const Form form, const Kind kind, const Size 
       }
       case Kind::Host: {
          // CULL has no lDelSubHost(); the cleanup outside the time deletes through the list reference
-         lListElem *ep = s ? f.cq_short : f.cq_long;
+         ocs::tom::ElementData *ep = s ? f.cq_short : f.cq_long;
          run_batched(op, batch, [] {},
                      [&](std::uint64_t i) {
                         g_sink += lAddSubHost(ep, QU_qhostname, host_at(i), CQ_qinstances, QU_Type) != nullptr ? 1 : 0;
@@ -2350,7 +2367,7 @@ static void op_sub_del(Fixture &f, const Form form, const Kind kind, const Size 
    static_cast<void>(form);
    switch (kind) {
       case Kind::Str: {
-         lListElem *ep = s ? f.sub_short : f.sub_long;
+         ocs::tom::ElementData *ep = s ? f.sub_short : f.sub_long;
          run_batched(op, batch,
                      [&] {
                         for (std::size_t i = 0; i < batch; i++) {
@@ -2361,7 +2378,7 @@ static void op_sub_del(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::U32: {
-         lListElem *ep = s ? f.sub_short : f.sub_long;
+         ocs::tom::ElementData *ep = s ? f.sub_short : f.sub_long;
          run_batched(op, batch,
                      [&] {
                         for (std::size_t i = 0; i < batch; i++) {
@@ -2373,7 +2390,7 @@ static void op_sub_del(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::U64: {
-         lListElem *ep = s ? f.rue_short : f.rue_long;
+         ocs::tom::ElementData *ep = s ? f.rue_short : f.rue_long;
          run_batched(op, batch,
                      [&] {
                         for (std::size_t i = 0; i < batch; i++) {
@@ -2385,7 +2402,7 @@ static void op_sub_del(Fixture &f, const Form form, const Kind kind, const Size 
          break;
       }
       case Kind::Host: {
-         lListElem *ep = s ? f.cq_short : f.cq_long;
+         ocs::tom::ElementData *ep = s ? f.cq_short : f.cq_long;
          run_batched(op, batch,
                      [&] {
                         for (std::size_t i = 0; i < batch; i++) {
@@ -2434,8 +2451,8 @@ static void op_sub_add_list_short(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lListElem *job = nullptr;
-   lList *src = nullptr;
+   ocs::tom::ElementData *job = nullptr;
+   ocs::tom::ListData *src = nullptr;
    run_batched("sub_add_list_short", 1,
                [&] {
                   job = lCopyElem(f.sub_short);
@@ -2471,7 +2488,7 @@ static void sort_case(const std::string &op, Fixture &f, const Form form, Typed 
       ocs::tom::RawListPtr lp;
       run_batched(op, 1, [&] { lp = ocs::tom::clone(f.jobs_long.get().raw()); },
                   [&](std::uint64_t) {
-                     lSortOrder *so = ocs::tom::make_sort_order(JB::descriptor.e, keys);
+                     ocs::tom::SortOrderData *so = ocs::tom::make_sort_order(JB::descriptor.e, keys);
                      ocs::tom::sort_list(lp.get().raw(), so);
                      ocs::tom::free_sort_order(so);
                   },
@@ -2490,7 +2507,7 @@ static void sort_case(const std::string &op, Fixture &f, const Form form, Typed 
  */
 template <typename Sort>
 static void sort_case(const std::string &op, Fixture &f, Sort &&sort) {
-   lList *lp = nullptr;
+   ocs::tom::ListData *lp = nullptr;
    run_batched(op, 1, [&] { lp = lCopyList("sort", f.jobs_long); }, [&](std::uint64_t) { sort(lp); },
                [&] { lFreeList(&lp); });
 }
@@ -2508,7 +2525,7 @@ static void op_sort_u32_asc(Fixture &f, const Form form) {
              {{JB_priority, true}});
 #else
    static_cast<void>(form);
-   sort_case("sort_u32_asc", f, [](lList *lp) { lPSortList(lp, "%I+", JB_priority); });
+   sort_case("sort_u32_asc", f, [](ocs::tom::ListData *lp) { lPSortList(lp, "%I+", JB_priority); });
 #endif
 }
 
@@ -2523,7 +2540,7 @@ static void op_sort_u32_desc(Fixture &f, const Form form) {
              {{JB_priority, false}});
 #else
    static_cast<void>(form);
-   sort_case("sort_u32_desc", f, [](lList *lp) { lPSortList(lp, "%I-", JB_priority); });
+   sort_case("sort_u32_desc", f, [](ocs::tom::ListData *lp) { lPSortList(lp, "%I-", JB_priority); });
 #endif
 }
 
@@ -2538,7 +2555,7 @@ static void op_sort_u64_asc(Fixture &f, const Form form) {
              {{JB_submission_time, true}});
 #else
    static_cast<void>(form);
-   sort_case("sort_u64_asc", f, [](lList *lp) { lPSortList(lp, "%I+", JB_submission_time); });
+   sort_case("sort_u64_asc", f, [](ocs::tom::ListData *lp) { lPSortList(lp, "%I+", JB_submission_time); });
 #endif
 }
 
@@ -2553,7 +2570,7 @@ static void op_sort_str_asc(Fixture &f, const Form form) {
              {{JB_job_name, true}});
 #else
    static_cast<void>(form);
-   sort_case("sort_str_asc", f, [](lList *lp) { lPSortList(lp, "%I+", JB_job_name); });
+   sort_case("sort_str_asc", f, [](ocs::tom::ListData *lp) { lPSortList(lp, "%I+", JB_job_name); });
 #endif
 }
 
@@ -2568,7 +2585,7 @@ static void op_sort_str_desc(Fixture &f, const Form form) {
              {{JB_job_name, false}});
 #else
    static_cast<void>(form);
-   sort_case("sort_str_desc", f, [](lList *lp) { lPSortList(lp, "%I-", JB_job_name); });
+   sort_case("sort_str_desc", f, [](ocs::tom::ListData *lp) { lPSortList(lp, "%I-", JB_job_name); });
 #endif
 }
 
@@ -2587,7 +2604,7 @@ static void op_sort_3keys(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    sort_case("sort_3keys", f,
-             [](lList *lp) { lPSortList(lp, "%I- %I+ %I+", JB_priority, JB_owner, JB_job_number); });
+             [](ocs::tom::ListData *lp) { lPSortList(lp, "%I- %I+ %I+", JB_priority, JB_owner, JB_job_number); });
 #endif
 }
 
@@ -2611,13 +2628,13 @@ static void op_insert_sorted(Fixture &f, const Form form) {
          spare = list.extract(e);
       });
    } else {
-      lList *lp = f.jobs_long.get().raw();
+      ocs::tom::ListData *lp = f.jobs_long.get().raw();
       const ocs::tom::SortKey keys[] = {{JB_job_number, true}};
-      lSortOrder *so = ocs::tom::make_sort_order(JB::descriptor.e, keys);
+      ocs::tom::SortOrderData *so = ocs::tom::make_sort_order(JB::descriptor.e, keys);
       auto spare = ocs::tom::create_raw_elem(JB::descriptor.e);
       ocs::tom::set<JB_job_number>(spare.get().raw(), static_cast<std::uint32_t>(long_hit));
       run("insert_sorted", [&](std::uint64_t) {
-         lListElem *ep = spare.release();
+         ocs::tom::ElementData *ep = spare.release();
          ocs::tom::insert_sorted(lp, ep, so);
          spare = ocs::tom::take(lp, ep);
       });
@@ -2625,9 +2642,9 @@ static void op_insert_sorted(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lList *lp = f.jobs_long;
-   lSortOrder *so = lParseSortOrderVarArg(JB_Type, "%I+", JB_job_number);
-   lListElem *spare = lCreateElem(JB_Type);
+   ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::SortOrderData *so = lParseSortOrderVarArg(JB_Type, "%I+", JB_job_number);
+   ocs::tom::ElementData *spare = lCreateElem(JB_Type);
    lSetUlong(spare, JB_job_number, long_hit);
    run("insert_sorted", [&](std::uint64_t) {
       lInsertSorted(so, spare, lp);
@@ -2667,7 +2684,7 @@ static void op_where_build(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    run("where_build", [&](std::uint64_t) {
-      lCondition *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, owner, JB_priority,
+      ocs::tom::WhereData *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, owner, JB_priority,
                                  static_cast<u_long32>(100));
       g_sink += where != nullptr ? 1 : 0;
       lFreeWhere(&where);
@@ -2698,7 +2715,7 @@ static void op_what_build(Fixture &f, const Form form) {
 #else
    static_cast<void>(form);
    run("what_build", [&](std::uint64_t) {
-      lEnumeration *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
+      ocs::tom::WhatData *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
       g_sink += what != nullptr ? 1 : 0;
       lFreeWhat(&what);
    });
@@ -2747,7 +2764,7 @@ static void op_select_1000(Fixture &f, const Form form) {
          g_sink += result->size();
       });
    } else {
-      const lList *lp = f.jobs_long.get().raw();
+      const ocs::tom::ListData *lp = f.jobs_long.get().raw();
       const auto where = raw_select_where();
       const auto what = ocs::tom::what_of(JB::descriptor.e, raw_select_fields);
       run("select_1000", [&](std::uint64_t) {
@@ -2757,12 +2774,12 @@ static void op_select_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lList *lp = f.jobs_long;
-   lCondition *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, "user3", JB_priority,
+   const ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::WhereData *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, "user3", JB_priority,
                               static_cast<u_long32>(100));
-   lEnumeration *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
+   ocs::tom::WhatData *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
    run("select_1000", [&](std::uint64_t) {
-      lList *result = lSelect("sel", lp, where, what);
+      ocs::tom::ListData *result = lSelect("sel", lp, where, what);
       g_sink += lGetNumberOfElem(result);
       lFreeList(&result);
    });
@@ -2786,7 +2803,7 @@ static void op_select_all_fields_1000(Fixture &f, const Form form) {
          g_sink += result->size();
       });
    } else {
-      const lList *lp = f.jobs_long.get().raw();
+      const ocs::tom::ListData *lp = f.jobs_long.get().raw();
       const auto where = raw_select_where();
       const auto what = ocs::tom::what_all();
       run("select_all_fields_1000", [&](std::uint64_t) {
@@ -2796,12 +2813,12 @@ static void op_select_all_fields_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lList *lp = f.jobs_long;
-   lCondition *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, "user3", JB_priority,
+   const ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::WhereData *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, "user3", JB_priority,
                               static_cast<u_long32>(100));
-   lEnumeration *what = lWhat("%T(ALL)", JB_Type);
+   ocs::tom::WhatData *what = lWhat("%T(ALL)", JB_Type);
    run("select_all_fields_1000", [&](std::uint64_t) {
-      lList *result = lSelect("sel", lp, where, what);
+      ocs::tom::ListData *result = lSelect("sel", lp, where, what);
       g_sink += lGetNumberOfElem(result);
       lFreeList(&result);
    });
@@ -2825,7 +2842,7 @@ static void op_select_elem(Fixture &f, const Form form) {
          g_sink += result ? 1 : 0;
       });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       const auto what = ocs::tom::what_of(JB::descriptor.e, raw_select_fields);
       run("select_elem", [&](std::uint64_t) {
          auto result = ocs::tom::select(ep, what.get(), ocs::tom::Hashing::Off);
@@ -2834,10 +2851,10 @@ static void op_select_elem(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
-   lEnumeration *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
+   const ocs::tom::ElementData *ep = f.job;
+   ocs::tom::WhatData *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
    run("select_elem", [&](std::uint64_t) {
-      lListElem *result = lSelectElemPack(ep, nullptr, what, false, nullptr);
+      ocs::tom::ElementData *result = lSelectElemPack(ep, nullptr, what, false, nullptr);
       g_sink += result != nullptr ? 1 : 0;
       lFreeElem(&result);
    });
@@ -2863,7 +2880,7 @@ static void op_reduced_elem(Fixture &f, const Form form) {
    } else {
       const auto what = ocs::tom::what_of(JB::descriptor.e, raw_select_fields);
       run("reduced_elem", [&](std::uint64_t) {
-         const lDescr *descr = ocs::tom::reduced_descr(JB::descriptor.e, what.get());
+         const ocs::tom::FieldDescr *descr = ocs::tom::reduced_descr(JB::descriptor.e, what.get());
          auto ep = ocs::tom::create_raw_elem(descr);
          ocs::tom::release_descr(descr);
          g_sink += ep ? 1 : 0;
@@ -2871,10 +2888,10 @@ static void op_reduced_elem(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lEnumeration *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
+   ocs::tom::WhatData *what = lWhat("%T(%I %I %I)", JB_Type, JB_job_number, JB_owner, JB_priority);
    run("reduced_elem", [&](std::uint64_t) {
-      lDescr *descr = lGetReducedDescr(JB_Type, what);
-      lListElem *ep = lCreateElem(descr);
+      ocs::tom::FieldDescr *descr = lGetReducedDescr(JB_Type, what);
+      ocs::tom::ElementData *ep = lCreateElem(descr);
       g_sink += ep != nullptr ? 1 : 0;
       lFreeElem(&ep);
       sge_free(&descr);
@@ -2895,15 +2912,15 @@ static void op_find_if_1000(Fixture &f, const Form form) {
       const auto where = ocs::tom::field<JB_job_number>() > 990U;
       run("find_if_1000", [&](std::uint64_t) { g_sink += list.find_if(where) ? 1 : 0; });
    } else {
-      const lList *lp = f.jobs_long.get().raw();
+      const ocs::tom::ListData *lp = f.jobs_long.get().raw();
       const auto where = ocs::tom::where_compare(JB::descriptor.e, JB_job_number, ocs::tom::CompareOp::Greater,
                                                  std::uint32_t{990});
       run("find_if_1000", [&](std::uint64_t) { g_sink += ocs::tom::find_first(lp, where.get()) != nullptr ? 1 : 0; });
    }
 #else
    static_cast<void>(form);
-   const lList *lp = f.jobs_long;
-   lCondition *where = lWhere("%T(%I > %u)", JB_Type, JB_job_number, static_cast<u_long32>(990));
+   const ocs::tom::ListData *lp = f.jobs_long;
+   ocs::tom::WhereData *where = lWhere("%T(%I > %u)", JB_Type, JB_job_number, static_cast<u_long32>(990));
    run("find_if_1000", [&](std::uint64_t) { g_sink += lFindFirstRW(lp, where) != nullptr ? 1 : 0; });
    lFreeWhere(&where);
 #endif
@@ -2921,14 +2938,14 @@ static void op_matches(Fixture &f, const Form form) {
       const auto where = typed_select_where();
       run("matches", [&](std::uint64_t) { g_sink += job.matches(where) ? 1 : 0; });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       const auto where = raw_select_where();
       run("matches", [&](std::uint64_t) { g_sink += ocs::tom::matches(ep, where.get()) ? 1 : 0; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
-   lCondition *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, "user3", JB_priority,
+   const ocs::tom::ElementData *ep = f.job;
+   ocs::tom::WhereData *where = lWhere("%T(%I == %s && %I > %u)", JB_Type, JB_owner, "user3", JB_priority,
                               static_cast<u_long32>(100));
    run("matches", [&](std::uint64_t) { g_sink += lCompare(ep, where); });
    lFreeWhere(&where);
@@ -2958,8 +2975,8 @@ static void op_split_1000(Fixture &f, const Form form) {
    } else {
       const auto where = ocs::tom::where_compare(JB::descriptor.e, JB_priority, ocs::tom::CompareOp::Greater,
                                                  std::uint32_t{511});
-      lList *lp = nullptr;
-      lList *rest = nullptr;
+      ocs::tom::ListData *lp = nullptr;
+      ocs::tom::ListData *rest = nullptr;
       run_batched("split_1000", 1, [&] { lp = ocs::tom::clone(f.jobs_long.get().raw()).release(); },
                   [&](std::uint64_t) { ocs::tom::split_list(lp, &rest, "rest", where.get()); },
                   [&] {
@@ -2969,9 +2986,9 @@ static void op_split_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lCondition *where = lWhere("%T(%I > %u)", JB_Type, JB_priority, static_cast<u_long32>(511));
-   lList *lp = nullptr;
-   lList *rest = nullptr;
+   ocs::tom::WhereData *where = lWhere("%T(%I > %u)", JB_Type, JB_priority, static_cast<u_long32>(511));
+   ocs::tom::ListData *lp = nullptr;
+   ocs::tom::ListData *rest = nullptr;
    run_batched("split_1000", 1, [&] { lp = lCopyList("split", f.jobs_long); },
                [&](std::uint64_t) { lSplit(&lp, &rest, "rest", where); },
                [&] {
@@ -3011,8 +3028,8 @@ static void op_add_list_100(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lList *target = nullptr;
-   lList *source = nullptr;
+   ocs::tom::ListData *target = nullptr;
+   ocs::tom::ListData *source = nullptr;
    run_batched("add_list_100", 1,
                [&] {
                   target = lCopyList("target", f.jobs_100);
@@ -3062,8 +3079,8 @@ static void op_append_list_100(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lList *target = nullptr;
-   lList *source = nullptr;
+   ocs::tom::ListData *target = nullptr;
+   ocs::tom::ListData *source = nullptr;
    run_batched("append_list_100", 1,
                [&] {
                   target = lCopyList("target", f.jobs_100);
@@ -3099,9 +3116,9 @@ static void op_dechain_list_1000(Fixture &f, const Form form) {
                      tail.reset();
                   });
    } else {
-      lList *lp = nullptr;
-      lList *tail = nullptr;
-      lListElem *from = nullptr;
+      ocs::tom::ListData *lp = nullptr;
+      ocs::tom::ListData *tail = nullptr;
+      ocs::tom::ElementData *from = nullptr;
       run_batched("dechain_list_1000", 1,
                   [&] {
                      lp = ocs::tom::clone(f.jobs_long.get().raw()).release();
@@ -3115,9 +3132,9 @@ static void op_dechain_list_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lList *lp = nullptr;
-   lList *tail = nullptr;
-   lListElem *from = nullptr;
+   ocs::tom::ListData *lp = nullptr;
+   ocs::tom::ListData *tail = nullptr;
+   ocs::tom::ElementData *from = nullptr;
    run_batched("dechain_list_1000", 1,
                [&] {
                   lp = lCopyList("list", f.jobs_long);
@@ -3149,7 +3166,7 @@ static void op_uniq_str_1000(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   lList *lp = nullptr;
+   ocs::tom::ListData *lp = nullptr;
    run_batched("uniq_str_1000", 1, [&] { lp = lCopyList("st", f.st_dup); },
                [&](std::uint64_t) { lUniqStr(lp, ST_name); }, [&] { lFreeList(&lp); });
 #endif
@@ -3173,15 +3190,15 @@ static void op_xchg_list(Fixture &f, const Form form) {
          other = std::move(old);
       });
    } else {
-      lListElem *ep = f.scratch_b.get().raw();
-      lList *other = ocs::tom::create_raw_list(VA::descriptor.e, ocs::tom::Hashing::On, "other").release();
+      ocs::tom::ElementData *ep = f.scratch_b.get().raw();
+      ocs::tom::ListData *other = ocs::tom::create_raw_list(VA::descriptor.e, ocs::tom::Hashing::On, "other").release();
       run("xchg_list", [&](std::uint64_t) { g_sink += ocs::tom::exchange<JB_env_list>(ep, &other); });
       ocs::tom::free_raw_list(other);
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.scratch_b;
-   lList *other = lCreateList("other", VA_Type);
+   ocs::tom::ElementData *ep = f.scratch_b;
+   ocs::tom::ListData *other = lCreateList("other", VA_Type);
    run("xchg_list", [&](std::uint64_t) { g_sink += lXchgList(ep, JB_env_list, &other); });
    lFreeList(&other);
 #endif
@@ -3199,14 +3216,14 @@ static void op_swap_list(Fixture &f, const Form form) {
       const Element<JB> b = *f.scratch_b;
       run("swap_list", [&](std::uint64_t) { a.swap<JB_ja_tasks, JB_ja_tasks>(b); });
    } else {
-      lListElem *a = f.scratch_a.get().raw();
-      lListElem *b = f.scratch_b.get().raw();
+      ocs::tom::ElementData *a = f.scratch_a.get().raw();
+      ocs::tom::ElementData *b = f.scratch_b.get().raw();
       run("swap_list", [&](std::uint64_t) { g_sink += ocs::tom::swap<JB_ja_tasks, JB_ja_tasks>(a, b); });
    }
 #else
    static_cast<void>(form);
-   lListElem *a = f.scratch_a;
-   lListElem *b = f.scratch_b;
+   ocs::tom::ElementData *a = f.scratch_a;
+   ocs::tom::ElementData *b = f.scratch_b;
    run("swap_list", [&](std::uint64_t) { g_sink += lSwapList(a, JB_ja_tasks, b, JB_ja_tasks); });
 #endif
 }
@@ -3224,14 +3241,14 @@ static void op_get_or_create_existing(Fixture &f, const Form form) {
          g_sink += job.get_or_create<JB_env_list>("env") ? 1 : 0;
       });
    } else {
-      lListElem *ep = f.job.get().raw();
+      ocs::tom::ElementData *ep = f.job.get().raw();
       run("get_or_create_existing", [&](std::uint64_t) {
          g_sink += ocs::tom::get_or_create<JB_env_list>(ep, "env") ? 1 : 0;
       });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.job;
+   ocs::tom::ElementData *ep = f.job;
    run("get_or_create_existing", [&](std::uint64_t) {
       g_sink += lGetOrCreateList(ep, JB_env_list, "env", VA_Type) != nullptr ? 1 : 0;
    });
@@ -3252,15 +3269,15 @@ static void op_get_or_create_new(Fixture &f, const Form form) {
          job.set<JB_context>(nullptr);
       });
    } else {
-      lListElem *ep = f.scratch_a.get().raw();
+      ocs::tom::ElementData *ep = f.scratch_a.get().raw();
       run("get_or_create_new", [&](std::uint64_t) {
          g_sink += ocs::tom::get_or_create<JB_context>(ep, "context") ? 1 : 0;
-         ocs::tom::set<JB_context>(ep, static_cast<lList *>(nullptr));
+         ocs::tom::set<JB_context>(ep, static_cast<ocs::tom::ListData *>(nullptr));
       });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.scratch_a;
+   ocs::tom::ElementData *ep = f.scratch_a;
    run("get_or_create_new", [&](std::uint64_t) {
       g_sink += lGetOrCreateList(ep, JB_context, "context", VA_Type) != nullptr ? 1 : 0;
       lSetList(ep, JB_context, nullptr);
@@ -3279,12 +3296,12 @@ static void op_list_ref(Fixture &f, const Form form) {
       const Element<JB> job = *f.job;
       run("list_ref", [&](std::uint64_t) { g_sink += job.list_ref<JB_env_list>() != nullptr ? 1 : 0; });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("list_ref", [&](std::uint64_t) { g_sink += ocs::tom::list_ref<JB_env_list>(ep) != nullptr ? 1 : 0; });
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("list_ref", [&](std::uint64_t) { g_sink += lGetListRef(ep, JB_env_list) != nullptr ? 1 : 0; });
 #endif
 }
@@ -3305,14 +3322,14 @@ static void op_bits_or(Fixture &f, const Form form) {
          g_sink += qu.or_bits<QU_state>(static_cast<std::uint32_t>(1U << (i & 7)));
       });
    } else {
-      lListElem *ep = f.qu.get().raw();
+      ocs::tom::ElementData *ep = f.qu.get().raw();
       run("bits_or", [&](std::uint64_t i) {
          g_sink += ocs::tom::or_bits<QU_state>(ep, static_cast<std::uint32_t>(1U << (i & 7)));
       });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.qu;
+   ocs::tom::ElementData *ep = f.qu;
    run("bits_or", [&](std::uint64_t i) { g_sink += lOrUlongBitMask(ep, QU_state, 1U << (i & 7)); });
 #endif
 }
@@ -3328,12 +3345,12 @@ static void op_bits_and(Fixture &f, const Form form) {
       const Element<QU> qu = *f.qu;
       run("bits_and", [&](std::uint64_t) { g_sink += qu.and_bits<QU_state>(0xffU); });
    } else {
-      lListElem *ep = f.qu.get().raw();
+      ocs::tom::ElementData *ep = f.qu.get().raw();
       run("bits_and", [&](std::uint64_t) { g_sink += ocs::tom::and_bits<QU_state>(ep, 0xffU); });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.qu;
+   ocs::tom::ElementData *ep = f.qu;
    run("bits_and", [&](std::uint64_t) { g_sink += lAndUlongBitMask(ep, QU_state, 0xffU); });
 #endif
 }
@@ -3351,14 +3368,14 @@ static void op_bits_clear(Fixture &f, const Form form) {
          g_sink += qu.clear_bits<QU_state>(static_cast<std::uint32_t>(1U << (i & 7)));
       });
    } else {
-      lListElem *ep = f.qu.get().raw();
+      ocs::tom::ElementData *ep = f.qu.get().raw();
       run("bits_clear", [&](std::uint64_t i) {
          g_sink += ocs::tom::clear_bits<QU_state>(ep, static_cast<std::uint32_t>(1U << (i & 7)));
       });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.qu;
+   ocs::tom::ElementData *ep = f.qu;
    run("bits_clear", [&](std::uint64_t i) { g_sink += lClearUlongBitMask(ep, QU_state, 1U << (i & 7)); });
 #endif
 }
@@ -3376,14 +3393,14 @@ static void op_bits_match(Fixture &f, const Form form) {
          g_sink += qu.has_any_bits<QU_state>(static_cast<std::uint32_t>(1U << (i & 7))) ? 1 : 0;
       });
    } else {
-      const lListElem *ep = f.qu.get().raw();
+      const ocs::tom::ElementData *ep = f.qu.get().raw();
       run("bits_match", [&](std::uint64_t i) {
          g_sink += ocs::tom::has_any_bits<QU_state>(ep, static_cast<std::uint32_t>(1U << (i & 7))) ? 1 : 0;
       });
    }
 #else
    static_cast<void>(form);
-   lListElem *ep = f.qu;
+   ocs::tom::ElementData *ep = f.qu;
    run("bits_match", [&](std::uint64_t i) { g_sink += lMatchUlongBitMask(ep, QU_state, 1U << (i & 7)) ? 1 : 0; });
 #endif
 }
@@ -3406,7 +3423,7 @@ static void op_pack_jobs_100(Fixture &f, const Form form) {
          g_sink += pb.size();
       });
    } else {
-      const lList *lp = f.jobs_pack.get().raw();
+      const ocs::tom::ListData *lp = f.jobs_pack.get().raw();
       run("pack_jobs_100", [&](std::uint64_t) {
          sge_pack_buffer pb;
          ocs::tom::init_buffer(&pb, 0, false, false);
@@ -3417,7 +3434,7 @@ static void op_pack_jobs_100(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lList *lp = f.jobs_pack;
+   const ocs::tom::ListData *lp = f.jobs_pack;
    run("pack_jobs_100", [&](std::uint64_t) {
       sge_pack_buffer pb;
       init_packbuffer(&pb, 0, false, false);
@@ -3476,7 +3493,7 @@ static void op_unpack_jobs_100(Fixture &f, const Form form) {
       memcpy(buf, bytes.data(), bytes.size());
       sge_pack_buffer pb;
       init_packbuffer_from_buffer(&pb, buf, static_cast<u_long32>(bytes.size()), false);
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       cull_unpack_list(&pb, &lp);
       g_sink += lGetNumberOfElem(lp);
       lFreeList(&lp);
@@ -3500,7 +3517,7 @@ static void op_pack_elem_job(Fixture &f, const Form form) {
          g_sink += pb.size();
       });
    } else {
-      const lListElem *ep = f.job.get().raw();
+      const ocs::tom::ElementData *ep = f.job.get().raw();
       run("pack_elem_job", [&](std::uint64_t) {
          sge_pack_buffer pb;
          ocs::tom::init_buffer(&pb, 0, false, false);
@@ -3511,7 +3528,7 @@ static void op_pack_elem_job(Fixture &f, const Form form) {
    }
 #else
    static_cast<void>(form);
-   const lListElem *ep = f.job;
+   const ocs::tom::ElementData *ep = f.job;
    run("pack_elem_job", [&](std::uint64_t) {
       sge_pack_buffer pb;
       init_packbuffer(&pb, 0, false, false);

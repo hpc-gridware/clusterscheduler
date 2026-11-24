@@ -110,8 +110,8 @@ free_what_and_where(sge_where_what_t *where_what);
  *          change; see the dead-declaration list.
  */
 sge_callback_result
-sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
-                                     sge_event_action action, lListElem *event, void *clientdata);
+sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
+                                     ocs::tom::ElementData *event, void *clientdata);
 
 /** @brief React to a scheduler configuration change, after the mirror applies it
  *
@@ -127,8 +127,8 @@ sge_process_schedd_conf_event_before(sge_evc_class_t *evc, sge_object_type type,
  *          change; see the dead-declaration list.
  */
 sge_callback_result
-sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type,
-                                    sge_event_action action, lListElem *event, void *clientdata);
+sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
+                                    ocs::tom::ElementData *event, void *clientdata);
 
 /** @brief React to a job change before the mirror applies it
  *
@@ -144,8 +144,8 @@ sge_process_schedd_conf_event_after(sge_evc_class_t *evc, sge_object_type type,
  *          change; see the dead-declaration list.
  */
 sge_callback_result
-sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type,
-                             sge_event_action action, lListElem *event, void *clientdata);
+sge_process_job_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
+                             ocs::tom::ElementData *event, void *clientdata);
 
 sge_callback_result
 sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
@@ -166,8 +166,8 @@ sge_process_job_event_after(sge_evc_class_t *evc, sge_object_type type,
  *          change; see the dead-declaration list.
  */
 sge_callback_result
-sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type,
-                                sge_event_action action, lListElem *event, void *clientdata);
+sge_process_ja_task_event_after(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
+                                ocs::tom::ElementData *event, void *clientdata);
 
 sge_callback_result
 sge_process_global_config_event(sge_evc_class_t *evc, sge_object_type type,
@@ -193,4 +193,5 @@ sge_process_schedd_monitor_event(sge_evc_class_t *evc, sge_object_type type,
  *          change; see the dead-declaration list.
  */
 sge_callback_result
-sge_process_category_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action, lListElem *event, void *clientdata);
+sge_process_category_event_before(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
+                                  ocs::tom::ElementData *event, void *clientdata);

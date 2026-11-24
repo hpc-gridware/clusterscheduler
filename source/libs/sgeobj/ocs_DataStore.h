@@ -47,7 +47,7 @@ namespace ocs {
    private:
       // no private attributes because data is store thread local
 
-      static lList **
+      static ocs::tom::ListData **
       get_master_list_rw(sge_object_type type, bool for_read = false);
 
       /**
@@ -60,9 +60,9 @@ namespace ocs {
        * @param type the type of the master list
        * @return the location of the list, never nullptr
        */
-      static const lList **
+      static const ocs::tom::ListData **
       get_master_list(const sge_object_type type) {
-         return const_cast<const lList **>(ocs::DataStore::get_master_list_rw(type, true));
+         return const_cast<const ocs::tom::ListData **>(ocs::DataStore::get_master_list_rw(type, true));
       }
 
    public:
@@ -90,7 +90,7 @@ namespace ocs {
       static ocs::tom::RawListPtr
       replace_master_list_raw(sge_object_type type, ocs::tom::RawListPtr &&list);
 
-      static lList **
+      static ocs::tom::ListData **
       master_list_slot(sge_object_type type);
 
       /// The object type of the elements of the master list of #sge_object_type value V, e.g. ocs::tom::JB
@@ -152,7 +152,7 @@ namespace ocs {
       static ocs::tom::List<master_type_t<V>>
       master_list_create(const char *name) {
          static_assert(ocs_object_type_t<V>::has_object, "the master list of a type that carries objects");
-         lList **slot = get_master_list_rw(V);
+         ocs::tom::ListData **slot = get_master_list_rw(V);
          if (*slot == nullptr) {
             *slot = ocs::tom::ListPtr<master_type_t<V>>::create(name).release();
          }
@@ -175,7 +175,7 @@ namespace ocs {
       replace_master_list(ocs::tom::ListPtr<master_type_t<V>> &&list) {
          static_assert(ocs_object_type_t<V>::has_object, "the master list of a type that carries objects");
          ocs::tom::ListPtr<master_type_t<V>> new_list(std::move(list));
-         lList **slot = get_master_list_rw(V);
+         ocs::tom::ListData **slot = get_master_list_rw(V);
          // the list in the slot was put there as a list of this type, by its owner or by this function
          return ocs::tom::ListPtr<master_type_t<V>>::from_typed(std::exchange(*slot, new_list.release()));
       }

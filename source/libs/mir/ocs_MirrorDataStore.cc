@@ -134,7 +134,7 @@ ocs::MirrorDataStore::thread_cleanup_data_store(void *arg) {
 void
 ocs::MirrorDataStore::event_mirror_update_func([[maybe_unused]] uint32_t ec_id,
                                                [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                               lList *event_list, void *arg) {
+                                               ocs::tom::ListData *event_list, void *arg) {
    DENTER(TOP_LAYER);
    auto *mirror_thread = static_cast<MirrorDataStore *>(arg);
 

@@ -210,7 +210,7 @@ template <std::size_t I>
 consteval object_description ocs_object_description_at() {
    const auto &entry = ocs_object_type_entry_at<I>();
    using E = ocs_object_type_entry_t<decltype(entry)>;
-   const lDescr *descr = nullptr;
+   const ocs::tom::FieldDescr *descr = nullptr;
    if constexpr (E::has_object) {
       descr = E::type::descriptor.e;
    }

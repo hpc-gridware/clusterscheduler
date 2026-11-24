@@ -254,15 +254,16 @@ static void test_positional_access() {
 
    auto sub = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "sub");
    sub->push_back(ocs::tom::RawElementPtr::create(TEST_Type));
-   const lList *sub_raw = sub.get();
+   const ocs::tom::ListData *sub_raw = sub.get();
    ep->set(TEST_list, std::move(sub));
-   CHECK(18, "set/get of a list field stores the list itself", ep->get<const lList *>(TEST_list) == sub_raw);
+   CHECK(18, "set/get of a list field stores the list itself",
+         ep->get<const ocs::tom::ListData *>(TEST_list) == sub_raw);
 
    auto obj = ocs::tom::RawElementPtr::create(TEST_Type);
-   const lListElem *obj_raw = obj.get();
+   const ocs::tom::ElementData *obj_raw = obj.get();
    ep->set(TEST_object, std::move(obj));
    CHECK(19, "set/get of an object field stores the object itself",
-         ep->get<const lListElem *>(TEST_object) == obj_raw);
+         ep->get<const ocs::tom::ElementData *>(TEST_object) == obj_raw);
 
    // CHECK 20 removed: lGetPosStringRef() has no TOM counterpart (CS-3103)
    // CHECK 21 removed: lGetPosHostRef() has no TOM counterpart (CS-3103)
@@ -290,7 +291,7 @@ static void test_setter_hash_upkeep() {
    elem->set(TEST_ulong64_ukey, std::uint64_t{100});
    elem->set(TEST_string_ukey, static_cast<const char *>("old"));
    const ocs::tom::RawElement ep = lp->push_back(std::move(elem));
-   const lListElem *ep_raw = ep.raw();
+   const ocs::tom::ElementData *ep_raw = ep.raw();
 
    ep.set(TEST_ulong_ukey, std::uint32_t{11});
    CHECK(23, "set of a hashed ulong key: new key found, old key gone",
@@ -370,15 +371,16 @@ static void test_move_out() {
 
    auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
    auto inner_owner = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "inner");
-   const lList *inner = inner_owner.get();
+   const ocs::tom::ListData *inner = inner_owner.get();
    ep->set(TEST_list, std::move(inner_owner));
 
    // T38: exchange() hands back the stored list and stores the caller's
    auto outer_owner = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "outer");
-   const lList *outer = outer_owner.get();
+   const ocs::tom::ListData *outer = outer_owner.get();
    ocs::tom::RawListPtr swap = ep->exchange(TEST_list, std::move(outer_owner));
    CHECK(38, "exchange() swaps the lists",
-         static_cast<const lList *>(swap.get()) == inner && ep->get<const lList *>(TEST_list) == outer);
+         static_cast<const ocs::tom::ListData *>(swap.get()) == inner &&
+         ep->get<const ocs::tom::ListData *>(TEST_list) == outer);
 
    // CHECK 39 removed: lXchgList() without a list pointer has no TOM counterpart (CS-3103)
    swap.reset();
@@ -386,12 +388,13 @@ static void test_move_out() {
    // T40: two exchanges swap the sublists of two elements
    auto other = ocs::tom::RawElementPtr::create(TEST_Type);
    auto other_owner = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "other");
-   const lList *other_list = other_owner.get();
+   const ocs::tom::ListData *other_list = other_owner.get();
    other->set(TEST_list2, std::move(other_owner));
    ocs::tom::RawListPtr remaining =
            ep->exchange(TEST_list, other->exchange(TEST_list2, ep->exchange(TEST_list, {})));
    CHECK(40, "two exchanges swap the sublists",
-         ep->get<const lList *>(TEST_list) == other_list && other->get<const lList *>(TEST_list2) == outer &&
+         ep->get<const ocs::tom::ListData *>(TEST_list) == other_list &&
+         other->get<const ocs::tom::ListData *>(TEST_list2) == outer &&
          !remaining);
    other.reset();
 
@@ -400,12 +403,12 @@ static void test_move_out() {
    // T42-T45: take() detaches the sub-object
    auto obj = ocs::tom::RawElementPtr::create(TEST_Type);
    obj->set(TEST_ulong, std::uint32_t{42});
-   const lListElem *obj_raw = obj.get();
+   const ocs::tom::ElementData *obj_raw = obj.get();
    ep->set(TEST_object, std::move(obj));
    ocs::tom::RawElementPtr out = ep->take(TEST_object);
    CHECK(42, "take() returns the sub-object",
-         static_cast<const lListElem *>(out.get()) == obj_raw && out->get<std::uint32_t>(TEST_ulong) == 42);
-   CHECK(43, "take() leaves the field empty", ep->get<const lListElem *>(TEST_object) == nullptr);
+         static_cast<const ocs::tom::ElementData *>(out.get()) == obj_raw && out->get<std::uint32_t>(TEST_ulong) == 42);
+   CHECK(43, "take() leaves the field empty", ep->get<const ocs::tom::ElementData *>(TEST_object) == nullptr);
    CHECK(44, "take() on an empty field returns an empty owner", !ep->take(TEST_object));
 
    // the detached object is free again: it can be stored in another element
@@ -417,7 +420,7 @@ static void test_move_out() {
       stored = false;
    }
    CHECK(45, "a taken object can be stored again",
-         stored && holder->get<const lListElem *>(TEST_object) == obj_raw);
+         stored && holder->get<const ocs::tom::ElementData *>(TEST_object) == obj_raw);
 }
 
 // ---------------------------------------------------------------------------
@@ -455,7 +458,7 @@ static void test_type_errors_abort() {
 
    // the element is untouched by the calls that threw
    CHECK(51, "the element is unchanged", strcmp(ep.get<const char *>(TEST_string), "s") == 0 &&
-         ep.get<std::uint32_t>(TEST_ulong) == 0 && ep.get<const lList *>(TEST_list) == nullptr);
+         ep.get<std::uint32_t>(TEST_ulong) == 0 && ep.get<const ocs::tom::ListData *>(TEST_list) == nullptr);
 }
 
 // ---------------------------------------------------------------------------

@@ -23,7 +23,7 @@
  * @brief Typed selections of the typed object model: What, Where, what<F...>(), field<F>()
  *
  * A selection of fields (`What<T>`) and a condition (`Where<T>`) are owning
- * handles on the `lEnumeration` and `lCondition` of the list library, built
+ * handles on the `ocs::tom::WhatData` and `ocs::tom::WhereData` of the list library, built
  * from field numbers given as template arguments: a field of another type, a
  * value of another type than the field, or a nested selection or condition on
  * a field that is not a list does not compile, where lWhat() and lWhere()
@@ -137,9 +137,9 @@ namespace ocs::tom {
        * @return the condition, owned by the caller
        */
       template <auto F>
-      lCondition *make_field_compare(const CompareOp op, const typename CompareArg<F>::type value) {
+      ocs::tom::WhereData *make_field_compare(const CompareOp op, const typename CompareArg<F>::type value) {
          using Tr = FieldTraits<F>;
-         lMultiType v{};
+         ocs::tom::FieldValue v{};
          if constexpr (Tr::type == FieldType::Uint32) {
             v.ul = value;
          } else if constexpr (Tr::type == FieldType::Uint64) {
@@ -176,7 +176,7 @@ namespace ocs::tom {
    public:
       using Type = T;   ///< the object type
 
-      /** @brief An empty condition; selecting with it selects every element, as a null lCondition does */
+      /** @brief An empty condition; selecting with it selects every element, as a null ocs::tom::WhereData does */
       constexpr Where() noexcept = default;
 
       /**
@@ -184,7 +184,7 @@ namespace ocs::tom {
        * @param cp the condition, or nullptr; freed by the handle
        * @return the handle
        */
-      [[nodiscard]] static Where from_typed(lCondition *cp) noexcept {
+      [[nodiscard]] static Where from_typed(ocs::tom::WhereData *cp) noexcept {
          Where handle;
          handle.cp_ = cp;
          return handle;
@@ -221,7 +221,7 @@ namespace ocs::tom {
        * @brief The condition, for the functions of the old interface: lSelect(), lFindFirstRW(), ...
        * @return the condition, or nullptr
        */
-      [[nodiscard]] const lCondition *get() const noexcept {
+      [[nodiscard]] const ocs::tom::WhereData *get() const noexcept {
          return cp_;
       }
 
@@ -229,7 +229,7 @@ namespace ocs::tom {
        * @brief Give up ownership
        * @return the condition, which the caller now owns, or nullptr
        */
-      [[nodiscard]] lCondition *release() noexcept {
+      [[nodiscard]] ocs::tom::WhereData *release() noexcept {
          return std::exchange(cp_, nullptr);
       }
 
@@ -339,7 +339,7 @@ namespace ocs::tom {
        * @see Old form: tom_unpack_cond(); core: ocs::tom::unpack_where()
        */
       [[nodiscard]] static Where unpack(sge_pack_buffer &pb) {
-         lCondition *cp = unpack_where(&pb);
+         ocs::tom::WhereData *cp = unpack_where(&pb);
          if (!condition_fits(cp, T::descriptor.e)) [[unlikely]] {
             free_where(cp);
             throw_field_exception(FieldException::Reason::ForeignField, NoName, T::descriptor.e);
@@ -366,7 +366,7 @@ namespace ocs::tom {
          cp_ = make_logic(op, std::exchange(cp_, nullptr), other.release());
       }
 
-      lCondition *cp_ = nullptr;   ///< the condition owned, or nullptr
+      ocs::tom::WhereData *cp_ = nullptr;   ///< the condition owned, or nullptr
    };
 
    /**
@@ -532,7 +532,7 @@ namespace ocs::tom {
        * @param ep the selection, or nullptr; freed by the handle
        * @return the handle
        */
-      [[nodiscard]] static What from_typed(lEnumeration *ep) noexcept {
+      [[nodiscard]] static What from_typed(ocs::tom::WhatData *ep) noexcept {
          What handle;
          handle.ep_ = ep;
          return handle;
@@ -569,7 +569,7 @@ namespace ocs::tom {
        * @brief The selection, for the functions of the old interface: lSelect(), lCopyElemPartialPack(), ...
        * @return the selection, or nullptr
        */
-      [[nodiscard]] const lEnumeration *get() const noexcept {
+      [[nodiscard]] const ocs::tom::WhatData *get() const noexcept {
          return ep_;
       }
 
@@ -577,7 +577,7 @@ namespace ocs::tom {
        * @brief Give up ownership
        * @return the selection, which the caller now owns, or nullptr
        */
-      [[nodiscard]] lEnumeration *release() noexcept {
+      [[nodiscard]] ocs::tom::WhatData *release() noexcept {
          return std::exchange(ep_, nullptr);
       }
 
@@ -699,7 +699,7 @@ namespace ocs::tom {
        * @see Old form: tom_unpack_enum(); core: ocs::tom::unpack_what()
        */
       [[nodiscard]] static What unpack(sge_pack_buffer &pb) {
-         lEnumeration *ep = unpack_what(&pb);
+         ocs::tom::WhatData *ep = unpack_what(&pb);
          if (ep != nullptr && !ocs::tom::detail::what_fits(ep, T::descriptor.e)) [[unlikely]] {
             free_what(ep);
             throw_field_exception(FieldException::Reason::ForeignField, NoName, T::descriptor.e);
@@ -708,7 +708,7 @@ namespace ocs::tom {
       }
 
    private:
-      lEnumeration *ep_ = nullptr;   ///< the selection owned, or nullptr
+      ocs::tom::WhatData *ep_ = nullptr;   ///< the selection owned, or nullptr
    };
 
    /**

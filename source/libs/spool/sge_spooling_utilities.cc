@@ -141,7 +141,7 @@ const spool_instr_t spool_user_instr = {
 };
 
 static spooling_field *
-_spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+_spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                            const spool_instr_t *instr);
 
 /**
@@ -170,7 +170,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * @see `ocs::tom::sub_type()`, #spool_free_spooling_fields
  */
 spooling_field *
-spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                           const spool_instr_t *instr) {
    DENTER(TOP_LAYER);
 
@@ -199,7 +199,7 @@ spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lD
  * @return the field array terminated by #NoName, or nullptr on error
  */
 static spooling_field *
-_spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+_spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                            const spool_instr_t *instr) {
    DENTER(TOP_LAYER);
 
@@ -287,7 +287,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
          }
 
          if (fields[j].ops->type == ocs::tom::FieldType::List) {
-            const lDescr *sub_descr;
+            const ocs::tom::FieldDescr *sub_descr;
 
             if (instr->sub_instr == nullptr) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,

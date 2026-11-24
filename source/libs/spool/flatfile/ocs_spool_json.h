@@ -69,7 +69,7 @@ extern ocs_json_value_format ocs_json_value_format_opt;
  */
 struct ocs_json_derived_list {
    const char *key;      ///< the JSON key; a nullptr key terminates the array
-   const lList *names;   ///< the values, as a list of name elements
+   const ocs::tom::ListData *names;   ///< the values, as a list of name elements
    int keynm;            ///< the attribute of an element holding the name
 };
 
@@ -126,9 +126,9 @@ spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs:
  * (as the ASCII reader does).
  */
 ocs::tom::RawElementPtr
-spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                        const spooling_field *fields, int fields_out[], const char *json_text);
 
 ocs::tom::RawListPtr
-spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                      const spooling_field *fields, int fields_out[], const char *json_text);

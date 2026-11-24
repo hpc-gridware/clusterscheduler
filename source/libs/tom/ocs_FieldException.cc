@@ -45,7 +45,7 @@ namespace ocs::tom {
     * @param descr the descriptor, or nullptr
     * @return the type's name, e.g. "JB", or "unknown"
     */
-   static std::string type_label(const lDescr *descr) {
+   static std::string type_label(const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr || descr[0].nm == NoName) {
          return "unknown";
       }
@@ -74,7 +74,7 @@ namespace ocs::tom {
     * @param descr the descriptor, or nullptr
     * @return "full", "reduced to <n> of <m> fields" or "unknown"
     */
-   static std::string layout_name(const lDescr *descr) {
+   static std::string layout_name(const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr) {
          return "unknown";
       }
@@ -91,8 +91,8 @@ namespace ocs::tom {
       return "reduced to " + std::to_string(present) + " of " + std::to_string(length) + " fields";
    }
 
-   void throw_field_exception(const FieldException::Reason reason, const int nm, const lDescr *descr,
-                              const lDescr *expected) {
+   void throw_field_exception(const FieldException::Reason reason, const int nm, const ocs::tom::FieldDescr *descr,
+                              const ocs::tom::FieldDescr *expected) {
       std::string message;
       switch (reason) {
          case FieldException::Reason::NullElement:
@@ -148,7 +148,8 @@ namespace ocs::tom {
       throw FieldException(reason, nm, message);
    }
 
-   void throw_duplicate_key(const int nm, const lDescr *descr, const std::string &key, const char *list_name) {
+   void throw_duplicate_key(const int nm, const ocs::tom::FieldDescr *descr, const std::string &key,
+                            const char *list_name) {
       throw FieldException(FieldException::Reason::DuplicateKey, nm,
                            "duplicate key \"" + key + "\" in unique field " + field_label(nm) + " of type " +
                            type_label(descr) + " in list \"" + (list_name != nullptr ? list_name : "unnamed") + "\"");

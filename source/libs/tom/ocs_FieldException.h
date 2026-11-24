@@ -107,8 +107,9 @@ namespace ocs::tom {
     * @param expected the descriptor of the type that was expected, or nullptr
     * @throw FieldException always, with @p reason and @p nm
     */
-   [[noreturn, gnu::cold]] void throw_field_exception(FieldException::Reason reason, int nm, const lDescr *descr,
-                                                      const lDescr *expected = nullptr);
+   [[noreturn, gnu::cold]] void throw_field_exception(FieldException::Reason reason, int nm,
+                                                      const ocs::tom::FieldDescr *descr,
+                                                      const ocs::tom::FieldDescr *expected = nullptr);
 
    /**
     * @brief Throw a FieldException for a key of a unique field that a list already holds
@@ -123,7 +124,7 @@ namespace ocs::tom {
     * @param list_name the name of the list, or nullptr
     * @throw FieldException always, with Reason::DuplicateKey and @p nm
     */
-   [[noreturn, gnu::cold]] void throw_duplicate_key(int nm, const lDescr *descr, const std::string &key,
+   [[noreturn, gnu::cold]] void throw_duplicate_key(int nm, const ocs::tom::FieldDescr *descr, const std::string &key,
                                                     const char *list_name);
 
 } // namespace ocs::tom

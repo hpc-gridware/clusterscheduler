@@ -135,10 +135,10 @@ uint32_t sge_execd_report_seqno = 0;   ///< Sequence number of the next report, 
 uint64_t qmrestart_time = 0;         ///< When qmaster was last seen to restart; job reports are delayed after one
 static bool delay_job_reports = false;
 static bool send_all = true;
-static lListElem *last_lr = nullptr;
-static lList *lr_list = nullptr;
+static ocs::tom::ElementData *last_lr = nullptr;
+static ocs::tom::ListData *lr_list = nullptr;
 
-extern lList *jr_list;   ///< The job reports waiting to be sent; defined in job_report_execd.cc
+extern ocs::tom::ListData *jr_list;   ///< The job reports waiting to be sent; defined in job_report_execd.cc
 
 static bool flush_lr = false;
 

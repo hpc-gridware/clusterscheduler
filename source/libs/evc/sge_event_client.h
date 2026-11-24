@@ -144,7 +144,8 @@ struct sge_evc_class_str {
    bool (*ec_subscribe_flush)(sge_evc_class_t *thiz, ev_event event, int flush);
 
    /// attach a what/where filter so qmaster reduces the data sent, see @ref evc_list_filtering
-   bool (*ec_mod_subscription_where)(sge_evc_class_t *thiz, ev_event event, const lListElem *what, const lListElem *where);
+   bool (*ec_mod_subscription_where)(sge_evc_class_t *thiz, ev_event event, const ocs::tom::ElementData *what,
+                                     const ocs::tom::ElementData *where);
 
    /// set the event delivery interval in seconds
    bool (*ec_set_edtime)(sge_evc_class_t *thiz, uint32_t intval);
@@ -170,10 +171,10 @@ struct sge_evc_class_str {
    ev_registration_id (*ec_get_id)(sge_evc_class_t *thiz);
 
    /// commit configuration changes as the final part of a GDI multi request
-   bool (*ec_commit_multi)(sge_evc_class_t *thiz, lList **malp, ocs::gdi::Request *state);
+   bool (*ec_commit_multi)(sge_evc_class_t *thiz, ocs::tom::ListData **malp, ocs::gdi::Request *state);
 
    /// fetch newly arrived events, registering and committing first if needed
-   bool (*ec_get)(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
+   bool (*ec_get)(sge_evc_class_t *thiz, ocs::tom::ListData **event_list, bool exit_on_qmaster_down);
 
    /// force a new registration, e.g. after the connection to qmaster broke
    void (*ec_mark4registration)(sge_evc_class_t *thiz);

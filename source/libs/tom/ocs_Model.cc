@@ -62,7 +62,8 @@ namespace ocs::tom {
          Model model;                       ///< the model the index was built from
          std::vector<TypeEntry> types;      ///< all types, sorted by base
          std::vector<NameEntry> names;      ///< all fields, sorted by name
-         std::vector<const lDescr *> subs;  ///< the sub-type of every field, nullptr if none; at first_sub + pos
+         /// the sub-type of every field, nullptr if none; at first_sub + pos
+         std::vector<const ocs::tom::FieldDescr *> subs;
       };
 
       std::atomic<const Index *> installed{nullptr};   ///< the installed model, nullptr if none
@@ -136,7 +137,7 @@ namespace ocs::tom {
                         ": the field numbers are not consecutive";
                return false;
             }
-            const lDescr &entry = table.descr[i];
+            const ocs::tom::FieldDescr &entry = table.descr[i];
             if (entry.nm != field.nm || mt_get_type(entry.mt) != mt_type_of(field.type)) {
                reason = where(i) + " (" + field.name + "): the descriptor holds field " + std::to_string(entry.nm) +
                         " of type " + type_name(mt_get_type(entry.mt)) + ", the table field " +
@@ -416,7 +417,7 @@ namespace ocs::tom {
     *         list or object field, or is an untyped list or object field (one the model names no sub-type for, so
     *         that it may hold elements of any type)
     */
-   const lDescr *sub_type(const int nm) noexcept {
+   const ocs::tom::FieldDescr *sub_type(const int nm) noexcept {
       const Index *index = installed.load(std::memory_order_acquire);
       if (index == nullptr) {
          return nullptr;
@@ -436,7 +437,7 @@ namespace ocs::tom {
     * @return the type's name, or nullptr if no model is installed, @p descr is nullptr or empty, or its first entry
     *         is not the first field of a type of the model
     */
-   const char *type_name(const lDescr *descr) noexcept {
+   const char *type_name(const ocs::tom::FieldDescr *descr) noexcept {
       const Index *index = installed.load(std::memory_order_acquire);
       if (index == nullptr || descr == nullptr || descr[0].nm == NoName) {
          return nullptr;

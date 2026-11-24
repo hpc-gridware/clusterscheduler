@@ -116,10 +116,9 @@ typedef struct {
 } mirror_description;
 
 static sge_mirror_error
-sge_mirror_subscribe_internal(sge_evc_class_t *evc,
-                              sge_object_type type, sge_mirror_callback callback_before,
-                              sge_mirror_callback callback_after, void *client_data,
-                              const lCondition *where, const lEnumeration *what);
+sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type, sge_mirror_callback callback_before,
+                              sge_mirror_callback callback_after, void *client_data, const ocs::tom::WhereData *where,
+                              const ocs::tom::WhatData *what);
 
 static sge_mirror_error
 sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type);
@@ -489,8 +488,9 @@ sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc) {
     488 (352 direct, 136 indirect) bytes in 1 blocks are definitely lost in loss record 239 of 274
     at 0x4C360A5 malloc (vg_replace_malloc.c:380)
     at 0x6CBC97 sge_malloc(unsigned long) (sge_stdlib.cc:72)
-    at 0x59D17F sge_evc_class_create(ev_registration_id, _lList**, char const*) (sge_event_client.cc:667)
-    at 0x5A5979 ocs::gdi::Client::sge_gdi2_evc_setup(sge_evc_class_str**, ev_registration_id, _lList**, char const*) (sge_event_client.cc:3066)
+    at 0x59D17F sge_evc_class_create(ev_registration_id, ocs::tom::ListData**, char const*) (sge_event_client.cc:667)
+    at 0x5A5979 ocs::gdi::Client::sge_gdi2_evc_setup(sge_evc_class_str**, ev_registration_id, ocs::tom::ListData**,
+                                                     char const*) (sge_event_client.cc:3066)
     at 0x47F575 ocs::MirrorDataStore::main(void*) (ocs_MirrorDataStore.cc:253)
     at 0x4860CB ocs::event_mirror_main(void*) (ocs_thread_mirror.cc:33)
     at 0x4E4E179 start_thread
@@ -526,13 +526,9 @@ sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc) {
  *
  * @see #sge_mirror_unsubscribe
  */
-sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
-                                      sge_object_type type,
-                                      sge_mirror_callback callback_before,
-                                      sge_mirror_callback callback_after,
-                                      void *client_data,
-                                      const lCondition *where,
-                                      const lEnumeration *what) {
+sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type, sge_mirror_callback callback_before,
+                                      sge_mirror_callback callback_after, void *client_data,
+                                      const ocs::tom::WhereData *where, const ocs::tom::WhatData *what) {
    DENTER(TOP_LAYER);
 
    sge_mirror_error ret = SGE_EM_OK;
@@ -557,9 +553,9 @@ sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc,
 }
 
 static sge_mirror_error
-sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type,
-                              sge_mirror_callback callback_before, sge_mirror_callback callback_after,
-                              void *client_data, const lCondition *where, const lEnumeration *what) {
+sge_mirror_subscribe_internal(sge_evc_class_t *evc, sge_object_type type, sge_mirror_callback callback_before,
+                              sge_mirror_callback callback_after, void *client_data, const ocs::tom::WhereData *where,
+                              const ocs::tom::WhatData *what) {
    sge_mirror_error ret = SGE_EM_OK;
    const auto what_el = ocs_what_to_elem(what);
    const auto where_el = ocs_where_to_elem(where);
@@ -1093,7 +1089,7 @@ sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
    // out-parameter of the event client, which hands the events over raw
-   lList *event_list_raw = nullptr;
+   ocs::tom::ListData *event_list_raw = nullptr;
    sge_mirror_error ret = SGE_EM_OK;
    static int test_debug = 0;
 

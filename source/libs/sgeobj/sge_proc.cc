@@ -45,7 +45,7 @@
 #include "tom/ocs_Raw.h"
 
 /// The process table; a process-lifetime list of PRO elements, read through typed handles
-static lList *procList;
+static ocs::tom::ListData *procList;
 
 /**
  * @brief Look for a certain process entry in the proc table

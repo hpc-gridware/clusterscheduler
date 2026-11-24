@@ -106,7 +106,7 @@ namespace ocs::tom {
           * @brief Free it
           * @param ep the element
           */
-         void operator()(lListElem *ep) const noexcept {
+         void operator()(ocs::tom::ElementData *ep) const noexcept {
             free_elem(ep);
          }
       };
@@ -117,15 +117,16 @@ namespace ocs::tom {
           * @brief Free it
           * @param lp the list
           */
-         void operator()(lList *lp) const noexcept {
+         void operator()(ocs::tom::ListData *lp) const noexcept {
             free_list(lp);
          }
       };
 
       using OwnedChars = std::unique_ptr<char, MallocFree>;     ///< a string allocated with malloc
-      using OwnedDescr = std::unique_ptr<lDescr, MallocFree>;   ///< a descriptor allocated with sge_malloc
-      using OwnedElem = std::unique_ptr<lListElem, ElemFree>;   ///< an element being read
-      using OwnedList = std::unique_ptr<lList, ListFree>;       ///< a list being read
+      /// a descriptor allocated with sge_malloc
+      using OwnedDescr = std::unique_ptr<ocs::tom::FieldDescr, MallocFree>;
+      using OwnedElem = std::unique_ptr<ocs::tom::ElementData, ElemFree>;   ///< an element being read
+      using OwnedList = std::unique_ptr<ocs::tom::ListData, ListFree>;       ///< a list being read
 
       /**
        * @brief The indentation of a nesting level
@@ -140,12 +141,12 @@ namespace ocs::tom {
          return space;
       }
 
-      int write_descr(FILE *fp, const lDescr *dp, int indent);
-      int write_elem(FILE *fp, const lListElem *ep, int indent);
-      int write_object(FILE *fp, const lListElem *ep, int indent);
-      int write_list(FILE *fp, const lList *lp, int indent);
-      lList *read_list(FILE *fp, const char *name, const lDescr *dp);
-      lListElem *read_object(FILE *fp);
+      int write_descr(FILE *fp, const ocs::tom::FieldDescr *dp, int indent);
+      int write_elem(FILE *fp, const ocs::tom::ElementData *ep, int indent);
+      int write_object(FILE *fp, const ocs::tom::ElementData *ep, int indent);
+      int write_list(FILE *fp, const ocs::tom::ListData *lp, int indent);
+      ocs::tom::ListData *read_list(FILE *fp, const char *name, const ocs::tom::FieldDescr *dp);
+      ocs::tom::ElementData *read_object(FILE *fp);
 
       // ---------------------------------------------------------------- writers
       //
@@ -160,7 +161,7 @@ namespace ocs::tom {
        * @return 0, or -1 if the last write failed
        * @throw ListCoreError if the stream or the descriptor is null
        */
-      int write_descr(FILE *fp, const lDescr *dp, const int indent) {
+      int write_descr(FILE *fp, const ocs::tom::FieldDescr *dp, const int indent) {
          const std::string space = indentation(indent);
          if (fp == nullptr) {
             fail("dumping a descriptor to no stream");
@@ -189,7 +190,7 @@ namespace ocs::tom {
        * @return 0, or -1 if the last write failed
        * @throw ListCoreError if the stream or the element is null
        */
-      int write_elem(FILE *fp, const lListElem *ep, const int indent) {
+      int write_elem(FILE *fp, const ocs::tom::ElementData *ep, const int indent) {
          const std::string sp = indentation(indent);
          const char *space = sp.c_str();
          if (fp == nullptr) {
@@ -206,7 +207,7 @@ namespace ocs::tom {
             if (ret == EOF) {
                break;
             }
-            const lMultiType &value = ocs::tom::detail::value(ep, f.pos);
+            const ocs::tom::FieldValue &value = ocs::tom::detail::value(ep, f.pos);
             const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
                case MT_INT32:
@@ -285,7 +286,7 @@ namespace ocs::tom {
        * @return 0, or -1 if the last write failed
        * @throw ListCoreError if the stream or the element is null
        */
-      int write_object(FILE *fp, const lListElem *ep, const int indent) {
+      int write_object(FILE *fp, const ocs::tom::ElementData *ep, const int indent) {
          const std::string space = indentation(indent);
          if (fp == nullptr) {
             fail("dumping an object to no stream");
@@ -308,7 +309,7 @@ namespace ocs::tom {
        * @return 0, or -1 if the last write failed
        * @throw ListCoreError if the stream or the list is null
        */
-      int write_list(FILE *fp, const lList *lp, const int indent) {
+      int write_list(FILE *fp, const ocs::tom::ListData *lp, const int indent) {
          const std::string space = indentation(indent);
          if (fp == nullptr) {
             fail("dumping a list to no stream");
@@ -320,7 +321,7 @@ namespace ocs::tom {
          fprintf(fp, "%s/* LISTNAME               */ \"%s\"\n", space.c_str(), list_name(lp));
          fprintf(fp, "%s/* NUMBER OF ELEMENTS     */ " sge_u32 "\n", space.c_str(), lp->nelem);
          int ret = write_descr(fp, lp->descr, indent);
-         for (const lListElem *ep = lp->first; ep != nullptr && ret != EOF; ep = ep->next) {
+         for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr && ret != EOF; ep = ep->next) {
             ret = write_elem(fp, ep, indent);
          }
          ret = fprintf(fp, "%s} /* LIST END */\n", space.c_str());
@@ -446,7 +447,7 @@ namespace ocs::tom {
        * @param dp receives the entry
        * @throw ListCoreError if the stream is null or the entry cannot be read
        */
-      void read_descr_entry(FILE *fp, lDescr *dp) {
+      void read_descr_entry(FILE *fp, ocs::tom::FieldDescr *dp) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
             fail("reading a descriptor entry from no stream");
@@ -554,7 +555,7 @@ namespace ocs::tom {
        * @return the list, or nullptr for `empty`
        * @throw ListCoreError if the stream is null or the sub-list cannot be read
        */
-      lList *read_sub_list(FILE *fp) {
+      ocs::tom::ListData *read_sub_list(FILE *fp) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
             fail("reading a sub-list from no stream");
@@ -572,7 +573,7 @@ namespace ocs::tom {
        * @return the object, or nullptr for `none`
        * @throw ListCoreError if the stream is null or the sub-object cannot be read
        */
-      lListElem *read_sub_object(FILE *fp) {
+      ocs::tom::ElementData *read_sub_object(FILE *fp) {
          char s[ReadLineLength + 1];
          if (fp == nullptr) {
             fail("reading a sub-object from no stream");
@@ -584,7 +585,7 @@ namespace ocs::tom {
          if (strstr(s, "object") == nullptr) {
             fail("reading a sub-object");
          }
-         lListElem *ep = relabel("reading a sub-object", [&] { return read_object(fp); });
+         ocs::tom::ElementData *ep = relabel("reading a sub-object", [&] { return read_object(fp); });
          elem_set_object(ep);
          return ep;
       }
@@ -595,10 +596,10 @@ namespace ocs::tom {
        * @param ep the element, with its descriptor
        * @throw ListCoreError if a value cannot be read
        */
-      void read_values(FILE *fp, lListElem *ep) {
-         const lDescr *dp = ep->descr;
+      void read_values(FILE *fp, ocs::tom::ElementData *ep) {
+         const ocs::tom::FieldDescr *dp = ep->descr;
          for (const auto f : ocs::tom::present_fields(dp)) {
-            lMultiType &value = ep->cont[f.slot];
+            ocs::tom::FieldValue &value = ep->cont[f.slot];
             switch (mt_get_type(dp[f.pos].mt)) {
                case MT_INT32:
                   read_number(fp, "%d", &(value.i));
@@ -652,7 +653,7 @@ namespace ocs::tom {
        * @return the descriptor, allocated with sge_malloc
        * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
        */
-      lDescr *read_descr(FILE *fp) {
+      ocs::tom::FieldDescr *read_descr(FILE *fp) {
          if (fp == nullptr) {
             fail("reading a descriptor from no stream");
          }
@@ -670,7 +671,7 @@ namespace ocs::tom {
          if (n < 0) {
             fail("reading a descriptor with a negative number of fields");
          }
-         std::vector<lDescr> dp(static_cast<std::size_t>(n) + 1);
+         std::vector<ocs::tom::FieldDescr> dp(static_cast<std::size_t>(n) + 1);
          for (int i = 0; i < n; i++) {
             relabel("reading a descriptor entry", [&] { read_descr_entry(fp, &(dp[i])); });
          }
@@ -684,7 +685,7 @@ namespace ocs::tom {
 
          // the full length of the type the fields belong to; they are listed in type order, as the values follow
          int first = 0;
-         const lDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &first) : nullptr;
+         const ocs::tom::FieldDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &first) : nullptr;
          const int type_n = type != nullptr ? descr_length(type) : 0;
          std::vector<bool> keep(type_n, false);
          bool known = type != nullptr;
@@ -700,7 +701,7 @@ namespace ocs::tom {
          if (!known) {
             fail("reading a descriptor of no known type");
          }
-         auto *out = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (type_n + 1)));
+         auto *out = reinterpret_cast<ocs::tom::FieldDescr *>(sge_malloc(sizeof(ocs::tom::FieldDescr) * (type_n + 1)));
          if (out == nullptr) {
             fail("reading a descriptor");
          }
@@ -715,7 +716,7 @@ namespace ocs::tom {
        * @return the element
        * @throw ListCoreError if the stream or the descriptor is null, the text cannot be read or there is no memory
        */
-      lListElem *read_elem(FILE *fp, const lDescr *dp) {
+      ocs::tom::ElementData *read_elem(FILE *fp, const ocs::tom::FieldDescr *dp) {
          if (fp == nullptr) {
             fail("reading an element from no stream");
          }
@@ -749,7 +750,7 @@ namespace ocs::tom {
        * @return the object
        * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
        */
-      lListElem *read_object(FILE *fp) {
+      ocs::tom::ElementData *read_object(FILE *fp) {
          if (fp == nullptr) {
             fail("reading an object from no stream");
          }
@@ -777,7 +778,7 @@ namespace ocs::tom {
        * @return the list
        * @throw ListCoreError as undump_list()
        */
-      lList *read_list(FILE *fp, const char *name, const lDescr *dp) {
+      ocs::tom::ListData *read_list(FILE *fp, const char *name, const ocs::tom::FieldDescr *dp) {
          if (fp == nullptr) {
             fail("reading a list from no stream");
          }
@@ -819,7 +820,7 @@ namespace ocs::tom {
          // the field of the text each field of the list takes its value from, -1 for none
          std::vector<int> found(n, -1);
          for (int j = 0; fdp.get()[j].nm != NoName; j++) {
-            const lDescr &from = fdp.get()[j];
+            const ocs::tom::FieldDescr &from = fdp.get()[j];
             if (from.off == TOM_ABSENT) {
                continue;
             }
@@ -874,31 +875,31 @@ namespace ocs::tom {
 
    } // namespace
 
-   void dump_descr(FILE *fp, const lDescr *descr, const int indent) {
+   void dump_descr(FILE *fp, const ocs::tom::FieldDescr *descr, const int indent) {
       if (write_descr(fp, descr, indent) != 0) {
          write_failed("dumping a descriptor");
       }
    }
 
-   void dump_elem(FILE *fp, const lListElem *ep, const int indent) {
+   void dump_elem(FILE *fp, const ocs::tom::ElementData *ep, const int indent) {
       if (write_elem(fp, ep, indent) != 0) {
          write_failed("dumping an element");
       }
    }
 
-   void dump_object(FILE *fp, const lListElem *ep, const int indent) {
+   void dump_object(FILE *fp, const ocs::tom::ElementData *ep, const int indent) {
       if (write_object(fp, ep, indent) != 0) {
          write_failed("dumping an object");
       }
    }
 
-   void dump_list(FILE *fp, const lList *lp, const int indent) {
+   void dump_list(FILE *fp, const ocs::tom::ListData *lp, const int indent) {
       if (write_list(fp, lp, indent) != 0) {
          write_failed("dumping a list");
       }
    }
 
-   void dump_elem_to(const char *path, const lListElem *ep, const int indent) {
+   void dump_elem_to(const char *path, const ocs::tom::ElementData *ep, const int indent) {
       FILE *fp = fopen(path, "w");
       if (fp == nullptr) {
          fail("opening a file to dump into");
@@ -918,23 +919,23 @@ namespace ocs::tom {
       }
    }
 
-   lDescr *undump_descr(FILE *fp) {
+   ocs::tom::FieldDescr *undump_descr(FILE *fp) {
       return read_descr(fp);
    }
 
-   lListElem *undump_elem(FILE *fp, const lDescr *descr) {
+   ocs::tom::ElementData *undump_elem(FILE *fp, const ocs::tom::FieldDescr *descr) {
       return read_elem(fp, descr);
    }
 
-   lListElem *undump_object(FILE *fp) {
+   ocs::tom::ElementData *undump_object(FILE *fp) {
       return read_object(fp);
    }
 
-   lList *undump_list(FILE *fp, const char *name, const lDescr *descr) {
+   ocs::tom::ListData *undump_list(FILE *fp, const char *name, const ocs::tom::FieldDescr *descr) {
       return read_list(fp, name, descr);
    }
 
-   lListElem *undump_elem_from(const char *path, const lDescr *descr) {
+   ocs::tom::ElementData *undump_elem_from(const char *path, const ocs::tom::FieldDescr *descr) {
       FILE *fp = fopen(path, "r");
       if (fp == nullptr) {
          fail("opening a file to read a dump from");
@@ -992,7 +993,8 @@ namespace ocs::tom {
 
    } // namespace
 
-   void write_elem_to_disk(const lListElem *ep, const char *prefix, const char *name, const char *obj_name) {
+   void write_elem_to_disk(const ocs::tom::ElementData *ep, const char *prefix, const char *name,
+                           const char *obj_name) {
       DENTER(TOP_LAYER);
 
       if (prefix == nullptr && name == nullptr) {
@@ -1037,7 +1039,8 @@ namespace ocs::tom {
       DRETURN_VOID;
    }
 
-   lListElem *read_elem_from_disk(const char *prefix, const char *name, const lDescr *descr, const char *obj_name) {
+   ocs::tom::ElementData *read_elem_from_disk(const char *prefix, const char *name, const ocs::tom::FieldDescr *descr,
+                                              const char *obj_name) {
       DENTER(TOP_LAYER);
 
       if (prefix == nullptr && name == nullptr) {
@@ -1084,7 +1087,7 @@ namespace ocs::tom {
       } catch (const PackException &e) {
          ERROR(MSG_TOM_ERRORININITPACKBUFFER_S, pack_error_text(e.code()));
       }
-      lListElem *ep = nullptr;
+      ocs::tom::ElementData *ep = nullptr;
       try {
          ep = unpack_elem(&pb, descr, 0);
       } catch (const PackException &e) {

@@ -84,7 +84,7 @@
  * which is what keeps a finished job from being forgotten. The list lives as
  * long as the process and is read and written through non-owning handles.
  */
-lList *jr_list = nullptr;
+ocs::tom::ListData *jr_list = nullptr;
 static bool flush_jr = false;
 static int check_queue_limits = 0;
 

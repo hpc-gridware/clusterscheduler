@@ -125,7 +125,7 @@ spool_berkeleydb_option_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::
  *
  * @return on success, the new spooling context (SPC), else nullptr
  */
-lListElem *
+ocs::tom::ElementData *
 spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args) {
    DENTER(BDB_LAYER);
 
@@ -247,7 +247,8 @@ bool spool_berkeleydb_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *ans
    ret = spool_berkeleydb_close_database(answer_list, info);
    bdb_destroy(&info);
    // the framework hands the rule over read-only, but the shutdown resets its client data, as it did before
-   ocs::tom::Element<ocs::tom::SPR>::from_typed(const_cast<lListElem *>(rule.raw())).set<SPR_clientdata>(nullptr);
+   ocs::tom::Element<ocs::tom::SPR>::from_typed(const_cast<ocs::tom::ElementData *>(rule.raw()))
+         .set<SPR_clientdata>(nullptr);
 
    DRETURN(ret);
 }
@@ -431,13 +432,13 @@ bool spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
  */
 bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                         const ocs::tom::ConstElement<ocs::tom::SPT> type,
-                                        const ocs::tom::ConstElement<ocs::tom::SPR> rule, lList **list,
+                                        const ocs::tom::ConstElement<ocs::tom::SPR> rule, ocs::tom::ListData **list,
                                         const sge_object_type object_type) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
 
-   const lDescr *descr;
+   const ocs::tom::FieldDescr *descr;
    const char *table_name;
    bdb_info info;
    const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
@@ -477,7 +478,8 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
       key = sge_dstring_sprintf(&key_dstring, "%s:", table_name);
 
       if (ret) {
-         // the callback signature hands the list over as lList **: the reader owns it while it reads and gives it
+         // the callback signature hands the list over as ocs::tom::ListData **: the reader owns it while it reads and
+         // gives it
          // back, so that the slot holds the list again during the tree walk below
          const auto read_into_list = [&](const bdb_database source) {
             ocs::tom::RawListPtr objects(std::exchange(*list, nullptr));
@@ -628,7 +630,7 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
  *
  * @see `spool_read_object()`
  */
-lListElem *
+ocs::tom::ElementData *
 spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const ocs::tom::ConstElement<ocs::tom::SPT> type,
                                    const ocs::tom::ConstElement<ocs::tom::SPR> rule, const char *key,
@@ -636,7 +638,7 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    DENTER(BDB_LAYER);
 
    bool ret = true;
-   lListElem *ep = nullptr;
+   ocs::tom::ElementData *ep = nullptr;
 
    bdb_info info;
 

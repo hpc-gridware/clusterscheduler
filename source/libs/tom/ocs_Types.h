@@ -43,8 +43,8 @@
 /** @file
  * @brief The storage layer of the typed object model: types, field types and flags, descriptor layout
  *
- * Moved from cull/cull_list.h into the core by CS-3088. The structure names (lList, lListElem, lDescr, ...)
- * and the cull_descr_* names still carry the prefix of the old library; CS-3197 renames them.
+ * The storage structures (ocs::tom::ListData, ocs::tom::ElementData, ocs::tom::FieldDescr, ...) are declared here;
+ * FieldDescr is defined here as well, the others in the headers under detail/.
  */
 
 #include <atomic>
@@ -57,13 +57,15 @@
 
 #define NoName -1 ///< field name meaning "no field"; terminates a descriptor
 
-typedef struct _lDescr lDescr;             ///< one field of an object type; see @ref _lDescr
-typedef struct _lList lList;               ///< a list of elements; see @ref _lList
-typedef struct _lListElem lListElem;       ///< one element, in a list or on its own; see @ref _lListElem
-typedef struct _lCondition lCondition;     ///< a selection condition, built with `where()` or `where_compare()`
-typedef struct _lEnumeration lEnumeration; ///< a field selection, built with `what<...>()` or `what_of()`
-typedef union _lMultiType lMultiType;      ///< the value of one field, of any field type
-typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with `make_sort_order()`
+namespace ocs::tom {
+struct FieldDescr;    ///< one field of an object type; see @ref ocs::tom::FieldDescr
+struct ListData;      ///< a list of elements; see @ref ocs::tom::ListData
+struct ElementData;   ///< one element, in a list or on its own; see @ref ocs::tom::ElementData
+struct WhereData;     ///< a selection condition, built with `where()` or `where_compare()`
+struct WhatData;      ///< a field selection, built with `what<...>()` or `what_of()`
+union FieldValue;     ///< the value of one field, of any field type
+struct SortOrderData; ///< a sort specification, built with `make_sort_order()`
+} // namespace ocs::tom
 
 /**
  * @brief The data type of a field
@@ -79,8 +81,8 @@ enum _enum_lMultiType {
    MT_BOOL,    ///< a boolean
    MT_INT32,   ///< an int; not supported at GDI level
    MT_STRING,  ///< a string, owned by the element
-   MT_LIST,    ///< a sub-list, @ref lList
-   MT_OBJECT,  ///< a single sub-object, an lListElem
+   MT_LIST,    ///< a sub-list, @ref ocs::tom::ListData
+   MT_OBJECT,  ///< a single sub-object, an ocs::tom::ElementData
    MT_REF,     ///< an opaque pointer; never spooled
    MT_HOST,    ///< a host name, owned by the element
    MT_UINT64   ///< a 64 bit unsigned value
@@ -126,18 +128,21 @@ static_assert(MT_IS_REDUCED < (1 << 30), "the flags fit into the mt word");
  * types the module tests define by hand use the macros of test/common/ocs_test_listdef.h.
  */
 
+namespace ocs::tom {
 /**
  * @brief One field of an object type
  *
  * An object type is described by an array of these, terminated by a field
  * whose type is #MT_END. The array is what `LISTDEF`/`LISTEND` build.
  */
-struct _lDescr {
+struct FieldDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
    int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref mt_field_attributes flags
    int off;        ///< the field's value slot relative to its index (slot = index + off), or #TOM_ABSENT; 0 in a full descriptor (CS-439)
 };
-static_assert(sizeof(lDescr) == 12, "a descriptor entry is field number, type and slot offset without padding");
+} // namespace ocs::tom
+static_assert(sizeof(ocs::tom::FieldDescr) == 12,
+              "a descriptor entry is field number, type and slot offset without padding");
 
 /** @brief Slot offset of a field that a reduced descriptor does not hold (CS-439, N-B-1) */
 constexpr int TOM_ABSENT = INT32_MIN;
@@ -167,7 +172,7 @@ static_assert(sizeof(tom_descr_header) == 24, "the fields must start 24 bytes af
 template<size_t N>
 struct tom_descr_block {
    tom_descr_header h; ///< header of the block
-   lDescr e[N];         ///< the fields, the last one is {#NoName, #MT_END}
+   ocs::tom::FieldDescr e[N];         ///< the fields, the last one is {#NoName, #MT_END}
 };
 
 namespace ocs::tom {
@@ -181,7 +186,7 @@ namespace ocs::tom {
     * @param n number of fields to hash
     * @return the hash
     */
-   constexpr uint64_t descr_hash(const lDescr *e, const size_t n) {
+   constexpr uint64_t descr_hash(const ocs::tom::FieldDescr *e, const size_t n) {
       uint64_t h = 0xcbf29ce484222325ULL;
       for (size_t i = 0; i < n; i++) {
          for (const uint32_t v : {static_cast<uint32_t>(e[i].nm), static_cast<uint32_t>(e[i].mt & ~MT_DESCR_INTERNED),
@@ -204,7 +209,7 @@ namespace ocs::tom {
     * @return the block with header and fields
     */
    template<size_t N, size_t... I>
-   consteval tom_descr_block<N> descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
+   consteval tom_descr_block<N> descr_make_impl(const ocs::tom::FieldDescr (&e)[N], std::index_sequence<I...>) {
       return {{0, N - 1, N - 1, ocs::tom::descr_hash(e, N - 1)}, {e[I]...}};
    }
 
@@ -218,7 +223,7 @@ namespace ocs::tom {
     * @return the block with header and fields
     */
    template<size_t N>
-   consteval tom_descr_block<N> descr_make(const lDescr (&e)[N]) {
+   consteval tom_descr_block<N> descr_make(const ocs::tom::FieldDescr (&e)[N]) {
       static_assert(N >= 1, "a descriptor needs at least its terminating entry");
       return ocs::tom::descr_make_impl(e, std::make_index_sequence<N>{});
    }
@@ -229,6 +234,6 @@ namespace ocs::tom {
 #define mt_is_unique(mt) (((mt) & MT_UNIQUE) ? true : false) ///< is #MT_UNIQUE set on this field?
 #define mt_do_transfer(mt) (((mt) & MT_NO_TRANSFER) ? false : true) ///< may the value of this field leave the process? (#MT_NO_TRANSFER not set)
 
-#define WHAT_ALL                        -1 ///< _lEnumeration::pos value meaning "every field of the type"
-#define WHAT_NONE                       -2 ///< _lEnumeration::pos value meaning "no field at all"
+#define WHAT_ALL                        -1 ///< ocs::tom::WhatData::pos value meaning "every field of the type"
+#define WHAT_NONE                       -2 ///< ocs::tom::WhatData::pos value meaning "no field at all"
 

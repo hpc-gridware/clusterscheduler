@@ -183,8 +183,8 @@ static bool cache_is_empty(const ocs::tom::ConstRawElement ep) {
    return ep &&
           ep.get<const char *>(TNT_cache_text) == nullptr &&
           ep.get<ocs::tom::Host>(TNT_cache_host) == nullptr &&
-          ep.get<const lList *>(TNT_cache_list) == nullptr &&
-          ep.get<const lListElem *>(TNT_cache_object) == nullptr &&
+          ep.get<const ocs::tom::ListData *>(TNT_cache_list) == nullptr &&
+          ep.get<const ocs::tom::ElementData *>(TNT_cache_object) == nullptr &&
           ep.get<std::uint32_t>(TNT_cache_number) == 0 &&
           ep.get<std::uint64_t>(TNT_cache_number64) == 0 &&
           !ep.get<bool>(TNT_cache_flag) &&
@@ -230,7 +230,7 @@ static bool shape_is_complete(const ocs::tom::ConstRawElement ep) {
  * @param[out] packed_size receives the number of bytes written, may be nullptr
  * @return the owner of the unpacked element, empty on failure
  */
-static ocs::tom::RawElementPtr round_trip(const ocs::tom::ConstRawElement ep, const lEnumeration *what,
+static ocs::tom::RawElementPtr round_trip(const ocs::tom::ConstRawElement ep, const ocs::tom::WhatData *what,
                                           size_t *packed_size) {
    ocs::tom::RawElementPtr copy;
 
@@ -426,7 +426,7 @@ int main(int argc, char *argv[]) {
       CHECK(22, "a reduced copy for hand-out skips them too",
             reduced &&
             reduced->get<const char *>(TNT_cache_text) == nullptr &&
-            reduced->get<const lList *>(TNT_cache_list) == nullptr &&
+            reduced->get<const ocs::tom::ListData *>(TNT_cache_list) == nullptr &&
             reduced->get<std::uint32_t>(TNT_cache_number) == 0 &&
             sge_strnullcmp(reduced->get<ocs::tom::Host>(TNT_name), "origin_host") == 0);
    }

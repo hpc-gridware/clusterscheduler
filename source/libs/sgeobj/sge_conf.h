@@ -111,7 +111,7 @@ typedef int (*tDaemonizeFunc)(void *ctx);
  *
  * @todo Used *only* by the execution daemon and should move there.
  */
-extern lList *Execd_Config_List;
+extern ocs::tom::ListData *Execd_Config_List;
 
 std::pair<int, ocs::tom::ListPtr<ocs::tom::CF>>
 merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t progid, const char *cell_root,

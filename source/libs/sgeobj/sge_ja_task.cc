@@ -123,7 +123,7 @@ ocs::tom::ConstElement<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::Con
 ocs::tom::Element<ocs::tom::PET> ja_task_search_pe_task(const ocs::tom::Element<ocs::tom::JAT> ja_task,
                                                         const char *pe_task_id) {
    const auto ret = ja_task_search_pe_task(ocs::tom::ConstElement<ocs::tom::JAT>(ja_task), pe_task_id);
-   return ocs::tom::Element<ocs::tom::PET>::from_typed(const_cast<lListElem *>(ret.raw()));
+   return ocs::tom::Element<ocs::tom::PET>::from_typed(const_cast<ocs::tom::ElementData *>(ret.raw()));
 }
 
 /**

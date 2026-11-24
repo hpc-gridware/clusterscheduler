@@ -57,11 +57,11 @@ namespace ocs::gdi {
        * is not always owned - for a GET of an external client qmaster lets it
        * point to the master list until pack_task() selects from it (see
        * #do_select_pack_simultaneous). Besides, many qmaster files and the
-       * `lList **` out-parameters of the object functions (sge_gdi_add_job(),
+       * `ocs::tom::ListData **` out-parameters of the object functions (sge_gdi_add_job(),
        * sge_add_event_client(), ...) use it directly. Owned data is handed in and
        * out with reset_data_list() and take_data_list().
        */
-      lList *data_list;
+      ocs::tom::ListData *data_list;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list; ///< qmaster's answer for this task
       ocs::tom::RawWherePtr condition;   ///< which objects to act on, from `lWhere()`; empty for all
       ocs::tom::RawWhatPtr enumeration;  ///< which fields to transfer, from `lWhat()`; empty for all

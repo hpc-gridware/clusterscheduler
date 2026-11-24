@@ -54,7 +54,7 @@ namespace ocs::spool {
     */
    class DuplicateFilter {
    public:
-      DuplicateFilter(const lDescr *descr, std::string type);
+      DuplicateFilter(const ocs::tom::FieldDescr *descr, std::string type);
 
       bool admit(ocs::tom::ConstRawElement ep, const char *spool_key);
 

@@ -73,13 +73,15 @@ template <auto Hard, auto Soft = NoName>
 void parse_list_hardsoft(ocs::tom::List<ocs::tom::SPA> cmdline, const char *option, ocs::tom::Element<ocs::tom::JB> job,
                          uint32_t scope);
 
-int ocs_parse_definition_list(char *str, lList **lpp, const char *name, const lDescr *descr, int *interpretation_rule);
+int ocs_parse_definition_list(char *str, ocs::tom::ListData **lpp, const char *name, const ocs::tom::FieldDescr *descr,
+                              int *interpretation_rule);
 
 
 int ocs_compress_definition_list(ocs::tom::RawList lp, int nm_var, int nm_value, int double_keys);
 
-int ocs_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
-                           lList **pplist);
+int ocs_parse_string_list(char **pstrlist, const char *listname, const ocs::tom::FieldDescr *descr,
+                          int *interpretation_rule,
+                           ocs::tom::ListData **pplist);
 
 int uni_print_list(std::ostream &os, ocs::tom::ConstRawList lp, const int *which_elements_rule, const char *pdelis[],
                    unsigned long flags);
@@ -128,13 +130,13 @@ void parse_list_append(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *
    using Sub = typename ocs::tom::FieldTraits<F>::Sub;
 
    // ocs_object_list_add_unique() is key generic and works on the raw lists
-   lList *destlist = job.template get<F>().clone("job_sublist").release();
+   ocs::tom::ListData *destlist = job.template get<F>().clone("job_sublist").release();
    ocs::tom::ListPtr<Sub> list;
    while (ocs::detail::take_list_option(cmdline, option, list)) {
       DPRINTF("OPTION: %s\n", option);
       if (list) {
          // merged without ever holding a key twice (N-H-18)
-         lList *lp = list.release();
+         ocs::tom::ListData *lp = list.release();
          ocs_object_list_add_unique(&destlist, &lp);
       }
    }

@@ -119,7 +119,7 @@ void ocs::Job::sgeee_sort_jobs(const ocs::tom::List<ocs::tom::JB> job_list) {
    // The job list is empty at this point, so we can just append the sorted jobs
    for (const auto tmp_sge_job : *tmp_list) {
       job_list.push_back(ocs::tom::ElementPtr<ocs::tom::JB>::from_typed(
-         static_cast<lListElem *>(tmp_sge_job.get<SGEJ_job_reference>())));
+         static_cast<ocs::tom::ElementData *>(tmp_sge_job.get<SGEJ_job_reference>())));
    }
 
    // we need to free the tmp list, but not the job references

@@ -489,7 +489,7 @@ namespace ocs::tom {
  * is cleared.
  */
 struct ocs::tom::descr_table {
-   std::vector<const lDescr *> entries; ///< the shared descriptors, by table index
+   std::vector<const ocs::tom::FieldDescr *> entries; ///< the shared descriptors, by table index
 };
 
 namespace ocs::tom {
@@ -578,23 +578,25 @@ namespace ocs::tom {
       }
 #endif
 
-      void pack_value(sge_pack_buffer *pb, const lMultiType *src, const lEnumeration *what, int type, int flags);
-      void unpack_value(sge_pack_buffer *pb, lMultiType *dst, int type, int flags);
-      lListElem *unpack_elem_n(sge_pack_buffer *pb, const lDescr *descr, std::uint32_t wire_n, int flags);
-      void pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, int flags);
-      lListElem *unpack_object(sge_pack_buffer *pb, int flags);
+      void pack_value(sge_pack_buffer *pb, const ocs::tom::FieldValue *src, const ocs::tom::WhatData *what, int type,
+                      int flags);
+      void unpack_value(sge_pack_buffer *pb, ocs::tom::FieldValue *dst, int type, int flags);
+      ocs::tom::ElementData *unpack_elem_n(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, std::uint32_t wire_n,
+                                           int flags);
+      void pack_object(sge_pack_buffer *pb, const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what, int flags);
+      ocs::tom::ElementData *unpack_object(sge_pack_buffer *pb, int flags);
 
       /**
        * @brief Free the values a partly unpacked value array holds, and the array
        * @param cp the values, or nullptr
        * @param descr the descriptor they belong to
        */
-      void free_values(lMultiType *cp, const lDescr *descr) noexcept {
+      void free_values(ocs::tom::FieldValue *cp, const ocs::tom::FieldDescr *descr) noexcept {
          if (cp == nullptr) {
             return;
          }
          for (const auto f : ocs::tom::present_fields(descr)) {
-            lMultiType &value = cp[f.slot];
+            ocs::tom::FieldValue &value = cp[f.slot];
             switch (mt_get_type(descr[f.pos].mt)) {
                case MT_STRING:
                   sge_free(&(value.str));
@@ -621,7 +623,7 @@ namespace ocs::tom {
        * @brief Free an element that was not completely unpacked: its values, its descriptor if it holds one, itself
        * @param ep the element, or nullptr
        */
-      void free_partial_elem(lListElem *ep) noexcept {
+      void free_partial_elem(ocs::tom::ElementData *ep) noexcept {
          if (ep == nullptr) {
             return;
          }
@@ -640,7 +642,7 @@ namespace ocs::tom {
           * @brief Free it
           * @param ep the element
           */
-         void operator()(lListElem *ep) const noexcept {
+         void operator()(ocs::tom::ElementData *ep) const noexcept {
             free_partial_elem(ep);
          }
       };
@@ -651,7 +653,7 @@ namespace ocs::tom {
           * @brief Free it
           * @param lp the list
           */
-         void operator()(lList *lp) const noexcept {
+         void operator()(ocs::tom::ListData *lp) const noexcept {
             free_list(lp);
          }
       };
@@ -662,7 +664,7 @@ namespace ocs::tom {
           * @brief Free it
           * @param ep the selection
           */
-         void operator()(lEnumeration *ep) const noexcept {
+         void operator()(ocs::tom::WhatData *ep) const noexcept {
             free_what(ep);
          }
       };
@@ -673,7 +675,7 @@ namespace ocs::tom {
           * @brief Free it
           * @param cp the condition
           */
-         void operator()(lCondition *cp) const noexcept {
+         void operator()(ocs::tom::WhereData *cp) const noexcept {
             free_where(cp);
          }
       };
@@ -684,16 +686,16 @@ namespace ocs::tom {
           * @brief Give it up
           * @param dp the descriptor
           */
-         void operator()(const lDescr *dp) const noexcept {
+         void operator()(const ocs::tom::FieldDescr *dp) const noexcept {
             ocs::tom::release_descr(dp);
          }
       };
 
-      using PartialElem = std::unique_ptr<lListElem, PartialElemDeleter>;   ///< an element being unpacked
-      using OwnedList = std::unique_ptr<lList, ListDeleter>;                ///< a list being unpacked
-      using OwnedWhat = std::unique_ptr<lEnumeration, WhatDeleter>;         ///< a selection being unpacked
-      using OwnedWhere = std::unique_ptr<lCondition, WhereDeleter>;         ///< a condition being unpacked
-      using OwnedDescr = std::unique_ptr<const lDescr, DescrReleaser>;      ///< a reference on a descriptor
+      using PartialElem = std::unique_ptr<ocs::tom::ElementData, PartialElemDeleter>;   ///< an element being unpacked
+      using OwnedList = std::unique_ptr<ocs::tom::ListData, ListDeleter>;                ///< a list being unpacked
+      using OwnedWhat = std::unique_ptr<ocs::tom::WhatData, WhatDeleter>;         ///< a selection being unpacked
+      using OwnedWhere = std::unique_ptr<ocs::tom::WhereData, WhereDeleter>;         ///< a condition being unpacked
+      using OwnedDescr = std::unique_ptr<const ocs::tom::FieldDescr, DescrReleaser>;   ///< a reference on a descriptor
 
       /**
        * @brief The descriptor table of a buffer, created on first use
@@ -712,8 +714,8 @@ namespace ocs::tom {
        * @param flags the flags for sub-lists and sub-objects
        * @throw PackException with PACK_FORMAT for a type that cannot be packed, PACK_ENOMEM
        */
-      void pack_value(sge_pack_buffer *pb, const lMultiType *src, const lEnumeration *what, const int type,
-                      const int flags) {
+      void pack_value(sge_pack_buffer *pb, const ocs::tom::FieldValue *src, const ocs::tom::WhatData *what,
+                      const int type, const int flags) {
          switch (type) {
             case MT_BOOL:
                put_uint32(pb, src->b);
@@ -754,7 +756,7 @@ namespace ocs::tom {
        * @param flags the flags for sub-lists and sub-objects
        * @throw PackException with PACK_FORMAT for bytes that are cut off or a type that is not packed, PACK_ENOMEM
        */
-      void unpack_value(sge_pack_buffer *pb, lMultiType *dst, const int type, const int flags) {
+      void unpack_value(sge_pack_buffer *pb, ocs::tom::FieldValue *dst, const int type, const int flags) {
          switch (type) {
             case MT_BOOL:
                dst->b = get_uint32(pb);
@@ -812,12 +814,12 @@ namespace ocs::tom {
        * @return the static type, or nullptr if @p dp does not list leading fields of one
        * @throw PackException with PACK_FORMAT if @p dp is longer than its type
        */
-      const lDescr *prefix_type(const lDescr *dp, const std::uint32_t n) {
+      const ocs::tom::FieldDescr *prefix_type(const ocs::tom::FieldDescr *dp, const std::uint32_t n) {
          if (n == 0) {
             return nullptr;
          }
          int pos = 0;
-         const lDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
+         const ocs::tom::FieldDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
          if (type == nullptr || pos != 0) {
             return nullptr;
          }
@@ -850,8 +852,8 @@ namespace ocs::tom {
        * @return the descriptor, holding a reference for the caller
        * @throw PackException with PACK_FORMAT for a malformed descriptor, PACK_ENOMEM
        */
-      const lDescr *unpack_descr(sge_pack_buffer *pb, const int flags, std::uint32_t *wire_n,
-                                 const lDescr *expected) {
+      const ocs::tom::FieldDescr *unpack_descr(sge_pack_buffer *pb, const int flags, std::uint32_t *wire_n,
+                                 const ocs::tom::FieldDescr *expected) {
          *wire_n = 0;
 
          // the number of fields, or the marker of a reference
@@ -864,7 +866,7 @@ namespace ocs::tom {
             const std::uint32_t first_nm = get_uint32(pb);
             const std::uint32_t count = get_uint32(pb);
             // fewer fields than the local type: the sender's type had only these (N-W-6)
-            const lDescr *block = ocs::tom::descr_static_for(static_cast<int>(first_nm));
+            const ocs::tom::FieldDescr *block = ocs::tom::descr_static_for(static_cast<int>(first_nm));
             if (block == nullptr || count == 0 || static_cast<int>(count) > descr_length(block)) {
                format_error("a type reference to an unknown or shorter type");
             }
@@ -883,7 +885,7 @@ namespace ocs::tom {
                if (pb->dtab == nullptr || index >= pb->dtab->entries.size()) {
                   format_error("a reference to a descriptor table entry that does not exist");
                }
-               const lDescr *dp = ocs::tom::descr_ref(pb->dtab->entries[index]);
+               const ocs::tom::FieldDescr *dp = ocs::tom::descr_ref(pb->dtab->entries[index]);
                *wire_n = static_cast<std::uint32_t>(lCountPresent(dp));
                return dp;
             }
@@ -893,7 +895,7 @@ namespace ocs::tom {
                // the fields by their index in one type, in type order; mt is taken from the local type (N-W-5, N-B-8)
                const std::uint32_t type_nm = get_uint32(pb);
                const std::uint32_t count = get_uint32(pb);
-               const lDescr *type = ocs::tom::descr_static_for(static_cast<int>(type_nm));
+               const ocs::tom::FieldDescr *type = ocs::tom::descr_static_for(static_cast<int>(type_nm));
                const int type_n = type != nullptr ? descr_length(type) : 0;
                if (type == nullptr || count > static_cast<std::uint32_t>(type_n)) {
                   format_error("a descriptor of an unknown type or with too many fields");
@@ -912,7 +914,7 @@ namespace ocs::tom {
                   format_error("a descriptor without fields");
                }
                TOM_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
-               TOM_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
+               TOM_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(ocs::tom::FieldDescr) * (count + 1));
                OwnedDescr shared(ocs::tom::descr_build(type, keep));
                if (shared == nullptr) {
                   no_memory("building a descriptor");
@@ -936,7 +938,7 @@ namespace ocs::tom {
             no_memory("unpacking a descriptor with too many fields");
          }
 
-         std::vector<lDescr> dp(n + 1);
+         std::vector<ocs::tom::FieldDescr> dp(n + 1);
          dp[n].nm = NoName;
          dp[n].mt = MT_END;
 
@@ -955,7 +957,7 @@ namespace ocs::tom {
 
          // a full type packed field by field is the local static type, also when the sender's type was shorter (N-W-6)
          if (!enter_table && !wire_reduced) {
-            const lDescr *type = prefix_type(dp.data(), n);
+            const ocs::tom::FieldDescr *type = prefix_type(dp.data(), n);
             if (type != expected && expected != nullptr && ocs::tom::descr_is_static(expected)) {
                format_error("a descriptor of another type than expected");
             }
@@ -964,12 +966,12 @@ namespace ocs::tom {
             }
          }
          TOM_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
-         TOM_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
+         TOM_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(ocs::tom::FieldDescr) * (n + 1));
 
          // the fields on the wire are held by a full-length descriptor of their type, with mt from the local type
          // as for a table entry by index (N-B-1, N-B-8); fields of no known type, or of several, are a format error
          int first = 0;
-         const lDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &first) : nullptr;
+         const ocs::tom::FieldDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &first) : nullptr;
          const int type_n = type != nullptr ? descr_length(type) : 0;
          std::vector<bool> keep(type_n, false);
          bool known = type != nullptr;
@@ -1008,7 +1010,7 @@ namespace ocs::tom {
        * @param dp a static or counted descriptor
        * @throw PackException with PACK_ENOMEM
        */
-      void pack_shared_descr(sge_pack_buffer *pb, const lDescr *dp) {
+      void pack_shared_descr(sge_pack_buffer *pb, const ocs::tom::FieldDescr *dp) {
          const int n = lCountPresent(dp);
 
          if (!ocs::tom::descr_is_counted(dp)) {
@@ -1033,7 +1035,7 @@ namespace ocs::tom {
 
          // by index if every field belongs to the type of the first one, with the same data type
          int pos = 0;
-         const lDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &pos) : nullptr;
+         const ocs::tom::FieldDescr *type = n > 0 ? ocs::tom::descr_static_containing(dp[0].nm, &pos) : nullptr;
          std::vector<std::uint32_t> idx;
          for (const auto f : ocs::tom::present_fields(dp)) {
             if (type == nullptr) {
@@ -1080,17 +1082,17 @@ namespace ocs::tom {
        * @param flags write only the fields whose flags match, 0 for all
        * @throw PackException with PACK_ENOMEM, PACK_FORMAT
        */
-      void pack_values(sge_pack_buffer *pb, const lMultiType *cp, const lDescr *dp, const lEnumeration *what,
-                       const int flags) {
-         static constexpr lMultiType no_transfer_value{};
+      void pack_values(sge_pack_buffer *pb, const ocs::tom::FieldValue *cp, const ocs::tom::FieldDescr *dp,
+                       const ocs::tom::WhatData *what, const int flags) {
+         static constexpr ocs::tom::FieldValue no_transfer_value{};
 
          TOM_STATS_CODE(if (!pb->just_count) { TOM_STATS_TYPE(dp->nm, PACK_ELEMS, 1); })
          if (what == nullptr) {
             for (const auto f : ocs::tom::present_fields(dp)) {
-               const lDescr &d = dp[f.pos];
+               const ocs::tom::FieldDescr &d = dp[f.pos];
                // with flags only the fields matching them, e.g. MT_SPOOL
                if (flags == 0 || (d.mt & flags) != 0) {
-                  const lMultiType *value = mt_do_transfer(d.mt) ? &cp[f.slot] : &no_transfer_value;
+                  const ocs::tom::FieldValue *value = mt_do_transfer(d.mt) ? &cp[f.slot] : &no_transfer_value;
                   TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
                   pack_value(pb, value, nullptr, mt_get_type(d.mt), flags);
                   TOM_STATS_CODE(count_value(pb, d.nm, mt_get_type(d.mt), stats_start);)
@@ -1101,9 +1103,9 @@ namespace ocs::tom {
                if (flags == 0 || (what[i].mt & flags) != 0) {
                   // also when the client asked for the field by name, not through ALL
                   const bool do_transfer = mt_do_transfer(what[i].mt);
-                  const lMultiType *value =
+                  const ocs::tom::FieldValue *value =
                         do_transfer ? &cp[ocs::tom::detail::slot_index(dp, what[i].pos)] : &no_transfer_value;
-                  const lEnumeration *sub_what = do_transfer ? what[i].ep : nullptr;
+                  const ocs::tom::WhatData *sub_what = do_transfer ? what[i].ep : nullptr;
                   TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
                   pack_value(pb, value, sub_what, mt_get_type(what[i].mt), flags);
                   TOM_STATS_CODE(count_value(pb, what[i].nm, mt_get_type(what[i].mt), stats_start);)
@@ -1127,13 +1129,13 @@ namespace ocs::tom {
        * @param flags read only the fields whose flags match, 0 for all
        * @throw PackException with PACK_FORMAT, PACK_ENOMEM
        */
-      void unpack_values(sge_pack_buffer *pb, lListElem *ep, const std::uint32_t wire_n, const int flags) {
-         const lDescr *dp = ep->descr;
+      void unpack_values(sge_pack_buffer *pb, ocs::tom::ElementData *ep, const std::uint32_t wire_n, const int flags) {
+         const ocs::tom::FieldDescr *dp = ep->descr;
          const int n = lCountPresent(dp);
          if (wire_n > static_cast<std::uint32_t>(n)) {
             format_error("more values than the descriptor has fields");
          }
-         ep->cont = static_cast<lMultiType *>(calloc(1, sizeof(lMultiType) * (n + 1)));
+         ep->cont = static_cast<ocs::tom::FieldValue *>(calloc(1, sizeof(ocs::tom::FieldValue) * (n + 1)));
          if (ep->cont == nullptr) {
             no_memory("unpacking the values of an element");
          }
@@ -1159,10 +1161,11 @@ namespace ocs::tom {
        * @return the element, owned by the caller
        * @throw PackException with PACK_FORMAT, PACK_BADARG for a bound element without a descriptor, PACK_ENOMEM
        */
-      lListElem *unpack_elem_n(sge_pack_buffer *pb, const lDescr *descr, std::uint32_t wire_n, const int flags) {
+      ocs::tom::ElementData *unpack_elem_n(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, std::uint32_t wire_n,
+                                           const int flags) {
          PackingProfile profile;
 
-         PartialElem ep(static_cast<lListElem *>(calloc(1, sizeof(lListElem))));
+         PartialElem ep(static_cast<ocs::tom::ElementData *>(calloc(1, sizeof(ocs::tom::ElementData))));
          if (ep == nullptr) {
             fail(PACK_ENOMEM, "unpacking an element");
          }
@@ -1204,7 +1207,8 @@ namespace ocs::tom {
        * @param flags write only the fields whose flags match, 0 for all
        * @throw PackException with PACK_ENOMEM, PACK_FORMAT, PACK_BADARG
        */
-      void pack_object(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, const int flags) {
+      void pack_object(sge_pack_buffer *pb, const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what,
+                       const int flags) {
          put_uint32(pb, ep != nullptr);
          if (ep != nullptr) {
             if (what == nullptr) {
@@ -1223,13 +1227,13 @@ namespace ocs::tom {
        * @return the sub-object, owned by the caller, or nullptr for one that was null
        * @throw PackException with PACK_FORMAT, PACK_ENOMEM
        */
-      lListElem *unpack_object(sge_pack_buffer *pb, const int flags) {
+      ocs::tom::ElementData *unpack_object(sge_pack_buffer *pb, const int flags) {
          if (get_uint32(pb) == 0) {
             return nullptr;
          }
          std::uint32_t wire_n = 0;
          OwnedDescr descr(unpack_descr(pb, flags, &wire_n, nullptr));
-         lListElem *ep = unpack_elem_n(pb, descr.get(), wire_n, flags);
+         ocs::tom::ElementData *ep = unpack_elem_n(pb, descr.get(), wire_n, flags);
          // the sub-object takes over the reference on the descriptor it borrowed while being unpacked
          if (ep->descr == descr.get()) {
             static_cast<void>(descr.release());
@@ -1248,14 +1252,14 @@ namespace ocs::tom {
       if (pb == nullptr || pb->dtab == nullptr) {
          return;
       }
-      for (const lDescr *dp : pb->dtab->entries) {
+      for (const ocs::tom::FieldDescr *dp : pb->dtab->entries) {
          ocs::tom::release_descr(dp);
       }
       delete pb->dtab;
       pb->dtab = nullptr;
    }
 
-   void pack_descr(sge_pack_buffer *pb, const lDescr *descr, const int flags) {
+   void pack_descr(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, const int flags) {
       need_buffer(pb, "packing a descriptor");
       if (descr == nullptr) {
          fail(PACK_BADARG, "packing a null descriptor");
@@ -1266,7 +1270,7 @@ namespace ocs::tom {
          // the shared descriptor: what a list or a free element holds, or the one equal to a plain array
          const bool held = ocs::tom::descr_is_counted(descr) || ocs::tom::descr_is_static(descr);
          OwnedDescr acquired(held ? nullptr : ocs::tom::descr_acquire(descr));
-         const lDescr *shared = held ? descr : acquired.get();
+         const ocs::tom::FieldDescr *shared = held ? descr : acquired.get();
          if (shared == nullptr) {
             fail(PACK_ENOMEM, "packing a descriptor");
          }
@@ -1285,7 +1289,8 @@ namespace ocs::tom {
       TOM_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
    }
 
-   void pack_what_as_descr(sge_pack_buffer *pb, const lEnumeration *what, const lDescr *descr, const int flags) {
+   void pack_what_as_descr(sge_pack_buffer *pb, const ocs::tom::WhatData *what, const ocs::tom::FieldDescr *descr,
+                           const int flags) {
       need_buffer(pb, "packing a selection as a descriptor");
       TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
 
@@ -1297,7 +1302,7 @@ namespace ocs::tom {
       PackingProfile profile;
       if (flags == 0 && what[0].pos != WHAT_NONE) {
          bool owned;
-         const lDescr *shared = ocs::tom::detail::what_descr(what, descr, &owned);
+         const ocs::tom::FieldDescr *shared = ocs::tom::detail::what_descr(what, descr, &owned);
          if (shared == nullptr) {
             fail(PACK_ENOMEM, "packing a selection as a descriptor");
          }
@@ -1331,7 +1336,8 @@ namespace ocs::tom {
       TOM_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
    }
 
-   void pack_elem(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, const int flags) {
+   void pack_elem(sge_pack_buffer *pb, const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what,
+                  const int flags) {
       need_buffer(pb, "packing an element");
       if (ep == nullptr) {
          fail(PACK_BADARG, "packing a null element");
@@ -1352,12 +1358,12 @@ namespace ocs::tom {
       pack_values(pb, ep->cont, ep->descr, what, flags);
    }
 
-   lListElem *unpack_elem(sge_pack_buffer *pb, const lDescr *descr, const int flags) {
+   ocs::tom::ElementData *unpack_elem(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, const int flags) {
       need_buffer(pb, "unpacking an element");
       return unpack_elem_n(pb, descr, descr != nullptr ? static_cast<std::uint32_t>(lCountPresent(descr)) : 0, flags);
    }
 
-   void pack_list(sge_pack_buffer *pb, const lList *lp, const lEnumeration *what, const int flags) {
+   void pack_list(sge_pack_buffer *pb, const ocs::tom::ListData *lp, const ocs::tom::WhatData *what, const int flags) {
       need_buffer(pb, "packing a list");
       PackingProfile profile;
 
@@ -1372,7 +1378,7 @@ namespace ocs::tom {
       } else {
          pack_what_as_descr(pb, what, lp->descr, flags);
       }
-      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
          // each element is preceded by a 1: another element follows
          put_uint32(pb, 1);
          pack_elem(pb, ep, what, flags);
@@ -1381,7 +1387,7 @@ namespace ocs::tom {
       put_uint32(pb, 0);
    }
 
-   lList *unpack_list(sge_pack_buffer *pb, const int flags) {
+   ocs::tom::ListData *unpack_list(sge_pack_buffer *pb, const int flags) {
       need_buffer(pb, "unpacking a list");
       const UniqueCheckSuspension suspension;
       PackingProfile profile;
@@ -1392,7 +1398,7 @@ namespace ocs::tom {
       }
       TOM_STATS_CODE(const std::uint64_t stats_start = ocs::tom::stats::now_ns();)
 
-      OwnedList lp(static_cast<lList *>(calloc(1, sizeof(lList))));
+      OwnedList lp(static_cast<ocs::tom::ListData *>(calloc(1, sizeof(ocs::tom::ListData))));
       if (lp == nullptr) {
          fail(PACK_ENOMEM, "unpacking a list");
       }
@@ -1482,7 +1488,7 @@ namespace ocs::tom {
             nm = static_cast<int>(get_uint32(pb));
          }
          int pos = 0;
-         const lDescr *type = ocs::tom::descr_static_containing(nm, &pos);
+         const ocs::tom::FieldDescr *type = ocs::tom::descr_static_containing(nm, &pos);
          if (type == nullptr) {
             fail(PACK_FORMAT, "peeking at a descriptor of no known type");
          }
@@ -1515,7 +1521,7 @@ namespace ocs::tom {
       return peek_descr_type(&copy);
    }
 
-   void pack_what(sge_pack_buffer *pb, const lEnumeration *what) {
+   void pack_what(sge_pack_buffer *pb, const ocs::tom::WhatData *what) {
       need_buffer(pb, "packing a selection");
       PackingProfile profile;
 
@@ -1558,7 +1564,7 @@ namespace ocs::tom {
       }
    }
 
-   lEnumeration *unpack_what(sge_pack_buffer *pb) {
+   ocs::tom::WhatData *unpack_what(sge_pack_buffer *pb) {
       need_buffer(pb, "unpacking a selection");
       PackingProfile profile;
 
@@ -1569,7 +1575,7 @@ namespace ocs::tom {
 
       const std::uint32_t flag = get_uint32(pb);
       if (flag != PackWhatArray) {
-         OwnedWhat what(static_cast<lEnumeration *>(calloc(2, sizeof(lEnumeration))));
+         OwnedWhat what(static_cast<ocs::tom::WhatData *>(calloc(2, sizeof(ocs::tom::WhatData))));
          if (what == nullptr) {
             fail(PACK_ENOMEM, "unpacking a selection");
          }
@@ -1597,12 +1603,12 @@ namespace ocs::tom {
       if (n + 1 > MAX_DESCR_SIZE) {
          no_memory("unpacking a selection of too many fields");
       }
-      OwnedWhat what(static_cast<lEnumeration *>(calloc(n + 1, sizeof(lEnumeration))));
+      OwnedWhat what(static_cast<ocs::tom::WhatData *>(calloc(n + 1, sizeof(ocs::tom::WhatData))));
       if (what == nullptr) {
          fail(PACK_ENOMEM, "unpacking a selection");
       }
       // the end mark first, so that freeing a selection cut off after some fields finds its end
-      lEnumeration *ep = what.get();
+      ocs::tom::WhatData *ep = what.get();
       for (std::uint32_t i = 0; i <= n; i++) {
          ep[i].nm = NoName;
          ep[i].mt = MT_END;
@@ -1617,7 +1623,8 @@ namespace ocs::tom {
          // the position, the type and the flags of a field are taken from the local type, not from the sender
          // (N-W-5, N-W-11)
          int local_pos = 0;
-         if (const lDescr *type = ocs::tom::descr_static_containing(ep[i].nm, &local_pos); type != nullptr) {
+         if (const ocs::tom::FieldDescr *type = ocs::tom::descr_static_containing(ep[i].nm,
+                                                                                  &local_pos); type != nullptr) {
             ep[i].pos = local_pos;
             ep[i].mt = type[local_pos].mt;
          }
@@ -1631,7 +1638,7 @@ namespace ocs::tom {
       return what.release();
    }
 
-   void pack_where(sge_pack_buffer *pb, const lCondition *cp) {
+   void pack_where(sge_pack_buffer *pb, const ocs::tom::WhereData *cp) {
       need_buffer(pb, "packing a condition");
       PackingProfile profile;
 
@@ -1675,7 +1682,7 @@ namespace ocs::tom {
       }
    }
 
-   lCondition *unpack_where(sge_pack_buffer *pb) {
+   ocs::tom::WhereData *unpack_where(sge_pack_buffer *pb) {
       need_buffer(pb, "unpacking a condition");
       PackingProfile profile;
 
@@ -1683,7 +1690,7 @@ namespace ocs::tom {
       if (get_uint32(pb) == 0) {
          return nullptr;
       }
-      OwnedWhere cp(static_cast<lCondition *>(calloc(1, sizeof(lCondition))));
+      OwnedWhere cp(static_cast<ocs::tom::WhereData *>(calloc(1, sizeof(ocs::tom::WhereData))));
       if (cp == nullptr) {
          no_memory("unpacking a condition");
       }

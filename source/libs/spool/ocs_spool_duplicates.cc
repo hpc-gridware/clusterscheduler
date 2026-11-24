@@ -54,7 +54,7 @@ namespace {
          text.clear();
          return text;
       }
-      const lDescr *descr = ep.descr();
+      const ocs::tom::FieldDescr *descr = ep.descr();
       const int pos = ocs::tom::field_pos(descr, nm);
       switch (ocs::tom::field_type_of(descr[pos].mt)) {
          case ocs::tom::FieldType::String: {
@@ -93,7 +93,7 @@ namespace ocs::spool {
     * @param descr the descriptor of the objects read
     * @param type the object type, for the message
     */
-   DuplicateFilter::DuplicateFilter(const lDescr *descr, std::string type) : type_(std::move(type)) {
+   DuplicateFilter::DuplicateFilter(const ocs::tom::FieldDescr *descr, std::string type) : type_(std::move(type)) {
       for (const auto f : ocs::tom::present_fields(descr)) {
          if (mt_is_unique(descr[f.pos].mt)) {
             fields_.push_back(descr[f.pos].nm);

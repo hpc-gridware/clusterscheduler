@@ -39,23 +39,25 @@
 
 #include "tom/ocs_Types.h"
 
+namespace ocs::tom {
 /**
  * @brief One entry of a field selection
  *
  * A selection is an array of these: the index is the field's position in the
- * *reduced* descriptor, and _lEnumeration::pos says where that field sits in
+ * *reduced* descriptor, and ocs::tom::WhatData::pos says where that field sits in
  * the original one. That is what lets a reduced object be expanded again.
  */
-struct _lEnumeration {
+struct WhatData {
    int pos;          ///< position of the field in the original descriptor, or #WHAT_ALL / #WHAT_NONE
    int mt;           ///< the field's type and attributes
    int nm;           ///< the selected field
-   lEnumeration *ep; ///< selection applied inside the field; only for sub-objects and sub-lists
+   ocs::tom::WhatData *ep; ///< selection applied inside the field; only for sub-objects and sub-lists
    /// entry 0 only: the descriptor the cached reduction was built from, holding a reference
-   const lDescr *cache_src;
+   const ocs::tom::FieldDescr *cache_src;
    /// entry 0 only: the shared reduction of cache_src, holding a reference (see ocs::tom::detail::what_descr())
-   const lDescr *cache_dp;
+   const ocs::tom::FieldDescr *cache_dp;
 };
+} // namespace ocs::tom
 
 namespace ocs::tom::detail {
    /**
@@ -69,7 +71,7 @@ namespace ocs::tom::detail {
     * @param[out] owned set to true if the caller has to release the result
     * @return the shared reduction, or nullptr on error
     */
-   const lDescr *what_descr(const lEnumeration *enp, const lDescr *src, bool *owned);
+   const ocs::tom::FieldDescr *what_descr(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *src, bool *owned);
 
    /**
     * @brief Whether a field selection can be applied to a descriptor (CS-439, N-B-11)
@@ -77,7 +79,7 @@ namespace ocs::tom::detail {
     * @param dp the descriptor
     * @return true if every selected field is present in dp at its position
     */
-   bool what_fits(const lEnumeration *enp, const lDescr *dp);
+   bool what_fits(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *dp);
 } // namespace ocs::tom::detail
 
 

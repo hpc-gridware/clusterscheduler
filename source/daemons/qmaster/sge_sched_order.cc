@@ -121,7 +121,8 @@ sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_l
  * @return true on success
  */
 bool
-sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **order_list) {
+sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 ocs::tom::ListData **order_list) {
    DENTER(TOP_LAYER);
    bool ret = true;
    auto *gdi_multi = new ocs::gdi::Request();

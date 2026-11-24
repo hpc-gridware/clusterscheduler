@@ -39,6 +39,7 @@
 
 #include "tom/ocs_Types.h"
 
+namespace ocs::tom {
 /**
  * @brief One sort criterion: which field to compare and in which direction
  *
@@ -47,10 +48,11 @@
  * field name is #NoName. Criteria are applied in order, the next one deciding
  * only where the previous compared equal.
  */
-struct _lSortOrder {
+struct SortOrderData {
    int pos;  ///< position of the field in the descriptor, resolved once when the order is built
    int mt;   ///< the field's type and attributes, copied from the descriptor
    int nm;   ///< the field to compare, or #NoName in the terminating entry
    int ad;   ///< direction: +1 ascending, -1 descending
 };
+} // namespace ocs::tom
 

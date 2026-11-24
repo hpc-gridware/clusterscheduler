@@ -83,11 +83,11 @@ namespace ocs::tom {
        * @param value_descr the descriptor of the list or element to be stored, or nullptr for none
        * @throw FieldException with reason WrongSubType if @p value_descr is of another type than the sub-type
        */
-      void check_sub_type(const int nm, const lDescr *value_descr) {
+      void check_sub_type(const int nm, const ocs::tom::FieldDescr *value_descr) {
          if (value_descr == nullptr) {
             return;
          }
-         const lDescr *sub = sub_type(nm);
+         const ocs::tom::FieldDescr *sub = sub_type(nm);
          if (sub != nullptr && value_descr[0].nm != sub[0].nm) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongSubType, nm, value_descr, sub);
          }
@@ -103,7 +103,7 @@ namespace ocs::tom {
        * @param ep the element
        * @throw FieldException with reason NullList, NullElement or WrongType
        */
-      void check_insert(const lList *lp, const lListElem *ep) {
+      void check_insert(const ocs::tom::ListData *lp, const ocs::tom::ElementData *ep) {
          if (lp == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullList, NoName, nullptr);
          }
@@ -137,7 +137,7 @@ namespace ocs::tom {
 
    } // namespace
 
-   void set(lListElem *ep, const int nm, RawListPtr list) {
+   void set(ocs::tom::ElementData *ep, const int nm, RawListPtr list) {
       const int pos = checked_pos(ep, nm, FieldType::List);
       check_sub_type(nm, list.get().descr());
       store_list(ep, pos, list.release());
@@ -157,8 +157,8 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement, ForeignField, AbsentField, WrongType, WrongSubType or
     *        BoundElement
     */
-   void set(lListElem *ep, const int nm, RawElementPtr object) {
-      lListElem *value = object.get().raw();
+   void set(ocs::tom::ElementData *ep, const int nm, RawElementPtr object) {
+      ocs::tom::ElementData *value = object.get().raw();
       if (value != nullptr && elem_kind(value) != FREE_ELEM && elem_kind(value) != TRANS_BOUND_ELEM) {
          // bound (or the sub-object of a field, maybe of this one): never the parameter's to free
          static_cast<void>(object.release());
@@ -172,54 +172,54 @@ namespace ocs::tom {
       static_cast<void>(object.release());
    }
 
-   RawListPtr exchange(lListElem *ep, const int nm, RawListPtr list) {
+   RawListPtr exchange(ocs::tom::ElementData *ep, const int nm, RawListPtr list) {
       const int pos = checked_pos(ep, nm, FieldType::List);
       check_sub_type(nm, list.get().descr());
-      lList *lp = list.release();
+      ocs::tom::ListData *lp = list.release();
       exchange_list(ep, pos, lp);
       return RawListPtr(lp);
    }
 
-   RawElementPtr take_raw_object(lListElem *ep, const int nm) {
+   RawElementPtr take_raw_object(ocs::tom::ElementData *ep, const int nm) {
       const int pos = checked_pos(ep, nm, FieldType::Object);
       return RawElementPtr(take_object(ep, pos));
    }
 
-   RawElementPtr create_raw_elem(const lDescr *descr) {
+   RawElementPtr create_raw_elem(const ocs::tom::FieldDescr *descr) {
       return RawElementPtr(create_elem(descr));
    }
 
-   RawListPtr create_raw_list(const lDescr *descr, const Hashing hashing, const char *name) {
+   RawListPtr create_raw_list(const ocs::tom::FieldDescr *descr, const Hashing hashing, const char *name) {
       return RawListPtr(create_list(name, descr, hashing == Hashing::On));
    }
 
-   RawElementPtr clone(const lListElem *ep) {
+   RawElementPtr clone(const ocs::tom::ElementData *ep) {
       if (ep == nullptr) {
          return {};
       }
       return RawElementPtr(copy_elem(ep, true, false));
    }
 
-   RawListPtr clone(const lList *lp, const Hashing hashing) {
+   RawListPtr clone(const ocs::tom::ListData *lp, const Hashing hashing) {
       if (lp == nullptr) {
          return {};
       }
       return RawListPtr(copy_list(nullptr, lp, hashing == Hashing::On, false));
    }
 
-   RawWherePtr clone(const lCondition *cp) {
+   RawWherePtr clone(const ocs::tom::WhereData *cp) {
       return RawWherePtr(copy_where(cp));
    }
 
-   RawWhatPtr clone(const lEnumeration *ep) {
+   RawWhatPtr clone(const ocs::tom::WhatData *ep) {
       if (ep == nullptr) {
          return {};
       }
       return RawWhatPtr(copy_what(ep));
    }
 
-   RawWherePtr detail::raw_where_compare(const lDescr *descr, const int nm, const CompareOp op, const int value_type,
-                                         const lMultiType &value) {
+   RawWherePtr detail::raw_where_compare(const ocs::tom::FieldDescr *descr, const int nm, const CompareOp op,
+                                         const int value_type, const ocs::tom::FieldValue &value) {
       try {
          return RawWherePtr(make_compare(descr, nm, op, value_type, value));
       } catch (const FieldException &e) {
@@ -234,7 +234,7 @@ namespace ocs::tom {
       return {};
    }
 
-   RawWhatPtr what_of(const lDescr *descr, const std::span<const int> fields) {
+   RawWhatPtr what_of(const ocs::tom::FieldDescr *descr, const std::span<const int> fields) {
       std::vector<WhatEntry> entries;
       entries.reserve(fields.size());
       for (const int nm : fields) {
@@ -259,14 +259,14 @@ namespace ocs::tom {
       return {};
    }
 
-   void append(lList *lp, RawElementPtr &&ep) {
+   void append(ocs::tom::ListData *lp, RawElementPtr &&ep) {
       check_insert(lp, ep.get().raw());
       append_elem(lp, ep.get().raw());
       // the list owns the element now
       static_cast<void>(ep.release());
    }
 
-   void insert_after(lList *lp, lListElem *after, RawElementPtr &&ep) {
+   void insert_after(ocs::tom::ListData *lp, ocs::tom::ElementData *after, RawElementPtr &&ep) {
       check_insert(lp, ep.get().raw());
       if (after != nullptr && elem_list(after) != lp) [[unlikely]] {
          throw_field_exception(FieldException::Reason::ForeignList, NoName, after->descr);
@@ -276,21 +276,21 @@ namespace ocs::tom {
       static_cast<void>(ep.release());
    }
 
-   RawElementPtr take(lList *lp, lListElem *ep) {
+   RawElementPtr take(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
       dechain_elem(lp, ep);
       return RawElementPtr(ep);
    }
 
-   void erase(lList *lp, lListElem *ep) {
-      lListElem *victim = ep;
+   void erase(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
+      ocs::tom::ElementData *victim = ep;
       remove_elem(lp, victim);
    }
 
-   void splice(lList *dst, RawListPtr &&src) {
+   void splice(ocs::tom::ListData *dst, RawListPtr &&src) {
       if (dst == nullptr) [[unlikely]] {
          throw_field_exception(FieldException::Reason::NullList, NoName, nullptr);
       }
-      lList *other = src.get().raw();
+      ocs::tom::ListData *other = src.get().raw();
       if (other == nullptr) {
          return;
       }
@@ -301,7 +301,7 @@ namespace ocs::tom {
                                NoName, other->descr, dst->descr);
       }
 #ifdef ENABLE_DEBUG_CHECKS
-      for (const lListElem *ep = other->first; ep != nullptr; ep = ep->next) {
+      for (const ocs::tom::ElementData *ep = other->first; ep != nullptr; ep = ep->next) {
          check_unique_on_add(dst, ep);
       }
 #endif
@@ -309,26 +309,27 @@ namespace ocs::tom {
       src.reset();
    }
 
-   RawListPtr select(const lList *lp, const lCondition *where, const lEnumeration *what, const Hashing hashing) {
+   RawListPtr select(const ocs::tom::ListData *lp, const ocs::tom::WhereData *where, const ocs::tom::WhatData *what,
+                     const Hashing hashing) {
       if (lp == nullptr) {
          return {};
       }
       return RawListPtr(select_list(list_name(lp), lp, where, what, hashing == Hashing::On, false));
    }
 
-   RawElementPtr select(const lListElem *ep, const lEnumeration *what, const Hashing hashing) {
+   RawElementPtr select(const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what, const Hashing hashing) {
       if (ep == nullptr) {
          return {};
       }
       return RawElementPtr(select_elem(ep, what, hashing == Hashing::On, false));
    }
 
-   bool matches(const lListElem *ep, const lCondition *where) {
+   bool matches(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *where) {
       return compare(ep, where);
    }
 
-   RawListPtr select_as(const char *name, const lList *lp, const lCondition *where, const lEnumeration *what,
-                        const Hashing hashing) {
+   RawListPtr select_as(const char *name, const ocs::tom::ListData *lp, const ocs::tom::WhereData *where,
+                        const ocs::tom::WhatData *what, const Hashing hashing) {
       if (lp == nullptr) {
          report_soft_path("select_as", SoftPathNoName, SoftPathReason::NullList);
          return {};
@@ -364,8 +365,8 @@ namespace ocs::tom {
       return result;
    }
 
-   RawElementPtr select_elem_as(const lListElem *ep, const lCondition *where, const lEnumeration *what,
-                                const Hashing hashing) {
+   RawElementPtr select_elem_as(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *where,
+                                const ocs::tom::WhatData *what, const Hashing hashing) {
       if (ep == nullptr) {
          return {};
       }
@@ -394,8 +395,9 @@ namespace ocs::tom {
       return {};
    }
 
-   RawListPtr select_into_descr(const char *name, const lList *lp, const lCondition *where, const lDescr *descr,
-                                const lEnumeration *what, const Hashing hashing) {
+   RawListPtr select_into_descr(const char *name, const ocs::tom::ListData *lp, const ocs::tom::WhereData *where,
+                                const ocs::tom::FieldDescr *descr, const ocs::tom::WhatData *what,
+                                const Hashing hashing) {
       if (lp == nullptr || descr == nullptr) {
          return {};
       }
@@ -408,11 +410,11 @@ namespace ocs::tom {
       } catch (const ListCoreError &) {
          return {};
       }
-      lList *dst = result.get().raw();
+      ocs::tom::ListData *dst = result.get().raw();
 
       // a selection from a list that was checked for duplicate keys when it was filled cannot create one
       const UniqueCheckSuspension suspension;
-      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
          // the element form, with the list's descriptor, as lSelectDPack() called lSelectElemDPack()
          RawElementPtr copy = select_elem_into_descr(ep, where, dst->descr, what, hashing);
          if (!copy) {
@@ -438,8 +440,9 @@ namespace ocs::tom {
       return result;
    }
 
-   RawElementPtr select_elem_into_descr(const lListElem *ep, const lCondition *where, const lDescr *descr,
-                                        const lEnumeration *what, const Hashing hashing) {
+   RawElementPtr select_elem_into_descr(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *where,
+                                        const ocs::tom::FieldDescr *descr, const ocs::tom::WhatData *what,
+                                        const Hashing hashing) {
       if (ep == nullptr || descr == nullptr) {
          return {};
       }
@@ -469,8 +472,8 @@ namespace ocs::tom {
       return copy;
    }
 
-   void select_pack(sge_pack_buffer *pb, const char *name, const lList *lp, const lCondition *where,
-                    const lEnumeration *what) {
+   void select_pack(sge_pack_buffer *pb, const char *name, const ocs::tom::ListData *lp,
+                    const ocs::tom::WhereData *where, const ocs::tom::WhatData *what) {
       if (what == nullptr) {
          // no selection: the whole list under its own name, the condition not applied - as tom_pack_list()
          try {
@@ -494,7 +497,7 @@ namespace ocs::tom {
          return;
       }
 
-      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
          // compare() throws only for a null element; a comparison that cannot be made is false
          if (!compare(ep, where)) {
             continue;
@@ -534,7 +537,7 @@ namespace ocs::tom {
       return RawListPtr(unpack_list(pb, flags));
    }
 
-   RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const lDescr *descr, const int flags) {
+   RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, const int flags) {
       return RawElementPtr(unpack_elem(pb, descr, flags));
    }
 
@@ -546,15 +549,15 @@ namespace ocs::tom {
       write_text(fp, [element](dstring *buffer) { print_elem(buffer, element.raw(), 0); });
    }
 
-   void write_to(FILE *fp, const lCondition *where) {
+   void write_to(FILE *fp, const ocs::tom::WhereData *where) {
       write_text(fp, [where](dstring *buffer) { print_where(buffer, where, 0); });
    }
 
-   void write_to(FILE *fp, const lEnumeration *what) {
+   void write_to(FILE *fp, const ocs::tom::WhatData *what) {
       write_text(fp, [what](dstring *buffer) { print_what(buffer, what, 0); });
    }
 
-   void free_raw_list(lList *&lp) noexcept {
+   void free_raw_list(ocs::tom::ListData *&lp) noexcept {
       try {
          free_list(lp);
       } catch (const FieldException &) {
@@ -563,7 +566,7 @@ namespace ocs::tom {
       }
    }
 
-   void free_raw_elem(lListElem *&ep) noexcept {
+   void free_raw_elem(ocs::tom::ElementData *&ep) noexcept {
       try {
          free_elem(ep);
       } catch (const FieldException &) {
@@ -575,7 +578,7 @@ namespace ocs::tom {
    std::size_t remaining(const ConstRawElement element) noexcept {
       std::size_t n = 0;
       if (element) {
-         for (const lListElem *next = element.raw()->next; next != nullptr; next = next->next) {
+         for (const ocs::tom::ElementData *next = element.raw()->next; next != nullptr; next = next->next) {
             n++;
          }
       }
@@ -587,7 +590,7 @@ namespace ocs::tom {
    }
 
    void make_hashable(const RawList list) noexcept {
-      lList *lp = list.raw();
+      ocs::tom::ListData *lp = list.raw();
       if (lp != nullptr && lp->nslots == 0) {
          ocs::tom::detail::hash_init_slots(lp, true);
       }

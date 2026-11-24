@@ -298,7 +298,7 @@ bool record_matches(const bdb_info info, const bdb_database database, const std:
  */
 std::vector<std::string> read_keys(const tom::ConstElement<tom::SPC> context, const std::string &prefix) {
    tom::ListPtr<tom::AN> alp;
-   lList *lp = nullptr;
+   ocs::tom::ListData *lp = nullptr;
    spool_read_keys(&alp, context, &lp, prefix.c_str());
    answers_ok(alp, "spool_read_keys");
    const auto keys = tom::ListPtr<tom::STU>::from_typed(lp);
@@ -320,7 +320,7 @@ std::vector<std::string> read_keys(const tom::ConstElement<tom::SPC> context, co
 template <typename T>
 tom::ListPtr<T> read_list(const tom::ConstElement<tom::SPC> context, const sge_object_type object_type, bool *ok) {
    tom::ListPtr<tom::AN> alp;
-   lList *lp = nullptr;
+   ocs::tom::ListData *lp = nullptr;
    const bool read = spool_read_list(&alp, context, &lp, object_type);
    *ok = answers_ok(alp, "spool_read_list") && read;
    // every record is unpacked with the descriptor of the object type

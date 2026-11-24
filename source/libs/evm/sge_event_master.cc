@@ -139,7 +139,7 @@
  *
  * Important variables:
  *  pthread_mutex_t  transaction_mutex;
- *  lList            *transaction_events;
+ *  ocs::tom::ListData            *transaction_events;
  *  pthread_mutex_t  t_add_event_mutex;
  *  bool             is_transaction;
  *
@@ -180,7 +180,8 @@ struct subscription_t {
    bool flush = false;                 ///< true -> flush is set
    uint32_t flush_time = 0;            ///< seconds how much the event can be delayed
    ocs::tom::RawWherePtr where;        ///< where filter, client supplied; frees itself
-   const lDescr *descr = nullptr;      ///< target list descriptor, a reference released by free_subscription_array()
+   /// target list descriptor, a reference released by free_subscription_array()
+   const ocs::tom::FieldDescr *descr = nullptr;
    ocs::tom::RawWhatPtr what;          ///< limits the target element, client supplied; frees itself
 };
 
@@ -444,10 +445,10 @@ static void       add_list_event_direct(ocs::tom::Element<ocs::tom::EV> event_cl
 static void       total_update_event(ocs::tom::Element<ocs::tom::EV> event_client, ev_event type,
                                      bool new_subscription, uint64_t gdi_session);
 static bool       list_select(subscription_t *subscription, int type, ocs::tom::RawListPtr *reduced_lp,
-                              ocs::tom::RawList lp, const lCondition *selection, const lEnumeration *fields,
-                              const lDescr *descr, bool do_hash);
+                              ocs::tom::RawList lp, const ocs::tom::WhereData *selection,
+                              const ocs::tom::WhatData *fields, const ocs::tom::FieldDescr *descr, bool do_hash);
 static ocs::tom::Element<ocs::tom::EV> eventclient_list_locate_by_adress(const char*, const char*, uint32_t);
-static const lDescr* getDescriptorL(subscription_t*, ocs::tom::ConstRawList, int);
+static const ocs::tom::FieldDescr* getDescriptorL(subscription_t*, ocs::tom::ConstRawList, int);
 static ocs::tom::Element<ocs::tom::EV> get_event_client(uint32_t id);
 static uint32_t   allocate_new_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static void       free_dynamic_id(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t id);
@@ -564,8 +565,9 @@ sge_event_master_process_add_event_client([[maybe_unused]] const ocs::tom::Const
  * @note MT-NOTE: sge_add_event_client() is MT safe, it uses the global lock and
  *       internal ones.
  */
-int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
-                         lList **eclpp, event_client_update_func_t update_func, void *update_func_arg) {
+int sge_add_event_client(const ocs::gdi::Packet *packet, ocs::tom::ElementData *clio,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListData **eclpp,
+                         event_client_update_func_t update_func, void *update_func_arg) {
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::EV> ep;
@@ -754,7 +756,7 @@ int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *clio, ocs::t
  *
  * @note MT-NOTE: sge_mod_event_client() is MT safe, uses internal locks
  */
-int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
+int sge_mod_event_client(ocs::tom::ElementData *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost) {
    DENTER(TOP_LAYER);
 
 
@@ -845,7 +847,7 @@ sge_event_master_process_mod_event_client(const ocs::tom::Element<ocs::tom::EVR>
       DRETURN_VOID;
    }
 
-   if (clio.get<EV_changed>() && static_cast<const lList *>(clio.get<EV_subscribed>()) == nullptr) {
+   if (clio.get<EV_changed>() && static_cast<const ocs::tom::ListData *>(clio.get<EV_subscribed>()) == nullptr) {
       sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
       SGE_UNLOCK(LOCK_GLOBAL, LOCK_READ);
       ERROR(SFNMAX, MSG_EVE_INVALIDSUBSCRIPTION);
@@ -1127,11 +1129,11 @@ sge_has_event_client(uint32_t event_client_id) {
  *       MT-NOTE: The elements contained in the result list are copies of the
  *       MT-NOTE: respective event client list elements.
  */
-lList *
-sge_select_event_clients(const char *list_name, const lCondition *where, const lEnumeration *what) {
+ocs::tom::ListData *
+sge_select_event_clients(const char *list_name, const ocs::tom::WhereData *where, const ocs::tom::WhatData *what) {
    DENTER(TOP_LAYER);
 
-   lList *lst = nullptr;
+   ocs::tom::ListData *lst = nullptr;
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
    if (Event_Master_Control.clients != nullptr) {
@@ -2370,7 +2372,7 @@ total_update(const ocs::tom::Element<ocs::tom::EV> event_client, const uint64_t 
                 Event_Master_Control.transaction_key);
    bool outer_transaction = t_store->is_transaction;
    // the thread local storage holds the request list raw; it is parked here and put back below
-   lList *outer_requests = nullptr;
+   ocs::tom::ListData *outer_requests = nullptr;
    if (outer_transaction) {
       outer_requests = t_store->transaction_requests;
       // thread local storage, freed below when the outer transaction is restored
@@ -2681,9 +2683,9 @@ static void add_list_event_direct(const ocs::tom::Element<ocs::tom::EV> event_cl
    subscription_t *subscription = nullptr;
    char buffer[1024];
    dstring buffer_wrapper;
-   const lCondition *selection = nullptr;
-   const lEnumeration *fields = nullptr;
-   const lDescr *descr = nullptr;
+   const ocs::tom::WhereData *selection = nullptr;
+   const ocs::tom::WhatData *fields = nullptr;
+   const ocs::tom::FieldDescr *descr = nullptr;
    bool internal_client = false;
 
    SGE_ASSERT(event_client);
@@ -2979,7 +2981,8 @@ template <auto... F>
 static ocs::tom::ElementPtr<typename OcsEventSubListFields<F...>::Type>
 ocs_event_select_elem(subscription_t *subscription,
                       const ocs::tom::Element<typename OcsEventSubListFields<F...>::Type> element,
-                      const lCondition *selection, const lEnumeration *fields, const lDescr *dp, const int sub_type) {
+                      const ocs::tom::WhereData *selection, const ocs::tom::WhatData *fields,
+                      const ocs::tom::FieldDescr *dp, const int sub_type) {
    DENTER(TOP_LAYER);
 
    using T = typename OcsEventSubListFields<F...>::Type;
@@ -2996,8 +2999,8 @@ ocs_event_select_elem(subscription_t *subscription,
    }
 
    /* get the filters for the sub lists */
-   const lCondition *sub_selection = subscription[sub_type].where.get();
-   const lEnumeration *sub_fields = subscription[sub_type].what.get();
+   const ocs::tom::WhereData *sub_selection = subscription[sub_type].where.get();
+   const ocs::tom::WhatData *sub_fields = subscription[sub_type].what.get();
 
    if (!sub_fields) {
       DPRINTF("no sub filter specified\n");
@@ -3015,7 +3018,7 @@ ocs_event_select_elem(subscription_t *subscription,
    (take_out.template operator()<F>(), ...);
 
    /* get descriptor for reduced sub-lists */
-   const lDescr *sub_descr = nullptr;
+   const ocs::tom::FieldDescr *sub_descr = nullptr;
    for (const auto &sub_list : sub_lists) {
       if (sub_list) {
          sub_descr = getDescriptorL(subscription, sub_list.get(), sub_type);
@@ -3079,8 +3082,9 @@ ocs_event_select_elem(subscription_t *subscription,
  */
 template <auto... F>
 static ocs::tom::RawListPtr
-ocs_event_select_list(subscription_t *subscription, const ocs::tom::RawList lp, const lCondition *selection,
-                      const lEnumeration *fields, const lDescr *descr, const bool do_hash, const int sub_type) {
+ocs_event_select_list(subscription_t *subscription, const ocs::tom::RawList lp, const ocs::tom::WhereData *selection,
+                      const ocs::tom::WhatData *fields, const ocs::tom::FieldDescr *descr, const bool do_hash,
+                      const int sub_type) {
    using T = typename OcsEventSubListFields<F...>::Type;
 
    if (descr == nullptr) {
@@ -3125,10 +3129,9 @@ ocs_event_select_list(subscription_t *subscription, const ocs::tom::RawList lp, 
  *
  * @return true, if the event was one of #EVENT_LIST with a sub-list filter
  */
-static bool list_select(subscription_t *subscription, const int type,
-                        ocs::tom::RawListPtr *reduced_lp, const ocs::tom::RawList lp,
-                        const lCondition *selection, const lEnumeration *fields,
-                        const lDescr *descr, const bool do_hash) {
+static bool list_select(subscription_t *subscription, const int type, ocs::tom::RawListPtr *reduced_lp,
+                        const ocs::tom::RawList lp, const ocs::tom::WhereData *selection,
+                        const ocs::tom::WhatData *fields, const ocs::tom::FieldDescr *descr, const bool do_hash) {
    DENTER(TOP_LAYER);
 
    bool ret = false;
@@ -3220,9 +3223,9 @@ eventclient_list_locate_by_adress(const char *host, const char *commproc, const 
  *
  * @note MT-NOTE: thread save, works only on the submitted variables.
  */
-static const lDescr *getDescriptorL(subscription_t *subscription,
+static const ocs::tom::FieldDescr *getDescriptorL(subscription_t *subscription,
                                     const ocs::tom::ConstRawList list, const int type) {
-   const lDescr *dp = nullptr;
+   const ocs::tom::FieldDescr *dp = nullptr;
 
    if (subscription[type].what) {
       if (!(dp = subscription[type].descr)) {

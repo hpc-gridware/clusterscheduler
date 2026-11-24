@@ -34,7 +34,7 @@
  * @param dp the descriptor
  * @return the registered descriptor, holding a reference
  */
-extern "C" const lDescr *test_tom_core_plugin_intern(const lDescr *dp) {
+extern "C" const ocs::tom::FieldDescr *test_tom_core_plugin_intern(const ocs::tom::FieldDescr *dp) {
    return ocs::tom::descr_intern(dp);
 }
 
@@ -42,7 +42,7 @@ extern "C" const lDescr *test_tom_core_plugin_intern(const lDescr *dp) {
  * @brief Release a descriptor through the list library this module is bound to
  * @param dpp the holder of the descriptor, set to nullptr; nullptr is ignored
  */
-extern "C" void test_tom_core_plugin_release(const lDescr **dpp) {
+extern "C" void test_tom_core_plugin_release(const ocs::tom::FieldDescr **dpp) {
    if (dpp != nullptr) {
       ocs::tom::release_descr(*dpp);
    }

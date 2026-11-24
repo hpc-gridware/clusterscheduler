@@ -99,7 +99,7 @@ typedef struct {
    pthread_cond_t cond_var;   ///< used for waiting
    bool exit;       ///< true -> exit event delivery
    bool triggered;  ///< new events added, a scheduling run is triggered
-   lList *new_events; ///< the storage for new events
+   ocs::tom::ListData *new_events; ///< the storage for new events
    bool new_global_conf;   ///< The global configuration changed and has to be re-read
 } scheduler_control_t;
 

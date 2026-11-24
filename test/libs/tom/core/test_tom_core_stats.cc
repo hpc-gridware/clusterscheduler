@@ -136,7 +136,7 @@ static ocs::tom::RawListPtr make_list() {
  * @param lp the list
  * @return true on success
  */
-static bool pack_list_ok(sge_pack_buffer *pb, const lList *lp) {
+static bool pack_list_ok(sge_pack_buffer *pb, const ocs::tom::ListData *lp) {
    try {
       ocs::tom::pack_list(pb, lp, nullptr, 0);
       return true;
@@ -167,7 +167,7 @@ static bool unpack_list_ok(sge_pack_buffer *pb, ocs::tom::RawListPtr &lp) {
  * @param pb receives the buffer, to be cleared by the caller
  * @return true on success
  */
-static bool pack_into(const lList *lp, const bool just_count, sge_pack_buffer *pb) {
+static bool pack_into(const ocs::tom::ListData *lp, const bool just_count, sge_pack_buffer *pb) {
    return ocs::tom::try_init_buffer(pb, 1024, just_count, false) == PACK_SUCCESS && pack_list_ok(pb, lp);
 }
 

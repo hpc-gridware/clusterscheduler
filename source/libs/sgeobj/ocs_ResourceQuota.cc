@@ -43,7 +43,7 @@
  *  @return true if duplicates were found, false otherwise
  */
 bool
-ocs::ResourceQuota::has_duplicates(const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+ocs::ResourceQuota::has_duplicates(const ocs::tom::ListData *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                    const std::string& object_name) {
    DENTER(TOP_LAYER);
    DRETURN(ocs::ObjectContainer::has_duplicates<RQRL_name>(ocs::tom::ConstList<ocs::tom::RQRL>(centry_list),

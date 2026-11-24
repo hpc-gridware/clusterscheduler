@@ -69,7 +69,7 @@ const char *get_spooling_method();
 const char *get_berkeleydb_spooling_method();
 #endif
 
-lListElem *
+ocs::tom::ElementData *
 spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args);
 }
 
@@ -108,9 +108,9 @@ spool_berkeleydb_transaction_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 bool 
 spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                  ocs::tom::ConstElement<ocs::tom::SPT> type, 
-                                 ocs::tom::ConstElement<ocs::tom::SPR> rule, lList **list, 
+                                 ocs::tom::ConstElement<ocs::tom::SPR> rule, ocs::tom::ListData **list, 
                                  const sge_object_type object_type);
-lListElem *
+ocs::tom::ElementData *
 spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
                                  ocs::tom::ConstElement<ocs::tom::SPT> type, 
                                  ocs::tom::ConstElement<ocs::tom::SPR> rule, const char *key, 

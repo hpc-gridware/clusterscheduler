@@ -37,7 +37,7 @@
  * @brief The wrong use
  * @param ep an element of type TEST
  */
-void wrong_use(lListElem *ep) {
+void wrong_use(ocs::tom::ElementData *ep) {
    const std::string text = "text";
    ocs::tom::set(ep, TEST_string, text);
 }

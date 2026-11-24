@@ -285,10 +285,10 @@ sge_qmaster_process_message(monitoring_t *monitor) {
  * @param data_descr the descriptor of the data the client sent
  * @return the descriptor the data has to match, possibly reduced, or nullptr when its type is not fixed
  */
-static const lDescr *
-ocs_request_data_type(const ocs::gdi::Task *task, const lDescr *data_descr) {
+static const ocs::tom::FieldDescr *
+ocs_request_data_type(const ocs::gdi::Task *task, const ocs::tom::FieldDescr *data_descr) {
    const gdi_object_t *object = get_gdi_object(task->target);
-   const lDescr *object_type = object != nullptr ? object->type : nullptr;
+   const ocs::tom::FieldDescr *object_type = object != nullptr ? object->type : nullptr;
    if (object_type == nullptr) {
       // targets without generic handling, whose request data still has one type
       switch (task->target) {

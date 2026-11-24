@@ -56,7 +56,7 @@ namespace ocs::tom {
     * @param nm the field number
     * @return the position, or -1 if the descriptor is null or the field does not belong to the type
     */
-   [[nodiscard]] inline int field_pos(const lDescr *descr, const int nm) noexcept {
+   [[nodiscard]] inline int field_pos(const ocs::tom::FieldDescr *descr, const int nm) noexcept {
       if (descr == nullptr) {
          return -1;
       }
@@ -76,7 +76,7 @@ namespace ocs::tom {
     * @param nm the field number
     * @return the position, or -1 if the descriptor is null, the field belongs to another type or is absent
     */
-   int present_pos(const lDescr *descr, int nm) noexcept;
+   int present_pos(const ocs::tom::FieldDescr *descr, int nm) noexcept;
 
    /**
     * @brief Record that a list or an element does not hold a field, as a soft path
@@ -90,7 +90,7 @@ namespace ocs::tom {
     * @param nm the field
     * @param descr the descriptor of the list or element, or nullptr
     */
-   [[gnu::cold]] void report_missing_field(const char *function, int nm, const lDescr *descr) noexcept;
+   [[gnu::cold]] void report_missing_field(const char *function, int nm, const ocs::tom::FieldDescr *descr) noexcept;
 
    /**
     * @brief The error of a field access the inline check refused: a null element, another type or an absent field
@@ -105,7 +105,7 @@ namespace ocs::tom {
     * @param first_nm the first field number of the field's type, which an element of that type starts with
     * @throw FieldException with reason NullElement, ForeignField or AbsentField
     */
-   [[noreturn, gnu::cold]] void throw_access_error(const lListElem *ep, int nm, int first_nm);
+   [[noreturn, gnu::cold]] void throw_access_error(const ocs::tom::ElementData *ep, int nm, int first_nm);
 
 
    /**
@@ -117,7 +117,7 @@ namespace ocs::tom {
     * @param descr the descriptor, or nullptr
     * @return the length, or -1 for nullptr
     */
-   int descr_length(const lDescr *descr) noexcept;
+   int descr_length(const ocs::tom::FieldDescr *descr) noexcept;
 
    /**
     * @brief The name of a field type of the list library
@@ -132,7 +132,7 @@ namespace ocs::tom {
     * @param nm the field number
     * @return the field type, or MT_END if the descriptor is null or does not hold the field
     */
-   int field_type(const lDescr *descr, int nm) noexcept;
+   int field_type(const ocs::tom::FieldDescr *descr, int nm) noexcept;
 
    /**
     * @brief How two descriptors differ: the same fields with the same types, holding the same of them
@@ -144,7 +144,7 @@ namespace ocs::tom {
     * @param b the second descriptor
     * @return 0 if equivalent, otherwise 1 for a null descriptor, 2 for an empty one, 3 for different ones
     */
-   int layout_difference(const lDescr *a, const lDescr *b) noexcept;
+   int layout_difference(const ocs::tom::FieldDescr *a, const ocs::tom::FieldDescr *b) noexcept;
 
    /**
     * @brief Whether two descriptors have the same layout, the entry by entry part of #same_layout
@@ -153,7 +153,7 @@ namespace ocs::tom {
     * @return true if both are the same pointer, or have the same length and, at every position, the same
     *         field number, field type and slot offset; false if one or both are nullptr
     */
-   bool same_layout_entries(const lDescr *a, const lDescr *b) noexcept;
+   bool same_layout_entries(const ocs::tom::FieldDescr *a, const ocs::tom::FieldDescr *b) noexcept;
 
    /**
     * @brief Whether elements of two descriptors keep their values at the same slots (CS-3112)
@@ -174,7 +174,7 @@ namespace ocs::tom {
     * @param b the second descriptor, or nullptr
     * @return true if both are the same pointer or have the same layout; false if one or both are nullptr
     */
-   [[nodiscard]] inline bool same_layout(const lDescr *a, const lDescr *b) noexcept {
+   [[nodiscard]] inline bool same_layout(const ocs::tom::FieldDescr *a, const ocs::tom::FieldDescr *b) noexcept {
       return a == b ? a != nullptr : same_layout_entries(a, b);
    }
 
@@ -192,7 +192,7 @@ namespace ocs::tom {
     * @param b the second descriptor, or nullptr
     * @return true if both describe the same type; false if they differ or one or both are nullptr
     */
-   bool same_type(const lDescr *a, const lDescr *b) noexcept;
+   bool same_type(const ocs::tom::FieldDescr *a, const ocs::tom::FieldDescr *b) noexcept;
 
    /**
     * @brief The position of a field an element must hold, with the field type it must have
@@ -213,7 +213,7 @@ namespace ocs::tom {
     * @return the field's position
     * @throw FieldException with reason NullElement, ForeignField, AbsentField or WrongType
     */
-   [[nodiscard]] inline int checked_pos(const lListElem *ep, const int nm, const FieldType type) {
+   [[nodiscard]] inline int checked_pos(const ocs::tom::ElementData *ep, const int nm, const FieldType type) {
       if (ep == nullptr) [[unlikely]] {
          throw_field_exception(FieldException::Reason::NullElement, nm, nullptr);
       }
@@ -244,7 +244,7 @@ namespace ocs::tom {
     * @throw FieldException with reason DuplicateKey in a debug build, when the field is unique and
     *        another element of the list holds the value; the old value is kept
     */
-   bool store_string(lListElem *ep, int pos, const char *value);
+   bool store_string(ocs::tom::ElementData *ep, int pos, const char *value);
 
    /**
     * @brief Store a number into a hashed field, maintaining the hash table
@@ -258,7 +258,7 @@ namespace ocs::tom {
     * @throw FieldException with reason DuplicateKey in a debug build, when the field is unique and
     *        another element of the list holds the value; the old value is kept
     */
-   void store_hashed_number(lListElem *ep, int pos, std::uint64_t value);
+   void store_hashed_number(ocs::tom::ElementData *ep, int pos, std::uint64_t value);
 
    /**
     * @brief Store a list into a list field, freeing the list it held before
@@ -269,7 +269,7 @@ namespace ocs::tom {
     * @param pos the field's position, of type List
     * @param value the new list, or nullptr; the element takes it over
     */
-   void store_list(lListElem *ep, int pos, lList *value);
+   void store_list(ocs::tom::ElementData *ep, int pos, ocs::tom::ListData *value);
 
    /**
     * @brief Store an element into an object field, freeing the element it held before
@@ -282,7 +282,7 @@ namespace ocs::tom {
     * @param value the new element, or nullptr; the element takes it over and marks it as a sub-object
     * @return true if stored or held already, false if @p value is bound to a list or another element
     */
-   bool store_object(lListElem *ep, int pos, lListElem *value);
+   bool store_object(ocs::tom::ElementData *ep, int pos, ocs::tom::ElementData *value);
 
    /**
     * @brief Suspend the debug checks for duplicate keys in unique fields of the calling thread for a scope
@@ -311,7 +311,7 @@ namespace ocs::tom {
     * @param ep the element to add
     * @throw FieldException with reason DuplicateKey
     */
-   void check_unique_on_add_debug(const lList *lp, const lListElem *ep);
+   void check_unique_on_add_debug(const ocs::tom::ListData *lp, const ocs::tom::ElementData *ep);
 
    /**
     * @brief The check of #check_unique_on_set, out of line; called in a debug build only
@@ -320,7 +320,7 @@ namespace ocs::tom {
     * @param value the new value, as for #check_unique_on_set
     * @throw FieldException with reason DuplicateKey
     */
-   void check_unique_on_set_debug(const lListElem *ep, int pos, const void *value);
+   void check_unique_on_set_debug(const ocs::tom::ElementData *ep, int pos, const void *value);
 
    /**
     * @brief Check the keys of an element against a list before it is added to it (N-H-18)
@@ -335,7 +335,8 @@ namespace ocs::tom {
     * @param ep the element to add, not yet in the list
     * @throw FieldException with reason DuplicateKey, naming type, field, key and list
     */
-   inline void check_unique_on_add([[maybe_unused]] const lList *lp, [[maybe_unused]] const lListElem *ep) {
+   inline void check_unique_on_add([[maybe_unused]] const ocs::tom::ListData *lp,
+                                   [[maybe_unused]] const ocs::tom::ElementData *ep) {
 #ifdef ENABLE_DEBUG_CHECKS
       check_unique_on_add_debug(lp, ep);
 #endif
@@ -354,7 +355,7 @@ namespace ocs::tom {
     *        number for a Uint32 (uint32_t) or Uint64 (uint64_t) field
     * @throw FieldException with reason DuplicateKey, naming type, field, key and list
     */
-   inline void check_unique_on_set([[maybe_unused]] const lListElem *ep, [[maybe_unused]] const int pos,
+   inline void check_unique_on_set([[maybe_unused]] const ocs::tom::ElementData *ep, [[maybe_unused]] const int pos,
                                    [[maybe_unused]] const void *value) {
 #ifdef ENABLE_DEBUG_CHECKS
       check_unique_on_set_debug(ep, pos, value);
@@ -372,7 +373,7 @@ namespace ocs::tom {
     * @param pos the field's position
     * @return true if the store needs the hashed path
     */
-   inline bool needs_hashed_store(const lListElem *ep, const int pos) {
+   inline bool needs_hashed_store(const ocs::tom::ElementData *ep, const int pos) {
       if (elem_hash_table(ep, pos) != nullptr) {
          return true;
       }
@@ -389,7 +390,7 @@ namespace ocs::tom {
    // same instruction.
    static_assert(__atomic_always_lock_free(sizeof(uint64_t), nullptr),
                  "uint64_t cannot be accessed atomically without a lock on this platform");
-   static_assert(alignof(lMultiType) >= sizeof(uint64_t),
+   static_assert(alignof(ocs::tom::FieldValue) >= sizeof(uint64_t),
                  "a field value is not aligned well enough to be accessed atomically");
 
    /**
@@ -402,7 +403,7 @@ namespace ocs::tom {
     * @param value the value slot of the field, of type Uint64
     * @return the value
     */
-   inline std::uint64_t load_uint64_atomic(const lMultiType &value) noexcept {
+   inline std::uint64_t load_uint64_atomic(const ocs::tom::FieldValue &value) noexcept {
       return __atomic_load_n(&value.ul64, __ATOMIC_RELAXED);
    }
 
@@ -415,7 +416,7 @@ namespace ocs::tom {
     * @param value the value slot of the field, of type Uint64
     * @param v the value to store
     */
-   inline void store_uint64_atomic(lMultiType &value, const std::uint64_t v) noexcept {
+   inline void store_uint64_atomic(ocs::tom::FieldValue &value, const std::uint64_t v) noexcept {
       __atomic_store_n(&value.ul64, v, __ATOMIC_RELAXED);
    }
 
@@ -440,7 +441,7 @@ namespace ocs::tom {
     */
    template <typename V>
       requires std::is_same_v<V, std::uint32_t> || std::is_same_v<V, std::uint64_t> || std::is_same_v<V, double>
-   V add_number(lListElem *ep, const int pos, lMultiType &slot, const V offset) {
+   V add_number(ocs::tom::ElementData *ep, const int pos, ocs::tom::FieldValue &slot, const V offset) {
       if constexpr (std::is_same_v<V, double>) {
          slot.db += offset;
          return slot.db;
@@ -514,7 +515,7 @@ namespace ocs::tom {
     */
    template <FieldType T>
       requires KeyFieldType<T>
-   lListElem *lookup_first(const lList *lp, int pos, KeyArgOf<T> value, const void **iterator);
+   ocs::tom::ElementData *lookup_first(const ocs::tom::ListData *lp, int pos, KeyArgOf<T> value, const void **iterator);
 
    /**
     * @brief The next element of a list whose field holds a value, continuing #lookup_first
@@ -532,7 +533,7 @@ namespace ocs::tom {
     */
    template <FieldType T>
       requires KeyFieldType<T>
-   lListElem *lookup_next(const lList *lp, int pos, KeyArgOf<T> value, const void **iterator);
+   ocs::tom::ElementData *lookup_next(const ocs::tom::ListData *lp, int pos, KeyArgOf<T> value, const void **iterator);
 
    /**
     * @brief The first element of a list whose string field equals a value without regard to case
@@ -547,7 +548,7 @@ namespace ocs::tom {
     * @throw FieldException with reason AbsentField if the list's elements do not hold the field, or
     *        WrongType if it is not a string field
     */
-   lListElem *lookup_first_str_nocase(const lList *lp, int nm, const char *value);
+   ocs::tom::ElementData *lookup_first_str_nocase(const ocs::tom::ListData *lp, int nm, const char *value);
 
    /**
     * @brief The first element of a list whose string field at a known position equals a value without regard to
@@ -557,7 +558,7 @@ namespace ocs::tom {
     * @param value the value, or nullptr for no match
     * @return the element, or nullptr
     */
-   lListElem *lookup_first_str_nocase_at(const lList *lp, int pos, const char *value);
+   ocs::tom::ElementData *lookup_first_str_nocase_at(const ocs::tom::ListData *lp, int pos, const char *value);
 
    /**
     * @brief The first element of a list whose string field equals a value, or starts with it if it ends in '*'
@@ -573,7 +574,7 @@ namespace ocs::tom {
     * @throw FieldException with reason AbsentField if the list's elements do not hold the field, or
     *        WrongType if it is not a string field
     */
-   lListElem *lookup_first_str_like(const lList *lp, int nm, const char *value);
+   ocs::tom::ElementData *lookup_first_str_like(const ocs::tom::ListData *lp, int nm, const char *value);
 
    /**
     * @brief The first element of a list whose string field at a known position equals a value, or starts with it
@@ -583,6 +584,6 @@ namespace ocs::tom {
     * @param value the value or prefix pattern, or nullptr for no match
     * @return the element, or nullptr
     */
-   lListElem *lookup_first_str_like_at(const lList *lp, int pos, const char *value);
+   ocs::tom::ElementData *lookup_first_str_like_at(const ocs::tom::ListData *lp, int pos, const char *value);
 
 } // namespace ocs::tom

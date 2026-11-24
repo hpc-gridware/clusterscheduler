@@ -79,7 +79,7 @@ test_host_list_locate() {
    // a typed handle converts to the raw handle of the parameter
    CHECK(1, "typed list: global is found", host_list_locate(*hosts, SGE_GLOBAL_NAME) == global_host.raw());
    // a raw pointer converts as well
-   const lList *raw_hosts = hosts->raw();
+   const ocs::tom::ListData *raw_hosts = hosts->raw();
    CHECK(2, "raw list: template is found", host_list_locate(raw_hosts, SGE_TEMPLATE_NAME) == template_host.raw());
    CHECK(3, "unknown host: nullptr", host_list_locate(*hosts, "no_such_host_x") == nullptr);
    CHECK(4, "nullptr host name: nullptr", host_list_locate(*hosts, nullptr) == nullptr);
@@ -92,7 +92,7 @@ test_host_list_locate() {
    auto centries = ocs::tom::ListPtr<ocs::tom::CE>::create("centries");
    centries->emplace_back<CE_name>(SGE_GLOBAL_NAME);
    bool threw = false;
-   lListElem *found = nullptr;
+   ocs::tom::ElementData *found = nullptr;
    try {
       found = host_list_locate(*centries, SGE_GLOBAL_NAME);
    } catch (...) {
@@ -152,7 +152,7 @@ test_raw_master_list_access() {
          !ocs::DataStore::master_list_raw_rw(SGE_TYPE_USERSET));
 
    auto users = ocs::tom::ListPtr<ocs::tom::US>::create("usersets");
-   const lList *users_raw = users.get().raw();
+   const ocs::tom::ListData *users_raw = users.get().raw();
    auto previous = ocs::DataStore::replace_master_list_raw(SGE_TYPE_USERSET, ocs::tom::RawListPtr(std::move(users)));
    CHECK(14, "replace_master_list_raw(): an empty slot gives an empty owner back", !previous);
    CHECK(15, "replace_master_list_raw(): the slot holds the new list",

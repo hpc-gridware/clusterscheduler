@@ -89,7 +89,7 @@ namespace {
     *        select_as() gives as no list
     * @return true if the condition exists and selects exactly those elements
     */
-   bool selects(const char *label, const lList *lp, const lCondition *built,
+   bool selects(const char *label, const ocs::tom::ListData *lp, const ocs::tom::WhereData *built,
                 const std::vector<std::uint32_t> &expected) {
       if (built == nullptr) {
          std::printf("%s: the condition is missing\n", label);
@@ -148,7 +148,7 @@ namespace {
     */
    std::vector<int> in_descriptor_order(const std::vector<int> &fields) {
       std::vector<int> ordered;
-      for (const lDescr *dp = ocs::tom::TEST::descriptor.e; dp->nm != NoName; dp++) {
+      for (const ocs::tom::FieldDescr *dp = ocs::tom::TEST::descriptor.e; dp->nm != NoName; dp++) {
          if (std::find(fields.begin(), fields.end(), dp->nm) != fields.end()) {
             ordered.push_back(dp->nm);
          }
@@ -161,9 +161,9 @@ namespace {
     * @param fields the fields, in any order, possibly repeated
     * @return the shared descriptor holding a reference for the caller, or nullptr for no field
     */
-   const lDescr *reduced_to(const std::vector<int> &fields) {
+   const ocs::tom::FieldDescr *reduced_to(const std::vector<int> &fields) {
       std::vector<bool> keep;
-      for (const lDescr *dp = ocs::tom::TEST::descriptor.e; dp->nm != NoName; dp++) {
+      for (const ocs::tom::FieldDescr *dp = ocs::tom::TEST::descriptor.e; dp->nm != NoName; dp++) {
          keep.push_back(std::find(fields.begin(), fields.end(), dp->nm) != fields.end());
       }
       return ocs::tom::descr_build(ocs::tom::TEST::descriptor.e, keep);
@@ -179,8 +179,8 @@ namespace {
     * @param fields the fields of @p expected, in descriptor order
     * @return true if the selected list has the expected layout and every element the values of its source
     */
-   bool selects_fields(const char *label, const lList *lp, const lEnumeration *built, const lDescr *expected,
-                       const std::vector<int> &fields) {
+   bool selects_fields(const char *label, const ocs::tom::ListData *lp, const ocs::tom::WhatData *built,
+                       const ocs::tom::FieldDescr *expected, const std::vector<int> &fields) {
       if (built == nullptr || expected == nullptr) {
          std::printf("%s: a selection or the expected layout is missing\n", label);
          return false;
@@ -218,7 +218,7 @@ namespace {
 static void
 test_where_compare() {
    const auto owner = make_test_list(10);
-   const lList *lp = owner.get().raw();
+   const ocs::tom::ListData *lp = owner.get().raw();
    using Op = ocs::tom::CompareOp;
    bool same = true;
 
@@ -307,11 +307,11 @@ static void
 test_where_compare_errors() {
    using Op = ocs::tom::CompareOp;
    const auto reduced_what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32});
-   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, reduced_what.get());
+   const ocs::tom::FieldDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, reduced_what.get());
 
    struct Case {
       const char *label;
-      const lDescr *descr;
+      const ocs::tom::FieldDescr *descr;
       int nm;
    };
    const Case cases[] = {{"null descriptor", nullptr, TEST_string},
@@ -356,7 +356,7 @@ test_where_compare_errors() {
 static void
 test_what() {
    const auto owner = make_test_list(6);
-   const lList *lp = owner.get().raw();
+   const ocs::tom::ListData *lp = owner.get().raw();
 
    const std::vector<std::vector<int>> field_sets = {
        {TEST_uint32},
@@ -368,12 +368,12 @@ test_what() {
    for (const auto &fields : field_sets) {
       // what lIntVector2What() selected: the fields in descriptor order, each once
       const std::vector<int> ordered = in_descriptor_order(fields);
-      const lDescr *expected = reduced_to(fields);
+      const ocs::tom::FieldDescr *expected = reduced_to(fields);
       const auto built = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, fields);
       const std::string label = "what_of with " + std::to_string(fields.size()) + " fields";
       same = selects_fields(label.c_str(), lp, built.get(), expected, ordered) && same;
 
-      const lDescr *new_reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, built.get());
+      const ocs::tom::FieldDescr *new_reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, built.get());
       if (expected == nullptr || new_reduced == nullptr || !ocs::tom::same_layout(expected, new_reduced)) {
          std::printf("%s: the reduced descriptors differ\n", label.c_str());
          reduced_same = false;
@@ -403,11 +403,11 @@ test_what() {
 static void
 test_what_errors() {
    const auto reduced_what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32});
-   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, reduced_what.get());
+   const ocs::tom::FieldDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, reduced_what.get());
 
    struct Case {
       const char *label;
-      const lDescr *descr;
+      const ocs::tom::FieldDescr *descr;
       std::vector<int> fields;
    };
    const Case cases[] = {{"no field", ocs::tom::TEST::descriptor.e, {}},

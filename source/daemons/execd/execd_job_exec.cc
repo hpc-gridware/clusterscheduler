@@ -123,7 +123,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
     */
    if (from_qmaster) {
       // raw out parameters of object_unpack_elem_verify() and of the answer list functions
-      lListElem *job_raw = nullptr;
+      ocs::tom::ElementData *job_raw = nullptr;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
 
@@ -158,7 +158,7 @@ int do_job_exec(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buffer 
    } else {
       /* start a pe task */
       // raw out parameters of object_unpack_elem_verify() and of the answer list functions
-      lListElem *petrep_raw = nullptr;
+      ocs::tom::ElementData *petrep_raw = nullptr;
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
       if (!object_unpack_elem_verify(&answer_list, &(aMsg->buf), &petrep_raw, ocs::tom::PETR::descriptor.e)) {
@@ -199,7 +199,7 @@ int do_job_slave(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    DENTER(TOP_LAYER);
 
    // raw out parameters of object_unpack_elem_verify() and of the answer list functions
-   lListElem *jelem_raw = nullptr;
+   ocs::tom::ElementData *jelem_raw = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
 
    /*

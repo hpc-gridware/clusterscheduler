@@ -53,7 +53,8 @@
  * its contents are constant expressions. The descriptor of a type points at its first field.
  */
 #define LISTDEF(name) inline constexpr auto name##_blk = ocs::tom::descr_make({           ///< opens an object type definition; ends with #LISTEND
-#define LISTEND(name) {NoName, MT_END}}); inline constexpr const lDescr *name = name##_blk.e; ///< closes the object type definition opened with #LISTDEF
+/// closes the object type definition opened with #LISTDEF
+#define LISTEND(name) {NoName, MT_END}}); inline constexpr const ocs::tom::FieldDescr *name = name##_blk.e;
 #define SGE_INT(name,flags)         { name, MT_INT32    | flags }, /* don't use it, not implemented on gdi level */ ///< declares an int (not supported at GDI level) field
 #define SGE_HOST(name,flags)        { name, MT_HOST   | flags },                 ///< declares a host name field
 #define SGE_STRING(name,flags)      { name, MT_STRING | flags },                 ///< declares a string field

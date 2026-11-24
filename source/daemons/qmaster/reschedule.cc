@@ -238,8 +238,9 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
  * @return 0 on success; 1 if one of the parameters was invalid
  */
 int
-reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor,
-                bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session) {
+reschedule_jobs(ocs::tom::ElementData *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer,
+                monitoring_t *monitor, bool is_manual, const char *caller_user, const char *caller_host,
+                uint64_t gdi_session) {
    DENTER(TOP_LAYER);
    int ret = 1;
 
@@ -309,7 +310,7 @@ reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *
  *
  * @return 0 on success
  */
-int reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep,
+int reschedule_job(ocs::tom::ElementData *raw_jep, ocs::tom::ElementData *raw_jatep, ocs::tom::ElementData *ep,
                    const uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor,
                    const bool is_manual, const char *caller_user, const char *caller_host, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
@@ -797,7 +798,7 @@ reschedule_clear_deferred_start(const ocs::tom::Element<ocs::tom::JB> jep, const
  * @param gdi_session the GDI session
  */
 void
-reschedule_clear_deferred_starts_of_host(const lListElem *raw_host, const uint64_t gdi_session) {
+reschedule_clear_deferred_starts_of_host(const ocs::tom::ElementData *raw_host, const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // the caller passes a host of the master list, checked here once
@@ -1131,7 +1132,7 @@ reschedule_unknown_timeout(const ocs::tom::Element<ocs::tom::EH> hep) {
  * @param raw_hep host EH
  */
 void
-reschedule_unknown_trigger(lListElem *raw_hep) {
+reschedule_unknown_trigger(ocs::tom::ElementData *raw_hep) {
    DENTER(TOP_LAYER);
 
    // the caller passes a host of the master list, checked here once

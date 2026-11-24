@@ -32,7 +32,7 @@ namespace ocs {
    /// Validation helpers for resource quota sets (RQS)
    class ResourceQuota {
    public:
-      static bool has_duplicates(const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+      static bool has_duplicates(const ocs::tom::ListData *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const std::string& object_name);
    };
 }

@@ -110,6 +110,6 @@ gru_list_search(const ocs::tom::List<ocs::tom::GRU> granted_resources_list, cons
    const ocs::tom::ConstElement<ocs::tom::GRU> gru =
          gru_list_search(static_cast<ocs::tom::ConstList<ocs::tom::GRU>>(granted_resources_list), name, host_name);
 
-   return ocs::tom::Element<ocs::tom::GRU>::from_typed(const_cast<lListElem *>(gru.raw()));
+   return ocs::tom::Element<ocs::tom::GRU>::from_typed(const_cast<ocs::tom::ElementData *>(gru.raw()));
 }
 

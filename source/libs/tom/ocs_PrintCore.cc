@@ -54,7 +54,7 @@ namespace ocs::tom {
        * @param lp the list, not nullptr
        * @param level the nesting level
        */
-      void append_list(dstring *buffer, const lList *lp, int level);
+      void append_list(dstring *buffer, const ocs::tom::ListData *lp, int level);
 
       /**
        * @brief Append an element without the check for null
@@ -62,13 +62,13 @@ namespace ocs::tom {
        * @param ep the element, not nullptr
        * @param level the nesting level
        */
-      void append_elem(dstring *buffer, const lListElem *ep, const int level) {
+      void append_elem(dstring *buffer, const ocs::tom::ElementData *ep, const int level) {
          const std::string space = indent(level);
          const char *sp = space.c_str();
          sge_dstring_sprintf_append(buffer, "%s-------------------------------\n", sp);
          for (const auto f : ocs::tom::present_fields(ep->descr)) {
             const char *name = ocs::tom::field_name(ep->descr[f.pos].nm);
-            const lMultiType &value = ocs::tom::detail::value(ep, f.pos);
+            const ocs::tom::FieldValue &value = ocs::tom::detail::value(ep, f.pos);
             switch (mt_get_type(ep->descr[f.pos].mt)) {
                case MT_INT32:
                   sge_dstring_sprintf_append(buffer, "%s%-20.20s (Integer) = %d\n", sp, name, value.i);
@@ -122,11 +122,11 @@ namespace ocs::tom {
          }
       }
 
-      void append_list(dstring *buffer, const lList *lp, const int level) {
+      void append_list(dstring *buffer, const ocs::tom::ListData *lp, const int level) {
          const char *name = list_name(lp);
          sge_dstring_sprintf_append(buffer, "\n%sList: <%s> #Elements: %d\n", indent(level).c_str(),
                                     name != nullptr ? name : "nullptr", static_cast<int>(lp->nelem));
-         for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
             append_elem(buffer, ep, level);
          }
       }
@@ -137,7 +137,7 @@ namespace ocs::tom {
        * @param what the selection, not nullptr
        * @param level the nesting level
        */
-      void append_what(dstring *buffer, const lEnumeration *what, const int level) {
+      void append_what(dstring *buffer, const ocs::tom::WhatData *what, const int level) {
          for (int i = 0; mt_get_type(what[i].mt) != MT_END; i++) {
             sge_dstring_append(buffer, indent(level).c_str());
             const char *name;
@@ -198,7 +198,7 @@ namespace ocs::tom {
        * @param cp the condition, or nullptr
        * @param level the nesting level
        */
-      void append_where(dstring *buffer, const lCondition *cp, const int level) {
+      void append_where(dstring *buffer, const ocs::tom::WhereData *cp, const int level) {
          if (cp == nullptr) {
             return;
          }
@@ -227,7 +227,7 @@ namespace ocs::tom {
                   const std::size_t used = strlen(out);
                   snprintf(&out[used], sizeof(out) - used, "%s", compare_op_text(cp->op));
                }
-               const lMultiType &val = cp->operand.cmp.val;
+               const ocs::tom::FieldValue &val = cp->operand.cmp.val;
                switch (mt_get_type(cp->operand.cmp.mt)) {
                   case MT_INT32:
                      sge_dstring_sprintf_append(buffer, "%s %d\n", out, val.i);
@@ -283,28 +283,28 @@ namespace ocs::tom {
 
    } // namespace
 
-   void print_elem(dstring *buffer, const lListElem *ep, const int level) {
+   void print_elem(dstring *buffer, const ocs::tom::ElementData *ep, const int level) {
       if (ep == nullptr) {
          throw ListCoreError("printing a null element");
       }
       append_elem(buffer, ep, level);
    }
 
-   void print_list(dstring *buffer, const lList *lp, const int level) {
+   void print_list(dstring *buffer, const ocs::tom::ListData *lp, const int level) {
       if (lp == nullptr) {
          throw ListCoreError("printing a null list");
       }
       append_list(buffer, lp, level);
    }
 
-   void print_what(dstring *buffer, const lEnumeration *what, const int level) {
+   void print_what(dstring *buffer, const ocs::tom::WhatData *what, const int level) {
       if (what == nullptr) {
          throw ListCoreError("printing a null selection");
       }
       append_what(buffer, what, level);
    }
 
-   void print_where(dstring *buffer, const lCondition *cp, const int level) {
+   void print_where(dstring *buffer, const ocs::tom::WhereData *cp, const int level) {
       if (cp == nullptr) {
          throw ListCoreError("printing a null condition");
       }

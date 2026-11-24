@@ -49,7 +49,7 @@
  * @return 0 on success, 1 when qmaster reported an error
  */
 static int
-qconf_control_kill(lList *lp, const int action_flag, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
+qconf_control_kill(ocs::tom::ListData *lp, const int action_flag, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    auto alp = ocs::gdi::Client::gdi_kill(lp, action_flag);
    return qconf_answer_take(alpp, &alp);
 }

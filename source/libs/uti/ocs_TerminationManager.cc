@@ -336,7 +336,8 @@ ocs::TerminationManager::install_terminate_handler() {
  *    /lib64/libstdc++.so.6 :   +0x96597 => 0x7f0e4a0e6597
  *    /lib64/libstdc++.so.6 :   +0x967f8 => 0x7f0e4a0e67f8
  *    ./sge_qmaster.all : ocs::TerminationManager::trigger_exception()  +0x36 => 0x44ba40
- *    ./sge_qmaster.all : sge_c_gdi_process_in_listener(ocs::gdi::Packet*, ocs::gdi::Task*, _lList**, monitoring_t*, bool)  +0x139d => 0x48402d
+ *    ./sge_qmaster.all : sge_c_gdi_process_in_listener(ocs::gdi::Packet*, ocs::gdi::Task*, ocs::tom::ListData**,
+ * monitoring_t*, bool)  +0x139d => 0x48402d
  *    ./sge_qmaster.all : sge_qmaster_process_message(monitoring_t*)  +0x115d => 0x4c30bd
  *    ./sge_qmaster.all : sge_listener_main(void*)  +0x19d => 0x4e6bad
  *    /lib64/libpthread.so.0 :   +0x817a => 0x7f0e4a82417a

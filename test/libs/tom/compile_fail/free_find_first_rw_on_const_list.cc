@@ -21,7 +21,8 @@
 /** @file
  * @brief Must not compile (CS-3103): the free find_first_rw<F>() on a read-only typed list, which is deleted
  *
- * Through the implicit conversion to const lList * the call would hand out a mutable element of a list held
+ * Through the implicit conversion to const ocs::tom::ListData * the call would hand out a mutable element of a list
+ * held
  * read-only. On a typed list there is one way per operation, the member: find_first<F>() gives a ConstElement on
  * a ConstList and an Element on a List.
  *

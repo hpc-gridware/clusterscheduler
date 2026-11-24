@@ -49,11 +49,11 @@
 #include "sgeobj/sge_answer.h"
 
 int
-sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
+sge_read_configuration(const ocs::tom::ElementData *aSpoolContext, ocs::tom::ListData **config_list,
                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 ocs::tom::RawListPtr
-sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration);
+sge_get_configuration(const ocs::tom::WhereData *condition, const ocs::tom::WhatData *enumeration);
 
 ocs::tom::ElementPtr<ocs::tom::CONF>
 sge_get_configuration_for_host(const char *aName);

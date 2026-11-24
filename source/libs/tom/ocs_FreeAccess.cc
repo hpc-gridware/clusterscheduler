@@ -32,14 +32,14 @@
 
 namespace ocs::tom {
 
-   void report_missing_field(const char *function, const int nm, const lDescr *descr) noexcept {
+   void report_missing_field(const char *function, const int nm, const ocs::tom::FieldDescr *descr) noexcept {
       // a reduced descriptor has a position for the field, but no value; any other descriptor is of another type
       const SoftPathReason reason =
          field_pos(descr, nm) >= 0 ? SoftPathReason::MissingField : SoftPathReason::ForeignField;
       report_soft_path(function, nm, reason);
    }
 
-   void missing_key_field(const KeyOp op, const char *function, const int nm, const lDescr *descr) {
+   void missing_key_field(const KeyOp op, const char *function, const int nm, const ocs::tom::FieldDescr *descr) {
       DENTER(TOM_LAYER);
       report_missing_field(function, nm, descr);
       switch (op) {

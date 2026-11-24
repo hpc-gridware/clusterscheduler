@@ -439,7 +439,7 @@ static void lWriteElemXML_(const ocs::tom::ConstRawElement ep, const int nesting
          lWriteListXML_(xml_elem.get<XMLE_List>(), nesting_level, os);
       }
    } else {
-      const lDescr *descr = ep.descr();
+      const ocs::tom::FieldDescr *descr = ep.descr();
       for (const auto f : ocs::tom::present_fields(descr)) {
          const int nm = descr[f.pos].nm;
          const ocs::tom::FieldType type = ocs::tom::field_type_of(descr[f.pos].mt);

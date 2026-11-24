@@ -149,7 +149,7 @@ ocs::tom::Element<ocs::tom::JAT> job_get_ja_task_template_pending(const ocs::tom
 
    // the template list of a read only job hands out a writable element
    const auto template_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(
-      const_cast<lListElem *>(job.get<JB_ja_template>().front().raw()));
+      const_cast<ocs::tom::ElementData *>(job.get<JB_ja_template>().front().raw()));
 
    if (!template_task) {
       ERROR("unable to retrieve template task");
@@ -559,7 +559,7 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(const ocs::tom::Element<ocs::tom::JB
  * @param[in,out] ja_task the task to unenroll (JAT); freed and set to nullptr
  */
 void job_unenroll(const ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                  lListElem **ja_task) {
+                  ocs::tom::ElementData **ja_task) {
    DENTER(TOP_LAYER);
    if (!job || ja_task == nullptr || *ja_task == nullptr) {
       // nothing to do
@@ -898,7 +898,7 @@ const char *job_get_shell_start_mode(const ocs::tom::ConstElement<ocs::tom::QU> 
  *
  * @return error code 1 => invalid parameter -1 => check failed: element already exists 0 => OK
  */
-int job_list_add_job(lList **job_list, const char *name, const ocs::tom::Element<ocs::tom::JB> job,
+int job_list_add_job(ocs::tom::ListData **job_list, const char *name, const ocs::tom::Element<ocs::tom::JB> job,
                      const int check) {
    DENTER(TOP_LAYER);
 

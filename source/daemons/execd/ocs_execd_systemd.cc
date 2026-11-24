@@ -62,7 +62,7 @@
 #include "ptf.h"
 
 // from ptf.cc
-extern lList *ptf_jobs;
+extern ocs::tom::ListData *ptf_jobs;
 
 namespace ocs::execd {
 #if defined(OCS_WITH_SYSTEMD)

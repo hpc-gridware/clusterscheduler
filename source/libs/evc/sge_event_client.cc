@@ -190,8 +190,8 @@
  * what and a where condition. If the where condition removes all data, no
  * event is sent at all.
  *
- * #sge_evc_class_str::ec_mod_subscription_where expects the `lListElem`
- * representation of the `lCondition` and `lEnumeration`; `ocs_what_to_elem()` and
+ * #sge_evc_class_str::ec_mod_subscription_where expects the `ocs::tom::ElementData`
+ * representation of the `ocs::tom::WhereData` and `ocs::tom::WhatData`; `ocs_what_to_elem()` and
  * `ocs_where_to_elem()` convert them.
  *
  * Master and client both benefit, in speed and in memory, from requesting only
@@ -427,8 +427,8 @@ static bool ec2_deregister_local(sge_evc_class_t *thiz);
 static bool ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_down,
                                ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool ec2_subscribe(sge_evc_class_t *thiz, ev_event event);
-static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what,
-                                       const lListElem *where);
+static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const ocs::tom::ElementData *what,
+                                       const ocs::tom::ElementData *where);
 static bool ec2_subscribe_all(sge_evc_class_t *thiz);
 static bool ec2_unsubscribe(sge_evc_class_t *thiz, ev_event event);
 static bool ec2_unsubscribe_all(sge_evc_class_t *thiz);
@@ -442,13 +442,13 @@ static bool ec2_set_session(sge_evc_class_t *thiz, const char *session);
 static const char *ec2_get_session(sge_evc_class_t *thiz);
 static bool ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 static bool ec2_commit_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp);
-static bool ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_multi);
+static bool ec2_commit_multi(sge_evc_class_t *thiz, ocs::tom::ListData **malpp, ocs::gdi::Request *gdi_multi);
 static bool ec2_ack(sge_evc_class_t *thiz);
-static bool ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down);
+static bool ec2_get(sge_evc_class_t *thiz, ocs::tom::ListData **event_list, bool exit_on_qmaster_down);
 static std::optional<ocs::tom::ListPtr<ocs::tom::REP>> get_event_list(sge_evc_class_t *thiz, int sync,
                                                                      int *commlib_error);
 static ev_registration_id ec2_get_id(sge_evc_class_t *thiz);
-static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down);
+static bool ec2_get_local(sge_evc_class_t *thiz, ocs::tom::ListData **elist, bool exit_on_qmaster_down);
 static void ec2_wait_local(sge_evc_class_t *thiz);
 static int ec2_signal_local(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                             ocs::tom::List<ocs::tom::REP> event_list);
@@ -1053,7 +1053,7 @@ ec2_register_local(sge_evc_class_t *thiz, [[maybe_unused]] bool exit_on_qmaster_
 
       if (evc_local && evc_local->add_func) {
          // out-parameter of the add function, which hands the registered client over raw
-         lList *eclp_raw = nullptr;
+         ocs::tom::ListData *eclp_raw = nullptr;
 
          // for internal request we create a pseudo packet just containing
          // information required for potential error message
@@ -1464,8 +1464,8 @@ ec2_mod_subscription_flush(sge_evc_class_t *thiz, ev_event event, bool flush, in
  *
  * @see `ocs_what_to_elem()`, `ocs_what_from_elem()`, `ocs_where_to_elem()`, `ocs_where_from_elem()`
  */
-static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const lListElem *what,
-                                       const lListElem *where) {
+static bool ec2_mod_subscription_where(sge_evc_class_t *thiz, ev_event event, const ocs::tom::ElementData *what,
+                                       const ocs::tom::ElementData *where) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -2146,7 +2146,7 @@ ec2_commit(sge_evc_class_t *thiz, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
  * @see #sge_evc_class_str::ec_commit, #sge_evc_class_str::ec_get
  */
 static bool
-ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_multi) {
+ec2_commit_multi(sge_evc_class_t *thiz, ocs::tom::ListData **malpp, ocs::gdi::Request *gdi_multi) {
    DENTER(EVC_LAYER);
    bool ret = false;
    auto *sge_evc = (sge_evc_t *) thiz->sge_evc_handle;
@@ -2230,7 +2230,7 @@ ec2_commit_multi(sge_evc_class_t *thiz, lList **malpp, ocs::gdi::Request *gdi_mu
  * @see #sge_evc_class_str::ec_register, #sge_evc_class_str::ec_commit
  */
 static bool
-ec2_get(sge_evc_class_t *thiz, lList **event_list, bool exit_on_qmaster_down) {
+ec2_get(sge_evc_class_t *thiz, ocs::tom::ListData **event_list, bool exit_on_qmaster_down) {
    DENTER(EVC_LAYER);
    bool ret = true;
    uint32_t wrong_number;
@@ -2665,7 +2665,7 @@ static ec_control_t *ec2_get_event_control(sge_evc_class_t *thiz) {
  * @return true when the wait completed, false when @p thiz is nullptr or the
  *         client has no event control block
  */
-static bool ec2_get_local(sge_evc_class_t *thiz, lList **elist, bool exit_on_qmaster_down) {
+static bool ec2_get_local(sge_evc_class_t *thiz, ocs::tom::ListData **elist, bool exit_on_qmaster_down) {
    DENTER(EVC_LAYER);
    DSTRING_STATIC(ds_buffer, 64);
 

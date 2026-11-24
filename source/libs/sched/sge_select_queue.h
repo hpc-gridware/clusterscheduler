@@ -333,7 +333,8 @@ sge_host_match_static(const sge_assignment_t *a, ocs::tom::ConstElement<ocs::tom
 /* ------ DEBUG / output methods --------------------------------------------------- */
 
 /* not used */
-/* int sge_get_ulong_qattr(uint32_t *uvalp, char *attrname, lListElem *q, lList *exechost_list, lList *complex_list); */
+/* int sge_get_ulong_qattr(uint32_t *uvalp, char *attrname, ocs::tom::ElementData *q, ocs::tom::ListData *exechost_list,
+ * ocs::tom::ListData *complex_list); */
 
 int sge_get_double_qattr(double *dvalp, const char *attrname, ocs::tom::ConstElement<ocs::tom::QU> q,
                          ocs::tom::ConstList<ocs::tom::EH> exechost_list,

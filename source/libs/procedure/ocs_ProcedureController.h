@@ -71,7 +71,7 @@
  *   MyView      view(param);
  *   MyController ctrl(std::cout);
  *
- *   lList *answer_list = nullptr;
+ *   ocs::tom::ListData *answer_list = nullptr;
  *   if (model.make_snapshot(&answer_list, param))
  *      ctrl.process_request(param, model, view);
  * @endcode

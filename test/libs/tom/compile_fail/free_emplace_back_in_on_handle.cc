@@ -43,7 +43,7 @@
  * @param job the job
  * @return never compiles
  */
-lListElem *wrong_use(const ocs::tom::Element<ocs::tom::JB> &job) {
+ocs::tom::ElementData *wrong_use(const ocs::tom::Element<ocs::tom::JB> &job) {
    // the member job.emplace_back_in<LF, F>(key) is the only way on a handle
    return ocs::tom::emplace_back_in<JB_env_list, VA_variable>(job, "PATH");
 }

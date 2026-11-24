@@ -706,7 +706,8 @@ bool qref_list_is_valid(const ocs::tom::ConstList<ocs::tom::QR> this_list, ocs::
    if (this_list) {
       // the host names are brought into their unique form first; "q@h" and "q@h.domain" may then be the same
       // reference, which is kept once - like the resolution, this changes the list in place (CS-3053)
-      qref_list_resolve_hostname(ocs::tom::List<ocs::tom::QR>::from_typed(const_cast<lList *>(this_list.raw())));
+      qref_list_resolve_hostname(
+            ocs::tom::List<ocs::tom::QR>::from_typed(const_cast<ocs::tom::ListData *>(this_list.raw())));
 
       /*
        * qname has to be requestable
@@ -826,7 +827,7 @@ ocs_qref_resolved_name(const char *name) {
  *
  * @note MT-NOTE: ocs_parse_destination_identifier_list() is MT safe
  */
-int ocs_parse_destination_identifier_list(lList **lpp, const char *dest_str) {
+int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *dest_str) {
    DENTER(TOP_LAYER);
 
    int rule[] = {QR_name, 0};

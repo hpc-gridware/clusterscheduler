@@ -22,7 +22,7 @@
 /** @file
  * @brief Typed handles on lists of the typed object model: List, ConstList, ListPtr
  *
- * A list handle is a view on an `lList *` whose elements are of one known
+ * A list handle is a view on an `ocs::tom::ListData *` whose elements are of one known
  * object type. It is the size of a pointer and converts implicitly back to the
  * pointer. Iterating it yields element handles of the type, and the lookups by
  * key use the lazy hash tables of the list library exactly as the old lookups
@@ -59,7 +59,7 @@ namespace ocs::tom::detail {
     *        check_sort_order() refuses it
     */
    template <auto F>
-   int sort_slot(const lDescr *descr) {
+   int sort_slot(const ocs::tom::FieldDescr *descr) {
       constexpr int pos = FieldTraits<F>::pos;
       const int off = descr[pos].off;
       if (off == TOM_ABSENT) [[unlikely]] {
@@ -84,11 +84,12 @@ namespace ocs::tom::detail {
     * @return less than, equal to or greater than 0 as @p a comes before, with or after @p b
     */
    template <std::size_t I, typename K, typename... Ks, std::size_t N>
-   int compare_by_keys(const lListElem *a, const lListElem *b, const std::array<int, N> &slots) {
+   int compare_by_keys(const ocs::tom::ElementData *a, const ocs::tom::ElementData *b,
+                       const std::array<int, N> &slots) {
       constexpr auto F = SortKeyTraits<K>::field;
       constexpr FieldType type = FieldTraits<F>::type;
-      const lMultiType &x = a->cont[slots[I]];
-      const lMultiType &y = b->cont[slots[I]];
+      const ocs::tom::FieldValue &x = a->cont[slots[I]];
+      const ocs::tom::FieldValue &y = b->cont[slots[I]];
       int result;
       if constexpr (type == FieldType::String) {
          result = sge_strnullcmp(x.str, y.str);
@@ -148,7 +149,7 @@ namespace ocs::tom {
        * @return the field's position, or -1
        */
       template <auto F>
-      [[nodiscard]] inline int typed_pos(const lDescr *descr) noexcept {
+      [[nodiscard]] inline int typed_pos(const ocs::tom::FieldDescr *descr) noexcept {
          using Tr = FieldTraits<F>;
          if (descr == nullptr || descr[0].nm != Tr::Type::fields[0].nm ||
              descr[Tr::pos].off == TOM_ABSENT) [[unlikely]] {
@@ -165,7 +166,7 @@ namespace ocs::tom {
        * @throw FieldException with reason AbsentField if the list is reduced without the field
        */
       template <auto F>
-      [[nodiscard]] inline int present_pos_of(const lList *lp) {
+      [[nodiscard]] inline int present_pos_of(const ocs::tom::ListData *lp) {
          const int pos = typed_pos<F>(lp->descr);
          if (pos < 0) [[unlikely]] {
             throw_field_exception(FieldException::Reason::AbsentField, F, lp->descr);
@@ -188,7 +189,8 @@ namespace ocs::tom {
        * @throw FieldException with reason DuplicateKey, naming type, field, key and list, or AbsentField
        */
       template <auto F>
-      inline lListElem *lookup_first(const lList *lp, const KeyOf<F> key, const void **iterator) {
+      inline ocs::tom::ElementData *lookup_first(const ocs::tom::ListData *lp, const KeyOf<F> key,
+                                                 const void **iterator) {
          *iterator = nullptr;
          const int pos = present_pos_of<F>(lp);
          constexpr FieldType type = FieldTraits<F>::type;
@@ -214,7 +216,8 @@ namespace ocs::tom {
        * @return the element, or nullptr
        */
       template <auto F>
-      inline lListElem *lookup_next(const lList *lp, const KeyOf<F> key, const void **iterator) {
+      inline ocs::tom::ElementData *lookup_next(const ocs::tom::ListData *lp, const KeyOf<F> key,
+                                                const void **iterator) {
          constexpr FieldType type = FieldTraits<F>::type;
          constexpr int pos = FieldTraits<F>::pos;
          if constexpr (type == FieldType::Host) {
@@ -244,7 +247,7 @@ namespace ocs::tom {
           * @brief An iterator at an element
           * @param ep the element, or nullptr for the end
           */
-         explicit ElementIterator(lListElem *ep) noexcept : ep_(ep) {}
+         explicit ElementIterator(ocs::tom::ElementData *ep) noexcept : ep_(ep) {}
 
          /**
           * @brief The handle on the current element
@@ -281,7 +284,7 @@ namespace ocs::tom {
          bool operator==(const ElementIterator &other) const noexcept = default;
 
       private:
-         lListElem *ep_ = nullptr;   ///< the current element, or nullptr at the end
+         ocs::tom::ElementData *ep_ = nullptr;   ///< the current element, or nullptr at the end
       };
 
       /**
@@ -313,7 +316,7 @@ namespace ocs::tom {
              * @param lp the list
              * @param key the key; a string or host name must outlive the iteration
              */
-            iterator(const lList *lp, const KeyOf<F> key) : lp_(lp), key_(key) {
+            iterator(const ocs::tom::ListData *lp, const KeyOf<F> key) : lp_(lp), key_(key) {
                ep_ = lp != nullptr ? lookup_first<F>(lp, key, &state_) : nullptr;
             }
 
@@ -344,10 +347,10 @@ namespace ocs::tom {
             }
 
          private:
-            const lList *lp_ = nullptr;      ///< the list
+            const ocs::tom::ListData *lp_ = nullptr;      ///< the list
             KeyOf<F> key_{};                 ///< the key
             const void *state_ = nullptr;    ///< the state of the old lookup
-            lListElem *ep_ = nullptr;        ///< the current match, or nullptr at the end
+            ocs::tom::ElementData *ep_ = nullptr;        ///< the current match, or nullptr at the end
          };
 
          /**
@@ -355,7 +358,7 @@ namespace ocs::tom {
           * @param lp the list, or nullptr for no matches
           * @param key the key; a string or host name must outlive the range
           */
-         KeyRange(const lList *lp, const KeyOf<F> key) noexcept : lp_(lp), key_(key) {}
+         KeyRange(const ocs::tom::ListData *lp, const KeyOf<F> key) noexcept : lp_(lp), key_(key) {}
 
          /**
           * @brief The first match
@@ -384,7 +387,7 @@ namespace ocs::tom {
          }
 
       private:
-         const lList *lp_;   ///< the list, or nullptr
+         const ocs::tom::ListData *lp_;   ///< the list, or nullptr
          KeyOf<F> key_;      ///< the key
       };
 
@@ -393,7 +396,7 @@ namespace ocs::tom {
    /**
     * @brief A read-only typed handle on a list
     *
-    * Converts implicitly to `const lList *`, made from one only explicitly and
+    * Converts implicitly to `const ocs::tom::ListData *`, made from one only explicitly and
     * with a check of the type. Tests as false when empty; an empty handle is
     * an empty list for iteration, size and lookups, as nullptr is for the old
     * interface.
@@ -426,7 +429,7 @@ namespace ocs::tom {
        * @param lp the list, or nullptr for an empty handle
        * @throw FieldException if the list holds elements of another type
        */
-      explicit ConstList(const lList *lp) : lp_(const_cast<lList *>(lp)) {
+      explicit ConstList(const ocs::tom::ListData *lp) : lp_(const_cast<ocs::tom::ListData *>(lp)) {
          if (lp != nullptr && lp->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             detail::throw_wrong_type<T>(lp->descr);
          }
@@ -437,9 +440,9 @@ namespace ocs::tom {
        * @param lp the list, or nullptr
        * @return the handle
        */
-      static ConstList from_typed(const lList *lp) noexcept {
+      static ConstList from_typed(const ocs::tom::ListData *lp) noexcept {
          ConstList handle;
-         handle.lp_ = const_cast<lList *>(lp);
+         handle.lp_ = const_cast<ocs::tom::ListData *>(lp);
          return handle;
       }
 
@@ -447,7 +450,7 @@ namespace ocs::tom {
        * @brief The list, for every function of the old interface
        * @return the list, or nullptr
        */
-      operator const lList *() const noexcept {
+      operator const ocs::tom::ListData *() const noexcept {
          return lp_;
       }
 
@@ -455,7 +458,7 @@ namespace ocs::tom {
        * @brief The list, for varargs and deduced templates
        * @return the list, or nullptr
        */
-      [[nodiscard]] const lList *raw() const noexcept {
+      [[nodiscard]] const ocs::tom::ListData *raw() const noexcept {
          return lp_;
       }
 
@@ -469,7 +472,7 @@ namespace ocs::tom {
        * @return the descriptor, nullptr if the handle is empty
        * @see Old form: lGetListDescr()
        */
-      [[nodiscard]] const lDescr *descr() const noexcept {
+      [[nodiscard]] const ocs::tom::FieldDescr *descr() const noexcept {
          return lp_ != nullptr ? lp_->descr : nullptr;
       }
 
@@ -815,13 +818,13 @@ namespace ocs::tom {
       }
 
    protected:
-      lList *lp_ = nullptr;   ///< the list, or nullptr; const unless reached through List
+      ocs::tom::ListData *lp_ = nullptr;   ///< the list, or nullptr; const unless reached through List
    };
 
    /**
     * @brief A typed handle on a list that may be changed
     *
-    * Adds the conversion to `lList *`, iteration with mutable element handles
+    * Adds the conversion to `ocs::tom::ListData *`, iteration with mutable element handles
     * and the operations that change the list, named after their counterparts
     * in std::list. Derives from ConstList, so it converts to its read-only
     * counterpart, never the other way round.
@@ -853,14 +856,14 @@ namespace ocs::tom {
        * @param lp the list, or nullptr for an empty handle
        * @throw FieldException if the list holds elements of another type
        */
-      explicit List(lList *lp) : ConstList<T>(lp) {}
+      explicit List(ocs::tom::ListData *lp) : ConstList<T>(lp) {}
 
       /**
        * @brief Take a list from a source whose type is known, without a check
        * @param lp the list, or nullptr
        * @return the handle
        */
-      static List from_typed(lList *lp) noexcept {
+      static List from_typed(ocs::tom::ListData *lp) noexcept {
          List handle;
          handle.lp_ = lp;
          return handle;
@@ -870,7 +873,7 @@ namespace ocs::tom {
        * @brief The list, for every function of the old interface
        * @return the list, or nullptr
        */
-      operator lList *() const noexcept {
+      operator ocs::tom::ListData *() const noexcept {
          return this->lp_;
       }
 
@@ -878,7 +881,7 @@ namespace ocs::tom {
        * @brief The list, for varargs and deduced templates
        * @return the list, or nullptr
        */
-      [[nodiscard]] lList *raw() const noexcept {
+      [[nodiscard]] ocs::tom::ListData *raw() const noexcept {
          return this->lp_;
       }
 
@@ -1015,8 +1018,8 @@ namespace ocs::tom {
          if (this->lp_ == nullptr) {
             return removed;
          }
-         lListElem *next;
-         for (lListElem *ep = this->lp_->first; ep != nullptr; ep = next) {
+         ocs::tom::ElementData *next;
+         for (ocs::tom::ElementData *ep = this->lp_->first; ep != nullptr; ep = next) {
             next = ep->next;
             if (compare(ep, where.get())) {
                remove_elem(this->lp_, ep);
@@ -1068,7 +1071,7 @@ namespace ocs::tom {
        */
       Element<T> insert_after(const ConstElement<T> after, ElementPtr<T> &&element) const {
          check_member(after);
-         return insert(const_cast<lListElem *>(after.raw()), std::move(element));
+         return insert(const_cast<ocs::tom::ElementData *>(after.raw()), std::move(element));
       }
 
       /**
@@ -1079,7 +1082,7 @@ namespace ocs::tom {
        */
       void erase(const Element<T> element) const {
          check_member(element);
-         lListElem *ep = element.raw();
+         ocs::tom::ElementData *ep = element.raw();
          remove_elem(this->lp_, ep);
       }
 
@@ -1191,7 +1194,7 @@ namespace ocs::tom {
        */
       [[nodiscard]] ListPtr<T> split_at(const ConstElement<T> element, const char *name = nullptr) const {
          check_member(element);
-         return ListPtr<T>::from_typed(split_from(this->lp_, const_cast<lListElem *>(element.raw()),
+         return ListPtr<T>::from_typed(split_from(this->lp_, const_cast<ocs::tom::ElementData *>(element.raw()),
                                                   name != nullptr ? name : list_name(this->lp_)));
       }
 
@@ -1233,8 +1236,8 @@ namespace ocs::tom {
       template <auto F>
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::String)
       void remove_common(const List<T> other) const {
-         lList *mine = this->lp_;
-         lList *theirs = other.raw();
+         ocs::tom::ListData *mine = this->lp_;
+         ocs::tom::ListData *theirs = other.raw();
          remove_common_str(mine, theirs, static_cast<int>(F), false);
       }
 
@@ -1268,7 +1271,7 @@ namespace ocs::tom {
          if (this->lp_->nelem < 2) {
             return;
          }
-         detail::sort_elems(this->lp_, [&slots](const lListElem *a, const lListElem *b) {
+         detail::sort_elems(this->lp_, [&slots](const ocs::tom::ElementData *a, const ocs::tom::ElementData *b) {
             return detail::compare_by_keys<0, K, Ks...>(a, b, slots) < 0;
          });
       }
@@ -1305,7 +1308,7 @@ namespace ocs::tom {
          if (this->lp_ == nullptr) {
             return;
          }
-         sort_list_with(this->lp_, [&less](const lListElem *a, const lListElem *b) {
+         sort_list_with(this->lp_, [&less](const ocs::tom::ElementData *a, const ocs::tom::ElementData *b) {
             return less(ConstElement<T>::from_typed(a), ConstElement<T>::from_typed(b));
          });
       }
@@ -1368,7 +1371,7 @@ namespace ocs::tom {
          requires FieldOf<F, T> && detail::LookupField<F>
       Element<T> emplace_back(const detail::KeyOf<F> key) const {
          check_list();
-         lList *lp = this->lp_;
+         ocs::tom::ListData *lp = this->lp_;
          constexpr FieldType type = FieldTraits<F>::type;
          constexpr int pos = FieldTraits<F>::pos;
          if constexpr (type == FieldType::String) {
@@ -1510,7 +1513,7 @@ namespace ocs::tom {
        * @param element the element, which the list takes over
        * @return the handle on the element, now in the list
        */
-      Element<T> insert(lListElem *after, ElementPtr<T> &&element) const {
+      Element<T> insert(ocs::tom::ElementData *after, ElementPtr<T> &&element) const {
          check_list();
          if (!element) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, NoName, T::descriptor.e);
@@ -1552,14 +1555,14 @@ namespace ocs::tom {
        * @param lp the list, or nullptr; freed by the handle
        * @throw FieldException if the list holds elements of another type; the list is not taken over then
        */
-      explicit ListPtr(lList *lp) : lp_(List<T>(lp).raw()) {}
+      explicit ListPtr(ocs::tom::ListData *lp) : lp_(List<T>(lp).raw()) {}
 
       /**
        * @brief Take over a list from a source whose type is known, without a check
        * @param lp the list, or nullptr; freed by the handle
        * @return the owning handle
        */
-      [[nodiscard]] static ListPtr from_typed(lList *lp) noexcept {
+      [[nodiscard]] static ListPtr from_typed(ocs::tom::ListData *lp) noexcept {
          ListPtr handle;
          handle.lp_ = lp;
          return handle;
@@ -1584,7 +1587,7 @@ namespace ocs::tom {
          requires FieldOf<F, T> && detail::Textual<F>
       [[nodiscard]] static ListPtr from_string(const char *s, const char *delimiters = nullptr,
                                                const NoneName none = NoneName::Name) {
-         lList *lp = nullptr;
+         ocs::tom::ListData *lp = nullptr;
          if (none == NoneName::Empty) {
             string_to_list_none(s, lp, T::descriptor.e, static_cast<int>(F), delimiters);
          } else {
@@ -1623,7 +1626,8 @@ namespace ocs::tom {
        *        if it is null
        * @throw ocs::RuntimeException if there is no memory
        */
-      [[nodiscard]] static ListPtr create(const char *name, const lDescr *descr, const Hashing hashing = Hashing::On) {
+      [[nodiscard]] static ListPtr create(const char *name, const ocs::tom::FieldDescr *descr,
+                                          const Hashing hashing = Hashing::On) {
          if (descr != nullptr && descr[0].nm != T::fields[0].nm) [[unlikely]] {
             detail::throw_wrong_type<T>(descr);
          }
@@ -1669,7 +1673,7 @@ namespace ocs::tom {
          if (!what) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullElement, NoName, T::descriptor.e);
          }
-         const lDescr *descr = reduced_descr(T::descriptor.e, what.get());
+         const ocs::tom::FieldDescr *descr = reduced_descr(T::descriptor.e, what.get());
          if (descr == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullDescriptor, NoName, T::descriptor.e);
          }
@@ -1796,7 +1800,7 @@ namespace ocs::tom {
        * @brief Give up ownership
        * @return the list, which the caller now owns, or nullptr
        */
-      [[nodiscard]] lList *release() noexcept {
+      [[nodiscard]] ocs::tom::ListData *release() noexcept {
          return std::exchange(lp_, nullptr);
       }
 
@@ -1828,7 +1832,7 @@ namespace ocs::tom {
        * @see Old form: tom_unpack_list(), tom_unpack_list_partial(); core: ocs::tom::unpack_list()
        */
       [[nodiscard]] static ListPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
-         lList *lp = unpack_list(&pb, flags);
+         ocs::tom::ListData *lp = unpack_list(&pb, flags);
          if (lp != nullptr && lp->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             try {
                detail::throw_wrong_type<T>(lp->descr);
@@ -1851,7 +1855,7 @@ namespace ocs::tom {
        * @see Old form: lUndumpList(); core: ocs::tom::undump_list()
        */
       [[nodiscard]] static ListPtr undump(FILE *fp, const char *name = nullptr) {
-         lList *lp = undump_list(fp, name, nullptr);
+         ocs::tom::ListData *lp = undump_list(fp, name, nullptr);
          if (lp->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             try {
                detail::throw_wrong_type<T>(lp->descr);
@@ -1864,7 +1868,7 @@ namespace ocs::tom {
       }
 
    private:
-      lList *lp_ = nullptr;   ///< the list owned, or nullptr
+      ocs::tom::ListData *lp_ = nullptr;   ///< the list owned, or nullptr
    };
 
    /**

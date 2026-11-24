@@ -82,7 +82,7 @@
  */
 typedef struct {
    bool     is_transaction;         ///< identifies, if a transaction is open, or not
-   lList    *transaction_requests;  ///< all event add requests collected while the transaction is open
+   ocs::tom::ListData    *transaction_requests;  ///< all event add requests collected while the transaction is open
 } event_master_transaction_t;
  
 /**
@@ -103,9 +103,9 @@ typedef struct {
    uint32_t         max_event_clients;     ///< max number of custom event clients, the scheduler not counted; protected by `mutex`
 
    bool             is_prepare_shutdown;   ///< set when qmaster is going down; no new event clients are accepted then; protected by `mutex`
-   lList*           clients;               ///< list of event master clients
-   lList*           client_ids;            ///< range list holding free event client ids
-   lList*           requests;              ///< event master requests (add/mod/del evc, add/ack event)
+   ocs::tom::ListData*           clients;               ///< list of event master clients
+   ocs::tom::ListData*           client_ids;            ///< range list holding free event client ids
+   ocs::tom::ListData*           requests;              ///< event master requests (add/mod/del evc, add/ack event)
    pthread_mutex_t  request_mutex;         ///< protects access to the request list
 
    pthread_key_t     transaction_key;      ///< key to access thread local transaction storage
@@ -121,15 +121,15 @@ void sge_event_master_send_events(ocs::tom::Element<ocs::tom::REP> report, ocs::
                                   monitoring_t *monitor);
 void sge_event_master_wait_next();
 
-int sge_add_event_client(const ocs::gdi::Packet *packet, lListElem *ev,
-                         ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **eclpp,
-                         event_client_update_func_t update_func,
-                         void *update_func_arg);
+int sge_add_event_client(const ocs::gdi::Packet *packet, ocs::tom::ElementData *ev,
+                         ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListData **eclpp,
+                         event_client_update_func_t update_func, void *update_func_arg);
 
-int sge_mod_event_client(lListElem *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
+int sge_mod_event_client(ocs::tom::ElementData *clio, ocs::tom::ListPtr<ocs::tom::AN> *alpp, char *ruser, char *rhost);
 bool sge_has_event_client(uint32_t aClientID);
 void sge_remove_event_client(uint32_t aClientID);
-lList* sge_select_event_clients(const char *list_name, const lCondition *where, const lEnumeration *what);
+ocs::tom::ListData* sge_select_event_clients(const char *list_name, const ocs::tom::WhereData *where,
+                                             const ocs::tom::WhatData *what);
 int sge_shutdown_event_client(const ocs::gdi::Packet *packet, uint32_t aClientID,
                               ocs::tom::ListPtr<ocs::tom::AN> *alpp);
 int sge_shutdown_dynamic_event_clients(const ocs::gdi::Packet *packet, ocs::tom::ListPtr<ocs::tom::AN> *alpp,

@@ -122,7 +122,7 @@ ocs::tom::ConstElement<ocs::tom::SU> suser_list_find(const ocs::tom::ConstList<o
 ocs::tom::Element<ocs::tom::SU> suser_list_find(const ocs::tom::List<ocs::tom::SU> suser_list,
                                                 const char *suser_name) {
    const auto ret = suser_list_find(ocs::tom::ConstList<ocs::tom::SU>(suser_list), suser_name);
-   return ocs::tom::Element<ocs::tom::SU>::from_typed(const_cast<lListElem *>(ret.raw()));
+   return ocs::tom::Element<ocs::tom::SU>::from_typed(const_cast<ocs::tom::ElementData *>(ret.raw()));
 }
 
 

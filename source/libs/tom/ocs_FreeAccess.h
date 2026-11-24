@@ -91,7 +91,7 @@ namespace ocs::tom {
     * @param nm the key field
     * @param descr the descriptor of the list, or nullptr
     */
-   [[gnu::cold]] void missing_key_field(KeyOp op, const char *function, int nm, const lDescr *descr);
+   [[gnu::cold]] void missing_key_field(KeyOp op, const char *function, int nm, const ocs::tom::FieldDescr *descr);
 
    namespace detail {
 
@@ -100,7 +100,7 @@ namespace ocs::tom {
        *
        * The element's type is the key field's type, known at compile time, so
        * the handle is made without a check (from_typed()). It converts
-       * implicitly to `const lListElem *`, so code holding the old pointer
+       * implicitly to `const ocs::tom::ElementData *`, so code holding the old pointer
        * keeps working.
        *
        * @tparam F the key field
@@ -111,7 +111,7 @@ namespace ocs::tom {
       /**
        * @brief The mutable handle the free forms return for an element found or added by key field F
        *
-       * Converts implicitly to `lListElem *`; see ConstElementOf.
+       * Converts implicitly to `ocs::tom::ElementData *`; see ConstElementOf.
        *
        * @tparam F the key field
        */
@@ -194,7 +194,8 @@ namespace ocs::tom {
        * @throw FieldException with reason DuplicateKey
        */
       template <auto F>
-      lListElem *free_find_first(const lList *lp, const RawKey<F> key, const void **iterator, const char *function) {
+      ocs::tom::ElementData *free_find_first(const ocs::tom::ListData *lp, const RawKey<F> key, const void **iterator,
+                                             const char *function) {
          if constexpr (StringKey<F>) {
             if (key == nullptr) {
                return nullptr;
@@ -226,7 +227,8 @@ namespace ocs::tom {
        * @return the element, or nullptr
        */
       template <auto F>
-      lListElem *free_find_next(const lList *lp, const RawKey<F> key, const void **iterator, const char *function) {
+      ocs::tom::ElementData *free_find_next(const ocs::tom::ListData *lp, const RawKey<F> key, const void **iterator,
+                                            const char *function) {
          if (*iterator == nullptr) {
             return nullptr;
          }
@@ -263,7 +265,7 @@ namespace ocs::tom {
        * @return the element, or nullptr
        */
       template <auto F, bool Like>
-      lListElem *free_find_string(const lList *lp, const char *value, const char *function) {
+      ocs::tom::ElementData *free_find_string(const ocs::tom::ListData *lp, const char *value, const char *function) {
          if (lp == nullptr || value == nullptr) {
             return nullptr;
          }
@@ -305,7 +307,7 @@ namespace ocs::tom {
        * @throw FieldException with reason DuplicateKey
        */
       template <auto F>
-      lListElem *free_emplace_back(lList **lpp, const RawKey<F> key, const char *function) {
+      ocs::tom::ElementData *free_emplace_back(ocs::tom::ListData **lpp, const RawKey<F> key, const char *function) {
          bool null_key = false;
          if constexpr (StringKey<F>) {
             null_key = key == nullptr;
@@ -319,7 +321,7 @@ namespace ocs::tom {
             missing_key_field(AddOp<F>, function, F, (*lpp)->descr);
             return nullptr;
          }
-         const lDescr *descr = FieldTraits<F>::Type::descriptor.e;
+         const ocs::tom::FieldDescr *descr = FieldTraits<F>::Type::descriptor.e;
          constexpr int pos = FieldTraits<F>::pos;
          try {
             return add_elem_at<FieldTraits<F>::type>(*lpp, pos, key, descr);
@@ -347,7 +349,7 @@ namespace ocs::tom {
        * @throw FieldException with reason DuplicateKey
        */
       template <auto F>
-      int free_erase(lList **lpp, const RawKey<F> key, const char *function) {
+      int free_erase(ocs::tom::ListData **lpp, const RawKey<F> key, const char *function) {
          if constexpr (StringKey<F>) {
             if (key == nullptr) {
                report_soft_path(function, F, SoftPathReason::NullArgument);
@@ -390,7 +392,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto LF, bool Typed = false>
-      lList **sub_list_ref(const lListElem *ep, const char *function) {
+      ocs::tom::ListData **sub_list_ref(const ocs::tom::ElementData *ep, const char *function) {
          if (ep == nullptr) {
             report_soft_path(function, LF, SoftPathReason::NullElement);
             return nullptr;
@@ -424,7 +426,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed = false>
-      int setter_pos(const lListElem *ep, const char *function) {
+      int setter_pos(const ocs::tom::ElementData *ep, const char *function) {
          using Tr = FieldTraits<F>;
          if (ep == nullptr) [[unlikely]] {
             report_soft_path(function, static_cast<int>(F), SoftPathReason::NullElement);
@@ -447,7 +449,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
       template <auto F, bool Typed = false>
-      int getter_pos(const lListElem *ep) {
+      int getter_pos(const ocs::tom::ElementData *ep) {
          check_holds<F, Typed>(ep);
          return FieldTraits<F>::pos;
       }
@@ -473,7 +475,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   [[nodiscard]] detail::ConstElementOf<F> find_first(const lList *lp, const detail::RawKey<F> key) {
+   [[nodiscard]] detail::ConstElementOf<F> find_first(const ocs::tom::ListData *lp, const detail::RawKey<F> key) {
       const void *iterator = nullptr;
       return detail::ConstElementOf<F>::from_typed(detail::free_find_first<F>(lp, key, &iterator, "ocs::tom::find_first"));
    }
@@ -489,7 +491,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   [[nodiscard]] detail::ElementOf<F> find_first_rw(const lList *lp, const detail::RawKey<F> key) {
+   [[nodiscard]] detail::ElementOf<F> find_first_rw(const ocs::tom::ListData *lp, const detail::RawKey<F> key) {
       const void *iterator = nullptr;
       return detail::ElementOf<F>::from_typed(detail::free_find_first<F>(lp, key, &iterator, "ocs::tom::find_first_rw"));
    }
@@ -506,7 +508,8 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   [[nodiscard]] detail::ConstElementOf<F> find_first(const lList *lp, const detail::RawKey<F> key, const void **iterator) {
+   [[nodiscard]] detail::ConstElementOf<F> find_first(const ocs::tom::ListData *lp, const detail::RawKey<F> key,
+                                                      const void **iterator) {
       return detail::ConstElementOf<F>::from_typed(detail::free_find_first<F>(lp, key, iterator, "ocs::tom::find_first"));
    }
 
@@ -522,7 +525,8 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   [[nodiscard]] detail::ElementOf<F> find_first_rw(const lList *lp, const detail::RawKey<F> key, const void **iterator) {
+   [[nodiscard]] detail::ElementOf<F> find_first_rw(const ocs::tom::ListData *lp, const detail::RawKey<F> key,
+                                                    const void **iterator) {
       return detail::ElementOf<F>::from_typed(detail::free_find_first<F>(lp, key, iterator, "ocs::tom::find_first_rw"));
    }
 
@@ -537,7 +541,8 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   [[nodiscard]] detail::ConstElementOf<F> find_next(const lList *lp, const detail::RawKey<F> key, const void **iterator) {
+   [[nodiscard]] detail::ConstElementOf<F> find_next(const ocs::tom::ListData *lp, const detail::RawKey<F> key,
+                                                     const void **iterator) {
       return detail::ConstElementOf<F>::from_typed(detail::free_find_next<F>(lp, key, iterator, "ocs::tom::find_next"));
    }
 
@@ -552,7 +557,8 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   [[nodiscard]] detail::ElementOf<F> find_next_rw(const lList *lp, const detail::RawKey<F> key, const void **iterator) {
+   [[nodiscard]] detail::ElementOf<F> find_next_rw(const ocs::tom::ListData *lp, const detail::RawKey<F> key,
+                                                   const void **iterator) {
       return detail::ElementOf<F>::from_typed(detail::free_find_next<F>(lp, key, iterator, "ocs::tom::find_next_rw"));
    }
 
@@ -564,7 +570,8 @@ namespace ocs::tom {
     * @param key the key
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // without it the call would bind silently to the raw form through the implicit conversion to const
+   // ocs::tom::ListData *;
    // it also catches a List<T>, which derives from ConstList<T>
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
@@ -579,7 +586,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // without it the call would bind silently to the raw form through the implicit conversion to const
+   // ocs::tom::ListData *;
    // it also catches a List<T>, which derives from ConstList<T>
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
@@ -594,7 +602,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // without it the call would bind silently to the raw form through the implicit conversion to const
+   // ocs::tom::ListData *;
    // it also catches a List<T>, which derives from ConstList<T>
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
@@ -609,7 +618,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // without it the call would bind silently to the raw form through the implicit conversion to const
+   // ocs::tom::ListData *;
    // it also catches a List<T>, which derives from ConstList<T>
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
@@ -624,7 +634,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to const lList *;
+   // without it the call would bind silently to the raw form through the implicit conversion to const
+   // ocs::tom::ListData *;
    // it also catches a List<T>, which derives from ConstList<T>
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
@@ -638,7 +649,8 @@ namespace ocs::tom {
     * @param key the key
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ListData *; the deleted overload gives the reason instead of "no matching
+   // function"
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
    auto find_first_rw(const ListPtr<T> &lp, const detail::RawKey<F> key) = delete;
@@ -652,7 +664,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ListData *; the deleted overload gives the reason instead of "no matching
+   // function"
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
    auto find_first_rw(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
@@ -666,7 +679,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ListData *; the deleted overload gives the reason instead of "no matching
+   // function"
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
    auto find_first(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
@@ -680,7 +694,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ListData *; the deleted overload gives the reason instead of "no matching
+   // function"
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
    auto find_next(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
@@ -694,7 +709,8 @@ namespace ocs::tom {
     * @param iterator the lookup's state
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lList *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ListData *; the deleted overload gives the reason instead of "no matching
+   // function"
    template <auto F, ObjectType T>
       requires detail::FreeKeyField<F>
    auto find_next_rw(const ListPtr<T> &lp, const detail::RawKey<F> key, const void **iterator) = delete;
@@ -709,7 +725,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] detail::ConstElementOf<F> find_first_nocase(const lList *lp, const char *value) {
+   [[nodiscard]] detail::ConstElementOf<F> find_first_nocase(const ocs::tom::ListData *lp, const char *value) {
       return detail::ConstElementOf<F>::from_typed(detail::free_find_string<F, false>(lp, value, "ocs::tom::find_first_nocase"));
    }
 
@@ -723,7 +739,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] detail::ElementOf<F> find_first_nocase_rw(const lList *lp, const char *value) {
+   [[nodiscard]] detail::ElementOf<F> find_first_nocase_rw(const ocs::tom::ListData *lp, const char *value) {
       return detail::ElementOf<F>::from_typed(detail::free_find_string<F, false>(lp, value, "ocs::tom::find_first_nocase_rw"));
    }
 
@@ -737,7 +753,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] detail::ConstElementOf<F> find_first_like(const lList *lp, const char *value) {
+   [[nodiscard]] detail::ConstElementOf<F> find_first_like(const ocs::tom::ListData *lp, const char *value) {
       return detail::ConstElementOf<F>::from_typed(detail::free_find_string<F, true>(lp, value, "ocs::tom::find_first_like"));
    }
 
@@ -751,7 +767,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] detail::ElementOf<F> find_first_like_rw(const lList *lp, const char *value) {
+   [[nodiscard]] detail::ElementOf<F> find_first_like_rw(const ocs::tom::ListData *lp, const char *value) {
       return detail::ElementOf<F>::from_typed(detail::free_find_string<F, true>(lp, value, "ocs::tom::find_first_like_rw"));
    }
 
@@ -779,8 +795,9 @@ namespace ocs::tom {
        *        DuplicateKey
        */
       template <auto LF, auto F, bool Typed>
-      lListElem *free_find_first_in(const lListElem *ep, const RawKey<F> key, const char *function) {
-         lList **lpp = sub_list_ref<LF, Typed>(ep, function);
+      ocs::tom::ElementData *free_find_first_in(const ocs::tom::ElementData *ep, const RawKey<F> key,
+                                                const char *function) {
+         ocs::tom::ListData **lpp = sub_list_ref<LF, Typed>(ep, function);
          const void *iterator = nullptr;
          return free_find_first<F>(lpp != nullptr ? *lpp : nullptr, key, &iterator, function);
       }
@@ -804,7 +821,7 @@ namespace ocs::tom {
     */
    template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
-   [[nodiscard]] detail::ConstElementOf<F> find_first_in(const lListElem *ep, const detail::RawKey<F> key) {
+   [[nodiscard]] detail::ConstElementOf<F> find_first_in(const ocs::tom::ElementData *ep, const detail::RawKey<F> key) {
       return detail::ConstElementOf<F>::from_typed(
          detail::free_find_first_in<LF, F, false>(ep, key, "ocs::tom::find_first_in"));
    }
@@ -821,7 +838,7 @@ namespace ocs::tom {
     */
    template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
-   [[nodiscard]] detail::ElementOf<F> find_first_in_rw(const lListElem *ep, const detail::RawKey<F> key) {
+   [[nodiscard]] detail::ElementOf<F> find_first_in_rw(const ocs::tom::ElementData *ep, const detail::RawKey<F> key) {
       return detail::ElementOf<F>::from_typed(
          detail::free_find_first_in<LF, F, false>(ep, key, "ocs::tom::find_first_in_rw"));
    }
@@ -848,7 +865,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   detail::ElementOf<F> emplace_back(lList **lpp, const detail::RawKey<F> key) {
+   detail::ElementOf<F> emplace_back(ocs::tom::ListData **lpp, const detail::RawKey<F> key) {
       return detail::ElementOf<F>::from_typed(detail::free_emplace_back<F>(lpp, key, "ocs::tom::emplace_back"));
    }
 
@@ -866,8 +883,8 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField, or DuplicateKey as #emplace_back
        */
       template <auto LF, auto F, bool Typed>
-      lListElem *free_emplace_back_in(lListElem *ep, const RawKey<F> key) {
-         lList **lpp = sub_list_ref<LF, Typed>(ep, "ocs::tom::emplace_back_in");
+      ocs::tom::ElementData *free_emplace_back_in(ocs::tom::ElementData *ep, const RawKey<F> key) {
+         ocs::tom::ListData **lpp = sub_list_ref<LF, Typed>(ep, "ocs::tom::emplace_back_in");
          return lpp != nullptr ? free_emplace_back<F>(lpp, key, "ocs::tom::emplace_back_in") : nullptr;
       }
    } // namespace detail
@@ -888,7 +905,7 @@ namespace ocs::tom {
     */
    template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
-   detail::ElementOf<F> emplace_back_in(lListElem *ep, const detail::RawKey<F> key) {
+   detail::ElementOf<F> emplace_back_in(ocs::tom::ElementData *ep, const detail::RawKey<F> key) {
       return detail::ElementOf<F>::from_typed(detail::free_emplace_back_in<LF, F, false>(ep, key));
    }
 
@@ -909,7 +926,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::FreeKeyField<F>
-   int erase(lList **lpp, const detail::RawKey<F> key) {
+   int erase(ocs::tom::ListData **lpp, const detail::RawKey<F> key) {
       return detail::free_erase<F>(lpp, key, "ocs::tom::erase");
    }
 
@@ -926,8 +943,8 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField, or DuplicateKey as #erase
        */
       template <auto LF, auto F, bool Typed>
-      int free_erase_in(lListElem *ep, const RawKey<F> key) {
-         lList **lpp = sub_list_ref<LF, Typed>(ep, "ocs::tom::erase_in");
+      int free_erase_in(ocs::tom::ElementData *ep, const RawKey<F> key) {
+         ocs::tom::ListData **lpp = sub_list_ref<LF, Typed>(ep, "ocs::tom::erase_in");
          return lpp != nullptr ? free_erase<F>(lpp, key, "ocs::tom::erase_in") : 0;
       }
    } // namespace detail
@@ -948,7 +965,7 @@ namespace ocs::tom {
     */
    template <auto LF, auto F>
       requires detail::SubKeyField<LF, F>
-   int erase_in(lListElem *ep, const detail::RawKey<F> key) {
+   int erase_in(ocs::tom::ElementData *ep, const detail::RawKey<F> key) {
       return detail::free_erase_in<LF, F, false>(ep, key);
    }
 
@@ -972,7 +989,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)>
-   [[nodiscard]] bool has(const lListElem *ep) noexcept {
+   [[nodiscard]] bool has(const ocs::tom::ElementData *ep) noexcept {
       return ep != nullptr && detail::typed_pos<F>(ep->descr) >= 0;
    }
 
@@ -989,7 +1006,7 @@ namespace ocs::tom {
        */
       template <auto F>
          requires TypedField<decltype(F)>
-      [[nodiscard]] bool has_unchecked(const lListElem *ep) noexcept {
+      [[nodiscard]] bool has_unchecked(const ocs::tom::ElementData *ep) noexcept {
          return ep != nullptr && ep->descr[FieldTraits<F>::pos].off != TOM_ABSENT;
       }
    } // namespace detail
@@ -1001,7 +1018,7 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // without it the call would bind silently to the raw form through the implicit conversion to ocs::tom::ElementData *
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    bool has(const ConstElement<T> &ep) = delete;
@@ -1013,7 +1030,8 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ElementData *; the deleted overload gives the reason instead of "no
+   // matching function"
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    bool has(const ElementPtr<T> &ep) = delete;
@@ -1034,7 +1052,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
-   int exchange(lListElem *ep, lList **lpp) {
+   int exchange(ocs::tom::ElementData *ep, ocs::tom::ListData **lpp) {
       if (lpp == nullptr) {
          report_soft_path("ocs::tom::exchange", F, SoftPathReason::NullArgument);
          return -1;
@@ -1060,7 +1078,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   int exchange(lListElem *ep, char **str) {
+   int exchange(ocs::tom::ElementData *ep, char **str) {
       if (str == nullptr) {
          report_soft_path("ocs::tom::exchange", F, SoftPathReason::NullArgument);
          return -1;
@@ -1096,7 +1114,7 @@ namespace ocs::tom {
    template <auto F, auto G>
       requires detail::TypedListField<F> && detail::TypedListField<G> &&
                std::is_same_v<typename FieldTraits<F>::Sub, typename FieldTraits<G>::Sub>
-   int swap(lListElem *to, lListElem *from) {
+   int swap(ocs::tom::ElementData *to, ocs::tom::ElementData *from) {
       const int from_pos = detail::setter_pos<G>(from, "ocs::tom::swap");
       if (from_pos < 0) {
          return -1;
@@ -1105,7 +1123,7 @@ namespace ocs::tom {
       if (to_pos < 0) {
          return -1;
       }
-      lList *held = nullptr;
+      ocs::tom::ListData *held = nullptr;
       exchange_list(from, from_pos, held);
       exchange_list(to, to_pos, held);
       exchange_list(from, from_pos, held);
@@ -1133,7 +1151,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires detail::TypedListField<F>
-   List<typename FieldTraits<F>::Sub> get_or_create(lListElem *ep, const char *list_name) {
+   List<typename FieldTraits<F>::Sub> get_or_create(ocs::tom::ElementData *ep, const char *list_name) {
       using Result = List<typename FieldTraits<F>::Sub>;
       if (ep == nullptr) {
          report_soft_path("ocs::tom::get_or_create", F, SoftPathReason::NullElement);
@@ -1159,7 +1177,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
       template <auto F, bool Typed>
-      [[nodiscard]] lList **free_list_ref(const lListElem *ep) {
+      [[nodiscard]] ocs::tom::ListData **free_list_ref(const ocs::tom::ElementData *ep) {
          const int pos = getter_pos<F, Typed>(ep);
          return &ocs::tom::detail::value(ep, pos).glp;
       }
@@ -1173,7 +1191,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
       template <auto F, bool Typed>
-      [[nodiscard]] const char *free_get_or_empty(const lListElem *ep) {
+      [[nodiscard]] const char *free_get_or_empty(const ocs::tom::ElementData *ep) {
          const int pos = getter_pos<F, Typed>(ep);
          const char *str = ocs::tom::detail::value(ep, pos).str;
          return str != nullptr ? str : "";
@@ -1189,7 +1207,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
       template <auto F, bool Typed>
-      [[nodiscard]] bool free_has_any_bits(const lListElem *ep, const std::uint32_t mask) {
+      [[nodiscard]] bool free_has_any_bits(const ocs::tom::ElementData *ep, const std::uint32_t mask) {
          const int pos = getter_pos<F, Typed>(ep);
          return (ocs::tom::detail::value(ep, pos).ul & mask) > 0;
       }
@@ -1206,7 +1224,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed, typename Op>
-      int free_change_bits(lListElem *ep, const char *function, Op op) {
+      int free_change_bits(ocs::tom::ElementData *ep, const char *function, Op op) {
          const int pos = setter_pos<F, Typed>(ep, function);
          if (pos < 0) {
             return -1;
@@ -1225,7 +1243,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed>
-      int free_or_bits(lListElem *ep, const std::uint32_t mask) {
+      int free_or_bits(ocs::tom::ElementData *ep, const std::uint32_t mask) {
          return free_change_bits<F, Typed>(ep, "ocs::tom::or_bits", [mask](std::uint32_t &ul) { ul |= mask; });
       }
 
@@ -1239,7 +1257,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed>
-      int free_and_bits(lListElem *ep, const std::uint32_t mask) {
+      int free_and_bits(ocs::tom::ElementData *ep, const std::uint32_t mask) {
          return free_change_bits<F, Typed>(ep, "ocs::tom::and_bits", [mask](std::uint32_t &ul) { ul &= mask; });
       }
 
@@ -1253,7 +1271,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField
        */
       template <auto F, bool Typed>
-      int free_clear_bits(lListElem *ep, const std::uint32_t mask) {
+      int free_clear_bits(ocs::tom::ElementData *ep, const std::uint32_t mask) {
          return free_change_bits<F, Typed>(ep, "ocs::tom::clear_bits", [mask](std::uint32_t &ul) { ul &= ~mask; });
       }
    } // namespace detail
@@ -1268,7 +1286,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::List)
-   [[nodiscard]] lList **list_ref(const lListElem *ep) {
+   [[nodiscard]] ocs::tom::ListData **list_ref(const ocs::tom::ElementData *ep) {
       return detail::free_list_ref<F, false>(ep);
    }
 
@@ -1282,7 +1300,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::String)
-   [[nodiscard]] const char *get_or_empty(const lListElem *ep) {
+   [[nodiscard]] const char *get_or_empty(const ocs::tom::ElementData *ep) {
       return detail::free_get_or_empty<F, false>(ep);
    }
 
@@ -1301,7 +1319,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   [[nodiscard]] bool has_any_bits(const lListElem *ep, const std::uint32_t mask) {
+   [[nodiscard]] bool has_any_bits(const ocs::tom::ElementData *ep, const std::uint32_t mask) {
       return detail::free_has_any_bits<F, false>(ep, mask);
    }
 
@@ -1316,7 +1334,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int or_bits(lListElem *ep, const std::uint32_t mask) {
+   int or_bits(ocs::tom::ElementData *ep, const std::uint32_t mask) {
       return detail::free_or_bits<F, false>(ep, mask);
    }
 
@@ -1331,7 +1349,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int and_bits(lListElem *ep, const std::uint32_t mask) {
+   int and_bits(ocs::tom::ElementData *ep, const std::uint32_t mask) {
       return detail::free_and_bits<F, false>(ep, mask);
    }
 
@@ -1346,7 +1364,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && (FieldTraits<F>::type == FieldType::Uint32)
-   int clear_bits(lListElem *ep, const std::uint32_t mask) {
+   int clear_bits(ocs::tom::ElementData *ep, const std::uint32_t mask) {
       return detail::free_clear_bits<F, false>(ep, mask);
    }
 
@@ -1371,7 +1389,8 @@ namespace ocs::tom {
     * @param value the value to put in
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *;
+   // without it the call would bind silently to the raw form through the implicit conversion to ocs::tom::ElementData
+   // *;
    // it also catches an Element<T>, which derives from ConstElement<T>
    template <auto F, ObjectType T, typename A>
       requires TypedField<decltype(F)>
@@ -1386,7 +1405,8 @@ namespace ocs::tom {
     * @param list_name the name of a list created here
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *;
+   // without it the call would bind silently to the raw form through the implicit conversion to ocs::tom::ElementData
+   // *;
    // it also catches an Element<T>, which derives from ConstElement<T>
    template <auto F, ObjectType T>
       requires detail::TypedListField<F>
@@ -1402,7 +1422,8 @@ namespace ocs::tom {
     * @param value the value to put in
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ElementData *; the deleted overload gives the reason instead of "no
+   // matching function"
    template <auto F, ObjectType T, typename A>
       requires TypedField<decltype(F)>
    int exchange(const ElementPtr<T> &ep, A value) = delete;
@@ -1416,7 +1437,8 @@ namespace ocs::tom {
     * @param list_name the name of a list created here
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ElementData *; the deleted overload gives the reason instead of "no
+   // matching function"
    template <auto F, ObjectType T>
       requires detail::TypedListField<F>
    auto get_or_create(const ElementPtr<T> &ep, const char *list_name) = delete;
@@ -1716,7 +1738,7 @@ namespace ocs::tom {
     */
    template <auto F, auto G, ObjectType T>
       requires detail::TypedListField<F> && detail::TypedListField<G>
-   int swap(const ConstElement<T> &to, lListElem *from) = delete;
+   int swap(const ConstElement<T> &to, ocs::tom::ElementData *from) = delete;
 
    /**
     * @brief Deleted: swap() on a raw pointer and a typed handle; use the member (to.swap<F, G>(from)),
@@ -1730,7 +1752,7 @@ namespace ocs::tom {
     */
    template <auto F, auto G, ObjectType U>
       requires detail::TypedListField<F> && detail::TypedListField<G>
-   int swap(lListElem *to, const ConstElement<U> &from) = delete;
+   int swap(ocs::tom::ElementData *to, const ConstElement<U> &from) = delete;
 
    /**
     * @brief Deleted: swap() on owning handles; use the member (to.swap<F, G>(from)), there is one way per
@@ -2175,7 +2197,7 @@ namespace ocs::tom {
    template <ObjectType T>
    template <auto F>
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List)
-   lList **ConstElement<T>::list_ref() const {
+   ocs::tom::ListData **ConstElement<T>::list_ref() const {
       return detail::free_list_ref<F, true>(this->ep_);
    }
 

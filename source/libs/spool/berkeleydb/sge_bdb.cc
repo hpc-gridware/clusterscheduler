@@ -729,9 +729,8 @@ bool spool_berkeleydb_trigger(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_
  * @return true on success, else false; @p list keeps what was read before a failure
  */
 bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
-                                const bdb_database database,
-                                ocs::tom::RawListPtr &list, const lDescr *descr,
-                                const char *key) {
+                                const bdb_database database, ocs::tom::RawListPtr &list,
+                                const ocs::tom::FieldDescr *descr, const char *key) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -870,8 +869,7 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
  * @return true on success, else false
  */
 bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
-                                   const bdb_database database,
-                                   const lListElem *object, const char *key) {
+                                   const bdb_database database, const ocs::tom::ElementData *object, const char *key) {
    DENTER(BDB_LAYER);
 
    bool ret = true;
@@ -882,7 +880,7 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
     */
    struct BorrowGuard {
       ocs::tom::RawListPtr list;   ///< the temporary list, empty if nothing was borrowed
-      lListElem *object;           ///< the borrowed element
+      ocs::tom::ElementData *object;           ///< the borrowed element
 
       /** @brief Take the element out of the temporary list, free again; the emptied list goes with its owner */
       ~BorrowGuard() {
@@ -890,7 +888,7 @@ bool spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             static_cast<void>(list.get().take(object).release());
          }
       }
-   } borrow{{}, const_cast<lListElem *>(object)};
+   } borrow{{}, const_cast<ocs::tom::ElementData *>(object)};
 
    /* do not spool free elems: a free element is packed with its descriptor, a bound one without. If a free
     * elem is passed, it is put into a temporary list for the write and taken out again afterwards, so that
@@ -1108,7 +1106,7 @@ bool spool_berkeleydb_write_ja_task(ocs::tom::ListPtr<ocs::tom::AN> *answer_list
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-   const auto ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(const_cast<lListElem *>(object.raw()));
+   const auto ja_task = ocs::tom::Element<ocs::tom::JAT>::from_typed(const_cast<ocs::tom::ElementData *>(object.raw()));
 
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
@@ -1151,7 +1149,7 @@ bool spool_berkeleydb_write_job(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-   const auto job = ocs::tom::Element<ocs::tom::JB>::from_typed(const_cast<lListElem *>(object.raw()));
+   const auto job = ocs::tom::Element<ocs::tom::JB>::from_typed(const_cast<ocs::tom::ElementData *>(object.raw()));
 
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
@@ -1196,7 +1194,7 @@ bool spool_berkeleydb_write_cqueue(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
    dstring dbkey_dstring;
    char dbkey_buffer[MAX_STRING_SIZE];
    const char *dbkey;
-   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>::from_typed(const_cast<lListElem *>(object.raw()));
+   const auto cqueue = ocs::tom::Element<ocs::tom::CQ>::from_typed(const_cast<ocs::tom::ElementData *>(object.raw()));
 
    sge_dstring_init(&dbkey_dstring,
                     dbkey_buffer, sizeof(dbkey_buffer));
@@ -1757,7 +1755,7 @@ spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
       } else {
          sge_pack_buffer pb;
          int pack_ret;
-         const lDescr *descr;
+         const ocs::tom::FieldDescr *descr;
 
          DPRINTF(("read object with key " SFQ ", size %d\n",
                   key_dbt.data, data_dbt.size));

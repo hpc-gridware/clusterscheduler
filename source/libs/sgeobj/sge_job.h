@@ -370,7 +370,7 @@ ocs::tom::Element<ocs::tom::JAT> job_enroll(ocs::tom::Element<ocs::tom::JB> job,
                                             ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t ja_task_number);
 
 void job_unenroll(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                  lListElem **ja_task);
+                  ocs::tom::ElementData **ja_task);
 
 void job_delete_not_enrolled_ja_task(ocs::tom::Element<ocs::tom::JB> job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                      uint32_t ja_task_number);
@@ -398,7 +398,7 @@ ocs::tom::Element<ocs::tom::JAT> job_search_task(ocs::tom::ConstElement<ocs::tom
 ocs::tom::Element<ocs::tom::JAT> job_create_task(ocs::tom::Element<ocs::tom::JB> job,
                                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint32_t ja_task_id);
 
-int job_list_add_job(lList **job_list, const char *name, ocs::tom::Element<ocs::tom::JB> job, int check);
+int job_list_add_job(ocs::tom::ListData **job_list, const char *name, ocs::tom::Element<ocs::tom::JB> job, int check);
 
 [[nodiscard]] std::array<std::pair<uint32_t, ocs::tom::ListPtr<ocs::tom::RN>>, 16>
 job_create_hold_id_lists(ocs::tom::ConstElement<ocs::tom::JB> job);

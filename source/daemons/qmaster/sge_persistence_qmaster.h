@@ -57,8 +57,7 @@ void
 spooling_trigger_handler(te_event_t anEvent, monitoring_t *monitor);
 
 bool
-sge_event_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t timestamp, ev_event type,
-                uint32_t intkey1, uint32_t intkey2, const char *strkey,
-                const char *strkey2, const char *session, lListElem *object, 
-                lListElem *sub_object1, lListElem *sub_object2, 
+sge_event_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, uint64_t timestamp, ev_event type, uint32_t intkey1,
+                uint32_t intkey2, const char *strkey, const char *strkey2, const char *session,
+                ocs::tom::ElementData *object, ocs::tom::ElementData *sub_object1, ocs::tom::ElementData *sub_object2,
                 bool send_event, bool spool, uint64_t gdi_session);

@@ -50,7 +50,7 @@ namespace ocs::module_test {
    /** @brief An object type written by hand in a module test */
    struct TestType {
       const char *name;            ///< the name of the type, e.g. "TEST"
-      const lDescr *descr;         ///< its descriptor, built with LISTDEF
+      const ocs::tom::FieldDescr *descr;         ///< its descriptor, built with LISTDEF
       const char *const *names;    ///< its field names in field order, built with NAMEDEF
       std::size_t size;            ///< the number of fields
    };

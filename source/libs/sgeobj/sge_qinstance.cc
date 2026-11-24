@@ -154,7 +154,7 @@ ocs::tom::ConstElement<ocs::tom::QU> qinstance_list_locate(const ocs::tom::Const
 ocs::tom::Element<ocs::tom::QU> qinstance_list_locate(const ocs::tom::List<ocs::tom::QU> this_list,
                                                       const char *hostname, const char *cqueue_name) {
    const auto ret = qinstance_list_locate(ocs::tom::ConstList<ocs::tom::QU>(this_list), hostname, cqueue_name);
-   return ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<lListElem *>(ret.raw()));
+   return ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<ocs::tom::ElementData *>(ret.raw()));
 }
 
 /**

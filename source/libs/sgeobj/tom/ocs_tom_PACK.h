@@ -58,7 +58,8 @@ namespace ocs::tom {
     * @brief Packed Condition
     *
     * A `where` or `what` condition in its packed form, so it can be sent over GDI.
-    * The scheduler and the clients build `lCondition` and `lEnumeration` structures locally; those cannot be sent as they are, so they are packed into this and unpacked on the other side.
+    * The scheduler and the clients build `ocs::tom::WhereData` and `ocs::tom::WhatData` structures locally; those
+    * cannot be sent as they are, so they are packed into this and unpacked on the other side.
     */
    struct PACK {
       /** @brief The fields: number, name, type and flags, in the order of the field numbers */

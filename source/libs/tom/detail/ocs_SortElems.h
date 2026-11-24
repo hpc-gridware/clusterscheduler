@@ -51,14 +51,14 @@ namespace ocs::tom::detail {
     * @throw whatever @p less throws; the list is unchanged then
     */
    template <typename Less>
-   void sort_elems(lList *lp, const Less &less) {
-      std::vector<lListElem *> elems;
+   void sort_elems(ocs::tom::ListData *lp, const Less &less) {
+      std::vector<ocs::tom::ElementData *> elems;
       try {
          elems.reserve(lp->nelem);
       } catch (const std::bad_alloc &) {
          throw ListCoreError("no memory to sort a list");
       }
-      for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      for (ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
          elems.push_back(ep);
       }
 

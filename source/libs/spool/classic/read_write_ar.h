@@ -31,5 +31,5 @@
 namespace ocs::spool::classic {
    ocs::tom::ElementPtr<ocs::tom::AR> ar_read_spool_file(uint32_t ar_id);
    bool ar_write_spool_file(ocs::tom::ConstElement<ocs::tom::AR> ar);
-   bool ar_list_read_from_disk(lList **ar_list, const char *list_name);
+   bool ar_list_read_from_disk(ocs::tom::ListData **ar_list, const char *list_name);
 }

@@ -348,7 +348,7 @@ spool_json_write_ce_array(rapidjson::PrettyWriter<rapidjson::StringBuffer> &writ
 static bool
 spool_json_is_ce_list(const ocs::tom::ConstRawList list) {
    // present_pos() is the lookup lGetPosInDescr() wraps: a field the (reduced) descriptor leaves out is a miss
-   const lDescr *d = list.descr();
+   const ocs::tom::FieldDescr *d = list.descr();
    return d != nullptr &&
           ocs::tom::present_pos(d, CE_name) >= 0 &&
           ocs::tom::present_pos(d, CE_stringval) >= 0 &&
@@ -1001,7 +1001,7 @@ spool_json_write_object_members(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
             created from it. */
          writer.Key(name);
          auto sub_obj = object.get<ocs::tom::ConstRawElement>(nm);
-         const lDescr *sub_descr = field.ops->sub_descr;
+         const ocs::tom::FieldDescr *sub_descr = field.ops->sub_descr;
          ocs::tom::RawElementPtr empty;   // the transient element, freed on every path
          if (!sub_obj && sub_descr != nullptr) {
             empty = ocs::tom::create_raw_elem(sub_descr);
@@ -1763,7 +1763,7 @@ static bool spool_json_populate_members(ocs::tom::RawElement ep, const spooling_
 static ocs::tom::RawListPtr
 spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                         const rapidjson::Value &arr, bool *ok) {
-   const lDescr *sub_descr = field.ops->sub_descr;
+   const ocs::tom::FieldDescr *sub_descr = field.ops->sub_descr;
    const spooling_field *fields = field.sub_fields;
    if (sub_descr == nullptr || fields == nullptr || !arr.IsArray() || arr.Size() == 0) {
       /* an empty array is read as a null (unset) list, mirroring the ASCII reader;
@@ -1842,7 +1842,7 @@ static bool
 spool_json_read_flatten(const ocs::tom::RawElement ep, const spooling_field *fields,
                         const spooling_field *flatten, int fields_out[],
                         const rapidjson::Value &obj, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
-   const lDescr *sub_descr = flatten->ops->sub_descr;
+   const ocs::tom::FieldDescr *sub_descr = flatten->ops->sub_descr;
    if (!ep.has(flatten->nm) || sub_descr == nullptr) {
       return true;
    }
@@ -1981,7 +1981,7 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
          /* nested JSON object (e.g. an RQS filter) -> sub-object; null / non-object
           * leaves the field unset, so an absent filter round-trips to null. The
           * sub-type is known here only as the descriptor the row's record names. */
-         const lDescr *sub_descr = field.ops->sub_descr;
+         const ocs::tom::FieldDescr *sub_descr = field.ops->sub_descr;
          if (m->value.IsObject() && sub_descr != nullptr) {
             auto sub = ocs::tom::create_raw_elem(sub_descr);
             if (!spool_json_populate_members(sub.get(), field.sub_fields, nullptr, answer_list, m->value)) {
@@ -2039,7 +2039,7 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
  * @return the owner of the parsed element, empty on a JSON syntax error or a malformed field (answer_list set)
  */
 ocs::tom::RawElementPtr
-spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                        const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
 
@@ -2073,7 +2073,7 @@ spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDesc
  *         malformed field (answer_list set)
  */
 ocs::tom::RawListPtr
-spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+spool_json_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                      const spooling_field *fields, int fields_out[], const char *json_text) {
    DENTER(JSON_LAYER);
 

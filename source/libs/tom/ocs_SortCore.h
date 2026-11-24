@@ -55,13 +55,13 @@ namespace ocs::tom {
     *        not hold, AbsentField for a field a reduced descriptor does not hold
     * @throw ListCoreError if there is no memory
     */
-   lSortOrder *make_sort_order(const lDescr *descr, std::span<const SortKey> keys);
+   ocs::tom::SortOrderData *make_sort_order(const ocs::tom::FieldDescr *descr, std::span<const SortKey> keys);
 
    /**
     * @brief Free a sort order, as lFreeSortOrder() does
     * @param so the order, or nullptr; nullptr afterwards
     */
-   void free_sort_order(lSortOrder *&so) noexcept;
+   void free_sort_order(ocs::tom::SortOrderData *&so) noexcept;
 
    /**
     * @brief Compare two elements by a sort order, as lSortCompare() did
@@ -75,7 +75,7 @@ namespace ocs::tom {
     * @param so the order
     * @return negative if @p a comes first, positive if @p b comes first, 0 if they are equal
     */
-   int sort_compare(const lListElem *a, const lListElem *b, const lSortOrder *so);
+   int sort_compare(const ocs::tom::ElementData *a, const ocs::tom::ElementData *b, const ocs::tom::SortOrderData *so);
 
    /**
     * @brief Sort a list by a sort order, keeping equal elements in their order
@@ -87,7 +87,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if @p so is null and the list has two elements or more
     * @throw ListCoreError if there is no memory; the list is unchanged then
     */
-   void sort_list(lList *lp, const lSortOrder *so);
+   void sort_list(ocs::tom::ListData *lp, const ocs::tom::SortOrderData *so);
 
    /**
     * @brief Sort a list by a comparison, keeping equal elements in their order
@@ -100,7 +100,8 @@ namespace ocs::tom {
     * @throw ListCoreError if there is no memory; the list is unchanged then
     * @throw whatever @p less throws; the list is unchanged then
     */
-   void sort_list_with(lList *lp, const std::function<bool(const lListElem *, const lListElem *)> &less);
+   void sort_list_with(ocs::tom::ListData *lp, const std::function<bool(const ocs::tom::ElementData *,
+                                                                        const ocs::tom::ElementData *)> &less);
 
    /**
     * @brief Check that the elements of a list can be compared by a sort order
@@ -109,7 +110,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if @p so is null, AbsentField for a field of the order that
     *        @p descr does not hold
     */
-   void check_sort_order(const lDescr *descr, const lSortOrder *so);
+   void check_sort_order(const ocs::tom::FieldDescr *descr, const ocs::tom::SortOrderData *so);
 
    /**
     * @brief Insert a free element at the place a sort order gives it, as lInsertSorted() did
@@ -124,7 +125,7 @@ namespace ocs::tom {
     *        descriptor of another layout than the list's, BoundElement, or DuplicateKey in a debug build;
     *        nothing is changed then
     */
-   void insert_sorted(lList *lp, lListElem *ep, const lSortOrder *so);
+   void insert_sorted(ocs::tom::ListData *lp, ocs::tom::ElementData *ep, const ocs::tom::SortOrderData *so);
 
    /**
     * @brief Move an element of a sorted list to the place its changed key gives it, as lResortElem() did
@@ -133,6 +134,6 @@ namespace ocs::tom {
     * @param so the order
     * @throw FieldException with reason NullList, NullElement or ForeignList; nothing is changed then
     */
-   void resort_elem(lList *lp, lListElem *ep, const lSortOrder *so);
+   void resort_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *ep, const ocs::tom::SortOrderData *so);
 
 } // namespace ocs::tom

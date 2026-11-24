@@ -637,7 +637,7 @@ void ocs::QStatDefaultViewXML::report_additional_info(std::ostream &os, const jo
          DRETURN_VOID;
       default:
          {
-            /*lListElem *xml_elem = nullptr;*/
+            /*ocs::tom::ElementData *xml_elem = nullptr;*/
             const ocs::tom::List<ocs::tom::XMLE> attribute_list = job_elem->get_as<XMLE_List, ocs::tom::XMLE>();
 
             DPRINTF("Add additional info %s(%d) = %s\n", ADDITIONAL_TAG_NAMES[name], name, value);

@@ -43,7 +43,7 @@
  * @param job the job
  * @return never compiles
  */
-const lListElem *wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
+const ocs::tom::ElementData *wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
    // the member job.find_first_in<LF, F>(key) is the only way on a handle
    return ocs::tom::find_first_in<JB_env_list, VA_variable>(job, "PATH");
 }

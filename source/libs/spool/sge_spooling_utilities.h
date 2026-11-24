@@ -63,7 +63,7 @@
  * `mt` bitmask, and #MT_SPOOL is the bit that says "write me".
  *
  * This module turns that bitmask into something the backends can iterate.
- * #spool_get_fields_to_spool walks a `lDescr` under a #spool_instr_t and
+ * #spool_get_fields_to_spool walks a `ocs::tom::FieldDescr` under a #spool_instr_t and
  * returns the matching fields as a #spooling_field array, which is what the
  * flatfile writer formats and the reader parses back.
  * @{
@@ -137,7 +137,7 @@ struct ocs_spool_field_ops {
    /// 0 (NONE) for other fields; read it with ocs_spool_avalue_type_of() (spool/ocs_spool_field_info.h)
    std::uint8_t avalue_type;
    /// the descriptor of the sub-type of a list or object field, nullptr if it has none
-   const lDescr *sub_descr;
+   const ocs::tom::FieldDescr *sub_descr;
    /// the names of the bits of a JSON bitfield or of the values of a JSON enumeration, nullptr terminated;
    /// nullptr for other fields
    const char *const *names;
@@ -173,8 +173,8 @@ typedef struct spooling_field {
    bool free_sub_fields;      ///< `sub_fields` was built here and must be freed with the array
    const void *clientdata;    ///< Free for the backend; the flatfile writer keeps its format info here
    /// Backend hook parsing this attribute out of `buffer`, instead of the default conversion
-   int (*read_func) (lListElem *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
-   int (*write_func) (const lListElem *ep, int nm, dstring *buffer,
+   int (*read_func) (ocs::tom::ElementData *ep, int nm, const char *buffer, ocs::tom::ListPtr<ocs::tom::AN> *alp);
+   int (*write_func) (const ocs::tom::ElementData *ep, int nm, dstring *buffer,
                       ocs::tom::ListPtr<ocs::tom::AN> *alp);   ///< Backend hook rendering this attribute into `buffer`
    /// The spooling record of the field, nullptr only in the terminating entry
    const ocs_spool_field_ops *ops;
@@ -188,7 +188,7 @@ struct ocs_spool_type_ops {
 };
 
 const ocs_spool_type_ops *
-ocs_spool_type_ops_of(const lDescr *descr);
+ocs_spool_type_ops_of(const ocs::tom::FieldDescr *descr);
 
 const ocs_spool_field_ops *
 ocs_spool_field_ops_of(int nm);
@@ -202,7 +202,7 @@ ocs_spool_parse_value(const ocs_spool_field_ops &ops, ocs::tom::RawElement ep,
                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value);
 
 spooling_field *
-spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                           const spool_instr_t *instr);
 
 spooling_field *

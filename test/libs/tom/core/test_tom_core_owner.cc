@@ -103,7 +103,7 @@ NAMEEND
  * @param lp the expected list; nullptr for every state but BOUND_ELEM
  * @return true if state and list are as expected
  */
-static bool is_owned(const lListElem *ep, tom_elem_kind kind, const lList *lp) {
+static bool is_owned(const ocs::tom::ElementData *ep, tom_elem_kind kind, const ocs::tom::ListData *lp) {
    return ep != nullptr && elem_kind(ep) == kind && elem_list(ep) == lp;
 }
 
@@ -136,7 +136,7 @@ static ocs::tom::RawElementPtr make_elem(const char *name) {
  * @param wire receives the packed status value
  * @return true if packing and reading back succeeded
  */
-static bool packed_status(const lListElem *ep, uint32_t *wire) {
+static bool packed_status(const ocs::tom::ElementData *ep, uint32_t *wire) {
    try {
       ocs::tom::PackBuffer pb(false, 1024);
       ocs::tom::pack_elem(&pb.raw(), ep, nullptr, 0);
@@ -155,7 +155,7 @@ static bool packed_status(const lListElem *ep, uint32_t *wire) {
  * @param out receives the owner of the unpacked element
  * @return the unpack result, PACK_SUCCESS on success
  */
-static int pack_unpack(const lListElem *ep, ocs::tom::RawElementPtr &out) {
+static int pack_unpack(const ocs::tom::ElementData *ep, ocs::tom::RawElementPtr &out) {
    try {
       ocs::tom::PackBuffer pb(false, 1024);
       ocs::tom::pack_elem(&pb.raw(), ep, nullptr, 0);
@@ -174,7 +174,7 @@ static int pack_unpack(const lListElem *ep, ocs::tom::RawElementPtr &out) {
  * @param out receives the owner of the unpacked list
  * @return true on success
  */
-static bool pack_unpack_list(const lList *lp, ocs::tom::RawListPtr &out) {
+static bool pack_unpack_list(const ocs::tom::ListData *lp, ocs::tom::RawListPtr &out) {
    try {
       ocs::tom::PackBuffer pb(false, 1024);
       ocs::tom::pack_list(&pb.raw(), lp, nullptr, 0);
@@ -197,7 +197,7 @@ static bool pack_unpack_list(const lList *lp, ocs::tom::RawListPtr &out) {
  *
  * @return the element the table holds for the key, or nullptr when the table has none or cannot be built
  */
-static const lListElem *table_str(const lList *lp, int nm, const char *key) {
+static const ocs::tom::ElementData *table_str(const ocs::tom::ListData *lp, int nm, const char *key) {
    const int pos = ocs::tom::field_pos(lp->descr, nm);
    const void *iterator = nullptr;
    return ocs::tom::detail::hash_first(ocs::tom::detail::hash_lookup_table(lp, pos), key,
@@ -216,7 +216,7 @@ static const lListElem *table_str(const lList *lp, int nm, const char *key) {
  *
  * @return the element the table holds for the key, or nullptr when the table has none or cannot be built
  */
-static const lListElem *table_ulong(const lList *lp, int nm, uint32_t key) {
+static const ocs::tom::ElementData *table_ulong(const ocs::tom::ListData *lp, int nm, uint32_t key) {
    const int pos = ocs::tom::field_pos(lp->descr, nm);
    const void *iterator = nullptr;
    return ocs::tom::detail::hash_first(ocs::tom::detail::hash_lookup_table(lp, pos), &key,
@@ -240,8 +240,8 @@ static const lListElem *table_ulong(const lList *lp, int nm, uint32_t key) {
  * @param group the group it gets, unused by any other element of both lists
  * @return true if both tables of both lists are as expected
  */
-static bool follows_owner(lListElem *ep, const lList *source, const lList *target, const char *old_name,
-                          const char *new_name, uint32_t group) {
+static bool follows_owner(ocs::tom::ElementData *ep, const ocs::tom::ListData *source, const ocs::tom::ListData *target,
+                          const char *old_name, const char *new_name, uint32_t group) {
    table_str(target, OW_name, old_name);
    table_ulong(target, OW_group, group);
    table_str(source, OW_name, old_name);
@@ -259,10 +259,10 @@ static bool follows_owner(lListElem *ep, const lList *source, const lList *targe
  * @return nothing; CHECK records the results
  */
 static void test_layout() {
-   CHECK(1, "an element is 40 bytes", sizeof(lListElem) == 40);
+   CHECK(1, "an element is 40 bytes", sizeof(ocs::tom::ElementData) == 40);
 
    auto lp = ocs::tom::RawListPtr::create(OW_Type, ocs::tom::Hashing::On, "layout");
-   const lListElem *ep = lp->push_back(make_elem("a"));
+   const ocs::tom::ElementData *ep = lp->push_back(make_elem("a"));
    CHECK(2, "a heap list leaves the two low bits of its address free",
          (reinterpret_cast<uintptr_t>(lp.get().raw()) & 3) == 0);
    CHECK(3, "the tag of a bound element yields its list", is_owned(ep, BOUND_ELEM, lp.get()));
@@ -287,7 +287,7 @@ static void test_transitions() {
    const ocs::tom::ConstRawList a_sub = a.get<ocs::tom::ConstRawList>(OW_sub);
    CHECK(6, "a sublist element is bound to the sublist, a sub-object is an object",
          is_owned(a_sub.front(), BOUND_ELEM, a_sub)
-         && is_owned(a.get<const lListElem *>(OW_obj), OBJECT_ELEM, nullptr));
+         && is_owned(a.get<const ocs::tom::ElementData *>(OW_obj), OBJECT_ELEM, nullptr));
 
    // list order is b, a, c: move a and c into a new list
    ocs::tom::RawListPtr target(ocs::tom::split_from(lp.get(), a, "source"));
@@ -299,7 +299,7 @@ static void test_transitions() {
    CHECK(8, "a taken element is free", is_owned(d.get(), FREE_ELEM, nullptr));
 
    ocs::tom::RawElementPtr obj = a.take(OW_obj);
-   const lListElem *obj_raw = obj.get();
+   const ocs::tom::ElementData *obj_raw = obj.get();
    CHECK(9, "a taken sub-object is free", is_owned(obj_raw, FREE_ELEM, nullptr));
    d->set(OW_obj, std::move(obj));
    CHECK(10, "an object set into a field is an object", is_owned(obj_raw, OBJECT_ELEM, nullptr));
@@ -309,7 +309,7 @@ static void test_transitions() {
    CHECK(11, "the copy of a bound element is free, its sub-object an object, its sublist elements bound "
              "to the copy's sublist",
          is_owned(copy.get(), FREE_ELEM, nullptr)
-         && is_owned(copy->get<const lListElem *>(OW_obj), OBJECT_ELEM, nullptr)
+         && is_owned(copy->get<const ocs::tom::ElementData *>(OW_obj), OBJECT_ELEM, nullptr)
          && is_owned(copy_sub.front(), BOUND_ELEM, copy_sub));
 
    // free in every state: bound (through the lists), free, and the objects they hold
@@ -335,7 +335,7 @@ static void test_pack() {
    uint32_t w_object = 0;
    CHECK(13, "free, bound and object elements are packed with the former status values 1, 2 and 8",
          packed_status(free_ep.get(), &w_free) && w_free == 1 && packed_status(bound, &w_bound) && w_bound == 2
-         && packed_status(bound.get<const lListElem *>(OW_obj), &w_object) && w_object == 8);
+         && packed_status(bound.get<const ocs::tom::ElementData *>(OW_obj), &w_object) && w_object == 8);
 
    ocs::tom::RawElementPtr from_free;
    ocs::tom::RawElementPtr from_bound;
@@ -350,7 +350,7 @@ static void test_pack() {
 
    // a transitionally bound element may be appended; it is bound afterwards
    auto lp2 = ocs::tom::RawListPtr::create(OW_Type, ocs::tom::Hashing::On, "pack2");
-   const lListElem *trans = from_bound.get();
+   const ocs::tom::ElementData *trans = from_bound.get();
    bool appended = false;
    if (from_bound) {
       static_cast<void>(lp2->push_back(std::move(from_bound)));
@@ -364,7 +364,7 @@ static void test_pack() {
    const bool ok = pack_unpack_list(lp.get(), unpacked);
    CHECK(17, "the elements of an unpacked list are bound to it, their sub-objects are objects",
          ok && unpacked && is_owned(unpacked->front(), BOUND_ELEM, unpacked.get())
-         && is_owned(unpacked->front().get<const lListElem *>(OW_obj), OBJECT_ELEM, nullptr));
+         && is_owned(unpacked->front().get<const ocs::tom::ElementData *>(OW_obj), OBJECT_ELEM, nullptr));
 
    // a status value the format does not know is refused
    ocs::tom::RawElementPtr bad;
@@ -442,14 +442,14 @@ static void test_hash_follows_owner() {
    c.set(OW_group, std::uint32_t{9});
    d.set(OW_group, std::uint32_t{9});
    const ocs::tom::SortKey keys[] = {{OW_name, false}};
-   lSortOrder *order = ocs::tom::make_sort_order(OW_Type, keys);
+   ocs::tom::SortOrderData *order = ocs::tom::make_sort_order(OW_Type, keys);
    ocs::tom::sort_list(moved.get(), order);
    ocs::tom::free_sort_order(order);
    CHECK(24, "after sorting the chain of a non unique key starts with the first element in list order",
          moved->front().raw() == d.raw() && table_ulong(moved.get(), OW_group, 9) == d.raw());
 
    // the tables left the descriptor: an entry is field number, type and slot offset (CS-439), no table
-   CHECK(25, "a descriptor entry is 12 bytes", sizeof(lDescr) == 12);
+   CHECK(25, "a descriptor entry is 12 bytes", sizeof(ocs::tom::FieldDescr) == 12);
 }
 
 /**

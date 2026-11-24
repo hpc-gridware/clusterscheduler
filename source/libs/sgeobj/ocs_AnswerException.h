@@ -47,13 +47,13 @@ namespace ocs {
    class AnswerException : public RuntimeException {
       /** @brief The answer list shared by all copies of one exception */
       struct Holder {
-         std::atomic<lList *> answer_list; ///< the list, nullptr once it was taken
+         std::atomic<ocs::tom::ListData *> answer_list; ///< the list, nullptr once it was taken
 
          /**
           * @brief Hold an answer list
           * @param list the list to hold; the holder owns it
           */
-         explicit Holder(lList *list) : answer_list(list) {}
+         explicit Holder(ocs::tom::ListData *list) : answer_list(list) {}
 
          /** @brief Free the list unless it was taken */
          ~Holder();

@@ -46,13 +46,13 @@
 
 /**
  * @defgroup tom_elem_status Element state
- * @brief The state of an element, held in the two low bits of _lListElem::owner
+ * @brief The state of an element, held in the two low bits of ocs::tom::ElementData::owner
  *
  * The state records who owns an element, which decides whether it may be
  * appended to a list and who has to free it. A bound element also carries the
  * list that holds it, in the upper bits of the same word.
  *
- * _lListElem::owner is one word with two parts that are valid at the same time
+ * ocs::tom::ElementData::owner is one word with two parts that are valid at the same time
  * (not a union, where only one interpretation holds at a time):
  *
  * @code
@@ -83,7 +83,7 @@ enum tom_elem_kind : uintptr_t {
    TRANS_BOUND_ELEM = 3  ///< temporary state while unpacking; bound elements and sub-objects carry it afterwards so that functions such as `lAppendElem()`, which reject bound objects, do not fail
 };
 
-/// the bits of _lListElem::owner that hold the state
+/// the bits of ocs::tom::ElementData::owner that hold the state
 constexpr uintptr_t TOM_ELEM_KIND_MASK = 3;
 
 /* the state as the pack format carries it, the former status values */
@@ -104,6 +104,7 @@ constexpr uint32_t TOM_PACK_DESCR_BY_FIELD = 1;
 static_assert(TOM_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference marker must not be a field count");
 /** @} */
 
+namespace ocs::tom {
 /**
  * @brief One element of a list
  *
@@ -112,13 +113,16 @@ static_assert(TOM_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference mark
  * array; ocs::tom::detail::value() in tom/detail/ocs_MultitypeP.h gives the value of a descriptor
  * position.
  */
-struct _lListElem {
-   lListElem *next;   ///< next element, or nullptr at the end of the list
-   lListElem *prev;   ///< previous element, or nullptr at the head
+struct ElementData {
+   ocs::tom::ElementData *next;   ///< next element, or nullptr at the end of the list
+   ocs::tom::ElementData *prev;   ///< previous element, or nullptr at the head
    uintptr_t owner;   ///< two parts in one word: the state in the two low bits, the list of a bound element in the upper bits (see @ref tom_elem_status)
-   const lDescr *descr; ///< the object type, shared: a static block or a counted descriptor (see tom/ocs_Descr.h)
-   lMultiType *cont;  ///< the field values, at the slots ocs::tom::detail::slot_index() gives for the positions
+   /// the object type, shared: a static block or a counted descriptor (see tom/ocs_Descr.h)
+   const ocs::tom::FieldDescr *descr;
+   /// the field values, at the slots ocs::tom::detail::slot_index() gives for the positions
+   ocs::tom::FieldValue *cont;
 };
+} // namespace ocs::tom
 
 namespace ocs::tom {
    /**
@@ -126,7 +130,7 @@ namespace ocs::tom {
     * @param dp the entries of a static or counted descriptor; a plain array has no header
     * @return its header
     */
-   inline const tom_descr_header *descr_header_of(const lDescr *dp) {
+   inline const tom_descr_header *descr_header_of(const ocs::tom::FieldDescr *dp) {
       return reinterpret_cast<const tom_descr_header *>(dp) - 1;
    }
 
@@ -135,7 +139,7 @@ namespace ocs::tom {
     * @param dp the entries of a counted descriptor whose header has np < n
     * @return the field position per slot, np entries behind the terminating entry
     */
-   inline const int16_t *descr_rmap(const lDescr *dp) {
+   inline const int16_t *descr_rmap(const ocs::tom::FieldDescr *dp) {
       return reinterpret_cast<const int16_t *>(dp + ocs::tom::descr_header_of(dp)->n + 1);
    }
 } // namespace ocs::tom
@@ -152,7 +156,7 @@ namespace ocs::tom::detail {
     * @param pos a valid field position in @p dp
     * @return the index into `cont` that holds the field's value
     */
-   inline int slot_index(const lDescr *dp, const int pos) {
+   inline int slot_index(const ocs::tom::FieldDescr *dp, const int pos) {
       return pos + dp[pos].off;
    }
 } // namespace ocs::tom::detail
@@ -199,7 +203,7 @@ namespace ocs::tom {
           * @param np the number of slots, used with a reverse map
           * @param full true if dp has no absent field, so the entry walk needs no check
           */
-         iterator(const lDescr *dp, const int16_t *rmap, const int np, const bool full)
+         iterator(const ocs::tom::FieldDescr *dp, const int16_t *rmap, const int np, const bool full)
             : dp_(dp), rmap_(rmap), np_(np), i_(0), full_(full) {
             if (rmap_ == nullptr && !full_) {
                skip_absent();
@@ -253,7 +257,7 @@ namespace ocs::tom {
             }
          }
 
-         const lDescr *dp_;    ///< the descriptor
+         const ocs::tom::FieldDescr *dp_;    ///< the descriptor
          const int16_t *rmap_; ///< the reverse map, or nullptr for an entry walk
          int np_;              ///< the number of slots of a slot walk
          int i_;               ///< the current slot of a slot walk, or position of an entry walk
@@ -264,7 +268,7 @@ namespace ocs::tom {
        * @brief The range over a descriptor
        * @param dp the descriptor, not nullptr
        */
-      explicit present_fields(const lDescr *dp) : dp_(dp) {}
+      explicit present_fields(const ocs::tom::FieldDescr *dp) : dp_(dp) {}
 
       /**
        * @brief The first field that has a value
@@ -293,7 +297,7 @@ namespace ocs::tom {
       }
 
    private:
-      const lDescr *dp_; ///< the descriptor
+      const ocs::tom::FieldDescr *dp_; ///< the descriptor
    };
 } // namespace ocs::tom
 
@@ -334,6 +338,7 @@ struct tom_hash_slot {
 };
 static_assert(std::atomic<tom_htable>::is_always_lock_free, "a hash slot must not hide a mutex");
 
+namespace ocs::tom {
 /**
  * @brief A list: a doubly linked list of elements of one object type
  *
@@ -342,26 +347,27 @@ static_assert(std::atomic<tom_htable>::is_always_lock_free, "a hash slot must no
  * appending is O(1). The hash tables over its elements belong to the list,
  * not to the descriptor, so that a descriptor carries nothing list specific.
  */
-struct _lList {
+struct ListData {
    uint32_t nelem;      ///< number of elements currently in the list
    uint32_t nslots;     ///< number of hashed fields of the type, 0 if the list is never hashed
    char *listname;      ///< name of the list, used in dumps and error messages
-   const lDescr *descr; ///< the object type every element has; one reference, see tom/ocs_Descr.h
-   lListElem *first;    ///< first element, or nullptr when the list is empty
-   lListElem *last;     ///< last element, or nullptr when the list is empty
+   const ocs::tom::FieldDescr *descr; ///< the object type every element has; one reference, see tom/ocs_Descr.h
+   ocs::tom::ElementData *first;    ///< first element, or nullptr when the list is empty
+   ocs::tom::ElementData *last;     ///< last element, or nullptr when the list is empty
    /// nslots hash slots, or nullptr until the first table build; atomic and
    /// mutable because concurrent first lookups on a const list publish it,
    /// which does not change the list logically, see #ocs::tom::detail::hash_lookup_table
    mutable std::atomic<tom_hash_slot *> ht;
 };
+} // namespace ocs::tom
 static_assert(std::atomic<tom_hash_slot *>::is_always_lock_free, "the slot array pointer must not hide a mutex");
 
 // The owner word replaces the former 4-byte status and the 4 bytes of padding
 // behind it, so the element keeps its five words.
-static_assert(sizeof(lListElem) == 40, "the owner tag must not grow the element");
+static_assert(sizeof(ocs::tom::ElementData) == 40, "the owner tag must not grow the element");
 // The state lives in the two low bits of a list address, which are 0 only if
 // every list is at least 4-byte aligned.
-static_assert(alignof(lList) >= 4 && alignof(lListElem) >= 4,
+static_assert(alignof(ocs::tom::ListData) >= 4 && alignof(ocs::tom::ElementData) >= 4,
               "the two low bits of a list address must be free for the element state");
 
 /**
@@ -372,7 +378,7 @@ static_assert(alignof(lList) >= 4 && alignof(lListElem) >= 4,
  * @param ep the element, not nullptr
  * @return the state held in the low bits of its owner word
  */
-inline tom_elem_kind elem_kind(const lListElem *ep) {
+inline tom_elem_kind elem_kind(const ocs::tom::ElementData *ep) {
    return static_cast<tom_elem_kind>(ep->owner & TOM_ELEM_KIND_MASK);
 }
 
@@ -386,11 +392,11 @@ inline tom_elem_kind elem_kind(const lListElem *ep) {
  * @param ep the element, not nullptr
  * @return the list for a bound element, nullptr in every other state
  */
-inline lList *elem_list(const lListElem *ep) {
+inline ocs::tom::ListData *elem_list(const ocs::tom::ElementData *ep) {
    if (elem_kind(ep) != BOUND_ELEM) {
       return nullptr;
    }
-   return reinterpret_cast<lList *>(ep->owner & ~TOM_ELEM_KIND_MASK);
+   return reinterpret_cast<ocs::tom::ListData *>(ep->owner & ~TOM_ELEM_KIND_MASK);
 }
 
 /**
@@ -401,7 +407,7 @@ inline lList *elem_list(const lListElem *ep) {
  *
  * @param ep the element, not nullptr
  */
-inline void elem_set_free(lListElem *ep) {
+inline void elem_set_free(ocs::tom::ElementData *ep) {
    ep->owner = FREE_ELEM;
 }
 
@@ -410,13 +416,13 @@ inline void elem_set_free(lListElem *ep) {
  *
  * The only setter that fills both parts of the owner word: the address of the
  * list in the upper bits, BOUND_ELEM in the two low bits. The address must have
- * its two low bits free; the alignment of lList guarantees that, the assert
+ * its two low bits free; the alignment of ocs::tom::ListData guarantees that, the assert
  * checks it in debug builds.
  *
  * @param ep the element, not nullptr
  * @param lp the list that now holds the element, not nullptr
  */
-inline void elem_set_bound(lListElem *ep, const lList *lp) {
+inline void elem_set_bound(ocs::tom::ElementData *ep, const ocs::tom::ListData *lp) {
    const auto address = reinterpret_cast<uintptr_t>(lp);
    assert((address & TOM_ELEM_KIND_MASK) == 0);
    ep->owner = address | BOUND_ELEM;
@@ -430,7 +436,7 @@ inline void elem_set_bound(lListElem *ep, const lList *lp) {
  *
  * @param ep the element, not nullptr
  */
-inline void elem_set_object(lListElem *ep) {
+inline void elem_set_object(ocs::tom::ElementData *ep) {
    ep->owner = OBJECT_ELEM;
 }
 
@@ -443,7 +449,7 @@ inline void elem_set_object(lListElem *ep) {
  *
  * @param ep the element, not nullptr
  */
-inline void elem_set_trans_bound(lListElem *ep) {
+inline void elem_set_trans_bound(ocs::tom::ElementData *ep) {
    ep->owner = TRANS_BOUND_ELEM;
 }
 
@@ -502,7 +508,7 @@ inline bool elem_kind_from_wire(const uint32_t wire, tom_elem_kind *kind) {
  * @param lp the list, not nullptr
  * @return the lp->nslots slots, or nullptr while no table of the list was built
  */
-inline tom_hash_slot *list_slots(const lList *lp) {
+inline tom_hash_slot *list_slots(const ocs::tom::ListData *lp) {
    return lp->ht.load(std::memory_order_acquire);
 }
 
@@ -516,7 +522,7 @@ inline tom_hash_slot *list_slots(const lList *lp) {
  * @param pos position of the field in the list's descriptor
  * @return the slot, or nullptr when the field is not hashed in this list or the list has no slot array yet
  */
-inline tom_hash_slot *list_hash_slot(const lList *lp, const int pos) {
+inline tom_hash_slot *list_hash_slot(const ocs::tom::ListData *lp, const int pos) {
    tom_hash_slot *slots = list_slots(lp);
    if (slots == nullptr) {
       return nullptr;
@@ -536,7 +542,7 @@ inline tom_hash_slot *list_hash_slot(const lList *lp, const int pos) {
  * @param pos position of the field in the list's descriptor
  * @return the table, or nullptr when the field is not hashed or its table is not built
  */
-inline tom_htable list_hash_table(const lList *lp, const int pos) {
+inline tom_htable list_hash_table(const ocs::tom::ListData *lp, const int pos) {
    const tom_hash_slot *slot = list_hash_slot(lp, pos);
    return slot != nullptr ? slot->get() : nullptr;
 }
@@ -552,11 +558,11 @@ inline tom_htable list_hash_table(const lList *lp, const int pos) {
  * @param pos position of the field in the element's descriptor
  * @return the table, or nullptr when the element is not bound or the field is not hashed
  */
-inline tom_htable elem_hash_table(const lListElem *ep, const int pos) {
+inline tom_htable elem_hash_table(const ocs::tom::ElementData *ep, const int pos) {
    // most fields are not hashed: their flag answers without looking at the list
    if (!mt_do_hashing(ep->descr[pos].mt)) {
       return nullptr;
    }
-   const lList *lp = elem_list(ep);
+   const ocs::tom::ListData *lp = elem_list(ep);
    return lp != nullptr ? list_hash_table(lp, pos) : nullptr;
 }

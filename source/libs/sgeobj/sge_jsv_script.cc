@@ -209,7 +209,7 @@ template <auto F>
 static ocs::tom::Element<ocs::tom::JB>
 ocs_jsv_get_job(const ocs::tom::ConstElement<ocs::tom::JSV> jsv) {
    DENTER(TOP_LAYER);
-   DRETURN(ocs::tom::Element<ocs::tom::JB>::from_typed(static_cast<lListElem *>(jsv.get<F>())));
+   DRETURN(ocs::tom::Element<ocs::tom::JB>::from_typed(static_cast<ocs::tom::ElementData *>(jsv.get<F>())));
 }
 
 /**
@@ -759,7 +759,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             ocs::tom::ListPtr<ocs::tom::QR> id_list;
 
             if (value != nullptr) {
-               lList *parsed = nullptr; // ocs_parse_destination_identifier_list() has no typed form
+               ocs::tom::ListData *parsed = nullptr; // ocs_parse_destination_identifier_list() has no typed form
                const int local_ret = ocs_parse_destination_identifier_list(&parsed, value);
                id_list = ocs::tom::ListPtr<ocs::tom::QR>::from_typed(parsed);
                if (local_ret != 0) {
@@ -2381,7 +2381,7 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
             // Transform fields into a list of corresponding qalter switch names
             // or switch combinations as accepted in JSV scripts. There are some exceptions that are handled
             // in the following code. The fields come from the descriptor of the (reduced) job at run time.
-            const lDescr *descr = job.descr();
+            const ocs::tom::FieldDescr *descr = job.descr();
             for (const auto f : ocs::tom::present_fields(descr)) {
                // JB_context and JB_context_change both map to ac, which is listed once
                if (const char *switch_name = jsv_field2switch_name(descr[f.pos].nm, job);

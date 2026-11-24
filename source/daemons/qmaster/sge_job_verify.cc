@@ -501,9 +501,8 @@ job_verify_adjust_request_set(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::
  *         when a unique attribute holds a key twice
  */
 int
-sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
-                      ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                      monitoring_t *monitor) {
+sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                      ocs::tom::ListData **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    int ret = STATUS_OK;

@@ -142,7 +142,7 @@ static int nelem(const ocs::tom::ConstRawList lp) {
  * @param keys the criteria, the first deciding first
  * @return the order, freed with ocs::tom::free_sort_order()
  */
-static lSortOrder *make_order(const std::initializer_list<ocs::tom::SortKey> keys) {
+static ocs::tom::SortOrderData *make_order(const std::initializer_list<ocs::tom::SortKey> keys) {
    return ocs::tom::make_sort_order(TEST_Type, std::span<const ocs::tom::SortKey>(keys.begin(), keys.size()));
 }
 
@@ -212,7 +212,7 @@ static bool ulong_order_is(const ocs::tom::ConstRawList lp, const std::uint32_t 
  */
 static bool back_links_consistent(const ocs::tom::ConstRawList lp) {
    int n = 0;
-   const lListElem *expected_next = nullptr;
+   const ocs::tom::ElementData *expected_next = nullptr;
    for (ocs::tom::ConstRawElement ep = lp.back(); ep; ep = ep.prev()) {
       if (ep.next().raw() != expected_next) {
          return false;
@@ -241,7 +241,7 @@ static bool hashes_consistent(const ocs::tom::ConstRawList lp) {
    for (std::uint32_t v = 0; v < 2; v++) {
       int found = 0;
       const void *it = nullptr;
-      for (const lListElem *h = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), pos, v, &it);
+      for (const ocs::tom::ElementData *h = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), pos, v, &it);
            h != nullptr; h = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), pos, v, &it)) {
          if (ocs::tom::get<std::uint32_t>(h, TEST_ulong_hashed) != v) {
             return false;
@@ -285,14 +285,15 @@ static void test_sort_order() {
    printf("\n--- sort order construction ---\n");
 
    // T01: a valid single-field order is built
-   lSortOrder *so = make_order({{TEST_ulong, true}});
+   ocs::tom::SortOrderData *so = make_order({{TEST_ulong, true}});
    CHECK(1, "make_sort_order with a known field", so != nullptr);
    ocs::tom::free_sort_order(so);
    CHECK(2, "free_sort_order resets the pointer", so == nullptr);
 
    // T03: a field that is not in the descriptor is rejected
    CHECK(3, "make_sort_order with an unknown field throws ForeignField",
-         throws_reason([] { lSortOrder *bad = make_order({{4711, true}}); ocs::tom::free_sort_order(bad); },
+         throws_reason([] { ocs::tom::SortOrderData *bad = make_order({{4711,
+                                                                        true}}); ocs::tom::free_sort_order(bad); },
                        ocs::tom::FieldException::Reason::ForeignField));
 
    // CHECK 4 removed: lAddSortCriteria has no TOM counterpart (CS-3103)
@@ -325,8 +326,8 @@ static void test_sort_compare() {
    a->set(TEST_string, "y");
    b->set(TEST_string, "x");
 
-   lSortOrder *up = make_order({{TEST_ulong, true}});
-   lSortOrder *down = make_order({{TEST_ulong, false}});
+   ocs::tom::SortOrderData *up = make_order({{TEST_ulong, true}});
+   ocs::tom::SortOrderData *down = make_order({{TEST_ulong, false}});
 
    // T06-T07: sign follows the direction of the criterion
    CHECK(6, "ascending: smaller value compares less", ocs::tom::sort_compare(a.get(), b.get(), up) < 0);
@@ -337,7 +338,7 @@ static void test_sort_compare() {
    CHECK(8, "equal values compare equal", ocs::tom::sort_compare(a.get(), b.get(), up) == 0);
 
    // T09: the second criterion breaks the tie
-   lSortOrder *two = make_order({{TEST_ulong, true}, {TEST_string, true}});
+   ocs::tom::SortOrderData *two = make_order({{TEST_ulong, true}, {TEST_string, true}});
    CHECK(9, "second criterion decides a tie", ocs::tom::sort_compare(a.get(), b.get(), two) > 0);
 
    ocs::tom::free_sort_order(up);
@@ -363,7 +364,7 @@ static void test_sort_list() {
 
    // T10-T11: ascending
    auto lp = make_ulong_list(in, 5);
-   lSortOrder *so = make_order({{TEST_ulong, true}});
+   ocs::tom::SortOrderData *so = make_order({{TEST_ulong, true}});
    ocs::tom::sort_list(lp.get(), so);
    ocs::tom::free_sort_order(so);
    CHECK(10, "ulong ascending", ulong_order_is(lp.get(), asc, 5));
@@ -489,7 +490,7 @@ static void test_sort_keeps_hash() {
    auto lp = make_ulong_list(in, 9);
    CHECK(24, "hashes consistent before sorting", hashes_consistent(lp.get()));
 
-   lSortOrder *so = make_order({{TEST_ulong, true}});
+   ocs::tom::SortOrderData *so = make_order({{TEST_ulong, true}});
    ocs::tom::sort_list(lp.get(), so);
    ocs::tom::free_sort_order(so);
    CHECK(25, "hashes consistent after ascending sort", hashes_consistent(lp.get()));
@@ -515,7 +516,7 @@ static void test_insert_and_resort() {
 
    const std::uint32_t in[] = {2, 4, 6};
    auto lp = make_ulong_list(in, 3);
-   lSortOrder *so = make_order({{TEST_ulong, true}});
+   ocs::tom::SortOrderData *so = make_order({{TEST_ulong, true}});
 
    auto insert = [&](const std::uint32_t v) {
       char key[32];
@@ -543,7 +544,7 @@ static void test_insert_and_resort() {
    auto dup_owner = ocs::tom::RawElementPtr::create(TEST_Type);
    dup_owner->set(TEST_ulong, std::uint32_t{4});
    dup_owner->set(TEST_string_ukey, "dup4");
-   const lListElem *dup = dup_owner.get().raw();
+   const ocs::tom::ElementData *dup = dup_owner.get().raw();
    ocs::tom::insert_sorted(lp.get(), dup_owner.get(), so);
    static_cast<void>(dup_owner.release());   // the list owns it now
    CHECK(30, "insert_sorted puts an equal key first", lp->front().next().raw() != dup &&

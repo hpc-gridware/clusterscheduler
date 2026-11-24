@@ -141,11 +141,11 @@ get_database_from_key(const char *key)
 }
 #endif
 
-static const lDescr *
+static const ocs::tom::FieldDescr *
 get_descr_from_key(const char *key) {
    DENTER(TOP_LAYER);
 
-   const lDescr *descr = nullptr;
+   const ocs::tom::FieldDescr *descr = nullptr;
 
    if (key != nullptr) {
       struct saved_vars_s *context = nullptr;
@@ -183,7 +183,7 @@ list_objects(const char *key) {
    bool  dbret = false;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
    // out-parameter of spool_read_keys(), which hands the keys over raw
-   lList *stu_list_raw = nullptr;
+   ocs::tom::ListData *stu_list_raw = nullptr;
 
    /* 
     * Start transaction to sync with other transaction-protected
@@ -327,7 +327,7 @@ load_object(const char *key, const char *fname) {
    int ret = EXIT_SUCCESS;
    bool dbret;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   const lDescr *descr;
+   const ocs::tom::FieldDescr *descr;
    // the object read from the dump, of the type the key names
    ocs::tom::RawElementPtr object;
 

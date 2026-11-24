@@ -250,7 +250,7 @@ static uint32_t japi_ec_id = 0;
  * japi_synchronize() remove a job again when it is reaped. This list is what
  * makes waiting for a job possible without polling qmaster.
  */
-static lList *Master_japi_job_list = nullptr;
+static ocs::tom::ListData *Master_japi_job_list = nullptr;
 
 /** Guards `Master_japi_job_list` */
 static pthread_mutex_t Master_japi_job_list_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -3715,7 +3715,7 @@ static void *japi_implementation_thread(void *a_user_data_pointer) {
       /* read events and add relevant information into library session data */
       // ec_get() is a function pointer of the event client class with a raw out-parameter; the events are taken
       // over at once, so every path of this iteration frees them
-      lList *events_raw = nullptr;
+      ocs::tom::ListData *events_raw = nullptr;
       const int ec_get_ret = evc->ec_get(evc, &events_raw, false);
       auto event_list = ocs::tom::ListPtr<ocs::tom::ET>(events_raw);
       if (!ec_get_ret) {

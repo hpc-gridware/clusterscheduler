@@ -47,7 +47,8 @@
  */
 static void
 ocs_qconf_export_one(const ocs::tom::List<ocs::tom::VA> objects, ocs::QConfViewBase &view,
-                     const qconf_object_desc &desc, const lListElem *ep, const lList *one, const char *name) {
+                     const qconf_object_desc &desc, const ocs::tom::ElementData *ep, const ocs::tom::ListData *one,
+                     const char *name) {
    DENTER(TOP_LAYER);
    std::ostringstream text;
 

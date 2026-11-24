@@ -96,7 +96,7 @@ static int s_fail = 0;
 // given descriptor and returns false for any nullptr argument.
 // ---------------------------------------------------------------------------
 
-static void test_object_has_type(lListElem *queue) {
+static void test_object_has_type(ocs::tom::ElementData *queue) {
    printf("\n--- object_has_type ---\n");
 
    // T01: element descriptor matches the expected type
@@ -116,7 +116,7 @@ static void test_object_has_type(lListElem *queue) {
 // object_get_type — retrieve the descriptor of an element  [T05–T06]
 // ---------------------------------------------------------------------------
 
-static void test_object_get_type(lListElem *queue) {
+static void test_object_get_type(ocs::tom::ElementData *queue) {
    printf("\n--- object_get_type ---\n");
 
    // T05: valid element returns its own descriptor
@@ -307,7 +307,7 @@ static_assert(ocs_object_descriptions[SGE_TYPE_CQUEUE].descr == ocs::tom::CQ::de
 /** @brief What the dispatch test's callable reports about the entry it was called with */
 struct DispatchedEntry {
    sge_object_type value;   ///< the entry's sge_object_type value
-   const lDescr *descr;     ///< the descriptor of the entry's object type
+   const ocs::tom::FieldDescr *descr;     ///< the descriptor of the entry's object type
    int key_nm;              ///< the entry's key field, NoName without a key
    const char *name;        ///< the entry's type name
 };
@@ -328,7 +328,7 @@ static void test_object_type_dispatch() {
          using E = ocs_object_type_entry_t<decltype(entry)>;
          return DispatchedEntry{E::value, E::type::descriptor.e, static_cast<int>(E::key), entry.name};
       });
-      const lDescr *descr = object_type_get_descr(type);
+      const ocs::tom::FieldDescr *descr = object_type_get_descr(type);
 
       if (descr == nullptr) {
          if (dispatched) {
@@ -1006,7 +1006,7 @@ static void test_object_get_type_name(const ocs::tom::ConstElement<ocs::tom::QU>
  * @param back receives the unpacked element, empty if it was rejected
  * @return the result of object_unpack_elem_verify(), false if packing failed
  */
-static bool unpack_verify_roundtrip(const ocs::tom::ConstRawElement ep, const lDescr *descr,
+static bool unpack_verify_roundtrip(const ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr,
                                     ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::RawElementPtr *back) {
    bool ret = false;
    back->reset();
@@ -1025,7 +1025,7 @@ static bool unpack_verify_roundtrip(const ocs::tom::ConstRawElement ep, const lD
          // the buffer takes buf over on every path, also when the header is refused
          if (ocs::tom::try_init_buffer_from(&in, buf, pb.bytes_used, false) == PACK_SUCCESS) {
             // object_unpack_elem_verify() hands the element out through a raw out-parameter
-            lListElem *raw_back = nullptr;
+            ocs::tom::ElementData *raw_back = nullptr;
             ret = object_unpack_elem_verify(answer_list, &in, &raw_back, descr);
             *back = ocs::tom::RawElementPtr(raw_back);
          }
@@ -1055,7 +1055,7 @@ static void test_object_unpack_elem_verify(const ocs::tom::ConstElement<ocs::tom
          rejected && !back && alp && alp->size() == 1);
    alp.reset();
 
-   lListElem *none = nullptr;
+   ocs::tom::ElementData *none = nullptr;
    CHECK(112, "no pack buffer → false, one error",
          !object_unpack_elem_verify(&alp, nullptr, &none, ocs::tom::QU::descriptor.e) && none == nullptr && alp &&
          alp->size() == 1);
@@ -1080,7 +1080,7 @@ static void test_object_find_repeated_keys() {
    ocs_object_find_repeated_keys(*job, found);
    CHECK(113, "distinct variables → nothing found", found.empty());
 
-   lList *job_env = job->get<JB_env_list>();
+   ocs::tom::ListData *job_env = job->get<JB_env_list>();
    ocs::tom::emplace_back<VA_variable>(&job_env, "A");
    ocs::tom::emplace_back<VA_variable>(&job_env, "A");
    ocs_object_find_repeated_keys(*job, found);
@@ -1101,16 +1101,16 @@ static void test_object_list_add_unique_layouts() {
    printf("\n--- ocs_object_list_add_unique, lists without a key ---\n");
 
    // ST has no unique string attribute, so its lists are appended as they are
-   lList *target = nullptr;
+   ocs::tom::ListData *target = nullptr;
    ocs::tom::emplace_back<ST_name>(&target, "a");
-   lList *more = nullptr;
+   ocs::tom::ListData *more = nullptr;
    ocs::tom::emplace_back<ST_name>(&more, "a");
    ocs_object_list_add_unique(&target, &more);
    CHECK(116, "same layout → appended, the source is consumed",
          more == nullptr && ocs::tom::size(target) == 2);
 
-   lList *created = nullptr;
-   lList *source = nullptr;
+   ocs::tom::ListData *created = nullptr;
+   ocs::tom::ListData *source = nullptr;
    ocs::tom::emplace_back<ST_name>(&source, "b");
    ocs_object_list_add_unique(&created, &source);
    CHECK(117, "no target → created with the source's elements", source == nullptr && ocs::tom::size(created) == 1);
@@ -1119,7 +1119,7 @@ static void test_object_list_add_unique_layouts() {
    // a reduced list of the same type has another layout: as lAddList() it is not joined, but freed
    const auto what = ocs::tom::what<ST_name>();
    ocs::tom::RawListPtr reduced = ocs::tom::select(target, nullptr, what.get());
-   lList *reduced_raw = reduced.release();
+   ocs::tom::ListData *reduced_raw = reduced.release();
    ocs_object_list_add_unique(&target, &reduced_raw);
    CHECK(118, "another layout → nothing appended, the source is consumed",
          reduced_raw == nullptr && ocs::tom::size(target) == 2);

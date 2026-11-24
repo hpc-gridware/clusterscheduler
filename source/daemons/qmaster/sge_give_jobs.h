@@ -97,8 +97,8 @@ int sge_give_job(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom
                  ocs::tom::ConstElement<ocs::tom::QU> master_qep, ocs::tom::Element<ocs::tom::EH> hep,
                  monitoring_t *monitor, uint64_t gdi_session);
 
-void sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, sge_commit_mode_t mode,
-                    int commit_flags, monitoring_t *monitor, uint64_t gdi_session);
+void sge_commit_job(ocs::tom::ElementData *raw_jep, ocs::tom::ElementData *raw_jatep, ocs::tom::ElementData *raw_jr,
+                    sge_commit_mode_t mode, int commit_flags, monitoring_t *monitor, uint64_t gdi_session);
 
 /* CS-1908: sge_bury_job SPLIT into finish-side and bury-side. Existing callers
  * of sge_bury_job continue to use the (static) wrapper. Retention introduces
@@ -108,14 +108,15 @@ void sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr,
 void sge_finish_ja_task(const char *sge_root, ocs::tom::Element<ocs::tom::JB> job, uint32_t job_id,
                         ocs::tom::Element<ocs::tom::JAT> ja_task, int no_events, uint64_t gdi_session);
 
-void sge_bury_ja_task(const char *sge_root, lListElem *raw_job, uint32_t job_id,
-                      lListElem *raw_ja_task, int spool_job, int no_events, uint64_t gdi_session);
+void sge_bury_ja_task(const char *sge_root, ocs::tom::ElementData *raw_job, uint32_t job_id,
+                      ocs::tom::ElementData *raw_ja_task, int spool_job, int no_events, uint64_t gdi_session);
 
-bool gdil_del_all_orphaned(const lList *gdil_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp, uint64_t gdi_session);
+bool gdil_del_all_orphaned(const ocs::tom::ListData *gdil_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                           uint64_t gdi_session);
 
 void sge_job_resend_event_handler(te_event_t anEvent, monitoring_t *monitor);
 
-void trigger_job_resend(uint64_t now, lListElem *hep, uint32_t jid, uint32_t tid, int delta);
+void trigger_job_resend(uint64_t now, ocs::tom::ElementData *hep, uint32_t jid, uint32_t tid, int delta);
 void create_timed_events_for_simulated_jobs();
 
 void cancel_job_resend(uint32_t jid, uint32_t tid);

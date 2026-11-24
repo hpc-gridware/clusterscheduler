@@ -624,7 +624,7 @@ ocs::tom::ConstElement<ocs::tom::CE> centry_list_locate(const ocs::tom::ConstLis
  */
 ocs::tom::Element<ocs::tom::CE> centry_list_locate(const ocs::tom::List<ocs::tom::CE> this_list, const char *name) {
    const auto ret = centry_list_locate(ocs::tom::ConstList<ocs::tom::CE>(this_list), name);
-   return ocs::tom::Element<ocs::tom::CE>::from_typed(const_cast<lListElem *>(ret.raw()));
+   return ocs::tom::Element<ocs::tom::CE>::from_typed(const_cast<ocs::tom::ElementData *>(ret.raw()));
 }
 
 

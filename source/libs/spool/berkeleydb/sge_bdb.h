@@ -82,10 +82,8 @@ spool_berkeleydb_trigger(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info 
                          uint64_t trigger, uint64_t *next_trigger);
 
 bool 
-spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
-                           const bdb_database database,
-                           ocs::tom::RawListPtr &list, const lDescr *descr,
-                           const char *key);
+spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info, const bdb_database database,
+                           ocs::tom::RawListPtr &list, const ocs::tom::FieldDescr *descr, const char *key);
 
 /**
  * @brief Read every record whose key starts with a prefix, as objects of a type known at compile time
@@ -115,9 +113,8 @@ ocs_spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb
 }
 
 bool 
-spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
-                              const bdb_database database,
-                              const lListElem *object, const char *key);
+spool_berkeleydb_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info, const bdb_database database,
+                              const ocs::tom::ElementData *object, const char *key);
 
 bool spool_berkeleydb_write_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info,
                               const bdb_database database,

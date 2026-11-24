@@ -51,4 +51,4 @@ void sge_setup_sge_execd_after_register(const char* tmp_err_file_name);
  *          change; see the dead-declaration list.
  */
 int daemonize_execd(void *context);
-int job_initialize_job(lListElem *job_raw);
+int job_initialize_job(ocs::tom::ElementData *job_raw);

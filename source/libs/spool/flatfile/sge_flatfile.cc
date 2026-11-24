@@ -654,25 +654,21 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
                           const char *filepath, std::ostream *stream);
 
 static ocs::tom::RawElementPtr
-_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
-                            ocs::tom::RawElement root, const spool_flatfile_instr *instr,
-                            const spooling_field *fields, int fields_out[], int *token,
-                            const char *end_token, bool parse_values);
+_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
+                            ocs::tom::RawElement root, const spool_flatfile_instr *instr, const spooling_field *fields,
+                            int fields_out[], int *token, const char *end_token, bool parse_values);
 
 static void
 _spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::RawElement object,
-                                 ocs::tom::RawElementPtr *created,
-                                 const lDescr *descr, ocs::tom::RawElement root,
-                                 const spool_flatfile_instr *instr, 
-                                 const spooling_field *fields, int fields_out[],
-                                 int *token, const char *end_token,
+                                 ocs::tom::RawElementPtr *created, const ocs::tom::FieldDescr *descr,
+                                 ocs::tom::RawElement root, const spool_flatfile_instr *instr,
+                                 const spooling_field *fields, int fields_out[], int *token, const char *end_token,
                                  bool parse_values);
 
 static ocs::tom::RawListPtr
-_spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr, 
-                          const spool_flatfile_instr *instr,
-                          const spooling_field *fields, int fields_out[], int *token,
-                          const char *end_token, bool parse_values, const char *list_name);
+_spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
+                           const spool_flatfile_instr *instr, const spooling_field *fields, int fields_out[],
+                          int *token, const char *end_token, bool parse_values, const char *list_name);
 
 static spooling_field *get_recursion_field_list (const spool_flatfile_instr *instr);
 
@@ -742,7 +738,7 @@ ocs_spool_row_get_list(const spooling_field &field, const ocs::tom::ConstRawElem
  * @param field the row, of a list field
  * @return the descriptor, nullptr if the field has no sub-type
  */
-static const lDescr *
+static const ocs::tom::FieldDescr *
 ocs_spool_row_sub_descr(const spooling_field &field) {
    return field.ops->sub_descr;
 }
@@ -816,7 +812,7 @@ bool spool_flatfile_align_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, s
  *
  * @see #spool_flatfile_align_object
  */
-bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lList *list,
+bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ListData *list,
                                spooling_field *fields, int padding) {
    DENTER(FLATFILE_LAYER);
    dstring buffer = DSTRING_INIT;
@@ -877,14 +873,10 @@ bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
  * @see #spool_flatfile_write_object
  */
 const char *
-spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                          const lList *list,
-                          const spooling_field *fields_in,
-                          const spool_flatfile_instr *instr,
-                          const spool_flatfile_destination destination,
-                          const spool_flatfile_format format,
-                          const char *filepath, bool print_header,
-                          std::ostream *stream,
+spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ListData *list,
+                          const spooling_field *fields_in, const spool_flatfile_instr *instr,
+                          const spool_flatfile_destination destination, const spool_flatfile_format format,
+                          const char *filepath, bool print_header, std::ostream *stream,
                           spool_flatfile_line_breaks line_breaks) {
    DENTER(FLATFILE_LAYER);
 
@@ -1054,14 +1046,10 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
  * @see #spool_flatfile_write_list, #spool_flatfile_read_object
  */
 const char *
-spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *object,
-                            bool is_root, const spooling_field *fields_in,
-                            const spool_flatfile_instr *instr,
-                            const spool_flatfile_destination destination,
-                            const spool_flatfile_format format,
-                            const char *filepath, bool print_header,
-                            const char *json_type_name,
-                            std::ostream *stream,
+spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *object,
+                            bool is_root, const spooling_field *fields_in, const spool_flatfile_instr *instr,
+                            const spool_flatfile_destination destination, const spool_flatfile_format format,
+                            const char *filepath, bool print_header, const char *json_type_name, std::ostream *stream,
                             spool_flatfile_line_breaks line_breaks) {
    DENTER(FLATFILE_LAYER);
 
@@ -1875,15 +1863,11 @@ namespace {
  *
  * @see #spool_flatfile_write_object, #spool_flatfile_read_list
  */
-lListElem *
-spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
-                           lListElem *root, const spooling_field *fields_in,
-                           int fields_out[], bool parse_values,
-                           const spool_flatfile_instr *instr,
-                           const spool_flatfile_format format,
-                           FILE *file,
-                           const char *filepath,
-                           const char *content) {
+ocs::tom::ElementData *
+spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
+                           ocs::tom::ElementData *root, const spooling_field *fields_in, int fields_out[],
+                           bool parse_values, const spool_flatfile_instr *instr, const spool_flatfile_format format,
+                           FILE *file, const char *filepath, const char *content) {
    DENTER(FLATFILE_LAYER);
 
    const ocs::tom::UniqueCheckSuspension suspension;
@@ -2046,10 +2030,9 @@ FCLOSE_ERROR:
  * @return the owner of the object, empty if it could not be read
  */
 static ocs::tom::RawElementPtr
-_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
+_spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                             const ocs::tom::RawElement root, const spool_flatfile_instr *instr,
-                            const spooling_field *fields, int fields_out[],
-                            int *token, const char *end_token,
+                            const spooling_field *fields, int fields_out[], int *token, const char *end_token,
                             bool parse_values) {
    ocs::tom::RawElementPtr object;
    int *my_fields_out = nullptr;
@@ -2108,11 +2091,9 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
  */
 static void
 _spool_flatfile_read_live_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::RawElement object,
-                                 ocs::tom::RawElementPtr *created,
-                                 const lDescr *descr, const ocs::tom::RawElement root,
-                                 const spool_flatfile_instr *instr,
-                                 const spooling_field *fields, int fields_out[],
-                                 int *token, const char *end_token,
+                                 ocs::tom::RawElementPtr *created, const ocs::tom::FieldDescr *descr,
+                                 const ocs::tom::RawElement root, const spool_flatfile_instr *instr,
+                                 const spooling_field *fields, int fields_out[], int *token, const char *end_token,
                                  bool parse_values) {
    DENTER(FLATFILE_LAYER);
 
@@ -2404,7 +2385,7 @@ FF_DEBUG("detected end_token");
             }
          }
       } else { /* a list */
-         const lDescr *sub_descr;
+         const ocs::tom::FieldDescr *sub_descr;
 
 FF_DEBUG("reading list");
          /* check for empty sublist */
@@ -2608,14 +2589,11 @@ FF_DEBUG("after parsing object");
  *
  * @see #spool_flatfile_write_list, #spool_flatfile_read_object
  */
-lList *
-spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
-                         const spooling_field *fields_in, int fields_out[],
-                         bool parse_values, const spool_flatfile_instr *instr,
-                         const spool_flatfile_format format,
-                         FILE *file,
-                         const char *filepath,
-                         const char *content) {
+ocs::tom::ListData *
+spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
+                         const spooling_field *fields_in, int fields_out[], bool parse_values,
+                         const spool_flatfile_instr *instr, const spool_flatfile_format format, FILE *file,
+                         const char *filepath, const char *content) {
    DENTER(FLATFILE_LAYER);
 
    const ocs::tom::UniqueCheckSuspension suspension;
@@ -2772,10 +2750,9 @@ FCLOSE_ERROR:
  * @return the owner of the list, empty if no object could be read or the list could not be created
  */
 static ocs::tom::RawListPtr
-_spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDescr *descr,
-                          const spool_flatfile_instr *instr,
-                          const spooling_field *fields, int fields_out[],
-                          int *token, const char *end_token, bool parse_values, const char *list_name) {
+_spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
+                          const spool_flatfile_instr *instr, const spooling_field *fields, int fields_out[], int *token,
+                          const char *end_token, bool parse_values, const char *list_name) {
    DENTER(FLATFILE_LAYER);
 
    bool stop = false;

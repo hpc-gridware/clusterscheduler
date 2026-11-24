@@ -148,7 +148,7 @@ static int nelem(const ocs::tom::ConstRawList lp) {
  * @brief Lends the list of an owner as a list reference to a core function that may replace or free it
  *
  * The core functions split_list(), string_to_list(), string_to_list_none() and
- * remove_common_str() take an `lList *&`; the owner gets back whatever the
+ * remove_common_str() take an `ocs::tom::ListData *&`; the owner gets back whatever the
  * reference holds when this object goes out of scope.
  */
 class ListRef {
@@ -171,13 +171,13 @@ public:
     * @brief The reference for the core function
     * @return the reference to the list, nullptr if there is none
     */
-   lList *&ref() noexcept {
+   ocs::tom::ListData *&ref() noexcept {
       return lp_;
    }
 
 private:
    ocs::tom::RawListPtr &owner_;   ///< the owner the list goes back to
-   lList *lp_;                     ///< the list lent out
+   ocs::tom::ListData *lp_;                     ///< the list lent out
 };
 
 /** @brief Build a list with keys `<prefix>0` .. `<prefix><n-1>`
@@ -208,7 +208,7 @@ static ocs::tom::RawListPtr make_list(const char *prefix, const int n) {
  * @param key the key
  * @return the element, nullptr if none holds the key
  */
-static lListElem *find_str(const ocs::tom::RawList lp, const int nm, const char *key) {
+static ocs::tom::ElementData *find_str(const ocs::tom::RawList lp, const int nm, const char *key) {
    return lp.find_first(nm, key);
 }
 
@@ -235,7 +235,8 @@ static bool hashes_consistent(const ocs::tom::ConstRawList lp) {
    for (std::uint32_t g = 0; g < 2; g++) {
       int found = 0;
       const void *it = nullptr;
-      for (const lListElem *h = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp, pos, g, &it); h != nullptr;
+      for (const ocs::tom::ElementData *h = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp, pos, g,
+                                                                                                &it); h != nullptr;
            h = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp, pos, g, &it)) {
          if (ocs::tom::get<std::uint32_t>(h, TEST_group) != g) {
             return false;
@@ -259,7 +260,7 @@ static bool back_links_consistent(const ocs::tom::ConstRawList lp) {
       return true;
    }
    int n = 0;
-   const lListElem *expected_next = nullptr;
+   const ocs::tom::ElementData *expected_next = nullptr;
    for (ocs::tom::ConstRawElement ep = lp.back(); ep; ep = ep.prev()) {
       if (ep.next().raw() != expected_next) {
          return false;
@@ -298,10 +299,10 @@ static void test_navigation() {
    CHECK(4, "prev() steps back", third.prev().raw() == lp->front().next().raw() && !lp->front().prev());
 
    ocs::tom::RawWherePtr odd = group_is(ocs::tom::CompareOp::Equal, 1);
-   const lListElem *last_odd = ocs::tom::find_last(lp.get(), odd.get());
+   const ocs::tom::ElementData *last_odd = ocs::tom::find_last(lp.get(), odd.get());
    CHECK(5, "find_last() finds the last match", last_odd != nullptr &&
          strcmp(ocs::tom::get<const char *>(last_odd, TEST_key), "n3") == 0);
-   const lListElem *prev_odd = ocs::tom::find_prev(last_odd, odd.get());
+   const ocs::tom::ElementData *prev_odd = ocs::tom::find_prev(last_odd, odd.get());
    CHECK(6, "find_prev() finds the previous match", prev_odd != nullptr &&
          strcmp(ocs::tom::get<const char *>(prev_odd, TEST_key), "n1") == 0);
    CHECK(7, "find_prev() before the first match is nullptr", ocs::tom::find_prev(prev_odd, odd.get()) == nullptr);
@@ -344,7 +345,7 @@ static void test_moves() {
    alien.reset();
 
    // T15-T18: split_from() moves the tail into a new list
-   lListElem *at = find_str(a.get(), TEST_key, "b0");   // fourth element
+   ocs::tom::ElementData *at = find_str(a.get(), TEST_key, "b0");   // fourth element
    ocs::tom::RawListPtr tail(ocs::tom::split_from(a.get(), at, "a"));
    CHECK(15, "split_from() splits at the element", nelem(a.get()) == 3 && nelem(tail.get()) == 4 &&
          tail->front().raw() == at);
@@ -356,7 +357,7 @@ static void test_moves() {
          find_str(a.get(), TEST_key, "b0") == nullptr && find_str(tail.get(), TEST_key, "a0") == nullptr);
 
    // T19-T20: lDechainList() into an existing list appended; that is split_from() and append_list()
-   lListElem *a1 = find_str(a.get(), TEST_key, "a1");
+   ocs::tom::ElementData *a1 = find_str(a.get(), TEST_key, "a1");
    ocs::tom::RawListPtr part(ocs::tom::split_from(a.get(), a1, "a"));
    ocs::tom::append_list(tail.get(), part.get());
    part.reset();

@@ -36,7 +36,7 @@
  *
  * We turn off detect_odr_violation because libsgeobj is a static library
  * and its runtime data (type descriptors: JB[] and
- * every other lDescr[] instantiated via LISTDEF in sge_all_listsL.h) is
+ * every other ocs::tom::FieldDescr[] instantiated via LISTDEF in sge_all_listsL.h) is
  * duplicated into every output that links sgeobj — the main binary AND
  * every dlopen'd spool plugin (libspoolc.so, libspoolb.so, ...). Each
  * object keeps its own copy, which strict ODR checking rejects. The copies

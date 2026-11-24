@@ -220,7 +220,7 @@ static ocs::tom::ListPtr<ocs::tom::STN> sge_sort_pending_job_nodes(ocs::tom::Ele
 static int sge_calc_sharetree_targets(ocs::tom::Element<ocs::tom::STN> root, scheduler_all_data_t *lists,
                                       ocs::tom::ConstList<ocs::tom::UA> decay_list, uint64_t curr_time,
                                       u_long seqno);
-static int sge_init_share_tree_node_fields( lListElem *node, void *ptr );
+static int sge_init_share_tree_node_fields( ocs::tom::ElementData *node, void *ptr );
 
 static double calc_pjob_override_tickets_shared( sge_ref_t *ref);
 
@@ -1048,8 +1048,7 @@ update_active_job_ref_count(const ocs::tom::Element<ocs::tom::STN> node) {
  * @return 0, so the walk continues
  */
 static int
-sge_init_share_tree_node_fields(lListElem *node_raw,
-                                [[maybe_unused]] void *ptr) {
+sge_init_share_tree_node_fields(ocs::tom::ElementData *node_raw, [[maybe_unused]] void *ptr) {
    DENTER(BASIS_LAYER);
    const auto node = ocs::tom::Element<ocs::tom::STN>(node_raw);
    node.set<STN_m_share>(0);

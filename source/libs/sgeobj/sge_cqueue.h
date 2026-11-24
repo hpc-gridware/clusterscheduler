@@ -129,7 +129,7 @@ cqueue_list_find_hgroup_references(ocs::tom::ConstList<ocs::tom::CQ> this_list,
                                    ocs::tom::ConstElement<ocs::tom::HGRP> hgroup);
 
 bool
-cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+cqueue_xattr_pre_gdi(ocs::tom::ListData *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 bool cqueue_verify_attributes(ocs::tom::Element<ocs::tom::CQ> cqueue, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                               ocs::tom::ConstElement<ocs::tom::CQ> reduced_elem, bool in_master,

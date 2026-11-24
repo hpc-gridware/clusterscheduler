@@ -67,7 +67,7 @@
  * @return the descriptor, nullptr for a field that is neither or has no sub-type
  */
 template <auto F>
-consteval const lDescr *ocs_spool_sub_descr() {
+consteval const ocs::tom::FieldDescr *ocs_spool_sub_descr() {
    using Tr = ocs::tom::FieldTraits<F>;
    if constexpr ((Tr::type == ocs::tom::FieldType::List || Tr::type == ocs::tom::FieldType::Object) && Tr::has_sub) {
       return Tr::Sub::descriptor.e;

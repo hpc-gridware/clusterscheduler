@@ -215,7 +215,7 @@ static const char *drmaa_supported_vector[] = {
 
 /* module global variables */
 static pthread_mutex_t qtask_mutex = PTHREAD_MUTEX_INITIALIZER;
-static lList *task_config = nullptr;
+static ocs::tom::ListData *task_config = nullptr;
 static int mode_verbose = 0;
 
 /**
@@ -2619,7 +2619,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
  * @brief Covert the DRMAA attributes
  *
  * All DRMAA job template attributes are translated into qsub style option
- * lListElem for parsing by ocs_parse_job_parameter()
+ * ocs::tom::ElementData for parsing by ocs_parse_job_parameter()
  *
  * @param args list to which options will be appended
  * @param attrs list of DRMAA scalar attributes
@@ -2910,7 +2910,7 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
  * @brief Append the DRMAA default setting
  *
  * All DRMAA default settings are translated into qsub style option
- * lListElem for parsing by ocs_parse_job_parameter()
+ * ocs::tom::ElementData for parsing by ocs_parse_job_parameter()
  *
  * @param opts list to which options will be appended, created when it is an empty handle
  *

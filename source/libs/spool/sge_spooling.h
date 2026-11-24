@@ -142,7 +142,7 @@ typedef const char *
  * The counterpart of #ocs_spool_create_context for a concrete backend; `args` is
  * the method specific URL or option string, e.g. the spool directory.
  */
-typedef lListElem *
+typedef ocs::tom::ElementData *
 (*spooling_create_context_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *args);
 
 /** @brief Apply one backend specific option to a rule */
@@ -193,9 +193,8 @@ typedef bool
  * while reading, and #spooling_validate_list_func once the list is complete.
  */
 typedef bool
-(*spooling_list_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
-                      ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule, 
-                      lList **list, 
+(*spooling_list_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,  ocs::tom::ConstElement<ocs::tom::SPT> type,
+                      ocs::tom::ConstElement<ocs::tom::SPR> rule, ocs::tom::ListData **list,
                       const sge_object_type object_type);
                                   
 /** @brief Write one object to the storage under `key` */
@@ -206,7 +205,7 @@ typedef bool
                        const sge_object_type object_type);
 
 /** @brief Read one object back from the storage by `key` */
-typedef lListElem *
+typedef ocs::tom::ElementData *
 (*spooling_read_func)(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                       ocs::tom::ConstElement<ocs::tom::SPT> type, ocs::tom::ConstElement<ocs::tom::SPR> rule,
                       const char *key,
@@ -257,7 +256,7 @@ void
 spool_free_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementPtr<ocs::tom::SPC> &&context);
 
 void 
-spool_set_default_context(lListElem *context);
+spool_set_default_context(ocs::tom::ElementData *context);
 
 ocs::tom::Element<ocs::tom::SPC>
 spool_get_default_context();
@@ -297,56 +296,54 @@ spool_type_add_rule(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::Elem
                     ocs::tom::ConstElement<ocs::tom::SPR> rule, bool is_default);
 
 bool
-spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, const char *option);
+spool_set_option(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementData *context, const char *option);
 
 /* startup and shutdown */
 bool 
-spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, bool check);
+spool_startup_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementData *context, bool check);
 
 bool 
-spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context);
+spool_shutdown_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context);
 
 bool
-spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lListElem *context, 
-                       const spooling_maintenance_command cmd,
-                       const char *args);
+spool_maintain_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs::tom::ElementData *context,
+                        const spooling_maintenance_command cmd, const char *args);
 
 bool
-spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                      uint64_t trigger, uint64_t *next_trigger);
+spool_trigger_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                       uint64_t trigger, uint64_t *next_trigger);
 
-bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                       spooling_transaction_command cmd);
+bool spool_transaction(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                        spooling_transaction_command cmd);
 
 /* reading */
 bool 
-spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                lList **list, const sge_object_type object_type);
+spool_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                 ocs::tom::ListData **list, const sge_object_type object_type);
 
-lListElem *
-spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                  const sge_object_type object_type, const char *key);
+ocs::tom::ElementData *
+spool_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                   const sge_object_type object_type, const char *key);
 
 bool
-spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context,
-                lList **list, const char *key);
+spool_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                ocs::tom::ListData **list, const char *key);
 
 /* writing */
 bool 
-spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                   const lListElem *object, const char *key, 
-                   const sge_object_type object_type);
+spool_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                    const ocs::tom::ElementData *object, const char *key, const sge_object_type object_type);
 
 /* deleting */
 bool 
-spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                    const sge_object_type object_type, const char *key);
+spool_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                     const sge_object_type object_type, const char *key);
 
 /* compare spooled attributes of 2 objects */
 bool
-spool_compare_objects(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *context, 
-                      const sge_object_type object_type, 
-                      const lListElem *ep1, const lListElem *ep2);
+spool_compare_objects(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *context,
+                       const sge_object_type object_type, const ocs::tom::ElementData *ep1,
+                      const ocs::tom::ElementData *ep2);
 
 /** @brief The spooling method this binary or shared library was built with
  *

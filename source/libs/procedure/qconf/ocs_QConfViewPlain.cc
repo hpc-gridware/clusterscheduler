@@ -51,7 +51,7 @@ qconf_name_of(const ocs::tom::ConstRawElement ep, const int key_nm) {
 
    // a field the element does not hold had no type in the old lookup: the same message as for an unexpected one
    if (ep.has(key_nm)) {
-      const lDescr *descr = ep.descr();
+      const ocs::tom::FieldDescr *descr = ep.descr();
       switch (ocs::tom::field_type_of(descr[ocs::tom::field_pos(descr, key_nm)].mt)) {
          case ocs::tom::FieldType::String:
             DRETURN(ep.get<const char *>(key_nm));

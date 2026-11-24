@@ -107,7 +107,7 @@ struct sge_qeti_s {
  */
 static ocs::tom::ConstElement<ocs::tom::RUE> sge_qeti_rue(const ocs::tom::ConstElement<ocs::tom::QETI> cr_ep) {
    DENTER(TOP_LAYER);
-   auto ref = static_cast<const lListElem *>(cr_ep.get<QETI_resource_instance>());
+   auto ref = static_cast<const ocs::tom::ElementData *>(cr_ep.get<QETI_resource_instance>());
    DRETURN(ocs::tom::ConstElement<ocs::tom::RUE>::from_typed(ref));
 }
 
@@ -119,7 +119,7 @@ static ocs::tom::ConstElement<ocs::tom::RUE> sge_qeti_rue(const ocs::tom::ConstE
  */
 static ocs::tom::Element<ocs::tom::RDE> sge_qeti_queue_end_next(const ocs::tom::ConstElement<ocs::tom::QETI> cr_ep) {
    DENTER(TOP_LAYER);
-   auto ref = static_cast<lListElem *>(cr_ep.get<QETI_queue_end_next>());
+   auto ref = static_cast<ocs::tom::ElementData *>(cr_ep.get<QETI_queue_end_next>());
    DRETURN(ocs::tom::Element<ocs::tom::RDE>::from_typed(ref));
 }
 
@@ -180,7 +180,7 @@ static int sge_qeti_list_add(ocs::tom::ListPtr<ocs::tom::QETI> &lp, const char *
 
    auto ep = ocs::tom::ElementPtr<ocs::tom::QETI>::create();
    // a Ref field holds a void *; the entry is only read through sge_qeti_rue()
-   ep->set<QETI_resource_instance>(const_cast<lListElem *>(tmp_cr_ref.raw()));
+   ep->set<QETI_resource_instance>(const_cast<ocs::tom::ElementData *>(tmp_cr_ref.raw()));
    ep->set<QETI_total>(total);
    lp->push_back(std::move(ep));
 
@@ -360,7 +360,7 @@ static void sge_qeti_init_refs(const ocs::tom::List<ocs::tom::QETI> cref_lp) {
       DPRINTF("   QETI INIT: %s %p\n", rue_ep.get<RUE_name>(), utilization_diagram.raw());
       /* back() correctly returns an empty handle (a nullptr reference)
          in case of an empty resource utilization diagram; the reference is to a mutable element */
-      cr_ep.set<QETI_queue_end_next>(const_cast<lListElem *>(utilization_diagram.back().raw()));
+      cr_ep.set<QETI_queue_end_next>(const_cast<ocs::tom::ElementData *>(utilization_diagram.back().raw()));
    }
 
    DRETURN_VOID;

@@ -21,7 +21,7 @@
 /** @file
  * @brief Must not compile (RAW-ACC): read a list field for writing from a read-only element
  *
- * get<lList *>() and the mutable handles RawList and RawElement are taken
+ * get<ocs::tom::ListData *>() and the mutable handles RawList and RawElement are taken
  * from a mutable element only. The build compiles this file as an expected
  * failure, see expect_compile_failure.cmake; the error must match the line
  * below.
@@ -36,6 +36,6 @@
  * @param ep a job
  * @return the job's environment, writable
  */
-lList *wrong_use(const lListElem *ep) {
-   return ocs::tom::get<lList *>(ep, JB_env_list);
+ocs::tom::ListData *wrong_use(const ocs::tom::ElementData *ep) {
+   return ocs::tom::get<ocs::tom::ListData *>(ep, JB_env_list);
 }

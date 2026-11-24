@@ -50,7 +50,8 @@ namespace ocs::tom {
     * @param delimiters the delimiters, or nullptr for white space
     * @throw FieldException or ListCoreError if a name cannot be added; the list is freed and nullptr then
     */
-   void string_to_list(const char *s, lList *&lp, const lDescr *descr, int nm, const char *delimiters);
+   void string_to_list(const char *s, ocs::tom::ListData *&lp, const ocs::tom::FieldDescr *descr, int nm,
+                       const char *delimiters);
 
    /**
     * @brief Add the names of a string to a list, with "none" for no name, as lString2ListNone() did
@@ -67,7 +68,8 @@ namespace ocs::tom {
     *        nullptr then
     * @throw FieldException or ListCoreError as string_to_list()
     */
-   void string_to_list_none(const char *s, lList *&lp, const lDescr *descr, int nm, const char *delimiters);
+   void string_to_list_none(const char *s, ocs::tom::ListData *&lp, const ocs::tom::FieldDescr *descr, int nm,
+                            const char *delimiters);
 
    /**
     * @brief Take the elements that do not fulfil a condition out of a list
@@ -80,7 +82,7 @@ namespace ocs::tom {
     * @return the elements taken out, in a new list owned by the caller, or nullptr if there are none
     * @throw ListCoreError if there is no memory; no element is taken out then
     */
-   lList *split_off(lList *lp, const lCondition *cp, const char *name);
+   ocs::tom::ListData *split_off(ocs::tom::ListData *lp, const ocs::tom::WhereData *cp, const char *name);
 
    /**
     * @brief Take an element and every element after it out of a list, as lDechainList() into a new list did
@@ -95,7 +97,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if @p ep is null, ForeignList if it is not in @p lp
     * @throw ListCoreError if there is no memory; no element is taken out then
     */
-   lList *split_from(lList *lp, lListElem *ep, const char *name);
+   ocs::tom::ListData *split_from(ocs::tom::ListData *lp, ocs::tom::ElementData *ep, const char *name);
 
    /**
     * @brief Split a list by a condition, as lSplit() did
@@ -111,7 +113,8 @@ namespace ocs::tom {
     * @param cp the condition; nullptr is fulfilled by every element
     * @throw ListCoreError if there is no memory; nothing is changed then
     */
-   void split_list(lList *&slp, lList **ulp, const char *ulp_name, const lCondition *cp);
+   void split_list(ocs::tom::ListData *&slp, ocs::tom::ListData **ulp, const char *ulp_name,
+                   const ocs::tom::WhereData *cp);
 
    /**
     * @brief Remove the elements two lists share by a string key from both, as lDiffListStr() did
@@ -125,7 +128,7 @@ namespace ocs::tom {
     * @param free_empty whether a list left empty is freed and set to nullptr, as lDiffListStr() did
     * @throw FieldException if the elements do not hold the string field @p nm
     */
-   void remove_common_str(lList *&lp1, lList *&lp2, int nm, bool free_empty);
+   void remove_common_str(ocs::tom::ListData *&lp1, ocs::tom::ListData *&lp2, int nm, bool free_empty);
 
    /**
     * @brief Sort a list by a string or host field and keep one element of each key, as lUniqStr() and lUniqHost() did
@@ -138,7 +141,7 @@ namespace ocs::tom {
     *        it is no string or host field
     * @throw ListCoreError if there is no memory
     */
-   void unique_by_key(lList *lp, int nm);
+   void unique_by_key(ocs::tom::ListData *lp, int nm);
 
    /**
     * @brief Count the nodes of a tree built of a list field, as lGetNumberOfNodes() did
@@ -151,7 +154,7 @@ namespace ocs::tom {
     * @param nm the list field holding the children
     * @return the number of nodes
     */
-   int count_nodes(const lListElem *ep, const lList *lp, int nm) noexcept;
+   int count_nodes(const ocs::tom::ElementData *ep, const ocs::tom::ListData *lp, int nm) noexcept;
 
    /**
     * @brief Count the leaves of a tree built of a list field, as lGetNumberOfLeafs() did
@@ -164,6 +167,6 @@ namespace ocs::tom {
     * @param nm the list field holding the children
     * @return the number of leaves
     */
-   int count_leaves(const lListElem *ep, const lList *lp, int nm) noexcept;
+   int count_leaves(const ocs::tom::ElementData *ep, const ocs::tom::ListData *lp, int nm) noexcept;
 
 } // namespace ocs::tom

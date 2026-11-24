@@ -35,7 +35,7 @@
  * @param job the job
  * @return the element
  */
-const lListElem *wrong_use(const lListElem *job) {
+const ocs::tom::ElementData *wrong_use(const ocs::tom::ElementData *job) {
    // JB_env_list holds VA elements; lGetSubUlong(job, JAT_task_number, 1, JB_env_list) compiled
    return ocs::tom::find_first_in<JB_env_list, JAT_task_number>(job, 1);
 }

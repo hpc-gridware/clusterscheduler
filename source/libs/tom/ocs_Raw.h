@@ -33,7 +33,8 @@
  *   `V` names the field type: one of the nine plain types (`std::uint32_t`,
  *   `std::uint64_t`, `std::int32_t`, `std::int64_t`, `double`, `bool`,
  *   `const char *`, `Host`, `void *`), or for a list or object field the raw
- *   pointer (`const lList *`, `lList *`, `const lListElem *`, `lListElem *`) or
+ *   pointer (`const ocs::tom::ListData *`, `ocs::tom::ListData *`, `const ocs::tom::ElementData *`,
+ * `ocs::tom::ElementData *`) or
  *   the raw handle (`ConstRawList`, `RawList`, `ConstRawElement`,
  *   `RawElement`); the mutable forms only from a mutable element. Every
  *   mismatch throws FieldException instead of aborting the process.
@@ -180,28 +181,29 @@ namespace ocs::tom {
        * @tparam V the value type
        */
       template <typename V>
-      concept RawConstListValue = std::is_same_v<V, const lList *> || std::is_same_v<V, ConstRawList>;
+      concept RawConstListValue = std::is_same_v<V, const ocs::tom::ListData *> || std::is_same_v<V, ConstRawList>;
 
       /**
        * @brief A value type that reads an object field without the right to change the object
        * @tparam V the value type
        */
       template <typename V>
-      concept RawConstObjectValue = std::is_same_v<V, const lListElem *> || std::is_same_v<V, ConstRawElement>;
+      concept RawConstObjectValue =
+            std::is_same_v<V, const ocs::tom::ElementData *> || std::is_same_v<V, ConstRawElement>;
 
       /**
        * @brief A value type that reads a list field for writing
        * @tparam V the value type
        */
       template <typename V>
-      concept RawMutableListValue = std::is_same_v<V, lList *> || std::is_same_v<V, RawList>;
+      concept RawMutableListValue = std::is_same_v<V, ocs::tom::ListData *> || std::is_same_v<V, RawList>;
 
       /**
        * @brief A value type that reads an object field for writing
        * @tparam V the value type
        */
       template <typename V>
-      concept RawMutableObjectValue = std::is_same_v<V, lListElem *> || std::is_same_v<V, RawElement>;
+      concept RawMutableObjectValue = std::is_same_v<V, ocs::tom::ElementData *> || std::is_same_v<V, RawElement>;
 
       /**
        * @brief A value type that can be read from a read-only element
@@ -256,7 +258,7 @@ namespace ocs::tom {
        */
       template <typename V>
          requires RawMutableValue<V>
-      [[nodiscard]] inline V raw_value(const lMultiType &value) noexcept {
+      [[nodiscard]] inline V raw_value(const ocs::tom::FieldValue &value) noexcept {
          if constexpr (RawPlainValue<V>) {
             return plain_value<V>(value);
          } else if constexpr (raw_field_type_for<V>() == FieldType::List) {
@@ -280,7 +282,7 @@ namespace ocs::tom {
        */
       template <typename V>
          requires RawMutableValue<V>
-      [[nodiscard]] inline V raw_get(const lListElem *ep, const int nm) {
+      [[nodiscard]] inline V raw_get(const ocs::tom::ElementData *ep, const int nm) {
          if constexpr (RawPlainValue<V>) {
             return runtime_get<V>(ep, nm);
          } else {
@@ -301,7 +303,8 @@ namespace ocs::tom {
        */
       template <typename V>
          requires RawKeyValue<V>
-      [[nodiscard]] inline lListElem *raw_find_first(const lList *lp, const int key_nm, const V key) {
+      [[nodiscard]] inline ocs::tom::ElementData *raw_find_first(const ocs::tom::ListData *lp, const int key_nm,
+                                                                 const V key) {
          if (lp == nullptr) {
             return nullptr;
          }
@@ -348,7 +351,7 @@ namespace ocs::tom {
           * @brief An iterator at an element
           * @param ep the element, or nullptr for the end
           */
-         explicit RawElementIterator(lListElem *ep) noexcept : ep_(ep) {}
+         explicit RawElementIterator(ocs::tom::ElementData *ep) noexcept : ep_(ep) {}
 
          /**
           * @brief The handle on the current element
@@ -385,7 +388,7 @@ namespace ocs::tom {
          bool operator==(const RawElementIterator &other) const noexcept = default;
 
       private:
-         lListElem *ep_ = nullptr;   ///< the current element, or nullptr at the end
+         ocs::tom::ElementData *ep_ = nullptr;   ///< the current element, or nullptr at the end
       };
 
       /** @brief The deleter of RawWherePtr: frees a condition with the core */
@@ -394,7 +397,7 @@ namespace ocs::tom {
           * @brief Free a condition, as lFreeWhere() does
           * @param cp the condition, or nullptr
           */
-         void operator()(lCondition *cp) const noexcept {
+         void operator()(ocs::tom::WhereData *cp) const noexcept {
             ocs::tom::free_where(cp);
          }
       };
@@ -405,7 +408,7 @@ namespace ocs::tom {
           * @brief Free a selection, as lFreeWhat() does
           * @param ep the selection, or nullptr
           */
-         void operator()(lEnumeration *ep) const noexcept {
+         void operator()(ocs::tom::WhatData *ep) const noexcept {
             ocs::tom::free_what(ep);
          }
       };
@@ -413,10 +416,10 @@ namespace ocs::tom {
    } // namespace detail
 
    /** @brief Owns a condition of any type; methods are those of std::unique_ptr */
-   using RawWherePtr = std::unique_ptr<lCondition, detail::FreeWhere>;
+   using RawWherePtr = std::unique_ptr<ocs::tom::WhereData, detail::FreeWhere>;
 
    /** @brief Owns a field selection of any type; methods are those of std::unique_ptr */
-   using RawWhatPtr = std::unique_ptr<lEnumeration, detail::FreeWhat>;
+   using RawWhatPtr = std::unique_ptr<ocs::tom::WhatData, detail::FreeWhat>;
 
    // ---------------------------------------------------------------------------------------------------------------
    // checked accessors on raw pointers
@@ -425,7 +428,7 @@ namespace ocs::tom {
     * @brief Read a field given at run time from a read-only element
     *
     * Plain fields give their value; a list or an object field gives the
-    * borrowed list or element (`const lList *`, `const lListElem *`) or a
+    * borrowed list or element (`const ocs::tom::ListData *`, `const ocs::tom::ElementData *`) or a
     * read-only handle on it (`ConstRawList`, `ConstRawElement`).
     *
     * @tparam V the value type, which names the field type
@@ -438,15 +441,15 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawConstValue<V>
-   [[nodiscard]] V get(const lListElem *ep, const int nm) {
+   [[nodiscard]] V get(const ocs::tom::ElementData *ep, const int nm) {
       return detail::raw_get<V>(ep, nm);
    }
 
    /**
     * @brief Read a field given at run time from a mutable element; list and object fields also for writing
     *
-    * As get() on a read-only element, and additionally `lList *`,
-    * `lListElem *`, `RawList` and `RawElement` for a list or an object field.
+    * As get() on a read-only element, and additionally `ocs::tom::ListData *`,
+    * `ocs::tom::ElementData *`, `RawList` and `RawElement` for a list or an object field.
     *
     * @tparam V the value type, which names the field type
     * @param ep the element, or nullptr
@@ -457,7 +460,7 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawMutableValue<V>
-   [[nodiscard]] V get(lListElem *ep, const int nm) {
+   [[nodiscard]] V get(ocs::tom::ElementData *ep, const int nm) {
       return detail::raw_get<V>(ep, nm);
    }
 
@@ -478,7 +481,7 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawConstValue<V>
-   [[nodiscard]] V get_or(const lListElem *ep, const int nm, const V fallback) {
+   [[nodiscard]] V get_or(const ocs::tom::ElementData *ep, const int nm, const V fallback) {
       if (ep == nullptr) {
          return fallback;
       }
@@ -502,7 +505,7 @@ namespace ocs::tom {
     * @return false for nullptr, a foreign field or an absent field
     * @see Old form: lGetPosViaElem() >= 0, lGetPosInDescr() >= 0
     */
-   [[nodiscard]] inline bool has(const lListElem *ep, const int nm) noexcept {
+   [[nodiscard]] inline bool has(const ocs::tom::ElementData *ep, const int nm) noexcept {
       if (ep == nullptr) {
          return false;
       }
@@ -529,7 +532,7 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawPlainValue<V>
-   void set(lListElem *ep, const int nm, const V value) {
+   void set(ocs::tom::ElementData *ep, const int nm, const V value) {
       detail::runtime_set<V>(ep, nm, value);
    }
 
@@ -543,7 +546,7 @@ namespace ocs::tom {
     *        the installed model names another sub-type for the field
     * @see Old form: lSetList(); typed form: Element<T>::set<F>(ListPtr<Sub>)
     */
-   void set(lListElem *ep, int nm, RawListPtr list);
+   void set(ocs::tom::ElementData *ep, int nm, RawListPtr list);
 
    /**
     * @brief Store an element into an object field given at run time, freeing the element it held
@@ -558,7 +561,7 @@ namespace ocs::tom {
     *        or another object and every other check passed
     * @see Old form: lSetObject(); typed form: Element<T>::set<F>(ElementPtr<Sub>)
     */
-   void set(lListElem *ep, int nm, RawElementPtr object);
+   void set(ocs::tom::ElementData *ep, int nm, RawElementPtr object);
 
    /**
     * @brief Put a list into a list field given at run time and take out the list it held
@@ -569,7 +572,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement, ForeignField, AbsentField, WrongType or WrongSubType
     * @see Old form: lXchgList(), lSwapList() as two calls; typed form: Element<T>::exchange<F>()
     */
-   [[nodiscard]] RawListPtr exchange(lListElem *ep, int nm, RawListPtr list);
+   [[nodiscard]] RawListPtr exchange(ocs::tom::ElementData *ep, int nm, RawListPtr list);
 
    /**
     * @brief Take the element out of an object field given at run time; the field holds none afterwards
@@ -582,7 +585,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement, ForeignField, AbsentField or WrongType
     * @see Old form: lDechainObject(); typed form: Element<T>::take<F>()
     */
-   [[nodiscard]] RawElementPtr take_raw_object(lListElem *ep, int nm);
+   [[nodiscard]] RawElementPtr take_raw_object(ocs::tom::ElementData *ep, int nm);
 
    // ---------------------------------------------------------------------------------------------------------------
    // generic list and selection ops
@@ -595,7 +598,7 @@ namespace ocs::tom {
     * @throw ListCoreError if there is no memory
     * @see Old form: lCreateElem(); core: ocs::tom::create_elem()
     */
-   [[nodiscard]] RawElementPtr create_raw_elem(const lDescr *descr);
+   [[nodiscard]] RawElementPtr create_raw_elem(const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Create an empty list of a full or reduced descriptor
@@ -607,7 +610,7 @@ namespace ocs::tom {
     * @throw ListCoreError if there is no memory
     * @see Old form: lCreateList(), lCreateListHash(); core: ocs::tom::create_list()
     */
-   [[nodiscard]] RawListPtr create_raw_list(const lDescr *descr, Hashing hashing = Hashing::On,
+   [[nodiscard]] RawListPtr create_raw_list(const ocs::tom::FieldDescr *descr, Hashing hashing = Hashing::On,
                                             const char *name = nullptr);
 
    /**
@@ -617,7 +620,7 @@ namespace ocs::tom {
     * @throw ListCoreError if the copy fails
     * @see Old form: lCopyElem(); core: ocs::tom::copy_elem()
     */
-   [[nodiscard]] RawElementPtr clone(const lListElem *ep);
+   [[nodiscard]] RawElementPtr clone(const ocs::tom::ElementData *ep);
 
    /**
     * @brief A deep copy of a list with the name of the original
@@ -627,7 +630,7 @@ namespace ocs::tom {
     * @throw ListCoreError if the copy fails
     * @see Old form: lCopyList(), lCopyListHash(); core: ocs::tom::copy_list()
     */
-   [[nodiscard]] RawListPtr clone(const lList *lp, Hashing hashing = Hashing::On);
+   [[nodiscard]] RawListPtr clone(const ocs::tom::ListData *lp, Hashing hashing = Hashing::On);
 
    /**
     * @brief A deep copy of a condition
@@ -636,7 +639,7 @@ namespace ocs::tom {
     * @throw ListCoreError if there is no memory or the condition is corrupt
     * @see Old form: lCopyWhere(); core: ocs::tom::copy_where()
     */
-   [[nodiscard]] RawWherePtr clone(const lCondition *cp);
+   [[nodiscard]] RawWherePtr clone(const ocs::tom::WhereData *cp);
 
    /**
     * @brief A deep copy of a field selection
@@ -645,7 +648,7 @@ namespace ocs::tom {
     * @throw ListCoreError if there is no memory
     * @see Old form: lCopyWhat(); core: ocs::tom::copy_what()
     */
-   [[nodiscard]] RawWhatPtr clone(const lEnumeration *ep);
+   [[nodiscard]] RawWhatPtr clone(const ocs::tom::WhatData *ep);
 
    /**
     * @brief Append an element to a list
@@ -655,9 +658,10 @@ namespace ocs::tom {
     * @throw FieldException with reason NullList, NullElement for an empty owner, WrongType if the element is of
     *        another type than the list, WrongLayout if of the type but another layout (CS-3112), BoundElement,
     *        or DuplicateKey in a debug build; nothing is changed then
-    * @see Old form: lAppendElem(); core: ocs::tom::append_elem(); typed owner: append(lList *, ElementPtr<T> &&)
+    * @see Old form: lAppendElem(); core: ocs::tom::append_elem(); typed owner: append(ocs::tom::ListData *,
+    * ElementPtr<T> &&)
     */
-   void append(lList *lp, RawElementPtr &&ep);
+   void append(ocs::tom::ListData *lp, RawElementPtr &&ep);
 
    /**
     * @brief Insert an element after another one of a list, or at the front
@@ -667,7 +671,7 @@ namespace ocs::tom {
     * @throw FieldException with the reasons of append(), and ForeignList if @p after is not in @p lp
     * @see Old form: lInsertElem(); core: ocs::tom::insert_elem()
     */
-   void insert_after(lList *lp, lListElem *after, RawElementPtr &&ep);
+   void insert_after(ocs::tom::ListData *lp, ocs::tom::ElementData *after, RawElementPtr &&ep);
 
    /**
     * @brief Take an element out of its list without freeing it
@@ -677,7 +681,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullList, NullElement or ForeignList; nothing is changed then
     * @see Old form: lDechainElem(); core: ocs::tom::dechain_elem()
     */
-   [[nodiscard]] RawElementPtr take(lList *lp, lListElem *ep);
+   [[nodiscard]] RawElementPtr take(ocs::tom::ListData *lp, ocs::tom::ElementData *ep);
 
    /**
     * @brief Take an element out of its list and free it
@@ -686,7 +690,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullList, NullElement or ForeignList; nothing is changed then
     * @see Old form: lRemoveElem(); core: ocs::tom::remove_elem()
     */
-   void erase(lList *lp, lListElem *ep);
+   void erase(ocs::tom::ListData *lp, ocs::tom::ElementData *ep);
 
    /**
     * @brief Move every element of a list to the end of another and free the emptied list
@@ -698,7 +702,7 @@ namespace ocs::tom {
     *        is changed then
     * @see Old form: lAddList(); core: ocs::tom::append_list()
     */
-   void splice(lList *dst, RawListPtr &&src);
+   void splice(ocs::tom::ListData *dst, RawListPtr &&src);
 
    /**
     * @brief The number of elements of a list
@@ -706,7 +710,7 @@ namespace ocs::tom {
     * @return the number, 0 for nullptr
     * @see Old form: lGetNumberOfElem()
     */
-   [[nodiscard]] inline std::size_t size(const lList *lp) noexcept {
+   [[nodiscard]] inline std::size_t size(const ocs::tom::ListData *lp) noexcept {
       return lp != nullptr ? lp->nelem : 0;
    }
 
@@ -728,7 +732,7 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawKeyValue<V>
-   [[nodiscard]] const lListElem *find_first(const lList *lp, const int key_nm, const V key) {
+   [[nodiscard]] const ocs::tom::ElementData *find_first(const ocs::tom::ListData *lp, const int key_nm, const V key) {
       return detail::raw_find_first<V>(lp, key_nm, key);
    }
 
@@ -744,7 +748,7 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawKeyValue<V>
-   [[nodiscard]] lListElem *find_first(lList *lp, const int key_nm, const V key) {
+   [[nodiscard]] ocs::tom::ElementData *find_first(ocs::tom::ListData *lp, const int key_nm, const V key) {
       return detail::raw_find_first<V>(lp, key_nm, key);
    }
 
@@ -764,8 +768,8 @@ namespace ocs::tom {
     * @see Old form: lSelect(), lSelectHashPack() and lSelectDPack() without a pack buffer; core: select_list();
     *      with the old contract: select_as(), select_into_descr(), select_pack()
     */
-   [[nodiscard]] RawListPtr select(const lList *lp, const lCondition *where, const lEnumeration *what,
-                                   Hashing hashing = Hashing::On);
+   [[nodiscard]] RawListPtr select(const ocs::tom::ListData *lp, const ocs::tom::WhereData *where,
+                                   const ocs::tom::WhatData *what, Hashing hashing = Hashing::On);
 
    /**
     * @brief A copy of one element reduced to a selection of fields
@@ -778,7 +782,8 @@ namespace ocs::tom {
     * @see Old form: lSelectElemPack() without a pack buffer; core: select_elem(); with the old contract:
     *      select_elem_as(), select_elem_into_descr()
     */
-   [[nodiscard]] RawElementPtr select(const lListElem *ep, const lEnumeration *what, Hashing hashing = Hashing::On);
+   [[nodiscard]] RawElementPtr select(const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what,
+                                      Hashing hashing = Hashing::On);
 
    /**
     * @brief Whether an element fulfils a condition
@@ -788,7 +793,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if @p ep is nullptr
     * @see Old form: lCompare(); core: ocs::tom::compare()
     */
-   [[nodiscard]] bool matches(const lListElem *ep, const lCondition *where);
+   [[nodiscard]] bool matches(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *where);
 
    // ---------------------------------------------------------------------------------------------------------------
    // conditions and selections built at run time
@@ -822,8 +827,8 @@ namespace ocs::tom {
        * @return the owner of the condition; empty for a null descriptor or a field the descriptor does not hold
        * @throw FieldException with reason WrongType if @p value_type does not fit the field
        */
-      [[nodiscard]] RawWherePtr raw_where_compare(const lDescr *descr, int nm, CompareOp op, int value_type,
-                                                  const lMultiType &value);
+      [[nodiscard]] RawWherePtr raw_where_compare(const ocs::tom::FieldDescr *descr, int nm, CompareOp op,
+                                                  int value_type, const ocs::tom::FieldValue &value);
 
    } // namespace detail
 
@@ -853,8 +858,9 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawCompareValue<V>
-   [[nodiscard]] RawWherePtr where_compare(const lDescr *descr, const int nm, const CompareOp op, const V value) {
-      lMultiType v{};
+   [[nodiscard]] RawWherePtr where_compare(const ocs::tom::FieldDescr *descr, const int nm, const CompareOp op,
+                                           const V value) {
+      ocs::tom::FieldValue v{};
       if constexpr (std::is_same_v<V, std::uint32_t>) {
          v.ul = value;
       } else if constexpr (std::is_same_v<V, std::uint64_t>) {
@@ -889,7 +895,7 @@ namespace ocs::tom {
     * @see Old form: lIntVector2What(), lWhat("%T(%I...)") without sub-selections; core: ocs::tom::make_what();
     *      typed form: ocs::tom::what<T>(fields)
     */
-   [[nodiscard]] RawWhatPtr what_of(const lDescr *descr, std::span<const int> fields);
+   [[nodiscard]] RawWhatPtr what_of(const ocs::tom::FieldDescr *descr, std::span<const int> fields);
 
    /**
     * @brief The selection of every field, of whatever type it is applied to
@@ -932,13 +938,13 @@ namespace ocs::tom {
     * @see Old form: lSelect() (Hashing::On), lSelectHashPack() without a pack buffer; core: select_list(),
     *      copy_list()
     */
-   [[nodiscard]] RawListPtr select_as(const char *name, const lList *lp, const lCondition *where,
-                                      const lEnumeration *what, Hashing hashing);
+   [[nodiscard]] RawListPtr select_as(const char *name, const ocs::tom::ListData *lp, const ocs::tom::WhereData *where,
+                                      const ocs::tom::WhatData *what, Hashing hashing);
 
    /**
     * @brief A copy of one element reduced to a selection if it fulfils a condition, as lSelectElemPack() did
     *
-    * Differences from select(const lListElem *, ...): the condition is
+    * Differences from select(const ocs::tom::ElementData *, ...): the condition is
     * applied (no match gives no copy); @p what == nullptr copies the whole
     * element - then without applying @p where - instead of throwing; a
     * selection that does not fit gives no copy instead of throwing.
@@ -950,8 +956,8 @@ namespace ocs::tom {
     * @return the owner of the copy, a free element; empty for nullptr, no match, or an error
     * @see Old form: lSelectElemPack() without a pack buffer; core: compare(), select_elem(), copy_elem()
     */
-   [[nodiscard]] RawElementPtr select_elem_as(const lListElem *ep, const lCondition *where, const lEnumeration *what,
-                                              Hashing hashing);
+   [[nodiscard]] RawElementPtr select_elem_as(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *where,
+                                              const ocs::tom::WhatData *what, Hashing hashing);
 
    /**
     * @brief Copy the elements of a list that fulfil a condition into a list of a given reduced descriptor, as
@@ -976,9 +982,9 @@ namespace ocs::tom {
     *         element cannot be linked into it, and with Hashing::On for no match
     * @see Old form: lSelectDPack() without a pack buffer; core: create_list(), compare(), copy_elem_partial()
     */
-   [[nodiscard]] RawListPtr select_into_descr(const char *name, const lList *lp, const lCondition *where,
-                                              const lDescr *descr, const lEnumeration *what,
-                                              Hashing hashing);
+   [[nodiscard]] RawListPtr select_into_descr(const char *name, const ocs::tom::ListData *lp,
+                                              const ocs::tom::WhereData *where, const ocs::tom::FieldDescr *descr,
+                                              const ocs::tom::WhatData *what, Hashing hashing);
 
    /**
     * @brief A copy of one element in a given reduced descriptor if it fulfils a condition, as lSelectElemDPack()
@@ -997,8 +1003,8 @@ namespace ocs::tom {
     * @return the owner of the copy, a free element; empty as described
     * @see Old form: lSelectElemDPack() without a pack buffer; core: create_elem(), compare(), copy_elem_partial()
     */
-   [[nodiscard]] RawElementPtr select_elem_into_descr(const lListElem *ep, const lCondition *where,
-                                                      const lDescr *descr, const lEnumeration *what,
+   [[nodiscard]] RawElementPtr select_elem_into_descr(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *where,
+                                                      const ocs::tom::FieldDescr *descr, const ocs::tom::WhatData *what,
                                                       Hashing hashing);
 
    /**
@@ -1026,8 +1032,8 @@ namespace ocs::tom {
     * @see Old form: lSelectHashPack() with a pack buffer (its hash flag had no effect there); core: compare(),
     *      put_uint32(), put_str(), pack_what_as_descr(), pack_elem(), pack_list()
     */
-   void select_pack(sge_pack_buffer *pb, const char *name, const lList *lp, const lCondition *where,
-                    const lEnumeration *what);
+   void select_pack(sge_pack_buffer *pb, const char *name, const ocs::tom::ListData *lp,
+                    const ocs::tom::WhereData *where, const ocs::tom::WhatData *what);
 
    /**
     * @brief Unpack a list of the type the buffer names
@@ -1057,7 +1063,7 @@ namespace ocs::tom {
     *        memory; everything read before is freed
     * @see Old form: tom_unpack_elem(), tom_unpack_elem_partial(); core: ocs::tom::unpack_elem()
     */
-   [[nodiscard]] RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const lDescr *descr, int flags = 0);
+   [[nodiscard]] RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, int flags = 0);
 
    // ---------------------------------------------------------------------------------------------------------------
    // handles
@@ -1065,7 +1071,7 @@ namespace ocs::tom {
    /**
     * @brief A read-only, non-owning handle on an element of any type
     *
-    * The size of a pointer; converts implicitly to `const lListElem *` and is
+    * The size of a pointer; converts implicitly to `const ocs::tom::ElementData *` and is
     * made implicitly from one or from a typed read-only handle: it owns nothing
     * and checks nothing, so the conversion cannot fail or lose an element. The
     * type is the element's descriptor. Every method forwards to the free
@@ -1083,7 +1089,7 @@ namespace ocs::tom {
        * @brief A handle on an element
        * @param ep the element, or nullptr for an empty handle
        */
-      ConstRawElement(const lListElem *ep) noexcept : ep_(const_cast<lListElem *>(ep)) {}
+      ConstRawElement(const ocs::tom::ElementData *ep) noexcept : ep_(const_cast<ocs::tom::ElementData *>(ep)) {}
 
       /**
        * @brief A handle on the element of a typed handle, also of a mutable one
@@ -1097,7 +1103,7 @@ namespace ocs::tom {
        * @brief The element, for every function that takes the raw pointer
        * @return the element, or nullptr
        */
-      operator const lListElem *() const noexcept {
+      operator const ocs::tom::ElementData *() const noexcept {
          return ep_;
       }
 
@@ -1105,7 +1111,7 @@ namespace ocs::tom {
        * @brief The element, for varargs and deduced templates
        * @return the element, or nullptr
        */
-      [[nodiscard]] const lListElem *raw() const noexcept {
+      [[nodiscard]] const ocs::tom::ElementData *raw() const noexcept {
          return ep_;
       }
 
@@ -1114,7 +1120,7 @@ namespace ocs::tom {
        * @return the descriptor, nullptr if the handle is empty
        * @see Old form: lGetElemDescr()
        */
-      [[nodiscard]] const lDescr *descr() const noexcept {
+      [[nodiscard]] const ocs::tom::FieldDescr *descr() const noexcept {
          return ep_ != nullptr ? ep_->descr : nullptr;
       }
 
@@ -1145,7 +1151,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Read a field given at run time; forwards to ocs::tom::get<V>(const lListElem *, int)
+       * @brief Read a field given at run time; forwards to ocs::tom::get<V>(const ocs::tom::ElementData *, int)
        * @tparam V the value type, which names the field type
        * @param nm the field number
        * @return the value
@@ -1181,20 +1187,21 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief A deep copy of the element; forwards to ocs::tom::clone(const lListElem *)
+       * @brief A deep copy of the element; forwards to ocs::tom::clone(const ocs::tom::ElementData *)
        * @return the owner of the copy, empty if the handle is empty
        * @throw ListCoreError if the copy fails
        */
       [[nodiscard]] RawElementPtr clone() const;
 
       /**
-       * @brief A copy of the element reduced to a selection; forwards to ocs::tom::select(const lListElem *, ...)
+       * @brief A copy of the element reduced to a selection; forwards to
+       *        ocs::tom::select(const ocs::tom::ElementData *, ...)
        * @param what the selection of fields
        * @param hashing whether copied sub-lists keep hash tables
        * @return the owner of the copy, empty if the handle is empty
        * @throw FieldException and ListCoreError as the free form
        */
-      [[nodiscard]] RawElementPtr select(const lEnumeration *what, Hashing hashing = Hashing::On) const;
+      [[nodiscard]] RawElementPtr select(const ocs::tom::WhatData *what, Hashing hashing = Hashing::On) const;
 
       /**
        * @brief Whether the element fulfils a condition; forwards to ocs::tom::matches()
@@ -1202,19 +1209,19 @@ namespace ocs::tom {
        * @return true if the element fulfils @p where
        * @throw FieldException with reason NullElement for an empty handle
        */
-      [[nodiscard]] bool matches(const lCondition *where) const {
+      [[nodiscard]] bool matches(const ocs::tom::WhereData *where) const {
          return ocs::tom::matches(raw(), where);
       }
 
    protected:
-      lListElem *ep_ = nullptr;   ///< the element, not owned; mutable only through RawElement
+      ocs::tom::ElementData *ep_ = nullptr;   ///< the element, not owned; mutable only through RawElement
    };
 
    /**
     * @brief A mutable, non-owning handle on an element of any type; adds the setters
     *
-    * Converts implicitly to `lListElem *` and to the read-only handle; made
-    * implicitly from `lListElem *` or a mutable typed handle, never from a
+    * Converts implicitly to `ocs::tom::ElementData *` and to the read-only handle; made
+    * implicitly from `ocs::tom::ElementData *` or a mutable typed handle, never from a
     * read-only one.
     */
    class RawElement : public ConstRawElement {
@@ -1229,7 +1236,7 @@ namespace ocs::tom {
        * @brief A handle on an element
        * @param ep the element, or nullptr for an empty handle
        */
-      RawElement(lListElem *ep) noexcept : ConstRawElement(ep) {}
+      RawElement(ocs::tom::ElementData *ep) noexcept : ConstRawElement(ep) {}
 
       /**
        * @brief A handle on the element of a mutable typed handle
@@ -1243,7 +1250,7 @@ namespace ocs::tom {
        * @brief The element, for every function that takes the raw pointer
        * @return the element, or nullptr
        */
-      operator lListElem *() const noexcept {
+      operator ocs::tom::ElementData *() const noexcept {
          return ep_;
       }
 
@@ -1251,7 +1258,7 @@ namespace ocs::tom {
        * @brief The element, for varargs and deduced templates
        * @return the element, or nullptr
        */
-      [[nodiscard]] lListElem *raw() const noexcept {
+      [[nodiscard]] ocs::tom::ElementData *raw() const noexcept {
          return ep_;
       }
 
@@ -1275,7 +1282,7 @@ namespace ocs::tom {
 
       /**
        * @brief Read a field given at run time; list and object fields also for writing; forwards to
-       *        ocs::tom::get<V>(lListElem *, int)
+       *        ocs::tom::get<V>(ocs::tom::ElementData *, int)
        * @tparam V the value type, which names the field type
        * @param nm the field number
        * @return the value
@@ -1288,7 +1295,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Set a plain field given at run time; forwards to ocs::tom::set(lListElem *, int, V)
+       * @brief Set a plain field given at run time; forwards to ocs::tom::set(ocs::tom::ElementData *, int, V)
        * @tparam V the value type, one of the nine plain types, which names the field type
        * @param nm the field number
        * @param value the value
@@ -1301,7 +1308,7 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Store a list into a list field; forwards to ocs::tom::set(lListElem *, int, RawListPtr)
+       * @brief Store a list into a list field; forwards to ocs::tom::set(ocs::tom::ElementData *, int, RawListPtr)
        * @param nm the field number
        * @param list the list, which the element takes over
        * @throw FieldException as the free form
@@ -1309,7 +1316,8 @@ namespace ocs::tom {
       void set(int nm, RawListPtr list) const;
 
       /**
-       * @brief Store an element into an object field; forwards to ocs::tom::set(lListElem *, int, RawElementPtr)
+       * @brief Store an element into an object field; forwards to ocs::tom::set(ocs::tom::ElementData *, int,
+       * RawElementPtr)
        * @param nm the field number
        * @param object the element, which the element takes over
        * @throw FieldException as the free form
@@ -1338,7 +1346,7 @@ namespace ocs::tom {
     * @brief A read-only, non-owning handle on a list of any type
     *
     * Walked as a range of ConstRawElement. Converts implicitly to
-    * `const lList *` and is made implicitly from one or from a typed read-only
+    * `const ocs::tom::ListData *` and is made implicitly from one or from a typed read-only
     * handle, as ConstRawElement is.
     */
    class ConstRawList {
@@ -1355,7 +1363,7 @@ namespace ocs::tom {
        * @brief A handle on a list
        * @param lp the list, or nullptr for an empty handle
        */
-      ConstRawList(const lList *lp) noexcept : lp_(const_cast<lList *>(lp)) {}
+      ConstRawList(const ocs::tom::ListData *lp) noexcept : lp_(const_cast<ocs::tom::ListData *>(lp)) {}
 
       /**
        * @brief A handle on the list of a typed handle, also of a mutable one
@@ -1369,7 +1377,7 @@ namespace ocs::tom {
        * @brief The list, for every function that takes the raw pointer
        * @return the list, or nullptr
        */
-      operator const lList *() const noexcept {
+      operator const ocs::tom::ListData *() const noexcept {
          return lp_;
       }
 
@@ -1377,7 +1385,7 @@ namespace ocs::tom {
        * @brief The list, for varargs and deduced templates
        * @return the list, or nullptr
        */
-      [[nodiscard]] const lList *raw() const noexcept {
+      [[nodiscard]] const ocs::tom::ListData *raw() const noexcept {
          return lp_;
       }
 
@@ -1386,7 +1394,7 @@ namespace ocs::tom {
        * @return the descriptor, nullptr if the handle is empty
        * @see Old form: lGetListDescr()
        */
-      [[nodiscard]] const lDescr *descr() const noexcept {
+      [[nodiscard]] const ocs::tom::FieldDescr *descr() const noexcept {
          return lp_ != nullptr ? lp_->descr : nullptr;
       }
 
@@ -1469,11 +1477,11 @@ namespace ocs::tom {
        * @return the owner of the result, empty if the handle is empty
        * @throw FieldException and ListCoreError as the free form
        */
-      [[nodiscard]] RawListPtr select(const lCondition *where, const lEnumeration *what,
+      [[nodiscard]] RawListPtr select(const ocs::tom::WhereData *where, const ocs::tom::WhatData *what,
                                       Hashing hashing = Hashing::On) const;
 
       /**
-       * @brief A deep copy of the list; forwards to ocs::tom::clone(const lList *, Hashing)
+       * @brief A deep copy of the list; forwards to ocs::tom::clone(const ocs::tom::ListData *, Hashing)
        * @param hashing whether the copy keeps hash tables
        * @return the owner of the copy, empty if the handle is empty
        * @throw ListCoreError if the copy fails
@@ -1481,13 +1489,13 @@ namespace ocs::tom {
       [[nodiscard]] RawListPtr clone(Hashing hashing = Hashing::On) const;
 
    protected:
-      lList *lp_ = nullptr;   ///< the list, not owned; mutable only through RawList
+      ocs::tom::ListData *lp_ = nullptr;   ///< the list, not owned; mutable only through RawList
    };
 
    /**
     * @brief A mutable, non-owning handle on a list of any type; adds the operations that change the list
     *
-    * Walked as a range of RawElement. Made implicitly from `lList *` or a
+    * Walked as a range of RawElement. Made implicitly from `ocs::tom::ListData *` or a
     * mutable typed handle, never from a read-only one.
     */
    class RawList : public ConstRawList {
@@ -1504,7 +1512,7 @@ namespace ocs::tom {
        * @brief A handle on a list
        * @param lp the list, or nullptr for an empty handle
        */
-      RawList(lList *lp) noexcept : ConstRawList(lp) {}
+      RawList(ocs::tom::ListData *lp) noexcept : ConstRawList(lp) {}
 
       /**
        * @brief A handle on the list of a mutable typed handle
@@ -1518,7 +1526,7 @@ namespace ocs::tom {
        * @brief The list, for every function that takes the raw pointer
        * @return the list, or nullptr
        */
-      operator lList *() const noexcept {
+      operator ocs::tom::ListData *() const noexcept {
          return lp_;
       }
 
@@ -1526,7 +1534,7 @@ namespace ocs::tom {
        * @brief The list, for varargs and deduced templates
        * @return the list, or nullptr
        */
-      [[nodiscard]] lList *raw() const noexcept {
+      [[nodiscard]] ocs::tom::ListData *raw() const noexcept {
          return lp_;
       }
 
@@ -1586,7 +1594,8 @@ namespace ocs::tom {
       RawElement push_back(RawElementPtr &&element) const;
 
       /**
-       * @brief Append the element of a typed owner; forwards to ocs::tom::append(lList *, ElementPtr<T> &&)
+       * @brief Append the element of a typed owner; forwards to
+       *        ocs::tom::append(ocs::tom::ListData *, ElementPtr<T> &&)
        * @tparam T the object type of the typed owner
        * @param element the typed owner; empty afterwards, keeps the element on a throw
        * @return the handle on the element, now in the list
@@ -1606,7 +1615,7 @@ namespace ocs::tom {
 
       /**
        * @brief Insert the element of a typed owner after another one, or at the front; forwards to
-       *        ocs::tom::insert_after(lList *, lListElem *, ElementPtr<T> &&)
+       *        ocs::tom::insert_after(ocs::tom::ListData *, ocs::tom::ElementData *, ElementPtr<T> &&)
        * @tparam T the object type of the typed owner
        * @param after the predecessor, an element of this list, or an empty handle for the front
        * @param element the typed owner; empty afterwards, keeps the element on a throw
@@ -1617,7 +1626,8 @@ namespace ocs::tom {
       RawElement insert_after(ConstRawElement after, ElementPtr<T> &&element) const;
 
       /**
-       * @brief Take an element out of the list without freeing it; forwards to ocs::tom::take(lList *, lListElem *)
+       * @brief Take an element out of the list without freeing it; forwards to ocs::tom::take(ocs::tom::ListData *,
+       * ocs::tom::ElementData *)
        *
        * Taking the current element of a range-for invalidates the range iterator; fetch the successor first.
        *
@@ -1628,7 +1638,8 @@ namespace ocs::tom {
       [[nodiscard]] RawElementPtr take(RawElement element) const;
 
       /**
-       * @brief Take an element out of the list and free it; forwards to ocs::tom::erase(lList *, lListElem *)
+       * @brief Take an element out of the list and free it; forwards to ocs::tom::erase(ocs::tom::ListData *,
+       * ocs::tom::ElementData *)
        *
        * Erasing the current element of a range-for invalidates the range iterator; fetch the successor first.
        *
@@ -1646,7 +1657,7 @@ namespace ocs::tom {
 
       /**
        * @brief Move every element of the list of a typed owner to the end of this one; forwards to
-       *        ocs::tom::splice(lList *, ListPtr<T> &&)
+       *        ocs::tom::splice(ocs::tom::ListData *, ListPtr<T> &&)
        * @tparam T the object type of the typed owner
        * @param other the typed owner; empty afterwards, keeps the list on a throw
        * @throw FieldException as the free form
@@ -1661,7 +1672,8 @@ namespace ocs::tom {
    // tie; these overloads take the handle as it is, so that every function that takes the pointer takes it
 
    /**
-    * @brief Read a field given at run time through a read-only handle; forwards to get<V>(const lListElem *, int)
+    * @brief Read a field given at run time through a read-only handle; forwards to
+    *        get<V>(const ocs::tom::ElementData *, int)
     * @tparam V the value type, which names the field type
     * @param element the handle, or an empty handle
     * @param nm the field number
@@ -1675,7 +1687,7 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief Read a field given at run time through a mutable handle; forwards to get<V>(lListElem *, int)
+    * @brief Read a field given at run time through a mutable handle; forwards to get<V>(ocs::tom::ElementData *, int)
     * @tparam V the value type, which names the field type
     * @param element the handle, or an empty handle
     * @param nm the field number
@@ -1833,7 +1845,7 @@ namespace ocs::tom {
 
    /**
     * @brief The first element of a list whose key field holds a key, through a read-only handle; forwards to
-    *        find_first<V>(const lList *, int, V)
+    *        find_first<V>(const ocs::tom::ListData *, int, V)
     * @tparam V the key's value type: std::uint32_t, std::uint64_t, const char * or Host; names the field type
     * @param list the handle, or an empty handle for no match
     * @param key_nm the key field
@@ -1843,13 +1855,13 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawKeyValue<V>
-   [[nodiscard]] const lListElem *find_first(const ConstRawList list, const int key_nm, const V key) {
+   [[nodiscard]] const ocs::tom::ElementData *find_first(const ConstRawList list, const int key_nm, const V key) {
       return detail::raw_find_first<V>(list.raw(), key_nm, key);
    }
 
    /**
     * @brief The first element of a list whose key field holds a key, through a mutable handle; forwards to
-    *        find_first<V>(lList *, int, V)
+    *        find_first<V>(ocs::tom::ListData *, int, V)
     * @tparam V the key's value type: std::uint32_t, std::uint64_t, const char * or Host; names the field type
     * @param list the handle, or an empty handle for no match
     * @param key_nm the key field
@@ -1859,13 +1871,14 @@ namespace ocs::tom {
     */
    template <typename V>
       requires detail::RawKeyValue<V>
-   [[nodiscard]] lListElem *find_first(const RawList list, const int key_nm, const V key) {
+   [[nodiscard]] ocs::tom::ElementData *find_first(const RawList list, const int key_nm, const V key) {
       return detail::raw_find_first<V>(list.raw(), key_nm, key);
    }
 
    // ---------------------------------------------------------------------------------------------------------------
    // writing as text for debugging: the text of the old lWrite*To() functions, byte for byte. Overload resolution:
-   // a list pointer (`lList *`, `const lList *`), a RawList and a typed list handle reach the list form, an
+   // a list pointer (`ocs::tom::ListData *`, `const ocs::tom::ListData *`), a RawList and a typed list handle reach the
+   // list form, an
    // element pointer, a RawElement and a typed element handle the element form, through the implicit handle
    // constructors; a condition and a selection pointer reach their forms directly. An owner converts to no
    // handle; pass `*owner`. The literal nullptr would tie between the condition and the selection form and is
@@ -1893,7 +1906,7 @@ namespace ocs::tom {
     * @param where the condition; nullptr writes nothing, as before
     * @see Old form: lWriteWhereTo(); core: ocs::tom::print_where(); typed form: Where<T>::print()
     */
-   void write_to(FILE *fp, const lCondition *where);
+   void write_to(FILE *fp, const ocs::tom::WhereData *where);
 
    /**
     * @brief Write a field selection with its nested selections as text for debugging
@@ -1901,7 +1914,7 @@ namespace ocs::tom {
     * @param what the selection; nullptr writes nothing, as before
     * @see Old form: lWriteWhatTo(); core: ocs::tom::print_what(); typed form: What<T>::print()
     */
-   void write_to(FILE *fp, const lEnumeration *what);
+   void write_to(FILE *fp, const ocs::tom::WhatData *what);
 
    /**
     * @brief The literal nullptr names no object type to write; rejected at compile time
@@ -1924,7 +1937,7 @@ namespace ocs::tom {
     * @param lp the holder; nullptr afterwards
     * @see Old form: lFreeList(&lp); core: ocs::tom::free_list(), which throws instead of aborting
     */
-   void free_raw_list(lList *&lp) noexcept;
+   void free_raw_list(ocs::tom::ListData *&lp) noexcept;
 
    /**
     * @brief Free an element that a raw holder keeps, and clear the holder
@@ -1935,7 +1948,7 @@ namespace ocs::tom {
     * @param ep the holder of a free element; nullptr afterwards
     * @see Old form: lFreeElem(&ep); core: ocs::tom::free_elem(), which throws instead of aborting
     */
-   void free_raw_elem(lListElem *&ep) noexcept;
+   void free_raw_elem(ocs::tom::ElementData *&ep) noexcept;
 
    /**
     * @brief The number of elements after an element in its list
@@ -1973,7 +1986,7 @@ namespace ocs::tom {
     *
     * @param descr the holder of the reference, or of nullptr; nullptr afterwards
     */
-   void release_descr(const lDescr *&descr) noexcept;
+   void release_descr(const ocs::tom::FieldDescr *&descr) noexcept;
 
    /**
     * @brief Whether a loaded shared object uses the descriptor registry of this process (N-A-22)
@@ -2011,7 +2024,7 @@ namespace ocs::tom {
        * @brief Take over an element
        * @param ep the element, free, or nullptr; freed by the owner
        */
-      explicit RawElementPtr(lListElem *ep) noexcept : ep_(ep) {}
+      explicit RawElementPtr(ocs::tom::ElementData *ep) noexcept : ep_(ep) {}
 
       /**
        * @brief Take over the element of a typed owner; the way from typed to raw, which cannot fail
@@ -2032,7 +2045,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullDescriptor if @p descr is null or empty
        * @throw ListCoreError if there is no memory
        */
-      [[nodiscard]] static RawElementPtr create(const lDescr *descr) {
+      [[nodiscard]] static RawElementPtr create(const ocs::tom::FieldDescr *descr) {
          return create_raw_elem(descr);
       }
 
@@ -2096,12 +2109,12 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief A deep copy of the element; forwards to ocs::tom::clone(const lListElem *)
+       * @brief A deep copy of the element; forwards to ocs::tom::clone(const ocs::tom::ElementData *)
        * @return the owner of the copy, empty if this owner is
        * @throw ListCoreError if the copy fails
        */
       [[nodiscard]] RawElementPtr clone() const {
-         return ocs::tom::clone(static_cast<const lListElem *>(ep_));
+         return ocs::tom::clone(static_cast<const ocs::tom::ElementData *>(ep_));
       }
 
       /** @brief Free the element held now, as std::unique_ptr::reset() and lFreeElem() do */
@@ -2113,12 +2126,12 @@ namespace ocs::tom {
        * @brief Give up ownership
        * @return the element, which the caller now owns, or nullptr
        */
-      [[nodiscard]] lListElem *release() noexcept {
+      [[nodiscard]] ocs::tom::ElementData *release() noexcept {
          return std::exchange(ep_, nullptr);
       }
 
    private:
-      lListElem *ep_ = nullptr;   ///< the element owned, or nullptr
+      ocs::tom::ElementData *ep_ = nullptr;   ///< the element owned, or nullptr
    };
 
    /**
@@ -2139,7 +2152,7 @@ namespace ocs::tom {
        * @brief Take over a list
        * @param lp the list, or nullptr; freed by the owner
        */
-      explicit RawListPtr(lList *lp) noexcept : lp_(lp) {}
+      explicit RawListPtr(ocs::tom::ListData *lp) noexcept : lp_(lp) {}
 
       /**
        * @brief Take over the list of a typed owner; the way from typed to raw, which cannot fail
@@ -2162,7 +2175,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullDescriptor if @p descr is null or empty
        * @throw ListCoreError if there is no memory
        */
-      [[nodiscard]] static RawListPtr create(const lDescr *descr, const Hashing hashing = Hashing::On,
+      [[nodiscard]] static RawListPtr create(const ocs::tom::FieldDescr *descr, const Hashing hashing = Hashing::On,
                                              const char *name = nullptr) {
          return create_raw_list(descr, hashing, name);
       }
@@ -2227,13 +2240,13 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief A deep copy of the list; forwards to ocs::tom::clone(const lList *, Hashing)
+       * @brief A deep copy of the list; forwards to ocs::tom::clone(const ocs::tom::ListData *, Hashing)
        * @param hashing whether the copy keeps hash tables
        * @return the owner of the copy, empty if this owner is
        * @throw ListCoreError if the copy fails
        */
       [[nodiscard]] RawListPtr clone(const Hashing hashing = Hashing::On) const {
-         return ocs::tom::clone(static_cast<const lList *>(lp_), hashing);
+         return ocs::tom::clone(static_cast<const ocs::tom::ListData *>(lp_), hashing);
       }
 
       /** @brief Free the list held now, as std::unique_ptr::reset() and lFreeList() do */
@@ -2245,12 +2258,12 @@ namespace ocs::tom {
        * @brief Give up ownership
        * @return the list, which the caller now owns, or nullptr
        */
-      [[nodiscard]] lList *release() noexcept {
+      [[nodiscard]] ocs::tom::ListData *release() noexcept {
          return std::exchange(lp_, nullptr);
       }
 
    private:
-      lList *lp_ = nullptr;   ///< the list owned, or nullptr
+      ocs::tom::ListData *lp_ = nullptr;   ///< the list owned, or nullptr
    };
 
    // ---------------------------------------------------------------------------------------------------------------
@@ -2290,10 +2303,10 @@ namespace ocs::tom {
     * @tparam T the object type of the typed owner
     * @param lp the list, which takes the element over
     * @param ep the typed owner; empty afterwards. On a throw the element is back in it.
-    * @throw FieldException with the reasons of append(lList *, RawElementPtr &&); nothing is changed then
+    * @throw FieldException with the reasons of append(ocs::tom::ListData *, RawElementPtr &&); nothing is changed then
     */
    template <ObjectType T>
-   void append(lList *lp, ElementPtr<T> &&ep) {
+   void append(ocs::tom::ListData *lp, ElementPtr<T> &&ep) {
       detail::through_raw_owner<RawElementPtr>(ep, [lp](RawElementPtr &&raw) { ocs::tom::append(lp, std::move(raw)); });
    }
 
@@ -2303,10 +2316,11 @@ namespace ocs::tom {
     * @param lp the list, which takes the element over
     * @param after the predecessor, an element of @p lp, or nullptr for the front
     * @param ep the typed owner; empty afterwards. On a throw the element is back in it.
-    * @throw FieldException with the reasons of insert_after(lList *, lListElem *, RawElementPtr &&)
+    * @throw FieldException with the reasons of insert_after(ocs::tom::ListData *, ocs::tom::ElementData *,
+    * RawElementPtr &&)
     */
    template <ObjectType T>
-   void insert_after(lList *lp, lListElem *after, ElementPtr<T> &&ep) {
+   void insert_after(ocs::tom::ListData *lp, ocs::tom::ElementData *after, ElementPtr<T> &&ep) {
       detail::through_raw_owner<RawElementPtr>(
          ep, [lp, after](RawElementPtr &&raw) { ocs::tom::insert_after(lp, after, std::move(raw)); });
    }
@@ -2317,10 +2331,10 @@ namespace ocs::tom {
     * @param dst the list taking the elements
     * @param src the typed owner; empty afterwards; an empty owner moves nothing. On a throw the list is back
     *        in it.
-    * @throw FieldException with the reasons of splice(lList *, RawListPtr &&); nothing is changed then
+    * @throw FieldException with the reasons of splice(ocs::tom::ListData *, RawListPtr &&); nothing is changed then
     */
    template <ObjectType T>
-   void splice(lList *dst, ListPtr<T> &&src) {
+   void splice(ocs::tom::ListData *dst, ListPtr<T> &&src) {
       detail::through_raw_owner<RawListPtr>(src, [dst](RawListPtr &&raw) { ocs::tom::splice(dst, std::move(raw)); });
    }
 
@@ -2328,7 +2342,7 @@ namespace ocs::tom {
    // forwarding members that return or take an owner, defined once the owners are complete
 
    /**
-    * @brief A deep copy of the element; forwards to ocs::tom::clone(const lListElem *)
+    * @brief A deep copy of the element; forwards to ocs::tom::clone(const ocs::tom::ElementData *)
     * @return the owner of the copy, empty if the handle is empty
     * @throw ListCoreError if the copy fails
     */
@@ -2337,18 +2351,19 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief A copy of the element reduced to a selection; forwards to ocs::tom::select(const lListElem *, ...)
+    * @brief A copy of the element reduced to a selection; forwards to ocs::tom::select(const ocs::tom::ElementData *,
+    * ...)
     * @param what the selection of fields
     * @param hashing whether copied sub-lists keep hash tables
     * @return the owner of the copy, empty if the handle is empty
     * @throw FieldException and ListCoreError as the free form
     */
-   inline RawElementPtr ConstRawElement::select(const lEnumeration *what, const Hashing hashing) const {
+   inline RawElementPtr ConstRawElement::select(const ocs::tom::WhatData *what, const Hashing hashing) const {
       return ocs::tom::select(raw(), what, hashing);
    }
 
    /**
-    * @brief Store a list into a list field; forwards to ocs::tom::set(lListElem *, int, RawListPtr)
+    * @brief Store a list into a list field; forwards to ocs::tom::set(ocs::tom::ElementData *, int, RawListPtr)
     * @param nm the field number
     * @param list the list, which the element takes over
     * @throw FieldException as the free form
@@ -2358,7 +2373,8 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief Store an element into an object field; forwards to ocs::tom::set(lListElem *, int, RawElementPtr)
+    * @brief Store an element into an object field; forwards to ocs::tom::set(ocs::tom::ElementData *, int,
+    * RawElementPtr)
     * @param nm the field number
     * @param object the element, which the element takes over
     * @throw FieldException as the free form
@@ -2396,13 +2412,13 @@ namespace ocs::tom {
     * @return the owner of the result, empty if the handle is empty
     * @throw FieldException and ListCoreError as the free form
     */
-   inline RawListPtr ConstRawList::select(const lCondition *where, const lEnumeration *what,
+   inline RawListPtr ConstRawList::select(const ocs::tom::WhereData *where, const ocs::tom::WhatData *what,
                                           const Hashing hashing) const {
       return ocs::tom::select(raw(), where, what, hashing);
    }
 
    /**
-    * @brief A deep copy of the list; forwards to ocs::tom::clone(const lList *, Hashing)
+    * @brief A deep copy of the list; forwards to ocs::tom::clone(const ocs::tom::ListData *, Hashing)
     * @param hashing whether the copy keeps hash tables
     * @return the owner of the copy, empty if the handle is empty
     * @throw ListCoreError if the copy fails
@@ -2432,12 +2448,12 @@ namespace ocs::tom {
     */
    inline RawElement RawList::insert_after(const ConstRawElement after, RawElementPtr &&element) const {
       const RawElement added = element.get();
-      ocs::tom::insert_after(raw(), const_cast<lListElem *>(after.raw()), std::move(element));
+      ocs::tom::insert_after(raw(), const_cast<ocs::tom::ElementData *>(after.raw()), std::move(element));
       return added;
    }
 
    /**
-    * @brief Append the element of a typed owner; forwards to ocs::tom::append(lList *, ElementPtr<T> &&)
+    * @brief Append the element of a typed owner; forwards to ocs::tom::append(ocs::tom::ListData *, ElementPtr<T> &&)
     * @tparam T the object type of the typed owner
     * @param element the typed owner; empty afterwards, keeps the element on a throw
     * @return the handle on the element, now in the list
@@ -2452,7 +2468,7 @@ namespace ocs::tom {
 
    /**
     * @brief Insert the element of a typed owner after another one, or at the front; forwards to
-    *        ocs::tom::insert_after(lList *, lListElem *, ElementPtr<T> &&)
+    *        ocs::tom::insert_after(ocs::tom::ListData *, ocs::tom::ElementData *, ElementPtr<T> &&)
     * @tparam T the object type of the typed owner
     * @param after the predecessor, an element of this list, or an empty handle for the front
     * @param element the typed owner; empty afterwards, keeps the element on a throw
@@ -2462,12 +2478,13 @@ namespace ocs::tom {
    template <ObjectType T>
    RawElement RawList::insert_after(const ConstRawElement after, ElementPtr<T> &&element) const {
       const RawElement added(element.get().raw());
-      ocs::tom::insert_after(raw(), const_cast<lListElem *>(after.raw()), std::move(element));
+      ocs::tom::insert_after(raw(), const_cast<ocs::tom::ElementData *>(after.raw()), std::move(element));
       return added;
    }
 
    /**
-    * @brief Take an element out of the list without freeing it; forwards to ocs::tom::take(lList *, lListElem *)
+    * @brief Take an element out of the list without freeing it; forwards to ocs::tom::take(ocs::tom::ListData *,
+    * ocs::tom::ElementData *)
     * @param element the element, an element of this list
     * @return the owner of the element
     * @throw FieldException as the free form
@@ -2477,7 +2494,8 @@ namespace ocs::tom {
    }
 
    /**
-    * @brief Take an element out of the list and free it; forwards to ocs::tom::erase(lList *, lListElem *)
+    * @brief Take an element out of the list and free it; forwards to ocs::tom::erase(ocs::tom::ListData *,
+    * ocs::tom::ElementData *)
     * @param element the element, an element of this list; dangles afterwards
     * @throw FieldException as the free form
     */
@@ -2496,7 +2514,7 @@ namespace ocs::tom {
 
    /**
     * @brief Move every element of the list of a typed owner to the end of this one; forwards to
-    *        ocs::tom::splice(lList *, ListPtr<T> &&)
+    *        ocs::tom::splice(ocs::tom::ListData *, ListPtr<T> &&)
     * @tparam T the object type of the typed owner
     * @param other the typed owner; empty afterwards, keeps the list on a throw
     * @throw FieldException as the free form
@@ -2623,7 +2641,7 @@ namespace ocs::tom {
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
    RawListPtr Element<T>::exchange(ListPtr<U> &&list) const {
       static_cast<void>(this->template present_slot<F>());
-      lList *lp = list.release();
+      ocs::tom::ListData *lp = list.release();
       exchange_list(this->ep_, FieldTraits<F>::pos, lp);
       return RawListPtr(lp);
    }
@@ -2643,7 +2661,7 @@ namespace ocs::tom {
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && detail::NoSubType<F>
    RawListPtr Element<T>::exchange(RawListPtr &&list) const {
       static_cast<void>(this->template present_slot<F>());
-      lList *lp = list.release();
+      ocs::tom::ListData *lp = list.release();
       exchange_list(this->ep_, FieldTraits<F>::pos, lp);
       return RawListPtr(lp);
    }
@@ -2665,7 +2683,7 @@ namespace ocs::tom {
       requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Object) && detail::NoSubType<F>
    RawElementPtr Element<T>::exchange(ElementPtr<U> &&elem) const {
       // a bound element is given up before present_slot() can throw, so that the caller's owner never frees it
-      lListElem *const object = detail::release_if_bound(elem);
+      ocs::tom::ElementData *const object = detail::release_if_bound(elem);
       static_cast<void>(this->template present_slot<F>());
       if (object != nullptr && !elem) [[unlikely]] {
          // given up above: it is bound in a list or another object, also when it is the one the field holds

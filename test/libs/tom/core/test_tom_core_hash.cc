@@ -91,7 +91,7 @@
 #include "sge_jobL.h"
 int NM_ULONG  = JB_job_number;   ///< the numeric attribute the benchmark hashes on
 int NM_STRING = JB_owner;        ///< the string attribute it hashes on
-const lDescr *DESCR = ocs::tom::JB::descriptor.e;         ///< the object type the benchmark builds lists of
+const ocs::tom::FieldDescr *DESCR = ocs::tom::JB::descriptor.e;   ///< the object type the benchmark builds lists of
 
 #else
 enum {
@@ -113,7 +113,7 @@ NAMEEND
 
 int NM_ULONG = TEST_ulong;     ///< the numeric attribute the benchmark hashes on
 int NM_STRING = TEST_string;   ///< the string attribute it hashes on
-const lDescr *DESCR = TEST_Type;     ///< the object type the benchmark builds lists of
+const ocs::tom::FieldDescr *DESCR = TEST_Type;     ///< the object type the benchmark builds lists of
 #endif
 
 static int s_fail = 0;
@@ -249,9 +249,9 @@ static ocs::tom::RawListPtr make_hashed_list(const char *name, const bool unique
  * @param num_names the number of names to choose from
  */
 static void fill_list(const ocs::tom::RawList lp, const int num_objects, const int num_names) {
-   lList *raw = lp.raw();   // never nullptr, so add_elem_ulong() does not replace it
+   ocs::tom::ListData *raw = lp.raw();   // never nullptr, so add_elem_ulong() does not replace it
    for (int i = 0; i < num_objects; i++) {
-      lListElem *ep = ocs::tom::add_elem_ulong(raw, NM_ULONG, static_cast<uint32_t>(i), DESCR);
+      ocs::tom::ElementData *ep = ocs::tom::add_elem_ulong(raw, NM_ULONG, static_cast<uint32_t>(i), DESCR);
       ocs::tom::set(ep, NM_STRING, names[rand() % num_names]);
    }
 }
@@ -262,7 +262,7 @@ static void fill_list(const ocs::tom::RawList lp, const int num_objects, const i
  * @param key the key
  * @return the element, or nullptr
  */
-static lListElem *find_key(const ocs::tom::RawList lp, const int key) {
+static ocs::tom::ElementData *find_key(const ocs::tom::RawList lp, const int key) {
    return ocs::tom::find_first<std::uint32_t>(lp.raw(), NM_ULONG, static_cast<std::uint32_t>(key));
 }
 
@@ -275,7 +275,7 @@ static void check_correctness(const int num_objects, const int num_names) {
    auto owner = make_hashed_list("check list", true, true);
    const ocs::tom::RawList lp = owner.get();
    const int pos_string = ocs::tom::field_pos(DESCR, NM_STRING);
-   lListElem *ep;
+   ocs::tom::ElementData *ep;
    int i, total_iterated, objs_dru;
 
    fill_list(lp, num_objects, num_names);
@@ -295,7 +295,8 @@ static void check_correctness(const int num_objects, const int num_names) {
    total_iterated = 0;
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
-      lListElem *next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
+      ocs::tom::ElementData *next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i],
+                                                                                           &iterator);
       while ((ep = next_ep) != nullptr) {
          next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
          total_iterated++;
@@ -330,7 +331,8 @@ static void check_correctness(const int num_objects, const int num_names) {
 
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
-      lListElem *next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
+      ocs::tom::ElementData *next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i],
+                                                                                           &iterator);
       while ((ep = next_ep) != nullptr) {
          next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
          lp.erase(ep);
@@ -361,7 +363,7 @@ static void check_correctness(const int num_objects, const int num_names) {
 static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
                           const int num_objects, const int num_names) {
    BenchTimes bt{};
-   lListElem *ep;
+   ocs::tom::ElementData *ep;
    struct timespec ts0, ts1;
    int i;
 #ifdef MALLINFO
@@ -406,7 +408,7 @@ static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
    clock_gettime(CLOCK_MONOTONIC, &ts0);
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
-      lListElem *next_ep;
+      ocs::tom::ElementData *next_ep;
       next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
          next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
@@ -450,7 +452,7 @@ static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
    bt.objs_del_str = 0;
    for (i = 0; i < num_names; i++) {
       const void *iterator = nullptr;
-      lListElem *next_ep;
+      ocs::tom::ElementData *next_ep;
       next_ep = ocs::tom::lookup_first<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);
       while ((ep = next_ep) != nullptr) {
          next_ep = ocs::tom::lookup_next<ocs::tom::FieldType::String>(lp, pos_string, names[i], &iterator);

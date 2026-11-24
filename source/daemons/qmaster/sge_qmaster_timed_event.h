@@ -126,8 +126,8 @@ typedef struct {
    pthread_cond_t cond_var;   ///< used for waiting
    bool exit;       ///< true -> exit event delivery
    bool deleted;     ///< true -> at least one event has been deleted
-   lList *list;       ///< timed event list
-   lSortOrder *sort_order; ///< list sort order
+   ocs::tom::ListData *list;       ///< timed event list
+   ocs::tom::SortOrderData *sort_order; ///< list sort order
    uint32_t seq_no;     ///< last added timed event sequence number
    uint64_t last;       ///< last time, event delivery has been checked
    uint64_t next;       ///< due date for next event, 0 -> event list is empty

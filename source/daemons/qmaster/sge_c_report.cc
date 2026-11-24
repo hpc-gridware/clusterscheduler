@@ -95,8 +95,8 @@ update_license_data(ocs::tom::Element<ocs::tom::EH> hep, ocs::tom::ConstList<ocs
  * @note MT-NOTE: sge_c_report() is MT safe
  */
 void
-sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, char *rhost, char *commproc,
-             const int id, lList *report_list, monitoring_t *monitor) {
+sge_c_report(ocs::gdi::Packet *packet, [[maybe_unused]] ocs::gdi::Task *task, char *rhost, char *commproc, const int id,
+             ocs::tom::ListData *report_list, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    // the reports arrive from an execd and were unpacked with the REP descriptor; from_typed keeps the old

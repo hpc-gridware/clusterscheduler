@@ -174,7 +174,7 @@ test_variable_parser() {
  */
 static void
 test_set_lists() {
-   lList *raw_qrefs = nullptr;
+   ocs::tom::ListData *raw_qrefs = nullptr;
    const int ret = ocs_parse_destination_identifier_list(&raw_qrefs, "a.q,b.q,a.q");
    ocs::tom::ListPtr<ocs::tom::QR> qrefs(raw_qrefs);
    CHECK(11, "-q a.q,b.q,a.q holds a.q once, in its first position",
@@ -438,8 +438,8 @@ names_list(const char *const names[]) {
 template <typename T>
 static void
 add_unique(ocs::tom::ListPtr<T> &dst, ocs::tom::ListPtr<T> &src) {
-   lList *dst_raw = dst.release();
-   lList *src_raw = src.release();
+   ocs::tom::ListData *dst_raw = dst.release();
+   ocs::tom::ListData *src_raw = src.release();
    ocs_object_list_add_unique(&dst_raw, &src_raw);
    dst = ocs::tom::ListPtr<T>::from_typed(dst_raw);
    src = ocs::tom::ListPtr<T>::from_typed(src_raw);

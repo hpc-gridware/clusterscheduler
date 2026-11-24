@@ -255,7 +255,7 @@ qinstance_modify_attribute(const ocs::tom::Element<ocs::tom::QU> this_elem,
          // the list of the cluster queue is completed in place, as it always was: the request data is filled in,
          // and an implicit slots entry is added for the comparison and removed again
          ocs::tom::List<ocs::tom::CE> value_list =
-            ocs::tom::List<ocs::tom::CE>::from_typed(const_cast<lList *>(new_value.raw()));
+            ocs::tom::List<ocs::tom::CE>::from_typed(const_cast<ocs::tom::ListData *>(new_value.raw()));
          ocs::tom::ListPtr<ocs::tom::CE> created_value;
 
          if (centry_list_fill_request(value_list, answer_list, master_centry_list, true, true, false) == 0) {

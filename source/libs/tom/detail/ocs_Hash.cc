@@ -136,9 +136,9 @@ namespace ocs::tom::detail {
 
    static void hash_count_free(tom_htable ht);
 
-   static tom_hash_slot *hash_alloc_slots(const lList *lp);
+   static tom_hash_slot *hash_alloc_slots(const ocs::tom::ListData *lp);
 
-   static tom_hash_slot *hash_publish_slots(const lList *lp);
+   static tom_hash_slot *hash_publish_slots(const ocs::tom::ListData *lp);
 
    static void hash_delete_non_unique_chain(htable table, const void *key, const void **data);
 } // namespace ocs::tom::detail
@@ -202,8 +202,8 @@ void ocs::tom::detail::hash_count_free([[maybe_unused]] const tom_htable ht) {
  *
  * @return initialized hash description
  */
-tom_htable ocs::tom::detail::hash_create(const lDescr *dp, const int pos, int size) {
-   const lDescr *descr = &dp[pos];
+tom_htable ocs::tom::detail::hash_create(const ocs::tom::FieldDescr *dp, const int pos, int size) {
+   const ocs::tom::FieldDescr *descr = &dp[pos];
    htable ht = nullptr;   /* hash table for keys */
    htable nuht = nullptr;   /* hash table for non unique access */
    tom_htable ret = nullptr;
@@ -278,7 +278,7 @@ tom_htable ocs::tom::detail::hash_create(const lDescr *dp, const int pos, int si
  * @return the array of lp->nslots slots, or nullptr if it cannot be allocated
  *         or the descriptor does not match lp->nslots
  */
-tom_hash_slot *ocs::tom::detail::hash_alloc_slots(const lList *lp) {
+tom_hash_slot *ocs::tom::detail::hash_alloc_slots(const ocs::tom::ListData *lp) {
    auto *slots = (tom_hash_slot *) sge_malloc(sizeof(tom_hash_slot) * lp->nslots);
    if (slots == nullptr) {
       return nullptr;
@@ -314,7 +314,7 @@ tom_hash_slot *ocs::tom::detail::hash_alloc_slots(const lList *lp) {
  * @param lp the list, with lp->nslots > 0
  * @return the slot array, or nullptr if it cannot be allocated
  */
-tom_hash_slot *ocs::tom::detail::hash_publish_slots(const lList *lp) {
+tom_hash_slot *ocs::tom::detail::hash_publish_slots(const ocs::tom::ListData *lp) {
    tom_hash_slot *slots = list_slots(lp);
    if (slots != nullptr) {
       return slots;
@@ -345,14 +345,14 @@ tom_hash_slot *ocs::tom::detail::hash_publish_slots(const lList *lp) {
  * @return the table, or nullptr when it cannot be allocated
  * @throw ocs::tom::FieldException with reason DuplicateKey
  */
-tom_htable ocs::tom::detail::hash_build(const lList *lp, const int pos) {
+tom_htable ocs::tom::detail::hash_build(const ocs::tom::ListData *lp, const int pos) {
    char host_key[CL_MAXHOSTNAMELEN + 1];
 
    tom_htable ht = ocs::tom::detail::hash_create(lp->descr, pos, hash_compute_size(lp->nelem));
    if (ht != nullptr) {
       const int mt = lp->descr[pos].mt;
       const bool unique = mt_is_unique(mt);
-      for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
          void *key = ocs::tom::detail::hash_key(ep, pos, host_key);
          if (unique && key != nullptr) {
             // a unique key held twice: the table is not published, every later lookup builds it again and throws
@@ -385,7 +385,7 @@ tom_htable ocs::tom::detail::hash_build(const lList *lp, const int pos) {
  * @throw ocs::tom::FieldException with reason DuplicateKey when a unique field holds a key twice, see
  *        #ocs::tom::detail::hash_build
  */
-tom_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) {
+tom_htable ocs::tom::detail::hash_lookup_table(const ocs::tom::ListData *lp, const int pos) {
    // a list that is never hashed, or a field that is not hashed in it, is searched linearly
    if (lp->nslots == 0 || !mt_do_hashing(lp->descr[pos].mt)) {
       return nullptr;
@@ -524,7 +524,7 @@ void ocs::tom::set_thread_host_hash_threshold(const std::uint32_t n) {
  * @param ht the table to insert into
  * @param unique true when the field was declared #MT_UNIQUE
  */
-void ocs::tom::detail::hash_insert(const lListElem *ep, void *key, tom_htable ht, bool unique) {
+void ocs::tom::detail::hash_insert(const ocs::tom::ElementData *ep, void *key, tom_htable ht, bool unique) {
    if (ht == nullptr || ep == nullptr || key == nullptr) {
       return;
    }
@@ -582,7 +582,7 @@ void ocs::tom::detail::hash_insert(const lListElem *ep, void *key, tom_htable ht
  * @param ep the element to be removed
  * @param pos position of the data field
  */
-void ocs::tom::detail::hash_remove(const lListElem *ep, const int pos) {
+void ocs::tom::detail::hash_remove(const ocs::tom::ElementData *ep, const int pos) {
    char host_key[CL_MAXHOSTNAMELEN + 1];
    tom_htable ht;
    void *key;
@@ -662,7 +662,7 @@ void ocs::tom::detail::hash_remove(const lListElem *ep, const int pos) {
  * @param ep the element, bound to a list
  * @param pos position of the field
  */
-void ocs::tom::detail::hash_insert_changed(const lListElem *ep, const int pos) {
+void ocs::tom::detail::hash_insert_changed(const ocs::tom::ElementData *ep, const int pos) {
    const tom_htable ht = elem_hash_table(ep, pos);
    if (ht == nullptr) {
       return;
@@ -696,12 +696,12 @@ void ocs::tom::detail::hash_insert_changed(const lListElem *ep, const int pos) {
  *
  * @param ep the element to be hashed
  */
-void ocs::tom::detail::hash_elem(const lListElem *ep) {
+void ocs::tom::detail::hash_elem(const ocs::tom::ElementData *ep) {
    if (ep == nullptr) {
       return;
    }
 
-   const lList *lp = elem_list(ep);
+   const ocs::tom::ListData *lp = elem_list(ep);
    if (lp == nullptr) {
       return;
    }
@@ -724,12 +724,12 @@ void ocs::tom::detail::hash_elem(const lListElem *ep) {
  *
  * @param ep the element to be removed from the tables
  */
-void ocs::tom::detail::hash_remove_elem(const lListElem *ep) {
+void ocs::tom::detail::hash_remove_elem(const ocs::tom::ElementData *ep) {
    if (ep == nullptr) {
       return;
    }
 
-   const lList *lp = elem_list(ep);
+   const ocs::tom::ListData *lp = elem_list(ep);
    if (lp == nullptr) {
       return;
    }
@@ -764,9 +764,10 @@ void ocs::tom::detail::hash_remove_elem(const lListElem *ep) {
  *
  * @see #ocs::tom::detail::hash_next
  */
-lListElem *ocs::tom::detail::hash_first(tom_htable ht, const void *key, bool unique, const void **iterator) {
+ocs::tom::ElementData *ocs::tom::detail::hash_first(tom_htable ht, const void *key, bool unique,
+                                                    const void **iterator) {
    union {
-      lListElem *l;
+      ocs::tom::ElementData *l;
       void *p;
    } ep;
    ep.l = nullptr;
@@ -785,7 +786,7 @@ lListElem *ocs::tom::detail::hash_first(tom_htable ht, const void *key, bool uni
    if (unique) {
       *iterator = nullptr;
       if (sge_htable_lookup(ht->ht, key, (const void **) &ep.p) == True) {
-         return (lListElem *) ep.p;
+         return (ocs::tom::ElementData *) ep.p;
       } else {
          return nullptr;
       }
@@ -797,9 +798,9 @@ lListElem *ocs::tom::detail::hash_first(tom_htable ht, const void *key, bool uni
       head.l = nullptr;
 
       if (sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
-         ep.p = (lListElem *) head.l->first->data;
+         ep.p = (ocs::tom::ElementData *) head.l->first->data;
          *iterator = head.l->first;
-         return (lListElem *) ep.p;
+         return (ocs::tom::ElementData *) ep.p;
       } else {
          *iterator = nullptr;
          return nullptr;
@@ -823,8 +824,8 @@ lListElem *ocs::tom::detail::hash_first(tom_htable ht, const void *key, bool uni
  *
  * @see #ocs::tom::detail::hash_first
  */
-lListElem *ocs::tom::detail::hash_next(tom_htable ht, const void **iterator) {
-   lListElem *ep = nullptr;
+ocs::tom::ElementData *ocs::tom::detail::hash_next(tom_htable ht, const void **iterator) {
+   ocs::tom::ElementData *ep = nullptr;
    non_unique_hash *nuh = (non_unique_hash *) *iterator;
 
    if (ht == nullptr) {
@@ -833,7 +834,7 @@ lListElem *ocs::tom::detail::hash_next(tom_htable ht, const void **iterator) {
 
    nuh = nuh->next;
    if (nuh != nullptr) {
-      ep = (lListElem *) nuh->data;
+      ep = (ocs::tom::ElementData *) nuh->data;
       *iterator = nuh;
    } else {
       *iterator = nullptr;
@@ -904,7 +905,7 @@ void ocs::tom::detail::hash_destroy(tom_htable *htp) {
  * @param hashable false to leave the list unhashable, so that it is always searched linearly
  * @return true; kept for the callers, which treated a failed slot allocation here
  */
-bool ocs::tom::detail::hash_init_slots(lList *lp, const bool hashable) {
+bool ocs::tom::detail::hash_init_slots(ocs::tom::ListData *lp, const bool hashable) {
    lp->nslots = 0;
    // the list comes from sge_malloc()/calloc(): construct the atomic before it is used
    new (&lp->ht) std::atomic<tom_hash_slot *>(nullptr);
@@ -928,7 +929,7 @@ bool ocs::tom::detail::hash_init_slots(lList *lp, const bool hashable) {
  *
  * @param lp the list; nullptr is ignored
  */
-void ocs::tom::detail::hash_free_tables(lList *lp) {
+void ocs::tom::detail::hash_free_tables(ocs::tom::ListData *lp) {
    if (lp == nullptr) {
       return;
    }
@@ -951,7 +952,7 @@ void ocs::tom::detail::hash_free_tables(lList *lp) {
  *
  * @param lp the list; nullptr is ignored
  */
-void ocs::tom::detail::hash_free_slots(lList *lp) {
+void ocs::tom::detail::hash_free_slots(ocs::tom::ListData *lp) {
    if (lp == nullptr) {
       return;
    }
@@ -992,8 +993,8 @@ void ocs::tom::detail::hash_free_slots(lList *lp) {
  *
  * @see #ocs::tom::detail::hash_new
  */
-int ocs::tom::detail::hash_new_check(lList *lp, int nm, bool unique) {
-   const lDescr *descr = lp != nullptr ? lp->descr : nullptr;
+int ocs::tom::detail::hash_new_check(ocs::tom::ListData *lp, int nm, bool unique) {
+   const ocs::tom::FieldDescr *descr = lp != nullptr ? lp->descr : nullptr;
    int pos = descr != nullptr ? ocs::tom::present_pos(descr, nm) : -1;
 
    if (descr != nullptr && pos >= 0) {
@@ -1031,10 +1032,10 @@ int ocs::tom::detail::hash_new_check(lList *lp, int nm, bool unique) {
  *
  * @return 1 on success, else 0
  */
-int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
+int ocs::tom::detail::hash_new(ocs::tom::ListData *lp, int nm, bool unique) {
    DENTER(TOM_LAYER);
 
-   const lDescr *descr;
+   const ocs::tom::FieldDescr *descr;
    int pos;
 
    if (lp == nullptr) {
@@ -1090,14 +1091,14 @@ int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
     * list and its elements hold (copy on write). */
    const int mt = descr[pos].mt | MT_HASH | (unique ? MT_UNIQUE : 0);
    if (mt != descr[pos].mt) {
-      const lDescr *copy = ocs::tom::descr_private(descr);
+      const ocs::tom::FieldDescr *copy = ocs::tom::descr_private(descr);
       if (copy == nullptr) {
          DRETURN(0);
       }
       // the copy is not registered and nobody holds it yet, so it may still be written; the flags are added, so
       // that the reference count mark the copy carries in its first entry stays
-      const_cast<lDescr *>(copy)[pos].mt |= MT_HASH | (unique ? MT_UNIQUE : 0);
-      for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+      const_cast<ocs::tom::FieldDescr *>(copy)[pos].mt |= MT_HASH | (unique ? MT_UNIQUE : 0);
+      for (ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
          ep->descr = copy;
       }
       ocs::tom::release_descr(lp->descr);
@@ -1116,11 +1117,11 @@ int ocs::tom::detail::hash_new(lList *lp, int nm, bool unique) {
  *        normalised before hashing
  * @return the key, pointing either into @p ep or into @p host_key
  */
-void *ocs::tom::detail::hash_key(const lListElem *ep, int pos, char *host_key) {
+void *ocs::tom::detail::hash_key(const ocs::tom::ElementData *ep, int pos, char *host_key) {
    void *key = nullptr;
 
-   const lDescr *descr = &(ep->descr[pos]);
-   const lMultiType &value = ocs::tom::detail::value(ep, pos);
+   const ocs::tom::FieldDescr *descr = &(ep->descr[pos]);
+   const ocs::tom::FieldValue &value = ocs::tom::detail::value(ep, pos);
 
    switch (mt_get_type(descr->mt)) {
       case MT_UINT32:
@@ -1190,7 +1191,7 @@ ocs::tom::detail::hash_statistics(tom_htable ht, dstring *buffer) {
  *
  * @param lp the sorted list; nullptr is ignored
  */
-void ocs::tom::detail::hash_recreate_after_sort(lList *lp) {
+void ocs::tom::detail::hash_recreate_after_sort(ocs::tom::ListData *lp) {
    tom_hash_slot *slots = lp != nullptr ? list_slots(lp) : nullptr;
    if (slots != nullptr) {
       for (uint32_t i = 0; i < lp->nslots; i++) {

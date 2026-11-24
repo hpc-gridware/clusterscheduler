@@ -33,7 +33,7 @@
  * @brief The wrong use
  * @param raw a list of jobs
  */
-void wrong_use(lList *raw) {
+void wrong_use(ocs::tom::ListData *raw) {
    const ocs::tom::List<ocs::tom::JB> jobs{raw};
    const ocs::tom::SortOrder<ocs::tom::US> order = ocs::tom::sort_order<ocs::tom::asc<US_name>>();
    // an order of user sets for a list of jobs

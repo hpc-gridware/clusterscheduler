@@ -61,7 +61,8 @@ namespace ocs::tom {
        * @param name the name
        * @return the element, or nullptr
        */
-      const lListElem *find_name(const lList *lp, const int nm, const int type, const char *name) {
+      const ocs::tom::ElementData *find_name(const ocs::tom::ListData *lp, const int nm, const int type,
+                                             const char *name) {
          if (lp == nullptr) {
             return nullptr;
          }
@@ -76,7 +77,8 @@ namespace ocs::tom {
 
    } // namespace
 
-   void string_to_list(const char *s, lList *&lp, const lDescr *descr, const int nm, const char *delimiters) {
+   void string_to_list(const char *s, ocs::tom::ListData *&lp, const ocs::tom::FieldDescr *descr, const int nm,
+                       const char *delimiters) {
       if (s == nullptr) {
          return;
       }
@@ -105,14 +107,15 @@ namespace ocs::tom {
       }
    }
 
-   void string_to_list_none(const char *s, lList *&lp, const lDescr *descr, const int nm, const char *delimiters) {
+   void string_to_list_none(const char *s, ocs::tom::ListData *&lp, const ocs::tom::FieldDescr *descr, const int nm,
+                            const char *delimiters) {
       string_to_list(s, lp, descr, nm, delimiters);
       if (lp == nullptr) {
          return;
       }
       const int pos = present_pos(descr, nm);
       const int type = pos >= 0 ? mt_get_type(descr[pos].mt) : static_cast<int>(MT_END);
-      const lListElem *none = nullptr;
+      const ocs::tom::ElementData *none = nullptr;
       if (type == MT_STRING) {
          none = lookup_first_str_nocase(lp, nm, "none");
       } else if (type == MT_HOST) {
@@ -128,10 +131,10 @@ namespace ocs::tom {
       }
    }
 
-   lList *split_off(lList *lp, const lCondition *cp, const char *name) {
-      lList *rest = nullptr;
-      for (lListElem *ep = lp->first; ep != nullptr;) {
-         lListElem *next = ep->next;
+   ocs::tom::ListData *split_off(ocs::tom::ListData *lp, const ocs::tom::WhereData *cp, const char *name) {
+      ocs::tom::ListData *rest = nullptr;
+      for (ocs::tom::ElementData *ep = lp->first; ep != nullptr;) {
+         ocs::tom::ElementData *next = ep->next;
          if (!compare(ep, cp)) {
             if (rest == nullptr) {
                rest = create_list(name, lp->descr, true);
@@ -144,7 +147,7 @@ namespace ocs::tom {
       return rest;
    }
 
-   lList *split_from(lList *lp, lListElem *ep, const char *name) {
+   ocs::tom::ListData *split_from(ocs::tom::ListData *lp, ocs::tom::ElementData *ep, const char *name) {
       // the member check before the list is created, so a foreign element leaves nothing behind
       if (ep == nullptr) [[unlikely]] {
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp->descr);
@@ -153,9 +156,9 @@ namespace ocs::tom {
       if (elem_list(ep) != lp) [[unlikely]] {
          throw_field_exception(FieldException::Reason::ForeignList, NoName, ep->descr);
       }
-      lList *tail = create_list(name, lp->descr, true);
+      ocs::tom::ListData *tail = create_list(name, lp->descr, true);
       while (ep != nullptr) {
-         lListElem *next = ep->next;
+         ocs::tom::ElementData *next = ep->next;
          dechain_elem(lp, ep);
          // the same layout and keys checked in the list they leave: appending cannot fail
          append_elem(tail, ep);
@@ -164,11 +167,12 @@ namespace ocs::tom {
       return tail;
    }
 
-   void split_list(lList *&slp, lList **ulp, const char *ulp_name, const lCondition *cp) {
+   void split_list(ocs::tom::ListData *&slp, ocs::tom::ListData **ulp, const char *ulp_name,
+                   const ocs::tom::WhereData *cp) {
       if (slp == nullptr) {
          return;
       }
-      lList *rest = split_off(slp, cp, ulp_name != nullptr ? ulp_name : "ulp");
+      ocs::tom::ListData *rest = split_off(slp, cp, ulp_name != nullptr ? ulp_name : "ulp");
       if (ulp == nullptr) {
          free_list(rest);
       } else if (*ulp == nullptr) {
@@ -182,11 +186,11 @@ namespace ocs::tom {
       }
    }
 
-   void remove_common_str(lList *&lp1, lList *&lp2, const int nm, const bool free_empty) {
+   void remove_common_str(ocs::tom::ListData *&lp1, ocs::tom::ListData *&lp2, const int nm, const bool free_empty) {
       if (lp1 == nullptr || lp2 == nullptr) {
          return;
       }
-      for (lListElem *ep = lp1->first; ep != nullptr && lp1 != nullptr && lp2 != nullptr;) {
+      for (ocs::tom::ElementData *ep = lp1->first; ep != nullptr && lp1 != nullptr && lp2 != nullptr;) {
          const char *key = ocs::tom::detail::value(ep, checked_pos(ep, nm, FieldType::String)).str;
          // step on first, the element may be removed
          ep = ep->next;
@@ -208,7 +212,7 @@ namespace ocs::tom {
       }
    }
 
-   void unique_by_key(lList *lp, const int nm) {
+   void unique_by_key(ocs::tom::ListData *lp, const int nm) {
       const int pos = present_pos(lp->descr, nm);
       if (pos < 0) {
          throw_field_exception(field_pos(lp->descr, nm) < 0 ? FieldException::Reason::ForeignField
@@ -220,7 +224,7 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::WrongType, nm, lp->descr);
       }
       const SortKey key{nm, true};
-      lSortOrder *so = make_sort_order(lp->descr, std::span<const SortKey>(&key, 1));
+      ocs::tom::SortOrderData *so = make_sort_order(lp->descr, std::span<const SortKey>(&key, 1));
       try {
          sort_list(lp, so);
       } catch (...) {
@@ -228,12 +232,12 @@ namespace ocs::tom {
          throw;
       }
       free_sort_order(so);
-      auto key_of = [pos, type](const lListElem *ep) {
-         const lMultiType &value = ocs::tom::detail::value(ep, pos);
+      auto key_of = [pos, type](const ocs::tom::ElementData *ep) {
+         const ocs::tom::FieldValue &value = ocs::tom::detail::value(ep, pos);
          return type == MT_STRING ? value.str : value.host;
       };
-      for (lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
-         lListElem *rep = ep->next;
+      for (ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
+         ocs::tom::ElementData *rep = ep->next;
          while (rep != nullptr && sge_strnullcmp(key_of(rep), key_of(ep)) == 0) {
             remove_elem(lp, rep);
             rep = ep->next;
@@ -241,35 +245,35 @@ namespace ocs::tom {
       }
    }
 
-   int count_nodes(const lListElem *ep, const lList *lp, const int nm) noexcept {
+   int count_nodes(const ocs::tom::ElementData *ep, const ocs::tom::ListData *lp, const int nm) noexcept {
       int n = 0;
       if (ep != nullptr) {
          n = 1;
          const int pos = present_pos(ep->descr, nm);
          if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == MT_LIST) {
-            const lList *children = ocs::tom::detail::value(ep, pos).glp;
+            const ocs::tom::ListData *children = ocs::tom::detail::value(ep, pos).glp;
             if (children != nullptr) {
                n += count_nodes(nullptr, children, nm);
             }
          }
       } else if (lp != nullptr) {
-         for (const lListElem *child = lp->first; child != nullptr; child = child->next) {
+         for (const ocs::tom::ElementData *child = lp->first; child != nullptr; child = child->next) {
             n += count_nodes(child, nullptr, nm);
          }
       }
       return n;
    }
 
-   int count_leaves(const lListElem *ep, const lList *lp, const int nm) noexcept {
+   int count_leaves(const ocs::tom::ElementData *ep, const ocs::tom::ListData *lp, const int nm) noexcept {
       int n = 0;
       if (ep != nullptr) {
          const int pos = present_pos(ep->descr, nm);
          if (pos >= 0 && mt_get_type(ep->descr[pos].mt) == MT_LIST) {
-            const lList *children = ocs::tom::detail::value(ep, pos).glp;
+            const ocs::tom::ListData *children = ocs::tom::detail::value(ep, pos).glp;
             n = children == nullptr ? 1 : count_leaves(nullptr, children, nm);
          }
       } else if (lp != nullptr) {
-         for (const lListElem *child = lp->first; child != nullptr; child = child->next) {
+         for (const ocs::tom::ElementData *child = lp->first; child != nullptr; child = child->next) {
             n += count_leaves(child, nullptr, nm);
          }
       }

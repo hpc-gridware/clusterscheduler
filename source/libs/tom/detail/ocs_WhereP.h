@@ -43,7 +43,7 @@
 
 /* ---- the operators of a condition ---- */
 
-/// the operator of a condition node, _lCondition::op; numbered without gaps, 0 is no operator
+/// the operator of a condition node, ocs::tom::WhereData::op; numbered without gaps, 0 is no operator
 enum {
    NO_OP = 0,     ///< no operator; what a node initialised with zeros holds
    SUBSCOPE,      ///< a nested condition on a sub-list or sub-object
@@ -62,15 +62,16 @@ enum {
    NEG            ///< `!`
 };
 
+namespace ocs::tom {
 /**
  * @brief One node of a selection condition, as a binary expression tree
  *
  * A condition is either a *comparison* of a field against a value, or a
- * *logical* combination of one or two sub-conditions. _lCondition::op decides
+ * *logical* combination of one or two sub-conditions. ocs::tom::WhereData::op decides
  * which, and therefore which arm of the union is live — the same discipline
- * as @ref _lMultiType.
+ * as @ref ocs::tom::FieldValue.
  */
-struct _lCondition {
+struct WhereData {
    int op;                      ///< the operator; decides which arm of #operand is live
    union {
       /// live when #op is a comparison
@@ -78,12 +79,13 @@ struct _lCondition {
          int pos;               ///< position of the field in the descriptor
          int mt;                ///< type of the compare value
          int nm;                ///< the field being compared
-         lMultiType val;        ///< the value to compare against
+         ocs::tom::FieldValue val;        ///< the value to compare against
       } cmp;
       /// live when #op is a logical operator
       struct {
-         lCondition *first;     ///< first operand
-         lCondition *second;    ///< second operand, or nullptr for a unary operator
+         ocs::tom::WhereData *first;     ///< first operand
+         ocs::tom::WhereData *second;    ///< second operand, or nullptr for a unary operator
       } log;
    } operand;                   ///< the comparison or the logical operands
 };
+} // namespace ocs::tom

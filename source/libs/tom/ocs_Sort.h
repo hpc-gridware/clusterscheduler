@@ -152,7 +152,7 @@ namespace ocs::tom {
        * @param so the order, or nullptr; freed by the handle
        * @return the handle
        */
-      [[nodiscard]] static SortOrder from_typed(lSortOrder *so) noexcept {
+      [[nodiscard]] static SortOrder from_typed(ocs::tom::SortOrderData *so) noexcept {
          SortOrder handle;
          handle.so_ = so;
          return handle;
@@ -189,7 +189,7 @@ namespace ocs::tom {
        * @brief The order, for the functions of the old interface: lSortList(), lInsertSorted(), ...
        * @return the order, or nullptr
        */
-      [[nodiscard]] const lSortOrder *get() const noexcept {
+      [[nodiscard]] const ocs::tom::SortOrderData *get() const noexcept {
          return so_;
       }
 
@@ -202,7 +202,7 @@ namespace ocs::tom {
       }
 
    private:
-      lSortOrder *so_ = nullptr;   ///< the order, owned
+      ocs::tom::SortOrderData *so_ = nullptr;   ///< the order, owned
    };
 
    /**

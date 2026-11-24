@@ -73,7 +73,7 @@ const char *get_spooling_method();
 const char *get_dynamic_spooling_method();
 #endif
 
-lListElem *
+ocs::tom::ElementData *
 spool_dynamic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args);
 

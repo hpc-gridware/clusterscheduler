@@ -917,7 +917,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                /* mark the category as rejected */
                // the category reference of the job is set by refresh_cat_data_in_job(): taken unchecked
                cat = ocs::tom::Element<ocs::tom::CT>::from_typed(
-                       static_cast<lListElem *>(orig_job.get<JB_category>()));
+                       static_cast<ocs::tom::ElementData *>(orig_job.get<JB_category>()));
                if (cat) {
                   DPRINTF("SKIP JOB (R)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
                           cat.get<CT_str>(), cat.get<CT_refcount>());
@@ -952,7 +952,7 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                   // do this only once, not when we skipped scheduling as the category was already rejected
                   // the category reference of the job is set by refresh_cat_data_in_job(): taken unchecked
                   cat = ocs::tom::Element<ocs::tom::CT>::from_typed(
-                          static_cast<lListElem *>(orig_job.get<JB_category>()));
+                          static_cast<ocs::tom::ElementData *>(orig_job.get<JB_category>()));
                   if (cat) {
                      DPRINTF("SKIP JOB (N)" sge_u32 " of category '%s' (rc: " sge_u32 ")\n", job_id,
                              cat.get<CT_str>(), cat.get<CT_refcount>());

@@ -100,8 +100,8 @@ namespace {
     * @param dp the entries of a static or counted descriptor
     * @return its header
     */
-   tom_descr_header *header_of(const lDescr *dp) {
-      return reinterpret_cast<tom_descr_header *>(const_cast<lDescr *>(dp)) - 1;
+   tom_descr_header *header_of(const ocs::tom::FieldDescr *dp) {
+      return reinterpret_cast<tom_descr_header *>(const_cast<ocs::tom::FieldDescr *>(dp)) - 1;
    }
 
    /**
@@ -109,8 +109,8 @@ namespace {
     * @param h the header of a counted descriptor
     * @return its entries
     */
-   lDescr *entries_of(tom_descr_header *h) {
-      return reinterpret_cast<lDescr *>(h + 1);
+   ocs::tom::FieldDescr *entries_of(tom_descr_header *h) {
+      return reinterpret_cast<ocs::tom::FieldDescr *>(h + 1);
    }
 
    /**
@@ -118,7 +118,7 @@ namespace {
     * @param dp the entries
     * @return the count
     */
-   uint32_t count_entries(const lDescr *dp) {
+   uint32_t count_entries(const ocs::tom::FieldDescr *dp) {
       uint32_t n = 0;
       while (mt_get_type(dp[n].mt) != MT_END) {
          n++;
@@ -136,7 +136,7 @@ namespace {
     * @param n the number of entries of both, without the terminating one
     * @return true if every entry has the same field number, type and slot offset
     */
-   bool same_entries(const lDescr *a, const lDescr *b, const uint32_t n) {
+   bool same_entries(const ocs::tom::FieldDescr *a, const ocs::tom::FieldDescr *b, const uint32_t n) {
       for (uint32_t i = 0; i < n; i++) {
          if (a[i].nm != b[i].nm || (a[i].mt & ~MT_DESCR_INTERNED) != (b[i].mt & ~MT_DESCR_INTERNED) ||
              a[i].off != b[i].off) {
@@ -152,7 +152,7 @@ namespace {
     * @param n their number, without the terminating one
     * @return the count of entries whose slot offset is not #TOM_ABSENT
     */
-   uint32_t count_present(const lDescr *dp, const uint32_t n) {
+   uint32_t count_present(const ocs::tom::FieldDescr *dp, const uint32_t n) {
       uint32_t np = 0;
       for (uint32_t i = 0; i < n; i++) {
          if (dp[i].off != TOM_ABSENT) {
@@ -169,7 +169,7 @@ namespace {
     * @return the bytes to allocate
     */
    size_t counted_size(const uint32_t n, const uint32_t np) {
-      return sizeof(tom_descr_header) + (n + 1) * sizeof(lDescr) + (np < n ? np * sizeof(int16_t) : 0);
+      return sizeof(tom_descr_header) + (n + 1) * sizeof(ocs::tom::FieldDescr) + (np < n ? np * sizeof(int16_t) : 0);
    }
 
    /**
@@ -183,15 +183,15 @@ namespace {
     * @param hash their hash
     * @return the header of the copy, or nullptr if out of memory
     */
-   tom_descr_header *alloc_counted(const lDescr *dp, const uint32_t n, const uint64_t hash) {
+   tom_descr_header *alloc_counted(const ocs::tom::FieldDescr *dp, const uint32_t n, const uint64_t hash) {
       const uint32_t np = count_present(dp, n);
       void *mem = sge_malloc(counted_size(n, np));
       if (mem == nullptr) {
          return nullptr;
       }
       auto *h = new (mem) tom_descr_header{1, n, np, hash};
-      lDescr *e = entries_of(h);
-      memcpy(e, dp, (n + 1) * sizeof(lDescr));
+      ocs::tom::FieldDescr *e = entries_of(h);
+      memcpy(e, dp, (n + 1) * sizeof(ocs::tom::FieldDescr));
       e[0].mt |= MT_DESCR_INTERNED;
       if (np < n) {
          auto *rmap = reinterpret_cast<int16_t *>(e + n + 1);
@@ -238,7 +238,7 @@ namespace {
     * @return the static block the installed object model holds for the type of entry 0, or nullptr if there is
     *         none
     */
-   const lDescr *static_block_for(const lDescr *dp) {
+   const ocs::tom::FieldDescr *static_block_for(const ocs::tom::FieldDescr *dp) {
       return ocs::tom::descr_static_for(dp[0].nm);
    }
 
@@ -249,7 +249,7 @@ namespace {
  * @param dp the entries of a descriptor, or nullptr
  * @return true for a counted descriptor, false for a static one, one without header and nullptr
  */
-bool ocs::tom::descr_is_counted(const lDescr *dp) {
+bool ocs::tom::descr_is_counted(const ocs::tom::FieldDescr *dp) {
    return dp != nullptr && (dp[0].mt & MT_DESCR_INTERNED) != 0;
 }
 
@@ -259,7 +259,7 @@ bool ocs::tom::descr_is_counted(const lDescr *dp) {
  * @return the block the installed object model holds for the type, or
  *         nullptr if no model is installed or no type of it starts with the field
  */
-const lDescr *ocs::tom::descr_static_for(const int nm) {
+const ocs::tom::FieldDescr *ocs::tom::descr_static_for(const int nm) {
    const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
    if (table == nullptr || table->descr == nullptr || mt_get_type(table->descr[0].mt) == MT_END ||
        table->descr[0].nm != nm) {
@@ -280,7 +280,7 @@ const lDescr *ocs::tom::descr_static_for(const int nm) {
  * @return the block the installed object model holds for the type, or
  *         nullptr if no model is installed or no type of it contains the field
  */
-const lDescr *ocs::tom::descr_static_containing(const int nm, int *pos) {
+const ocs::tom::FieldDescr *ocs::tom::descr_static_containing(const int nm, int *pos) {
    const ocs::tom::TypeTable *table = ocs::tom::type_table(nm);
    if (table == nullptr || table->descr == nullptr) {
       return nullptr;
@@ -298,7 +298,7 @@ const lDescr *ocs::tom::descr_static_containing(const int nm, int *pos) {
  * @param dp the entries of a descriptor, or nullptr
  * @return true if dp is the block the installed object model holds for its type
  */
-bool ocs::tom::descr_is_static(const lDescr *dp) {
+bool ocs::tom::descr_is_static(const ocs::tom::FieldDescr *dp) {
    return dp != nullptr && !ocs::tom::descr_is_counted(dp) && static_block_for(dp) == dp;
 }
 
@@ -315,7 +315,7 @@ bool ocs::tom::descr_is_static(const lDescr *dp) {
  * @return the shared or private descriptor holding one reference for the caller,
  *         or nullptr if dp is nullptr or memory is exhausted
  */
-const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
+const ocs::tom::FieldDescr *ocs::tom::descr_intern(const ocs::tom::FieldDescr *dp) {
    DENTER(TOM_LAYER);
 
    if (dp == nullptr) {
@@ -386,12 +386,12 @@ const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
  * @param dp the entries of a descriptor
  * @param n their number, without the terminating one
  */
-static void check_full_length(const lDescr *dp, const uint32_t n) {
+static void check_full_length(const ocs::tom::FieldDescr *dp, const uint32_t n) {
    if ((dp[0].mt & MT_IS_REDUCED) == 0 || !ocs::tom::has_model()) {
       return;
    }
    int pos = 0;
-   const lDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
+   const ocs::tom::FieldDescr *type = ocs::tom::descr_static_containing(dp[0].nm, &pos);
    if (type == nullptr || pos != 0 || count_entries(type) != n) {
       CRITICAL(MSG_TOM_DESCRNOTFULLLENGTH_IU, dp[0].nm, n);
       abort();
@@ -411,7 +411,7 @@ static void check_full_length(const lDescr *dp, const uint32_t n) {
  * @param dp the entries of the descriptor, terminated by #MT_END
  * @return the descriptor to hold, or nullptr if dp is nullptr or memory is exhausted
  */
-const lDescr *ocs::tom::descr_acquire(const lDescr *dp) {
+const ocs::tom::FieldDescr *ocs::tom::descr_acquire(const ocs::tom::FieldDescr *dp) {
    if (dp == nullptr) {
       return nullptr;
    }
@@ -421,7 +421,7 @@ const lDescr *ocs::tom::descr_acquire(const lDescr *dp) {
 #if defined(ENABLE_DEBUG_CHECKS)
    check_full_length(dp, count_entries(dp));
 #endif
-   const lDescr *block = static_block_for(dp);
+   const ocs::tom::FieldDescr *block = static_block_for(dp);
    if (block == dp) {
       return dp;
    }
@@ -443,7 +443,7 @@ const lDescr *ocs::tom::descr_acquire(const lDescr *dp) {
  * @param dp the entries of the descriptor, terminated by #MT_END
  * @return the copy, or nullptr if dp is nullptr or memory is exhausted
  */
-const lDescr *ocs::tom::descr_private(const lDescr *dp) {
+const ocs::tom::FieldDescr *ocs::tom::descr_private(const ocs::tom::FieldDescr *dp) {
    if (dp == nullptr) {
       return nullptr;
    }
@@ -470,7 +470,7 @@ const lDescr *ocs::tom::descr_private(const lDescr *dp) {
  * @param[out] out room for the entries of src and the terminating one; undefined on an error
  * @return the number of kept fields, or -1 if keep does not match src
  */
-int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out) {
+int ocs::tom::descr_layout(const ocs::tom::FieldDescr *src, const std::vector<bool> &keep, ocs::tom::FieldDescr *out) {
    const uint32_t n = src != nullptr ? count_entries(src) : 0;
    if (n == 0 || keep.size() != n || out == nullptr) {
       return -1;
@@ -507,11 +507,11 @@ int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDe
  * @return the shared descriptor holding a reference for the caller, or nullptr
  *         if keep does not match src, selects no field, or memory is exhausted
  */
-const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &keep) {
+const ocs::tom::FieldDescr *ocs::tom::descr_build(const ocs::tom::FieldDescr *src, const std::vector<bool> &keep) {
    DENTER(TOM_LAYER);
 
    const uint32_t n = src != nullptr ? count_entries(src) : 0;
-   std::vector<lDescr> entries(n + 1);
+   std::vector<ocs::tom::FieldDescr> entries(n + 1);
    const int kept = ocs::tom::descr_layout(src, keep, entries.data());
    if (kept < 0) {
       DRETURN(nullptr);
@@ -522,7 +522,7 @@ const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &
    if (static_cast<uint32_t>(kept) == n) {
       DRETURN(ocs::tom::descr_acquire(src));
    }
-   const lDescr *dp = ocs::tom::descr_intern(entries.data());
+   const ocs::tom::FieldDescr *dp = ocs::tom::descr_intern(entries.data());
    DRETURN(dp);
 }
 
@@ -533,7 +533,7 @@ const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &
  * order and more than once; the result is that of ocs::tom::descr_build().
  *
  * @code
- * static const lDescr *const task_descr =
+ * static const ocs::tom::FieldDescr *const task_descr =
  *    ocs::tom::descr_reduce(ocs::tom::JAT::descriptor.e, {JAT_task_number, JAT_hold});
  * @endcode
  *
@@ -542,7 +542,8 @@ const lDescr *ocs::tom::descr_build(const lDescr *src, const std::vector<bool> &
  * @return the shared descriptor holding a reference for the caller, or nullptr
  *         if a field does not belong to the type, none is given, or memory is exhausted
  */
-const lDescr *ocs::tom::descr_reduce(const lDescr *type, const std::initializer_list<int> fields) {
+const ocs::tom::FieldDescr *ocs::tom::descr_reduce(const ocs::tom::FieldDescr *type,
+                                                   const std::initializer_list<int> fields) {
    DENTER(TOM_LAYER);
 
    const uint32_t n = type != nullptr ? count_entries(type) : 0;
@@ -566,7 +567,7 @@ const lDescr *ocs::tom::descr_reduce(const lDescr *type, const std::initializer_
  * @param dp the entries of a descriptor, or nullptr
  * @return dp
  */
-const lDescr *ocs::tom::descr_ref(const lDescr *dp) {
+const ocs::tom::FieldDescr *ocs::tom::descr_ref(const ocs::tom::FieldDescr *dp) {
    if (ocs::tom::descr_is_counted(dp)) {
       header_of(dp)->refs.fetch_add(1, std::memory_order_relaxed);
    }
@@ -582,7 +583,7 @@ const lDescr *ocs::tom::descr_ref(const lDescr *dp) {
  *
  * @param descr the holder of the reference, or of nullptr; nullptr afterwards
  */
-void ocs::tom::release_descr(const lDescr *&descr) noexcept {
+void ocs::tom::release_descr(const ocs::tom::FieldDescr *&descr) noexcept {
    if (!ocs::tom::descr_is_counted(descr)) {
       descr = nullptr;
       return;
@@ -617,7 +618,7 @@ void ocs::tom::release_descr(const lDescr *&descr) noexcept {
  * @param dp the entries of a descriptor, or nullptr
  * @return the count of a counted descriptor, 0 for any other
  */
-uint32_t ocs::tom::descr_refs(const lDescr *dp) {
+uint32_t ocs::tom::descr_refs(const ocs::tom::FieldDescr *dp) {
    if (!ocs::tom::descr_is_counted(dp)) {
       return 0;
    }
@@ -633,7 +634,7 @@ uint32_t ocs::tom::descr_refs(const lDescr *dp) {
  * @param dp the descriptor
  * @return the number of values, or -1 if dp is nullptr
  */
-int lCountPresent(const lDescr *dp) {
+int lCountPresent(const ocs::tom::FieldDescr *dp) {
    if (dp == nullptr) {
       return -1;
    }
@@ -652,7 +653,7 @@ int lCountPresent(const lDescr *dp) {
  * @param ep the element
  * @param pos the position that was accessed
  */
-void ocs::tom::detail::bad_slot(const lListElem *ep, const int pos) {
+void ocs::tom::detail::bad_slot(const ocs::tom::ElementData *ep, const int pos) {
    const tom_descr_header *h = ocs::tom::descr_header_of(ep->descr);
    CRITICAL(MSG_TOM_BADSLOT_IIUU, pos, ep->descr[0].nm, h->n, h->np);
    abort();

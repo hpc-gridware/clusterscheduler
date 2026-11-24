@@ -23,7 +23,7 @@
  *
  * On a typed handle there is one way per operation, the member. Without the
  * deleted overload the call would bind silently to the raw form through the
- * handle's implicit conversion to lListElem *.
+ * handle's implicit conversion to ocs::tom::ElementData *.
  *
  * The build compiles this file as an expected failure, see
  * expect_compile_failure.cmake; the error must match the line below.

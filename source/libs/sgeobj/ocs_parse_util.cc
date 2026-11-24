@@ -85,7 +85,7 @@
  * @return the field type, or std::nullopt if @p descr is nullptr or does not hold @p nm (another type's field,
  *         or one a reduced descriptor leaves out)
  */
-static std::optional<ocs::tom::FieldType> ocs_parse_field_type(const lDescr *descr, const int nm) {
+static std::optional<ocs::tom::FieldType> ocs_parse_field_type(const ocs::tom::FieldDescr *descr, const int nm) {
    const int pos = ocs::tom::present_pos(descr, nm);
    if (pos < 0) {
       return std::nullopt;
@@ -126,8 +126,9 @@ static bool ocs_parse_is_num_type(const std::optional<ocs::tom::FieldType> type)
  *
  * @note MT-NOTE: ocs_parse_string_list() is MT safe
  */
-int ocs_parse_string_list(char **pstrlist, const char *listname, const lDescr *descr, int *interpretation_rule,
-                           lList **pplist) {
+int ocs_parse_string_list(char **pstrlist, const char *listname, const ocs::tom::FieldDescr *descr,
+                          int *interpretation_rule,
+                           ocs::tom::ListData **pplist) {
    DENTER(BASIS_LAYER);
 
    if (!pstrlist || !descr || !interpretation_rule || !pplist) {
@@ -298,9 +299,9 @@ int ocs_parse_string_list(char **pstrlist, const char *listname, const lDescr *d
  */
 int ocs_parse_definition_list(
 char *str,
-lList **lpp,
+ocs::tom::ListData **lpp,
 const char *name,
-const lDescr *descr,
+const ocs::tom::FieldDescr *descr,
 int *interpretation_rule 
 ) {
    DENTER(BASIS_LAYER);
@@ -421,7 +422,7 @@ int ocs_compress_definition_list(const ocs::tom::RawList lp, const int nm_var, c
 /**
  * @brief Print selected fields of a list into a text stream.
  *
- * This function serializes the elements of an @c lList into a textual
+ * This function serializes the elements of an @c ocs::tom::ListData into a textual
  * representation and writes the result to the provided @c std::ostream.
  * The fields to be printed and their order are defined by
  * @p which_elements_rule.
@@ -463,7 +464,7 @@ int uni_print_list(std::ostream &os, const ocs::tom::ConstRawList lp, const int 
    DENTER(BASIS_LAYER);
 
    const int* rule;
-   const lDescr* descr;
+   const ocs::tom::FieldDescr* descr;
    bool begin = true;
    std::string field;
    const char* cp = nullptr;
@@ -678,8 +679,8 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
    bool handled_option = false;
    // the merge below works on raw lists, ocs_object_list_add_unique() has no typed form: the copies are handed
    // over raw and taken back typed when they are stored
-   lList *hard_list = nullptr;
-   lList *soft_list = nullptr;
+   ocs::tom::ListData *hard_list = nullptr;
+   ocs::tom::ListData *soft_list = nullptr;
 
    auto jrs = job_get_request_setRW(job, scope);
    if (jrs != nullptr) {
@@ -697,7 +698,7 @@ void parse_list_hardsoft(const ocs::tom::List<ocs::tom::SPA> cmdline, const char
 
       if (int(ep.get<SPA_argval_lLongT>()) == int(scope)) {
          // the argument list is of the type of the request field, so it stays untyped
-         lList *lp = ep.exchange<SPA_argval_lListT>(ocs::tom::RawListPtr()).release();
+         ocs::tom::ListData *lp = ep.exchange<SPA_argval_lListT>(ocs::tom::RawListPtr()).release();
          if (lp != nullptr) {
             // merged without ever holding a key twice (N-H-18)
             if (!has_soft || ep.get<SPA_argval_lIntT>() < 2) {
@@ -835,7 +836,7 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> ocs_parse_jid_hold_list(const ch
       DRETURN(std::make_pair(2, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
    // ocs_parse_string_list() is generic over the descriptor; it fills the list only on success
-   lList *parsed = nullptr;
+   ocs::tom::ListData *parsed = nullptr;
    const int i_ret = ocs_parse_string_list(str_str, "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
    // the list was created with ST above, so it is taken over unchecked
    auto list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(parsed);

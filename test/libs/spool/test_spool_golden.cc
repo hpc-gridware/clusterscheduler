@@ -191,7 +191,7 @@ struct Layout {
 /** @brief One spooled object type with every way it is written */
 struct ObjectCase {
    const char *name;                    ///< file name stem
-   const lDescr *descr;                 ///< the descriptor the reader is given
+   const ocs::tom::FieldDescr *descr;                 ///< the descriptor the reader is given
    tom::RawElementPtr (*build)(Variant); ///< builds the object
    bool variants;                       ///< also write the NONE and EMPTY variants
    void (*fixup)(tom::RawElement);      ///< applied to an object read back before it is written again, or nullptr
@@ -210,7 +210,7 @@ enum class ListJson {
 /** @brief One list written as a whole (spool_flatfile_write_list() and the JSON list writers) */
 struct ListCase {
    const char *name;                      ///< file name stem
-   const lDescr *descr;                   ///< the descriptor of the elements
+   const ocs::tom::FieldDescr *descr;                   ///< the descriptor of the elements
    tom::RawListPtr (*build)();            ///< builds the list
    FieldSource source;                    ///< the field list
    const spool_flatfile_instr *instr;     ///< the ASCII instruction, nullptr when there is no ASCII form
@@ -500,7 +500,7 @@ std::string render_object(const tom::ConstRawElement ep, const Layout &layout, c
  * @param what the file name, for the messages
  * @return the object, empty if it cannot be read
  */
-tom::RawElementPtr parse_object(const std::string &text, const lDescr *descr, const Layout &layout,
+tom::RawElementPtr parse_object(const std::string &text, const ocs::tom::FieldDescr *descr, const Layout &layout,
                                 const spooling_field *fields, const Form form, const std::string &what) {
    const bool json = select_format(form);
    tom::ListPtr<tom::AN> alp;
@@ -2063,7 +2063,7 @@ void run_classic() {
    g_files += static_cast<int>(before.size()) + 1;
 
    if (g_roundtrip) {
-      lList *jobs_raw = nullptr;
+      ocs::tom::ListData *jobs_raw = nullptr;
       job_list_read_from_disk(&jobs_raw, "jobs", 0, SPOOL_DEFAULT, nullptr);
       auto jobs = tom::ListPtr<tom::JB>::from_typed(jobs_raw);
       auto ar_back = ocs::spool::classic::ar_read_spool_file(815);

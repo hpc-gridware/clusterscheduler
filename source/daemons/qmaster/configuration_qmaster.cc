@@ -159,7 +159,7 @@ notify_execds_about_conf_change(const char *conf_name);
  * @return 0 on success, -1 if there is no global configuration or merging failed
  */
 int
-sge_read_configuration(const lListElem *aSpoolContext, lList **config_list,
+sge_read_configuration(const ocs::tom::ElementData *aSpoolContext, ocs::tom::ListData **config_list,
                        ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
@@ -1028,7 +1028,7 @@ get_entry_from_conf(const ocs::tom::ConstElement<ocs::tom::CONF> aConf, const ch
  * @return the owner of the matching configurations, empty on error
  */
 ocs::tom::RawListPtr
-sge_get_configuration(const lCondition *condition, const lEnumeration *enumeration) {
+sge_get_configuration(const ocs::tom::WhereData *condition, const ocs::tom::WhatData *enumeration) {
    DENTER(TOP_LAYER);
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);

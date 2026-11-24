@@ -401,7 +401,7 @@ int main(int argc, char **argv) {
    {
       // job_list_read_from_disk() takes a list reference, which it sets only when it holds nullptr; the list
       // exists, so the jobs go into the master job list itself
-      lList *master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().raw();
+      ocs::tom::ListData *master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>().raw();
       job_list_read_from_disk(&master_job_list, "master job list", 0, SPOOL_WITHIN_EXECD, job_initialize_job);
    }
 
@@ -484,7 +484,7 @@ int sge_execd_register_at_qmaster(bool is_restart) {
 
    int return_value = 0;
    static int sge_last_register_error_flag = 0;
-   // the answer list, filled through an lList ** by gdi_is_alive() and returned by sge_gdi()
+   // the answer list, filled through an ocs::tom::ListData ** by gdi_is_alive() and returned by sge_gdi()
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    /*
@@ -613,7 +613,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> sge_parse_cmdline_execd(char **argv,
    char **sp;
    char **rp;
    stringT str;
-   // filled through an lList ** by the parsing functions
+   // filled through an ocs::tom::ListData ** by the parsing functions
    ocs::tom::ListPtr<ocs::tom::AN> alp;
 
    rp = argv;
@@ -651,7 +651,7 @@ static ocs::tom::ListPtr<ocs::tom::AN>
 sge_parse_execd(const ocs::tom::List<ocs::tom::SPA> ppcmdline, uint32_t *help) {
    DENTER(TOP_LAYER);
 
-   // filled through an lList ** by the parsing functions
+   // filled through an ocs::tom::ListData ** by the parsing functions
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    int usageshowed = 0;
 

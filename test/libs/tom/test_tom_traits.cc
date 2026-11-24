@@ -116,7 +116,7 @@ test_entries() {
    int mismatches = 0;
    std::size_t n_fields = 0;
    for (const ocs::tom::TypeTable &table : ocs::tom::all_type_tables) {
-      const lDescr *dp = table.descr;
+      const ocs::tom::FieldDescr *dp = table.descr;
       for (std::size_t i = 0; i < table.size; i++, n_fields++) {
          const ocs::tom::FieldInfo &f = table.fields[i];
          const int mt = ocs::tom::mt_type_of(f.type) | ocs::tom::mt_flags_of(f.flags);

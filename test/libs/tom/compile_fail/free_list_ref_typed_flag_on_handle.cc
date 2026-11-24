@@ -45,7 +45,7 @@
  * @param queue the queue
  * @return never compiles
  */
-lList **wrong_use(const ocs::tom::ConstElement<ocs::tom::QU> &queue) {
+ocs::tom::ListData **wrong_use(const ocs::tom::ConstElement<ocs::tom::QU> &queue) {
    // list_ref<F>() has no second template parameter any more; JB_env_list is no queue field either
    return ocs::tom::list_ref<JB_env_list, true>(queue);
 }

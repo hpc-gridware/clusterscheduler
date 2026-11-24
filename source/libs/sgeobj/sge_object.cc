@@ -311,7 +311,7 @@ namespace {
       }
 
       // raw out-parameter of ocs_parse_definition_list(), which creates the list with CE
-      lList *tmp_list = nullptr;
+      ocs::tom::ListData *tmp_list = nullptr;
       const int parse_ret = ocs_parse_definition_list(const_cast<char *>(string), &tmp_list, "",
                                                        ocs::tom::CE::descriptor.e, rule);
       auto list = ocs::tom::ListPtr<ocs::tom::CE>::from_typed(tmp_list);
@@ -1064,7 +1064,7 @@ template bool ocs_object_parse_field<ASOLIST_value>(ocs::tom::Element<ocs::tom::
  * @see #object_get_primary_key
  */
 bool
-object_has_type(const ocs::tom::ConstRawElement object, const lDescr *descr) {
+object_has_type(const ocs::tom::ConstRawElement object, const ocs::tom::FieldDescr *descr) {
    bool ret = false;
 
    /*
@@ -1092,9 +1092,9 @@ object_has_type(const ocs::tom::ConstRawElement object, const lDescr *descr) {
  *
  * @return the object type / descriptor
  */
-const lDescr *
-object_get_type(const lListElem *object) {
-   const lDescr *ret = nullptr;
+const ocs::tom::FieldDescr *
+object_get_type(const ocs::tom::ElementData *object) {
+   const ocs::tom::FieldDescr *ret = nullptr;
 
    if (object_has_type(object, ocs::tom::CAL::descriptor.e)) {
       ret = ocs::tom::CAL::descriptor.e;
@@ -1140,7 +1140,7 @@ object_get_type(const lListElem *object) {
  *       pass an object, or call it descr_get_primary_key.
  */
 int
-object_get_primary_key(const lDescr *descr) {
+object_get_primary_key(const ocs::tom::FieldDescr *descr) {
    int ret = NoName;
 
    if (descr != nullptr) {
@@ -1184,7 +1184,7 @@ object_get_primary_key(const lDescr *descr) {
  * @see #object_get_primary_key
  */
 const char *
-object_get_name_prefix(const lDescr *descr, dstring *buffer) {
+object_get_name_prefix(const ocs::tom::FieldDescr *descr, dstring *buffer) {
    int nm;
 
    if (descr == nullptr || buffer == nullptr) {
@@ -1228,7 +1228,7 @@ object_get_name_prefix(const lDescr *descr, dstring *buffer) {
  * @note MT-NOTE: object_get_name() is MT safe
  */
 const char *
-object_get_name(const lDescr *descr) {
+object_get_name(const ocs::tom::FieldDescr *descr) {
    const char *name = "unknown";
 
    if (descr != nullptr) {
@@ -1263,7 +1263,7 @@ object_get_type_name(const ocs::tom::ConstRawElement object) {
    const char *name = "unknown";
 
    if (object) {
-      const lDescr *descr = object.descr();
+      const ocs::tom::FieldDescr *descr = object.descr();
 
       for (int i = SGE_TYPE_FIRST; i < SGE_TYPE_ALL; i++) {
          if (object_base[i].descr != nullptr && object_base[i].key_nm != NoName &&
@@ -1450,10 +1450,10 @@ sge_object_type object_name_get_type(const char *name) {
  *
  * @see #object_type_get_name, #object_type_get_key_nm
  */
-const lDescr *object_type_get_descr(sge_object_type type) {
+const ocs::tom::FieldDescr *object_type_get_descr(sge_object_type type) {
    DENTER(OBJECT_LAYER);
 
-   const lDescr *ret = nullptr;
+   const ocs::tom::FieldDescr *ret = nullptr;
 
    if (/* type >= 0 && */ type < SGE_TYPE_ALL) {
       ret = object_base[type].descr;
@@ -1580,8 +1580,8 @@ object_has_differences(const ocs::tom::ConstRawElement this_elem, ocs::tom::List
       DRETURN(static_cast<bool>(this_elem) != static_cast<bool>(old_elem));
    }
 
-   const lDescr *const this_descr = this_elem.descr();
-   const lDescr *const old_descr = old_elem.descr();
+   const ocs::tom::FieldDescr *const this_descr = this_elem.descr();
+   const ocs::tom::FieldDescr *const old_descr = old_elem.descr();
    bool ret = false;
    int this_count = 0;
 
@@ -1672,7 +1672,7 @@ object_list_has_differences(const ocs::tom::ConstRawList this_list, ocs::tom::Li
  * @see #object_verify_structure, `ocs::tom::layout_difference()`
  */
 bool
-object_list_verify_structure(const ocs::tom::ConstRawList lp, const lDescr *descr) {
+object_list_verify_structure(const ocs::tom::ConstRawList lp, const ocs::tom::FieldDescr *descr) {
    bool ret = true;
 
    /*
@@ -1730,7 +1730,7 @@ object_list_verify_structure(const ocs::tom::ConstRawList lp, const lDescr *desc
  * @see #object_list_verify_structure, `ocs::tom::layout_difference()`
  */
 bool
-object_verify_structure(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
+object_verify_structure(const ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr) {
    bool ret = true;
 
    /*
@@ -1752,14 +1752,14 @@ object_verify_structure(const ocs::tom::ConstRawElement ep, const lDescr *descr)
 
    /* check contents of subobject; the walk visits held fields only, of the type read, so no read throws */
    if (ret) {
-      const lDescr *elem_descr = ep.descr();
+      const ocs::tom::FieldDescr *elem_descr = ep.descr();
       for (const auto f : ocs::tom::present_fields(elem_descr)) {
          const int nm = elem_descr[f.pos].nm;
          const ocs::tom::FieldType type = ocs::tom::field_type_of(elem_descr[f.pos].mt);
          if (type == ocs::tom::FieldType::List) {
             const auto lp = ep.get<ocs::tom::ConstRawList>(nm);
             if (lp) {
-               const lDescr *subdescr = ocs::tom::sub_type(nm);
+               const ocs::tom::FieldDescr *subdescr = ocs::tom::sub_type(nm);
                if (!object_list_verify_structure(lp, subdescr)) {
                   ret = false;
                   break;
@@ -1768,7 +1768,7 @@ object_verify_structure(const ocs::tom::ConstRawElement ep, const lDescr *descr)
          } else if (type == ocs::tom::FieldType::Object) {
             const auto sub_ep = ep.get<ocs::tom::ConstRawElement>(nm);
             if (sub_ep) {
-               const lDescr *subdescr = ocs::tom::sub_type(nm);
+               const ocs::tom::FieldDescr *subdescr = ocs::tom::sub_type(nm);
                if (!object_verify_structure(sub_ep, subdescr)) {
                   ret = false;
                   break;
@@ -1798,11 +1798,11 @@ object_verify_structure(const ocs::tom::ConstRawElement ep, const lDescr *descr)
  * @return true if the list and everything below it are of their expected types
  */
 bool
-ocs_object_list_verify_type(const ocs::tom::ConstRawList lp, const lDescr *descr) {
+ocs_object_list_verify_type(const ocs::tom::ConstRawList lp, const ocs::tom::FieldDescr *descr) {
    if (!lp) {
       return true;
    }
-   const lDescr *list_descr = lp.descr();
+   const ocs::tom::FieldDescr *list_descr = lp.descr();
    if (descr != nullptr && !ocs::tom::same_type(list_descr, descr)) {
       return false;
    }
@@ -1828,11 +1828,11 @@ ocs_object_list_verify_type(const ocs::tom::ConstRawList lp, const lDescr *descr
  * @return true if the element and everything below it are of their expected types
  */
 bool
-ocs_object_verify_type(const ocs::tom::ConstRawElement ep, const lDescr *descr) {
+ocs_object_verify_type(const ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr) {
    if (!ep) {
       return true;
    }
-   const lDescr *elem_descr = ep.descr();
+   const ocs::tom::FieldDescr *elem_descr = ep.descr();
    if (descr != nullptr && !ocs::tom::same_type(elem_descr, descr)) {
       return false;
    }
@@ -1902,7 +1902,7 @@ namespace {
          return;
       }
       // held fields only, read with their own type: no read throws
-      const lDescr *descr = ep.descr();
+      const ocs::tom::FieldDescr *descr = ep.descr();
       for (const auto f : ocs::tom::present_fields(descr)) {
          const int nm = descr[f.pos].nm;
          const ocs::tom::FieldType type = ocs::tom::field_type_of(descr[f.pos].mt);
@@ -1963,7 +1963,7 @@ namespace {
       }
 
       // the elements have the layout of the list, so each holds every field the list's descriptor holds
-      const lDescr *dp = lp.descr();
+      const ocs::tom::FieldDescr *dp = lp.descr();
       for (const auto f : ocs::tom::present_fields(dp)) {
          if (!mt_is_unique(dp[f.pos].mt)) {
             continue;
@@ -2137,7 +2137,7 @@ namespace {
     * @return true if the descriptor holds the field
     */
    bool
-   holds_field(const lDescr *descr, const int nm) {
+   holds_field(const ocs::tom::FieldDescr *descr, const int nm) {
       return ocs::tom::present_pos(descr, nm) >= 0;
    }
 
@@ -2150,7 +2150,7 @@ namespace {
     */
    Repair
    repair_of(const ocs::tom::ConstRawList lp, int &nm, int &value_nm) {
-      const lDescr *dp = lp.descr();
+      const ocs::tom::FieldDescr *dp = lp.descr();
       if (holds_field(dp, VA_variable)) {
          nm = VA_variable;
          value_nm = VA_value;
@@ -2210,7 +2210,7 @@ ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repa
    }
 
    // backwards, so a nested list is repaired before an element holding it may be removed; each list once
-   std::unordered_set<const lList *> repaired;
+   std::unordered_set<const ocs::tom::ListData *> repaired;
    for (auto it = found.rbegin(); it != found.rend(); ++it) {
       int nm;
       int value_nm = NoName;
@@ -2219,7 +2219,7 @@ ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repa
          continue;
       }
       // the list belongs to ep, which the caller holds for writing
-      const ocs::tom::RawList lp(const_cast<lList *>(it->list.raw()));
+      const ocs::tom::RawList lp(const_cast<ocs::tom::ListData *>(it->list.raw()));
       if (repair == Repair::KeepLast) {
          ocs_compress_definition_list(lp, nm, value_nm, 0);
       } else {
@@ -2262,14 +2262,14 @@ ocs_object_repair_repeated_keys(const ocs::tom::RawElement ep, std::string &repa
  * @see #ocs_object_list_remove_repeated_keys
  */
 void
-ocs_object_list_add_unique(lList **lpp, lList **src) {
+ocs_object_list_add_unique(ocs::tom::ListData **lpp, ocs::tom::ListData **src) {
    if (lpp == nullptr || src == nullptr || *src == nullptr) {
       return;
    }
 
    // freed on every path
    ocs::tom::RawListPtr source(std::exchange(*src, nullptr));
-   const lDescr *dp = source.get().descr();
+   const ocs::tom::FieldDescr *dp = source.get().descr();
    int nm = NoName;
    bool keep_last = false;
    if (holds_field(dp, VA_variable)) {
@@ -2713,8 +2713,8 @@ int compress_ressources(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::L
  *
  * @see #object_verify_structure
  */
-bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, lListElem **epp,
-                               const lDescr *descr) {
+bool object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb,
+                               ocs::tom::ElementData **epp, const ocs::tom::FieldDescr *descr) {
    DENTER(TOP_LAYER);
    bool ret = true;
 

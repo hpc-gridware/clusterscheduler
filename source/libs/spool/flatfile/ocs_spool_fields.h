@@ -130,7 +130,7 @@ struct OcsSpoolField {
  * @return 1 if the value was accepted, 0 otherwise
  */
 template <typename T, auto Cb>
-int ocs_spool_read_thunk(lListElem *ep, [[maybe_unused]] const int nm, const char *buffer,
+int ocs_spool_read_thunk(ocs::tom::ElementData *ep, [[maybe_unused]] const int nm, const char *buffer,
                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    // the walkers call a row's callback only for an element holding the row's field; checked as the old callbacks were
    return Cb(ocs::tom::Element<T>(ep), buffer, answer_list) ? 1 : 0;
@@ -150,7 +150,7 @@ int ocs_spool_read_thunk(lListElem *ep, [[maybe_unused]] const int nm, const cha
  * @return 1 if something was rendered, 0 otherwise
  */
 template <typename T, auto Cb>
-int ocs_spool_write_thunk(const lListElem *ep, [[maybe_unused]] const int nm, dstring *buffer,
+int ocs_spool_write_thunk(const ocs::tom::ElementData *ep, [[maybe_unused]] const int nm, dstring *buffer,
                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    // the walkers call a row's callback only for an element holding the row's field; checked as the old callbacks were
    return Cb(ocs::tom::ConstElement<T>(ep), buffer, answer_list) ? 1 : 0;

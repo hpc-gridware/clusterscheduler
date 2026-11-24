@@ -190,7 +190,7 @@ static bool read_spooled_data() {
 
    /* cluster configuration */
    {
-      lList *schedd_config = nullptr;
+      ocs::tom::ListData *schedd_config = nullptr;
       spool_read_list(&answer_list, context, &schedd_config, SGE_TYPE_SCHEDD_CONF);
       if (schedd_config) {
          // the handle takes the spooled list over; a list the call refused is freed with it

@@ -78,7 +78,7 @@ ocs::gdi::Request::wait() {
  * @return the owner of the copy, empty for nullptr, for no selected element or on failure
  */
 static ocs::tom::RawListPtr
-ocs_gdi_copy_request_data(const lList *lp, const lEnumeration *enp) {
+ocs_gdi_copy_request_data(const ocs::tom::ListData *lp, const ocs::tom::WhatData *enp) {
    if (lp == nullptr) {
       return {};
    }
@@ -102,7 +102,7 @@ ocs_gdi_copy_request_data(const lList *lp, const lEnumeration *enp) {
 
 /**
  * @brief Copy a condition or a field selection without throwing, as lCopyWhere() and lCopyWhat() did
- * @tparam P lCondition or lEnumeration
+ * @tparam P ocs::tom::WhereData or ocs::tom::WhatData
  * @param p the condition or selection, or nullptr
  * @return the owner of the copy, empty for nullptr or on failure
  */
@@ -135,7 +135,8 @@ ocs_gdi_soft_clone(const P *p) -> decltype(ocs::tom::clone(p)) {
  */
 int
 ocs::gdi::Request::request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Target target, const Command cmd,
-                           SubCommand sub_cmd, lList **lp, lCondition *cp, lEnumeration *enp, const bool do_copy) {
+                           SubCommand sub_cmd, ocs::tom::ListData **lp, ocs::tom::WhereData *cp,
+                           ocs::tom::WhatData *enp, const bool do_copy) {
    DENTER(GDI_MULTI_LAYER);
 
    // create a new packet if it does not exist
@@ -190,7 +191,7 @@ ocs::gdi::Request::request(ocs::tom::ListPtr<ocs::tom::AN> *alpp, Mode mode, Tar
  */
 bool
 ocs::gdi::Request::get_response(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const Command cmd, const SubCommand sub_cmd,
-                                const Target target, const int id, lList **list) const {
+                                const Target target, const int id, ocs::tom::ListData **list) const {
    DENTER(GDI_MULTI_LAYER);
 
    // check parameters. list can be nullptr if no response data is expected

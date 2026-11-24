@@ -356,8 +356,8 @@ none_string(const char *str) {
  * @return true on success
  */
 bool
-sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *raw_jr,
-                 lListElem *raw_job, lListElem *raw_ja_task, const char *category_str,
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, ocs::tom::ElementData *raw_jr,
+                 ocs::tom::ElementData *raw_job, ocs::tom::ElementData *raw_ja_task, const char *category_str,
                  std::vector<std::pair<std::string, std::string>> *usage_patterns, const char delimiter,
                  const bool intermediate, const bool is_reporting) {
    DENTER(TOP_LAYER);

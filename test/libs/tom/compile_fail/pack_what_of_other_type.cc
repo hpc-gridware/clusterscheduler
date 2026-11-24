@@ -34,7 +34,7 @@
  * @param raw a list of jobs
  * @param pb the buffer
  */
-void wrong_use(lList *raw, sge_pack_buffer &pb) {
+void wrong_use(ocs::tom::ListData *raw, sge_pack_buffer &pb) {
    const ocs::tom::List<ocs::tom::JB> jobs{raw};
    // a selection of user set fields for packing jobs
    jobs.pack(pb, ocs::tom::what<US_name>());

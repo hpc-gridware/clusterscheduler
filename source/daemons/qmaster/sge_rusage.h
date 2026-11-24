@@ -197,7 +197,7 @@ typedef struct drusage sge_rusage_type;   ///< @copybrief drusage
 #define INTERMEDIATE_MIN_RUNTIME 60
 
 bool
-sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, lListElem *raw_jr,
-                 lListElem *raw_job, lListElem *raw_ja_task, const char *category_str,
+sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *writer, ocs::tom::ElementData *raw_jr,
+                 ocs::tom::ElementData *raw_job, ocs::tom::ElementData *raw_ja_task, const char *category_str,
                  std::vector<std::pair<std::string, std::string>> *usage_patterns, char delimiter,
                  bool intermediate, bool is_reporting);

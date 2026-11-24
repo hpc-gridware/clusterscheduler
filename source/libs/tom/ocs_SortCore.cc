@@ -59,9 +59,10 @@ namespace ocs::tom {
        * @param key the criterion
        * @return negative, 0 or positive, before the direction is applied
        */
-      int compare_field(const lListElem *a, const lListElem *b, const lSortOrder &key) {
-         const lMultiType &x = ocs::tom::detail::value(a, key.pos);
-         const lMultiType &y = ocs::tom::detail::value(b, key.pos);
+      int compare_field(const ocs::tom::ElementData *a, const ocs::tom::ElementData *b,
+                        const ocs::tom::SortOrderData &key) {
+         const ocs::tom::FieldValue &x = ocs::tom::detail::value(a, key.pos);
+         const ocs::tom::FieldValue &y = ocs::tom::detail::value(b, key.pos);
          switch (mt_get_type(key.mt)) {
             case MT_INT32:
                return three_way(x.i, y.i);
@@ -88,11 +89,11 @@ namespace ocs::tom {
 
    } // namespace
 
-   lSortOrder *make_sort_order(const lDescr *descr, const std::span<const SortKey> keys) {
+   ocs::tom::SortOrderData *make_sort_order(const ocs::tom::FieldDescr *descr, const std::span<const SortKey> keys) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
-      auto *so = static_cast<lSortOrder *>(malloc(sizeof(lSortOrder) * (keys.size() + 1)));
+      auto *so = static_cast<ocs::tom::SortOrderData *>(malloc(sizeof(ocs::tom::SortOrderData) * (keys.size() + 1)));
       if (so == nullptr) {
          throw ListCoreError("no memory for a sort order");
       }
@@ -117,12 +118,12 @@ namespace ocs::tom {
       return so;
    }
 
-   void free_sort_order(lSortOrder *&so) noexcept {
+   void free_sort_order(ocs::tom::SortOrderData *&so) noexcept {
       free(so);
       so = nullptr;
    }
 
-   int sort_compare(const lListElem *a, const lListElem *b, const lSortOrder *so) {
+   int sort_compare(const ocs::tom::ElementData *a, const ocs::tom::ElementData *b, const ocs::tom::SortOrderData *so) {
       int result = 0;
       for (int i = 0; result == 0 && so[i].nm != NoName; i++) {
          result = compare_field(a, b, so[i]) * so[i].ad;
@@ -130,26 +131,27 @@ namespace ocs::tom {
       return result;
    }
 
-   void sort_list(lList *lp, const lSortOrder *so) {
+   void sort_list(ocs::tom::ListData *lp, const ocs::tom::SortOrderData *so) {
       if (lp == nullptr || lp->nelem < 2) {
          return;
       }
       if (so == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp->descr);
       }
-      ocs::tom::detail::sort_elems(lp, [so](const lListElem *a, const lListElem *b) {
+      ocs::tom::detail::sort_elems(lp, [so](const ocs::tom::ElementData *a, const ocs::tom::ElementData *b) {
          return sort_compare(a, b, so) < 0;
       });
    }
 
-   void sort_list_with(lList *lp, const std::function<bool(const lListElem *, const lListElem *)> &less) {
+   void sort_list_with(ocs::tom::ListData *lp, const std::function<bool(const ocs::tom::ElementData *,
+                                                                        const ocs::tom::ElementData *)> &less) {
       if (lp == nullptr || lp->nelem < 2) {
          return;
       }
       ocs::tom::detail::sort_elems(lp, less);
    }
 
-   void check_sort_order(const lDescr *descr, const lSortOrder *so) {
+   void check_sort_order(const ocs::tom::FieldDescr *descr, const ocs::tom::SortOrderData *so) {
       if (so == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, descr);
       }
@@ -160,7 +162,7 @@ namespace ocs::tom {
       }
    }
 
-   void insert_sorted(lList *lp, lListElem *ep, const lSortOrder *so) {
+   void insert_sorted(ocs::tom::ListData *lp, ocs::tom::ElementData *ep, const ocs::tom::SortOrderData *so) {
       if (so == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp != nullptr ? lp->descr : nullptr);
       }
@@ -174,7 +176,7 @@ namespace ocs::tom {
       if (!same_layout(ep->descr, lp->descr)) [[unlikely]] {
          throw_field_exception(FieldException::Reason::WrongLayout, NoName, ep->descr, lp->descr);
       }
-      lListElem *before = lp->first;
+      ocs::tom::ElementData *before = lp->first;
       while (before != nullptr && sort_compare(ep, before, so) > 0) {
          before = before->next;
       }
@@ -185,7 +187,7 @@ namespace ocs::tom {
       }
    }
 
-   void resort_elem(lList *lp, lListElem *ep, const lSortOrder *so) {
+   void resort_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *ep, const ocs::tom::SortOrderData *so) {
       if (so == nullptr) {
          // checked before the element leaves the list, so that it is not lost
          throw_field_exception(FieldException::Reason::NullElement, NoName, lp != nullptr ? lp->descr : nullptr);

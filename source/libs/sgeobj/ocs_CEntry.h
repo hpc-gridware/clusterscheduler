@@ -64,7 +64,7 @@ namespace ocs {
          TYPE_LOG  = 12,  ///< log level; used in the configuration, not on a complex
          TYPE_LAST = TYPE_LOG ///< highest value used at all, for iterating
       };
-      static bool has_duplicates(const lList *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+      static bool has_duplicates(const ocs::tom::ListData *centry_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  const std::string& object_name);
    };
 }

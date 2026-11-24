@@ -33,7 +33,7 @@
  * @brief The wrong use
  * @param raw an element
  */
-void wrong_use(lListElem *raw) {
+void wrong_use(ocs::tom::ElementData *raw) {
    const ocs::tom::ConstElement<ocs::tom::JB> job{raw};
    job.set<JB_job_number>(1u);
 }

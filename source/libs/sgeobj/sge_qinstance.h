@@ -152,8 +152,8 @@ int rc_debit_consumable(ocs::tom::ConstElement<ocs::tom::JB> jep, ocs::tom::Cons
                         ocs::tom::Element<T> ep, ocs::tom::ConstList<ocs::tom::CE> centry_list, int slots,
                         const char *obj_name, bool is_master_task, bool do_per_host_booking, bool *just_check);
 
-//lListElem *
-//explicit_job_request(lListElem *jep, const char *name);
+//ocs::tom::ElementData *
+//explicit_job_request(ocs::tom::ElementData *jep, const char *name);
 
 [[nodiscard]] ocs::tom::ListPtr<ocs::tom::QR> qinstance_list_find_matching(ocs::tom::ConstList<ocs::tom::QU> this_list,
                                                                          ocs::tom::ListPtr<ocs::tom::AN> *answer_list,

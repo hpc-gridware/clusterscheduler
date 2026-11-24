@@ -71,7 +71,7 @@ measure_short_lookups() {
       for (std::uint32_t i = 1; i <= n; i++) {
          tasks->emplace_back<JAT_task_number>(i);
       }
-      const lList *raw_tasks = tasks->raw();
+      const ocs::tom::ListData *raw_tasks = tasks->raw();
       double ns[4];
       const std::uint32_t keys[4] = {1, n / 2 + 1, n, n + 1};
       for (int k = 0; k < 4; k++) {
@@ -189,7 +189,7 @@ int main() {
 
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
    job->set<JB_job_number>(job_value);
-   const lListElem *elem = job->raw();
+   const ocs::tom::ElementData *elem = job->raw();
 
    uint64_t sum = 0;
    auto time_start = std::chrono::high_resolution_clock::now();

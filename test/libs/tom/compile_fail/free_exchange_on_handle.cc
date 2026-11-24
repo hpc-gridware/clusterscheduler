@@ -43,7 +43,7 @@
  * @param lpp the list to put in
  * @return never compiles
  */
-int wrong_use(const ocs::tom::Element<ocs::tom::JB> &job, lList **lpp) {
+int wrong_use(const ocs::tom::Element<ocs::tom::JB> &job, ocs::tom::ListData **lpp) {
    // the member job.exchange<JB_env_list>(std::move(list)) is the only way on a handle
    return ocs::tom::exchange<JB_env_list>(job, lpp);
 }

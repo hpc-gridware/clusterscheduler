@@ -72,12 +72,13 @@ skip_restarted_job(ocs::tom::Element<ocs::tom::EH> host, ocs::tom::ConstElement<
                    uint32_t job_number, uint32_t task_number);
 
 int
-reschedule_jobs(lListElem *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor,
-                bool is_manual, const char *caller_user, const char *caller_host, uint64_t gdi_session);
+reschedule_jobs(ocs::tom::ElementData *ep, uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer,
+                monitoring_t *monitor, bool is_manual, const char *caller_user, const char *caller_host,
+                uint64_t gdi_session);
 
 int
-reschedule_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *ep, uint32_t force,
-               ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor, bool is_manual,
+reschedule_job(ocs::tom::ElementData *raw_jep, ocs::tom::ElementData *raw_jatep, ocs::tom::ElementData *ep,
+               uint32_t force, ocs::tom::ListPtr<ocs::tom::AN> *answer, monitoring_t *monitor, bool is_manual,
                const char *caller_user, const char *caller_host, uint64_t gdi_session);
 
 ocs::tom::Element<ocs::tom::RU>
@@ -92,7 +93,7 @@ reschedule_clear_deferred_start(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::E
                                 uint64_t gdi_session);
 
 void
-reschedule_clear_deferred_starts_of_host(const lListElem *raw_host, uint64_t gdi_session);
+reschedule_clear_deferred_starts_of_host(const ocs::tom::ElementData *raw_host, uint64_t gdi_session);
 
 void
 update_reschedule_unknown_list(ocs::tom::Element<ocs::tom::EH> host, uint64_t gdi_session);
@@ -104,7 +105,7 @@ void
 update_reschedule_unknown_timout_values(const char *config_name);
 
 void
-reschedule_unknown_trigger(lListElem *raw_hep);
+reschedule_unknown_trigger(ocs::tom::ElementData *raw_hep);
 
 void
 reschedule_add_additional_time(uint64_t time);

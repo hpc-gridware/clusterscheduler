@@ -1193,7 +1193,8 @@ sge_gdi_do_permcheck(ocs::gdi::Packet *packet, ocs::gdi::Task *task) {
            is_admin_host ? "true" : "false",
            is_submit_host ? "true" : "false");
 
-   // client might have sent lCondition and lEnumeration (where/what) but we ignore it for this kind of request
+   // client might have sent ocs::tom::WhereData and ocs::tom::WhatData (where/what) but we ignore it for this kind of
+   // request
 
    // report success
    answer_list_add(&(task->answer_list), MSG_GDI_OKNL, STATUS_OK, ANSWER_QUALITY_END);
@@ -1942,7 +1943,7 @@ ocs_gdi_add_mod_modifier_failed(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom:
  * @return true if the object holds every key once
  */
 static bool
-ocs_gdi_add_mod_unique_keys(const lListElem *new_obj, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+ocs_gdi_add_mod_unique_keys(const ocs::tom::ElementData *new_obj, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
                             const gdi_object_t *object, const char *name) {
    DENTER(TOP_LAYER);
    const std::string object_name = std::string(object->object_name) + " " + name;

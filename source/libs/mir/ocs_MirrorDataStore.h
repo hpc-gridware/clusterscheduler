@@ -100,7 +100,7 @@ namespace ocs {
 
       static void event_mirror_update_func([[maybe_unused]] uint32_t ec_id,
                                            [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
-                                           lList *event_list, void *arg);
+                                           ocs::tom::ListData *event_list, void *arg);
 
       static void thread_cleanup_monitor(void *arg);
       static void thread_cleanup_event_client(void *arg);

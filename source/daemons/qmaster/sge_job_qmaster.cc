@@ -275,9 +275,8 @@ static const char JOB_NAME_DEL = ':';
  * @note MT-Note: it is thread safe. It is using the global lock to secure the none safe functions
  */
 int
-sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
-                ocs::gdi::Packet *packet, ocs::gdi::Task *task,
-                monitoring_t *monitor) {
+sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                ocs::tom::ListData **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
    int ret;
    bool lret;
@@ -3728,8 +3727,8 @@ int verify_suitable_queues(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom
  * @param monitor for monitoring qmaster threads
  * @return STATUS_OK on success, an error status otherwise
  */
-int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
-                     ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
+int sge_gdi_copy_job(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                     ocs::tom::ListData **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
    uint32_t seek_jid;

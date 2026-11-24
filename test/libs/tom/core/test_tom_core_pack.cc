@@ -237,7 +237,7 @@ static bool compare_objects(const ocs::tom::ConstRawElement a, const ocs::tom::C
  * @param flags write only the fields whose flags match, 0 for all
  * @return PACK_SUCCESS or the code of the PackException, as tom_pack_elem_partial() returned it
  */
-static int pack_elem_code(sge_pack_buffer *pb, const lListElem *ep, const int flags) {
+static int pack_elem_code(sge_pack_buffer *pb, const ocs::tom::ElementData *ep, const int flags) {
    try {
       ocs::tom::pack_elem(pb, ep, nullptr, flags);
       return PACK_SUCCESS;
@@ -252,7 +252,7 @@ static int pack_elem_code(sge_pack_buffer *pb, const lListElem *ep, const int fl
  * @param lp the list
  * @return PACK_SUCCESS or the code of the PackException, as tom_pack_list() returned it
  */
-static int pack_list_code(sge_pack_buffer *pb, const lList *lp) {
+static int pack_list_code(sge_pack_buffer *pb, const ocs::tom::ListData *lp) {
    try {
       ocs::tom::pack_list(pb, lp, nullptr, 0);
       return PACK_SUCCESS;
@@ -269,7 +269,8 @@ static int pack_list_code(sge_pack_buffer *pb, const lList *lp) {
  * @param flags read only the fields whose flags match, 0 for all
  * @return PACK_SUCCESS or the code of the PackException, as tom_unpack_elem_partial() returned it
  */
-static int unpack_elem_code(sge_pack_buffer *pb, ocs::tom::RawElementPtr &ep, const lDescr *descr, const int flags) {
+static int unpack_elem_code(sge_pack_buffer *pb, ocs::tom::RawElementPtr &ep, const ocs::tom::FieldDescr *descr,
+                            const int flags) {
    try {
       ep = ocs::tom::unpack_raw_elem(pb, descr, flags);
       return PACK_SUCCESS;

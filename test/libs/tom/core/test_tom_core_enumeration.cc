@@ -191,7 +191,8 @@ static int s_fail = 0;
  * @param entries the fields with their nested selections, which the selection takes over
  * @return the selection
  */
-static lEnumeration *make(const lDescr *descr, const std::initializer_list<ocs::tom::WhatEntry> entries) {
+static ocs::tom::WhatData *make(const ocs::tom::FieldDescr *descr,
+                                const std::initializer_list<ocs::tom::WhatEntry> entries) {
    return ocs::tom::make_what(descr, std::span<const ocs::tom::WhatEntry>(entries.begin(), entries.size()));
 }
 
@@ -199,7 +200,7 @@ static lEnumeration *make(const lDescr *descr, const std::initializer_list<ocs::
  * @brief The selection of every field, as lWhat("%T(ALL)") gave it
  * @return the selection
  */
-static lEnumeration *all() {
+static ocs::tom::WhatData *all() {
    return ocs::tom::make_what_special(WHAT_ALL);
 }
 
@@ -207,7 +208,7 @@ static lEnumeration *all() {
  * @brief The selection of no field, as lWhat("%T(NONE)") gave it
  * @return the selection
  */
-static lEnumeration *none() {
+static ocs::tom::WhatData *none() {
    return ocs::tom::make_what_special(WHAT_NONE);
 }
 
@@ -257,8 +258,8 @@ static ocs::tom::RawWhatPtr make_complex_what() {
  * @param max the number of entries to compare
  * @return true if every entry matches
  */
-static bool test_what_enumeration(const lEnumeration *what, const int *result,
-                                  int *pos_what, int *pos_result, const int max) {
+static bool test_what_enumeration(const ocs::tom::WhatData *what, const int *result, int *pos_what, int *pos_result,
+                                  const int max) {
    bool ret = true;
 
    for (int i = 0; i < max; i++) {
@@ -304,7 +305,7 @@ static bool test_what_simple() {
  * @param what2 the second selection
  * @return 0 if both print the same, as strcmp() otherwise
  */
-static int enumeration_compare(const lEnumeration *what1, const lEnumeration *what2) {
+static int enumeration_compare(const ocs::tom::WhatData *what1, const ocs::tom::WhatData *what2) {
    dstring str1 = DSTRING_INIT;
    dstring str2 = DSTRING_INIT;
    ocs::tom::print_what(&str1, what1, 0);
@@ -366,9 +367,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
       const ocs::tom::RawWhatPtr what1(all());
       const ocs::tom::RawWhatPtr what2(none());
       const ocs::tom::RawWhatPtr what3 = make_complex_what();
-      const lDescr *dst1 = ocs::tom::reduced_descr(TEST_Type, what1.get());
-      const lDescr *dst2 = ocs::tom::reduced_descr(TEST_Type, what2.get());
-      const lDescr *dst3 = ocs::tom::reduced_descr(TEST_Type, what3.get());
+      const ocs::tom::FieldDescr *dst1 = ocs::tom::reduced_descr(TEST_Type, what1.get());
+      const ocs::tom::FieldDescr *dst2 = ocs::tom::reduced_descr(TEST_Type, what2.get());
+      const ocs::tom::FieldDescr *dst3 = ocs::tom::reduced_descr(TEST_Type, what3.get());
       // TEST_Type has 11 fields; ALL selects all → descr_length == count_what == 11
       CHECK(7,  "ALL: descr_length == 11", ocs::tom::descr_length(dst1) == 11);
       CHECK(8,  "ALL: count_what == 11",  ocs::tom::count_what(what1.get(), TEST_Type) == 11);

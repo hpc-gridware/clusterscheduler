@@ -35,7 +35,7 @@
  * @param lp the list
  * @return the element
  */
-const lListElem *wrong_use(const lList *lp) {
+const ocs::tom::ElementData *wrong_use(const ocs::tom::ListData *lp) {
    // TEST_string holds strings; lGetElemUlong(lp, TEST_string, 5) compiled and failed only at run time
    return ocs::tom::find_first<TEST_string>(lp, 5u);
 }

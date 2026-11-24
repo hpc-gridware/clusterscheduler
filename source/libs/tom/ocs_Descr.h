@@ -57,37 +57,37 @@
  * @param dp the descriptor
  * @return the number of present fields, or -1 for nullptr
  */
-int lCountPresent(const lDescr *dp);
+int lCountPresent(const ocs::tom::FieldDescr *dp);
 
 /** @brief Default number of registered descriptors above which interning falls back to private copies */
 #define TOM_DESCR_SOFT_CAP 4096
 
 namespace ocs::tom {
-   const lDescr *descr_intern(const lDescr *dp);
+   const ocs::tom::FieldDescr *descr_intern(const ocs::tom::FieldDescr *dp);
 
-   const lDescr *descr_acquire(const lDescr *dp);
+   const ocs::tom::FieldDescr *descr_acquire(const ocs::tom::FieldDescr *dp);
 
-   const lDescr *descr_private(const lDescr *dp);
+   const ocs::tom::FieldDescr *descr_private(const ocs::tom::FieldDescr *dp);
 
-   int descr_layout(const lDescr *src, const std::vector<bool> &keep, lDescr *out);
+   int descr_layout(const ocs::tom::FieldDescr *src, const std::vector<bool> &keep, ocs::tom::FieldDescr *out);
 
-   const lDescr *descr_build(const lDescr *src, const std::vector<bool> &keep);
+   const ocs::tom::FieldDescr *descr_build(const ocs::tom::FieldDescr *src, const std::vector<bool> &keep);
 
-   const lDescr *descr_reduce(const lDescr *type, std::initializer_list<int> fields);
+   const ocs::tom::FieldDescr *descr_reduce(const ocs::tom::FieldDescr *type, std::initializer_list<int> fields);
 
-   const lDescr *descr_ref(const lDescr *dp);
+   const ocs::tom::FieldDescr *descr_ref(const ocs::tom::FieldDescr *dp);
 
-   void release_descr(const lDescr *&descr) noexcept;
+   void release_descr(const ocs::tom::FieldDescr *&descr) noexcept;
 
-   bool descr_is_counted(const lDescr *dp);
+   bool descr_is_counted(const ocs::tom::FieldDescr *dp);
 
-   bool descr_is_static(const lDescr *dp);
+   bool descr_is_static(const ocs::tom::FieldDescr *dp);
 
-   const lDescr *descr_static_for(int nm);
+   const ocs::tom::FieldDescr *descr_static_for(int nm);
 
-   const lDescr *descr_static_containing(int nm, int *pos);
+   const ocs::tom::FieldDescr *descr_static_containing(int nm, int *pos);
 
-   uint32_t descr_refs(const lDescr *dp);
+   uint32_t descr_refs(const ocs::tom::FieldDescr *dp);
 
    size_t descr_registry_size();
 

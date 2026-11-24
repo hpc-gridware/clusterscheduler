@@ -33,7 +33,7 @@
  * @brief The wrong use
  * @param raw a list of user sets
  */
-void wrong_use(lList *raw) {
+void wrong_use(ocs::tom::ListData *raw) {
    const ocs::tom::List<ocs::tom::US> sets{raw};
    // a job field in a condition on user sets
    static_cast<void>(sets.find_if(ocs::tom::field<JB_owner>() == "alice"));

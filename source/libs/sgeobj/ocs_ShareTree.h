@@ -49,7 +49,7 @@
 #include "sgeobj/tom/ocs_tom_UU.h"
 
 /// Callback #ocs::ShareTree::foreach_call_func applies to every node; a non-zero return stops the walk
-typedef int (*sge_node_func_t) (lListElem *node, void *ptr);
+typedef int (*sge_node_func_t) (ocs::tom::ElementData *node, void *ptr);
 
 namespace ocs {
    /// The share tree: the hierarchy of users and projects the fair share policy distributes tickets over
@@ -69,7 +69,7 @@ namespace ocs {
       foreach_call_func(ocs::tom::Element<ocs::tom::STN> node, sge_node_func_t func, void *ptr);
 
       static int
-      zero_node_fields(lListElem *node, void *ptr);
+      zero_node_fields(ocs::tom::ElementData *node, void *ptr);
 
       static double
       calc_node_usage(ocs::tom::Element<ocs::tom::STN> node, ocs::tom::List<ocs::tom::UU> user_list,

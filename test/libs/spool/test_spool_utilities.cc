@@ -124,7 +124,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    // T04: for every field in QU, serialize to string and parse back gives identical string
    {
-      const lDescr *descr = ocs::tom::QU::descriptor.e;
+      const ocs::tom::FieldDescr *descr = ocs::tom::QU::descriptor.e;
       const auto elem = ocs::tom::ElementPtr<ocs::tom::QU>::create();
       const auto copy = ocs::tom::ElementPtr<ocs::tom::QU>::create();
       dstring elem_str = DSTRING_INIT;

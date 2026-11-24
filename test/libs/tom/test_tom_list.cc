@@ -85,11 +85,11 @@ test_ranges_and_lookups() {
    const Element<JB> job = job_owner.get();
    job.set<JB_ja_tasks>(make_tasks(5));
 
-   std::vector<const lListElem *> walk_order;
+   std::vector<const ocs::tom::ElementData *> walk_order;
    for (ConstRawElement ep = ConstRawList{job.get<JB_ja_tasks>()}.front(); ep; ep = ep.next()) {
       walk_order.push_back(ep.raw());
    }
-   std::vector<const lListElem *> new_order;
+   std::vector<const ocs::tom::ElementData *> new_order;
    for (const auto task : job.get<JB_ja_tasks>()) {
       new_order.push_back(task);
    }
@@ -147,7 +147,7 @@ test_owning_handles() {
    CHECK(7, "a moved owning handle is empty, the target holds the element",
          !a && b && b.get().get<JAT_task_number>() == 1);
 
-   lListElem *released = b.release();
+   ocs::tom::ElementData *released = b.release();
    CHECK(8, "a released element is no longer owned", !b && released != nullptr);
    ocs::tom::free_raw_elem(released);
 
@@ -400,7 +400,7 @@ test_create_and_free() {
    jobs = numbered_jobs("second", 2, 1);
    const bool reassigned = jobs->size() == 2 && std::strcmp(jobs->name(), "second") == 0;
    // the bridge to raw pointers: release() gives the list up, the checked constructor takes it back
-   lList *raw = jobs.release();
+   ocs::tom::ListData *raw = jobs.release();
    const bool released = !jobs && raw != nullptr;
    ListPtr<JB> back(raw);
    CHECK(12, "create, reset, move assignment and release free and hand over; the checked constructor takes a "

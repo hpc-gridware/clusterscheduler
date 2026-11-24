@@ -170,7 +170,7 @@ static ocs::tom::RawWherePtr string_is(const char *value) {
  */
 static void sort_by(const ocs::tom::RawList lp, const int nm, const bool ascending) {
    const ocs::tom::SortKey keys[] = {{nm, ascending}};
-   lSortOrder *order = ocs::tom::make_sort_order(lp.descr(), keys);
+   ocs::tom::SortOrderData *order = ocs::tom::make_sort_order(lp.descr(), keys);
    ocs::tom::sort_list(lp, order);
    ocs::tom::free_sort_order(order);
 }
@@ -244,7 +244,7 @@ static void test_field_access() {
 // Embedded object  [T12–T13]
 //
 // An element can store another element as a sub-object via set(nm, owner).
-// get<const lListElem *>() returns the stored pointer and the sub-object's own
+// get<const ocs::tom::ElementData *>() returns the stored pointer and the sub-object's own
 // fields are accessible through it.
 // ---------------------------------------------------------------------------
 
@@ -254,12 +254,12 @@ static void test_embedded_object() {
 
    auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
    ocs::tom::RawElementPtr obj = make_int_elem(50);
-   const lListElem *obj_raw = obj.get();
+   const ocs::tom::ElementData *obj_raw = obj.get();
    ep->set(TEST_object, std::move(obj));
 
    // T12: the getter returns the exact pointer that was stored
    CHECK(12, "get of an object field returns the stored pointer",
-         ep->get<const lListElem *>(TEST_object) == obj_raw);
+         ep->get<const ocs::tom::ElementData *>(TEST_object) == obj_raw);
 
    // T13: the embedded object's own fields are accessible through the returned handle
    CHECK(13, "embedded object int accessible through the object field",
@@ -359,7 +359,7 @@ static void test_list_ops() {
    // T22: a freshly created list has no elements
    CHECK(22, "fresh list has 0 elements", list->size() == 0);
 
-   const lListElem *e1 = list->push_back(make_int_elem(10));
+   const ocs::tom::ElementData *e1 = list->push_back(make_int_elem(10));
 
    // T23: after the first append the count is 1
    CHECK(23, "after first append, count is 1", list->size() == 1);
@@ -387,7 +387,8 @@ static void test_sub_list() {
    printf("\n--- sub-list operations ---\n");
 
    auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
-   lList *sub = ocs::tom::get_or_create_list(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_list), nullptr, TEST_Type);
+   ocs::tom::ListData *sub = ocs::tom::get_or_create_list(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_list), nullptr,
+                                                          TEST_Type);
    ocs::tom::add_elem_str(sub, TEST_string, "needle", TEST_Type);
 
    const ocs::tom::ConstRawElement found =
@@ -479,7 +480,7 @@ static void test_elem_removal() {
    auto list = ocs::tom::RawListPtr::create(TEST_Type, ocs::tom::Hashing::On, "rm");
    list->push_back(make_int_elem(1));
    const ocs::tom::RawElement e2 = list->push_back(make_int_elem(2));
-   lListElem *e3 = list->push_back(make_int_elem(3));
+   ocs::tom::ElementData *e3 = list->push_back(make_int_elem(3));
 
    // T36: take() unlinks the element; count decreases but element is not freed
    ocs::tom::RawElementPtr taken = list->take(e2);
@@ -671,7 +672,7 @@ static void test_atomic_ulong64() {
    printf("\n--- atomic 64 bit accessors ---\n");
 
    auto ep = ocs::tom::RawElementPtr::create(TEST_Type);
-   lMultiType &slot = ocs::tom::detail::value(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_ulong64));
+   ocs::tom::FieldValue &slot = ocs::tom::detail::value(ep.get(), ocs::tom::field_pos(TEST_Type, TEST_ulong64));
 
    // T56-T57: the plain round trip, and that the two kinds of accessor address
    // the same storage - a field must be readable by whichever of them the caller

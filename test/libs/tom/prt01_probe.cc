@@ -56,7 +56,7 @@ const char *prt01_typed_string(const ConstElement<JB> job) {
  * @param ep the job
  * @return the job number
  */
-std::uint32_t prt01_untyped_number(const lListElem *ep) {
+std::uint32_t prt01_untyped_number(const ocs::tom::ElementData *ep) {
    return ocs::tom::get<JB_job_number>(ep);
 }
 
@@ -65,6 +65,6 @@ std::uint32_t prt01_untyped_number(const lListElem *ep) {
  * @param ep the job
  * @return the owner
  */
-const char *prt01_untyped_string(const lListElem *ep) {
+const char *prt01_untyped_string(const ocs::tom::ElementData *ep) {
    return ocs::tom::get<JB_owner>(ep);
 }

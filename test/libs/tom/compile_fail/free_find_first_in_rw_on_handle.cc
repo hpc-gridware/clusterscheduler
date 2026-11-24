@@ -43,7 +43,7 @@
  * @param job the job
  * @return never compiles
  */
-lListElem *wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
+ocs::tom::ElementData *wrong_use(const ocs::tom::ConstElement<ocs::tom::JB> &job) {
    // the member job.find_first_in_rw<LF, F>(key) is the only way on a handle
    return ocs::tom::find_first_in_rw<JB_ja_tasks, JAT_task_number>(job, 1);
 }

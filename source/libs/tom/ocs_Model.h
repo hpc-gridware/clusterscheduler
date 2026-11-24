@@ -83,8 +83,8 @@ namespace ocs::tom {
 
    const TypeTable *type_table(int nm) noexcept;
 
-   const lDescr *sub_type(int nm) noexcept;
+   const ocs::tom::FieldDescr *sub_type(int nm) noexcept;
 
-   const char *type_name(const lDescr *descr) noexcept;
+   const char *type_name(const ocs::tom::FieldDescr *descr) noexcept;
 
 } // namespace ocs::tom

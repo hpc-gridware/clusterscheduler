@@ -106,7 +106,7 @@ test_verify_type() {
 
    // T01-T03: same_type itself
    {
-      const lDescr *reduced = ocs::tom::layout<EH_name>().get();
+      const ocs::tom::FieldDescr *reduced = ocs::tom::layout<EH_name>().get();
       CHECK(1, "a reduced descriptor is of the type of the full one",
             ocs::tom::same_type(reduced, ocs::tom::EH::descriptor.e));
       CHECK(2, "two different types differ",
@@ -234,8 +234,8 @@ test_client_shapes() {
 
    // T15: two different reductions of one type are of the same type
    {
-      const lDescr *a = ocs::tom::layout<EH_name>().get();
-      const lDescr *b = ocs::tom::layout<EH_name, EH_acl>().get();
+      const ocs::tom::FieldDescr *a = ocs::tom::layout<EH_name>().get();
+      const ocs::tom::FieldDescr *b = ocs::tom::layout<EH_name, EH_acl>().get();
       CHECK(15, "two reductions of one type are of the same type", ocs::tom::same_type(a, b));
    }
 }

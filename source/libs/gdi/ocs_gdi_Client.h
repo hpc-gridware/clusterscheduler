@@ -66,8 +66,9 @@ namespace ocs::gdi {
     */
    class Client : public ClientBase {
       static ocs::tom::ListPtr<ocs::tom::AN> ocs_gdi_single_task(Target target, Command cmd, SubCommand sub_cmd,
-                                                                 lList **lpp, const lCondition *cp,
-                                                                 const lEnumeration *enp);
+                                                                 ocs::tom::ListData **lpp,
+                                                                 const ocs::tom::WhereData *cp,
+                                                                 const ocs::tom::WhatData *enp);
 
    public:
       template <ocs::tom::ObjectType T>
@@ -80,7 +81,7 @@ namespace ocs::gdi {
                                                      ocs::tom::ListPtr<T> &data);
 
       static ocs::tom::ListPtr<ocs::tom::AN> gdi_tsm();
-      static ocs::tom::ListPtr<ocs::tom::AN> gdi_kill(lList *id_list, uint32_t action_flag);
+      static ocs::tom::ListPtr<ocs::tom::AN> gdi_kill(ocs::tom::ListData *id_list, uint32_t action_flag);
       static bool sge_gdi_get_permission(ocs::tom::ListPtr<ocs::tom::AN> *alpp, bool *is_manager, bool *is_operator,
                                          bool *is_admin_host, bool *is_submit_host);
       static std::tuple<int, ocs::tom::ElementPtr<ocs::tom::CONF>, ocs::tom::ElementPtr<ocs::tom::CONF>>
@@ -108,8 +109,8 @@ namespace ocs::gdi {
    ocs::tom::ListPtr<ocs::tom::AN> Client::sge_gdi(const Target target, const Command cmd, const SubCommand sub_cmd,
                                             ocs::tom::ListPtr<T> &data, const ocs::tom::Where<T> &where,
                                             const ocs::tom::What<T> &what) {
-      lList *const request = data.get();
-      lList *lp = request;
+      ocs::tom::ListData *const request = data.get();
+      ocs::tom::ListData *lp = request;
       auto alp = ocs_gdi_single_task(target, cmd, sub_cmd, &lp, where.get(), what.get());
       if (lp != request) {
          // the answer of a task is a list of the target's type (reduced by the selection) that qmaster packed;

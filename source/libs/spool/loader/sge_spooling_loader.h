@@ -41,6 +41,6 @@
 #include "sgeobj/sge_answer.h"
 
 /* create spooling context dynamically or from compiled in default */
-lListElem *
+ocs::tom::ElementData *
 spool_create_dynamic_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args);

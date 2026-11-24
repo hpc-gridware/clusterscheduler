@@ -602,7 +602,7 @@ ocs::tom::Element<ocs::tom::RQR> rqs_rule_locate(const ocs::tom::List<ocs::tom::
  *
  * @note MT-NOTE: rqs_xattr_pre_gdi() is MT safe
  */
-bool rqs_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+bool rqs_xattr_pre_gdi(ocs::tom::ListData *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
@@ -821,7 +821,7 @@ ocs::tom::Element<ocs::tom::RQR> rqs_get_matching_rule(const ocs::tom::ConstElem
          sge_dstring_sprintf(rule_name, "%s/%d", rqs.get<RQS_name>(), i);
       }
       /* if all filter object matches this is our rule */
-      DRETURN(ocs::tom::Element<ocs::tom::RQR>::from_typed(const_cast<lListElem *>(rule.raw())));
+      DRETURN(ocs::tom::Element<ocs::tom::RQR>::from_typed(const_cast<ocs::tom::ElementData *>(rule.raw())));
    }
    DRETURN(nullptr);
 }

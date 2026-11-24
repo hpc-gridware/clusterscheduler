@@ -3845,7 +3845,7 @@ static void fill_category_use_t(const sge_assignment_t *a, category_use_t *use_c
    DENTER(TOP_LAYER);
 
    use_category->category =
-      ocs::tom::Element<ocs::tom::CT>(static_cast<lListElem *>(a->job.get<JB_category>()));
+      ocs::tom::Element<ocs::tom::CT>(static_cast<ocs::tom::ElementData *>(a->job.get<JB_category>()));
    if (use_category->category) {
       // the category cache is stored in the job category object and contains an element per pe
       use_category->cache = use_category->category.get<CT_cache>().find_first<CCT_pe_name>(pe_name);
@@ -7358,7 +7358,7 @@ bool sge_load_list_alarm(const bool monitor_next_run, const ocs::tom::ConstList<
       bool is_category_alarm = false;
       auto queue_ref_list = load.get<LDR_queue_ref_list>();
       for (auto queue_ref : queue_ref_list) {
-         auto queue = ocs::tom::Element<ocs::tom::QU>(static_cast<lListElem *>(queue_ref.get<QRL_queue>()));
+         auto queue = ocs::tom::Element<ocs::tom::QU>(static_cast<ocs::tom::ElementData *>(queue_ref.get<QRL_queue>()));
          if (is_category_alarm) {
             queue.set<QU_tagged4schedule>(1);
          } else if (sge_load_alarm(reason, sizeof(reason), queue, queue.get<QU_load_thresholds>(), host_list,

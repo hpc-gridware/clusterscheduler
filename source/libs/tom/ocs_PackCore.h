@@ -238,7 +238,7 @@ namespace ocs::tom {
     * @param flags the flags the values are packed with, 0 for all values
     * @throw PackException with PACK_BADARG for a null argument, PACK_ENOMEM
     */
-   void pack_descr(sge_pack_buffer *pb, const lDescr *descr, int flags);
+   void pack_descr(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, int flags);
 
    /**
     * @brief Write a field selection as the descriptor it reduces another one to, as tom_pack_enum_as_descr() did
@@ -249,7 +249,8 @@ namespace ocs::tom {
     * @throw PackException with PACK_BADARG for a null argument or a selected field @p descr does not hold,
     *        PACK_ENOMEM
     */
-   void pack_what_as_descr(sge_pack_buffer *pb, const lEnumeration *what, const lDescr *descr, int flags);
+   void pack_what_as_descr(sge_pack_buffer *pb, const ocs::tom::WhatData *what, const ocs::tom::FieldDescr *descr,
+                           int flags);
 
    /**
     * @brief Write an element, or the fields of it a selection names, as tom_pack_elem_partial() did
@@ -260,7 +261,7 @@ namespace ocs::tom {
     * @throw PackException with PACK_BADARG for a null argument, PACK_ENOMEM, PACK_FORMAT for a field of a
     *        type that cannot be packed
     */
-   void pack_elem(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, int flags);
+   void pack_elem(sge_pack_buffer *pb, const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what, int flags);
 
    /**
     * @brief Read an element, as tom_unpack_elem_partial() did
@@ -277,7 +278,7 @@ namespace ocs::tom {
     * @throw PackException with PACK_FORMAT for bytes that are cut off or no element, PACK_BADARG for a bound
     *        element without @p descr, PACK_ENOMEM
     */
-   lListElem *unpack_elem(sge_pack_buffer *pb, const lDescr *descr, int flags);
+   ocs::tom::ElementData *unpack_elem(sge_pack_buffer *pb, const ocs::tom::FieldDescr *descr, int flags);
 
    /**
     * @brief Write a list, or the fields of its elements a selection names, as tom_pack_list_partial() did
@@ -287,7 +288,7 @@ namespace ocs::tom {
     * @param flags write only the fields whose flags match, 0 for all
     * @throw PackException with PACK_BADARG for a null buffer, PACK_ENOMEM, PACK_FORMAT
     */
-   void pack_list(sge_pack_buffer *pb, const lList *lp, const lEnumeration *what, int flags);
+   void pack_list(sge_pack_buffer *pb, const ocs::tom::ListData *lp, const ocs::tom::WhatData *what, int flags);
 
    /**
     * @brief Read a list, as tom_unpack_list_partial() did
@@ -300,7 +301,7 @@ namespace ocs::tom {
     * @return the list, owned by the caller, or nullptr for a list that was null
     * @throw PackException with PACK_FORMAT for bytes that are cut off or no list, PACK_ENOMEM
     */
-   lList *unpack_list(sge_pack_buffer *pb, int flags);
+   ocs::tom::ListData *unpack_list(sge_pack_buffer *pb, int flags);
 
    /**
     * @brief The type of the next list in a buffer, without reading it
@@ -336,7 +337,7 @@ namespace ocs::tom {
     * @param what the selection, or nullptr
     * @throw PackException with PACK_BADARG for a null buffer, PACK_ENOMEM
     */
-   void pack_what(sge_pack_buffer *pb, const lEnumeration *what);
+   void pack_what(sge_pack_buffer *pb, const ocs::tom::WhatData *what);
 
    /**
     * @brief Read a field selection, as tom_unpack_enum() did
@@ -344,7 +345,7 @@ namespace ocs::tom {
     * @return the selection, owned by the caller, or nullptr for a selection that was null
     * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
     */
-   lEnumeration *unpack_what(sge_pack_buffer *pb);
+   ocs::tom::WhatData *unpack_what(sge_pack_buffer *pb);
 
    /**
     * @brief Write a condition, as tom_pack_cond() did
@@ -352,7 +353,7 @@ namespace ocs::tom {
     * @param cp the condition, or nullptr
     * @throw PackException with PACK_BADARG for a null buffer, PACK_ENOMEM, PACK_FORMAT for an unknown operator
     */
-   void pack_where(sge_pack_buffer *pb, const lCondition *cp);
+   void pack_where(sge_pack_buffer *pb, const ocs::tom::WhereData *cp);
 
    /**
     * @brief Read a condition, as tom_unpack_cond() did
@@ -360,7 +361,7 @@ namespace ocs::tom {
     * @return the condition, owned by the caller, or nullptr for a condition that was null
     * @throw PackException with PACK_FORMAT for bytes that are cut off or an unknown operator, PACK_ENOMEM
     */
-   lCondition *unpack_where(sge_pack_buffer *pb);
+   ocs::tom::WhereData *unpack_where(sge_pack_buffer *pb);
 
    /**
     * @brief Bytes as the text setByteArray() stores: two hex digits per byte, the low half first

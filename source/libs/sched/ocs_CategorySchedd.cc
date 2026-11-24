@@ -44,7 +44,7 @@
 int
 ocs::CategorySchedd::job_is_category_rejected(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   auto cat = ocs::tom::ConstElement<ocs::tom::CT>(static_cast<const lListElem *>(job.get<JB_category>()));
+   auto cat = ocs::tom::ConstElement<ocs::tom::CT>(static_cast<const ocs::tom::ElementData *>(job.get<JB_category>()));
    SGE_ASSERT(cat);
    const int ret = cat.get<CT_rejected>();
    DRETURN(ret);
@@ -61,7 +61,7 @@ ocs::CategorySchedd::job_is_category_rejected(const ocs::tom::ConstElement<ocs::
 int
 ocs::CategorySchedd::job_is_category_reservation_rejected(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    DENTER(TOP_LAYER);
-   auto cat = ocs::tom::ConstElement<ocs::tom::CT>(static_cast<const lListElem *>(job.get<JB_category>()));
+   auto cat = ocs::tom::ConstElement<ocs::tom::CT>(static_cast<const ocs::tom::ElementData *>(job.get<JB_category>()));
    SGE_ASSERT(cat);
    const int ret = cat.get<CT_reservation_rejected>();
    DRETURN(ret);
@@ -77,7 +77,7 @@ ocs::CategorySchedd::job_is_category_reservation_rejected(const ocs::tom::ConstE
 void
 ocs::CategorySchedd::job_reject_category(const ocs::tom::ConstElement<ocs::tom::JB> job, const bool with_reservation) {
    DENTER(TOP_LAYER);
-   auto cat = ocs::tom::Element<ocs::tom::CT>(static_cast<lListElem *>(job.get<JB_category>()));
+   auto cat = ocs::tom::Element<ocs::tom::CT>(static_cast<ocs::tom::ElementData *>(job.get<JB_category>()));
    SGE_ASSERT(cat);
    cat.set<CT_rejected>(true);
    if (with_reservation) {

@@ -59,7 +59,7 @@ namespace ocs::tom {
        */
       void free_subs(const std::span<const WhatEntry> entries) noexcept {
          for (const WhatEntry &entry : entries) {
-            lEnumeration *sub = entry.sub;
+            ocs::tom::WhatData *sub = entry.sub;
             free_what(sub);
          }
       }
@@ -69,8 +69,8 @@ namespace ocs::tom {
        * @return the node, zeroed
        * @throw ListCoreError if there is no memory
        */
-      lCondition *new_node() {
-         auto *cp = static_cast<lCondition *>(calloc(1, sizeof(lCondition)));
+      ocs::tom::WhereData *new_node() {
+         auto *cp = static_cast<ocs::tom::WhereData *>(calloc(1, sizeof(ocs::tom::WhereData)));
          if (cp == nullptr) {
             throw ListCoreError("out of memory building a condition");
          }
@@ -84,7 +84,7 @@ namespace ocs::tom {
        * @return the position
        * @throw FieldException with reason NullDescriptor or ForeignField
        */
-      int descr_pos(const lDescr *descr, const int nm) {
+      int descr_pos(const ocs::tom::FieldDescr *descr, const int nm) {
          if (descr == nullptr) {
             throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
          }
@@ -118,8 +118,8 @@ namespace ocs::tom {
        * @param skip_no_transfer true if the copy is handed out
        * @throw ListCoreError if the field cannot be copied
        */
-      void copy_field_or_throw(const lListElem *src, lListElem *dst, const int pos, const bool hash,
-                               const lEnumeration *sub_what, const bool skip_no_transfer) {
+      void copy_field_or_throw(const ocs::tom::ElementData *src, ocs::tom::ElementData *dst, const int pos,
+                               const bool hash, const ocs::tom::WhatData *sub_what, const bool skip_no_transfer) {
          try {
             copy_field(src, dst, pos, pos, hash, sub_what, skip_no_transfer);
          } catch (const FieldException &) {
@@ -140,7 +140,7 @@ namespace ocs::tom {
        * @param cp the comparison
        * @return the value
        */
-      const lMultiType &field_value(const lListElem *ep, const lCondition *cp) {
+      const ocs::tom::FieldValue &field_value(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp) {
          const int pos = cp->operand.cmp.pos;
          if (mt_get_type(ep->descr[pos].mt) != mt_get_type(cp->operand.cmp.mt)) [[unlikely]] {
             ocs::TerminationManager::trigger_abort();
@@ -154,7 +154,7 @@ namespace ocs::tom {
        * @param cp the comparison
        * @return the value, or nullptr
        */
-      const char *string_value(const lListElem *ep, const lCondition *cp) {
+      const char *string_value(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp) {
          // the union holds a string and a host at the same place
          return field_value(ep, cp).str;
       }
@@ -165,8 +165,8 @@ namespace ocs::tom {
        * @param cp the comparison
        * @return whether it holds
        */
-      bool compare_ordered(const lListElem *ep, const lCondition *cp) {
-         const lMultiType &operand = cp->operand.cmp.val;
+      bool compare_ordered(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp) {
+         const ocs::tom::FieldValue &operand = cp->operand.cmp.val;
          int result;
          switch (mt_get_type(cp->operand.cmp.mt)) {
             case MT_INT32:
@@ -191,7 +191,7 @@ namespace ocs::tom {
                result = three_way(field_value(ep, cp).ul64, operand.ul64);
                break;
             case MT_LIST: {
-               const lList *sub = field_value(ep, cp).glp;
+               const ocs::tom::ListData *sub = field_value(ep, cp).glp;
                if (sub == nullptr) {
                   return false;
                }
@@ -264,7 +264,7 @@ namespace ocs::tom {
 
    } // namespace
 
-   lEnumeration *make_what(const lDescr *descr, const std::span<const WhatEntry> entries) {
+   ocs::tom::WhatData *make_what(const ocs::tom::FieldDescr *descr, const std::span<const WhatEntry> entries) {
       if (descr == nullptr) {
          free_subs(entries);
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
@@ -281,7 +281,7 @@ namespace ocs::tom {
             throw;
          }
       }
-      auto *ep = static_cast<lEnumeration *>(calloc(entries.size() + 1, sizeof(lEnumeration)));
+      auto *ep = static_cast<ocs::tom::WhatData *>(calloc(entries.size() + 1, sizeof(ocs::tom::WhatData)));
       if (ep == nullptr) {
          free_subs(entries);
          throw ListCoreError("out of memory building a selection");
@@ -302,8 +302,8 @@ namespace ocs::tom {
       return ep;
    }
 
-   lEnumeration *make_what_special(const int pos) {
-      auto *ep = static_cast<lEnumeration *>(calloc(2, sizeof(lEnumeration)));
+   ocs::tom::WhatData *make_what_special(const int pos) {
+      auto *ep = static_cast<ocs::tom::WhatData *>(calloc(2, sizeof(ocs::tom::WhatData)));
       if (ep == nullptr) {
          throw ListCoreError("out of memory building a selection");
       }
@@ -318,7 +318,7 @@ namespace ocs::tom {
       return ep;
    }
 
-   void sort_what_by_pos(lEnumeration *ep) noexcept {
+   void sort_what_by_pos(ocs::tom::WhatData *ep) noexcept {
       if (ep == nullptr || ep[0].pos < 0) {
          return;
       }
@@ -326,7 +326,8 @@ namespace ocs::tom {
       while (ep[n].nm != NoName) {
          n++;
       }
-      std::stable_sort(ep, ep + n, [](const lEnumeration &a, const lEnumeration &b) { return a.pos < b.pos; });
+      std::stable_sort(ep, ep + n, [](const ocs::tom::WhatData &a,
+                                      const ocs::tom::WhatData &b) { return a.pos < b.pos; });
       int m = 0;
       for (int i = 0; i < n; i++) {
          if (m > 0 && ep[i].pos == ep[m - 1].pos) {
@@ -353,14 +354,15 @@ namespace ocs::tom {
       }
    }
 
-   lCondition *make_compare(const lDescr *descr, const int nm, const CompareOp op, const int value_type,
-                            const lMultiType &value) {
+   ocs::tom::WhereData *make_compare(const ocs::tom::FieldDescr *descr, const int nm, const CompareOp op,
+                                     const int value_type,
+                            const ocs::tom::FieldValue &value) {
       const int pos = descr_pos(descr, nm);
       const int field_type = mt_get_type(descr[pos].mt);
       if (value_type != field_type && !(value_type == MT_STRING && field_type == MT_HOST)) {
          throw_field_exception(FieldException::Reason::WrongType, nm, descr);
       }
-      lCondition *cp = new_node();
+      ocs::tom::WhereData *cp = new_node();
       cp->op = token_of(op);
       cp->operand.cmp.nm = nm;
       cp->operand.cmp.pos = pos;
@@ -383,7 +385,7 @@ namespace ocs::tom {
       return cp;
    }
 
-   lCondition *make_subscope(const lDescr *descr, const int nm, lCondition *sub) {
+   ocs::tom::WhereData *make_subscope(const ocs::tom::FieldDescr *descr, const int nm, ocs::tom::WhereData *sub) {
       int pos;
       try {
          pos = descr_pos(descr, nm);
@@ -394,7 +396,7 @@ namespace ocs::tom {
          free_where(sub);
          throw;
       }
-      lCondition *cp;
+      ocs::tom::WhereData *cp;
       try {
          cp = new_node();
       } catch (...) {
@@ -409,7 +411,7 @@ namespace ocs::tom {
       return cp;
    }
 
-   lCondition *make_logic(const LogicOp op, lCondition *first, lCondition *second) {
+   ocs::tom::WhereData *make_logic(const LogicOp op, ocs::tom::WhereData *first, ocs::tom::WhereData *second) {
       if (first == nullptr || (op != LogicOp::Not && second == nullptr)) {
          free_where(first);
          free_where(second);
@@ -418,7 +420,7 @@ namespace ocs::tom {
       if (op == LogicOp::Not) {
          free_where(second);
       }
-      lCondition *cp;
+      ocs::tom::WhereData *cp;
       try {
          cp = new_node();
       } catch (...) {
@@ -432,7 +434,7 @@ namespace ocs::tom {
       return cp;
    }
 
-   bool compare(const lListElem *ep, const lCondition *cp) {
+   bool compare(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp) {
       if (ep == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
@@ -498,51 +500,52 @@ namespace ocs::tom {
       }
    }
 
-   lListElem *find_first(const lList *lp, const lCondition *cp) {
+   ocs::tom::ElementData *find_first(const ocs::tom::ListData *lp, const ocs::tom::WhereData *cp) {
       if (lp == nullptr) {
          throw_field_exception(FieldException::Reason::NullList, NoName, nullptr);
       }
-      lListElem *ep = lp->first;
+      ocs::tom::ElementData *ep = lp->first;
       while (ep != nullptr && !compare(ep, cp)) {
          ep = ep->next;
       }
       return ep;
    }
 
-   lListElem *find_last(const lList *lp, const lCondition *cp) {
+   ocs::tom::ElementData *find_last(const ocs::tom::ListData *lp, const ocs::tom::WhereData *cp) {
       if (lp == nullptr) {
          throw_field_exception(FieldException::Reason::NullList, NoName, nullptr);
       }
-      lListElem *ep = lp->last;
+      ocs::tom::ElementData *ep = lp->last;
       while (ep != nullptr && !compare(ep, cp)) {
          ep = ep->prev;
       }
       return ep;
    }
 
-   lListElem *find_next(const lListElem *ep, const lCondition *cp) {
+   ocs::tom::ElementData *find_next(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp) {
       if (ep == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
-      lListElem *next = ep->next;
+      ocs::tom::ElementData *next = ep->next;
       while (next != nullptr && !compare(next, cp)) {
          next = next->next;
       }
       return next;
    }
 
-   lListElem *find_prev(const lListElem *ep, const lCondition *cp) {
+   ocs::tom::ElementData *find_prev(const ocs::tom::ElementData *ep, const ocs::tom::WhereData *cp) {
       if (ep == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
-      lListElem *prev = ep->prev;
+      ocs::tom::ElementData *prev = ep->prev;
       while (prev != nullptr && !compare(prev, cp)) {
          prev = prev->prev;
       }
       return prev;
    }
 
-   lList *select_list(const char *name, const lList *lp, const lCondition *cp, const lEnumeration *what,
+   ocs::tom::ListData *select_list(const char *name, const ocs::tom::ListData *lp, const ocs::tom::WhereData *cp,
+                                   const ocs::tom::WhatData *what,
                       const bool hash, const bool skip_no_transfer) {
       if (lp == nullptr) {
          throw_field_exception(FieldException::Reason::NullList, NoName, nullptr);
@@ -552,11 +555,11 @@ namespace ocs::tom {
       }
       // the shared reduction, cached in the selection
       bool owned;
-      const lDescr *descr = ocs::tom::detail::what_descr(what, lp->descr, &owned);
+      const ocs::tom::FieldDescr *descr = ocs::tom::detail::what_descr(what, lp->descr, &owned);
       if (descr == nullptr) {
          throw ListCoreError(reduction_failed);
       }
-      lList *dst;
+      ocs::tom::ListData *dst;
       try {
          // the new list takes a reference of its own on the reduction
          dst = create_list(name, descr, false);
@@ -573,11 +576,11 @@ namespace ocs::tom {
       // a selection from a list that was checked for duplicate keys when it was filled cannot create one
       const UniqueCheckSuspension suspension;
       try {
-         for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+         for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
             if (!compare(ep, cp)) {
                continue;
             }
-            lListElem *copy = create_elem(dst->descr);
+            ocs::tom::ElementData *copy = create_elem(dst->descr);
             try {
                copy_elem_partial(copy, ep, what, hash, skip_no_transfer);
             } catch (const ListCoreError &) {
@@ -598,7 +601,7 @@ namespace ocs::tom {
       return dst;
    }
 
-   void free_what(lEnumeration *&ep) noexcept {
+   void free_what(ocs::tom::WhatData *&ep) noexcept {
       if (ep == nullptr) {
          return;
       }
@@ -610,7 +613,7 @@ namespace ocs::tom {
       sge_free(&ep);
    }
 
-   lEnumeration *copy_what(const lEnumeration *ep) {
+   ocs::tom::WhatData *copy_what(const ocs::tom::WhatData *ep) {
       if (ep == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
@@ -619,7 +622,7 @@ namespace ocs::tom {
          n++;
       }
       // the cache of the reduced descriptor is not copied; the copy builds its own
-      auto *copy = static_cast<lEnumeration *>(calloc(n + 1, sizeof(lEnumeration)));
+      auto *copy = static_cast<ocs::tom::WhatData *>(calloc(n + 1, sizeof(ocs::tom::WhatData)));
       if (copy == nullptr) {
          throw ListCoreError("out of memory copying a selection");
       }
@@ -637,7 +640,7 @@ namespace ocs::tom {
       return copy;
    }
 
-   void free_where(lCondition *&cp) noexcept {
+   void free_where(ocs::tom::WhereData *&cp) noexcept {
       if (cp == nullptr) {
          return;
       }
@@ -680,11 +683,11 @@ namespace ocs::tom {
       sge_free(&cp);
    }
 
-   lCondition *copy_where(const lCondition *cp) {
+   ocs::tom::WhereData *copy_where(const ocs::tom::WhereData *cp) {
       if (cp == nullptr) {
          return nullptr;
       }
-      lCondition *copy = new_node();
+      ocs::tom::WhereData *copy = new_node();
       copy->op = cp->op;
       try {
          switch (cp->op) {
@@ -748,8 +751,8 @@ namespace ocs::tom {
       return copy;
    }
 
-   void copy_elem_partial(lListElem *dst, const lListElem *src, const lEnumeration *what, const bool hash,
-                          const bool skip_no_transfer) {
+   void copy_elem_partial(ocs::tom::ElementData *dst, const ocs::tom::ElementData *src, const ocs::tom::WhatData *what,
+                          const bool hash, const bool skip_no_transfer) {
       if (dst == nullptr || src == nullptr || what == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
@@ -776,18 +779,18 @@ namespace ocs::tom {
       }
    }
 
-   lListElem *select_elem(const lListElem *ep, const lEnumeration *what, const bool hash,
+   ocs::tom::ElementData *select_elem(const ocs::tom::ElementData *ep, const ocs::tom::WhatData *what, const bool hash,
                           const bool skip_no_transfer) {
       if (ep == nullptr || what == nullptr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, nullptr);
       }
       // the shared reduction, cached in the selection
       bool owned;
-      const lDescr *descr = ocs::tom::detail::what_descr(what, ep->descr, &owned);
+      const ocs::tom::FieldDescr *descr = ocs::tom::detail::what_descr(what, ep->descr, &owned);
       if (descr == nullptr) {
          throw ListCoreError(reduction_failed);
       }
-      lListElem *copy;
+      ocs::tom::ElementData *copy;
       try {
          // the element takes a reference of its own on the reduction
          copy = create_elem(descr);
@@ -810,7 +813,7 @@ namespace ocs::tom {
    }
 
 
-   int count_what(const lEnumeration *enp, const lDescr *dp) noexcept {
+   int count_what(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *dp) noexcept {
       if (enp == nullptr) {
          return -1;
       }
@@ -834,7 +837,8 @@ namespace ocs::tom {
       }
    }
 
-   int partial_descr(const lEnumeration *enp, const lDescr *sdp, lDescr *ddp, int *indexp) noexcept {
+   int partial_descr(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *sdp, ocs::tom::FieldDescr *ddp,
+                     int *indexp) noexcept {
       if (enp == nullptr) {
          return -1;
       }
@@ -873,7 +877,7 @@ namespace ocs::tom {
    }
 
 
-   bool condition_fits(const lCondition *cp, const lDescr *descr) noexcept {
+   bool condition_fits(const ocs::tom::WhereData *cp, const ocs::tom::FieldDescr *descr) noexcept {
       if (cp == nullptr) {
          return true;
       }
@@ -889,7 +893,7 @@ namespace ocs::tom {
       }
    }
 
-   lEnumeration *merge_what(lEnumeration *what1, lEnumeration *what2) {
+   ocs::tom::WhatData *merge_what(ocs::tom::WhatData *what1, ocs::tom::WhatData *what2) {
       if (what2 == nullptr) {
          return what1;
       }
@@ -901,9 +905,9 @@ namespace ocs::tom {
          free_what(what2);
          return what1;
       }
-      std::vector<lEnumeration> entries;
+      std::vector<ocs::tom::WhatData> entries;
       auto give_up = [&] {
-         for (lEnumeration &entry : entries) {
+         for (ocs::tom::WhatData &entry : entries) {
             free_what(entry.ep);
          }
          free_what(what1);
@@ -915,10 +919,10 @@ namespace ocs::tom {
                                nullptr});
          }
          for (int i = 0; mt_get_type(what2[i].mt) != MT_END; i++) {
-            auto same = std::ranges::find_if(entries, [&](const lEnumeration &entry) {
+            auto same = std::ranges::find_if(entries, [&](const ocs::tom::WhatData &entry) {
                return entry.nm == what2[i].nm;
             });
-            lEnumeration *sub = std::exchange(what2[i].ep, nullptr);
+            ocs::tom::WhatData *sub = std::exchange(what2[i].ep, nullptr);
             if (same == entries.end()) {
                entries.push_back({what2[i].pos, what2[i].mt, what2[i].nm, sub, nullptr, nullptr});
             } else if (same->ep != nullptr && sub != nullptr) {
@@ -933,7 +937,7 @@ namespace ocs::tom {
          give_up();
          throw;
       }
-      auto *ep = static_cast<lEnumeration *>(calloc(entries.size() + 1, sizeof(lEnumeration)));
+      auto *ep = static_cast<ocs::tom::WhatData *>(calloc(entries.size() + 1, sizeof(ocs::tom::WhatData)));
       if (ep == nullptr) {
          give_up();
          throw ListCoreError("out of memory merging two selections");
@@ -949,7 +953,7 @@ namespace ocs::tom {
       return ep;
    }
 
-   void set_sub_what(lEnumeration *what, const int nm, lEnumeration *sub) {
+   void set_sub_what(ocs::tom::WhatData *what, const int nm, ocs::tom::WhatData *sub) {
       for (int i = 0; mt_get_type(what[i].mt) != MT_END; i++) {
          if (what[i].nm == nm) {
             free_what(what[i].ep);
@@ -961,12 +965,13 @@ namespace ocs::tom {
       throw_field_exception(FieldException::Reason::ForeignField, nm, nullptr);
    }
 
-   const lDescr *reduced_descr(const lDescr *descr, const lEnumeration *what) noexcept {
+   const ocs::tom::FieldDescr *reduced_descr(const ocs::tom::FieldDescr *descr,
+                                             const ocs::tom::WhatData *what) noexcept {
       if (count_what(what, descr) <= 0) {
          return nullptr;
       }
       bool owned;
-      const lDescr *dp = ocs::tom::detail::what_descr(what, descr, &owned);
+      const ocs::tom::FieldDescr *dp = ocs::tom::detail::what_descr(what, descr, &owned);
       if (dp == nullptr) {
          return nullptr;
       }
@@ -993,9 +998,10 @@ namespace ocs::tom {
  * @return the shared reduction borrowed from the cache, or with a reference
  *         for the caller if @p owned is set to true; nullptr on error
  */
-const lDescr *ocs::tom::detail::what_descr(const lEnumeration *enp, const lDescr *src, bool *owned) {
+const ocs::tom::FieldDescr *ocs::tom::detail::what_descr(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *src,
+                                                         bool *owned) {
    *owned = false;
-   auto *head = const_cast<lEnumeration *>(enp);
+   auto *head = const_cast<ocs::tom::WhatData *>(enp);
    if (head->cache_dp != nullptr && head->cache_src == src) {
       return head->cache_dp;
    }
@@ -1004,7 +1010,8 @@ const lDescr *ocs::tom::detail::what_descr(const lEnumeration *enp, const lDescr
       return nullptr;
    }
    // the reduction has the full length of the type (N-B-1)
-   auto *tmp = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (ocs::tom::descr_length(src) + 1)));
+   auto *tmp = reinterpret_cast<ocs::tom::FieldDescr *>(
+         sge_malloc(sizeof(ocs::tom::FieldDescr) * (ocs::tom::descr_length(src) + 1)));
    if (tmp == nullptr) {
       return nullptr;
    }
@@ -1013,7 +1020,7 @@ const lDescr *ocs::tom::detail::what_descr(const lEnumeration *enp, const lDescr
       sge_free(&tmp);
       return nullptr;
    }
-   const lDescr *dp = ocs::tom::descr_acquire(tmp);
+   const ocs::tom::FieldDescr *dp = ocs::tom::descr_acquire(tmp);
    sge_free(&tmp);
    if (dp == nullptr) {
       return nullptr;
@@ -1041,7 +1048,7 @@ const lDescr *ocs::tom::detail::what_descr(const lEnumeration *enp, const lDescr
  * @param dp the descriptor
  * @return true if every selected field is present in dp at its position
  */
-bool ocs::tom::detail::what_fits(const lEnumeration *enp, const lDescr *dp) {
+bool ocs::tom::detail::what_fits(const ocs::tom::WhatData *enp, const ocs::tom::FieldDescr *dp) {
    if (enp == nullptr || dp == nullptr) {
       return false;
    }

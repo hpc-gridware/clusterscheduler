@@ -157,7 +157,7 @@ namespace {
  * @return the records of the type's fields, nullptr if the descriptor is nullptr or of no type of the model
  */
 const ocs_spool_type_ops *
-ocs_spool_type_ops_of(const lDescr *descr) {
+ocs_spool_type_ops_of(const ocs::tom::FieldDescr *descr) {
    if (descr == nullptr || descr[0].nm == NoName) {
       return nullptr;
    }

@@ -64,12 +64,12 @@
  * @return STATUS_OK on success
  */
 int
-sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+sge_read_sched_configuration(const ocs::tom::ElementData *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
                              const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // the spooling layer has no typed form yet; it reads SC elements for SGE_TYPE_SCHEDD_CONF
-   lList *spooled_conf = nullptr;
+   ocs::tom::ListData *spooled_conf = nullptr;
    spool_read_list(anAnswer, aSpoolContext, &spooled_conf, SGE_TYPE_SCHEDD_CONF);
    auto sched_conf = ocs::tom::ListPtr<ocs::tom::SC>::from_typed(spooled_conf);
 

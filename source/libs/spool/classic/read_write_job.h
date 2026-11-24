@@ -51,8 +51,7 @@ int job_remove_spool_file(uint32_t job_id, uint32_t ja_taskid,
                           const char *pe_task_id,
                           sge_spool_flags_t flags);
 
-int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
-                            sge_spool_flags_t flags,
-                            int (*init_function)(lListElem*)); 
+int job_list_read_from_disk(ocs::tom::ListData **job_list, const char *list_name, int check, sge_spool_flags_t flags,
+                            int (*init_function)(ocs::tom::ElementData*));
 
 int job_write_common_part(ocs::tom::Element<ocs::tom::JB> job, uint32_t ja_task_id, sge_spool_flags_t flags);

@@ -192,7 +192,7 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
  * @param job_raw the job (`JB`)
  * @return 0 on success
  */
-int job_initialize_job(lListElem *job_raw) {
+int job_initialize_job(ocs::tom::ElementData *job_raw) {
    DENTER(TOP_LAYER);
    const ocs::tom::Element<ocs::tom::JB> job(job_raw);
    uint32_t job_id;

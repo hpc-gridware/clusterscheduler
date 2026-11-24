@@ -123,11 +123,9 @@ sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_fu
 sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc);
 
 /* Subscription */
-sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type,
-                                      sge_mirror_callback callback_before, 
-                                      sge_mirror_callback callback_after, 
-                                      void *client_data,
-                                      const lCondition *where, const lEnumeration *what);
+sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type, sge_mirror_callback callback_before,
+                                      sge_mirror_callback callback_after, void *client_data,
+                                      const ocs::tom::WhereData *where, const ocs::tom::WhatData *what);
 
 sge_mirror_error sge_mirror_unsubscribe(sge_evc_class_t *evc,
                                         sge_object_type type);

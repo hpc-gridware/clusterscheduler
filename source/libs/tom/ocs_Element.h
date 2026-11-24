@@ -22,7 +22,7 @@
 /** @file
  * @brief Typed handles on elements of the typed object model: Element, ConstElement, ElementPtr
  *
- * A handle is a view on an `lListElem *` that knows the object type of the
+ * A handle is a view on an `ocs::tom::ElementData *` that knows the object type of the
  * element at compile time. It is the size of a pointer, owns nothing and
  * converts implicitly back to the pointer, so every function of the old
  * interface takes it unchanged. `get<F>()`, `set<F>()` and `has<F>()` take the
@@ -131,7 +131,7 @@ namespace ocs::tom {
        * @param pos the field's position
        * @return the slot
        */
-      inline lMultiType &slot(const lListElem *ep, const int pos) {
+      inline ocs::tom::FieldValue &slot(const ocs::tom::ElementData *ep, const int pos) {
          return ep->cont[pos + ep->descr[pos].off];
       }
 
@@ -141,7 +141,7 @@ namespace ocs::tom {
        * @param descr the descriptor of the element or list
        */
       template <ObjectType T>
-      [[noreturn, gnu::cold]] void throw_wrong_type(const lDescr *descr) {
+      [[noreturn, gnu::cold]] void throw_wrong_type(const ocs::tom::FieldDescr *descr) {
          throw_field_exception(FieldException::Reason::WrongType, NoName, descr, T::descriptor.e);
       }
 
@@ -156,7 +156,7 @@ namespace ocs::tom {
        * @param descr the descriptor of the sub-list or sub-object, or nullptr
        */
       template <ObjectType Sub>
-      inline void check_sub_type([[maybe_unused]] const int nm, [[maybe_unused]] const lDescr *descr) {
+      inline void check_sub_type([[maybe_unused]] const int nm, [[maybe_unused]] const ocs::tom::FieldDescr *descr) {
 #ifdef ENABLE_DEBUG_CHECKS
          if (descr != nullptr && descr[0].nm != Sub::fields[0].nm) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongSubType, nm, descr, Sub::descriptor.e);
@@ -180,7 +180,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
       template <auto F, bool Typed = false>
-      inline void check_holds(const lListElem *ep) {
+      inline void check_holds(const ocs::tom::ElementData *ep) {
          using Tr = FieldTraits<F>;
          const bool foreign = !Typed && ep != nullptr && ep->descr[0].nm != Tr::Type::fields[0].nm;
          if (ep == nullptr || foreign || ep->descr[Tr::pos].off == TOM_ABSENT) [[unlikely]] {
@@ -249,7 +249,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField or AbsentField
        */
       template <auto F, bool Typed = false>
-      [[nodiscard]] inline int checked_slot(const lListElem *ep) {
+      [[nodiscard]] inline int checked_slot(const ocs::tom::ElementData *ep) {
          check_holds<F, Typed>(ep);
          constexpr int pos = FieldTraits<F>::pos;
          return pos + ep->descr[pos].off;
@@ -266,7 +266,7 @@ namespace ocs::tom {
        * @return the index into the element's values
        */
       template <auto F>
-      inline int present_slot(const lListElem *ep) {
+      inline int present_slot(const ocs::tom::ElementData *ep) {
          constexpr int pos = FieldTraits<F>::pos;
          const int off = ep->descr[pos].off;
          if (off == TOM_ABSENT) [[unlikely]] {
@@ -286,9 +286,9 @@ namespace ocs::tom {
        * @return the value
        */
       template <auto F, bool Mutable>
-      inline auto read(const lListElem *ep, const int s) {
+      inline auto read(const ocs::tom::ElementData *ep, const int s) {
          using Tr = FieldTraits<F>;
-         const lMultiType &value = ep->cont[s];
+         const ocs::tom::FieldValue &value = ep->cont[s];
          if constexpr (Tr::type == FieldType::Uint32) {
             return static_cast<std::uint32_t>(value.ul);
          } else if constexpr (Tr::type == FieldType::Uint64) {
@@ -319,7 +319,7 @@ namespace ocs::tom {
             } else if constexpr (Mutable) {
                return value.glp;
             } else {
-               return static_cast<const lList *>(value.glp);
+               return static_cast<const ocs::tom::ListData *>(value.glp);
             }
          } else {
             static_assert(Tr::type == FieldType::Object);
@@ -334,7 +334,7 @@ namespace ocs::tom {
             } else if constexpr (Mutable) {
                return value.obj;
             } else {
-               return static_cast<const lListElem *>(value.obj);
+               return static_cast<const ocs::tom::ElementData *>(value.obj);
             }
          }
       }
@@ -384,7 +384,7 @@ namespace ocs::tom {
        * @return the value
        */
       template <auto F, bool Mutable>
-      inline auto read_member(const lListElem *ep, const int s) {
+      inline auto read_member(const ocs::tom::ElementData *ep, const int s) {
          if constexpr (NoSubType<F>) {
             using Handle = typename RawHandleOf<F, Mutable>::type;
             return Handle(read<F, Mutable>(ep, s));
@@ -417,10 +417,10 @@ namespace ocs::tom {
        */
       template <auto F, ObjectType U, bool Mutable>
          requires NoSubType<F>
-      inline TypedViewOf<F, U, Mutable> read_as(const lListElem *ep, const int s) {
-         const lMultiType &value = ep->cont[s];
+      inline TypedViewOf<F, U, Mutable> read_as(const ocs::tom::ElementData *ep, const int s) {
+         const ocs::tom::FieldValue &value = ep->cont[s];
          // the type is checked here, so that the error names the field; the view is then made unchecked
-         const lDescr *descr = nullptr;
+         const ocs::tom::FieldDescr *descr = nullptr;
          if constexpr (FieldTraits<F>::type == FieldType::List) {
             descr = value.glp != nullptr ? value.glp->descr : nullptr;
          } else {
@@ -454,13 +454,13 @@ namespace ocs::tom {
                if constexpr (Tr::has_sub) {
                   return std::type_identity<ListPtr<typename Tr::Sub>>{};
                } else {
-                  return std::type_identity<lList *>{};
+                  return std::type_identity<ocs::tom::ListData *>{};
                }
             } else if constexpr (Tr::type == FieldType::Object) {
                if constexpr (Tr::has_sub) {
                   return std::type_identity<ElementPtr<typename Tr::Sub>>{};
                } else {
-                  return std::type_identity<lListElem *>{};
+                  return std::type_identity<ocs::tom::ElementData *>{};
                }
             } else {
                return std::type_identity<typename ValueOf<Tr::type>::type>{};
@@ -480,8 +480,8 @@ namespace ocs::tom {
        * @return the element the handle held, or nullptr; the caller stores this pointer
        */
       template <typename P>
-      lListElem *release_if_bound(P &owner) {
-         lListElem *const elem = owner.get().raw();
+      ocs::tom::ElementData *release_if_bound(P &owner) {
+         ocs::tom::ElementData *const elem = owner.get().raw();
          if (elem != nullptr && elem_kind(elem) != FREE_ELEM && elem_kind(elem) != TRANS_BOUND_ELEM) {
             static_cast<void>(owner.release());
          }
@@ -503,10 +503,10 @@ namespace ocs::tom {
        * @return false if a string could not be copied or an element to store is bound elsewhere
        */
       template <auto F, typename V>
-      inline bool write(lListElem *ep, const int s, V &&value) {
+      inline bool write(ocs::tom::ElementData *ep, const int s, V &&value) {
          using Tr = FieldTraits<F>;
          constexpr int pos = Tr::pos;
-         lMultiType &slot_value = ep->cont[s];
+         ocs::tom::FieldValue &slot_value = ep->cont[s];
          if constexpr (Tr::type == FieldType::String || Tr::type == FieldType::Host) {
             return store_string(ep, pos, static_cast<const char *>(value));
          } else if constexpr (Tr::type == FieldType::List) {
@@ -589,7 +589,7 @@ namespace ocs::tom {
        * @return the value
        */
       template <typename V>
-      [[nodiscard]] inline V plain_value(const lMultiType &value) noexcept {
+      [[nodiscard]] inline V plain_value(const ocs::tom::FieldValue &value) noexcept {
          constexpr FieldType type = field_type_for<V>();
          if constexpr (type == FieldType::Uint32) {
             return value.ul;
@@ -616,7 +616,8 @@ namespace ocs::tom {
        * @brief Read a plain field given at run time, checked as the old getters by name (lGetUlong(), ...) check it
        *
        * The one implementation behind the run-time member ConstElement<T>::get<V>(int) and the free accessor
-       * ocs::tom::get<V>(const lListElem *, int) of ocs_Raw.h, so both give the same value and the same reason.
+       * ocs::tom::get<V>(const ocs::tom::ElementData *, int) of ocs_Raw.h, so both give the same value and the same
+       * reason.
        * The checks are those of #checked_pos, in its order.
        *
        * @tparam V the value type, one of the nine plain types of #field_type_for
@@ -626,7 +627,7 @@ namespace ocs::tom {
        * @throw FieldException with reason NullElement, ForeignField, AbsentField or WrongType
        */
       template <typename V>
-      [[nodiscard]] inline V runtime_get(const lListElem *ep, const int nm) {
+      [[nodiscard]] inline V runtime_get(const ocs::tom::ElementData *ep, const int nm) {
          return plain_value<V>(slot(ep, checked_pos(ep, nm, field_type_for<V>())));
       }
 
@@ -634,7 +635,8 @@ namespace ocs::tom {
        * @brief Write a plain field given at run time, checked as the old setters by name (lSetUlong(), ...) check it
        *
        * The one implementation behind the run-time member Element<T>::set(int, V) and the free accessor
-       * ocs::tom::set(lListElem *, int, V) of ocs_Raw.h. Strings and host names are copied and the old value
+       * ocs::tom::set(ocs::tom::ElementData *, int, V) of ocs_Raw.h. Strings and host names are copied and the old
+       * value
        * freed; the hash table of the owning list is maintained.
        *
        * @tparam V the value type, one of the nine plain types of #field_type_for
@@ -646,10 +648,10 @@ namespace ocs::tom {
        *        the value of a unique field
        */
       template <typename V>
-      inline void runtime_set(lListElem *ep, const int nm, const V value) {
+      inline void runtime_set(ocs::tom::ElementData *ep, const int nm, const V value) {
          constexpr FieldType type = field_type_for<V>();
          const int pos = checked_pos(ep, nm, type);
-         lMultiType &slot_value = slot(ep, pos);
+         ocs::tom::FieldValue &slot_value = slot(ep, pos);
          if constexpr (type == FieldType::String || type == FieldType::Host) {
             if (!store_string(ep, pos, static_cast<const char *>(value))) [[unlikely]] {
                throw_field_exception(FieldException::Reason::OutOfMemory, nm, ep->descr);
@@ -704,7 +706,7 @@ namespace ocs::tom {
        * @param descr the descriptor, the full one of the type or a reduction of it
        * @return the handle
        */
-      [[nodiscard]] static constexpr Layout from_typed(const lDescr *descr) noexcept {
+      [[nodiscard]] static constexpr Layout from_typed(const ocs::tom::FieldDescr *descr) noexcept {
          Layout handle;
          handle.descr_ = descr;
          return handle;
@@ -714,12 +716,12 @@ namespace ocs::tom {
        * @brief The descriptor, as an opaque token for the functions of the old interface
        * @return the descriptor, or nullptr for a default-constructed handle
        */
-      [[nodiscard]] const lDescr *get() const noexcept {
+      [[nodiscard]] const ocs::tom::FieldDescr *get() const noexcept {
          return descr_;
       }
 
    private:
-      const lDescr *descr_ = nullptr;   ///< the descriptor, not owned
+      const ocs::tom::FieldDescr *descr_ = nullptr;   ///< the descriptor, not owned
    };
 
    /**
@@ -728,7 +730,7 @@ namespace ocs::tom {
     *
     * Built on the first call for each set of fields and kept for the life of
     * the process, so a call on a hot path costs no allocation: the typed form
-    * of `static const lDescr *const d = ocs::tom::descr_reduce(T_Type, {...})`.
+    * of `static const ocs::tom::FieldDescr *const d = ocs::tom::descr_reduce(T_Type, {...})`.
     * The fields may be given in any order; the layout keeps the full length of
     * the type with the fields not given marked absent, so the checked
     * constructors of the handles accept elements and lists of it.
@@ -751,7 +753,7 @@ namespace ocs::tom {
    [[nodiscard]] Layout<typename FieldTraits<F>::Type> layout() {
       using T = typename FieldTraits<F>::Type;
       // built once per set of fields and never released, like the descriptor blocks of the types
-      static const lDescr *const descr =
+      static const ocs::tom::FieldDescr *const descr =
               ocs::tom::descr_reduce(T::descriptor.e, {static_cast<int>(F), static_cast<int>(Fs)...});
       if (descr == nullptr) [[unlikely]] {
          throw ListCoreError("out of memory reducing the descriptor of a layout");
@@ -762,7 +764,7 @@ namespace ocs::tom {
    /**
     * @brief A read-only typed handle on an element
     *
-    * Converts implicitly to `const lListElem *`, made from one only explicitly
+    * Converts implicitly to `const ocs::tom::ElementData *`, made from one only explicitly
     * and with a check of the type. Tests as false when empty; any field access
     * through an empty handle throws.
     *
@@ -784,7 +786,7 @@ namespace ocs::tom {
        * @param ep the element, or nullptr for an empty handle
        * @throw FieldException if the element is of another type
        */
-      explicit ConstElement(const lListElem *ep) : ep_(const_cast<lListElem *>(ep)) {
+      explicit ConstElement(const ocs::tom::ElementData *ep) : ep_(const_cast<ocs::tom::ElementData *>(ep)) {
          if (ep != nullptr && ep->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             detail::throw_wrong_type<T>(ep->descr);
          }
@@ -795,9 +797,9 @@ namespace ocs::tom {
        * @param ep the element, or nullptr
        * @return the handle
        */
-      static ConstElement from_typed(const lListElem *ep) noexcept {
+      static ConstElement from_typed(const ocs::tom::ElementData *ep) noexcept {
          ConstElement handle;
-         handle.ep_ = const_cast<lListElem *>(ep);
+         handle.ep_ = const_cast<ocs::tom::ElementData *>(ep);
          return handle;
       }
 
@@ -805,7 +807,7 @@ namespace ocs::tom {
        * @brief The element, for every function of the old interface
        * @return the element, or nullptr
        */
-      operator const lListElem *() const noexcept {
+      operator const ocs::tom::ElementData *() const noexcept {
          return ep_;
       }
 
@@ -813,7 +815,7 @@ namespace ocs::tom {
        * @brief The element, for varargs and deduced templates
        * @return the element, or nullptr
        */
-      [[nodiscard]] const lListElem *raw() const noexcept {
+      [[nodiscard]] const ocs::tom::ElementData *raw() const noexcept {
          return ep_;
       }
 
@@ -827,7 +829,7 @@ namespace ocs::tom {
        * @return the descriptor, nullptr if the handle is empty
        * @see Old form: lGetElemDescr()
        */
-      [[nodiscard]] const lDescr *descr() const noexcept {
+      [[nodiscard]] const ocs::tom::FieldDescr *descr() const noexcept {
          return ep_ != nullptr ? ep_->descr : nullptr;
       }
 
@@ -862,7 +864,8 @@ namespace ocs::tom {
        * @brief Read a field, as lGetUlong(), lGetString(), lGetList() and the other getters by name do
        *
        * A list or object field for which the model names no sub-type gives a raw handle, ConstRawList or
-       * ConstRawElement, which converts implicitly to `const lList *` / `const lListElem *`; get_as() gives a
+       * ConstRawElement, which converts implicitly to `const ocs::tom::ListData *` / `const ocs::tom::ElementData *`;
+       * get_as() gives a
        * checked typed view on it instead.
        *
        * @tparam F the field number, of this object type
@@ -897,7 +900,8 @@ namespace ocs::tom {
       /**
        * @brief Read a field given only at run time, checked as the old getters by name (lGetUlong(), ...) check it
        *
-       * Runs on the core of the free accessor ocs::tom::get<V>(const lListElem *, int) (detail::runtime_get()),
+       * Runs on the core of the free accessor ocs::tom::get<V>(const ocs::tom::ElementData *, int)
+       * (detail::runtime_get()),
        * so both give the same value and the same reason; only an empty handle is reported as EmptyHandle here.
        *
        * @tparam V the value type, which must match the field's type
@@ -1209,7 +1213,7 @@ namespace ocs::tom {
        */
       template <auto F>
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List)
-      [[nodiscard]] lList **list_ref() const;
+      [[nodiscard]] ocs::tom::ListData **list_ref() const;
 
       /**
        * @brief The string of a string field, or "" for an unset one, as lGetStringNotNull() gives it
@@ -1249,7 +1253,7 @@ namespace ocs::tom {
       [[nodiscard]] std::uint64_t get_atomic() const;
 
    protected:
-      lListElem *ep_ = nullptr;   ///< the element, or nullptr; const unless reached through Element
+      ocs::tom::ElementData *ep_ = nullptr;   ///< the element, or nullptr; const unless reached through Element
 
       /**
        * @brief The slot index of a field the element holds, checking the handle
@@ -1268,7 +1272,7 @@ namespace ocs::tom {
    /**
     * @brief A typed handle on an element that may be changed
     *
-    * Adds the setters and the conversion to `lListElem *`. Derives from
+    * Adds the setters and the conversion to `ocs::tom::ElementData *`. Derives from
     * ConstElement, so it converts to its read-only counterpart, never the
     * other way round.
     *
@@ -1288,14 +1292,14 @@ namespace ocs::tom {
        * @param ep the element, or nullptr for an empty handle
        * @throw FieldException if the element is of another type
        */
-      explicit Element(lListElem *ep) : ConstElement<T>(ep) {}
+      explicit Element(ocs::tom::ElementData *ep) : ConstElement<T>(ep) {}
 
       /**
        * @brief Take an element from a source whose type is known, without a check
        * @param ep the element, or nullptr
        * @return the handle
        */
-      static Element from_typed(lListElem *ep) noexcept {
+      static Element from_typed(ocs::tom::ElementData *ep) noexcept {
          Element handle;
          handle.ep_ = ep;
          return handle;
@@ -1305,7 +1309,7 @@ namespace ocs::tom {
        * @brief The element, for every function of the old interface
        * @return the element, or nullptr
        */
-      operator lListElem *() const noexcept {
+      operator ocs::tom::ElementData *() const noexcept {
          return this->ep_;
       }
 
@@ -1313,7 +1317,7 @@ namespace ocs::tom {
        * @brief The element, for varargs and deduced templates
        * @return the element, or nullptr
        */
-      [[nodiscard]] lListElem *raw() const noexcept {
+      [[nodiscard]] ocs::tom::ElementData *raw() const noexcept {
          return this->ep_;
       }
 
@@ -1336,7 +1340,8 @@ namespace ocs::tom {
        * @brief Read a field; list and object fields give mutable handles, as lGetListRW() and lGetObject() do
        *
        * A list or object field for which the model names no sub-type gives a raw handle, RawList or
-       * RawElement, which converts implicitly to `lList *` / `lListElem *`; get_as() gives a checked typed
+       * RawElement, which converts implicitly to `ocs::tom::ListData *` / `ocs::tom::ElementData *`; get_as() gives a
+       * checked typed
        * view on it instead.
        *
        * @tparam F the field number, of this object type
@@ -1388,7 +1393,7 @@ namespace ocs::tom {
          if constexpr (FieldTraits<F>::type == FieldType::Object && FieldTraits<F>::has_sub) {
             // a bound element is given up before present_slot() can throw EmptyHandle or AbsentField, so
             // that the parameter never frees it; a free element stays with the parameter until it is stored
-            lListElem *const object = detail::release_if_bound(value);
+            ocs::tom::ElementData *const object = detail::release_if_bound(value);
             static_cast<void>(this->template present_slot<F>());
             if (!store_object(this->ep_, FieldTraits<F>::pos, object)) [[unlikely]] {
                throw_field_exception(FieldException::Reason::BoundElement, F, this->ep_->descr);
@@ -1444,7 +1449,7 @@ namespace ocs::tom {
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::Object) && detail::NoSubType<F>
       void set(ElementPtr<U> &&elem) const {
          // a bound element is given up before present_slot() can throw, so that the caller's owner never frees it
-         lListElem *const object = detail::release_if_bound(elem);
+         ocs::tom::ElementData *const object = detail::release_if_bound(elem);
          static_cast<void>(this->template present_slot<F>());
          if (!store_object(this->ep_, FieldTraits<F>::pos, object)) [[unlikely]] {
             throw_field_exception(FieldException::Reason::BoundElement, F, this->ep_->descr);
@@ -1456,7 +1461,7 @@ namespace ocs::tom {
        * @brief Set a field given only at run time, checked as the old setters by name (lSetUlong(), ...) check it
        *
        * For plain values only: numbers, bool, strings, host names and references. Runs on the core of the
-       * free accessor ocs::tom::set(lListElem *, int, V) (detail::runtime_set()).
+       * free accessor ocs::tom::set(ocs::tom::ElementData *, int, V) (detail::runtime_set()).
        *
        * @tparam V the value type, which must match the field's type
        * @param nm the field number
@@ -1544,7 +1549,7 @@ namespace ocs::tom {
          requires FieldOf<F, T> && (FieldTraits<F>::type == FieldType::List) && FieldTraits<F>::has_sub
       ListPtr<typename FieldTraits<F>::Sub> exchange(ListPtr<typename FieldTraits<F>::Sub> &&list) const {
          static_cast<void>(this->template present_slot<F>());
-         lList *lp = list.release();
+         ocs::tom::ListData *lp = list.release();
          exchange_list(this->ep_, FieldTraits<F>::pos, lp);
          return ListPtr<typename FieldTraits<F>::Sub>::from_typed(lp);
       }
@@ -1687,7 +1692,7 @@ namespace ocs::tom {
             throw_field_exception(FieldException::Reason::EmptyHandle, G, U::descriptor.e);
          }
          static_cast<void>(detail::present_slot<G>(other.raw()));
-         lList *lp = nullptr;
+         ocs::tom::ListData *lp = nullptr;
          exchange_list(other.raw(), FieldTraits<G>::pos, lp);
          exchange_list(this->ep_, FieldTraits<F>::pos, lp);
          exchange_list(other.raw(), FieldTraits<G>::pos, lp);
@@ -1853,14 +1858,14 @@ namespace ocs::tom {
        * @param ep the element, or nullptr; freed by the handle
        * @throw FieldException if the element is of another type; the element is not taken over then
        */
-      explicit ElementPtr(lListElem *ep) : ep_(Element<T>(ep).raw()) {}
+      explicit ElementPtr(ocs::tom::ElementData *ep) : ep_(Element<T>(ep).raw()) {}
 
       /**
        * @brief Take over an element from a source whose type is known, without a check
        * @param ep the element, or nullptr; freed by the handle
        * @return the owning handle
        */
-      [[nodiscard]] static ElementPtr from_typed(lListElem *ep) noexcept {
+      [[nodiscard]] static ElementPtr from_typed(ocs::tom::ElementData *ep) noexcept {
          ElementPtr handle;
          handle.ep_ = ep;
          return handle;
@@ -1892,7 +1897,7 @@ namespace ocs::tom {
        *        if it is null
        * @throw ocs::RuntimeException if there is no memory
        */
-      [[nodiscard]] static ElementPtr create(const lDescr *descr) {
+      [[nodiscard]] static ElementPtr create(const ocs::tom::FieldDescr *descr) {
          if (descr != nullptr && descr[0].nm != T::fields[0].nm) [[unlikely]] {
             detail::throw_wrong_type<T>(descr);
          }
@@ -1934,7 +1939,7 @@ namespace ocs::tom {
          if (!what) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullElement, NoName, T::descriptor.e);
          }
-         const lDescr *descr = reduced_descr(T::descriptor.e, what.get());
+         const ocs::tom::FieldDescr *descr = reduced_descr(T::descriptor.e, what.get());
          if (descr == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::NullDescriptor, NoName, T::descriptor.e);
          }
@@ -2056,7 +2061,7 @@ namespace ocs::tom {
        * @brief Give up ownership
        * @return the element, which the caller now owns, or nullptr
        */
-      [[nodiscard]] lListElem *release() noexcept {
+      [[nodiscard]] ocs::tom::ElementData *release() noexcept {
          return std::exchange(ep_, nullptr);
       }
 
@@ -2088,7 +2093,7 @@ namespace ocs::tom {
        * @see Old form: tom_unpack_elem(), tom_unpack_elem_partial(); core: ocs::tom::unpack_elem()
        */
       [[nodiscard]] static ElementPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
-         lListElem *ep = unpack_elem(&pb, T::descriptor.e, flags);
+         ocs::tom::ElementData *ep = unpack_elem(&pb, T::descriptor.e, flags);
          if (ep->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             try {
                detail::throw_wrong_type<T>(ep->descr);
@@ -2128,7 +2133,7 @@ namespace ocs::tom {
        * @see Old form: lReadElemFromDisk(); core: ocs::tom::read_elem_from_disk()
        */
       [[nodiscard]] static ElementPtr read_from_disk(const char *prefix, const char *name, const char *obj_name) {
-         lListElem *ep = read_elem_from_disk(prefix, name, T::descriptor.e, obj_name);
+         ocs::tom::ElementData *ep = read_elem_from_disk(prefix, name, T::descriptor.e, obj_name);
          if (ep->descr[0].nm != T::fields[0].nm) [[unlikely]] {
             try {
                detail::throw_wrong_type<T>(ep->descr);
@@ -2141,7 +2146,7 @@ namespace ocs::tom {
       }
 
    private:
-      lListElem *ep_ = nullptr;   ///< the element owned, or nullptr
+      ocs::tom::ElementData *ep_ = nullptr;   ///< the element owned, or nullptr
    };
 
    /**
@@ -2160,7 +2165,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)>
-   [[nodiscard]] auto get(const lListElem *ep) {
+   [[nodiscard]] auto get(const ocs::tom::ElementData *ep) {
       return detail::read<F, false>(ep, detail::checked_slot<F>(ep));
    }
 
@@ -2173,7 +2178,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)>
-   [[nodiscard]] auto get(lListElem *ep) {
+   [[nodiscard]] auto get(ocs::tom::ElementData *ep) {
       return detail::read<F, true>(ep, detail::checked_slot<F>(ep));
    }
 
@@ -2208,7 +2213,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
        */
       template <auto F, bool Typed, typename V>
-      int free_set(lListElem *ep, V &&value) {
+      int free_set(ocs::tom::ElementData *ep, V &&value) {
          using Tr = FieldTraits<F>;
          using Value = std::remove_cvref_t<V>;
          if constexpr (is_element_ptr<Value> || is_list_ptr<Value>) {
@@ -2221,7 +2226,7 @@ namespace ocs::tom {
          }
          // a bound element is given up before the null check and check_holds(), so that neither the early
          // return nor a throw leaves it in the caller's handle, whose destructor would free it
-         [[maybe_unused]] lListElem *object = nullptr;
+         [[maybe_unused]] ocs::tom::ElementData *object = nullptr;
          if constexpr (is_element_ptr<Value>) {
             object = release_if_bound(value);
          }
@@ -2236,12 +2241,12 @@ namespace ocs::tom {
             if constexpr (is_list_ptr<Value>) {
                store_list(ep, Tr::pos, value.release());
             } else {
-               store_list(ep, Tr::pos, static_cast<lList *>(value));
+               store_list(ep, Tr::pos, static_cast<ocs::tom::ListData *>(value));
             }
             return 0;
          } else if constexpr (Tr::type == FieldType::Object) {
             if constexpr (!is_element_ptr<Value>) {
-               object = static_cast<lListElem *>(value);
+               object = static_cast<ocs::tom::ElementData *>(value);
             }
             if (!store_object(ep, Tr::pos, object)) {
                // bound elsewhere: an owning handle gave it up above, it stays where it is bound
@@ -2270,7 +2275,7 @@ namespace ocs::tom {
        * @throw FieldException with reason ForeignField or AbsentField if the element does not hold the field
        */
       template <auto F, bool Typed>
-      int free_add(lListElem *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
+      int free_add(ocs::tom::ElementData *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
          using Tr = FieldTraits<F>;
          if (ep == nullptr) [[unlikely]] {
             report_soft_path("ocs::tom::add", static_cast<int>(F), SoftPathReason::NullElement);
@@ -2301,7 +2306,7 @@ namespace ocs::tom {
     */
    template <auto F, typename V>
       requires TypedField<decltype(F)>
-   int set(lListElem *ep, V &&value) {
+   int set(ocs::tom::ElementData *ep, V &&value) {
       return detail::free_set<F, false>(ep, std::forward<V>(value));
    }
 
@@ -2312,7 +2317,7 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // without it the call would bind silently to the raw form through the implicit conversion to ocs::tom::ElementData *
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    auto get(const ConstElement<T> &ep) = delete;
@@ -2324,7 +2329,7 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // without it the call would bind silently to the raw form through the implicit conversion to ocs::tom::ElementData *
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    auto get(const Element<T> &ep) = delete;
@@ -2336,7 +2341,8 @@ namespace ocs::tom {
     * @param ep the handle
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ElementData *; the deleted overload gives the reason instead of "no
+   // matching function"
    template <auto F, ObjectType T>
       requires TypedField<decltype(F)>
    auto get(const ElementPtr<T> &ep) = delete;
@@ -2350,7 +2356,7 @@ namespace ocs::tom {
     * @param value the value
     * @return nothing, the call does not compile
     */
-   // without it the call would bind silently to the raw form through the implicit conversion to lListElem *
+   // without it the call would bind silently to the raw form through the implicit conversion to ocs::tom::ElementData *
    template <auto F, ObjectType T, typename V>
       requires TypedField<decltype(F)>
    int set(const Element<T> &ep, V &&value) = delete;
@@ -2364,7 +2370,8 @@ namespace ocs::tom {
     * @param value the value
     * @return nothing, the call does not compile
     */
-   // an owner does not convert to lListElem *; the deleted overload gives the reason instead of "no matching function"
+   // an owner does not convert to ocs::tom::ElementData *; the deleted overload gives the reason instead of "no
+   // matching function"
    template <auto F, ObjectType T, typename V>
       requires TypedField<decltype(F)>
    int set(const ElementPtr<T> &ep, V &&value) = delete;
@@ -2387,7 +2394,7 @@ namespace ocs::tom {
     */
    template <auto F>
       requires TypedField<decltype(F)> && detail::Addable<F>
-   int add(lListElem *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
+   int add(ocs::tom::ElementData *ep, const typename ValueOf<FieldTraits<F>::type>::type offset) {
       return detail::free_add<F, false>(ep, offset);
    }
 
@@ -2431,7 +2438,7 @@ namespace ocs::tom {
       requires TypedField<decltype(F)> && detail::AtomicReadable<F>
    [[nodiscard]] std::uint64_t get_atomic(const ConstElement<T> &ep) {
       detail::assert_field_of<F, T>();
-      const lListElem *raw = ep.raw();
+      const ocs::tom::ElementData *raw = ep.raw();
       // the slot first: it throws NullElement for an empty handle before raw is dereferenced
       const int pos = detail::checked_slot<F, true>(raw);
       return load_uint64_atomic(raw->cont[pos]);
@@ -2457,7 +2464,7 @@ namespace ocs::tom {
       requires TypedField<decltype(F)> && detail::AtomicWritable<F>
    int set_atomic(const Element<T> &ep, const std::uint64_t value) {
       detail::assert_field_of<F, T>();
-      lListElem *raw = ep.raw();
+      ocs::tom::ElementData *raw = ep.raw();
       if (raw == nullptr) [[unlikely]] {
          report_soft_path("ocs::tom::set_atomic", static_cast<int>(F), SoftPathReason::NullElement);
          return -1;

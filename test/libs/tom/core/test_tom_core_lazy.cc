@@ -137,7 +137,7 @@ static ocs::tom::RawListPtr make_list(const int n) {
  * @param lp the list
  * @return true if the list counts both hashed fields and has no slot array
  */
-static bool slots_empty(const lList *lp) {
+static bool slots_empty(const ocs::tom::ListData *lp) {
    return lp != nullptr && lp->nslots == 2 && list_slots(lp) == nullptr &&
           list_hash_table(lp, POS_NAME) == nullptr && list_hash_table(lp, POS_GROUP) == nullptr;
 }
@@ -148,7 +148,7 @@ static bool slots_empty(const lList *lp) {
  * @param name the name
  * @return the first element with that name, or nullptr
  */
-static const lListElem *linear_find(const ocs::tom::ConstRawList lp, const char *name) {
+static const ocs::tom::ElementData *linear_find(const ocs::tom::ConstRawList lp, const char *name) {
    for (const ocs::tom::ConstRawElement ep : lp) {
       const char *s = ep.get<const char *>(LZ_name);
       if (s != nullptr && strcmp(s, name) == 0) {
@@ -164,7 +164,7 @@ static const lListElem *linear_find(const ocs::tom::ConstRawList lp, const char 
  * @param name the name
  * @return the element, or nullptr
  */
-static const lListElem *find_name(const ocs::tom::ConstRawList lp, const char *name) {
+static const ocs::tom::ElementData *find_name(const ocs::tom::ConstRawList lp, const char *name) {
    return lp.find_first(LZ_name, name).raw();
 }
 
@@ -192,7 +192,8 @@ static bool all_found(const ocs::tom::ConstRawList lp) {
 static std::vector<uint32_t> group_values(const ocs::tom::ConstRawList lp, const uint32_t group) {
    std::vector<uint32_t> values;
    const void *iterator = nullptr;
-   for (const lListElem *ep = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), POS_GROUP, group,
+   for (const ocs::tom::ElementData *ep = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp.raw(), POS_GROUP,
+                                                                                              group,
                                                                                     &iterator);
         ep != nullptr; ep = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), POS_GROUP, group, &iterator)) {
       values.push_back(ocs::tom::get<std::uint32_t>(ep, LZ_value));
@@ -221,7 +222,7 @@ static std::vector<uint32_t> group_values_in_list_order(const ocs::tom::ConstRaw
  * @param lp the list
  * @return the unpacked list, empty on an error
  */
-static ocs::tom::RawListPtr pack_unpack(const lList *lp) {
+static ocs::tom::RawListPtr pack_unpack(const ocs::tom::ListData *lp) {
    try {
       ocs::tom::PackBuffer out(false, 1024);
       ocs::tom::pack_list(&out.raw(), lp, nullptr, 0);
@@ -238,9 +239,9 @@ static ocs::tom::RawListPtr pack_unpack(const lList *lp) {
  * @param nm the field
  * @param ascending true for ascending, false for descending
  */
-static void sort_by(lList *lp, const int nm, const bool ascending) {
+static void sort_by(ocs::tom::ListData *lp, const int nm, const bool ascending) {
    const ocs::tom::SortKey keys[] = {{nm, ascending}};
-   lSortOrder *so = ocs::tom::make_sort_order(LZ_Type, keys);
+   ocs::tom::SortOrderData *so = ocs::tom::make_sort_order(LZ_Type, keys);
    ocs::tom::sort_list(lp, so);
    ocs::tom::free_sort_order(so);
 }
@@ -289,7 +290,7 @@ static void test_no_table() {
 static void test_first_lookup() {
    const auto owner = make_list(2 * TOM_HASH_MIN_ELEMS);
    const ocs::tom::RawList lp = owner.get();
-   const lListElem *e3 = find_name(lp, "e3");
+   const ocs::tom::ElementData *e3 = find_name(lp, "e3");
    CHECK(5, "the first lookup builds the table of its field only and answers like the linear search",
          e3 != nullptr && e3 == linear_find(lp, "e3") && list_hash_table(lp, POS_NAME) != nullptr &&
          list_hash_table(lp, POS_GROUP) == nullptr && all_found(lp));

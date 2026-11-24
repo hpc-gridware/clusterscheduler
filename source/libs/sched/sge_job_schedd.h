@@ -71,7 +71,7 @@ int active_subtasks(ocs::tom::ConstElement<ocs::tom::JB> job, const char *qname)
 int active_nslots_granted(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::ConstList<ocs::tom::JG> granted,
                           const char *qhostname);
 
-//lListElem *explicit_job_request(lListElem *jep, const char *name);
+//ocs::tom::ElementData *explicit_job_request(ocs::tom::ElementData *jep, const char *name);
 
 int sge_granted_slots(ocs::tom::ConstList<ocs::tom::JG> gdil);
 

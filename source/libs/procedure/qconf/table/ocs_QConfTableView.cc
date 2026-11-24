@@ -42,7 +42,7 @@
  * @param desc the CE row, for the field list and the instruction
  */
 void
-ocs::QConfTableView::show_table(std::ostream &os, const lList *list,
+ocs::QConfTableView::show_table(std::ostream &os, const ocs::tom::ListData *list,
                                      const qconf_object_desc &desc) {
    DENTER(TOP_LAYER);
 

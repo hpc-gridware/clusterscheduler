@@ -151,7 +151,7 @@ static ocs::tom::RawElementPtr make_elem(const char *name, const uint32_t n, con
       obj->set(PFS_value, n);
       ep->set(PF_obj, std::move(obj));
       // the sublist as lAddSubStr() made it: created by the keyed add of the core, named ""
-      lList *sub = nullptr;
+      ocs::tom::ListData *sub = nullptr;
       static_cast<void>(ocs::tom::add_elem_str(sub, PFS_name, "s1", PFS_Type));
       static_cast<void>(ocs::tom::add_elem_str(sub, PFS_name, "s2", PFS_Type));
       ep->set(PF_sub, ocs::tom::RawListPtr(sub));

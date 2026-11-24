@@ -66,7 +66,7 @@
 #include <ocs_gdi_ClientServerBase.h>
 
 /// The remote tasks started by sge_qexecve() (RT); a process-lifetime list held raw, read through checked handles
-static lList *remote_task_list = nullptr;
+static ocs::tom::ListData *remote_task_list = nullptr;
 static char lasterror[4096];
 
 /**

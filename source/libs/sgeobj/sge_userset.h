@@ -109,15 +109,15 @@ std::pair<bool, uint32_t> ocs_userset_type_parse(ocs::tom::ListPtr<ocs::tom::AN>
 
 const char *userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US> this_list, dstring *string);
 
-int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list,
+int sge_contained_in_access_list(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                                  ocs::tom::ConstElement<ocs::tom::US> acl);
 
-int sge_has_access(const char *user, const char *group, const lList *grp_list, ocs::tom::ConstElement<ocs::tom::QU> q,
-                   ocs::tom::ConstList<ocs::tom::US> acl_list);
+int sge_has_access(const char *user, const char *group, const ocs::tom::ListData *grp_list,
+                   ocs::tom::ConstElement<ocs::tom::QU> q, ocs::tom::ConstList<ocs::tom::US> acl_list);
 
-int sge_has_access_(const char *user, const char *group, const lList *grp_list,
+int sge_has_access_(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                     ocs::tom::ConstList<ocs::tom::US> q_acl, ocs::tom::ConstList<ocs::tom::US> q_xacl,
                     ocs::tom::ConstList<ocs::tom::US> acl_list);
 
-int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
+int sge_contained_in_access_list_(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                                   ocs::tom::ConstList<ocs::tom::US> acl, ocs::tom::ConstList<ocs::tom::US> acl_list);

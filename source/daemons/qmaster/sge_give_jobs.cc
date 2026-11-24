@@ -889,7 +889,7 @@ cancel_job_resend(uint32_t jid, uint32_t ja_task_id) {
  * @param delta seconds to wait before the next attempt
  */
 void
-trigger_job_resend(uint64_t now, lListElem *hep, uint32_t jid, uint32_t ja_task_id, int delta) {
+trigger_job_resend(uint64_t now, ocs::tom::ElementData *hep, uint32_t jid, uint32_t ja_task_id, int delta) {
    DENTER(TOP_LAYER);
 
    uint32_t seconds;
@@ -987,8 +987,9 @@ create_timed_events_for_simulated_jobs() {
  * @param gdi_session the session the change belongs to
  */
 void
-sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, const sge_commit_mode_t mode,
-               const int commit_flags, monitoring_t *monitor, const uint64_t gdi_session) {
+sge_commit_job(ocs::tom::ElementData *raw_jep, ocs::tom::ElementData *raw_jatep, ocs::tom::ElementData *raw_jr,
+               const sge_commit_mode_t mode, const int commit_flags, monitoring_t *monitor,
+               const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // the callers pass a job and array task of the master job list and a job report, checked here once
@@ -1466,7 +1467,7 @@ sge_commit_job(lListElem *raw_jep, lListElem *raw_jatep, lListElem *raw_jr, cons
  *    SGE_WABORTED  flag (= COMMIT_NEVER_RAN)
  *    exit status  (8 bit)
  *    signal       (8 bit)
- * lList *rusage;
+ * ocs::tom::ListData *rusage;
  *
  * Additional job finish information provided by JAPI
  * char *failed_reason
@@ -2142,8 +2143,9 @@ sge_finish_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::Element<ocs:
  * @param gdi_session the session the change belongs to
  */
 void
-sge_bury_ja_task([[maybe_unused]] const char *sge_root, lListElem *raw_job, const uint32_t job_id,
-                 lListElem *raw_ja_task, const int spool_job, const int no_events, const uint64_t gdi_session) {
+sge_bury_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::ElementData *raw_job, const uint32_t job_id,
+                 ocs::tom::ElementData *raw_ja_task, const int spool_job, const int no_events,
+                 const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    // the callers pass a job and array task of the master job list, checked here once
@@ -2342,7 +2344,8 @@ setCheckpointObj(const ocs::tom::Element<ocs::tom::JB> job) {
  * @return true when anything was released
  */
 bool
-gdil_del_all_orphaned(const lList *gdil_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const uint64_t gdi_session) {
+gdil_del_all_orphaned(const ocs::tom::ListData *gdil_list, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                      const uint64_t gdi_session) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

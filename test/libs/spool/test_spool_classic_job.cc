@@ -139,7 +139,7 @@ test_leftover_dot_file() {
                      JOB_ID, 2, nullptr);
    CHECK(2, "the dot file is created", copy_file(task_file, dot_file));
 
-   lList *jobs_raw = nullptr;
+   ocs::tom::ListData *jobs_raw = nullptr;
    job_list_read_from_disk(&jobs_raw, "jobs", 0, SPOOL_DEFAULT, nullptr);
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::from_typed(jobs_raw);
    const auto read = jobs->find_first<JB_job_number>(JOB_ID);

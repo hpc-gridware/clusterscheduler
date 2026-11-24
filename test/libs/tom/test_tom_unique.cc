@@ -181,7 +181,7 @@ test_debug_checks() {
       const bool typed_string =
          throws_duplicate([&] { entries->back().set<UE_name>("u2"); }, "UE_name", "u2", "entries");
       // the free forms that replaced lAddElemStr() and lSetString(); the list reference form needs the raw list
-      lList *entries_raw = entries.release();
+      ocs::tom::ListData *entries_raw = entries.release();
       const bool free_string =
          throws_duplicate([&] { static_cast<void>(ocs::tom::emplace_back<UE_name>(&entries_raw, "u2")); }, "UE_name",
                           "u2", "entries") &&
@@ -195,7 +195,7 @@ test_debug_checks() {
       const bool typed_host =
          throws_duplicate([&] { hosts->back().set<EH_name>(Host{"HOST-2"}); }, "EH_name", "HOST-2", "hosts");
       // the free forms that replaced lAddElemHost() and lSetHost()
-      lList *hosts_raw = hosts.release();
+      ocs::tom::ListData *hosts_raw = hosts.release();
       const bool free_host =
          throws_duplicate([&] { static_cast<void>(ocs::tom::emplace_back<EH_name>(&hosts_raw, "HOST-2")); },
                           "EH_name", "HOST-2", "hosts") &&
@@ -334,7 +334,7 @@ test_lookup() {
          finds_duplicate
             ? throws_duplicate([&] { static_cast<void>(ocs::tom::find_first<JAT_task_number>(typed.raw(), 2u)); },
                                "JAT_task_number", "2", "tasks")
-            : static_cast<const lListElem *>(ocs::tom::find_first<JAT_task_number>(typed.raw(), 2u)) ==
+            : static_cast<const ocs::tom::ElementData *>(ocs::tom::find_first<JAT_task_number>(typed.raw(), 2u)) ==
                  typed.front().next().raw();
       CHECK(check++, (std::string{finds_duplicate ? "the free lookup throws, " : "the free lookup finds the first of "
                                                                                  "the two, "} + size).c_str(),
@@ -356,8 +356,8 @@ test_lookup() {
       changes->emplace_back<CX_variable>(i % 2 == 0 ? "a" : "b");
    }
    const void *iterator = nullptr;
-   const lListElem *first = ocs::tom::find_first<CX_variable>(changes->raw(), "a", &iterator);
-   const lListElem *second = ocs::tom::find_next<CX_variable>(changes->raw(), "a", &iterator);
+   const ocs::tom::ElementData *first = ocs::tom::find_first<CX_variable>(changes->raw(), "a", &iterator);
+   const ocs::tom::ElementData *second = ocs::tom::find_next<CX_variable>(changes->raw(), "a", &iterator);
    CHECK(20, "a non unique hashed field holding a key many times is looked up and iterated as before",
          first == changes->front().raw() && second != nullptr && second != first &&
          std::strcmp(ConstElement<CX>{second}.get<CX_variable>(), "a") == 0);

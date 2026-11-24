@@ -57,7 +57,7 @@ namespace ocs::tom {
        * @brief Throw the logic error of a null element
        * @param descr the descriptor of the list the element was meant for, or nullptr
        */
-      [[noreturn, gnu::cold]] void throw_null_elem(const lDescr *descr) {
+      [[noreturn, gnu::cold]] void throw_null_elem(const ocs::tom::FieldDescr *descr) {
          throw_field_exception(FieldException::Reason::NullElement, NoName, descr);
       }
 
@@ -66,7 +66,7 @@ namespace ocs::tom {
        * @param ep the element
        * @throw FieldException with reason BoundElement if it is bound in a list or an object
        */
-      void check_free(const lListElem *ep) {
+      void check_free(const ocs::tom::ElementData *ep) {
          if (elem_kind(ep) == BOUND_ELEM || elem_kind(ep) == OBJECT_ELEM) [[unlikely]] {
             throw_field_exception(FieldException::Reason::BoundElement, NoName, ep->descr);
          }
@@ -84,7 +84,7 @@ namespace ocs::tom {
        * @param ep the element
        * @throw FieldException with reason WrongLayout if the layouts differ
        */
-      void check_layout(const lList *lp, const lListElem *ep) {
+      void check_layout(const ocs::tom::ListData *lp, const ocs::tom::ElementData *ep) {
          if (!same_layout(ep->descr, lp->descr)) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongLayout, NoName, ep->descr, lp->descr);
          }
@@ -96,7 +96,7 @@ namespace ocs::tom {
        * @param ep the element
        * @throw FieldException with reason NullList, NullElement or ForeignList
        */
-      void check_member(const lList *lp, const lListElem *ep) {
+      void check_member(const ocs::tom::ListData *lp, const ocs::tom::ElementData *ep) {
          if (lp == nullptr) [[unlikely]] {
             throw_null_list();
          }
@@ -118,7 +118,7 @@ namespace ocs::tom {
        * @param lp the list
        * @param ep the element, linked into @p lp already
        */
-      void bind(lList *lp, lListElem *ep) {
+      void bind(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
          if (elem_kind(ep) == FREE_ELEM) {
             ocs::tom::release_descr(ep->descr);
          }
@@ -133,7 +133,7 @@ namespace ocs::tom {
        * @param lp the list
        * @param ep the element, in @p lp
        */
-      void unlink(lList *lp, lListElem *ep) {
+      void unlink(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
          if (ep->prev) {
             ep->prev->next = ep->next;
          } else {
@@ -150,12 +150,12 @@ namespace ocs::tom {
 
    } // namespace
 
-   lListElem *create_elem(const lDescr *descr) {
+   ocs::tom::ElementData *create_elem(const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr || mt_get_type(descr[0].mt) == MT_END) {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
-      auto *ep = reinterpret_cast<lListElem *>(sge_malloc(sizeof(lListElem)));
+      auto *ep = reinterpret_cast<ocs::tom::ElementData *>(sge_malloc(sizeof(ocs::tom::ElementData)));
       if (ep == nullptr) {
          throw ListCoreError("out of memory creating an element");
       }
@@ -178,19 +178,20 @@ namespace ocs::tom {
 
       // every field inherits the reduced flag of the type; a descriptor that does
       // not carry it in every field yet is normalised in a temporary copy
-      lDescr *normalised = nullptr;
+      ocs::tom::FieldDescr *normalised = nullptr;
       if (!shared && (descr->mt & MT_IS_REDUCED) != 0) {
          const int n = descr_length(descr);
          for (int i = 0; i <= n; i++) {
             if ((descr[i].mt & MT_IS_REDUCED) == 0) {
-               normalised = reinterpret_cast<lDescr *>(sge_malloc(sizeof(lDescr) * (n + 1)));
+               normalised =
+                     reinterpret_cast<ocs::tom::FieldDescr *>(sge_malloc(sizeof(ocs::tom::FieldDescr) * (n + 1)));
                if (normalised == nullptr) {
                   sge_free(&ep);
                   throw ListCoreError("out of memory creating an element");
                }
-               memcpy(normalised, descr, sizeof(lDescr) * (n + 1));
+               memcpy(normalised, descr, sizeof(ocs::tom::FieldDescr) * (n + 1));
                TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM, 1);
-               TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
+               TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM_B, sizeof(ocs::tom::FieldDescr) * (n + 1));
                for (int j = 0; j <= n; j++) {
                   normalised[j].mt |= MT_IS_REDUCED;
                }
@@ -207,7 +208,8 @@ namespace ocs::tom {
 
       elem_set_free(ep);
       // the held descriptor is static or counted, so its header knows the number of values
-      ep->cont = static_cast<lMultiType *>(calloc(1, sizeof(lMultiType) * ocs::tom::descr_header_of(ep->descr)->np));
+      ep->cont = static_cast<ocs::tom::FieldValue *>(
+            calloc(1, sizeof(ocs::tom::FieldValue) * ocs::tom::descr_header_of(ep->descr)->np));
       if (ep->cont == nullptr) {
          ocs::tom::release_descr(ep->descr);
          sge_free(&ep);
@@ -217,7 +219,7 @@ namespace ocs::tom {
       return ep;
    }
 
-   lList *create_list(const char *name, const lDescr *descr, const bool hash) {
+   ocs::tom::ListData *create_list(const char *name, const ocs::tom::FieldDescr *descr, const bool hash) {
       if (name == nullptr) {
          name = "No list name specified";
       }
@@ -225,7 +227,7 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
-      auto *lp = reinterpret_cast<lList *>(sge_malloc(sizeof(lList)));
+      auto *lp = reinterpret_cast<ocs::tom::ListData *>(sge_malloc(sizeof(ocs::tom::ListData)));
       if (lp == nullptr) {
          throw ListCoreError("out of memory creating a list");
       }
@@ -253,7 +255,7 @@ namespace ocs::tom {
       return lp;
    }
 
-   void free_elem(lListElem *&ep) {
+   void free_elem(ocs::tom::ElementData *&ep) {
       if (ep == nullptr) {
          return;
       }
@@ -265,7 +267,7 @@ namespace ocs::tom {
       ocs::tom::detail::hash_remove_elem(ep);
 
       for (const auto f : ocs::tom::present_fields(ep->descr)) {
-         lMultiType &value = ep->cont[f.slot];
+         ocs::tom::FieldValue &value = ep->cont[f.slot];
          switch (mt_get_type(ep->descr[f.pos].mt)) {
             case MT_INT32:
             case MT_UINT32:
@@ -311,14 +313,14 @@ namespace ocs::tom {
       sge_free(&ep);
    }
 
-   void free_list(lList *&lp) {
+   void free_list(ocs::tom::ListData *&lp) {
       if (lp == nullptr) {
          return;
       }
       // remove all hash tables first, it is more efficient than maintaining them while emptying
       ocs::tom::detail::hash_free_tables(lp);
       while (lp->first) {
-         lListElem *ep = lp->first;
+         ocs::tom::ElementData *ep = lp->first;
          unlink(lp, ep);
          free_elem(ep);
       }
@@ -330,11 +332,11 @@ namespace ocs::tom {
       sge_free(&lp);
    }
 
-   lListElem *copy_elem(const lListElem *ep, const bool hash, const bool skip_no_transfer) {
+   ocs::tom::ElementData *copy_elem(const ocs::tom::ElementData *ep, const bool hash, const bool skip_no_transfer) {
       if (ep == nullptr) {
          throw_null_elem(nullptr);
       }
-      lListElem *copy;
+      ocs::tom::ElementData *copy;
       try {
          copy = create_elem(ep->descr);
       } catch (const ListCoreError &) {
@@ -352,14 +354,15 @@ namespace ocs::tom {
       return copy;
    }
 
-   lList *copy_list(const char *name, const lList *src, const bool hash, const bool skip_no_transfer) {
+   ocs::tom::ListData *copy_list(const char *name, const ocs::tom::ListData *src, const bool hash,
+                                 const bool skip_no_transfer) {
       if (src == nullptr) {
          throw_null_list();
       }
       if (name == nullptr) {
          name = src->listname;
       }
-      lList *dst;
+      ocs::tom::ListData *dst;
       try {
          // the copy is created without hash slots, so that filling it maintains no table
          dst = create_list(name, src->descr, false);
@@ -368,7 +371,7 @@ namespace ocs::tom {
       }
       // the source was checked for duplicate keys when it was filled; checking each copy again would be quadratic
       const UniqueCheckSuspension suspension;
-      for (const lListElem *sep = src->first; sep; sep = sep->next) {
+      for (const ocs::tom::ElementData *sep = src->first; sep; sep = sep->next) {
          try {
             append_elem(dst, copy_elem(sep, true, skip_no_transfer));
          } catch (const ListCoreError &) {
@@ -383,18 +386,18 @@ namespace ocs::tom {
       return dst;
    }
 
-   void copy_field(const lListElem *src, lListElem *dst, const int src_pos, const int dst_pos, const bool hash,
-                   const lEnumeration *sub_what, const bool skip_no_transfer) {
+   void copy_field(const ocs::tom::ElementData *src, ocs::tom::ElementData *dst, const int src_pos, const int dst_pos,
+                   const bool hash, const ocs::tom::WhatData *sub_what, const bool skip_no_transfer) {
       if (src == nullptr || dst == nullptr) {
          throw_null_elem(nullptr);
       }
-      lMultiType &to = ocs::tom::detail::value(dst, dst_pos);
-      const lMultiType &from = ocs::tom::detail::value(src, src_pos);
+      ocs::tom::FieldValue &to = ocs::tom::detail::value(dst, dst_pos);
+      const ocs::tom::FieldValue &from = ocs::tom::detail::value(src, src_pos);
 
       // A field marked MT_NO_TRANSFER holds state that is meaningful only in the process that built it.
       // A copy that will be handed out, an event payload, keeps what create_elem() gave it.
       if (skip_no_transfer && !mt_do_transfer(dst->descr[dst_pos].mt)) {
-         to = lMultiType{};
+         to = ocs::tom::FieldValue{};
          return;
       }
 
@@ -422,7 +425,8 @@ namespace ocs::tom {
                if (sub_what == nullptr) {
                   to.glp = copy_list(from.glp->listname, from.glp, hash, skip_no_transfer);
                } else {
-                  lList *selected = select_list(from.glp->listname, from.glp, nullptr, sub_what, hash, skip_no_transfer);
+                  ocs::tom::ListData *selected = select_list(from.glp->listname, from.glp, nullptr, sub_what, hash,
+                                                             skip_no_transfer);
                   // an emptied sub-list of a list that may be hashed is no list, as the selection always gave it
                   if (hash && selected->nelem == 0) {
                      free_list(selected);
@@ -434,7 +438,7 @@ namespace ocs::tom {
          case MT_OBJECT:
             to.obj = nullptr;
             if (from.obj != nullptr) {
-               lListElem *copy = sub_what == nullptr ? copy_elem(from.obj, hash, skip_no_transfer)
+               ocs::tom::ElementData *copy = sub_what == nullptr ? copy_elem(from.obj, hash, skip_no_transfer)
                                                      : select_elem(from.obj, sub_what, hash, skip_no_transfer);
                elem_set_object(copy);
                to.obj = copy;
@@ -457,11 +461,11 @@ namespace ocs::tom {
       }
    }
 
-   const char *list_name(const lList *lp) noexcept {
+   const char *list_name(const ocs::tom::ListData *lp) noexcept {
       return lp != nullptr && lp->listname != nullptr ? lp->listname : "No list name specified";
    }
 
-   void insert_elem(lList *lp, lListElem *after, lListElem *ep) {
+   void insert_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *after, ocs::tom::ElementData *ep) {
       if (lp == nullptr) {
          throw_null_list();
       }
@@ -494,7 +498,7 @@ namespace ocs::tom {
       bind(lp, ep);
    }
 
-   void append_elem(lList *lp, lListElem *ep) {
+   void append_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
       if (lp == nullptr) {
          throw_null_list();
       }
@@ -517,7 +521,7 @@ namespace ocs::tom {
       bind(lp, ep);
    }
 
-   void dechain_elem(lList *lp, lListElem *ep) {
+   void dechain_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
       check_member(lp, ep);
       unlink(lp, ep);
       // remove the hash entries while the element still borrows the list's descriptor
@@ -527,13 +531,13 @@ namespace ocs::tom {
       elem_set_free(ep);
    }
 
-   void remove_elem(lList *lp, lListElem *&ep) {
+   void remove_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *&ep) {
       check_member(lp, ep);
       unlink(lp, ep);
       free_elem(ep);
    }
 
-   void append_list(lList *dst, lList *src) {
+   void append_list(ocs::tom::ListData *dst, ocs::tom::ListData *src) {
       if (dst == nullptr || src == nullptr) {
          throw_null_list();
       }
@@ -544,7 +548,7 @@ namespace ocs::tom {
                                NoName, src->descr, dst->descr);
       }
       while (src->first) {
-         lListElem *ep = src->first;
+         ocs::tom::ElementData *ep = src->first;
          dechain_elem(src, ep);
          try {
             append_elem(dst, ep);
@@ -556,15 +560,15 @@ namespace ocs::tom {
       }
    }
 
-   void exchange_list(lListElem *ep, const int pos, lList *&lp) noexcept {
-      lList *&held = ocs::tom::detail::value(ep, pos).glp;
+   void exchange_list(ocs::tom::ElementData *ep, const int pos, ocs::tom::ListData *&lp) noexcept {
+      ocs::tom::ListData *&held = ocs::tom::detail::value(ep, pos).glp;
       if (lp != held) {
          std::swap(lp, held);
       }
    }
 
-   lListElem *take_object(lListElem *ep, const int pos) noexcept {
-      lListElem *const held = ocs::tom::detail::value(ep, pos).obj;
+   ocs::tom::ElementData *take_object(ocs::tom::ElementData *ep, const int pos) noexcept {
+      ocs::tom::ElementData *const held = ocs::tom::detail::value(ep, pos).obj;
       if (held != nullptr) {
          elem_set_free(held);
          ocs::tom::detail::value(ep, pos).obj = nullptr;
@@ -582,7 +586,7 @@ namespace ocs::tom {
        * @return the position
        * @throw FieldException with reason AbsentField or WrongType
        */
-      int key_pos(const lDescr *descr, const int nm, const int type) {
+      int key_pos(const ocs::tom::FieldDescr *descr, const int nm, const int type) {
          const int pos = present_pos(descr, nm);
          if (pos < 0) [[unlikely]] {
             throw_field_exception(FieldException::Reason::AbsentField, nm, descr);
@@ -614,7 +618,8 @@ namespace ocs::tom {
        *        field, and as create_elem() and append_elem()
        */
       template <typename Store>
-      lListElem *add_with_key(lList *&lp, const int pos, const lDescr *descr, const char *list_name, Store store) {
+      ocs::tom::ElementData *add_with_key(ocs::tom::ListData *&lp, const int pos, const ocs::tom::FieldDescr *descr,
+                                          const char *list_name, Store store) {
          const bool created = lp == nullptr;
          if (!created && (lp->descr[0].nm != descr[0].nm || lp->descr[pos].off == TOM_ABSENT)) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongType, descr[pos].nm, lp->descr);
@@ -622,7 +627,7 @@ namespace ocs::tom {
          if (created) {
             lp = create_list(list_name, descr, true);
          }
-         lListElem *ep = nullptr;
+         ocs::tom::ElementData *ep = nullptr;
          try {
             // the element shares the list's descriptor, which holds the key field, checked above
             ep = create_elem(lp->descr);
@@ -640,7 +645,8 @@ namespace ocs::tom {
 
    } // namespace
 
-   lListElem *add_elem_str(lList *&lp, const int nm, const char *key, const lDescr *descr) {
+   ocs::tom::ElementData *add_elem_str(ocs::tom::ListData *&lp, const int nm, const char *key,
+                                       const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
@@ -651,7 +657,8 @@ namespace ocs::tom {
       return add_elem_at<FieldType::String>(lp, pos, key, descr);
    }
 
-   lListElem *add_elem_host(lList *&lp, const int nm, const char *key, const lDescr *descr) {
+   ocs::tom::ElementData *add_elem_host(ocs::tom::ListData *&lp, const int nm, const char *key,
+                                        const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
@@ -662,7 +669,8 @@ namespace ocs::tom {
       return add_elem_at<FieldType::Host>(lp, pos, key, descr);
    }
 
-   lListElem *add_elem_ulong(lList *&lp, const int nm, const uint32_t key, const lDescr *descr) {
+   ocs::tom::ElementData *add_elem_ulong(ocs::tom::ListData *&lp, const int nm, const uint32_t key,
+                                         const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
@@ -670,7 +678,8 @@ namespace ocs::tom {
       return add_elem_at<FieldType::Uint32>(lp, pos, key, descr);
    }
 
-   lListElem *add_elem_ulong64(lList *&lp, const int nm, const uint64_t key, const lDescr *descr) {
+   ocs::tom::ElementData *add_elem_ulong64(ocs::tom::ListData *&lp, const int nm, const uint64_t key,
+                                           const ocs::tom::FieldDescr *descr) {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, nm, nullptr);
       }
@@ -686,7 +695,7 @@ namespace ocs::tom {
        * @param ep the element found, or nullptr
        * @return true if an element was removed
        */
-      bool remove_found(lList *lp, lListElem *ep) {
+      bool remove_found(ocs::tom::ListData *lp, ocs::tom::ElementData *ep) {
          if (ep == nullptr) {
             return false;
          }
@@ -696,7 +705,7 @@ namespace ocs::tom {
 
    } // namespace
 
-   bool remove_elem_str(lList *lp, const int nm, const char *key) {
+   bool remove_elem_str(ocs::tom::ListData *lp, const int nm, const char *key) {
       if (key == nullptr) {
          throw_field_exception(FieldException::Reason::NullKey, nm, lp != nullptr ? lp->descr : nullptr);
       }
@@ -706,7 +715,7 @@ namespace ocs::tom {
       return remove_elem_at<FieldType::String>(lp, key_pos(lp->descr, nm, MT_STRING), key);
    }
 
-   bool remove_elem_host(lList *lp, const int nm, const char *key) {
+   bool remove_elem_host(ocs::tom::ListData *lp, const int nm, const char *key) {
       if (key == nullptr) {
          throw_field_exception(FieldException::Reason::NullKey, nm, lp != nullptr ? lp->descr : nullptr);
       }
@@ -716,14 +725,14 @@ namespace ocs::tom {
       return remove_elem_at<FieldType::Host>(lp, key_pos(lp->descr, nm, MT_HOST), key);
    }
 
-   bool remove_elem_ulong(lList *lp, const int nm, const uint32_t key) {
+   bool remove_elem_ulong(ocs::tom::ListData *lp, const int nm, const uint32_t key) {
       if (lp == nullptr) {
          return false;
       }
       return remove_elem_at<FieldType::Uint32>(lp, key_pos(lp->descr, nm, MT_UINT32), key);
    }
 
-   bool remove_elem_ulong64(lList *lp, const int nm, const uint64_t key) {
+   bool remove_elem_ulong64(ocs::tom::ListData *lp, const int nm, const uint64_t key) {
       if (lp == nullptr) {
          return false;
       }
@@ -732,17 +741,18 @@ namespace ocs::tom {
 
    template <FieldType T>
       requires KeyFieldType<T>
-   lListElem *add_elem_at(lList *&lp, const int pos, const KeyArgOf<T> key, const lDescr *descr) {
+   ocs::tom::ElementData *add_elem_at(ocs::tom::ListData *&lp, const int pos, const KeyArgOf<T> key,
+                                      const ocs::tom::FieldDescr *descr) {
       if constexpr (T == FieldType::Uint32) {
-         return add_with_key(lp, pos, descr, "ulong_sublist", [pos, key](lListElem *ep) {
+         return add_with_key(lp, pos, descr, "ulong_sublist", [pos, key](ocs::tom::ElementData *ep) {
             ocs::tom::detail::value(ep, pos).ul = key;
          });
       } else if constexpr (T == FieldType::Uint64) {
-         return add_with_key(lp, pos, descr, "ulong64_sublist", [pos, key](lListElem *ep) {
+         return add_with_key(lp, pos, descr, "ulong64_sublist", [pos, key](ocs::tom::ElementData *ep) {
             ocs::tom::detail::value(ep, pos).ul64 = key;
          });
       } else {
-         return add_with_key(lp, pos, descr, "", [pos, key](lListElem *ep) {
+         return add_with_key(lp, pos, descr, "", [pos, key](ocs::tom::ElementData *ep) {
             if (!store_string(ep, pos, key)) {
                throw ListCoreError("out of memory copying a key");
             }
@@ -752,7 +762,7 @@ namespace ocs::tom {
 
    template <FieldType T>
       requires KeyFieldType<T>
-   bool remove_elem_at(lList *lp, const int pos, const KeyArgOf<T> key) {
+   bool remove_elem_at(ocs::tom::ListData *lp, const int pos, const KeyArgOf<T> key) {
       if (lp == nullptr) {
          return false;
       }
@@ -761,22 +771,31 @@ namespace ocs::tom {
    }
 
    // adding and deleting by key exist for the four key field types; callers link against these instantiations
-   template lListElem *add_elem_at<FieldType::Uint32>(lList *&, int, KeyArgOf<FieldType::Uint32>, const lDescr *);
-   template lListElem *add_elem_at<FieldType::Uint64>(lList *&, int, KeyArgOf<FieldType::Uint64>, const lDescr *);
-   template lListElem *add_elem_at<FieldType::String>(lList *&, int, KeyArgOf<FieldType::String>, const lDescr *);
-   template lListElem *add_elem_at<FieldType::Host>(lList *&, int, KeyArgOf<FieldType::Host>, const lDescr *);
-   template bool remove_elem_at<FieldType::Uint32>(lList *, int, KeyArgOf<FieldType::Uint32>);
-   template bool remove_elem_at<FieldType::Uint64>(lList *, int, KeyArgOf<FieldType::Uint64>);
-   template bool remove_elem_at<FieldType::String>(lList *, int, KeyArgOf<FieldType::String>);
-   template bool remove_elem_at<FieldType::Host>(lList *, int, KeyArgOf<FieldType::Host>);
+   template ocs::tom::ElementData *add_elem_at<FieldType::Uint32>(ocs::tom::ListData *&, int,
+                                                                  KeyArgOf<FieldType::Uint32>,
+                                                                  const ocs::tom::FieldDescr *);
+   template ocs::tom::ElementData *add_elem_at<FieldType::Uint64>(ocs::tom::ListData *&, int,
+                                                                  KeyArgOf<FieldType::Uint64>,
+                                                                  const ocs::tom::FieldDescr *);
+   template ocs::tom::ElementData *add_elem_at<FieldType::String>(ocs::tom::ListData *&, int,
+                                                                  KeyArgOf<FieldType::String>,
+                                                                  const ocs::tom::FieldDescr *);
+   template ocs::tom::ElementData *add_elem_at<FieldType::Host>(ocs::tom::ListData *&, int, KeyArgOf<FieldType::Host>,
+                                                                const ocs::tom::FieldDescr *);
+   template bool remove_elem_at<FieldType::Uint32>(ocs::tom::ListData *, int, KeyArgOf<FieldType::Uint32>);
+   template bool remove_elem_at<FieldType::Uint64>(ocs::tom::ListData *, int, KeyArgOf<FieldType::Uint64>);
+   template bool remove_elem_at<FieldType::String>(ocs::tom::ListData *, int, KeyArgOf<FieldType::String>);
+   template bool remove_elem_at<FieldType::Host>(ocs::tom::ListData *, int, KeyArgOf<FieldType::Host>);
 
-   lList *get_or_create_list(lListElem *ep, const int pos, const char *name, const lDescr *descr) {
+   ocs::tom::ListData *get_or_create_list(ocs::tom::ElementData *ep, const int pos, const char *name,
+                                          const ocs::tom::FieldDescr *descr) {
       if (mt_get_type(ep->descr[pos].mt) != MT_LIST) [[unlikely]] {
          throw_field_exception(FieldException::Reason::WrongType, ep->descr[pos].nm, ep->descr);
       }
-      lList *&held = ocs::tom::detail::value(ep, pos).glp;
+      ocs::tom::ListData *&held = ocs::tom::detail::value(ep, pos).glp;
       if (held == nullptr) {
-         lList *lp = create_list(name != nullptr ? name : ocs::tom::field_name(ep->descr[pos].nm), descr, true);
+         ocs::tom::ListData *lp = create_list(name != nullptr ? name : ocs::tom::field_name(ep->descr[pos].nm), descr,
+                                              true);
          store_list(ep, pos, lp);
       }
       return held;

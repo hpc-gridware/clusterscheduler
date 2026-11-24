@@ -42,6 +42,7 @@
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_ListP.h"
 
+namespace ocs::tom {
 /**
  * @brief The value of one field
  *
@@ -50,7 +51,7 @@
  * detected by the compiler, which is why the accessors in ocs_ElementCore.cc
  * check the type first and abort on a mismatch.
  */
-union _lMultiType {
+union FieldValue {
    double db;         ///< value when the field is #MT_DOUBLE
    uint32_t ul;       ///< value when the field is #MT_UINT32
    uint64_t ul64;     ///< value when the field is #MT_UINT64
@@ -58,15 +59,16 @@ union _lMultiType {
    bool b;            ///< value when the field is #MT_BOOL
    int i;             ///< value when the field is #MT_INT32
    char *str;         ///< value when the field is #MT_STRING; owned by the element
-   lList *glp;        ///< value when the field is #MT_LIST; owned by the element
-   lListElem *obj;    ///< value when the field is #MT_OBJECT; owned by the element
+   ocs::tom::ListData *glp;        ///< value when the field is #MT_LIST; owned by the element
+   ocs::tom::ElementData *obj;    ///< value when the field is #MT_OBJECT; owned by the element
    void *ref;         ///< value when the field is #MT_REF; never owned, never spooled
    char *host;        ///< value when the field is #MT_HOST; owned by the element
-   lCondition *cp;    ///< a condition, used when a descriptor carries a where clause
+   ocs::tom::WhereData *cp;    ///< a condition, used when a descriptor carries a where clause
 };
+} // namespace ocs::tom
 
 namespace ocs::tom::detail {
-   void bad_slot(const lListElem *ep, int pos);
+   void bad_slot(const ocs::tom::ElementData *ep, int pos);
 
    /**
     * @brief The value of the field at a descriptor position of an element (CS-439)
@@ -80,7 +82,7 @@ namespace ocs::tom::detail {
     * @param pos a valid field position in the element's descriptor
     * @return the value
     */
-   inline lMultiType &value(const lListElem *ep, const int pos) {
+   inline ocs::tom::FieldValue &value(const ocs::tom::ElementData *ep, const int pos) {
 #if defined(ENABLE_DEBUG_CHECKS)
       const tom_descr_header *h = ocs::tom::descr_header_of(ep->descr);
       if (pos < 0 || static_cast<uint32_t>(pos) >= h->n || ep->descr[pos].off == TOM_ABSENT ||

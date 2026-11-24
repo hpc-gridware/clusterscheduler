@@ -190,7 +190,8 @@ namespace ocs::tom {
     */
    template <std::size_t N, std::size_t... I>
    consteval tom_descr_block<N + 1> make_descriptor_impl(const FieldInfo (&fields)[N], std::index_sequence<I...>) {
-      const lDescr entries[N + 1] = {{fields[I].nm, mt_type_of(fields[I].type) | mt_flags_of(fields[I].flags), 0}...,
+      const ocs::tom::FieldDescr entries[N + 1] = {{fields[I].nm,
+                                                    mt_type_of(fields[I].type) | mt_flags_of(fields[I].flags), 0}...,
                                      {NoName, MT_END, 0}};
       return ocs::tom::descr_make(entries);
    }
@@ -440,7 +441,7 @@ namespace ocs::tom {
    /** @brief The field table of one object type, as listed in `ocs_tom_all.h` */
    struct TypeTable {
       const char *name;            ///< the name of the type, e.g. "JB"
-      const lDescr *descr;         ///< the descriptor derived from the table
+      const ocs::tom::FieldDescr *descr;         ///< the descriptor derived from the table
       const FieldInfo *fields;     ///< the field table
       std::size_t size;            ///< number of fields
    };
@@ -448,7 +449,7 @@ namespace ocs::tom {
    /** @brief The sub-type of one list or object field, as listed in `ocs_tom_all.h` */
    struct SubTypeEntry {
       int nm;                      ///< the field number
-      const lDescr *sub;           ///< the descriptor of the sub-type
+      const ocs::tom::FieldDescr *sub;           ///< the descriptor of the sub-type
    };
 
 } // namespace ocs::tom

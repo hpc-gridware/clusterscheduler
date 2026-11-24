@@ -99,11 +99,11 @@
  * @param hostname the host to look for, nullptr is reported as CRITICAL and finds nothing
  * @return the host, or nullptr when it is not defined; mutable although the list is read only, as before
  */
-lListElem *
+ocs::tom::ElementData *
 host_list_locate(const ocs::tom::ConstRawList host_list, const char *hostname) {
    DENTER(TOP_LAYER);
 
-   lListElem *ret = nullptr;
+   ocs::tom::ElementData *ret = nullptr;
 
    if (host_list) {
       if (hostname != nullptr) {
@@ -112,7 +112,8 @@ host_list_locate(const ocs::tom::ConstRawList host_list, const char *hostname) {
          if (element) {
             if (object_has_type(element, ocs::tom::EH::descriptor.e)) {
                // the lookup hands out the element for writing, as lGetElemHostRW() did on the read-only list
-               ret = const_cast<lListElem *>(ocs::tom::find_first(host_list, EH_name, ocs::tom::Host(hostname)));
+               ret = const_cast<ocs::tom::ElementData *>(ocs::tom::find_first(host_list, EH_name,
+                                                                              ocs::tom::Host(hostname)));
             } else {
                // the old lookup on NoName: the message of lGetElemHost() and no element
                ocs::tom::missing_key_field(ocs::tom::KeyOp::FindHost, __func__, NoName, host_list.descr());

@@ -134,7 +134,7 @@ static constexpr int SUB_SIZE = 3;
 // helpers
 // ---------------------------------------------------------------------------
 
-static bool list_equal(const lList *a, const lList *b);
+static bool list_equal(const ocs::tom::ListData *a, const ocs::tom::ListData *b);
 
 /**
  * @brief Compare two elements field by field, sublists and sub-objects included
@@ -146,12 +146,12 @@ static bool list_equal(const lList *a, const lList *b);
  * @param b the second element, may be nullptr
  * @return true if both are nullptr or carry the same fields and values
  */
-static bool elem_equal(const lListElem *a, const lListElem *b) {
+static bool elem_equal(const ocs::tom::ElementData *a, const ocs::tom::ElementData *b) {
    if (a == nullptr || b == nullptr) {
       return a == b;
    }
-   const lDescr *da = ocs::tom::ConstRawElement(a).descr();
-   const lDescr *db = ocs::tom::ConstRawElement(b).descr();
+   const ocs::tom::FieldDescr *da = ocs::tom::ConstRawElement(a).descr();
+   const ocs::tom::FieldDescr *db = ocs::tom::ConstRawElement(b).descr();
    const int n = ocs::tom::descr_length(da);
    if (n != ocs::tom::descr_length(db)) {
       fprintf(stderr, "elements have %d and %d fields\n", n, ocs::tom::descr_length(db));
@@ -193,10 +193,12 @@ static bool elem_equal(const lListElem *a, const lListElem *b) {
             same = ocs::tom::get<std::int64_t>(a, nm) == ocs::tom::get<std::int64_t>(b, nm);
             break;
          case MT_LIST:
-            same = list_equal(ocs::tom::get<const lList *>(a, nm), ocs::tom::get<const lList *>(b, nm));
+            same = list_equal(ocs::tom::get<const ocs::tom::ListData *>(a, nm),
+                              ocs::tom::get<const ocs::tom::ListData *>(b, nm));
             break;
          case MT_OBJECT:
-            same = elem_equal(ocs::tom::get<const lListElem *>(a, nm), ocs::tom::get<const lListElem *>(b, nm));
+            same = elem_equal(ocs::tom::get<const ocs::tom::ElementData *>(a, nm),
+                              ocs::tom::get<const ocs::tom::ElementData *>(b, nm));
             break;
          default:
             break;
@@ -215,7 +217,7 @@ static bool elem_equal(const lListElem *a, const lListElem *b) {
  * @param b the second list, may be nullptr
  * @return true if both are nullptr or hold equal elements in the same order
  */
-static bool list_equal(const lList *a, const lList *b) {
+static bool list_equal(const ocs::tom::ListData *a, const ocs::tom::ListData *b) {
    if (a == nullptr || b == nullptr) {
       return a == b;
    }
@@ -244,7 +246,7 @@ static bool list_equal(const lList *a, const lList *b) {
  * @param names the expected names, terminated by NoName
  * @return true if the fields that have a value and their order match
  */
-static bool descr_names_are(const lDescr *dp, const int *names) {
+static bool descr_names_are(const ocs::tom::FieldDescr *dp, const int *names) {
    if (dp == nullptr) {
       return false;
    }
@@ -263,7 +265,7 @@ static bool descr_names_are(const lDescr *dp, const int *names) {
  * @param lp the list, may be empty
  * @return the descriptor, nullptr for no list
  */
-static const lDescr *descr_of(const ocs::tom::ConstRawList lp) {
+static const ocs::tom::FieldDescr *descr_of(const ocs::tom::ConstRawList lp) {
    return lp ? lp.descr() : nullptr;
 }
 
@@ -279,7 +281,7 @@ static const lDescr *descr_of(const ocs::tom::ConstRawList lp) {
  */
 static ocs::tom::RawListPtr make_source() {
    auto owner = ocs::tom::RawListPtr::create(SP_Type, ocs::tom::Hashing::On, "source");
-   lList *lp = owner.get();
+   ocs::tom::ListData *lp = owner.get();
    const int sub_pos = ocs::tom::field_pos(SP_Type, SP_sub);
    for (int i = 0; i < SOURCE_SIZE; i++) {
       const std::string n = std::to_string(i);
@@ -290,7 +292,7 @@ static ocs::tom::RawListPtr make_source() {
       ep.set(SP_flag, i % 2 == 0);
       ep.set(SP_big, (static_cast<std::uint64_t>(1) << 40) + i);
       ep.set(SP_spool, ("spool" + n).c_str());
-      lList *sub_list = ocs::tom::get_or_create_list(ep, sub_pos, nullptr, SPS_Type);
+      ocs::tom::ListData *sub_list = ocs::tom::get_or_create_list(ep, sub_pos, nullptr, SPS_Type);
       for (int k = 0; k < SUB_SIZE; k++) {
          const std::string nk = n + "-" + std::to_string(k);
          const ocs::tom::RawElement sub = ocs::tom::add_elem_str(sub_list, SPS_name, ("s" + nk).c_str(), SPS_Type);
@@ -314,7 +316,7 @@ static ocs::tom::RawListPtr make_source() {
  * @param fields the fields
  * @return the owner of the selection
  */
-static ocs::tom::RawWhatPtr what_of(const lDescr *descr, const std::initializer_list<int> fields) {
+static ocs::tom::RawWhatPtr what_of(const ocs::tom::FieldDescr *descr, const std::initializer_list<int> fields) {
    return ocs::tom::what_of(descr, std::span<const int>(fields.begin(), fields.size()));
 }
 
@@ -352,8 +354,8 @@ static ocs::tom::RawWherePtr group_is(const ocs::tom::CompareOp op, const std::u
  * @param what the what, may be nullptr
  * @return the owner of the result, empty for no match or an error
  */
-static ocs::tom::RawListPtr select_old(const char *name, const lList *lp, const lCondition *where,
-                                        const lEnumeration *what) {
+static ocs::tom::RawListPtr select_old(const char *name, const ocs::tom::ListData *lp, const ocs::tom::WhereData *where,
+                                        const ocs::tom::WhatData *what) {
    return ocs::tom::select_as(name, lp, where, what, ocs::tom::Hashing::On);
 }
 
@@ -385,7 +387,7 @@ static int unpack_list_from(ocs::tom::PackBuffer &pb, ocs::tom::RawListPtr &out,
  * @param out receives the owner of the unpacked list
  * @return the unpack result, PACK_SUCCESS on success
  */
-static int pack_unpack_list(const lList *lp, ocs::tom::RawListPtr &out) {
+static int pack_unpack_list(const ocs::tom::ListData *lp, ocs::tom::RawListPtr &out) {
    try {
       ocs::tom::PackBuffer pb(false, 1024);
       ocs::tom::pack_list(&pb.raw(), lp, nullptr, 0);
@@ -401,7 +403,7 @@ static int pack_unpack_list(const lList *lp, ocs::tom::RawListPtr &out) {
  * @param out receives the owner of the unpacked element
  * @return the unpack result, PACK_SUCCESS on success
  */
-static int pack_unpack_elem(const lListElem *ep, ocs::tom::RawElementPtr &out) {
+static int pack_unpack_elem(const ocs::tom::ElementData *ep, ocs::tom::RawElementPtr &out) {
    try {
       ocs::tom::PackBuffer pb(false, 1024);
       ocs::tom::pack_elem(&pb.raw(), ep, nullptr, 0);
@@ -422,8 +424,8 @@ static int pack_unpack_elem(const lListElem *ep, ocs::tom::RawElementPtr &out) {
  * @param bytes receives the number of bytes select_pack() added, the buffer head excluded
  * @return the unpack result, PACK_SUCCESS on success
  */
-static int select_pack_unpack(const lList *slp, const lCondition *cp, const lEnumeration *what,
-                              ocs::tom::RawListPtr &out, size_t *bytes) {
+static int select_pack_unpack(const ocs::tom::ListData *slp, const ocs::tom::WhereData *cp,
+                              const ocs::tom::WhatData *what, ocs::tom::RawListPtr &out, size_t *bytes) {
    try {
       ocs::tom::PackBuffer pb(false, 1024);
       const size_t head = pb.size();
@@ -445,7 +447,8 @@ static int select_pack_unpack(const lList *slp, const lCondition *cp, const lEnu
  * @param what the what, may be nullptr
  * @return the number of bytes added, or 0 on error
  */
-static size_t select_pack_count(const lList *slp, const lCondition *cp, const lEnumeration *what) {
+static size_t select_pack_count(const ocs::tom::ListData *slp, const ocs::tom::WhereData *cp,
+                                const ocs::tom::WhatData *what) {
    try {
       ocs::tom::PackBuffer pb = ocs::tom::PackBuffer::counting();
       const size_t head = pb.size();
@@ -573,7 +576,7 @@ static void test_select_pack_all_fields() {
 static void test_partial_descr() {
    ocs::tom::RawWhatPtr what = what_of(SP_Type, {SP_spool, SP_name, SP_group});
    const int n = ocs::tom::count_what(what.get(), SP_Type);
-   std::vector<lDescr> dp(SP_Size + 1);
+   std::vector<ocs::tom::FieldDescr> dp(SP_Size + 1);
    int index = 0;
    const int ret = ocs::tom::partial_descr(what.get(), SP_Type, dp.data(), &index);
 
@@ -602,14 +605,14 @@ static void test_partial_descr() {
          (dp[pos_group].mt & MT_UNIQUE) == 0 && (dp[pos_spool].mt & MT_SPOOL) != 0);
 
    ocs::tom::RawWhatPtr all = ocs::tom::what_all();
-   std::vector<lDescr> dp_all(SP_Size + 1);
+   std::vector<ocs::tom::FieldDescr> dp_all(SP_Size + 1);
    index = 0;
    const int ret_all = ocs::tom::partial_descr(all.get(), SP_Type, dp_all.data(), &index);
    CHECK(17, "what ALL copies the descriptor without marking it reduced",
          ret_all == 0 && index == static_cast<int>(SP_Size) &&
          ocs::tom::layout_difference(dp_all.data(), SP_Type) == 0 && (dp_all[0].mt & MT_IS_REDUCED) == 0);
 
-   lDescr dummy[1];
+   ocs::tom::FieldDescr dummy[1];
    index = 0;
    CHECK(18, "partial_descr rejects a missing what", ocs::tom::partial_descr(nullptr, SP_Type, dummy, &index) == -1);
 }
@@ -634,7 +637,7 @@ static void test_pack_list_partial() {
    CHECK(19, "with MT_SPOOL only the spooled fields arrive, the others stay empty",
          ret == PACK_SUCCESS && lp->size() == SOURCE_SIZE && e2 &&
          sge_strnullcmp(e2.get<const char *>(SP_spool), "spool2") == 0 && e2.get<const char *>(SP_name) == nullptr &&
-         e2.get<std::uint32_t>(SP_group) == 0 && e2.get<const lListElem *>(SP_obj) == nullptr);
+         e2.get<std::uint32_t>(SP_group) == 0 && e2.get<const ocs::tom::ElementData *>(SP_obj) == nullptr);
    CHECK(20, "the flags reach into the sublist",
          e2 && e2.get<ocs::tom::ConstRawList>(SP_sub).size() == SUB_SIZE &&
          sge_strnullcmp(e2.get<ocs::tom::ConstRawList>(SP_sub).front().get<const char *>(SPS_name), "s2-0") == 0 &&
@@ -668,7 +671,7 @@ static void test_reduced_and_free() {
    int ret = pack_unpack_list(reduced.get(), lp);
    CHECK(22, "a reduced list survives the round trip",
          ret == PACK_SUCCESS && lp->size() == SOURCE_SIZE && list_equal(reduced.get(), lp.get()));
-   const lDescr *dp = descr_of(lp.get());
+   const ocs::tom::FieldDescr *dp = descr_of(lp.get());
    CHECK(23, "the unpacked list is still marked reduced", dp != nullptr && (dp[0].mt & MT_IS_REDUCED) != 0);
    lp.reset();
 
@@ -678,7 +681,7 @@ static void test_reduced_and_free() {
    ret = pack_unpack_elem(free_ep.get(), copy);
    CHECK(24, "a free element with a sub-object survives the round trip",
          ocs::tom::is_free(free_ep.get()) && ret == PACK_SUCCESS && elem_equal(free_ep.get(), copy.get()) &&
-         copy->get<const lListElem *>(SP_obj) != nullptr);
+         copy->get<const ocs::tom::ElementData *>(SP_obj) != nullptr);
    CHECK(25, "the unpacked element is free, its sub-object is bound to it",
          copy && ocs::tom::is_free(copy.get()) && !ocs::tom::is_free(copy->get<ocs::tom::ConstRawElement>(SP_obj)));
    copy.reset();
@@ -689,8 +692,9 @@ static void test_reduced_and_free() {
    odd->set(SP_sub, ocs::tom::RawListPtr::create(SPS_Type, ocs::tom::Hashing::On, "empty"));
    ret = pack_unpack_elem(odd.get(), copy);
    CHECK(26, "a missing sub-object stays missing, an empty sublist stays an empty list",
-         ret == PACK_SUCCESS && copy && copy->get<const lListElem *>(SP_obj) == nullptr &&
-         copy->get<const lList *>(SP_sub) != nullptr && copy->get<ocs::tom::ConstRawList>(SP_sub).size() == 0);
+         ret == PACK_SUCCESS && copy && copy->get<const ocs::tom::ElementData *>(SP_obj) == nullptr &&
+         copy->get<const ocs::tom::ListData *>(SP_sub) != nullptr &&
+         copy->get<ocs::tom::ConstRawList>(SP_sub).size() == 0);
 }
 
 /**
@@ -722,7 +726,8 @@ static int count_by_ulong(const ocs::tom::ConstRawList lp, const int nm, const s
    const int pos = ocs::tom::field_pos(lp.descr(), nm);
    const void *iterator = nullptr;
    int count = 0;
-   for (const lListElem *ep = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp, pos, value, &iterator);
+   for (const ocs::tom::ElementData *ep = ocs::tom::lookup_first<ocs::tom::FieldType::Uint32>(lp, pos, value,
+                                                                                              &iterator);
         ep != nullptr; ep = ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp, pos, value, &iterator)) {
       count++;
    }
@@ -738,7 +743,7 @@ static void test_hash_after_unpack() {
 
    ocs::tom::RawListPtr lp;
    int ret = pack_unpack_list(source.get(), lp);
-   const lDescr *dp = descr_of(lp.get());
+   const ocs::tom::FieldDescr *dp = descr_of(lp.get());
    CHECK(27, "the unpacked list may be hashed on both hashed fields and has no table before a lookup",
          ret == PACK_SUCCESS && dp != nullptr && lp->raw()->nslots == 2 && list_slots(lp.get()) == nullptr &&
          list_hash_table(lp.get(), ocs::tom::field_pos(dp, SP_name)) == nullptr &&

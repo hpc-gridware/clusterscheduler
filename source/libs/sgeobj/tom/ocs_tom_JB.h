@@ -460,7 +460,7 @@ enum JB_Field {
     * List of usernames (qsub/qalter -u username_list).
     * qsub -u does not exist. Not part of a job, but only
     * userd for qalter request as where condition. Could most
-    * probably be passed via lCondition.
+    * probably be passed via ocs::tom::WhereData.
     * @todo change qalter, remove this attribute from job
     */
    JB_user_list,

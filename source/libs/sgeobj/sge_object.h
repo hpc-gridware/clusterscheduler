@@ -161,7 +161,7 @@ typedef enum {
 /// One row of the type table: what a #sge_object_type value actually refers to; generated from `ocs_object_types`
 typedef struct {
    const char *type_name;                 ///< type name, e.g. "JOB"
-   const lDescr *descr;                         ///< descriptor, e.g. JB; nullptr for a type that carries no object
+   const ocs::tom::FieldDescr *descr;   ///< descriptor, e.g. JB; nullptr for a type that carries no object
    const int key_nm;                      ///< nm of the key attribute, or `NoName` when the type has no key
 } object_description;
 
@@ -171,7 +171,7 @@ object_type_get_name(sge_object_type type);
 sge_object_type 
 object_name_get_type(const char *name);
 
-const lDescr *
+const ocs::tom::FieldDescr *
 object_type_get_descr(sge_object_type type);
 
 int
@@ -180,17 +180,17 @@ object_type_get_key_nm(sge_object_type type);
 /* JG: TODO: rename to object_has_descr, make function object_has_type 
              and call this function where possible */
 bool 
-object_has_type(ocs::tom::ConstRawElement object, const lDescr *descr);
+object_has_type(ocs::tom::ConstRawElement object, const ocs::tom::FieldDescr *descr);
 
 /* JG: TODO: rename to object_get_type_descr, check all calls, if possible pass sge_object_type */
-const lDescr *
-object_get_type(const lListElem *object);
+const ocs::tom::FieldDescr *
+object_get_type(const ocs::tom::ElementData *object);
 
 int 
-object_get_primary_key(const lDescr *descr);
+object_get_primary_key(const ocs::tom::FieldDescr *descr);
 
 const char *
-object_get_name(const lDescr *descr);
+object_get_name(const ocs::tom::FieldDescr *descr);
 
 /* CS-2313a: type name of an object identified by content (covers all registered
  * types and GDI-transported elements; see sge_object.cc). */
@@ -198,7 +198,7 @@ const char *
 object_get_type_name(ocs::tom::ConstRawElement object);
 
 const char *
-object_get_name_prefix(const lDescr *descr, dstring *buffer);
+object_get_name_prefix(const ocs::tom::FieldDescr *descr, dstring *buffer);
 
 /**
  * @brief The fields whose value is written as a word rather than in the default form of the field's type
@@ -335,20 +335,20 @@ object_list_has_differences(ocs::tom::ConstRawList this_list, ocs::tom::ListPtr<
                             ocs::tom::ConstRawList old_list);
 
 bool
-object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb, lListElem **epp,
-                          const lDescr *descr);
+object_unpack_elem_verify(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_buffer *pb,
+                          ocs::tom::ElementData **epp, const ocs::tom::FieldDescr *descr);
 
 bool
-object_list_verify_structure(ocs::tom::ConstRawList lp, const lDescr *descr);
+object_list_verify_structure(ocs::tom::ConstRawList lp, const ocs::tom::FieldDescr *descr);
 
 bool
-object_verify_structure(ocs::tom::ConstRawElement ep, const lDescr *descr);
+object_verify_structure(ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr);
 
 bool
-ocs_object_list_verify_type(ocs::tom::ConstRawList lp, const lDescr *descr);
+ocs_object_list_verify_type(ocs::tom::ConstRawList lp, const ocs::tom::FieldDescr *descr);
 
 bool
-ocs_object_verify_type(ocs::tom::ConstRawElement ep, const lDescr *descr);
+ocs_object_verify_type(ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr);
 
 bool
 ocs_object_verify_unique_keys(ocs::tom::ConstRawElement ep, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
@@ -362,7 +362,7 @@ void
 ocs_object_list_remove_repeated_keys(ocs::tom::RawList lp, int nm);
 
 void
-ocs_object_list_add_unique(lList **lpp, lList **src);
+ocs_object_list_add_unique(ocs::tom::ListData **lpp, ocs::tom::ListData **src);
 
 void
 ocs_object_find_repeated_keys(ocs::tom::ConstRawElement ep, std::vector<ocs::RepeatedKey> &found);

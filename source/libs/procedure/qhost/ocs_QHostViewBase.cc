@@ -668,7 +668,7 @@ ocs::QHostViewBase::show_job(std::ostream &os, const ocs::tom::ConstElement<ocs:
             // reads a field of the array task from the job, as it always did; the raw access keeps that
             // behaviour, the typed one would not compile (qhost never sets these columns, see full_listing)
             report_handler.job_value(os, jid, "{:<7.5f} ", "ntix",
-                                     ocs::tom::get<JAT_ntix>(static_cast<const lListElem *>(job)));
+                                     ocs::tom::get<JAT_ntix>(static_cast<const ocs::tom::ElementData *>(job)));
          } else {
             report_handler.job_value(os, jid, std::string(7 + 1, ' ').c_str(), nullptr, nullptr);
          }

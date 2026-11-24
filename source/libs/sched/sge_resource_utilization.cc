@@ -834,7 +834,8 @@ utilization_find_time_or_prevstart_or_prev(const ocs::tom::ConstList<ocs::tom::R
    ocs::tom::Element<ocs::tom::RDE> prev;
 
    // the caller may change the elements of the read-only list, so the walk hands out mutable elements
-   for (auto thiz = ocs::tom::Element<ocs::tom::RDE>::from_typed(const_cast<lListElem *>(diagram.front().raw()));
+   for (auto thiz =
+           ocs::tom::Element<ocs::tom::RDE>::from_typed(const_cast<ocs::tom::ElementData *>(diagram.front().raw()));
         thiz != nullptr; thiz = thiz.next()) {
       uint64_t rde_time = thiz.get<RDE_time>();
       if (time == rde_time) {

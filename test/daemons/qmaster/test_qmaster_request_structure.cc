@@ -190,7 +190,7 @@ main(int /*argc*/, char * /*argv*/[]) {
    // T02: a list of the wrong type at the top level - string elements sent as calendars; the old code
    // refused it too, later, for a missing field - only the syntax status tells the structure check
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       ocs::tom::emplace_back<ST_name>(&lp, CAL_NAME);
       // sent as calendars on purpose, so the list is taken over unchecked
       CHECK(2, "a calendar modify request with string elements is refused as a syntax error",

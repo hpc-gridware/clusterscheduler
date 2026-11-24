@@ -86,11 +86,11 @@ const char *
 get_job_log_name(job_log_t type);
 
 int
-sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
-                ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
+sge_gdi_add_job(ocs::tom::ElementPtr<ocs::tom::JB> &jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                ocs::tom::ListData **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int
-sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
+sge_gdi_copy_job(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ListData **lpp,
                  ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 
 int

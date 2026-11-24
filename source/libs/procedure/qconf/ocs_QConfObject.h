@@ -226,7 +226,7 @@ struct qconf_object_desc {
    bool (*export_exclude)(const char *name);         ///< bulk export: leave this object out
    qconf_read_desc read;                             ///< the read path additions (CS-2796)
    qconf_write_desc write;                           ///< the write path additions (CS-2823)
-   const lDescr *descr = nullptr;                    ///< descriptor, from the entry's object type
+   const ocs::tom::FieldDescr *descr = nullptr;                    ///< descriptor, from the entry's object type
    int name_nm = NoName;                             ///< name field, NoName for the singletons; from the
                                                      ///< entry's key field
 };
@@ -243,7 +243,7 @@ using ocs_qconf_check_fn = int (*)(ocs::tom::Element<T>, ocs::tom::ListPtr<ocs::
 /** @brief The object type specific hooks of one qconf object type, typed on the type
  *
  * The hooks used to be raw function pointers in qconf_object_desc taking
- * `lListElem *` and `lList *`; every implementation then took the element into
+ * `ocs::tom::ElementData *` and `ocs::tom::ListData *`; every implementation then took the element into
  * a handle of its type. Typed here, the compiler checks that a row pairs each
  * hook with its own type, and the callers reach them through the entry of
  * #ocs_qconf_objects, see ocs_with_qconf_object().

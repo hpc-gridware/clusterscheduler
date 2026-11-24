@@ -174,7 +174,7 @@ bool host_is_centry_referenced(ocs::tom::ConstElement<ocs::tom::EH> this_elem,
 bool host_is_centry_a_complex_value(ocs::tom::ConstElement<ocs::tom::EH> this_elem,
                                     ocs::tom::ConstElement<ocs::tom::CE> centry);
 
-lListElem *
+ocs::tom::ElementData *
 host_list_locate(ocs::tom::ConstRawList host_list, const char *hostname);
 
 /* CS-2438: is this host an admin / submit host?

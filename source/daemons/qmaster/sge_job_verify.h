@@ -44,8 +44,8 @@
 #include "sgeobj/sge_answer.h"
 
 int
-sge_job_verify_adjust(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp, lList **lpp,
-                      ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
+sge_job_verify_adjust(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
+                      ocs::tom::ListData **lpp, ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monitor);
 bool
 job_verify_adjust_request_set(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::ConstElement<ocs::tom::JB> jep,
                               ocs::tom::ConstList<ocs::tom::CE> master_centry_list);

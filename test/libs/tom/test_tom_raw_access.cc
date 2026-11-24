@@ -57,24 +57,24 @@
 
 // the non-owning raw handles are made implicitly from the matching pointer and typed handle, never with a loss
 // of const; the owners stay explicit (RAW-ACC-07)
-static_assert(std::is_convertible_v<const lListElem *, ocs::tom::ConstRawElement>);
-static_assert(std::is_convertible_v<lListElem *, ocs::tom::RawElement>);
-static_assert(!std::is_convertible_v<const lListElem *, ocs::tom::RawElement>);
+static_assert(std::is_convertible_v<const ocs::tom::ElementData *, ocs::tom::ConstRawElement>);
+static_assert(std::is_convertible_v<ocs::tom::ElementData *, ocs::tom::RawElement>);
+static_assert(!std::is_convertible_v<const ocs::tom::ElementData *, ocs::tom::RawElement>);
 static_assert(!std::is_convertible_v<ocs::tom::ConstRawElement, ocs::tom::RawElement>);
 static_assert(std::is_convertible_v<ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::ConstRawElement>);
 static_assert(std::is_convertible_v<ocs::tom::Element<ocs::tom::JB>, ocs::tom::ConstRawElement>);
 static_assert(std::is_convertible_v<ocs::tom::Element<ocs::tom::JB>, ocs::tom::RawElement>);
 static_assert(!std::is_convertible_v<ocs::tom::ConstElement<ocs::tom::JB>, ocs::tom::RawElement>);
-static_assert(std::is_convertible_v<const lList *, ocs::tom::ConstRawList>);
-static_assert(std::is_convertible_v<lList *, ocs::tom::RawList>);
-static_assert(!std::is_convertible_v<const lList *, ocs::tom::RawList>);
+static_assert(std::is_convertible_v<const ocs::tom::ListData *, ocs::tom::ConstRawList>);
+static_assert(std::is_convertible_v<ocs::tom::ListData *, ocs::tom::RawList>);
+static_assert(!std::is_convertible_v<const ocs::tom::ListData *, ocs::tom::RawList>);
 static_assert(!std::is_convertible_v<ocs::tom::ConstRawList, ocs::tom::RawList>);
 static_assert(std::is_convertible_v<ocs::tom::ConstList<ocs::tom::JB>, ocs::tom::ConstRawList>);
 static_assert(std::is_convertible_v<ocs::tom::List<ocs::tom::JB>, ocs::tom::RawList>);
 static_assert(!std::is_convertible_v<ocs::tom::ConstList<ocs::tom::JB>, ocs::tom::RawList>);
-static_assert(!std::is_convertible_v<lListElem *, ocs::tom::RawElementPtr>);
+static_assert(!std::is_convertible_v<ocs::tom::ElementData *, ocs::tom::RawElementPtr>);
 static_assert(!std::is_convertible_v<ocs::tom::ElementPtr<ocs::tom::JB>, ocs::tom::RawElementPtr>);
-static_assert(!std::is_convertible_v<lList *, ocs::tom::RawListPtr>);
+static_assert(!std::is_convertible_v<ocs::tom::ListData *, ocs::tom::RawListPtr>);
 
 namespace {
 
@@ -149,7 +149,7 @@ namespace {
     * @brief The layout of TEST reduced to TEST_obj_any: every other field of TEST is absent in it
     * @return the descriptor, alive for the whole run
     */
-   const lDescr *reduced_test() {
+   const ocs::tom::FieldDescr *reduced_test() {
       return ocs::tom::layout<TEST_obj_any>().get();
    }
 
@@ -174,12 +174,12 @@ namespace {
    bool field_case(const char *label, const int nm, const V a, const V b) {
       const auto full = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
       const auto reduced = ocs::tom::create_raw_elem(reduced_test());
-      lListElem *ep = full.get();
-      const lListElem *cep = ep;
-      lListElem *rp = reduced.get();
-      const lListElem *crp = rp;
-      const lListElem *null_ep = nullptr;
-      lListElem *null_mut = nullptr;
+      ocs::tom::ElementData *ep = full.get();
+      const ocs::tom::ElementData *cep = ep;
+      ocs::tom::ElementData *rp = reduced.get();
+      const ocs::tom::ElementData *crp = rp;
+      const ocs::tom::ElementData *null_ep = nullptr;
+      ocs::tom::ElementData *null_mut = nullptr;
       const ocs::tom::ConstRawElement handle(cep);
       const ocs::tom::RawElement handle_rw(ep);
       const ocs::tom::ConstElement<ocs::tom::TEST> typed(cep);
@@ -287,25 +287,25 @@ test_plain_fields() {
 static void
 test_object_field() {
    const auto test = ocs::tom::create_raw_elem(ocs::tom::TEST::descriptor.e);
-   lListElem *ep = test.get();
-   const lListElem *cep = ep;
+   ocs::tom::ElementData *ep = test.get();
+   const ocs::tom::ElementData *cep = ep;
    const ocs::tom::RawElement handle(ep);
 
    // store, read, write through the mutable read, replace, clear
-   const bool empty_before = ocs::tom::get<const lListElem *>(cep, TEST_obj_jb) == nullptr;
+   const bool empty_before = ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb) == nullptr;
    auto job = ocs::tom::create_raw_elem(ocs::tom::JB::descriptor.e);
    ocs::tom::set(job.get(), JB_job_number, std::uint32_t{5});
-   const lListElem *stored = job.get();
+   const ocs::tom::ElementData *stored = job.get();
    ocs::tom::set(ep, TEST_obj_jb, std::move(job));
    const bool taken = !job;
    const auto held = ocs::tom::get<ocs::tom::ConstRawElement>(cep, TEST_obj_jb);
    const bool read = held.raw() == stored && held.get<std::uint32_t>(JB_job_number) == 5;
-   ocs::tom::set(ocs::tom::get<lListElem *>(ep, TEST_obj_jb), JB_job_number, std::uint32_t{6});
+   ocs::tom::set(ocs::tom::get<ocs::tom::ElementData *>(ep, TEST_obj_jb), JB_job_number, std::uint32_t{6});
    const bool written = handle.get<ocs::tom::RawElement>(TEST_obj_jb).get<std::uint32_t>(JB_job_number) == 6;
    auto second = ocs::tom::RawElementPtr::create(ocs::tom::JB::descriptor.e);
-   const lListElem *second_raw = second.get();
+   const ocs::tom::ElementData *second_raw = second.get();
    handle.set(TEST_obj_jb, std::move(second));
-   const bool replaced = ocs::tom::get<const lListElem *>(cep, TEST_obj_jb) == second_raw;
+   const bool replaced = ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb) == second_raw;
    handle.set(TEST_obj_jb, ocs::tom::RawElementPtr{});
    const bool cleared = !ocs::tom::get<ocs::tom::ConstRawElement>(cep, TEST_obj_jb);
    CHECK(10, "an object field takes the element over, reads it in every form, replaces and clears it",
@@ -330,7 +330,7 @@ test_object_field() {
    auto jobs = ocs::tom::create_raw_list(ocs::tom::JB::descriptor.e);
    auto first_job = ocs::tom::create_raw_elem(ocs::tom::JB::descriptor.e);
    first_job->set(JB_job_number, std::uint32_t{100});
-   lListElem *bound = jobs->push_back(std::move(first_job));
+   ocs::tom::ElementData *bound = jobs->push_back(std::move(first_job));
    ocs::tom::RawElementPtr wrong_owner(bound);
    ocs::tom::RawElementPtr wrong_owner_rw(bound);
    const bool bound_refused =
@@ -339,15 +339,15 @@ test_object_field() {
       expect_reason("object", "raw handle set, bound", [&] { handle.set(TEST_obj_jb, std::move(wrong_owner_rw)); },
                     Reason::BoundElement);
    const bool bound_kept = jobs->size() == 1 && jobs->front().raw() == bound && !wrong_owner && !wrong_owner_rw &&
-                           ocs::tom::get<const lListElem *>(cep, TEST_obj_jb) == nullptr;
+                           ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb) == nullptr;
    CHECK(12, "a bound element is refused with BoundElement and stays in its list", bound_refused && bound_kept);
 
    // a bound element in an owner stays in its list also when another check of set() throws first: the
    // by-value parameter must not free it
    auto queues = ocs::tom::create_raw_list(ocs::tom::QU::descriptor.e);
-   lListElem *bound_queue = queues->push_back(ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e));
+   ocs::tom::ElementData *bound_queue = queues->push_back(ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e));
    const auto reduced_target = ocs::tom::create_raw_elem(reduced_test());   // TEST_obj_jb is absent in it
-   lListElem *null_target = nullptr;
+   ocs::tom::ElementData *null_target = nullptr;
    ocs::tom::RawElementPtr to_null(bound);
    ocs::tom::RawElementPtr to_foreign(bound);
    ocs::tom::RawElementPtr to_absent(bound);
@@ -367,7 +367,8 @@ test_object_field() {
                     [&] { handle.set(TEST_obj_jb, std::move(to_sub_type)); }, Reason::WrongSubType);
    const bool other_kept = jobs->size() == 1 && jobs->front().raw() == bound && queues->size() == 1 &&
                            queues->front().raw() == bound_queue && !to_null && !to_foreign && !to_absent &&
-                           !to_number && !to_sub_type && ocs::tom::get<const lListElem *>(cep, TEST_obj_jb) == nullptr;
+                           !to_number && !to_sub_type &&
+                           ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb) == nullptr;
    CHECK(24, "set() of a bound element that fails another check first (NullElement, ForeignField, AbsentField, "
              "WrongType, WrongSubType) leaves the element in its list",
          other_reasons && other_kept);
@@ -376,28 +377,30 @@ test_object_field() {
    auto next_job = ocs::tom::create_raw_elem(ocs::tom::JB::descriptor.e);
    next_job->set(JB_job_number, std::uint32_t{101});
    ocs::tom::set(ep, TEST_obj_jb, std::move(next_job));
-   const lListElem *inside = ocs::tom::get<const lListElem *>(cep, TEST_obj_jb);
+   const ocs::tom::ElementData *inside = ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb);
    auto taken_out = ocs::tom::take_raw_object(ep, TEST_obj_jb);
-   const bool out = taken_out.get().raw() == inside && ocs::tom::get<const lListElem *>(cep, TEST_obj_jb) == nullptr;
+   const bool out = taken_out.get().raw() == inside &&
+                    ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb) == nullptr;
    jobs->push_back(std::move(taken_out));
    handle.set(TEST_obj_jb, ocs::tom::create_raw_elem(ocs::tom::JB::descriptor.e));
    const auto again = handle.take(TEST_obj_jb);
    const auto none = handle.take(TEST_obj_jb);
    CHECK(13, "take_raw_object() and the method take() hand the element out free; an empty field gives none",
-         out && jobs->size() == 2 && again && !none && ocs::tom::get<const lListElem *>(cep, TEST_obj_jb) == nullptr);
+         out && jobs->size() == 2 && again && !none &&
+         ocs::tom::get<const ocs::tom::ElementData *>(cep, TEST_obj_jb) == nullptr);
 
    // the reasons of the object accessors
    const auto reduced = ocs::tom::create_raw_elem(reduced_test());
-   lListElem *rp = reduced.get();
-   const lListElem *crp = rp;
-   const lListElem *null_ep = nullptr;
-   lListElem *null_mut = nullptr;
+   ocs::tom::ElementData *rp = reduced.get();
+   const ocs::tom::ElementData *crp = rp;
+   const ocs::tom::ElementData *null_ep = nullptr;
+   ocs::tom::ElementData *null_mut = nullptr;
    const bool reasons =
       expect_reason("object", "get, null",
                     [&] { static_cast<void>(ocs::tom::get<ocs::tom::ConstRawElement>(null_ep, TEST_obj_jb)); },
                     Reason::NullElement) &&
       expect_reason("object", "get, foreign",
-                    [&] { static_cast<void>(ocs::tom::get<const lListElem *>(cep, JB_job_number)); },
+                    [&] { static_cast<void>(ocs::tom::get<const ocs::tom::ElementData *>(cep, JB_job_number)); },
                     Reason::ForeignField) &&
       expect_reason("object", "get, absent",
                     [&] { static_cast<void>(ocs::tom::get<ocs::tom::ConstRawElement>(crp, TEST_obj_jb)); },
@@ -431,49 +434,51 @@ test_object_field() {
 static void
 test_list_field() {
    const auto job = ocs::tom::create_raw_elem(ocs::tom::JB::descriptor.e);
-   lListElem *jp = job.get();
-   const lListElem *cjp = jp;
+   ocs::tom::ElementData *jp = job.get();
+   const ocs::tom::ElementData *cjp = jp;
    const ocs::tom::RawElement handle(jp);
 
    // store, read, append through the mutable read, replace by the method, clear
    auto env = ocs::tom::create_raw_list(ocs::tom::VA::descriptor.e, ocs::tom::Hashing::On, "env");
    env->push_back(variable("A"));
-   const lList *env_raw = env.get();
+   const ocs::tom::ListData *env_raw = env.get();
    ocs::tom::set(jp, JB_env_list, std::move(env));
-   const bool stored = !env && ocs::tom::get<const lList *>(cjp, JB_env_list) == env_raw &&
+   const bool stored = !env && ocs::tom::get<const ocs::tom::ListData *>(cjp, JB_env_list) == env_raw &&
                        ocs::tom::get<ocs::tom::ConstRawList>(cjp, JB_env_list).size() == 1;
-   ocs::tom::append(ocs::tom::get<lList *>(jp, JB_env_list), variable("B"));
+   ocs::tom::append(ocs::tom::get<ocs::tom::ListData *>(jp, JB_env_list), variable("B"));
    const bool appended = handle.get<ocs::tom::RawList>(JB_env_list).size() == 2;
    handle.set(JB_env_list, ocs::tom::create_raw_list(ocs::tom::VA::descriptor.e));
    const bool replaced = handle.get<ocs::tom::ConstRawList>(JB_env_list).empty() &&
-                         handle.get<const lList *>(JB_env_list) != nullptr;
+                         handle.get<const ocs::tom::ListData *>(JB_env_list) != nullptr;
    handle.set(JB_env_list, ocs::tom::RawListPtr{});
-   const bool cleared = ocs::tom::get<const lList *>(cjp, JB_env_list) == nullptr;
+   const bool cleared = ocs::tom::get<const ocs::tom::ListData *>(cjp, JB_env_list) == nullptr;
    CHECK(15, "a list field takes the list over, reads it in every form, replaces and clears it",
          stored && appended && replaced && cleared);
 
    // exchange gives the old list back, in the free and the member form
    auto one = ocs::tom::create_raw_list(ocs::tom::VA::descriptor.e);
    one->push_back(variable("C"));
-   const lList *one_raw = one.get();
+   const ocs::tom::ListData *one_raw = one.get();
    ocs::tom::set(jp, JB_env_list, std::move(one));
    auto two = ocs::tom::create_raw_list(ocs::tom::VA::descriptor.e);
    two->push_back(variable("D"));
    two->push_back(variable("E"));
-   const lList *two_raw = two.get();
+   const ocs::tom::ListData *two_raw = two.get();
    auto old = ocs::tom::exchange(jp, JB_env_list, std::move(two));
    const bool first = old.get().raw() == one_raw && old->size() == 1 &&
-                      ocs::tom::get<const lList *>(cjp, JB_env_list) == two_raw;
+                      ocs::tom::get<const ocs::tom::ListData *>(cjp, JB_env_list) == two_raw;
    auto back = handle.exchange(JB_env_list, std::move(old));
-   const bool second = back.get().raw() == two_raw && ocs::tom::get<const lList *>(cjp, JB_env_list) == one_raw;
+   const bool second = back.get().raw() == two_raw && ocs::tom::get<const ocs::tom::ListData *>(cjp,
+                                                                                                JB_env_list) == one_raw;
    auto last = handle.exchange(JB_env_list, ocs::tom::RawListPtr{});
-   const bool third = last.get().raw() == one_raw && ocs::tom::get<const lList *>(cjp, JB_env_list) == nullptr;
+   const bool third = last.get().raw() == one_raw && ocs::tom::get<const ocs::tom::ListData *>(cjp,
+                                                                                               JB_env_list) == nullptr;
    CHECK(16, "exchange() and the method exchange() put the new list in and hand the old one out",
          first && second && third);
 
    // another sub-type than the model names is refused, the field keeps its list
    ocs::tom::set(jp, JB_env_list, ocs::tom::create_raw_list(ocs::tom::VA::descriptor.e));
-   const lList *kept_raw = ocs::tom::get<const lList *>(cjp, JB_env_list);
+   const ocs::tom::ListData *kept_raw = ocs::tom::get<const ocs::tom::ListData *>(cjp, JB_env_list);
    const bool sub_refused =
       expect_reason("list", "free set, sub-type",
                     [&] { ocs::tom::set(jp, JB_env_list, ocs::tom::create_raw_list(ocs::tom::QU::descriptor.e)); },
@@ -488,13 +493,13 @@ test_list_field() {
                     },
                     Reason::WrongSubType);
    CHECK(17, "a list of another sub-type is refused with WrongSubType and the field keeps its list",
-         sub_refused && ocs::tom::get<const lList *>(cjp, JB_env_list) == kept_raw);
+         sub_refused && ocs::tom::get<const ocs::tom::ListData *>(cjp, JB_env_list) == kept_raw);
 
    // the reasons of the list accessors
    const auto reduced = ocs::tom::create_raw_elem(ocs::tom::layout<JB_job_number>().get());
-   lListElem *rp = reduced.get();
-   const lListElem *crp = rp;
-   const lListElem *null_ep = nullptr;
+   ocs::tom::ElementData *rp = reduced.get();
+   const ocs::tom::ElementData *crp = rp;
+   const ocs::tom::ElementData *null_ep = nullptr;
    const bool reasons =
       expect_reason("list", "get, null",
                     [&] { static_cast<void>(ocs::tom::get<ocs::tom::ConstRawList>(null_ep, JB_env_list)); },
@@ -503,13 +508,13 @@ test_list_field() {
                     [&] { static_cast<void>(ocs::tom::get<ocs::tom::ConstRawList>(cjp, TEST_uint32)); },
                     Reason::ForeignField) &&
       expect_reason("list", "get, absent",
-                    [&] { static_cast<void>(ocs::tom::get<const lList *>(crp, JB_env_list)); },
+                    [&] { static_cast<void>(ocs::tom::get<const ocs::tom::ListData *>(crp, JB_env_list)); },
                     Reason::AbsentField) &&
       expect_reason("list", "get as an object",
                     [&] { static_cast<void>(ocs::tom::get<ocs::tom::ConstRawElement>(cjp, JB_env_list)); },
                     Reason::WrongType) &&
       expect_reason("list", "raw handle get as an object",
-                    [&] { static_cast<void>(handle.get<lListElem *>(JB_env_list)); }, Reason::WrongType) &&
+                    [&] { static_cast<void>(handle.get<ocs::tom::ElementData *>(JB_env_list)); }, Reason::WrongType) &&
       expect_reason("list", "exchange a number field",
                     [&] {
                        static_cast<void>(ocs::tom::exchange(jp, JB_job_number,
@@ -532,9 +537,9 @@ test_soft() {
    const auto reduced = ocs::tom::create_raw_elem(reduced_test());
    ocs::tom::set(full.get(), TEST_uint32, std::uint32_t{3});
    ocs::tom::set(full.get(), TEST_string, "text");
-   const lListElem *cep = full.get();
-   const lListElem *crp = reduced.get();
-   const lListElem *null_ep = nullptr;
+   const ocs::tom::ElementData *cep = full.get();
+   const ocs::tom::ElementData *crp = reduced.get();
+   const ocs::tom::ElementData *null_ep = nullptr;
    const ocs::tom::ConstRawElement handle(crp);
 
    const bool has = !ocs::tom::has(null_ep, TEST_uint32) && !ocs::tom::has(cep, JB_job_number) &&
@@ -579,7 +584,7 @@ test_soft() {
 static void
 test_order() {
    const auto reduced = ocs::tom::create_raw_elem(reduced_test());
-   const lListElem *crp = reduced.get();
+   const ocs::tom::ElementData *crp = reduced.get();
    // get checks the presence before the type: a wrong type on an absent field is AbsentField in every form
    const bool order =
       expect_reason("order", "free", [&] { static_cast<void>(ocs::tom::get<std::uint64_t>(crp, TEST_uint32)); },
@@ -627,13 +632,15 @@ test_handle_arguments() {
    const auto reduced = ocs::tom::create_raw_elem(reduced_test());
    const ocs::tom::RawElement reduced_handle = reduced.get();
 
-   static_assert(std::is_same_v<decltype(ocs::tom::find_first<std::uint32_t>(list, TEST_uint32, 12U)), lListElem *>);
+   static_assert(std::is_same_v<decltype(ocs::tom::find_first<std::uint32_t>(list, TEST_uint32, 12U)),
+                 ocs::tom::ElementData *>);
    static_assert(
-      std::is_same_v<decltype(ocs::tom::find_first<std::uint32_t>(clist, TEST_uint32, 12U)), const lListElem *>);
+      std::is_same_v<decltype(ocs::tom::find_first<std::uint32_t>(clist, TEST_uint32,
+                                                                  12U)), const ocs::tom::ElementData *>);
    const bool reads = ocs::tom::get<std::uint32_t>(cadded, TEST_uint32) == 12 &&
                       ocs::tom::get<std::uint32_t>(added, TEST_uint32) == 12 &&
-                      ocs::tom::get<const lListElem *>(cadded, TEST_obj_jb) == nullptr &&
-                      ocs::tom::get<lListElem *>(added, TEST_obj_jb) == nullptr &&
+                      ocs::tom::get<const ocs::tom::ElementData *>(cadded, TEST_obj_jb) == nullptr &&
+                      ocs::tom::get<ocs::tom::ElementData *>(added, TEST_obj_jb) == nullptr &&
                       !ocs::tom::get<ocs::tom::RawElement>(added, TEST_obj_jb) &&
                       !ocs::tom::get<ocs::tom::ConstRawElement>(cadded, TEST_obj_jb);
    const bool finds = ocs::tom::find_first<std::uint32_t>(clist, TEST_uint32, 12U) == added.raw() &&
@@ -659,9 +666,9 @@ test_handle_arguments() {
                     Reason::WrongType);
    // the counterpart of compile_fail/raw_set_typed_owner.cc: a typed owner goes to set() converted explicitly
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
-   const lListElem *job_raw = job.get().raw();
+   const ocs::tom::ElementData *job_raw = job.get().raw();
    ocs::tom::set(added, TEST_obj_jb, ocs::tom::RawElementPtr(std::move(job)));
-   const bool explicit_set = !job && ocs::tom::get<const lListElem *>(cadded, TEST_obj_jb) == job_raw;
+   const bool explicit_set = !job && ocs::tom::get<const ocs::tom::ElementData *>(cadded, TEST_obj_jb) == job_raw;
    CHECK(25, "get<V>() and find_first<V>() take a read-only and a mutable raw handle and give what the pointer "
              "forms give, with the same reasons; a typed owner goes to set() converted explicitly",
          reads && finds && reasons && explicit_set);

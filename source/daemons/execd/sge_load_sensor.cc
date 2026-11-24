@@ -90,7 +90,7 @@ static int read_ls();
  * of the corresponding load sensor; it lives as long as the process,
  * so it stays a raw pointer and is read through checked handles
  */
-static lList *ls_list = nullptr;   /* LS */
+static ocs::tom::ListData *ls_list = nullptr;   /* LS */
 
 /* 
  * should we start the qidle command 

@@ -205,7 +205,7 @@ job_update_master_list([[maybe_unused]] sge_evc_class_t *evc, [[maybe_unused]] c
              if (has_category && has_category_id) {
                 // the master category list (CT), read access as master_list() gives it; JB_category is a
                 // reference field, which takes the raw element
-                lListElem *category =
+                ocs::tom::ElementData *category =
                    ocs::DataStore::master_list_rw<SGE_TYPE_CATEGORY>(true).find_first<CT_id>(category_id);
 
                 event_job.set<JB_category>(category);

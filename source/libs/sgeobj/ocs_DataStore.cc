@@ -52,7 +52,7 @@ namespace ocs {
 
    /// data store structure. hold all master lists.
    struct obj_data_store_t {
-      lList *master_list[SGE_TYPE_ALL]; ///< master list
+      ocs::tom::ListData *master_list[SGE_TYPE_ALL]; ///< master list
    };
 
    /// thread shared storage data type.
@@ -190,7 +190,7 @@ namespace ocs {
     * @param for_read true when the caller only reads, so a snapshot store may answer
     * @return pointer to the master list. will never be nullptr.
     */
-   lList **
+   ocs::tom::ListData **
    DataStore::get_master_list_rw(sge_object_type type, bool for_read) {
       DENTER(DATA_STORE_LAYER);
       GET_SPECIFIC(obj_thread_local_t, obj_state, obj_state_init, obj_state_key);
@@ -245,7 +245,7 @@ namespace ocs {
       }
 #endif
 
-      lList **ret;
+      ocs::tom::ListData **ret;
       ret = &(obj_thread_shared.data_store[obj_state->ds_id].master_list[type]);
       DRETURN(ret);
    }
@@ -310,7 +310,7 @@ namespace ocs {
     * @param type the type of the master list
     * @return the location of the list, never nullptr
     */
-   lList **
+   ocs::tom::ListData **
    DataStore::master_list_slot(const sge_object_type type) {
       return get_master_list_rw(type);
    }

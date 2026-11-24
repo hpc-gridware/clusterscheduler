@@ -362,7 +362,7 @@ static bool find_name_as_user(const char *user_name, const ocs::tom::ConstList<o
  * @param acl the access list to check (US)
  * @return 1 when the user is contained, 0 when not
  */
-int sge_contained_in_access_list(const char *user, const char *group, const lList *grp_list,
+int sge_contained_in_access_list(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                                  const ocs::tom::ConstElement<ocs::tom::US> acl) {
    DENTER(TOP_LAYER);
    bool found = false;
@@ -403,7 +403,7 @@ int sge_contained_in_access_list(const char *user, const char *group, const lLis
  * @return 1 when the user is contained in at least one, 0 when not, -1 when
  *         both `user` and `group` were nullptr
  */
-int sge_contained_in_access_list_(const char *user, const char *group, const lList *grp_list,
+int sge_contained_in_access_list_(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                                   const ocs::tom::ConstList<ocs::tom::US> acl,
                                   const ocs::tom::ConstList<ocs::tom::US> acl_list) {
    DENTER(TOP_LAYER);
@@ -433,7 +433,7 @@ int sge_contained_in_access_list_(const char *user, const char *group, const lLi
  * @param acl_list The list of ACLs (US)
  * @return 1 if the user has access, 0 otherwise
  */
-int sge_has_access(const char *user, const char *group, const lList *grp_list,
+int sge_has_access(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                    const ocs::tom::ConstElement<ocs::tom::QU> q, const ocs::tom::ConstList<ocs::tom::US> acl_list) {
    return sge_has_access_(user, group, grp_list, q.get<QU_acl>(), q.get<QU_xacl>(), acl_list);
 }
@@ -453,7 +453,7 @@ int sge_has_access(const char *user, const char *group, const lList *grp_list,
  * @param acl_list The list of ACLs (US)
  * @return 1 if the user has access, 0 otherwise
  */
-int sge_has_access_(const char *user, const char *group, const lList *grp_list,
+int sge_has_access_(const char *user, const char *group, const ocs::tom::ListData *grp_list,
                     const ocs::tom::ConstList<ocs::tom::US> q_acl, const ocs::tom::ConstList<ocs::tom::US> q_xacl,
                     const ocs::tom::ConstList<ocs::tom::US> acl_list) {
    DENTER(TOP_LAYER);

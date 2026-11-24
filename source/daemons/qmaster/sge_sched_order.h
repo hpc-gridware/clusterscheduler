@@ -49,7 +49,7 @@
  * than the run itself.
  */
 typedef struct {
-   lList *order_list;             ///< The orders collected so far
+   ocs::tom::ListData *order_list;             ///< The orders collected so far
    sge_sl_list_t *request_list;   ///< The GDI requests sent but not yet acknowledged
 } gdi_request_queue_t;
 
@@ -62,7 +62,8 @@ bool
 schedd_order_destroy();
 
 bool
-sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN> *answer_list, lList **order_list);
+sge_schedd_add_gdi_order_request(order_t *orders, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                                 ocs::tom::ListData **order_list);
 
 bool
 sge_schedd_send_orders(order_t *orders, ocs::tom::ListPtr<ocs::tom::OR> &order_list,

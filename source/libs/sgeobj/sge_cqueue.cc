@@ -982,7 +982,7 @@ ocs_cqueue_xattr_set_href(const ocs::tom::List<A> list, ocs::tom::ListPtr<ocs::t
  *
  * @note MT-NOTE: cqueue_xattr_pre_gdi() is MT safe
  */
-bool cqueue_xattr_pre_gdi(lList *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+bool cqueue_xattr_pre_gdi(ocs::tom::ListData *this_list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(CQUEUE_LAYER);
 
    bool ret = true;
@@ -1248,7 +1248,7 @@ ocs::tom::Element<ocs::tom::QU> cqueue_list_locate_qinstance_msg(const ocs::tom:
                                                                  const char *full_name, const bool raise_error) {
    const auto ret = cqueue_list_locate_qinstance_msg(ocs::tom::ConstList<ocs::tom::CQ>(cqueue_list), full_name,
                                                      raise_error);
-   return ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<lListElem *>(ret.raw()));
+   return ocs::tom::Element<ocs::tom::QU>::from_typed(const_cast<ocs::tom::ElementData *>(ret.raw()));
 }
 
 

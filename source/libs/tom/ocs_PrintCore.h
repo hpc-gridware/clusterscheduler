@@ -46,7 +46,7 @@ namespace ocs::tom {
     * @param level the nesting level, three blanks each
     * @throw ListCoreError if @p ep is null
     */
-   void print_elem(dstring *buffer, const lListElem *ep, int level);
+   void print_elem(dstring *buffer, const ocs::tom::ElementData *ep, int level);
 
    /**
     * @brief Append a list with its name, its number of elements and its elements as text, as lWriteListTo() did
@@ -55,7 +55,7 @@ namespace ocs::tom {
     * @param level the nesting level, three blanks each
     * @throw ListCoreError if @p lp is null
     */
-   void print_list(dstring *buffer, const lList *lp, int level);
+   void print_list(dstring *buffer, const ocs::tom::ListData *lp, int level);
 
    /**
     * @brief Append a selection with its nested selections as text, as lWriteWhatToDString() did
@@ -64,7 +64,7 @@ namespace ocs::tom {
     * @param level the nesting level, three blanks each
     * @throw ListCoreError if @p what is null
     */
-   void print_what(dstring *buffer, const lEnumeration *what, int level);
+   void print_what(dstring *buffer, const ocs::tom::WhatData *what, int level);
 
    /**
     * @brief Append a condition as text, as lWriteWhereTo() did
@@ -77,7 +77,7 @@ namespace ocs::tom {
     * @param level the nesting level, three blanks each
     * @throw ListCoreError if @p cp is null
     */
-   void print_where(dstring *buffer, const lCondition *cp, int level);
+   void print_where(dstring *buffer, const ocs::tom::WhereData *cp, int level);
 
    /**
     * @brief Write the text a print function appends to a string into a stream, freeing the string also on an

@@ -179,8 +179,8 @@ typedef struct {
    int        scheduled_pe_jobs;        ///< counts the dispatched pe jobs
    int        scheduled_fast_jobs;      ///< counts the dispatched sequential jobs
    double     decay_constant;           ///< used in the share tree
-   lListElem *sme;                      ///< Job scheduling informations store if not disabled
-   lListElem *tmp_sme;                  ///< the same, for the run in progress
+   ocs::tom::ElementData *sme;                      ///< Job scheduling informations store if not disabled
+   ocs::tom::ElementData *tmp_sme;                  ///< the same, for the run in progress
    bool mes_schedd_info;                ///< write scheduling information into logfile
    int log_schedd_info;                 ///< write scheduling information into logfile
 }  sc_state_t;
@@ -276,9 +276,9 @@ typedef struct{
 
    int c_is_schedd_job_info;                         ///< cached `schedd_job_info` mode, so the common case needs no parsing
    uint32_t s_duration_offset;                       ///< cached `DURATION_OFFSET` from `params`, in seconds
-   lList *c_schedd_job_info_range;                   ///< cached parsed range of `schedd_job_info`
-   lList *c_halflife_decay_list;                     ///< cached parsed `halflife_decay_list`
-   lList *c_params;                                  ///< cached parsed `params`
+   ocs::tom::ListData *c_schedd_job_info_range;                   ///< cached parsed range of `schedd_job_info`
+   ocs::tom::ListData *c_halflife_decay_list;                     ///< cached parsed `halflife_decay_list`
+   ocs::tom::ListData *c_params;                                  ///< cached parsed `params`
    uint32_t c_default_duration;                      ///< cached `default_duration`, in seconds
 
    bool new_config;                                  ///< identifies an update in the configuration
@@ -2296,7 +2296,7 @@ bool sconf_validate_config(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
       // the master list is swapped for the time of the check: the slot borrows the caller's list, and the stored
       // list is kept aside unowned, so neither list is freed here. A throwing check would leave the borrowed list
       // in the slot and the stored one aside, as before; it runs under Sched_Conf_Lock and is fatal anyway
-      lList *store = ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(
+      ocs::tom::ListData *store = ocs::DataStore::replace_master_list<SGE_TYPE_SCHEDD_CONF>(
          ocs::tom::ListPtr<ocs::tom::SC>::from_typed(config.raw())).release();
       sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 

@@ -60,8 +60,8 @@
  * to its category regardless if it is existing or not.
  *
  * This is done with:
- * - sge_add_job_category(lListElem *job, lList *acl_list)
- * - sge_rebuild_job_category(lList *job_list, lList *acl_list)
+ * - sge_add_job_category(ocs::tom::ElementData *job, ocs::tom::ListData *acl_list)
+ * - sge_rebuild_job_category(ocs::tom::ListData *job_list, ocs::tom::ListData *acl_list)
  * - int sge_reset_job_category()
  *
  * During the dispatch run for a job, the category caches

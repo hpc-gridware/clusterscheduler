@@ -77,15 +77,16 @@
  */
 ocs::tom::ListPtr<ocs::tom::AN>
 ocs::gdi::Client::ocs_gdi_single_task(const Target target, const Command cmd, const SubCommand sub_cmd,
-                                      lList **lpp, const lCondition *cp, const lEnumeration *enp) {
+                                      ocs::tom::ListData **lpp, const ocs::tom::WhereData *cp,
+                                      const ocs::tom::WhatData *enp) {
    DENTER(GDI_LAYER);
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    Request gdi_multi{};
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
    // the request copies the condition and the selection, it does not change them
-   int id = gdi_multi.request(&alp, Mode::SEND, target, cmd, sub_cmd, lpp, const_cast<lCondition *>(cp),
-                              const_cast<lEnumeration *>(enp), true);
+   int id = gdi_multi.request(&alp, Mode::SEND, target, cmd, sub_cmd, lpp, const_cast<ocs::tom::WhereData *>(cp),
+                              const_cast<ocs::tom::WhatData *>(enp), true);
    if (id != -1) {
       gdi_multi.wait();
       gdi_multi.get_response(&alp, cmd, sub_cmd, target, id, lpp);
@@ -119,7 +120,7 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_tsm() {
  */
 static ocs::tom::ListPtr<ocs::tom::AN>
 ocs_gdi_trigger_ids(const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::ID> &own_ids,
-                    const lList *id_list) {
+                    const ocs::tom::ListData *id_list) {
    DENTER(GDI_LAYER);
    if (own_ids) {
       auto alp = ocs::gdi::Client::sge_gdi(target, ocs::gdi::Command::TRIGGER, ocs::gdi::SubCommand::NONE, own_ids);
@@ -149,7 +150,7 @@ ocs_gdi_trigger_ids(const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::I
  *
  * @note MT-NOTE: gdi_kill() is MT safe (assumptions)
  */
-ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(lList *id_list, const uint32_t action_flag) {
+ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(ocs::tom::ListData *id_list, const uint32_t action_flag) {
    DENTER(GDI_LAYER);
    ocs::tom::ListPtr<ocs::tom::ID> own_ids;
    auto alp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");

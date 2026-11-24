@@ -100,7 +100,7 @@ namespace ocs::spool::classic {
     * @param list_name Name for the created list
     * @return true if all advance reservations were successfully read and validated, false otherwise
     */
-   bool ar_list_read_from_disk(lList **ar_list, const char *list_name) {
+   bool ar_list_read_from_disk(ocs::tom::ListData **ar_list, const char *list_name) {
       DENTER(TOP_LAYER);
 
       bool ret = true;

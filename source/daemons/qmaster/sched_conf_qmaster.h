@@ -43,7 +43,7 @@
 #include "sgeobj/sge_answer.h"
 
 int
-sge_read_sched_configuration(const lListElem *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
+sge_read_sched_configuration(const ocs::tom::ElementData *aSpoolContext, ocs::tom::ListPtr<ocs::tom::AN> *anAnswer,
                              uint64_t gdi_session);
 
 int

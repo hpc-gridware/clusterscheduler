@@ -74,11 +74,8 @@
 #include "msg_utilbin.h"
 #include "ocs_Bootstrap.h"
 
-static int spool_object_list(const char *directory,
-                             const spooling_field *fields, 
-                             const spool_flatfile_instr *instr,
-                             const lDescr *descr,
-                             sge_object_type obj_type);
+static int spool_object_list(const char *directory, const spooling_field *fields, const spool_flatfile_instr *instr,
+                             const ocs::tom::FieldDescr *descr, sge_object_type obj_type);
 
 static void usage(const char *argv0) {
    fprintf(stderr, "%s\n %s command\n\n", MSG_UTILBIN_USAGE, argv0);
@@ -334,11 +331,8 @@ static int spool_usersets(int argc, char *argv[]) {
  * @param obj_type the object type to spool the objects as
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-static int spool_object_list(const char *directory,
-                             const spooling_field *fields,
-                             const spool_flatfile_instr *instr,
-                             const lDescr *descr,
-                             const sge_object_type obj_type) {
+static int spool_object_list(const char *directory, const spooling_field *fields, const spool_flatfile_instr *instr,
+                             const ocs::tom::FieldDescr *descr, const sge_object_type obj_type) {
    DENTER(TOP_LAYER);
 
    int ret = EXIT_SUCCESS;

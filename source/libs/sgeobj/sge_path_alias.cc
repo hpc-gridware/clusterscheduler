@@ -363,7 +363,8 @@ int path_alias_list_get_path(const ocs::tom::ConstList<ocs::tom::PA> path_aliase
             /* no '*', so we have to look closer   */
             /* resolv the exec host from the alias */
             // the alias list is handed in read-only, but the resolved exec host is written back, as before
-            const auto writable_pap = ocs::tom::Element<ocs::tom::PA>::from_typed(const_cast<lListElem *>(pap.raw()));
+            const auto writable_pap =
+                  ocs::tom::Element<ocs::tom::PA>::from_typed(const_cast<ocs::tom::ElementData *>(pap.raw()));
             if (ocs_resolve_host<PA_exec_host>(writable_pap) != CL_RETVAL_OK) {
                ERROR(MSG_SGETEXT_CANTRESOLVEHOST_S, exec_host);
                continue;

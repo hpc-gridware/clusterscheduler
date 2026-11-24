@@ -119,13 +119,13 @@ enum JSV_Field {
    /**
     * @brief Job Before
     *
-    * `lListElem *` to the job as submitted, so the changes the script asks for can be applied to a copy.
+    * `ocs::tom::ElementData *` to the job as submitted, so the changes the script asks for can be applied to a copy.
     */
    JSV_old_job,
    /**
     * @brief Job After
     *
-    * `lListElem *` to the job the script may modify. This is what is submitted if the verifier accepts.
+    * `ocs::tom::ElementData *` to the job the script may modify. This is what is submitted if the verifier accepts.
     */
    JSV_new_job,
    /**

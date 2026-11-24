@@ -113,7 +113,7 @@ ocs::ShareTree::foreach_call_func(const ocs::tom::Element<ocs::tom::STN> node, c
  * @return Always returns 0.
  */
 int
-ocs::ShareTree::zero_node_fields(lListElem *node_raw, [[maybe_unused]] void *ptr) {
+ocs::ShareTree::zero_node_fields(ocs::tom::ElementData *node_raw, [[maybe_unused]] void *ptr) {
    DENTER(BASIS_LAYER);
 
    // the callback is only applied to share tree nodes; called for every node, so no check

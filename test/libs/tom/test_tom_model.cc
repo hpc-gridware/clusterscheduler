@@ -138,8 +138,8 @@ test_sub_types() {
    for (const ocs::tom::TypeTable &table : ocs::tom::all_type_tables) {
       for (std::size_t i = 0; i < table.size; i++) {
          const int nm = table.fields[i].nm;
-         const lDescr *got = ocs::tom::sub_type(nm);
-         const lDescr *expected = nullptr;
+         const ocs::tom::FieldDescr *got = ocs::tom::sub_type(nm);
+         const ocs::tom::FieldDescr *expected = nullptr;
          for (const ocs::tom::SubTypeEntry &entry : ocs::tom::all_sub_types) {
             if (entry.nm == nm) {
                expected = entry.sub;
@@ -175,13 +175,13 @@ test_type_names() {
    CHECK(8, "type_name() of the full descriptor of every type is the type's name", mismatches == 0);
 
    // a reduced descriptor without the first field of the type: the first entry is kept, marked absent
-   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_name, JB_owner});
+   const ocs::tom::FieldDescr *reduced = ocs::tom::descr_reduce(ocs::tom::JB::descriptor.e, {JB_job_name, JB_owner});
    const char *reduced_name = ocs::tom::type_name(reduced);
    CHECK(9, "type_name() of a reduced descriptor without the type's first field is the type's name",
          reduced != nullptr && reduced_name != nullptr && std::strcmp(reduced_name, "JB") == 0);
    ocs::tom::release_descr(reduced);
 
-   const lDescr empty[] = {{NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr empty[] = {{NoName, MT_END, 0}};
    CHECK(10, "type_name() of nullptr, of an empty descriptor and of the tail of a descriptor is nullptr",
          ocs::tom::type_name(nullptr) == nullptr && ocs::tom::type_name(empty) == nullptr &&
          ocs::tom::type_name(ocs::tom::JB::descriptor.e + 1) == nullptr);
@@ -313,13 +313,13 @@ namespace {
       {2, "TA_list", ocs::tom::FieldType::List, ocs::tom::Flag::None},
    };
    /** @brief The descriptor of type TA */
-   const lDescr ta_descr[] = {{1, MT_UINT32, 0}, {2, MT_LIST, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr ta_descr[] = {{1, MT_UINT32, 0}, {2, MT_LIST, 0}, {NoName, MT_END, 0}};
    /** @brief The fields of type TB: a string */
    const ocs::tom::FieldInfo tb_fields[] = {
       {10, "TB_one", ocs::tom::FieldType::String, ocs::tom::Flag::None},
    };
    /** @brief The descriptor of type TB */
-   const lDescr tb_descr[] = {{10, MT_STRING, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr tb_descr[] = {{10, MT_STRING, 0}, {NoName, MT_END, 0}};
 
    /** @brief The valid model: TA and TB, TA_list holds TB */
    const ocs::tom::TypeTable valid_types[] = {{"TA", ta_descr, ta_fields, 2}, {"TB", tb_descr, tb_fields, 1}};
@@ -343,19 +343,20 @@ namespace {
       {1, "TA_one", ocs::tom::FieldType::Uint32, ocs::tom::Flag::None},
       {3, "TA_list", ocs::tom::FieldType::List, ocs::tom::Flag::None},
    };
-   const lDescr gap_descr[] = {{1, MT_UINT32, 0}, {3, MT_LIST, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr gap_descr[] = {{1, MT_UINT32, 0}, {3, MT_LIST, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable gap_types[] = {{"TA", gap_descr, gap_fields, 2}};
 
    /** @brief A descriptor whose first entry is another field than the table's first */
-   const lDescr first_descr[] = {{5, MT_UINT32, 0}, {2, MT_LIST, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr first_descr[] = {{5, MT_UINT32, 0}, {2, MT_LIST, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable first_types[] = {{"TA", first_descr, ta_fields, 2}};
 
    /** @brief A descriptor that agrees in entry 0, but declares entry 1 a string */
-   const lDescr later_descr[] = {{1, MT_UINT32, 0}, {2, MT_STRING, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr later_descr[] = {{1, MT_UINT32, 0}, {2, MT_STRING, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable later_types[] = {{"TA", later_descr, ta_fields, 2}};
 
    /** @brief A descriptor with one entry more than the table has fields */
-   const lDescr long_descr[] = {{1, MT_UINT32, 0}, {2, MT_LIST, 0}, {3, MT_UINT32, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr long_descr[] = {{1, MT_UINT32, 0}, {2, MT_LIST, 0}, {3, MT_UINT32, 0}, {NoName, MT_END,
+                                                                                                      0}};
    const ocs::tom::TypeTable long_types[] = {{"TA", long_descr, ta_fields, 2}};
 
    /** @brief Two types of the name TA, with field ranges and names of their own */
@@ -371,7 +372,7 @@ namespace {
    const ocs::tom::FieldInfo overlap_fields[] = {
       {2, "TC_one", ocs::tom::FieldType::Uint32, ocs::tom::Flag::None},
    };
-   const lDescr overlap_descr[] = {{2, MT_UINT32, 0}, {NoName, MT_END, 0}};
+   const ocs::tom::FieldDescr overlap_descr[] = {{2, MT_UINT32, 0}, {NoName, MT_END, 0}};
    const ocs::tom::TypeTable overlap_types[] = {
       {"TA", ta_descr, ta_fields, 2},
       {"TC", overlap_descr, overlap_fields, 1},
@@ -477,7 +478,7 @@ test_static_descriptors() {
          ocs::tom::type_table(beyond) == nullptr && ocs::tom::type_table(NoName) == nullptr);
 
    int pos = -1;
-   const lDescr *containing = ocs::tom::descr_static_containing(JB_owner, &pos);
+   const ocs::tom::FieldDescr *containing = ocs::tom::descr_static_containing(JB_owner, &pos);
    int unknown_pos = -1;
    CHECK(40, "the static block lookups give JB and the field's position, nothing for a later or unknown field",
          ocs::tom::descr_static_for(JB_job_number) == ocs::tom::JB::descriptor.e &&

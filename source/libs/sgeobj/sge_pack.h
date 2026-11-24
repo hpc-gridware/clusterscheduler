@@ -48,10 +48,10 @@ enum {
    SGE_WHERE   ///< a filter condition, as `lWhere` builds it
 };
 
-ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where);
+ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const ocs::tom::WhereData *where);
 
-lCondition *ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> where);
+ocs::tom::WhereData *ocs_where_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> where);
 
-ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what);
+ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const ocs::tom::WhatData *what);
 
-lEnumeration *ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> what);
+ocs::tom::WhatData *ocs_what_from_elem(ocs::tom::ConstElement<ocs::tom::PACK> what);

@@ -51,14 +51,14 @@
 
 bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
-                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
-                      bool refresh_all_values, bool is_startup,
-                      monitoring_t *monitor, ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *reduced_elem,
+                      bool refresh_all_values, bool is_startup, monitoring_t *monitor,
+                      ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                       ocs::tom::List<ocs::tom::CQ> master_cqueue_list);
 
 bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,
-                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *reduced_elem,
                          ocs::tom::ConstList<ocs::tom::HR> add_hosts, ocs::tom::ConstList<ocs::tom::HR> rem_hosts,
                          bool refresh_all_values, monitoring_t *monitor,
                          ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
@@ -78,7 +78,7 @@ cqueue_commit(ocs::tom::Element<ocs::tom::CQ> cqueue, uint64_t gdi_session);
  * @param cqueue the cluster queue (`CQ`) whose changes are discarded
  */
 void
-cqueue_rollback(lListElem *cqueue);
+cqueue_rollback(ocs::tom::ElementData *cqueue);
 
 int
 cqueue_success(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::Element<ocs::tom::CQ> cqueue,

@@ -83,10 +83,10 @@
  * @return what the step returns
  */
 template <typename Step>
-static auto ocs_parse_on_untyped_cmdline(lList **ppcmdline, Step step) {
+static auto ocs_parse_on_untyped_cmdline(ocs::tom::ListData **ppcmdline, Step step) {
    /// gives the list back to the untyped caller when the step is done
    struct GiveBack {
-      lList **ppcmdline;                          ///< the caller's list reference
+      ocs::tom::ListData **ppcmdline;                          ///< the caller's list reference
       ocs::tom::ListPtr<ocs::tom::SPA> &cmdline;  ///< the handle that holds the list meanwhile
       /** @brief Hand the list back */
       ~GiveBack() {

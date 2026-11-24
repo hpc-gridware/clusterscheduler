@@ -78,13 +78,13 @@
  *
  * @return on success a spooling context, else nullptr.
  */
-lListElem *
+ocs::tom::ElementData *
 spool_create_dynamic_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args) {
    DENTER(TOP_LAYER);
 
    const char *compiled_method;
-   lListElem *context = nullptr;
+   ocs::tom::ElementData *context = nullptr;
 
 #ifdef SPOOLING_berkeleydb
    compiled_method = "berkeleydb";

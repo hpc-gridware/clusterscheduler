@@ -77,8 +77,8 @@ static bool same(const char *a, const char *b) {
  * @param[out] lpp receives the list on success
  * @return the result of ocs_parse_string_list()
  */
-static int parse_words(const std::initializer_list<const char *> words, const lDescr *descr, int *rule,
-                       lList **lpp) {
+static int parse_words(const std::initializer_list<const char *> words, const ocs::tom::FieldDescr *descr, int *rule,
+                       ocs::tom::ListData **lpp) {
    std::vector<std::string> storage(words.begin(), words.end());
    std::vector<char *> argv;
    for (auto &word : storage) {
@@ -179,7 +179,7 @@ static void test_parse_string_list() {
    int spa_rule[] = {SPA_switch_val, SPA_argval_lUlongT, SPA_argval_lDoubleT, SPA_argval_lLongT, SPA_argval_lIntT, 0};
 
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       const int ret = parse_words({"-x", "7", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp);
       const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
       const auto ep = list ? list->front() : ocs::tom::Element<ocs::tom::SPA>();
@@ -190,7 +190,7 @@ static void test_parse_string_list() {
       CHECK(11, "the list carries the given name", list && same(list->name(), "parsed"));
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       const int ret = parse_words({"-x", "7", "1.5", "-3", "-4", "-y", "8", "2", "3", "4"}, ocs::tom::SPA::descriptor.e,
                                   spa_rule, &lp);
       const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
@@ -198,14 +198,14 @@ static void test_parse_string_list() {
                                                           join_strings(list.get(), SPA_switch_val) == "-x -y");
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       const int ret = parse_words({"none", "7", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp);
       const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
       CHECK(3, "a string word NONE in any case leaves the field unset",
             ret == 0 && join_strings(list.get(), SPA_switch_val) == "-");
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       const bool ulong_bad = parse_words({"-x", "x", "1.5", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule,
                                          &lp) == -8;
       const bool double_bad = parse_words({"-x", "7", "y", "-3", "-4"}, ocs::tom::SPA::descriptor.e, spa_rule,
@@ -218,12 +218,12 @@ static void test_parse_string_list() {
             ulong_bad && double_bad && long_bad && int_bad && lp == nullptr);
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       CHECK(5, "words that do not fill the last element give -13",
             parse_words({"-x", "7"}, ocs::tom::SPA::descriptor.e, spa_rule, &lp) == -13 && lp == nullptr);
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       int u64_rule[] = {SPA_argval_lUlong64T, 0};
       int bool_rule[] = {SPA_argval_lBoolT, 0};
       int foreign_rule[] = {ST_name, 0};
@@ -233,7 +233,7 @@ static void test_parse_string_list() {
                parse_words({"1"}, ocs::tom::SPA::descriptor.e, foreign_rule, &lp) == -12 && lp == nullptr);
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       int list_rule[] = {SPA_switch_val, SPA_argval_lListT, 0};
       const int ret = parse_words({"-x", "ignored"}, ocs::tom::SPA::descriptor.e, list_rule, &lp);
       const ocs::tom::ListPtr<ocs::tom::SPA> list(lp);
@@ -241,7 +241,7 @@ static void test_parse_string_list() {
             ret == 0 && list->size() == 1 && !list->front().get<SPA_argval_lListT>());
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       int pn_rule[] = {PN_path, PN_host, 0};
       const int ret = parse_words({"/p", "h1", "/q", "NONE"}, ocs::tom::PN::descriptor.e, pn_rule, &lp);
       const ocs::tom::ListPtr<ocs::tom::PN> list(lp);
@@ -252,14 +252,14 @@ static void test_parse_string_list() {
             ret == 0 && same(first.get<PN_host>().c_str(), "h1") && second.get<PN_host>().c_str() == nullptr);
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       int empty_rule[] = {0};
       CHECK(9, "a nullptr descriptor gives -1, an empty rule -2",
             parse_words({"a"}, nullptr, spa_rule, &lp) == -1 &&
             parse_words({"a"}, ocs::tom::SPA::descriptor.e, empty_rule, &lp) == -2);
    }
    {
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       CHECK(10, "no words give -13, the first element is never filled",
             parse_words({}, ocs::tom::SPA::descriptor.e, spa_rule, &lp) == -13 && lp == nullptr);
    }
@@ -267,10 +267,10 @@ static void test_parse_string_list() {
       int ce_rule[] = {CE_name, CE_stringval, 0};
       char text[] = "a=1,b=2";
       char none[] = "NONE";
-      lList *lp = nullptr;
+      ocs::tom::ListData *lp = nullptr;
       const int ret = ocs_parse_definition_list(text, &lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       const ocs::tom::ListPtr<ocs::tom::CE> list(lp);
-      lList *none_lp = reinterpret_cast<lList *>(1);
+      ocs::tom::ListData *none_lp = reinterpret_cast<ocs::tom::ListData *>(1);
       const int none_ret = ocs_parse_definition_list(none, &none_lp, "defs", ocs::tom::CE::descriptor.e, ce_rule);
       CHECK(12, "a definition list gives name and value pairs, NONE gives no list",
             ret == 0 && join_strings(list.get(), CE_name) == "a b" &&

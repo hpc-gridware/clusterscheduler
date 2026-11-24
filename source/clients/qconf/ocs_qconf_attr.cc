@@ -59,13 +59,13 @@
 struct qconf_attr_entry {
    ocs::gdi::Target target;                  ///< which master list the object lives in
    const char *object_name;                  ///< the name the switches take, e.g. "queue"
-   const lDescr *object_descr;                  ///< the object type of the object
+   const ocs::tom::FieldDescr *object_descr;                  ///< the object type of the object
    const char *attribute_name;               ///< the attribute carrying the object's name, for the messages
    int nm_name;                              ///< the field holding the object's name, its key
    spooling_field *fields;                   ///< which fields the attribute text is read with
    const struct spool_flatfile_instr *instr; ///< how the attribute text is laid out
    /// validation to run before sending, or `nullptr`
-   bool (*pre_gdi_function)(lList *list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+   bool (*pre_gdi_function)(ocs::tom::ListData *list, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 };
 
 /** @brief Write one attribute line "name<delimiter>value" into a new temporary file
@@ -287,7 +287,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
 
    /* one copy of the delta per named object; the type of the name field decides how the name is stored, checked
     * here before the set, so that a field of another type ends in the internal failure, not in an exception */
-   const lDescr *descr = ep.get().descr();
+   const ocs::tom::FieldDescr *descr = ep.get().descr();
    const int name_pos = ocs::tom::present_pos(descr, info_entry->nm_name);
    ocs::tom::RawListPtr qlp;
    for (size_t i = first_name; i < op.args.size(); i++) {

@@ -69,7 +69,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullDescriptor if @p descr is null or empty
     * @throw ListCoreError if there is no memory
     */
-   lListElem *create_elem(const lDescr *descr);
+   ocs::tom::ElementData *create_elem(const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Create an empty list, as lCreateListHash()
@@ -80,7 +80,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullDescriptor if @p descr is null or empty
     * @throw ListCoreError if there is no memory
     */
-   lList *create_list(const char *name, const lDescr *descr, bool hash);
+   ocs::tom::ListData *create_list(const char *name, const ocs::tom::FieldDescr *descr, bool hash);
 
    /**
     * @brief Free an element with its strings, sub-lists and sub-objects, as lFreeElem()
@@ -91,13 +91,13 @@ namespace ocs::tom {
     * @param ep the element, nullptr afterwards; nullptr frees nothing
     * @throw FieldException with reason NullDescriptor if the element has no descriptor
     */
-   void free_elem(lListElem *&ep);
+   void free_elem(ocs::tom::ElementData *&ep);
 
    /**
     * @brief Free a list with its elements, as lFreeList()
     * @param lp the list, nullptr afterwards; nullptr frees nothing
     */
-   void free_list(lList *&lp);
+   void free_list(ocs::tom::ListData *&lp);
 
    /**
     * @brief Copy an element deeply, as lCopyElemHash()
@@ -108,7 +108,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if @p ep is null
     * @throw ListCoreError if the copy fails
     */
-   lListElem *copy_elem(const lListElem *ep, bool hash, bool skip_no_transfer);
+   ocs::tom::ElementData *copy_elem(const ocs::tom::ElementData *ep, bool hash, bool skip_no_transfer);
 
    /**
     * @brief Copy a list deeply, as lCopyListHash()
@@ -120,7 +120,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullList if @p src is null
     * @throw ListCoreError if the copy fails
     */
-   lList *copy_list(const char *name, const lList *src, bool hash, bool skip_no_transfer);
+   ocs::tom::ListData *copy_list(const char *name, const ocs::tom::ListData *src, bool hash, bool skip_no_transfer);
 
    /**
     * @brief Copy one field of an element into another, as lCopySwitchPack() copied it
@@ -141,15 +141,15 @@ namespace ocs::tom {
     * @throw FieldException with reason NullElement if an element is null
     * @throw ListCoreError if there is no memory or the field has an unknown type
     */
-   void copy_field(const lListElem *src, lListElem *dst, int src_pos, int dst_pos, bool hash,
-                   const lEnumeration *sub_what, bool skip_no_transfer);
+   void copy_field(const ocs::tom::ElementData *src, ocs::tom::ElementData *dst, int src_pos, int dst_pos, bool hash,
+                   const ocs::tom::WhatData *sub_what, bool skip_no_transfer);
 
    /**
     * @brief The name of a list, as lGetListName() gives it for a list
     * @param lp the list, or nullptr
     * @return the name, or "No list name specified" for nullptr or a list without a name
     */
-   const char *list_name(const lList *lp) noexcept;
+   const char *list_name(const ocs::tom::ListData *lp) noexcept;
 
    /**
     * @brief Insert a free element after another one or at the front, as lInsertElem()
@@ -160,7 +160,7 @@ namespace ocs::tom {
     *        WrongLayout if @p ep was created with a descriptor of another layout than the list's (CS-3112),
     *        or DuplicateKey in a debug build; nothing is changed then
     */
-   void insert_elem(lList *lp, lListElem *after, lListElem *ep);
+   void insert_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *after, ocs::tom::ElementData *ep);
 
    /**
     * @brief Append a free element, as lAppendElem()
@@ -170,7 +170,7 @@ namespace ocs::tom {
     *        WrongLayout if @p ep was created with a descriptor of another layout than the list's (CS-3112),
     *        or DuplicateKey in a debug build; nothing is changed then
     */
-   void append_elem(lList *lp, lListElem *ep);
+   void append_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *ep);
 
    /**
     * @brief Take an element out of its list without freeing it, as lDechainElem()
@@ -179,7 +179,7 @@ namespace ocs::tom {
     * @throw FieldException with reason NullList, NullElement or ForeignList if @p ep is not in @p lp;
     *        nothing is changed then
     */
-   void dechain_elem(lList *lp, lListElem *ep);
+   void dechain_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *ep);
 
    /**
     * @brief Take an element out of its list and free it, as lRemoveElem()
@@ -187,7 +187,7 @@ namespace ocs::tom {
     * @param ep the element, nullptr afterwards
     * @throw FieldException with reason NullList, NullElement or ForeignList; nothing is changed then
     */
-   void remove_elem(lList *lp, lListElem *&ep);
+   void remove_elem(ocs::tom::ListData *lp, ocs::tom::ElementData *&ep);
 
    /**
     * @brief Move every element of a list to the end of another, as lAppendList()
@@ -198,7 +198,7 @@ namespace ocs::tom {
     *        in the last case the elements before the duplicate are moved and
     *        the others stay in @p src
     */
-   void append_list(lList *dst, lList *src);
+   void append_list(ocs::tom::ListData *dst, ocs::tom::ListData *src);
 
    /**
     * @brief Put a list into a list field and take out the one held, as lXchgList() after its checks
@@ -206,7 +206,7 @@ namespace ocs::tom {
     * @param pos the position of the list field in the element's descriptor
     * @param lp the list to put in; the list held before afterwards
     */
-   void exchange_list(lListElem *ep, int pos, lList *&lp) noexcept;
+   void exchange_list(ocs::tom::ElementData *ep, int pos, ocs::tom::ListData *&lp) noexcept;
 
    /**
     * @brief Take the element out of an object field, as lDechainObject() after its checks
@@ -217,7 +217,7 @@ namespace ocs::tom {
     * @param pos the position of the object field in the element's descriptor
     * @return the element the field held, or nullptr if it held none
     */
-   [[nodiscard]] lListElem *take_object(lListElem *ep, int pos) noexcept;
+   [[nodiscard]] ocs::tom::ElementData *take_object(ocs::tom::ElementData *ep, int pos) noexcept;
 
    /**
     * @brief Add an element with a string key, as lAddElemStr()
@@ -236,7 +236,8 @@ namespace ocs::tom {
     *        without the field, or DuplicateKey in a debug build; a list created here is freed again then
     * @throw ListCoreError if there is no memory
     */
-   lListElem *add_elem_str(lList *&lp, int nm, const char *key, const lDescr *descr);
+   ocs::tom::ElementData *add_elem_str(ocs::tom::ListData *&lp, int nm, const char *key,
+                                       const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Add an element with a host key, as lAddElemHost(); see #add_elem_str
@@ -247,7 +248,8 @@ namespace ocs::tom {
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str
     */
-   lListElem *add_elem_host(lList *&lp, int nm, const char *key, const lDescr *descr);
+   ocs::tom::ElementData *add_elem_host(ocs::tom::ListData *&lp, int nm, const char *key,
+                                        const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Add an element with a 32 bit key, as lAddElemUlong(); see #add_elem_str
@@ -258,7 +260,8 @@ namespace ocs::tom {
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
-   lListElem *add_elem_ulong(lList *&lp, int nm, uint32_t key, const lDescr *descr);
+   ocs::tom::ElementData *add_elem_ulong(ocs::tom::ListData *&lp, int nm, uint32_t key,
+                                         const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Add an element with a 64 bit key, as lAddElemUlong64(); see #add_elem_str
@@ -269,7 +272,8 @@ namespace ocs::tom {
     * @return the element, now in the list
     * @throw FieldException and ListCoreError as #add_elem_str, without NullKey
     */
-   lListElem *add_elem_ulong64(lList *&lp, int nm, uint64_t key, const lDescr *descr);
+   ocs::tom::ElementData *add_elem_ulong64(ocs::tom::ListData *&lp, int nm, uint64_t key,
+                                           const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Add an element with a key at a known position, without the checks of #add_elem_str
@@ -290,7 +294,8 @@ namespace ocs::tom {
     */
    template <FieldType T>
       requires KeyFieldType<T>
-   lListElem *add_elem_at(lList *&lp, int pos, KeyArgOf<T> key, const lDescr *descr);
+   ocs::tom::ElementData *add_elem_at(ocs::tom::ListData *&lp, int pos, KeyArgOf<T> key,
+                                      const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Remove and free the first element with a string key, as lDelElemStr() without freeing the list
@@ -300,7 +305,7 @@ namespace ocs::tom {
     * @return true if an element was removed
     * @throw FieldException with reason NullKey, AbsentField, WrongType, or DuplicateKey from the lookup
     */
-   bool remove_elem_str(lList *lp, int nm, const char *key);
+   bool remove_elem_str(ocs::tom::ListData *lp, int nm, const char *key);
 
    /**
     * @brief Remove and free the first element with a host key, as lDelElemHost(); see #remove_elem_str
@@ -310,7 +315,7 @@ namespace ocs::tom {
     * @return true if an element was removed
     * @throw FieldException as #remove_elem_str
     */
-   bool remove_elem_host(lList *lp, int nm, const char *key);
+   bool remove_elem_host(ocs::tom::ListData *lp, int nm, const char *key);
 
    /**
     * @brief Remove and free the first element with a 32 bit key, as lDelElemUlong(); see #remove_elem_str
@@ -320,7 +325,7 @@ namespace ocs::tom {
     * @return true if an element was removed
     * @throw FieldException as #remove_elem_str, without NullKey
     */
-   bool remove_elem_ulong(lList *lp, int nm, uint32_t key);
+   bool remove_elem_ulong(ocs::tom::ListData *lp, int nm, uint32_t key);
 
    /**
     * @brief Remove and free the first element with a 64 bit key, as lDelElemUlong64(); see #remove_elem_str
@@ -330,7 +335,7 @@ namespace ocs::tom {
     * @return true if an element was removed
     * @throw FieldException as #remove_elem_str, without NullKey
     */
-   bool remove_elem_ulong64(lList *lp, int nm, uint64_t key);
+   bool remove_elem_ulong64(ocs::tom::ListData *lp, int nm, uint64_t key);
 
    /**
     * @brief Remove and free the first element with a key at a known position, without the checks of
@@ -349,7 +354,7 @@ namespace ocs::tom {
     */
    template <FieldType T>
       requires KeyFieldType<T>
-   bool remove_elem_at(lList *lp, int pos, KeyArgOf<T> key);
+   bool remove_elem_at(ocs::tom::ListData *lp, int pos, KeyArgOf<T> key);
 
    /**
     * @brief The list of a list field, created if the field holds none, as lGetOrCreateList()
@@ -362,7 +367,8 @@ namespace ocs::tom {
     * @throw FieldException with reason WrongType if the field is not a list field, NullDescriptor
     * @throw ListCoreError if there is no memory
     */
-   lList *get_or_create_list(lListElem *ep, int pos, const char *name, const lDescr *descr);
+   ocs::tom::ListData *get_or_create_list(ocs::tom::ElementData *ep, int pos, const char *name,
+                                          const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Set the list length below which the calling thread searches a string key field linearly

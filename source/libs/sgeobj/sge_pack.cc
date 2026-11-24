@@ -76,7 +76,7 @@ ocs_pack_soft(sge_pack_buffer *pb, F &&pack) {
  * @param where the condition to pack
  * @return the element of type `SGE_WHERE`, or an empty handle when the condition cannot be packed
  */
-ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) {
+ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const ocs::tom::WhereData *where) {
    DENTER(TOM_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::PACK> where_elem;
@@ -100,10 +100,10 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_where_to_elem(const lCondition *where) 
  * @param where the element to unpack; an empty handle or an element of another kind is an error
  * @return the condition, to be released with `lFreeWhere()`, or nullptr on error
  */
-lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> where) {
+ocs::tom::WhereData *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> where) {
    DENTER(TOM_LAYER);
 
-   lCondition *cond = nullptr;
+   ocs::tom::WhereData *cond = nullptr;
 
    if (where.get<PACK_id>() == SGE_WHERE) {
       sge_pack_buffer pb;
@@ -139,7 +139,7 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
  * @param what the selection to pack
  * @return the element of type `SGE_WHAT`, or an empty handle when the selection cannot be packed
  */
-ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) {
+ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const ocs::tom::WhatData *what) {
    DENTER(TOM_LAYER);
 
    ocs::tom::ElementPtr<ocs::tom::PACK> what_elem;
@@ -164,10 +164,10 @@ ocs::tom::ElementPtr<ocs::tom::PACK> ocs_what_to_elem(const lEnumeration *what) 
  * @param what the element to unpack; an empty handle or an element of another kind is an error
  * @return the selection, to be released with `lFreeWhat()`, or nullptr on error
  */
-lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> what) {
+ocs::tom::WhatData *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> what) {
    DENTER(TOM_LAYER);
 
-   lEnumeration *cond = nullptr;
+   ocs::tom::WhatData *cond = nullptr;
 
    if (what.get<PACK_id>() == SGE_WHAT) {
       sge_pack_buffer pb;

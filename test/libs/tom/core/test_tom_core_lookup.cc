@@ -189,7 +189,7 @@ static int count_key(const ocs::tom::ConstRawList lp, const int nm, const ocs::t
    const int pos = ocs::tom::field_pos(lp.descr(), nm);
    int n = 0;
    const void *it = nullptr;
-   for (const lListElem *ep = ocs::tom::lookup_first<T>(lp.raw(), pos, val, &it); ep != nullptr;
+   for (const ocs::tom::ElementData *ep = ocs::tom::lookup_first<T>(lp.raw(), pos, val, &it); ep != nullptr;
         ep = ocs::tom::lookup_next<T>(lp.raw(), pos, val, &it)) {
       if (!holds(ocs::tom::ConstRawElement(ep))) {
          return -1;
@@ -338,7 +338,7 @@ static void test_lookup(const bool hashed, const int base) {
          ocs::tom::lookup_next<ocs::tom::FieldType::Uint32>(lp.raw(), pos_ulong, one, &it) == nullptr);
 
    // lookup_first_str_like: exact match or a trailing '*' as prefix wildcard
-   const lListElem *found = ocs::tom::lookup_first_str_like(clp.raw(), TEST_string, "str*");
+   const ocs::tom::ElementData *found = ocs::tom::lookup_first_str_like(clp.raw(), TEST_string, "str*");
    CHECK(base + 8, "lookup_first_str_like with a trailing '*' matches the prefix",
          found != nullptr && strncmp(ocs::tom::get<const char *>(found, TEST_string), "str", 3) == 0);
    CHECK(base + 9, "lookup_first_str_like without a match returns nullptr",
@@ -414,7 +414,7 @@ static void test_delete(const bool hashed, const int base) {
  * @param ep the element
  * @return the sublist
  */
-static lList *sub_list(const ocs::tom::RawElement ep) {
+static ocs::tom::ListData *sub_list(const ocs::tom::RawElement ep) {
    return ocs::tom::get_or_create_list(ep, ocs::tom::field_pos(TEST_Type, TEST_list), nullptr, TEST_Type);
 }
 
@@ -424,7 +424,7 @@ static void test_sublist_helpers() {
 
    const auto owner = ocs::tom::RawElementPtr::create(TEST_Type);
    const ocs::tom::RawElement ep = owner.get();
-   lList *sub = sub_list(ep);
+   ocs::tom::ListData *sub = sub_list(ep);
 
    CHECK(41, "get_or_create_list and add_elem_ulong create the sublist",
          ocs::tom::add_elem_ulong(sub, TEST_ulong, 7, TEST_Type) != nullptr &&
@@ -458,7 +458,7 @@ static void test_sublist_helpers() {
    // CHECK 52 removed: lDelElemHost() freed the emptied sublist, which has no TOM counterpart (CS-3103)
 
    // the list-level adders create the list on first use
-   lList *lp = nullptr;
+   ocs::tom::ListData *lp = nullptr;
    static_cast<void>(ocs::tom::add_elem_ulong64(lp, TEST_ulong64, key64(9), TEST_Type));
    static_cast<void>(ocs::tom::add_elem_host(lp, TEST_host, "addhost", TEST_Type));
    ocs::tom::RawListPtr list(lp);

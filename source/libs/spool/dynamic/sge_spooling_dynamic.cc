@@ -125,13 +125,13 @@ spool_dynamic_get_shlib_path(const char *shlib_fullname) {
  *         loaded, uses another descriptor registry, lacks the expected
  *         symbols, or implements another method
  */
-lListElem *
+ocs::tom::ElementData *
 spool_dynamic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *method,
                              const char *shlib_name, const char *args) {
    DENTER(TOP_LAYER);
 
    bool ok = true;
-   lListElem *context = nullptr;
+   ocs::tom::ElementData *context = nullptr;
 
    /* shared lib name buffer and handle */
    dstring shlib_dstring = DSTRING_INIT;

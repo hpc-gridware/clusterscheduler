@@ -836,8 +836,8 @@ static int job_remove_script_file(uint32_t job_id) {
  *
  * @return 0 on success, else 1
  */
-int job_list_read_from_disk(lList **job_list, const char *list_name, int check,
-                            sge_spool_flags_t flags, int (*init_function)(lListElem *)) {
+int job_list_read_from_disk(ocs::tom::ListData **job_list, const char *list_name, int check, sge_spool_flags_t flags,
+                            int (*init_function)(ocs::tom::ElementData *)) {
    DENTER(TOP_LAYER); 
 
    char first_dir[SGE_PATH_MAX] = ""; 

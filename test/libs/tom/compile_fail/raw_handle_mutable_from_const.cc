@@ -36,7 +36,7 @@
  * @param ep a job
  * @return the number of elements of the job's environment
  */
-std::size_t wrong_use(const lListElem *ep) {
+std::size_t wrong_use(const ocs::tom::ElementData *ep) {
    const ocs::tom::ConstRawElement job(ep);
    const ocs::tom::RawList env = job.get<ocs::tom::RawList>(JB_env_list);
    return env.size();

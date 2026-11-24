@@ -159,7 +159,7 @@ static void
 ocs_follow_unenroll_task(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Element<ocs::tom::JAT> &jatp) {
    DENTER(TOP_LAYER);
 
-   lListElem *raw_jatp = jatp;
+   ocs::tom::ElementData *raw_jatp = jatp;
    job_unenroll(jep, nullptr, &raw_jatp);
    jatp = ocs::tom::Element<ocs::tom::JAT>::from_typed(raw_jatp);
 

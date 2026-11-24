@@ -41,6 +41,6 @@
  * @param ep an element of type TEST
  * @param job a typed owner of a job
  */
-void wrong_use(lListElem *ep, ocs::tom::ElementPtr<ocs::tom::JB> &&job) {
+void wrong_use(ocs::tom::ElementData *ep, ocs::tom::ElementPtr<ocs::tom::JB> &&job) {
    ocs::tom::set(ep, TEST_obj_jb, std::move(job));
 }

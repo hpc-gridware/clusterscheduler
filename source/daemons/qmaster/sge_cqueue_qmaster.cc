@@ -712,7 +712,7 @@ cqueue_route_hostlist(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char
  */
 bool
 cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
-                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
+                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *reduced_elem,
                       const bool refresh_all_values, const bool is_startup, monitoring_t *monitor,
                       const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,
                       const ocs::tom::List<ocs::tom::CQ> master_cqueue_list) {
@@ -859,7 +859,7 @@ cqueue_mod_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
  */
 bool
 cqueue_handle_qinstances(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::Element<ocs::tom::CQ> cqueue,
-                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lListElem *reduced_elem,
+                         ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ElementData *reduced_elem,
                          const ocs::tom::ConstList<ocs::tom::HR> add_hosts,
                          const ocs::tom::ConstList<ocs::tom::HR> rem_hosts, const bool refresh_all_values,
                          monitoring_t *monitor, const ocs::tom::ConstList<ocs::tom::HGRP> master_hgroup_list,

@@ -175,7 +175,8 @@ namespace {
     * @return true if it has the layout of the two fields and the expected elements with their strings
     */
    bool selection_is(const ocs::tom::ConstRawList selected, const Numbers &expected) {
-      const lDescr *layout = ocs::tom::descr_reduce(ocs::tom::TEST::descriptor.e, {TEST_uint32, TEST_string});
+      const ocs::tom::FieldDescr *layout = ocs::tom::descr_reduce(ocs::tom::TEST::descriptor.e, {TEST_uint32,
+                                                                                                 TEST_string});
       const bool same_layout = ocs::tom::same_layout(layout, selected.descr());
       ocs::tom::release_descr(layout);
       if (selected.size() != expected.size() || (!expected.empty() && !same_layout)) {
@@ -224,7 +225,7 @@ namespace {
    struct ListResult {
       bool exists;                 ///< whether there is a list at all
       const char *name;            ///< the list's name
-      const lDescr *layout;        ///< the layout of the list's descriptor
+      const ocs::tom::FieldDescr *layout;        ///< the layout of the list's descriptor
       std::uint32_t nslots;        ///< the number of hash slots (the tables themselves are built by the first lookup)
       Numbers keys;                ///< the TEST_uint32 of the elements, in order
    };
@@ -239,7 +240,7 @@ namespace {
     * @param expected what the old function gave
     * @return true if they are equal
     */
-   bool list_is(const char *label, const lList *selected, const ListResult &expected) {
+   bool list_is(const char *label, const ocs::tom::ListData *selected, const ListResult &expected) {
       if (selected == nullptr || !expected.exists) {
          if ((selected != nullptr) != expected.exists) {
             std::printf("%s: %s, expected %s\n", label, selected ? "a list" : "no list",
@@ -272,7 +273,8 @@ namespace {
     * @param layout the layout of the expected copy, nullptr for no copy
     * @return true if both are none, or the copy has the layout and the TEST_uint32 of the source
     */
-   bool elem_is(const char *label, const lListElem *selected, const lListElem *source, const lDescr *layout) {
+   bool elem_is(const char *label, const ocs::tom::ElementData *selected, const ocs::tom::ElementData *source,
+                const ocs::tom::FieldDescr *layout) {
       if ((selected != nullptr) != (layout != nullptr)) {
          std::printf("%s: %s, expected %s\n", label, selected ? "a copy" : "no copy",
                      layout ? "a copy" : "no copy");
@@ -346,13 +348,13 @@ test_owners() {
    auto copy = ep.clone();
    const bool cloned = copy && copy.get().raw() != ep.get().raw() && copy->get<std::uint32_t>(TEST_uint32) == 4 &&
                        std::strcmp(copy->get<const char *>(TEST_string), "copy me") == 0;
-   lListElem *released = copy.release();
+   ocs::tom::ElementData *released = copy.release();
    const bool released_ok = !copy && released != nullptr;
    ocs::tom::free_raw_elem(released);
    ep.reset();
    const bool reset_ok = !ep;
    auto a = test_elem(1);
-   const lListElem *a_raw = a.get();
+   const ocs::tom::ElementData *a_raw = a.get();
    ocs::tom::RawElementPtr b(std::move(a));
    ocs::tom::RawElementPtr c;
    c = std::move(b);
@@ -365,7 +367,7 @@ test_owners() {
    auto list_copy = list.clone();
    const bool list_cloned = list_copy && list_copy.get().raw() != list.get().raw() &&
                             numbers(*list_copy) == numbers(*list);
-   lList *list_released = list_copy.release();
+   ocs::tom::ListData *list_released = list_copy.release();
    const bool list_released_ok = !list_copy && list_released != nullptr;
    ocs::tom::free_raw_list(list_released);
    list.reset();
@@ -408,9 +410,9 @@ test_typed_raw() {
          to_raw && to_typed && list_to_raw && list_to_typed);
 
    auto queue = ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e);
-   const lListElem *queue_raw = queue.get();
+   const ocs::tom::ElementData *queue_raw = queue.get();
    auto queues = ocs::tom::create_raw_list(ocs::tom::QU::descriptor.e);
-   const lList *queues_raw = queues.get();
+   const ocs::tom::ListData *queues_raw = queues.get();
    const bool refused =
       expect_reason("adopt", "element",
                     [&] { static_cast<void>(ocs::tom::adopt<ocs::tom::JB>(std::move(queue))); }, Reason::WrongType) &&
@@ -425,9 +427,9 @@ test_typed_raw() {
 
    ocs::tom::RawWherePtr where = ocs::tom::where_compare(ocs::tom::JB::descriptor.e, JB_job_number,
                                                          ocs::tom::CompareOp::Equal, std::uint32_t{7});
-   const lCondition *where_raw = where.get();
+   const ocs::tom::WhereData *where_raw = where.get();
    ocs::tom::RawWhatPtr what = ocs::tom::what_of(ocs::tom::JB::descriptor.e, std::vector<int>{JB_job_number});
-   const lEnumeration *what_raw = what.get();
+   const ocs::tom::WhatData *what_raw = what.get();
    const bool selections_refused =
       expect_reason("adopt", "condition",
                     [&] { static_cast<void>(ocs::tom::adopt<ocs::tom::QU>(std::move(where))); },
@@ -451,9 +453,9 @@ test_typed_raw() {
 static void
 test_add() {
    auto list = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
-   lList *lp = list.get();
+   ocs::tom::ListData *lp = list.get();
    ocs::tom::append(lp, test_elem(2));
-   lListElem *three = list->push_back(test_elem(3));
+   ocs::tom::ElementData *three = list->push_back(test_elem(3));
    ocs::tom::insert_after(lp, nullptr, test_elem(1));
    list->insert_after(ocs::tom::ConstRawElement(three), test_elem(5));
    ocs::tom::insert_after(lp, three, test_elem(4));
@@ -461,13 +463,13 @@ test_add() {
    CHECK(6, "append(), insert_after() and the methods push_back(), insert_after() link the elements in order",
          (numbers(*list) == Numbers{0, 1, 2, 3, 4, 5}) && ocs::tom::size(lp) == 6 && list->size() == 6);
 
-   lList *null_list = nullptr;
+   ocs::tom::ListData *null_list = nullptr;
    auto spare = test_elem(91);
    auto queue = ocs::tom::create_raw_elem(ocs::tom::QU::descriptor.e);
    auto reduced = ocs::tom::create_raw_elem(ocs::tom::layout<TEST_uint32>().get());
    ocs::tom::set(reduced.get(), TEST_uint32, std::uint32_t{90});
    auto other = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
-   lListElem *stranger = other->push_back(test_elem(50));
+   ocs::tom::ElementData *stranger = other->push_back(test_elem(50));
    const bool refused =
       expect_reason("add", "null list", [&] { ocs::tom::append(null_list, std::move(spare)); }, Reason::NullList) &&
       expect_reason("add", "empty owner", [&] { ocs::tom::append(lp, ocs::tom::RawElementPtr{}); },
@@ -500,7 +502,7 @@ test_add() {
 static void
 test_remove_and_splice() {
    auto list = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
-   lList *lp = list.get();
+   ocs::tom::ListData *lp = list.get();
    for (std::uint32_t i = 0; i < 6; i++) {
       list->push_back(test_elem(i));
    }
@@ -512,9 +514,9 @@ test_remove_and_splice() {
    const bool removed = took && five && (numbers(*list) == Numbers{3, 4});
    // a free element goes into another list again
    ocs::tom::append(lp, std::move(two));
-   lList *null_list = nullptr;
+   ocs::tom::ListData *null_list = nullptr;
    auto other = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
-   lListElem *stranger = other->push_back(test_elem(50));
+   ocs::tom::ElementData *stranger = other->push_back(test_elem(50));
    const bool refused =
       expect_reason("remove", "take a stranger", [&] { static_cast<void>(ocs::tom::take(lp, stranger)); },
                     Reason::ForeignList) &&
@@ -571,7 +573,7 @@ test_iteration() {
       ep.set(TEST_uint64, ep.get<std::uint64_t>(TEST_uint64) + 10);
    }
    bool written = true;
-   const lList *clp = owner.get();
+   const ocs::tom::ListData *clp = owner.get();
    for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList{clp}) {
       written = written && ep.get<std::uint64_t>(TEST_uint64) == ep.get<std::uint32_t>(TEST_uint32) % 3 + 10;
    }
@@ -591,18 +593,18 @@ test_find_first() {
    bool found = true;
    for (const bool hash : {true, false}) {
       const ocs::tom::RawListPtr owner(make_test_list(40, hash));
-      lList *lp = owner.get();
-      const lList *clp = lp;
+      ocs::tom::ListData *lp = owner.get();
+      const ocs::tom::ListData *clp = lp;
       // the first element with the key in list order, as lGetElemUlong/Ulong64/Str/Host found it: element 17,
       // element 2 (2 % 3), element 3 ("s3") and element 1 ("h1")
-      std::vector<const lListElem *> at;
+      std::vector<const ocs::tom::ElementData *> at;
       for (const ocs::tom::ConstRawElement ep : ocs::tom::ConstRawList(clp)) {
          at.push_back(ep.raw());
       }
-      const lListElem *by_number = at[17];
-      const lListElem *by_number64 = at[2];
-      const lListElem *by_string = at[3];
-      const lListElem *by_host = at[1];
+      const ocs::tom::ElementData *by_number = at[17];
+      const ocs::tom::ElementData *by_number64 = at[2];
+      const ocs::tom::ElementData *by_string = at[3];
+      const ocs::tom::ElementData *by_host = at[1];
       const bool ok = by_number != nullptr && by_number64 != nullptr && by_string != nullptr && by_host != nullptr &&
                       ocs::tom::find_first<std::uint32_t>(clp, TEST_uint32, 17U) == by_number &&
                       ocs::tom::find_first<std::uint64_t>(clp, TEST_uint64, std::uint64_t{2}) == by_number64 &&
@@ -624,10 +626,10 @@ test_find_first() {
          found);
 
    const ocs::tom::RawListPtr owner(make_test_list(5, true));
-   const lList *clp = owner.get();
-   const lList *null_list = nullptr;
+   const ocs::tom::ListData *clp = owner.get();
+   const ocs::tom::ListData *null_list = nullptr;
    const auto reduced = ocs::tom::create_raw_list(ocs::tom::layout<TEST_uint32>().get());
-   const lList *creduced = reduced.get();
+   const ocs::tom::ListData *creduced = reduced.get();
    const bool refused =
       expect_reason("find", "wrong number type",
                     [&] { static_cast<void>(ocs::tom::find_first<std::uint64_t>(clp, TEST_uint32, std::uint64_t{1})); },
@@ -664,7 +666,7 @@ test_find_first() {
 static void
 test_select() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
-   const lList *lp = owner.get();
+   const ocs::tom::ListData *lp = owner.get();
    const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32,
                                               ocs::tom::CompareOp::Greater, std::uint32_t{4});
    const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
@@ -676,7 +678,7 @@ test_select() {
                       selection_is(*by_method, Numbers{5, 6, 7, 8, 9}) &&
                       selection_is(*everything, Numbers{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}) && selected->size() == 5 &&
                       ocs::tom::has(selected->front(), TEST_string) && !ocs::tom::has(selected->front(), TEST_uint64) &&
-                      !ocs::tom::select(static_cast<const lList *>(nullptr), where.get(), what.get());
+                      !ocs::tom::select(static_cast<const ocs::tom::ListData *>(nullptr), where.get(), what.get());
    CHECK(13, "select() and the method select what lSelect() selected, with the same layout; a null list gives an "
             "empty owner",
          lists);
@@ -687,7 +689,7 @@ test_select() {
    const bool element = reduced && ocs::tom::has(reduced.get(), TEST_uint32) &&
                         !ocs::tom::has(reduced.get(), TEST_uint64) && reduced_by_method &&
                         reduced->get<std::uint32_t>(TEST_uint32) == first.get<std::uint32_t>(TEST_uint32) &&
-                        !ocs::tom::select(static_cast<const lListElem *>(nullptr), what.get());
+                        !ocs::tom::select(static_cast<const ocs::tom::ElementData *>(nullptr), what.get());
    bool matches = true;
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
       // lCompare() held for the elements above 4
@@ -698,12 +700,13 @@ test_select() {
    const auto what_copy = ocs::tom::clone(what.get());
    const bool copies = where_copy && where_copy.get() != where.get() && what_copy && what_copy.get() != what.get() &&
                        ocs::tom::select(lp, where_copy.get(), what_copy.get())->size() == 5 &&
-                       !ocs::tom::clone(static_cast<const lCondition *>(nullptr)) &&
-                       !ocs::tom::clone(static_cast<const lEnumeration *>(nullptr));
+                       !ocs::tom::clone(static_cast<const ocs::tom::WhereData *>(nullptr)) &&
+                       !ocs::tom::clone(static_cast<const ocs::tom::WhatData *>(nullptr));
    const bool refused = expect_reason("select", "matches on null",
                                       [&] {
                                          static_cast<void>(
-                                            ocs::tom::matches(static_cast<const lListElem *>(nullptr), where.get()));
+                                            ocs::tom::matches(static_cast<const ocs::tom::ElementData *>(nullptr),
+                                                              where.get()));
                                       },
                                       Reason::NullElement) &&
                         expect_reason("select", "no selection",
@@ -764,12 +767,12 @@ static void
 test_typed_owners() {
    // a job into a list of TEST: every op throws WrongType and the typed owner keeps its element
    auto tests = ocs::tom::create_raw_list(ocs::tom::TEST::descriptor.e);
-   lList *lp = tests.get();
+   ocs::tom::ListData *lp = tests.get();
    auto job = typed_job(1);
-   const lListElem *job_raw = job.get().raw();
+   const ocs::tom::ElementData *job_raw = job.get().raw();
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
    jobs->push_back(typed_job(2));
-   const lList *jobs_raw = jobs.get().raw();
+   const ocs::tom::ListData *jobs_raw = jobs.get().raw();
    const bool refused =
       expect_reason("typed", "append", [&] { ocs::tom::append(lp, std::move(job)); }, Reason::WrongType) &&
       expect_reason("typed", "insert_after", [&] { ocs::tom::insert_after(lp, nullptr, std::move(job)); },
@@ -791,11 +794,11 @@ test_typed_owners() {
 
    // a job into a list of jobs: every op succeeds and empties the typed owner
    auto raw_jobs = ocs::tom::create_raw_list(ocs::tom::JB::descriptor.e);
-   lList *jlp = raw_jobs.get();
+   ocs::tom::ListData *jlp = raw_jobs.get();
    auto two = typed_job(2);
    ocs::tom::append(jlp, std::move(two));
    auto four = typed_job(4);
-   lListElem *four_raw = raw_jobs->push_back(std::move(four));
+   ocs::tom::ElementData *four_raw = raw_jobs->push_back(std::move(four));
    auto one = typed_job(1);
    ocs::tom::insert_after(jlp, nullptr, std::move(one));
    auto three = typed_job(3);
@@ -809,7 +812,7 @@ test_typed_owners() {
    seven->push_back(typed_job(7));
    raw_jobs->splice(std::move(seven));
    auto eight = typed_job(8);
-   const lListElem *eight_raw = eight.get().raw();
+   const ocs::tom::ElementData *eight_raw = eight.get().raw();
    const auto adopted = ocs::tom::adopt<ocs::tom::JB>(std::move(eight));
    const auto adopted_list = ocs::tom::adopt<ocs::tom::JB>(std::move(jobs));
    const bool emptied = !two && !four && !one && !three && !five && !six && !seven && !eight && !jobs;
@@ -833,8 +836,8 @@ test_typed_owners() {
 static void
 test_write_to() {
    const ocs::tom::RawListPtr owner(make_test_list(3, false));
-   lList *lp = owner.get();
-   lListElem *first = ocs::tom::RawList{lp}.front();
+   ocs::tom::ListData *lp = owner.get();
+   ocs::tom::ElementData *first = ocs::tom::RawList{lp}.front();
    const auto where = ocs::tom::field<TEST_uint32>() > 0u && ocs::tom::field<TEST_string>() == "s2";
    const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    auto jobs = ocs::tom::ListPtr<ocs::tom::JB>::create("jobs");
@@ -846,7 +849,7 @@ test_write_to() {
    single->set<JB_job_number>(43);
    single->set<JB_owner>("single");
    const ocs::tom::ConstElement<ocs::tom::JB> single_const = *single;
-   const lListElem *const_first = first;
+   const ocs::tom::ElementData *const_first = first;
 
    // the old writers wrote the text of the print cores at level 0
    const std::optional<std::string> old_list = printed([&](dstring *b) { ocs::tom::print_list(b, lp, 0); });
@@ -889,8 +892,9 @@ test_write_to() {
    };
    as_old("empty list", [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawList()); });
    as_old("empty element", [](FILE *fp) { ocs::tom::write_to(fp, ocs::tom::ConstRawElement()); });
-   as_old("null condition", [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lCondition *>(nullptr)); });
-   as_old("null selection", [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const lEnumeration *>(nullptr)); });
+   as_old("null condition", [](FILE *fp) { ocs::tom::write_to(fp,
+                                                              static_cast<const ocs::tom::WhereData *>(nullptr)); });
+   as_old("null selection", [](FILE *fp) { ocs::tom::write_to(fp, static_cast<const ocs::tom::WhatData *>(nullptr)); });
    CHECK(19, "write_to() of an empty handle or a null pointer writes nothing, as the old function", empty);
 }
 
@@ -919,7 +923,7 @@ test_unpack_elem() {
    ocs::tom::PackBuffer old_cut = ocs::tom::PackBuffer::reading(out.data(), out.size() / 2);
    int old_code = PACK_SUCCESS;
    try {
-      lListElem *old_ep = ocs::tom::unpack_elem(&old_cut.raw(), nullptr, 0);
+      ocs::tom::ElementData *old_ep = ocs::tom::unpack_elem(&old_cut.raw(), nullptr, 0);
       ocs::tom::free_raw_elem(old_ep);
    } catch (const ocs::tom::PackException &e) {
       old_code = e.code();
@@ -946,7 +950,7 @@ test_unpack_elem() {
 static void
 test_select_as() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
-   const lList *lp = owner.get();
+   const ocs::tom::ListData *lp = owner.get();
    using ocs::tom::CompareOp;
    const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, CompareOp::Greater,
                                               std::uint32_t{4});
@@ -955,8 +959,9 @@ test_select_as() {
    const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    const auto all = ocs::tom::what_all();
    const auto foreign = ocs::tom::what_of(ocs::tom::JB::descriptor.e, std::vector<int>{JB_job_number});
-   const lDescr *reduced = ocs::tom::descr_reduce(ocs::tom::TEST::descriptor.e, {TEST_uint32, TEST_string});
-   const lDescr *full = ocs::tom::TEST::descriptor.e;
+   const ocs::tom::FieldDescr *reduced = ocs::tom::descr_reduce(ocs::tom::TEST::descriptor.e, {TEST_uint32,
+                                                                                               TEST_string});
+   const ocs::tom::FieldDescr *full = ocs::tom::TEST::descriptor.e;
    const Numbers above{5, 6, 7, 8, 9};
    const Numbers every{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
@@ -965,10 +970,11 @@ test_select_as() {
       const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
       // a given name, the default name, no match, every field, no selection (the condition not applied), a
       // foreign selection, a null list
-      const lList *sources[] = {lp, lp, lp, lp, lp, lp, nullptr};
-      const lCondition *conditions[] = {where.get(), where.get(), none.get(), where.get(), where.get(), nullptr,
+      const ocs::tom::ListData *sources[] = {lp, lp, lp, lp, lp, lp, nullptr};
+      const ocs::tom::WhereData *conditions[] = {where.get(), where.get(), none.get(), where.get(), where.get(),
+                                                 nullptr,
                                         where.get()};
-      const lEnumeration *selections[] = {what.get(), what.get(), what.get(), all.get(), nullptr, foreign.get(),
+      const ocs::tom::WhatData *selections[] = {what.get(), what.get(), what.get(), all.get(), nullptr, foreign.get(),
                                           what.get()};
       const char *names[] = {"selected", nullptr, "nothing", "all", "ignored", "foreign", "null list"};
       const char *labels[] = {"selected", "default name", "nothing", "all", "ignored", "foreign", "null list"};
@@ -1012,20 +1018,20 @@ test_select_as() {
          lists);
 
    bool elements = true;
-   std::vector<const lListElem *> sources{nullptr};
+   std::vector<const ocs::tom::ElementData *> sources{nullptr};
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
       sources.push_back(ep.raw());
    }
    for (const bool hash : {true, false}) {
       const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
-      for (const lListElem *ep : sources) {
+      for (const ocs::tom::ElementData *ep : sources) {
          // what lSelectElemPack() without a pack buffer gave, hashed or not: nothing for a null element; a copy of
          // a matching element in the layout of the selection; a whole copy of every element without a selection
          // (the condition not applied); no copy for no match and for a foreign selection
          const bool match = ep != nullptr && ocs::tom::get<std::uint32_t>(ep, TEST_uint32) > 4;
          struct Case {
-            const lEnumeration *selection;
-            const lDescr *layout;
+            const ocs::tom::WhatData *selection;
+            const ocs::tom::FieldDescr *layout;
          };
          const Case cases[] = {{what.get(), match ? reduced : nullptr},
                                {all.get(), match ? full : nullptr},
@@ -1058,7 +1064,7 @@ test_select_as() {
 static void
 test_select_into_descr() {
    const ocs::tom::RawListPtr owner(make_test_list(10, true));
-   const lList *lp = owner.get();
+   const ocs::tom::ListData *lp = owner.get();
    using ocs::tom::CompareOp;
    const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32, CompareOp::Greater,
                                               std::uint32_t{4});
@@ -1067,7 +1073,7 @@ test_select_into_descr() {
    const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
    // a selection with a field the reduced descriptor does not hold
    const auto wider = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_uint64});
-   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
+   const ocs::tom::FieldDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
    const Numbers above{5, 6, 7, 8, 9};
 
    bool lists = reduced != nullptr;
@@ -1075,12 +1081,12 @@ test_select_into_descr() {
       const auto hashing = hash ? ocs::tom::Hashing::On : ocs::tom::Hashing::Off;
       // a match, no match, no selection, no descriptor, a field the descriptor lacks, the default name, a null
       // list
-      const lList *sources[] = {lp, lp, lp, lp, lp, lp, nullptr};
-      const lCondition *conditions[] = {where.get(), none.get(), where.get(), where.get(), where.get(),
+      const ocs::tom::ListData *sources[] = {lp, lp, lp, lp, lp, lp, nullptr};
+      const ocs::tom::WhereData *conditions[] = {where.get(), none.get(), where.get(), where.get(), where.get(),
                                         where.get(), where.get()};
-      const lEnumeration *selections[] = {what.get(), what.get(), nullptr, what.get(), wider.get(), what.get(),
+      const ocs::tom::WhatData *selections[] = {what.get(), what.get(), nullptr, what.get(), wider.get(), what.get(),
                                           what.get()};
-      const lDescr *descriptors[] = {reduced, reduced, reduced, nullptr, reduced, reduced, reduced};
+      const ocs::tom::FieldDescr *descriptors[] = {reduced, reduced, reduced, nullptr, reduced, reduced, reduced};
       const char *names[] = {"updating list", "nothing", "no selection", "no descriptor", "lacking field", nullptr,
                              "null list"};
       const char *labels[] = {"updating list", "nothing", "no selection", "no descriptor", "lacking field",
@@ -1120,18 +1126,18 @@ test_select_into_descr() {
          lists);
 
    bool elements = reduced != nullptr;
-   std::vector<const lListElem *> sources{nullptr};
+   std::vector<const ocs::tom::ElementData *> sources{nullptr};
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
       sources.push_back(ep.raw());
    }
-   for (const lListElem *ep : sources) {
+   for (const ocs::tom::ElementData *ep : sources) {
       // what lSelectElemDPack() without a pack buffer gave: nothing for a null element, no descriptor or no match;
       // for a match the copy in the descriptor, none without a selection or for a field the descriptor lacks
       const bool match = ep != nullptr && ocs::tom::get<std::uint32_t>(ep, TEST_uint32) > 4;
       struct Case {
-         const lEnumeration *selection;
-         const lDescr *descr;
-         const lDescr *layout;
+         const ocs::tom::WhatData *selection;
+         const ocs::tom::FieldDescr *descr;
+         const ocs::tom::FieldDescr *layout;
       };
       const Case cases[] = {{what.get(), reduced, match ? reduced : nullptr},
                             {what.get(), nullptr, nullptr},
@@ -1145,7 +1151,7 @@ test_select_into_descr() {
          elements = elem_is("lSelectElemDPack", selected.get(), ep, c.layout) && elements;
       }
    }
-   const lListElem *last = nullptr;
+   const ocs::tom::ElementData *last = nullptr;
    for (const auto ep : ocs::tom::ConstRawList(lp)) {
       last = ep.raw();
    }
@@ -1171,7 +1177,7 @@ test_select_into_descr() {
 static void
 test_select_pack() {
    const ocs::tom::RawListPtr owner(make_test_list(10, false));
-   const lList *lp = owner.get();
+   const ocs::tom::ListData *lp = owner.get();
    const auto where = ocs::tom::where_compare(ocs::tom::TEST::descriptor.e, TEST_uint32,
                                               ocs::tom::CompareOp::Greater, std::uint32_t{4});
    const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
@@ -1222,12 +1228,13 @@ test_select_pack() {
 
    // a reduction, every field, no field, no selection (the condition not applied); each also without condition,
    // with no list, and with the name of the list
-   const lEnumeration *selections[] = {what.get(), all.get(), nothing.get(), nullptr};
+   const ocs::tom::WhatData *selections[] = {what.get(), all.get(), nothing.get(), nullptr};
    bool bytes = true;
    std::size_t n = 0;
-   for (const lEnumeration *selection : selections) {
-      for (const lCondition *condition : std::initializer_list<const lCondition *>{where.get(), nullptr}) {
-         for (const lList *list : std::initializer_list<const lList *>{lp, nullptr}) {
+   for (const ocs::tom::WhatData *selection : selections) {
+      for (const ocs::tom::WhereData *condition : std::initializer_list<const ocs::tom::WhereData *>{where.get(),
+                                                                                                     nullptr}) {
+         for (const ocs::tom::ListData *list : std::initializer_list<const ocs::tom::ListData *>{lp, nullptr}) {
             for (const char *name : std::initializer_list<const char *>{"", nullptr}) {
                const std::string selected =
                   packed([&](sge_pack_buffer *pb) { ocs::tom::select_pack(pb, name, list, condition, selection); });
@@ -1272,7 +1279,8 @@ test_remaining() {
    CHECK(26, "remaining() counts the successors of every element as lGetNumberOfRemainingElem() did; none for the "
              "last, a free element and an empty handle",
          same && ocs::tom::remaining(free_elem.get()) == 0 &&
-               ocs::tom::remaining(ocs::tom::ConstRawElement(static_cast<const lListElem *>(nullptr))) == 0);
+               ocs::tom::remaining(ocs::tom::ConstRawElement(static_cast<const ocs::tom::ElementData *>(nullptr))) ==
+                     0);
 }
 
 /**
@@ -1282,19 +1290,19 @@ test_remaining() {
 static void
 test_is_free() {
    const ocs::tom::RawListPtr list(make_test_list(2, false));
-   const lListElem *in_list = list->front().raw();
+   const ocs::tom::ElementData *in_list = list->front().raw();
 
    auto holder = test_elem(1);
    holder->set(TEST_obj_any, test_elem(2));
-   const lListElem *sub_object = holder->get<const lListElem *>(TEST_obj_any);
+   const ocs::tom::ElementData *sub_object = holder->get<const ocs::tom::ElementData *>(TEST_obj_any);
 
    const auto free_elem = test_elem(3);
-   const lListElem *free_raw = free_elem.get().raw();
+   const ocs::tom::ElementData *free_raw = free_elem.get().raw();
 
    CHECK(27, "is_free() is true for a free element and false for one in a list, a sub-object and an empty handle, "
              "as lIsFreeElem() was",
          ocs::tom::is_free(free_raw) && !ocs::tom::is_free(in_list) && !ocs::tom::is_free(sub_object) &&
-               !ocs::tom::is_free(ocs::tom::ConstRawElement(static_cast<const lListElem *>(nullptr))));
+               !ocs::tom::is_free(ocs::tom::ConstRawElement(static_cast<const ocs::tom::ElementData *>(nullptr))));
 }
 
 /**
@@ -1304,17 +1312,17 @@ test_is_free() {
 static void
 test_release_descr() {
    const auto what = ocs::tom::what_of(ocs::tom::TEST::descriptor.e, std::vector<int>{TEST_uint32, TEST_string});
-   const lDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
+   const ocs::tom::FieldDescr *reduced = ocs::tom::reduced_descr(ocs::tom::TEST::descriptor.e, what.get());
    const bool counted = reduced != nullptr && ocs::tom::descr_is_counted(reduced);
-   const lDescr *second = ocs::tom::descr_ref(reduced);
+   const ocs::tom::FieldDescr *second = ocs::tom::descr_ref(reduced);
    const std::uint32_t refs = ocs::tom::descr_refs(reduced);
 
    ocs::tom::release_descr(second);
    const bool one_less = second == nullptr && ocs::tom::descr_refs(reduced) == refs - 1;
 
-   const lDescr *static_descr = ocs::tom::TEST::descriptor.e;
+   const ocs::tom::FieldDescr *static_descr = ocs::tom::TEST::descriptor.e;
    ocs::tom::release_descr(static_descr);
-   const lDescr *none = nullptr;
+   const ocs::tom::FieldDescr *none = nullptr;
    ocs::tom::release_descr(none);
    ocs::tom::release_descr(reduced);
 
@@ -1336,7 +1344,7 @@ test_make_hashable() {
 
    // the slots the list keeps: one per field of its type marked for hashing
    std::uint32_t hashed = 0;
-   for (const lDescr *dp = list.get().raw()->descr; mt_get_type(dp->mt) != MT_END; ++dp) {
+   for (const ocs::tom::FieldDescr *dp = list.get().raw()->descr; mt_get_type(dp->mt) != MT_END; ++dp) {
       if (mt_do_hashing(dp->mt)) {
          hashed++;
       }
@@ -1344,7 +1352,7 @@ test_make_hashable() {
 
    // a hashable list stays as it is, an empty handle is ignored
    ocs::tom::make_hashable(list.get());
-   ocs::tom::make_hashable(ocs::tom::RawList(static_cast<lList *>(nullptr)));
+   ocs::tom::make_hashable(ocs::tom::RawList(static_cast<ocs::tom::ListData *>(nullptr)));
 
    const auto found = list->find_first(TEST_uint32, std::uint32_t{17});
    CHECK(29, "make_hashable() gives a list without hashing one slot per hashed field of its type; a "
@@ -1363,13 +1371,13 @@ test_make_hashable() {
  */
 static void
 test_free_raw() {
-   lList *lp = make_test_list(3, true).release();
-   lListElem *ep = test_elem(1).release();
+   ocs::tom::ListData *lp = make_test_list(3, true).release();
+   ocs::tom::ElementData *ep = test_elem(1).release();
    ocs::tom::free_raw_list(lp);
    ocs::tom::free_raw_elem(ep);
 
-   lList *no_list = nullptr;
-   lListElem *no_elem = nullptr;
+   ocs::tom::ListData *no_list = nullptr;
+   ocs::tom::ElementData *no_elem = nullptr;
    ocs::tom::free_raw_list(no_list);
    ocs::tom::free_raw_elem(no_elem);
 
@@ -1776,7 +1784,7 @@ namespace typed_ops {
     * @return true if the table on the field is built; false for nullptr, a field the list does not hash or a
     *         table not built yet
     */
-   bool has_table(const lList *lp, const int nm) {
+   bool has_table(const ocs::tom::ListData *lp, const int nm) {
       if (lp == nullptr) {
          return false;
       }
@@ -2564,20 +2572,20 @@ test_try_get() {
 static void
 test_walk() {
    const ocs::tom::RawListPtr owner(make_test_list(4, false));
-   lList *lp = owner.get();
+   ocs::tom::ListData *lp = owner.get();
 
    // read only, front to back and back to front; the list's own links are the reference
    const ocs::tom::ConstRawList clist{lp};
-   std::vector<const lListElem *> forward;
+   std::vector<const ocs::tom::ElementData *> forward;
    for (ocs::tom::ConstRawElement ep = clist.front(); ep; ep = ep.next()) {
       forward.push_back(ep.raw());
    }
-   std::vector<const lListElem *> backward;
+   std::vector<const ocs::tom::ElementData *> backward;
    for (ocs::tom::ConstRawElement ep = clist.back(); ep; ep = ep.prev()) {
       backward.push_back(ep.raw());
    }
-   std::vector<const lListElem *> linked;
-   for (const lListElem *ep = lp->first; ep != nullptr; ep = ep->next) {
+   std::vector<const ocs::tom::ElementData *> linked;
+   for (const ocs::tom::ElementData *ep = lp->first; ep != nullptr; ep = ep->next) {
       linked.push_back(ep);
    }
    const bool read_only = forward == linked && forward.size() == 4 &&

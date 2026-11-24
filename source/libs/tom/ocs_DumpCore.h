@@ -53,7 +53,7 @@ namespace ocs::tom {
     * @param indent the nesting level, three blanks each
     * @throw ListCoreError if the stream or the descriptor is null or the last write failed
     */
-   void dump_descr(FILE *fp, const lDescr *descr, int indent);
+   void dump_descr(FILE *fp, const ocs::tom::FieldDescr *descr, int indent);
 
    /**
     * @brief Write an element as text, as lDumpElemFp() did
@@ -62,7 +62,7 @@ namespace ocs::tom {
     * @param indent the nesting level
     * @throw ListCoreError if the stream or the element is null or the last write failed
     */
-   void dump_elem(FILE *fp, const lListElem *ep, int indent);
+   void dump_elem(FILE *fp, const ocs::tom::ElementData *ep, int indent);
 
    /**
     * @brief Write a sub-object with its descriptor as text, as lDumpObject() did
@@ -71,7 +71,7 @@ namespace ocs::tom {
     * @param indent the nesting level
     * @throw ListCoreError if the stream or the element is null or the last write failed
     */
-   void dump_object(FILE *fp, const lListElem *ep, int indent);
+   void dump_object(FILE *fp, const ocs::tom::ElementData *ep, int indent);
 
    /**
     * @brief Write a list with its name, its descriptor and its elements as text, as lDumpList() did
@@ -80,7 +80,7 @@ namespace ocs::tom {
     * @param indent the nesting level
     * @throw ListCoreError if the stream or the list is null or the last write failed
     */
-   void dump_list(FILE *fp, const lList *lp, int indent);
+   void dump_list(FILE *fp, const ocs::tom::ListData *lp, int indent);
 
    /**
     * @brief Write an element as text into a file, as lDumpElem() did
@@ -89,7 +89,7 @@ namespace ocs::tom {
     * @param indent the nesting level
     * @throw ListCoreError if the file cannot be opened or closed, or as dump_elem()
     */
-   void dump_elem_to(const char *path, const lListElem *ep, int indent);
+   void dump_elem_to(const char *path, const ocs::tom::ElementData *ep, int indent);
 
    /**
     * @brief Read a descriptor written by dump_descr(), as lUndumpDescr() did
@@ -101,7 +101,7 @@ namespace ocs::tom {
     * @return the descriptor, allocated with sge_malloc() and owned by the caller
     * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
     */
-   lDescr *undump_descr(FILE *fp);
+   ocs::tom::FieldDescr *undump_descr(FILE *fp);
 
    /**
     * @brief Read an element written by dump_elem(), as lUndumpElemFp() did
@@ -110,7 +110,7 @@ namespace ocs::tom {
     * @return the element, owned by the caller
     * @throw ListCoreError if the stream or the descriptor is null, the text cannot be read or there is no memory
     */
-   lListElem *undump_elem(FILE *fp, const lDescr *descr);
+   ocs::tom::ElementData *undump_elem(FILE *fp, const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Read a sub-object written by dump_object(), as lUndumpObject() did
@@ -118,7 +118,7 @@ namespace ocs::tom {
     * @return the object, a free element owned by the caller
     * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
     */
-   lListElem *undump_object(FILE *fp);
+   ocs::tom::ElementData *undump_object(FILE *fp);
 
    /**
     * @brief Read a list written by dump_list(), as lUndumpList() did
@@ -132,7 +132,7 @@ namespace ocs::tom {
     * @return the list, owned by the caller
     * @throw ListCoreError if the stream is null, the text cannot be read or there is no memory
     */
-   lList *undump_list(FILE *fp, const char *name, const lDescr *descr);
+   ocs::tom::ListData *undump_list(FILE *fp, const char *name, const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Read an element from a file written by dump_elem_to(), as lUndumpElem() did
@@ -141,7 +141,7 @@ namespace ocs::tom {
     * @return the element, owned by the caller
     * @throw ListCoreError if the file cannot be opened, or as undump_elem()
     */
-   lListElem *undump_elem_from(const char *path, const lDescr *descr);
+   ocs::tom::ElementData *undump_elem_from(const char *path, const ocs::tom::FieldDescr *descr);
 
    /**
     * @brief Pack an element into a file, as lWriteElemToDisk() did
@@ -156,7 +156,7 @@ namespace ocs::tom {
     * @throw ocs::RuntimeException with the message logged, if no file is named, the element cannot be packed or
     *        the file cannot be written
     */
-   void write_elem_to_disk(const lListElem *ep, const char *prefix, const char *name, const char *obj_name);
+   void write_elem_to_disk(const ocs::tom::ElementData *ep, const char *prefix, const char *name, const char *obj_name);
 
    /**
     * @brief Unpack an element from a file written by write_elem_to_disk(), as lReadElemFromDisk() did
@@ -168,6 +168,7 @@ namespace ocs::tom {
     * @throw ocs::RuntimeException with the message logged, if no file is named, it cannot be read or does not
     *        hold an element
     */
-   lListElem *read_elem_from_disk(const char *prefix, const char *name, const lDescr *descr, const char *obj_name);
+   ocs::tom::ElementData *read_elem_from_disk(const char *prefix, const char *name, const ocs::tom::FieldDescr *descr,
+                                              const char *obj_name);
 
 } // namespace ocs::tom

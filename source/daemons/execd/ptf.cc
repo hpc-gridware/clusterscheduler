@@ -217,10 +217,11 @@ static void ptf_setpriority_addgrpid(ocs::tom::ConstElement<ocs::tom::JL> job,
 /**
  * @brief Every job the PTF is currently adjusting (`JL`)
  *
- * Stays a raw list: ocs_execd_systemd.cc declares it `extern lList *` and walks it. ptf.cc creates and frees it
+ * Stays a raw list: ocs_execd_systemd.cc declares it `extern ocs::tom::ListData *` and walks it. ptf.cc creates and
+ * frees it
  * and reads it through checked non-owning handles.
  */
-lList *ptf_jobs = nullptr;
+ocs::tom::ListData *ptf_jobs = nullptr;
 
 static int is_ptf_running = 0;
 
