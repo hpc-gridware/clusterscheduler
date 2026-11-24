@@ -2189,8 +2189,9 @@ ec2_commit_multi(sge_evc_class_t *thiz, ocs::tom::ListData **malpp, ocs::gdi::Re
       } else {
          // the modification answers with no objects
          ocs::tom::ListPtr<ocs::tom::EV> no_objects;
-         gdi_multi->get_response(&alp, ocs::gdi::Command::ADD, ocs::gdi::SubCommand::NONE,
-                                 ocs::gdi::Target::ORDER_LIST, commit_id, no_objects);
+         // CS-3154: the response is fetched with the command and the target of the request it answers
+         gdi_multi->get_response(&alp, ocs::gdi::Command::MOD, ocs::gdi::SubCommand::NONE,
+                                 ocs::gdi::Target::EV_LIST, commit_id, no_objects);
 
          gdi_ret = answer_list_handle_request_answer_list(&alp, stderr);
 
