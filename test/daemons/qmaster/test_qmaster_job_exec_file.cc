@@ -55,7 +55,7 @@
 #include "gdi/ocs_gdi_ClientBase.h"
 
 #include "ocs_client_parse.h"
-#include "parse_job_cull.h"
+#include "ocs_parse_job.h"
 
 #include "basis_types.h"
 
@@ -106,7 +106,7 @@ build_job(const bool with_script) {
 
    ocs::tom::ElementPtr<ocs::tom::JB> job;
    uint32_t sync_opt = SYNC_NO;
-   alp = cull_parse_job_parameter(component_get_uid(), component_get_username(), bootstrap_get_cell_root(),
+   alp = ocs_parse_job_parameter(component_get_uid(), component_get_username(), bootstrap_get_cell_root(),
                                   component_get_unqualified_hostname(), component_get_qualified_hostname(), *opts,
                                   job, &sync_opt);
    if (answer_list_has_error(&alp) || !job) {

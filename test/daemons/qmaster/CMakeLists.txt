@@ -66,7 +66,7 @@ set_tests_properties(test_qmaster_procedure_mod PROPERTIES DISABLED TRUE)
 # qmaster. Same DISABLED + installed treatment as test_qmaster_hgroup_reserved.
 add_executable(test_qmaster_job_exec_file
       test_qmaster_job_exec_file.cc
-      ../../../source/common/parse_job_cull.cc
+      ../../../source/common/ocs_parse_job.cc
       ../../../source/common/parse_qsub.cc
       ../../../source/common/sig_handlers.cc
       ../../../source/common/sge_options.cc
