@@ -985,10 +985,9 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
          }
       }
    } else if (!strcmp(name, "admin_user")) {
+      // CS-3165: an empty value gives no token; sge_strtok_r() splits at white space, so a token has no blank
       value = sge_strtok_r(buffer, " \t\n", &context);
-      while (value[0] && isspace((int)value[0]))
-         value++;
-      if (value) {
+      if (value != nullptr) {
          cf.set<CF_value>(value);
       } else {
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
