@@ -21,6 +21,7 @@
 /** @file
  * @brief Unit tests for single fields of the flatfile reader and writer in `libs/spool/flatfile`
  *
+ * - The load formula of the scheduler configuration is validated as it is stored, without blanks (CS-3166).
  * - A field the writer cannot render is left out instead of crashing the writer (CS-3167).
  * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170), also of a
  *   bit field and of an enumeration.
@@ -50,6 +51,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
+#include "sgeobj/tom/ocs_tom_SC.h"
 #include "tom/ocs_Element.h"
 
 #include "spool/sge_spooling_utilities.h"
@@ -110,6 +112,43 @@ print_answers(const ocs::tom::ListPtr<ocs::tom::AN> &alp) {
          }
       }
    }
+}
+
+/**
+ * @brief Read a scheduler configuration from a text as qconf -Msconf does
+ * @param text the content of the file
+ * @param[out] alp receives the messages
+ * @return the scheduler configuration, empty if it was refused
+ */
+static ocs::tom::ElementPtr<ocs::tom::SC>
+read_sconf(const char *text, ocs::tom::ListPtr<ocs::tom::AN> &alp) {
+   char path[64];
+   ocs::tom::ElementPtr<ocs::tom::SC> sc;
+   if (write_tmp_file(text, path)) {
+      sc = ocs::tom::ElementPtr<ocs::tom::SC>::from_typed(
+         spool_flatfile_read_object(&alp, ocs::tom::SC::descriptor.e, nullptr, SC_fields, nullptr, true,
+                                    &qconf_comma_sfi, SP_FORM_ASCII, nullptr, path));
+      unlink(path);
+   }
+   print_answers(alp);
+   return sc;
+}
+
+/**
+ * @brief The load formula is validated as it is stored, without blanks (CS-3166)
+ *
+ * `no ne` is no keyword, but with the blank stripped it is stored as `none`, which is not allowed.
+ */
+static void
+test_sconf_load_formula_validated_as_stored() {
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   auto sc = read_sconf("load_formula   no ne\n", alp);
+   check("T01", "a load formula that is none without its blanks is refused", !sc);
+
+   alp.reset();
+   sc = read_sconf("load_formula   np_load_avg + 2\n", alp);
+   check("T02", "a valid load formula is stored without blanks",
+         sc && sc->get<SC_load_formula>() != nullptr && strcmp(sc->get<SC_load_formula>(), "np_load_avg+2") == 0);
 }
 
 /**
@@ -313,6 +352,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);
    ocs::tom::install_model(ocs::tom::gcs_model());
 
+   test_sconf_load_formula_validated_as_stored();
    test_write_unrenderable_field();
    test_json_by_name_unknown_word();
    test_json_bitfield_enum_unknown_word();

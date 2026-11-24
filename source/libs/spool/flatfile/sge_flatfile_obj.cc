@@ -899,7 +899,8 @@ static bool read_SC_load_formula(const ocs::tom::Element<ocs::tom::SC> sc, const
       if (copy != nullptr) {
          strcpy(copy, load_formula);
          sge_strip_blanks(copy);
-         if (!validate_load_formula(load_formula, alp, ocs::tom::ConstList<ocs::tom::CE>(), SGE_ATTR_LOAD_FORMULA)) {
+         // CS-3166: validate the text that is stored
+         if (!validate_load_formula(copy, alp, ocs::tom::ConstList<ocs::tom::CE>(), SGE_ATTR_LOAD_FORMULA)) {
             sge_free(&copy);
             DRETURN(false);
          }
