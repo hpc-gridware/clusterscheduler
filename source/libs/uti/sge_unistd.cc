@@ -43,6 +43,9 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
+#include <string>
+#include <vector>
+
 #if defined(LINUX)
 
 #  include <limits.h>
@@ -386,8 +389,8 @@ int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, cons
    }
 
    int ret = 0;
-   struct stat stat_buffer{};
-   if (fstat(fd, &stat_buffer) != 0) {
+   SGE_STRUCT_STAT stat_buffer{};
+   if (SGE_FSTAT(fd, &stat_buffer) != 0) {
       sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path, strerror(errno));
       ret = -1;
    } else if (!S_ISDIR(stat_buffer.st_mode) || (stat_buffer.st_uid != geteuid() && stat_buffer.st_uid != uid)) {
@@ -405,71 +408,118 @@ int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, cons
    DRETURN(ret);
 }
 
+/** @brief The deepest directory level below its top that sge_rmdir() descends into */
+static constexpr size_t OCS_RMDIR_MAX_DEPTH = 4096;
+
 /**
  * @brief Remove everything inside an open directory without following symbolic links
  *
- * Every entry is examined with fstatat(AT_SYMLINK_NOFOLLOW) and removed relative to
- * @p dir_fd with unlinkat(), a subdirectory is opened with openat(O_DIRECTORY | O_NOFOLLOW)
- * and emptied the same way. Nothing is ever looked up by its full path, so a directory
- * that is replaced by a symbolic link while the tree is removed is not followed: the
- * open fails and the removal stops with an error, the link's target is not touched.
+ * Every entry is examined with fstatat(AT_SYMLINK_NOFOLLOW) and removed relative to its open
+ * parent with unlinkat(), a subdirectory is opened with openat(O_DIRECTORY | O_NOFOLLOW) and
+ * emptied the same way. Nothing is ever looked up by its full path, so a directory that is
+ * replaced by a symbolic link while the tree is removed is not followed: the open fails and the
+ * removal stops with an error, the link's target is not touched.
  *
- * @param dir_fd descriptor of the directory, opened with O_DIRECTORY and O_NOFOLLOW;
+ * The walk keeps its state on the heap, one open directory per level, so the depth of the tree
+ * does not depend on the stack of the caller. A tree deeper than #OCS_RMDIR_MAX_DEPTH levels, or
+ * one that needs more descriptors than the process may open, is an error; whatever was not
+ * removed by then stays in place.
+ *
+ * @param top_fd descriptor of the directory, opened with O_DIRECTORY and O_NOFOLLOW;
  *               it is always closed when the function returns
  * @param path path of the directory, used in error messages only
  * @param error destination for an error message, may be nullptr
  * @return 0 when the directory is empty afterwards, -1 on error
  */
-static int ocs_rmdir_contents(const int dir_fd, const char *path, dstring *error) {
+static int ocs_rmdir_contents(const int top_fd, const char *path, dstring *error) {
    DENTER(TOP_LAYER);
 
-   DIR *dir = fdopendir(dir_fd);
-   if (dir == nullptr) {
+   /** @brief One open directory of the walk */
+   struct Level {
+      DIR *dir;            ///< the open directory
+      std::string name;    ///< its name in the parent directory, the path for the top
+   };
+
+   DIR *top = fdopendir(top_fd);
+   if (top == nullptr) {
       sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path, strerror(errno));
-      close(dir_fd);
+      close(top_fd);
       DRETURN(-1);
    }
 
+   std::vector<Level> levels;
+   levels.push_back({top, path});
+
+   // the path of an entry of the deepest open directory, built for error messages only
+   auto path_of = [&levels](const char *name) {
+      std::string result;
+      for (const auto &level : levels) {
+         result += level.name;
+         result += '/';
+      }
+      return result + name;
+   };
+
    int ret = 0;
-   SGE_STRUCT_DIRENT *dent;
-   char dirent[SGE_PATH_MAX * 2];
-   while (ret == 0 && SGE_READDIR_R(dir, (SGE_STRUCT_DIRENT *) dirent, &dent) == 0 && dent != nullptr) {
+   while (ret == 0 && !levels.empty()) {
+      const int dir_fd = dirfd(levels.back().dir);
+      const SGE_STRUCT_DIRENT *dent = SGE_READDIR(levels.back().dir);
+      if (dent == nullptr) {
+         // the directory is empty now: close it and remove it from its parent
+         const std::string name = levels.back().name;
+         closedir(levels.back().dir);
+         levels.pop_back();
+         if (!levels.empty() && unlinkat(dirfd(levels.back().dir), name.c_str(), AT_REMOVEDIR) != 0) {
+            const int saved_errno = errno;
+            sge_dstring_sprintf(error, MSG_FILE_RMDIRFAILED_SS, path_of(name.c_str()).c_str(), strerror(saved_errno));
+            ret = -1;
+         }
+         continue;
+      }
+
       const char *name = dent->d_name;
       if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
          continue;
       }
 
-      char fname[SGE_PATH_MAX];
-      snprintf(fname, sizeof(fname), "%s/%s", path, name);
-
-      struct stat stat_buffer{};
-      if (fstatat(dirfd(dir), name, &stat_buffer, AT_SYMLINK_NOFOLLOW) != 0) {
-         sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, fname, strerror(errno));
+      SGE_STRUCT_STAT stat_buffer{};
+      if (SGE_FSTATAT(dir_fd, name, &stat_buffer, AT_SYMLINK_NOFOLLOW) != 0) {
+         const int saved_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path_of(name).c_str(), strerror(saved_errno));
          ret = -1;
       } else if (S_ISDIR(stat_buffer.st_mode)) {
+         if (levels.size() > OCS_RMDIR_MAX_DEPTH) {
+            sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path_of(name).c_str(), strerror(ENAMETOOLONG));
+            ret = -1;
+            continue;
+         }
          // O_NOFOLLOW: a directory swapped for a symbolic link since the fstatat() is not entered
-         const int sub_fd = openat(dirfd(dir), name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-         if (sub_fd < 0) {
-            sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, fname, strerror(errno));
+         const int sub_fd = openat(dir_fd, name, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+         DIR *sub = sub_fd < 0 ? nullptr : fdopendir(sub_fd);
+         if (sub == nullptr) {
+            const int saved_errno = errno;
+            sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path_of(name).c_str(), strerror(saved_errno));
+            if (sub_fd >= 0) {
+               close(sub_fd);
+            }
             ret = -1;
-         } else if (ocs_rmdir_contents(sub_fd, fname, error) != 0) {
-            sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
-            ret = -1;
-         } else if (unlinkat(dirfd(dir), name, AT_REMOVEDIR) != 0) {
-            sge_dstring_sprintf(error, MSG_FILE_RECURSIVERMDIRFAILED);
-            ret = -1;
+         } else {
+            levels.push_back({sub, name});
          }
       } else {
          // a symbolic link is removed itself, never its target
-         DPRINTF("sge_rmdir: unlink %s\n", fname);
-         if (unlinkat(dirfd(dir), name, 0) != 0) {
-            sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS, fname, strerror(errno));
+         DPRINTF("sge_rmdir: unlink %s\n", name);
+         if (unlinkat(dir_fd, name, 0) != 0) {
+            const int saved_errno = errno;
+            sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS, path_of(name).c_str(), strerror(saved_errno));
             ret = -1;
          }
       }
    }
 
-   closedir(dir);
+   for (const auto &level : levels) {
+      closedir(level.dir);
+   }
    DRETURN(ret);
 }
 
@@ -481,7 +531,7 @@ static int ocs_rmdir_contents(const int dir_fd, const char *path, dstring *error
  *
  * The removal never follows a symbolic link, neither at @p cp itself nor anywhere inside the
  * tree: a symbolic link inside the tree is removed, its target stays untouched, and a
- * symbolic link at @p cp is an error. The tree is walked with descriptors (openat(),
+ * symbolic link at @p cp is an error. The tree is walked without recursion, with descriptors (openat(),
  * fstatat(), unlinkat() relative to the open parent), so a directory that is replaced by a
  * symbolic link while the tree is removed cannot redirect the removal to the link's target,
  * even when the caller runs as root on a tree that belongs to another user (CS-3202).

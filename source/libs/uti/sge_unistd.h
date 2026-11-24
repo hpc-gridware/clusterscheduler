@@ -66,6 +66,9 @@
 /** @def SGE_FSTAT
  * @brief stat an open file descriptor, 64 bit safe
  */
+/** @def SGE_FSTATAT
+ * @brief stat a name relative to an open directory, 64 bit safe
+ */
 /** @def SGE_READDIR
  * @brief read the next directory entry
  */
@@ -113,6 +116,7 @@
 #  define SGE_STAT(filename, buffer) stat64(filename, buffer)
 #  define SGE_LSTAT(filename, buffer) lstat64(filename, buffer)
 #  define SGE_FSTAT(filename, buffer) fstat64(filename, buffer)
+#  define SGE_FSTATAT(dirfd, name, buffer, flag) fstatat64(dirfd, name, buffer, flag)
 #  define SGE_STRUCT_STAT struct stat64
 #  define SGE_INO_T ino64_t
 #  define SGE_OFF_T off64_t
@@ -120,6 +124,7 @@
 #  define SGE_STAT(filename, buffer) stat(filename, buffer)
 #  define SGE_LSTAT(filename, buffer) lstat(filename, buffer)
 #  define SGE_FSTAT(filename, buffer) fstat(filename, buffer)
+#  define SGE_FSTATAT(dirfd, name, buffer, flag) fstatat(dirfd, name, buffer, flag)
 #  define SGE_STRUCT_STAT struct stat
 #  define SGE_INO_T ino_t
 #  define SGE_OFF_T off_t

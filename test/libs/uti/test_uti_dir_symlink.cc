@@ -41,6 +41,7 @@
 #include <string>
 
 #include <fcntl.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -224,6 +225,106 @@ static bool get_stat(const std::string &path, struct stat &st) {
 }
 
 /**
+ * @brief Build a chain of nested directories relative to descriptors, so PATH_MAX is no limit
+ * @param top the directory to build in, it must exist
+ * @param depth number of nested levels below @p top
+ * @return true on success
+ */
+static bool make_deep_tree(const std::string &top, const int depth) {
+   int fd = open(top.c_str(), O_RDONLY | O_DIRECTORY);
+   if (fd < 0) {
+      printf("setup: open(%s) failed: %s\n", top.c_str(), strerror(errno));
+      return false;
+   }
+   for (int i = 0; i < depth; i++) {
+      if (mkdirat(fd, "d", 0755) != 0) {
+         printf("setup: mkdirat() at level %d failed: %s\n", i, strerror(errno));
+         close(fd);
+         return false;
+      }
+      const int sub = openat(fd, "d", O_RDONLY | O_DIRECTORY);
+      close(fd);
+      if (sub < 0) {
+         printf("setup: openat() at level %d failed: %s\n", i, strerror(errno));
+         return false;
+      }
+      fd = sub;
+   }
+   // a file at the bottom
+   const int file = openat(fd, "f", O_WRONLY | O_CREAT, 0644);
+   if (file >= 0) {
+      close(file);
+   }
+   close(fd);
+   return file >= 0;
+}
+
+/**
+ * @brief Test sge_rmdir() on deep trees: no recursion on the stack, clean failure at the limits
+ * @param base scratch directory
+ * @param id running test number
+ */
+static void test_rmdir_deep(const std::string &base, int &id) {
+   printf("\n--- RMDIR: deep trees do not depend on the stack (CS-3202) ---\n");
+
+   // as many descriptors as allowed, so the depth is the only limit
+   struct rlimit saved{};
+   getrlimit(RLIMIT_NOFILE, &saved);
+   struct rlimit raised = saved;
+   raised.rlim_cur = saved.rlim_max;
+   setrlimit(RLIMIT_NOFILE, &raised);
+   struct rlimit now{};
+   getrlimit(RLIMIT_NOFILE, &now);
+   printf("      descriptor limit %llu\n", (unsigned long long) now.rlim_cur);
+
+   DSTRING_STATIC(err, 1024);
+
+   // 2000 levels: removed when the descriptors suffice, else a clean error
+   const std::string deep = base + "/deep";
+   CHECK(id++, "setup of a tree 2000 levels deep", make_dir(deep) && make_deep_tree(deep, 2000));
+   sge_dstring_clear(&err);
+   const int ret = sge_rmdir(deep.c_str(), &err);
+   if (now.rlim_cur >= 2100) {
+      CHECK(id++, "a tree 2000 levels deep is removed", ret == 0 && !exists(deep));
+   } else {
+      CHECK(id++, "a tree 2000 levels deep fails cleanly with too few descriptors",
+            ret != 0 && sge_dstring_strlen(&err) > 0 && exists(deep));
+   }
+   if (sge_dstring_strlen(&err) > 0) {
+      printf("      error: %s\n", sge_dstring_get_string(&err));
+   }
+   cleanup(deep);
+
+   // deeper than the limit of the walk: a clean error, the deepest part stays
+   const std::string too_deep = base + "/too_deep";
+   CHECK(id++, "setup of a tree 5000 levels deep", make_dir(too_deep) && make_deep_tree(too_deep, 5000));
+   sge_dstring_clear(&err);
+   CHECK(id++, "a tree 5000 levels deep fails cleanly",
+         sge_rmdir(too_deep.c_str(), &err) != 0 && sge_dstring_strlen(&err) > 0 && exists(too_deep + "/d"));
+   printf("      error: %.200s\n", sge_dstring_get_string(&err));
+   cleanup(too_deep);
+
+   // running out of descriptors: a clean error, a second call with enough descriptors finishes
+   const std::string fds = base + "/fds";
+   CHECK(id++, "setup of a tree 200 levels deep", make_dir(fds) && make_deep_tree(fds, 200));
+   struct rlimit low = now;
+   low.rlim_cur = 64;
+   setrlimit(RLIMIT_NOFILE, &low);
+   sge_dstring_clear(&err);
+   const int low_ret = sge_rmdir(fds.c_str(), &err);
+   setrlimit(RLIMIT_NOFILE, &now);
+   CHECK(id++, "with 64 descriptors the removal fails cleanly and leaves the tree",
+         low_ret != 0 && sge_dstring_strlen(&err) > 0 && exists(fds + "/d"));
+   printf("      error: %.200s\n", sge_dstring_get_string(&err));
+   sge_dstring_clear(&err);
+   CHECK(id++, "with enough descriptors a second removal finishes",
+         sge_rmdir(fds.c_str(), &err) == 0 && !exists(fds));
+   cleanup(fds);
+
+   setrlimit(RLIMIT_NOFILE, &saved);
+}
+
+/**
  * @brief Test ocs_mkdir_for_owner() against whatever a user planted at the path (CS-3203)
  *
  * The test runs unprivileged, so the new owner is the calling user and the group is one of its
@@ -341,6 +442,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    int id = 1;
 
    test_rmdir(base, id);
+   test_rmdir_deep(base, id);
    test_mkdir_for_owner(base, id);
 
    cleanup(base);
