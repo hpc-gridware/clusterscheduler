@@ -179,6 +179,12 @@ target_include_directories(test_sgeobj_unique_keys PRIVATE "./")
 target_link_libraries(test_sgeobj_unique_keys PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
 add_test(NAME test_sgeobj_unique_keys COMMAND test_sgeobj_unique_keys)
 
+# CS-3138: text that a JSV script sends is never used as a printf format
+add_executable(test_sgeobj_jsv test_sgeobj_jsv.cc)
+target_include_directories(test_sgeobj_jsv PRIVATE "./")
+target_link_libraries(test_sgeobj_jsv PRIVATE sgeobj tom comm commlists uti ${SGE_LIBS})
+add_test(NAME test_sgeobj_jsv COMMAND test_sgeobj_jsv)
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_eval_expression DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_performance DESTINATION testbin/${SGE_ARCH})
@@ -208,4 +214,5 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_sgeobj_parse_util DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_AnswerException DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_sgeobj_unique_keys DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_sgeobj_jsv DESTINATION testbin/${SGE_ARCH})
 endif ()
