@@ -374,7 +374,7 @@ destroy_slotwise_sos_tree_elem(ssos_qinstance_t **ssos_qinstance) {
  * too.
  *
  * @param only_ssos If true, checks if task is only suspended by slotwise suspend on subordinate, if false, checks if task is suspended by slotwise suspend on subordinate, but it might be also suspended by some other suspend method at the same time.
- * @param task The task to check. CULL type "JAT".
+ * @param task The task to check. object type "JAT".
  *
  * @return true if the task is (only) suspended by slotwise suspend on subordinate. false else.
  *

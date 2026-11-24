@@ -503,7 +503,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_job_parameter([[maybe_unused]] const 
    ** this can lead to a core dump
    ** so a better method is to xchange the list in the option struct 
    ** with a null pointer, this is not nice but safe
-   ** a little redesign of cull would be nice
+   ** a little redesign of the list library would be nice
    ** see parse_list_simple
    */
    parse_list_merge<JB_stderr_path_list, PN_host, PN_path>(cmdline, "-e", *pjob);

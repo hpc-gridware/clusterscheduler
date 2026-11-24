@@ -75,7 +75,7 @@
  *
  * @param alpp reference to an answer list.
  * @param new_ckpt if a new ckpt object will be created by this function, than new_ckpt is new uninitialized
- *        CULL object if this function was called due to a modify request than new_ckpt will contain the old
+ *        object if this function was called due to a modify request than new_ckpt will contain the old
  *        data (see add parameter)
  * @param ckpt a reduced ckpt object which contains all necessary information to create a new object or modify
  *        parts of an existing one
@@ -83,7 +83,7 @@
  * @param ruser username of person who invoked this gdi request
  * @param rhost hostname of the host where someone initiated an gdi call
  * @param object structure of the gdi framework which contains additional information to perform the request
- *        (function pointers, names, CULL-types)
+ *        (function pointers, names, object types)
  * @param sub_command how should we handle sublist elements: `SGE_GDI_CHANGE`
  * @param packet the client request
  * @param task the GDI task being answered
@@ -190,7 +190,7 @@ DRETURN(STATUS_EUNKNOWN);
  * @param alpp reference to an answer list.
  * @param ep ckpt object which should be spooled
  * @param object structure of the gdi framework which contains additional information to perform the request
- *        (function pointers, names, CULL-types)
+ *        (function pointers, names, object types)
  * @param packet the client request
  * @param task the GDI task being answered
  *
@@ -227,7 +227,7 @@ int ckpt_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr
  * @param ep new ckpt object
  * @param old_ep old ckpt object before modification or nullptr if a new object was added
  * @param object structure of the gdi framework which contains additional information to perform the request
- *        (function pointers, names, CULL-types)
+ *        (function pointers, names, object types)
  * @param packet the client request
  * @param task the GDI task being answered
  * @param post what is left for after the last object of the request, unused

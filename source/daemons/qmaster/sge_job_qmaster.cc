@@ -1375,7 +1375,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          DRETURN(STATUS_ENOTOWNER);
       }
 
-      /* operate on a cull copy of the job */
+      /* operate on a copy of the job */
       auto new_job_ptr = jobep.clone();
       const auto new_job = new_job_ptr.get();
       int lret = mod_job_attributes(packet, new_job, jep, &tmp_alp, &trigger);

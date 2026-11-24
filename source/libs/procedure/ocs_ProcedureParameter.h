@@ -43,7 +43,7 @@ namespace ocs {
     * the command name, optional sub-command, requested output format, execution
     * context, and the environment variables the procedure depends on.
     *
-    * Parameters are marshaled to a CULL SPP list (`get_bundle()`) for
+    * Parameters are marshaled to a SPP list (`get_bundle()`) for
     * transport in a GDI request, and reconstructed on the server side
     * (`set_bundle()`).
     *
@@ -130,7 +130,7 @@ namespace ocs {
    public:
       /** @name Names of the entries in the marshalled parameter bundle
        *
-       * A bundle is a CULL list keyed by these strings, so both sides have to
+       * A bundle is a list keyed by these strings, so both sides have to
        * agree on them - they are the wire format of a procedure call.
        * @{
        */
@@ -236,7 +236,7 @@ namespace ocs {
        * into `abort()` - one `qconf -scat ''` took the whole qmaster down
        * (CS-2840). Every bundle value that becomes a string goes through here.
        *
-       * @param text the value as CULL returns it, possibly nullptr
+       * @param text the value as the list library returns it, possibly nullptr
        * @return the text, or an empty string when it was empty on the wire
        */
       [[nodiscard]] static std::string bundle_string(const char *text) {

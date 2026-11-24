@@ -200,7 +200,7 @@
  * - Reducing elements via a what condition requires care: all elements must
  *   have a custom descriptor, and elements with different descriptors must not
  *   be mixed in the same list.
- * - All registered events for the same CULL data structure need the same what
+ * - All registered events for the same object type need the same what
  *   and where filter.
  * - `JAT` is special. It is subscribable as an event and is at the same
  *   time a sub-structure of `JB`, so setting a `JAT` filter also
@@ -236,7 +236,7 @@
  */
 /** @page evc_ev_type The EV event client object
  *
- * An event client creates and initialises an `EV` CULL object and passes
+ * An event client creates and initialises an `EV` object and passes
  * it to qmaster for registration. Qmaster fills in some of the fields, for
  * example `EV_id`, and sends the object back on successful registration.
  * Whenever the client wants to change a configuration parameter it modifies

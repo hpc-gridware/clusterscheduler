@@ -87,7 +87,7 @@ extern spool_flatfile_format qconf_opt_format;
  * with the descriptor table that uses it (CS-2799). */
 
 
-/** @brief Turn a comma separated name list into a new CULL list, one element per name
+/** @brief Turn a comma separated name list into a new list, one element per name
  *
  * The name goes into a string or a host field, whichever @p F is. Of a host
  * list, every host but the first is resolved into EH_name.

@@ -1091,7 +1091,6 @@ size_t sge_strlen(const char *str) {
 ** but allocating extra memory (as it was in
 ** sge_string2list) should also be possible
 ** problem: default delimiters should be possible
-** note: there is a similar cull function lString2List
 */
 /*
 ** NAME

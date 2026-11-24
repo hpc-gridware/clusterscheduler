@@ -30,7 +30,7 @@ namespace ocs::gdi {
    /**
     * @brief The object list a GDI request addresses
     *
-    * Every request names exactly one target; qmaster maps it to the cull type,
+    * Every request names exactly one target; qmaster maps it to the object type,
     * the spooling function and the permission check for that object kind. The
     * table in `daemons/qmaster/sge_c_gdi.cc` is where that mapping lives.
     */

@@ -386,7 +386,7 @@ int sge_parse_qconf(char *argv[]) {
 
 /***********************************************************************/
 
-/** @brief Turn a comma separated name list into a new CULL list, one element per name
+/** @brief Turn a comma separated name list into a new list, one element per name
  *
  * The name goes into a string or a host field, whichever @p F is. Of a host
  * list, every host but the first is resolved into EH_name.

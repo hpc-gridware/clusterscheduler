@@ -226,7 +226,7 @@ struct qconf_object_desc {
    bool (*export_exclude)(const char *name);         ///< bulk export: leave this object out
    qconf_read_desc read;                             ///< the read path additions (CS-2796)
    qconf_write_desc write;                           ///< the write path additions (CS-2823)
-   const lDescr *descr = nullptr;                    ///< CULL descriptor, from the entry's object type
+   const lDescr *descr = nullptr;                    ///< descriptor, from the entry's object type
    int name_nm = NoName;                             ///< name field, NoName for the singletons; from the
                                                      ///< entry's key field
 };
@@ -806,7 +806,7 @@ ocs_qconf_parse_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, spooling_fi
 spooling_field *qconf_copy_fields(const spooling_field *fields);
 
 /**
- * @brief Fill one complex-value sublist with its CULL type and numeric value (CS-2313a)
+ * @brief Fill one complex-value sublist with its object type and numeric value (CS-2313a)
  *
  * One step of ocs_qconf_json_fill_complex().
  *
@@ -829,7 +829,7 @@ void ocs_qconf_json_fill_complex_field(const ocs::tom::Element<typename ocs::tom
 }
 
 /**
- * @brief Fill complex-value sublists with their CULL type/numeric value (CS-2313a).
+ * @brief Fill complex-value sublists with their object type/numeric value (CS-2313a).
  *
  * The raw complex_values / threshold entries stored on an exec host or queue carry
  * only a name + string value (CE_valtype is NONE). To emit native JSON numbers

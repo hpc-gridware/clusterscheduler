@@ -33,7 +33,7 @@
 /*___INFO__MARK_END__*/                                   
 
 /** @file
- * @brief Rendering cull objects as text, and parsing them back
+ * @brief Rendering objects as text, and parsing them back
  */
 
 /** @def NO_SGE_COMPILE_DEBUG
@@ -2947,7 +2947,7 @@ static spooling_field *get_recursion_field_list(const spool_flatfile_instr *inst
  * @param out  the fields actually read, terminated by `NoName`
  * @param alpp receives a message naming the first missing attribute
  *
- * @return the cull attribute number of the first field of `in` that is not in
+ * @return the field number of the first field of `in` that is not in
  *         `out`, or `NoName` if the input was complete
  */
 int spool_get_unprocessed_field(spooling_field in[], int out[], ocs::tom::ListPtr<ocs::tom::AN> *alpp) {

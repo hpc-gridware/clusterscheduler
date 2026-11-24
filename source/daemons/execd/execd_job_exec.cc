@@ -813,7 +813,7 @@ Error:
  * @brief Verify a job entering execd
  *
  * Verifies a job object entering execd.
- * Does generic tests by calling job_verify, like verifying the cull
+ * Does generic tests by calling job_verify, like verifying the list
  * structure, and makes sure a number of job attributes are set
  * correctly.
  *
@@ -826,7 +826,7 @@ Error:
  * @note MT-NOTE: job_verify_execd_job() is MT safe
  *
  * @bug The function is far from being complete.
- *      Currently, only the CULL structure is verified, not the contents.
+ *      Currently, only the structure is verified, not the contents.
  *
  * @see `job_verify()`
  */

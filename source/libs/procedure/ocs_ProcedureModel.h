@@ -42,7 +42,7 @@ namespace ocs {
     * sent to qmaster, and the pre-rendered text response is stored internally.
     *
     * Command-specific models (e.g. QStatModelBase) do not use this GDI path;
-    * instead they fetch typed CULL lists and perform filtering/rendering locally.
+    * instead they fetch typed lists and perform filtering/rendering locally.
     *
     * @note This object owns `procedure_response` and frees it in its destructor.
     *
@@ -52,7 +52,7 @@ namespace ocs {
 
 #pragma region Data
    protected:
-      /** @brief CULL list received from qmaster; owned by this object
+      /** @brief list received from qmaster; owned by this object
        *
        * Protected rather than private so that a unit test can hand in a response
        * it built itself and check the readers against it (CS-2821). Ownership is
@@ -110,7 +110,7 @@ namespace ocs {
        *
        * The entry's presence is the answer and the list is the content, the way
        * get_write_result() reports a write: an export that matched no object
-       * sends the entry with an empty list, and CULL stores an empty list as
+       * sends the entry with an empty list, and the list library stores an empty list as
        * none at all. Returning the list alone could not tell that legitimate
        * "nothing to export" from a response that never carried the entry - and
        * the second one would be a broken channel wearing the face of an empty

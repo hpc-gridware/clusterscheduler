@@ -44,7 +44,7 @@
  *
  * The three opaque string vectors are the same layout: a discriminator plus a
  * union of the two iterator implementations, one over the job ids of a bulk
- * job and one over a cull list of strings.
+ * job and one over a list of strings.
  */
 
 #include <type_traits>

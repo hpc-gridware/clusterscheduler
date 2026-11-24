@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Rendering cull objects as JSON, for `qconf -fmt json`
+ * @brief Rendering objects as JSON, for `qconf -fmt json`
  */
 
 #include <cctype>
@@ -917,7 +917,7 @@ spool_json_perm_list_from_array(const rapidjson::Value &v, dstring *out, ocs::to
 /**
  * @brief Emit the "key": value members of one object (no surrounding braces).
  *
- * Members are keyed by the spooling_field names and typed from the CULL field types.
+ * Members are keyed by the spooling_field names and typed from the field types.
  * Scalars become native JSON values; CE/complex-value sublists become arrays of typed
  * {name,value}; name-only sublists become arrays of strings; other sublists become
  * arrays of objects. A top-level unnamed name=value sublist (the config entries) is
@@ -1296,7 +1296,7 @@ bool spool_json_write_typed_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
  *
  * @param answer_list  for returning errors
  * @param list         the list of name-bearing elements, maybe empty
- * @param keynm        CULL field id of the name attribute
+ * @param keynm        field id of the name attribute
  * @param out          dstring the JSON document is appended to
  * @return true on success
  */
@@ -1316,7 +1316,7 @@ bool spool_json_write_name_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
  *
  * @param answer_list  for returning errors
  * @param list         the list of name-bearing elements, maybe empty
- * @param keynm        CULL field id of the name attribute
+ * @param keynm        field id of the name attribute
  * @param type_name    envelope/$id name, or nullptr to derive it from the first element
  * @param out          dstring the JSON document is appended to
  * @return true on success
@@ -1552,7 +1552,7 @@ spool_json_value_to_bool(const rapidjson::Value &v) {
 }
 
 /**
- * @brief Coerce a JSON value for a CULL string/host field, mapping unset to "NONE".
+ * @brief Coerce a JSON value for a string/host field, mapping unset to "NONE".
  *
  * An unset value (JSON null or an empty string) maps to the "NONE" sentinel *string*,
  * exactly as the flatfile reader stores the "NONE" token from an ASCII file. Producing
@@ -2029,7 +2029,7 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
 }
 
 /**
- * @brief Parse a JSON document back into a single CULL element.
+ * @brief Parse a JSON document back into a single element.
  *
  * @param answer_list  for returning errors
  * @param descr        descriptor of the element to build
@@ -2059,7 +2059,7 @@ spool_json_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const lDesc
 }
 
 /**
- * @brief Parse a JSON document back into a CULL list.
+ * @brief Parse a JSON document back into a list.
  *
  * The objects are read from the document's first array member (the $schema/$id envelope
  * members are skipped).

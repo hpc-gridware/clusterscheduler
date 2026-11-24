@@ -30,7 +30,7 @@
  * takes its place through ordinary ELF symbol interposition (see
  * ocs_SanitizerOptions.cc). We turn off detect_leaks in client
  * tools because those binaries run once, do their work, and exit without
- * unwinding the CULL master lists, packed buffers, GDI contexts, and
+ * unwinding the master lists, packed buffers, GDI contexts, and
  * every other object that persists for the tool's lifetime. Every one of
  * those looks like a leak to LSan even though the OS reclaims all of it
  * immediately on exit — noise that drowns out real bugs.

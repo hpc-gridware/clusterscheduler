@@ -38,7 +38,7 @@
  *
  * `drusage` is the flattened form of everything the accounting record holds:
  * who ran the job, where, when, and what it consumed. It exists because the
- * CULL job object is far larger than what a record needs and outlives none of
+ * job object is far larger than what a record needs and outlives none of
  * it - by the time the record is written the job is gone.
  *
  * The `ru_*` fields mirror the platform's `struct rusage`; the fields after

@@ -47,10 +47,10 @@
 #include "sgeobj/sge_answer.h"
 
 namespace ocs {
-   /** @brief Base model for qstat that holds all CULL data lists needed for rendering.
+   /** @brief Base model for qstat that holds all data lists needed for rendering.
     *
     * Unlike the generic ProcedureModel (which delegates rendering to qmaster),
-    * QStatModelBase fetches typed CULL lists, applies filtering, and exposes
+    * QStatModelBase fetches typed lists, applies filtering, and exposes
     * the results directly to the view layer — in both client and server contexts.
     *
     * ## Client vs. server execution
@@ -68,7 +68,7 @@ namespace ocs {
     * ## Virtual pipeline inside make_snapshot()
     *
     * 1. `prepare_filter()` — normalises parameter flags before data is fetched.
-    * 2. `fetch_data()`     — populates the CULL list members (overridden per context).
+    * 2. `fetch_data()`     — populates the list members (overridden per context).
     * 3. `prepare_data()`   — post-processes the fetched lists (e.g. resolves hostgroups).
     * 4. `filter_data()`    — applies user-specified filters (queue state, resource, PE …).
     *

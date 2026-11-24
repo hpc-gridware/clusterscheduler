@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Rendering cull objects as JSON, for `qconf -fmt json`
+ * @brief Rendering objects as JSON, for `qconf -fmt json`
  */
 
 #include "tom/ocs_Types.h"
@@ -120,7 +120,7 @@ spool_json_write_typed_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, ocs:
                               const spooling_field *fields, const char *type_name, dstring *out);
 
 /*
- * Parse a JSON document (produced by the writers above) back into a CULL element
+ * Parse a JSON document (produced by the writers above) back into an element
  * or list, returned as its owner (empty on error). @p fields_out (if non-null)
  * receives the set of field ids found, for the caller's unprocessed-field check
  * (as the ASCII reader does).

@@ -245,7 +245,7 @@ void ocs::ProcedureView::show_ISO_8601_timestamp(std::ostream &os, uint64_t time
    DRETURN_VOID;
 }
 
-/** @brief Write a CULL resource element as its natural JSON type to @p os.
+/** @brief Write a resource element as its natural JSON type to @p os.
  *
  * String-typed resources (STR, CSTR, HOST, RESTR) are emitted as JSON strings,
  * DOUBLE as a JSON number, BOOL as `true`/`false`, and all others as an integer.

@@ -815,7 +815,7 @@ ocs::QConfModelBase::collect_exechost_matches(ocs::tom::ListPtr<ocs::tom::AN> *a
                sge_dstring_append(&value, ep.get<CE_stringval>());
             } else {
                /* the hand written switch read this double field with lGetString
-                * and printed it as %f, which is a CULL type error and undefined
+                * and printed it as %f, which is a type error and undefined
                 * behaviour; the branch is only reached when a complex value has
                 * no string form, which is why it survived (CS-2819) */
                sge_dstring_sprintf_append(&value, "%f", ep.get<CE_doubleval>());
@@ -1032,7 +1032,7 @@ ocs::QConfModelBase::collect_cqueue_matches(ocs::tom::ListPtr<ocs::tom::AN> *ans
  * - `queue_domain`   a queue whose attribute is overridden for a host group
  *
  * What comes back are names, not objects, which is why the result is a vector of
- * strings rather than a CULL list: a queue instance is named `queue@host` and a
+ * strings rather than a list: a queue instance is named `queue@host` and a
  * domain `queue@@group`, neither of which is the name of anything the daemon
  * holds.
  *
@@ -1455,7 +1455,7 @@ ocs::QConfModelBase::make_cqueue_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answe
     * the full descriptor is rebuilt when the answer is unpacked. lSelect() has no
     * such step: it hands back elements carrying exactly the reduced descriptor,
     * and the spooling field list then asks for a field that is not in them, which
-    * CULL answers by aborting the daemon ("ASTRLIST_href not found in element",
+    * the list library answers by aborting the daemon ("ASTRLIST_href not found in element",
     * CS-2818). Inside qmaster the copy never leaves the process, so the selection
     * saved nothing here anyway. */
    const bool ok = fetch(answer_list, desc_->target, std::move(cqueue_where), ocs::tom::what_all<ocs::tom::CQ>());
@@ -1766,7 +1766,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          where = ocs_qconf_name_where<E>();
       } else if (kind_ == QConfReadKind::SINGLE_OBJECT_BY_ID) {
          what = ocs::tom::what_all<T>();
-         /* strtoull rather than a CULL conversion: the argument is whatever the
+         /* strtoull rather than a conversion of the list library: the argument is whatever the
           * user typed, and a value that is not a number becomes 0, which matches no
           * category and is reported as "does not exist" - the wording the hand
           * written switch produced for a bad id too. */
@@ -1974,7 +1974,7 @@ ocs::QConfModelBase::make_snapshot(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          answered_with_template_ = true;
       }
 
-      /* lGetNumberOfElem() flagged a null list as a CULL error, so the list
+      /* lGetNumberOfElem() flagged a null list as an error of the list library, so the list
        * itself is checked first - as the hand written engine did. The wording of
        * the "not found" message is per object type, its shape is not. */
       if (!object_list_ || object_count() == 0) {

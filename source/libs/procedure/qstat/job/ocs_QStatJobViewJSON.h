@@ -38,7 +38,7 @@ namespace ocs {
     * whether it has already written something at each level.
     *
     * The private `report_X_*` helpers exist because most of the eighty hooks do
-    * the same thing - read one CULL field and emit it under a name - and only
+    * the same thing - read one field and emit it under a name - and only
     * differ in the field and its type.
     *
     * @ingroup libprocedure

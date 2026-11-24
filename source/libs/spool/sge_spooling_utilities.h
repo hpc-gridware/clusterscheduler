@@ -57,7 +57,7 @@
 /** @defgroup spool_utilities Spooling utilities
  * @brief Which attributes of an object are spooled, and under what name
  *
- * A cull object has more attributes than belong in a spool file: runtime
+ * An object has more attributes than belong in a spool file: runtime
  * state, cached values, things derived on load. Which ones survive is not
  * decided here but in the object's own definition - every field carries a
  * `mt` bitmask, and #MT_SPOOL is the bit that says "write me".
@@ -165,7 +165,7 @@ struct ocs_spool_field_ops {
  * terminating one has `ops`.
  */
 typedef struct spooling_field {
-   int nm;                    ///< The cull attribute number, `NoName` in the terminating entry
+   int nm;                    ///< The field number, `NoName` in the terminating entry
    int width;                 ///< Field width for formatted output, 0 for unformatted
    const char *name;          ///< The name to write into the spool file
    bool free_name;            ///< `name` was copied and must be freed with the array

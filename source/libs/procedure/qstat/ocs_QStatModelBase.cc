@@ -594,7 +594,7 @@ void ocs::QStatModelBase::prepare_filter(QStatParameter &parameter) {
    apply_state_filter(parameter);
 }
 
-/** @brief Fetch raw CULL lists into the member variables.
+/** @brief Fetch raw lists into the member variables.
  *
  * Overridden by QStatModelClient (GDI calls) and QStatModelServer (master lists).
  *

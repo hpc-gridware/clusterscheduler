@@ -35,7 +35,7 @@
  * plugin opened with RTLD_LOCAL is never seen.
  *
  * We turn off detect_odr_violation because libsgeobj is a static library
- * and its runtime data (CULL type descriptors: JB[] and
+ * and its runtime data (type descriptors: JB[] and
  * every other lDescr[] instantiated via LISTDEF in sge_all_listsL.h) is
  * duplicated into every output that links sgeobj — the main binary AND
  * every dlopen'd spool plugin (libspoolc.so, libspoolb.so, ...). Each
@@ -43,7 +43,7 @@
  * of the plugin are not used, though: the executables are linked -rdynamic,
  * so the references of the plugin, opened with RTLD_LOCAL at
  * source/libs/spool/dynamic/sge_spooling_dynamic.cc, bind to the copies of
- * the executable. The loader checks that for the CULL descriptor registry
+ * the executable. The loader checks that for the descriptor registry
  * and refuses a plugin bound to its own (CS-2997, N-A-22), because the
  * identity of shared descriptors matters across the boundary. Every other
  * ASan check stays active.

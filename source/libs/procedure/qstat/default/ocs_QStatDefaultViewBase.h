@@ -44,7 +44,7 @@ namespace ocs {
     * #QStatDefaultViewPlain, #QStatDefaultViewXML and #QStatDefaultViewJSON
     * turn the events into their own syntax.
     *
-    * The hooks do not take CULL elements but the `*_summary_t` structs below.
+    * The hooks do not take elements but the `*_summary_t` structs below.
     * The controller works out what a line says - which of the many optional
     * columns apply, what the state string is, whether a value is present at all
     * - once, and all three formats print the same answer.

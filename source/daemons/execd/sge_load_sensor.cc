@@ -106,7 +106,7 @@ static int has_to_use_gnu_load_sensor = 0;
 /**
  * @brief Get pid of a loadsensor
  *
- * Returns the pid which is stored in an CULL element of
+ * Returns the pid which is stored in an element of
  * the type LS. If the corresponding loadsensor was
  * not started until now then -1 will be returned.
  *
@@ -129,12 +129,12 @@ static pid_t sge_ls_get_pid(const ocs::tom::ConstElement<ocs::tom::LS> this_ls) 
 /**
  * @brief Set pid in loadsensor element
  *
- * Set the pid entry in a CULL element of the type LS.
+ * Set the pid entry in an element of the type LS.
  *
  * @param this_ls the load sensor
  * @param pid pid of the loadsensor process or -1
  *
- * @note [this_ls] - LS_pid entry of the CULL element will be modified
+ * @note [this_ls] - LS_pid entry of the element will be modified
  */
 static void sge_ls_set_pid(const ocs::tom::Element<ocs::tom::LS> this_ls, const pid_t pid) {
    DENTER(TOP_LAYER);
@@ -266,7 +266,7 @@ static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Eleme
 }
 
 /**
- * @brief Creates a new CULL loadsensor element
+ * @brief Creates a new loadsensor element
  *
  * The function creates a new element of type LS and
  * returns it. The loadsensor will be

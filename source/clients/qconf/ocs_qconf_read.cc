@@ -212,7 +212,7 @@ qconf_name_is_fs_safe(const char *name) {
  *
  * @param os   the stream the output is written to (CS-1841)
  * @param text the file content, rendered by qmaster; nullptr is the wire form of
- *             an empty text, because CULL packs an empty string as no string -
+ *             an empty text, because the list library packs an empty string as no string -
  *             so it is an empty file and not a missing one
  * @param dest the file to write
  * @param alpp the answer list of the operation

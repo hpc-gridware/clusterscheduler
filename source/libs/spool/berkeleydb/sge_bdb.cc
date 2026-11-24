@@ -860,7 +860,7 @@ bool spool_berkeleydb_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
    DRETURN(ret);
 }
 
-/** @brief Write one cull object as a record
+/** @brief Write one object as a record
  * @param answer_list to return error messages
  * @param info the handle
  * @param database which database to write to
@@ -1707,7 +1707,7 @@ bool spool_berkeleydb_read_keys(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bd
    DRETURN(ret);
 }
 
-/** @brief Read one record and parse it back into a cull object
+/** @brief Read one record and parse it back into an object
  * @param answer_list to return error messages
  * @param info the handle
  * @param database which database to read from

@@ -63,7 +63,7 @@ ocs::ProcedureParameter::string_value_list(const char *value) {
    DRETURN(list);
 }
 
-/** @brief Serialise this object into a CULL SPP parameter bundle for GDI transport.
+/** @brief Serialise this object into a SPP parameter bundle for GDI transport.
  *
  * @return the bundle, which the caller owns
  */
@@ -99,7 +99,7 @@ ocs::tom::ListPtr<ocs::tom::SPP> ocs::ProcedureParameter::get_bundle() {
    DRETURN(bundle);
 }
 
-/** @brief Populate this object from a received CULL SPP parameter bundle.
+/** @brief Populate this object from a received SPP parameter bundle.
  *
  * Called on the server side after the GDI request is received. The value lists of
  * the bundle entries are of any type; they are wrapped without the descriptor check

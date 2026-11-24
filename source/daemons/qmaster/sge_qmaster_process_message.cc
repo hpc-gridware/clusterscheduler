@@ -704,7 +704,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
 /**
  * @brief Process execd load report
  *
- * Process execd load reports (TAG_REPORT_REQUEST). Unpack a CULL list with
+ * Process execd load reports (TAG_REPORT_REQUEST). Unpack a list with
  * the load report from the pack buffer, which is part of 'aMsg'. Process
  * execd load report.
  *

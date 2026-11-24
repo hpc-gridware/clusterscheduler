@@ -1513,7 +1513,7 @@ bool ijs_was_escape_disconnect() {
  *                                 will connect back to.
  * @param username                 Owner of the TLS certificates; used only
  *                                 when TLS is active, otherwise ignored.
- * @param port_range               RN CULL range list of ports to try, or
+ * @param port_range               RN range list of ports to try, or
  *                                 an empty handle/empty list for an OS-assigned
  *                                 ephemeral port.  Supports N-M and N-M:S (step) syntax.
  * @param[out] phandle             Receives the initialized COMM server handle.

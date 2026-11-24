@@ -112,7 +112,7 @@ spool_dynamic_get_shlib_path(const char *shlib_fullname) {
 
 /** @brief Load a spooling shared library and build its context
  *
- * A library whose code does not use the CULL descriptor registry of this
+ * A library whose code does not use the descriptor registry of this
  * process is refused (N-A-22).
  *
  * @param answer_list to return error messages

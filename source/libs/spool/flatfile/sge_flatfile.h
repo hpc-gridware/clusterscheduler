@@ -34,12 +34,12 @@
 /*___INFO__MARK_END__*/       
 
 /** @file
- * @brief Rendering cull objects as text, and parsing them back
+ * @brief Rendering objects as text, and parsing them back
  */
 
 
 /** @defgroup spool_flatfile Flatfile spooling and qconf formatting
- * @brief Rendering cull objects as text, and parsing them back
+ * @brief Rendering objects as text, and parsing them back
  *
  * Two things use this module, and that is why it is bigger than a spooling
  * backend needs to be: the classic spooling backend writes the master lists

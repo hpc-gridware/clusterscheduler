@@ -44,7 +44,7 @@
 
 /** @brief Send the procedure request to qmaster and store the response.
  *
- * Serialises @p parameter into a CULL bundle, issues a GDI procedure request
+ * Serialises @p parameter into a bundle, issues a GDI procedure request
  * under the command get_command() names, and stores the resulting response
  * list.  On success the rendered output is accessible via get_output_text().
  *

@@ -44,7 +44,7 @@
  *   (CLIENT or SERVER).
  *
  * - **ProcedureModel** — fetches or computes the data needed for the response.
- *   Subcommand-specific models (e.g. QStatModelBase) hold typed CULL lists;
+ *   Subcommand-specific models (e.g. QStatModelBase) hold typed lists;
  *   the generic ProcedureModel delegates the entire execution to qmaster via GDI
  *   and stores the pre-rendered text response.
  *

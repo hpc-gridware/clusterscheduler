@@ -40,7 +40,7 @@
 
 namespace ocs {
 
-   /** @brief Base model for qhost that holds all CULL data lists needed for rendering.
+   /** @brief Base model for qhost that holds all data lists needed for rendering.
     *
     * Fetches execution host, queue, job, centry, PE, and ACL lists, then applies
     * resource-match filtering and sorts the result before handing it to the view.
@@ -54,7 +54,7 @@ namespace ocs {
     *
     * ## Virtual pipeline inside make_snapshot()
     *
-    * 1. `fetch_data()`   — populates the CULL list members (overridden per context).
+    * 1. `fetch_data()`   — populates the list members (overridden per context).
     * 2. `prepare_data()` — post-processes fetched lists (e.g. resolves hostgroup references).
     * 3. `filter_data()`  — applies the resource-match filter from the parameters.
     * 4. `sort_data()`    — sorts the result list for deterministic view output.

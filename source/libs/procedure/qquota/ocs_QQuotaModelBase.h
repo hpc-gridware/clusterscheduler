@@ -36,7 +36,7 @@
 #include "sgeobj/sge_answer.h"
 
 namespace ocs {
-   /** @brief Base model for qquota that holds the CULL lists needed for resource quota rendering.
+   /** @brief Base model for qquota that holds the lists needed for resource quota rendering.
     *
     * Fetches resource quota sets (RQS), complex entries, user sets, host groups,
     * and execution hosts, then passes them to the view for rendering.
@@ -50,7 +50,7 @@ namespace ocs {
     *
     * ## Virtual pipeline inside make_snapshot()
     *
-    * 1. `fetch_data()` — populates the CULL list members (overridden per context).
+    * 1. `fetch_data()` — populates the list members (overridden per context).
     *
     * @ingroup libprocedure
     */

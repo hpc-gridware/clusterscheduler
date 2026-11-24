@@ -33,7 +33,7 @@ namespace ocs {
    /** @brief QHost model for the client execution context.
     *
     * Implements `fetch_data()` and `prepare_data()` by issuing GDI requests to
-    * qmaster to retrieve host, queue, job, and auxiliary CULL lists.  All
+    * qmaster to retrieve host, queue, job, and auxiliary lists.  All
     * subsequent filtering, sorting, and rendering happens locally on the client.
     *
     * @see QHostModelBase for the full pipeline description.

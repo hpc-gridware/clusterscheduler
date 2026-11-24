@@ -115,7 +115,7 @@ namespace ocs {
       [[nodiscard]] ocs::tom::ConstRawList get_object_list() const { return object_list_.get(); }
 
       /** @brief The field holding the name
-       * @return its CULL id
+       * @return its field number
        */
       [[nodiscard]] int get_key_nm() const { return key_nm_; }
 
@@ -192,7 +192,7 @@ namespace ocs {
 
       /** @brief The root of the fetched share tree, mutable (CS-2820)
        *
-       * `show_sharetree_path()` takes a non const node, because the CULL search it
+       * `show_sharetree_path()` takes a non const node, because the search it
        * uses is not const correct. Exposing just the root rather than the whole
        * list keeps that need where it belongs instead of widening the model.
        *

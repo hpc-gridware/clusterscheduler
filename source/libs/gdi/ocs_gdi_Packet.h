@@ -136,7 +136,7 @@ namespace ocs::gdi {
        *    requests are handled by some kind of read only thread.
        *    in qmaster. Write requests don't need the packbuffer.
        *    Due to that fact we could create and release the packbuffer
-       *    in the the listener thread and use cull lists (part
+       *    in the the listener thread and use lists (part
        *    of the task sublist) to transfer GDI result information
        *    from the worker to the listener then we are able to
        *    remove pb.
@@ -151,7 +151,7 @@ namespace ocs::gdi {
        * @todo eliminate "pb" from ocs::gdi::Packet. It could go once pure GDI
        *       GET requests are handled by a read-only thread in qmaster: write
        *       requests do not need it, so the listener thread could create and
-       *       release the buffer and use cull lists to carry the result from
+       *       release the buffer and use lists to carry the result from
        *       the worker back to the listener.
        */
       sge_pack_buffer pb;

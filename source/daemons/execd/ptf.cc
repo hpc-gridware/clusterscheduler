@@ -227,7 +227,7 @@ static int is_ptf_running = 0;
 /**
  * @brief Return the job id
  *
- * The function returns the os job id contained in the CULL element
+ * The function returns the os job id contained in the element
  *
  * @param osjob the os job
  *

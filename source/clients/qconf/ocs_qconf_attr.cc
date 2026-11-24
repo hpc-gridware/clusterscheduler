@@ -61,7 +61,7 @@ struct qconf_attr_entry {
    const char *object_name;                  ///< the name the switches take, e.g. "queue"
    const lDescr *cull_descriptor;                  ///< the CULL type of the object
    const char *attribute_name;               ///< the attribute carrying the object's name, for the messages
-   int nm_name;                              ///< the CULL field holding the object's name, its key
+   int nm_name;                              ///< the field holding the object's name, its key
    spooling_field *fields;                   ///< which fields the attribute text is read with
    const struct spool_flatfile_instr *instr; ///< how the attribute text is laid out
    /// validation to run before sending, or `nullptr`
@@ -337,7 +337,7 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
          const ocs::tom::ConstRawElement first = lp.front();
 
          /* Look for the list and see if it's nullptr.  These should all be very
-          * simple CULL structures which should only contain an MT_HOST and an
+          * simple structures which should only contain an MT_HOST and an
           * MT_LIST. */
          for (const auto f : ocs::tom::present_fields(first.descr())) {
             const int nm = first.descr()[f.pos].nm;

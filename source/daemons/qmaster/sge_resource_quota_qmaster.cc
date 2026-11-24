@@ -105,7 +105,7 @@ rqs_update_categories(ocs::tom::ConstElement<ocs::tom::RQS> new_rqs, ocs::tom::C
  * @param task the GDI task being answered
  * @param alpp reference to an answer list
  * @param target if a new rqs object will be created by this function, then target is a newly initialized
- *        CULL object. if this function was called due to a modify request than target will contain the old data
+ *        object. if this function was called due to a modify request than target will contain the old data
  * @param delta a reduced rqs object which contains all necessary information to create a new object or
  *        modify parts of an existing one; its rule lists are consumed
  * @param add 1 if a new element should be added to the master list 0 to modify an existing object
@@ -203,7 +203,7 @@ DRETURN(STATUS_EUNKNOWN);
  * @param alpp reference to an answer list, error messages will be added to this list
  * @param rqs rqs object which should be spooled
  * @param object structure of the gdi framework which contains additional information to perform the request
- *        (function pointers, names, CULL-types)
+ *        (function pointers, names, object types)
  *
  * @return 0 - success, 1 - an error occurred
  *
@@ -243,7 +243,7 @@ rqs_spool(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs:
  * @param rqs new rqs object
  * @param old_ep old rqs object before modification or an empty handle if a new object was added
  * @param object structure of the gdi framework which contains additional information to perform the request
- *        (function pointers, names, CULL-types)
+ *        (function pointers, names, object types)
  * @param post what is left for after the last object of the request, unused
  * @param monitor monitoring structure
  *

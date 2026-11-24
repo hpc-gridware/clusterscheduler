@@ -33,7 +33,7 @@
 namespace ocs {
    /** @brief Renders `qstat -g c` as XML
     *
-    * Like the other XML views this one builds a CULL tree from the hook calls
+    * Like the other XML views this one builds a tree from the hook calls
     * and lets the generic XML writer serialise it at the end.
     *
     * @ingroup libprocedure

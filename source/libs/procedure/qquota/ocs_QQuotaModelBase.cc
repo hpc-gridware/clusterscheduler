@@ -38,7 +38,7 @@
 #include "ocs_QQuotaParameterClient.h"
 #include "sgeobj/sge_answer.h"
 
-/** @brief Fetch raw CULL lists into the member variables.
+/** @brief Fetch raw lists into the member variables.
  *
  * Overridden by QQuotaModelClient (GDI calls) and QQuotaModelServer (master lists).
  *

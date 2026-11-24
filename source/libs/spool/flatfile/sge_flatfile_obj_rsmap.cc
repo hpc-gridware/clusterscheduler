@@ -440,7 +440,7 @@ write_CE_stringval_host(const ocs::tom::ConstElement<ocs::tom::CE> centry, dstri
        * the pending range is flushed and the characteristic-bearing id is
        * emitted individually. Characteristics themselves are sorted ascending
        * by CE_name (same convention as centry_list_sort) before emission; the
-       * stored CULL order is not modified.
+       * stored element order is not modified.
        */
       const auto resource_map = centry.get<CE_resource_map_list>();
       if (!resource_map.empty()) {

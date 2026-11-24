@@ -252,7 +252,7 @@ dump_object(const char *key) {
       answer_list_output(&answer_list);
       ret = EXIT_FAILURE;
    } else {
-      /* job script is spooled as string, not as cull object */
+      /* job script is spooled as string, not as object */
       if (strncmp(key, "JOBSCRIPT:", 10) == 0) {
          // job script is written as a pseudo STU object in field STU_name; the element owns the
          // string and is freed with it - the string alone was freed before and the element leaked (CS-3127)

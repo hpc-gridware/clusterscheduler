@@ -47,7 +47,7 @@
  * The computation runs over an array of #sge_ref_t, one per job or array
  * task, each holding references to everything the policies need - the job,
  * the task, the user, the project, the department and the share tree node.
- * Tasks that are not enrolled in `JB_ja_tasks` have no cull element to write
+ * Tasks that are not enrolled in `JB_ja_tasks` have no element to write
  * to, which is what #sge_task_ref_t and the `REF_*` accessor macros exist
  * for.
  */
@@ -106,12 +106,12 @@
 /*
  * Following fields are necessary for tasks which are not
  * enrolled in the JB_ja_tasks-list. For these jobs we have no
- * reference to the 'ja_task'-CULL-element.
+ * reference to the 'ja_task' element.
  */
 /**
  * @brief The ticket values of an array task that is not enrolled
  *
- * A task that has no element in `JB_ja_tasks` has no cull element the
+ * A task that has no element in `JB_ja_tasks` has no element the
  * policies could write into, so its values are kept here instead. The `REF_*`
  * macros hide the difference: they write to the task element when there is
  * one and into this struct otherwise.
@@ -1322,7 +1322,7 @@ destribute_ftickets(const ocs::tom::ConstList<ocs::tom::FCAT> fcategories, const
  *
  *       IMPROVEMENTS:
  *       - the stored values in the functional category structure can be used to speed up the
- *       ticket calculation. This will avoid unnecessary CULL accesses in the function
+ *       ticket calculation. This will avoid unnecessary list accesses in the function
  *       calc_job_functional_tickets_pass1
  *       - A further improvement can be done by:
  *       - limiting the job list length in each category to the max nr of jobs calculated

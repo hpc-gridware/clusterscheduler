@@ -357,7 +357,7 @@ ocs::tom::ListPtr<ocs::tom::AN> cull_parse_qsh_parameter(const uint32_t prog_num
    ** this can lead to a core dump
    ** so a better method is to xchange the list in the option struct 
    ** with a null pointer, this is not nice but safe
-   ** a little redesign of cull would be nice
+   ** a little redesign of the list library would be nice
    ** see parse_list_simple
    */
    job_set_submit_task_ids(job, 1, 1, 1);

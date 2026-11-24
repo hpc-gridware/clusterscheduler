@@ -2415,7 +2415,7 @@ total_update(const ocs::tom::Element<ocs::tom::EV> event_client, const uint64_t 
 
 /** @brief Build the per-event-client subscription array from EV_subscribed.
  *
- * Transforms the cull EV_subscribed registration list into a fixed
+ * Transforms the EV_subscribed registration list into a fixed
  * sgeE_EVENTSIZE-element array, one entry per event type flagging whether it
  * is subscribed. Returns early when the EV_changed flag is not set.
  *
@@ -2959,7 +2959,7 @@ struct OcsEventSubListFields {
  * element is restored. The sub-lists are only reduced, if the reduced element
  * still contains their fields.
  *
- * The selections are cull's where and what of the subscription, which work on a descriptor, so the
+ * The selections are the where and what of the subscription, which work on a descriptor, so the
  * selection calls are the raw ops of ocs_Raw.h with the old contract; their results keep the types of the
  * element and of @p F.
  *

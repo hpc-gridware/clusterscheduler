@@ -1509,7 +1509,7 @@ void ocs::QStatJobViewJSON::report_pending_tasks(std::ostream &os, const ocs::to
  *
  * @param[in,out] os   output stream
  * @param[in]     job  job element to report
- * @tparam        F    CULL field to emit (JB_env_list or JB_context)
+ * @tparam        F    field to emit (JB_env_list or JB_context)
  * @param[in]     name JSON key name for the emitted array
  */
 template <auto F>

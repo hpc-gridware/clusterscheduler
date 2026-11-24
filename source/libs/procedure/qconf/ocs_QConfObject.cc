@@ -768,7 +768,7 @@ const ocs_qconf_object_tuple ocs_qconf_objects{
                SGE_TYPE_SHARETREE,
                { .prepare = qconf_stn_prepare, .create_template = qconf_template_STN } },
    /* SC: the hand written -ssconf had no empty check at all - it handed a null
-    * element to the writer and reported the CULL complaint plus this line. The
+    * element to the writer and reported the complaint of the list library plus this line. The
     * path cannot occur on a running cluster; inside qmaster a null element must
     * not reach the writer, so the check is explicit here and reports the closer
     * of the two messages (CS-2808). */
@@ -981,7 +981,7 @@ qconf_json_type_load_values(const ocs::tom::Element<ocs::tom::EH> host,
 
 /** @brief Type the numeric fields of an exec host before it is rendered.
  *
- * CS-2313a: complex_values and the load values are strings in CULL, so -fmt
+ * CS-2313a: complex_values and the load values are strings in the object model, so -fmt
  * json would quote them without this.
  *
  * @param ep the exec host about to be written

@@ -47,7 +47,7 @@
 #include "sgeobj/sge_answer.h"
 
 
-/** @brief Fetch raw CULL lists into the member variables.
+/** @brief Fetch raw lists into the member variables.
  *
  * Overridden by QHostModelClient (GDI calls) and QHostModelServer (master lists).
  *

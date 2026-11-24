@@ -148,13 +148,13 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const l
  * @brief Which fields are to be spooled
  *
  * Returns an array of field descriptions (sge_spooling_field).
- * Which fields have to be spooled is retrieved from the CULL object
+ * Which fields have to be spooled is retrieved from the object
  * definition given in `descr` and the spooling instruction `instr`.
  * For each attribute the function checks if the attribute information
  * fulfils the selection given in `instr` (e.g. attribute property
  * MT_SPOOL).
  * If `instr` contains an instruction for sublists, the function will
- * take the CULL object definition of the sublists from the spooling record
+ * take the object definition of the sublists from the spooling record
  * of the list field (the sub-type `ocs::tom::sub_type()` names) and call itself
  * recursively. Every entry carries the spooling record of its field in `ops`.
  *

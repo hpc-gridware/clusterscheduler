@@ -54,7 +54,7 @@
 
 /* ===== CS-2298: shared helpers for qconf add/modify/delete enhancements =====
  *
- * These are object-agnostic (parameterised by the GDI target, the CULL
+ * These are object-agnostic (parameterised by the GDI target, the
  * descriptor, the object's spooling fields and its name attribute), so every
  * per-object branch can reuse the same upsert / directory / file-delete logic.
  */

@@ -7324,7 +7324,7 @@ load_locate_elem(const ocs::tom::List<ocs::tom::LDR> load_list,
 /**
  * @brief Checks if queues went into an alarm state
  *
- * The function uses the cull bitfield to identify modifications in one of
+ * The function uses the bitfield to identify modifications in one of
  * the consumable elements. If the consumption has changed, the load for all
  * queue referencing the consumable is recomputed. If a queue exceeds it
  * load threshold, QU_tagged4schedule is set to 1.

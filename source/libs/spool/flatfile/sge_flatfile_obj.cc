@@ -800,7 +800,7 @@ spooling_field *sge_build_STN_field_list(const bool spool, const bool recurse) {
  * child ids and the writer flattens the tree into separate id-keyed blocks), this list
  * renders childnodes as an array of full child node objects recursively (CS-2313a): the
  * "childnodes" field's sub_fields point back at the same field list, so the generic
- * JSON writer/reader descend the real CULL tree directly. STN_id and STN_version are
+ * JSON writer/reader descend the real element tree directly. STN_id and STN_version are
  * omitted (the nested form needs no id bookkeeping; ids are re-assigned via
  * id_sharetree() after a read). A typed table cannot name itself as its sub-table,
  * so this list is still built at run time; its rows carry the typed code of their

@@ -33,7 +33,7 @@ namespace ocs {
    /** @brief Renders plain `qstat` as XML
     *
     * Unlike the other two formats this one does not write as it goes: it builds
-    * a CULL tree from the hook calls and lets the generic XML writer serialise
+    * a tree from the hook calls and lets the generic XML writer serialise
     * it at the end. The members below are the nodes currently being filled.
     *
     * @ingroup libprocedure
