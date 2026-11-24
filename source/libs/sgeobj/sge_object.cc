@@ -153,14 +153,14 @@ namespace {
    /**
     * @brief Parse a relational operator, as `CE_relop` takes it
     *
-    * The symbols of the operators CMPLXEQ_OP to CMPLXEXCL_OP are compared (CS-3169); no message is written for an
-    * unknown symbol.
+    * The symbols of the operators CMPLXEQ_OP to CMPLXEXCL_OP are compared (CS-3169).
     *
+    * @param[out] answer_list receives the error for an unknown symbol (CS-3170)
     * @param value the symbol, e.g. `<=`
     * @return the result; a failure stores nothing
     */
    ocs_object_parsed_symbol
-   parse_ce_relop(const char *value) {
+   parse_ce_relop(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
       uint32_t op = 0;
 
       // CS-3169: walk the operators, not the value types - map_op2str() returns "??" for out-of-range values,
@@ -172,7 +172,8 @@ namespace {
       }
 
       if (op == 0) {
-         /* error output necessary? Should be created by parsing function */
+         answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CENTRY_UNKNOWNVALUE_SS, value,
+                                 "relop");
          return {false, false, 0};
       }
       return {true, true, op};
@@ -181,11 +182,12 @@ namespace {
    /**
     * @brief Parse a requestable setting, as `CE_requestable` takes it
     *
+    * @param[out] answer_list receives the error for an unknown word (CS-3170)
     * @param value `y`/`yes`, `n`/`no` or `f`/`forced`, case insensitive
-    * @return the result; an unknown word stores #REQU_NO and fails without a message
+    * @return the result; a failure stores nothing
     */
    ocs_object_parsed_symbol
-   parse_ce_requestable(const char *value) {
+   parse_ce_requestable(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
       if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
          return {true, true, REQU_YES};
       }
@@ -195,17 +197,20 @@ namespace {
       if (strcasecmp(value, "f") == 0 || strcasecmp(value, "forced") == 0) {
          return {true, true, REQU_FORCED};
       }
-      return {false, true, REQU_NO};
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CENTRY_UNKNOWNVALUE_SS, value,
+                              "requestable");
+      return {false, false, 0};
    }
 
    /**
     * @brief Parse a consumable setting, as `CE_consumable` takes it
     *
+    * @param[out] answer_list receives the error for an unknown word (CS-3170)
     * @param value `y`/`yes`, `n`/`no`, `j`/`job` or `h`/`host`, case insensitive
-    * @return the result; an unknown word stores #CONSUMABLE_NO and fails without a message
+    * @return the result; a failure stores nothing
     */
    ocs_object_parsed_symbol
-   parse_ce_consumable(const char *value) {
+   parse_ce_consumable(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *value) {
       if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
          return {true, true, CONSUMABLE_YES};
       }
@@ -218,7 +223,9 @@ namespace {
       if (strcasecmp(value, "h") == 0 || strcasecmp(value, "host") == 0) {
          return {true, true, CONSUMABLE_HOST};
       }
-      return {false, true, CONSUMABLE_NO};
+      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_CENTRY_UNKNOWNVALUE_SS, value,
+                              "consumable");
+      return {false, false, 0};
    }
 
    /**
@@ -559,9 +566,9 @@ ocs_object_append_symbolic(dstring *buffer, const ocs_object_symbolic kind, cons
  * @brief Parse a value of a field that is written as a word, see #ocs_object_symbolic
  *
  * Shared by the typed ocs_object_parse_field() and by the spooling walkers. What a failure reports and stores
- * differs by kind, as it always did: an unknown complex type reports and stores nothing, an unknown operator
- * stores nothing without a message, an unknown requestable or consumable word stores `NO` without a message, a
- * bad queue or userset type of an object stores the bits understood before, a bad queue type of a cluster queue
+ * differs by kind: an unknown complex type, operator, requestable or consumable word reports and stores nothing
+ * (CS-3170: the operator and the requestable and consumable words used to fail without a message, the latter two
+ * storing `NO`), a bad queue or userset type of an object stores the bits understood before, a bad queue type of a cluster queue
  * attribute reports and stores nothing.
  *
  * @param[out] answer_list receives the messages
@@ -582,13 +589,13 @@ ocs_object_parse_symbolic(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
          ret = parse_ce_valtype(answer_list, value);
          break;
       case ocs_object_symbolic::ce_relop:
-         ret = parse_ce_relop(value);
+         ret = parse_ce_relop(answer_list, value);
          break;
       case ocs_object_symbolic::ce_requestable:
-         ret = parse_ce_requestable(value);
+         ret = parse_ce_requestable(answer_list, value);
          break;
       case ocs_object_symbolic::ce_consumable:
-         ret = parse_ce_consumable(value);
+         ret = parse_ce_consumable(answer_list, value);
          break;
       case ocs_object_symbolic::qinstance_type: {
          const auto [ok, type] = ocs_qinstance_qtype_parse(value);

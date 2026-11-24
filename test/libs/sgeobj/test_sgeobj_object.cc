@@ -37,6 +37,7 @@
 
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_object_type.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_object.h"
@@ -899,6 +900,55 @@ static void test_object_parse_centry_relop() {
 }
 
 // ---------------------------------------------------------------------------
+// ocs_object_parse_symbolic — unknown words of a complex  [T119–T127]
+//
+// CS-3170: an unknown relop, requestable or consumable word is rejected with an
+// error naming the value and the attribute, and nothing is stored.
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Check that an unknown word of a complex attribute is reported and not stored
+ */
+static void test_object_parse_centry_unknown_word() {
+   printf("\n--- ocs_object_parse_symbolic (unknown words of a complex) ---\n");
+   struct {
+      ocs_object_symbolic kind;
+      const char *attribute;
+      const char *value;
+   } cases[] = {
+      {ocs_object_symbolic::ce_relop, "relop", "=~"},
+      {ocs_object_symbolic::ce_requestable, "requestable", "maybe"},
+      {ocs_object_symbolic::ce_consumable, "consumable", "often"},
+   };
+   char label[160];
+   int id = 119;
+
+   for (const auto &c : cases) {
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
+      const auto parsed = ocs_object_parse_symbolic(&alp, c.kind, c.value);
+
+      snprintf(label, sizeof(label), "%s \"%s\" is rejected", c.attribute, c.value);
+      CHECK(id, label, !parsed.ok); id++;
+      snprintf(label, sizeof(label), "%s \"%s\": nothing is stored", c.attribute, c.value);
+      CHECK(id, label, !parsed.store); id++;
+
+      char expected[256];
+      snprintf(expected, sizeof(expected), MSG_CENTRY_UNKNOWNVALUE_SS, c.value, c.attribute);
+      bool reported = false;
+      if (alp) {
+         for (const auto answer : *alp) {
+            const char *text = answer.get<AN_text>();
+            reported = reported || (answer.get<AN_quality>() == ANSWER_QUALITY_ERROR && text != nullptr &&
+                                    strncmp(text, expected, strlen(expected)) == 0);
+         }
+      }
+      snprintf(label, sizeof(label), "%s \"%s\": the error names the value and the attribute", c.attribute,
+               c.value);
+      CHECK(id, label, reported); id++;
+   }
+}
+
+// ---------------------------------------------------------------------------
 // ocs_object_append_field / ocs_object_parse_field — attribute lists  [T75–T90]
 // ---------------------------------------------------------------------------
 // The generic round trip over the spooling records (test_spool_utilities) writes and reads a default element, so
@@ -1166,6 +1216,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_spooled_job_of_shorter_type();
    test_pack_type_roundtrip();
    test_object_parse_centry_relop();
+   test_object_parse_centry_unknown_word();
    test_attr_value_round_trip();
    test_object_get_type_name(*queue);
    // a fresh queue: the fixture above holds a deliberately wrong sub-list since T37

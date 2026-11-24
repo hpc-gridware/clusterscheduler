@@ -436,4 +436,7 @@
 // CS-3134: a job script file name that qmaster did not set is never read, written or deleted
 #define MSG_JOB_INVALIDEXECFILE_SS             _MESSAGE(64601, _("refusing script file " SFQ " of job " SFQ ": it is not the job's spooled script"))
 
+// CS-3170: an unknown word for relop, requestable or consumable of a complex is reported
+#define MSG_CENTRY_UNKNOWNVALUE_SS             _MESSAGE(64602, _("unknown value " SFQ " for attribute " SFQ " of a complex"))
+
 // clang-format on
