@@ -1629,7 +1629,6 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
       if (!allow_non_requestable) {
          dispatch_t ff;
          const char *name;
-         double dval=0.0;
          // the default request is built in the scratch element of the assignment. a->centry_list holds
          // the complex definitions of the cluster, which other threads read while we match and
          // which the qmaster spools - a request must not be written into one of them.
@@ -1645,7 +1644,8 @@ rc_time_by_slots(sge_assignment_t *a, const ocs::tom::List<ocs::tom::CE> request
                ocs::tom::ConstElement<ocs::tom::CE> centry = a->centry_list.find_first<CE_name>(name);
                const char *def_req = centry.get<CE_defaultval>();
                auto valtype = static_cast<ocs::CEntry::Type>(centry.get<CE_valtype>());
-               parse_ulong_val(&dval, nullptr, valtype, def_req, nullptr, 0);
+               // CS-459: parsed once by qmaster, 0 if the default does not parse
+               const double dval = centry.get<CE_default_doubleval>();
 
                /* ignore default request if the value is 0 */
                if ((def_req != nullptr && dval != 0.0) ||
@@ -6885,12 +6885,10 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const ocs::tom::Const
       // we need to check how much would give us a default request if the attribute is not requested
       // if there are any tasks (master or slave) which have no request
       if (!is_requested(a->job, name)) {
-         double request;
          const char *def_req = cep.get<CE_defaultval>();
          if (def_req != nullptr) {
-            // @todo (CS-459) we should have a CE_default_doubleval which gets filled once and is used here!
-            parse_ulong_val(&request, nullptr, static_cast<ocs::CEntry::Type>(cep.get<CE_valtype>()), def_req, nullptr,
-                            0);
+            // CS-459: parsed once by qmaster, 0 if the default does not parse
+            const double request = cep.get<CE_default_doubleval>();
 
             if (request != 0 || cep.get<CE_relop>() == CMPLXEXCL_OP) {
                // the request is built in the scratch element of the assignment, with the fields

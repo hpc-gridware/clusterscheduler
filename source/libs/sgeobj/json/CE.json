@@ -199,6 +199,18 @@
          "flags": [
             "SPOOL"
          ]
+      },
+      {
+         "name": "default_doubleval",
+         "summary": "Parsed Default Value",
+         "description": [
+            "The default value (CE_defaultval) of a complex definition, parsed once by qmaster when the",
+            "definition is created, modified or read from the spool (ocs_centry_fill_default()).",
+            "0 when there is no default value or it does not parse as a value of the complex's type.",
+            "Derived, not spooled."
+         ],
+         "type": "Double",
+         "flags": []
       }
    ]
 }

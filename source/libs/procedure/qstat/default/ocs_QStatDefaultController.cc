@@ -671,17 +671,14 @@ void ocs::QStatDefaultController::process_job(std::ostream &os, const ocs::tom::
          const auto attributes = queue_complexes2scheduler(qep, model.get_exechost_list(), model.get_centry_list(),
                                                            model.get_job_load_adjustments());
          for (const auto ce : *attributes) {
-            double dval;
-
             name = ce.get<CE_name>();
             if (!ce.get<CE_consumable>() || !strcmp(name, "slots") ||
                 job_get_request(job, name)) {
                continue;
             }
 
-            parse_ulong_val(&dval, nullptr, static_cast<CEntry::Type>(ce.get<CE_valtype>()),
-                            ce.get<CE_defaultval>(), nullptr, 0);
-            if (dval == 0.0) {
+            // CS-459: parsed once by qmaster, 0 if the default does not parse
+            if (ce.get<CE_default_doubleval>() == 0.0) {
                continue;
             }
 

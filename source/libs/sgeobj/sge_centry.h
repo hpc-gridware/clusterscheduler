@@ -188,6 +188,8 @@ ocs::tom::Element<ocs::tom::CE> centry_list_locate(ocs::tom::List<ocs::tom::CE> 
 bool centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE> centry, ocs::tom::ConstList<ocs::tom::CE> centry_list,
                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bool from_spool_read);
 
+bool ocs_centry_fill_default(ocs::tom::Element<ocs::tom::CE> centry);
+
 bool centry_list_sort(ocs::tom::List<ocs::tom::CE> this_list);
 
 void centry_list_init_double(ocs::tom::List<ocs::tom::CE> this_list);

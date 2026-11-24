@@ -868,6 +868,7 @@ setup_qmaster() {
             new_centry.set<CE_relop>(new_complexes[i].relop);
             new_centry.set<CE_consumable>(new_complexes[i].consumable);
             new_centry.set<CE_requestable>(new_complexes[i].requestable);
+            ocs_centry_fill_default(new_centry);
 
             /* append and spool the object */
             if (centry_list) {

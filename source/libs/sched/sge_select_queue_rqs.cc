@@ -40,7 +40,6 @@
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_time.h"
 
 #include "sgeobj/ocs_DataStore.h"
@@ -140,10 +139,8 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const ocs::tom::El
          if (strcmp(raw_centry.get<CE_name>(), SGE_ATTR_SLOTS) == 0) {
             job_centry = ocs_assignment_implicit_slots_request(a);
          } else if (raw_centry.get<CE_defaultval>() != nullptr && raw_centry.get<CE_consumable>()) {
-            double request;
-            parse_ulong_val(&request, nullptr,
-                            static_cast<ocs::CEntry::Type>(raw_centry.get<CE_valtype>()),
-                            raw_centry.get<CE_defaultval>(), nullptr, 0);
+            // CS-459: parsed once by qmaster, 0 if the default does not parse
+            const double request = raw_centry.get<CE_default_doubleval>();
 
             /* default requests with zero value are ignored */
             if (request == 0.0 && raw_centry.get<CE_relop>() != CMPLXEXCL_OP) {

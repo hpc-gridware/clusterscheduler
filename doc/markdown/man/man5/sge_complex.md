@@ -447,6 +447,10 @@ resource amount denoted in the *default* parameter implicitly to be consumed by 
 to a host or queue managing the consumable attribute. Jobs explicitly requesting the attribute via the `-l` 
 option to qsub(1) override this default value.
 
+The *default* value has to be a valid value of the attribute's *type*, otherwise adding or modifying the complex
+attribute is rejected. For a consumable with *requestable* set to 'no' it must not be 0, with *requestable* set to
+'forced' it must be 0. For a non-consumable attribute it must be 0 (NONE for string types).
+
 ## urgency
 
 The urgency value allows influencing job priorities on a per resource base. The urgency value effects the addend 

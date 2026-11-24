@@ -521,12 +521,15 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
             ret = false;
          }
          break;
-      case SGE_TYPE_CENTRY:
+      case SGE_TYPE_CENTRY: {
+         const auto centry = ocs::tom::Element<ocs::tom::CE>(object);
          // a complex already in the spool is reported, not refused - see centry_elem_validate()
-         if (!centry_elem_validate(ocs::tom::ConstElement<ocs::tom::CE>(object), master_centry_list, answer_list,
-                                   true)) {
+         if (!centry_elem_validate(centry, master_centry_list, answer_list, true)) {
             ret = false;
          }
+         // CS-459: fill in the parsed default request, which is not spooled
+         ocs_centry_fill_default(centry);
+      }
          break;
       case SGE_TYPE_RQS:
          if (!rqs_verify_attributes(ocs::tom::Element<ocs::tom::RQS>(object), answer_list, true, master_centry_list)) {

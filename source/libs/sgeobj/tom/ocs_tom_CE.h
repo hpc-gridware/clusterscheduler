@@ -151,6 +151,15 @@ enum CE_Field {
     * on host level only: RSMAP id list
     */
    CE_resource_map_list,
+   /**
+    * @brief Parsed Default Value
+    *
+    * The default value (CE_defaultval) of a complex definition, parsed once by qmaster when the
+    * definition is created, modified or read from the spool (ocs_centry_fill_default()).
+    * 0 when there is no default value or it does not parse as a value of the complex's type.
+    * Derived, not spooled.
+    */
+   CE_default_doubleval,
 };
 
 namespace ocs::tom {
@@ -184,6 +193,7 @@ namespace ocs::tom {
          {CE_tagged, "CE_tagged", FieldType::Uint32, Flag::None},
          {CE_urgency_weight, "CE_urgency_weight", FieldType::String, Flag::Spool},
          {CE_resource_map_list, "CE_resource_map_list", FieldType::List, Flag::Spool},
+         {CE_default_doubleval, "CE_default_doubleval", FieldType::Double, Flag::None},
       };
 
       /** @brief The descriptor of the list library, derived from the field table */

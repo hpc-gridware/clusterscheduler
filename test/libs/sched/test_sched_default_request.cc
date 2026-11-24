@@ -34,6 +34,11 @@
  * synchronisation while the qmaster worker threads and the scheduler thread match jobs at the
  * same time (CS-482). It is kept in the assignment now; the tests pin that each assignment owns
  * its own request, that it limits the slots as before and that assignment_release() frees it.
+ *
+ * The default value of a complex is parsed once, when qmaster creates, modifies or reads the
+ * definition, into CE_default_doubleval (CS-459). The tests pin the fill (a valid default gives
+ * its value, no default or one that does not parse gives 0), that the debit reads it, and that a
+ * default of a requestable consumable which does not parse is refused by centry_elem_validate().
  */
 
 #include <climits>
@@ -42,7 +47,9 @@
 
 #include "uti/sge_rmon_macros.h"
 
+#include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
+#include "sgeobj/sge_job.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -100,6 +107,7 @@ add_consumable(const ocs::tom::List<ocs::tom::CE> centry_list, const char *name,
    ep.set<CE_requestable>(REQU_YES);
    ep.set<CE_consumable>(CONSUMABLE_YES);
    ep.set<CE_defaultval>(defaultval);
+   ocs_centry_fill_default(ep);
 }
 
 /**
@@ -264,6 +272,110 @@ test_implicit_slots_request_in_assignment() {
 }
 
 /**
+ * @brief Fill the parsed default of a complex definition of a given type and default value
+ * @param type the type of the complex
+ * @param defaultval the default value, may be nullptr
+ * @param[out] value receives CE_default_doubleval
+ * @return what ocs_centry_fill_default() returned
+ */
+static bool
+fill_default(const ocs::CEntry::Type type, const char *defaultval, double &value) {
+   auto ep = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+   ep->set<CE_name>("fd");
+   ep->set<CE_valtype>(static_cast<uint32_t>(type));
+   ep->set<CE_defaultval>(defaultval);
+   // a value the fill has to overwrite
+   ep->set<CE_default_doubleval>(42.0);
+   const bool ret = ocs_centry_fill_default(*ep);
+   value = ep->get<CE_default_doubleval>();
+   return ret;
+}
+
+/**
+ * @brief The default value of a complex definition is parsed once into CE_default_doubleval (CS-459)
+ */
+static void
+test_fill_default() {
+   double value = -1.0;
+   bool parsed = fill_default(ocs::CEntry::Type::INT, "2", value);
+   check("T50", "an INT default of 2 parses to 2", parsed && value == 2.0);
+   parsed = fill_default(ocs::CEntry::Type::MEM, "1G", value);
+   check("T51", "a MEMORY default of 1G parses to 1073741824", parsed && value == 1073741824.0);
+   parsed = fill_default(ocs::CEntry::Type::TIME, "0:1:30", value);
+   check("T52", "a TIME default of 0:1:30 parses to 90", parsed && value == 90.0);
+   parsed = fill_default(ocs::CEntry::Type::INT, "0", value);
+   check("T53", "a default of 0 parses to 0", parsed && value == 0.0);
+   parsed = fill_default(ocs::CEntry::Type::INT, "abc", value);
+   check("T54", "an INT default of abc is not parsed and gives 0", !parsed && value == 0.0);
+   // the parser has added up 3600 + 60 before it fails on the missing seconds
+   parsed = fill_default(ocs::CEntry::Type::TIME, "1:1", value);
+   check("T55", "a TIME default the parser fails half way through gives 0, not the partial value",
+         !parsed && value == 0.0);
+   parsed = fill_default(ocs::CEntry::Type::INT, nullptr, value);
+   check("T56", "a missing default is not parsed and gives 0", !parsed && value == 0.0);
+   parsed = fill_default(ocs::CEntry::Type::STR, "NONE", value);
+   check("T57", "the default of a string complex is not parsed and gives 0", !parsed && value == 0.0);
+
+   auto created = centry_create(nullptr, "created");
+   check("T58", "centry_create() fills the parsed default of its default 0",
+         created->get<CE_default_doubleval>() == 0.0);
+}
+
+/**
+ * @brief The debit takes the default request from CE_default_doubleval (CS-459)
+ */
+static void
+test_debit_takes_parsed_default() {
+   auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   add_consumable(*centry_list, "dr_a", "2");
+   add_consumable(*centry_list, "dr_zero", "0");
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+
+   double value = -1.0;
+   bool ret = job_get_contribution_by_scope(*job, nullptr, "dr_a", &value, centry_list->find_first<CE_name>("dr_a"),
+                                            JRS_SCOPE_GLOBAL);
+   check("T60", "the debit takes the parsed default 2", ret && value == 2.0);
+
+   value = -1.0;
+   ret = job_get_contribution_by_scope(*job, nullptr, "dr_zero", &value, centry_list->find_first<CE_name>("dr_zero"),
+                                       JRS_SCOPE_GLOBAL);
+   check("T61", "a default of 0 is no contribution", !ret && value == 0.0);
+}
+
+/**
+ * @brief Validate a requestable consumable with a given default value
+ * @param defaultval the default value
+ * @param[out] answer_list receives the messages
+ * @return what centry_elem_validate() returned
+ */
+static bool
+validate_requestable_consumable(const char *defaultval, ocs::tom::ListPtr<ocs::tom::AN> &answer_list) {
+   auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   add_consumable(*centry_list, "dr_v", defaultval);
+   centry_list->front().set<CE_shortcut>("dr_v");
+   centry_list->front().set<CE_urgency_weight>("0");
+   return centry_elem_validate(centry_list->front(), ocs::tom::ConstList<ocs::tom::CE>(), &answer_list, false);
+}
+
+/**
+ * @brief The default of a requestable consumable has to parse (CS-459)
+ */
+static void
+test_validate_requestable_consumable_default() {
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
+
+   check("T70", "a requestable consumable with default 0 is accepted",
+         validate_requestable_consumable("0", answer_list) && !answer_list_has_error(&answer_list));
+   answer_list.reset();
+   check("T71", "a requestable consumable with default 5 is accepted",
+         validate_requestable_consumable("5", answer_list) && !answer_list_has_error(&answer_list));
+   answer_list.reset();
+   check("T72", "a requestable consumable with default abc is refused",
+         !validate_requestable_consumable("abc", answer_list) && answer_list_has_error(&answer_list));
+   answer_list.reset();
+}
+
+/**
  * @brief Run the tests
  * @return 0 if all checks held, 1 otherwise
  */
@@ -274,6 +386,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    test_default_request_leaves_centry_untouched();
    test_implicit_slots_request_in_assignment();
+   test_fill_default();
+   test_debit_takes_parsed_default();
+   test_validate_requestable_consumable_default();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);

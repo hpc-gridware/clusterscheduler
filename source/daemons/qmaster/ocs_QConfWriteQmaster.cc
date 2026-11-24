@@ -173,8 +173,12 @@ qconf_write_is_unchanged([[maybe_unused]] const ocs::tom::ConstList<typename E::
       /* Argument order as the client had it: the element from the text first, the
        * stored one second. The answer list stays out of it, because a difference is
        * not a problem to report - it is the normal case. object_has_differences()
-       * compares any two elements of one type and has no typed form. */
-      DRETURN(!object_has_differences(ep, nullptr, stored));
+       * compares any two elements of one type and has no typed form.
+       * The stored element carries the parsed default request, which no text holds (CS-459):
+       * the comparison takes a copy of the text's element with it filled in the same way. */
+      auto filled = ep.clone();
+      ocs_centry_fill_default(*filled);
+      DRETURN(!object_has_differences(*filled, nullptr, stored));
    } else {
       DRETURN(false);
    }

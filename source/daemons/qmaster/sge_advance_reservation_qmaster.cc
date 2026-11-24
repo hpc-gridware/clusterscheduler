@@ -47,7 +47,6 @@
 #include "uti/sge_lock.h"
 #include "uti/sge_log.h"
 #include "uti/sge_mtutil.h"
-#include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdio.h"
 #include "uti/sge_stdlib.h"
@@ -1792,13 +1791,9 @@ ar_get_request_or_default(const ocs::tom::ConstElement<ocs::tom::AR> ar, const o
       request_value = request.get<CE_doubleval>();
       ret = true;
    } else {
-      // resource was not requested but there might be a default request
-      const char *default_string = cr.get<CE_defaultval>();
-      double default_double;
-      if (default_string != nullptr &&
-          parse_ulong_val(&default_double, nullptr, static_cast<ocs::CEntry::Type>(cr.get<CE_valtype>()),
-                          default_string, nullptr, 0) != 0) {
-         request_value = default_double;
+      // resource was not requested but there might be a default request, parsed once by qmaster (CS-459)
+      if (cr.get<CE_defaultval>() != nullptr) {
+         request_value = cr.get<CE_default_doubleval>();
          ret = true;
       }
    }

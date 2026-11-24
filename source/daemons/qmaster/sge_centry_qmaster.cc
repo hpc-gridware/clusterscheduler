@@ -234,6 +234,8 @@ centry_mod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, ocs::tom::ListPtr<ocs
    if (ret) {
       ce.set<CE_stringval>(nullptr);
       ce.set<CE_doubleval>(0);
+      // CS-459: the default request is parsed here once, readers take CE_default_doubleval
+      ocs_centry_fill_default(ce);
    }
 
    if (ret) {

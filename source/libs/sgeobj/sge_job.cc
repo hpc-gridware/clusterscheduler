@@ -2077,7 +2077,7 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
  * returned for a default request of 0.
  *
  * @param job the job to read (JB)
- * @param[out] answer_list receives the message when the value cannot be parsed
+ * @param[out] answer_list unused since CS-459, kept for the callers
  * @param name the consumable to ask about
  * @param[out] value receives the amount
  * @param complex_definition the resource's complex entry (CE), for its default
@@ -2086,17 +2086,18 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
  *
  * @note A default request of 0 is reported as failure, so the caller books
  *       nothing rather than booking zero.
+ * @note The default request is not parsed here: it is taken from CE_default_doubleval, which
+ *       qmaster fills once per complex definition (ocs_centry_fill_default(), CS-459), so
+ *       there is no parsing error to report in @p answer_list any more.
  */
 bool
 job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
-                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
+                              [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
                               double *value, const ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
                               const uint32_t scope) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const char *value_string = nullptr;
-   char error_str[256];
    bool is_default_request = false;
 
    // we only consider *hard* requests (consumables), there are no soft consumables
@@ -2106,16 +2107,10 @@ job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
       // a bracketed parameter list after the amount.
       *value = centry.get<CE_doubleval>();
    } else {
-      // if the job did not request the consumable, there might still be a default request
-      // @todo CE-459 if there was a CE_default_doubleval we wouldn't have to parse the string
-      value_string = complex_definition.get<CE_defaultval>();
+      // if the job did not request the consumable, there might still be a default request,
+      // parsed once by qmaster when the complex was defined (CS-459)
       is_default_request = true;
-      const auto valtype = static_cast<ocs::CEntry::Type>(complex_definition.get<CE_valtype>());
-      if (!(parse_ulong_val(value, nullptr, valtype, value_string, error_str, sizeof(error_str)-1))) {
-         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,
-                                 MSG_ATTRIB_PARSATTRFAILED_SS, name, error_str);
-         ret = false;
-      }
+      *value = complex_definition.get<CE_default_doubleval>();
    }
    if (is_default_request && *value == 0) {
       ret = false;

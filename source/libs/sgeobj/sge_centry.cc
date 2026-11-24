@@ -462,6 +462,7 @@ centry_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name) {
       ret->set<CE_consumable>(CONSUMABLE_NO);
       ret->set<CE_defaultval>("0");
       ret->set<CE_urgency_weight>("0");
+      ocs_centry_fill_default(*ret);
    } else {
       answer_list_add_sprintf(answer_list, STATUS_ERROR1, ANSWER_QUALITY_ERROR,
                               MSG_INAVLID_PARAMETER_IN_S, __func__);
@@ -814,6 +815,35 @@ int centry_list_fill_request(const ocs::tom::List<ocs::tom::CE> this_list, ocs::
 
 
 /**
+ * @brief Parse the default value of a complex definition once and keep the result (CS-459)
+ *
+ * The default request of a complex is needed on hot paths - every scheduling decision and every
+ * debit of a job that does not request the complex. Instead of parsing CE_defaultval there each
+ * time, qmaster calls this function wherever a complex definition is created, modified or read
+ * from the spool, and the readers take CE_default_doubleval.
+ *
+ * A missing default, the default of a string type and a default which does not parse give
+ * CE_default_doubleval 0, i.e. no default request (centry_elem_validate() refuses a numeric
+ * default which does not parse).
+ *
+ * @param centry the complex definition (CE) to fill
+ * @return true when the default value parsed as a value of the complex's type
+ */
+bool
+ocs_centry_fill_default(const ocs::tom::Element<ocs::tom::CE> centry) {
+   DENTER(CENTRY_LAYER);
+
+   double dval = 0.0;
+   const char *defaultval = centry.get<CE_defaultval>();
+   const auto type = static_cast<ocs::CEntry::Type>(centry.get<CE_valtype>());
+   const bool parsed = defaultval != nullptr && parse_ulong_val(&dval, nullptr, type, defaultval, nullptr, 0) != 0;
+
+   centry.set<CE_default_doubleval>(parsed ? dval : 0.0);
+
+   DRETURN(parsed);
+}
+
+/**
  * @brief fill in configuration attributes into a list of complex attributes
  *
  * The function makes sure that all configuration attributes of objects in a CE list
@@ -837,6 +867,7 @@ void centry_list_fill_config(const ocs::tom::List<ocs::tom::CE> centry_list,
          centry.set<CE_consumable>(master_centry.get<CE_consumable>());
          centry.set<CE_defaultval>(master_centry.get<CE_defaultval>());
          centry.set<CE_urgency_weight>(master_centry.get<CE_urgency_weight>());
+         centry.set<CE_default_doubleval>(master_centry.get<CE_default_doubleval>());
       }
    }
 }
@@ -1100,7 +1131,9 @@ void centry_list_remove_duplicates(const ocs::tom::List<ocs::tom::CE> this_list)
  *        - boolean:	                  only ==
  *        - int, double, memory, time: ==, !=, <=, <, =>, >
  *     Requestable	   : for all attribute
- *     default value 	: only for consumables
+ *     default value 	: has to parse as a value of the type for every numeric type; for a
+ *                       non consumable it has to be 0 (NONE for string types), for a consumable
+ *                       requestable NO it must not be 0, for requestable FORCED it must be 0
  * A RSMAP must be a consumable.
  * The type for build in attributes is not allowed to be changed!
  * When no centy list is passed in, the check for uniqie name and
@@ -1191,11 +1224,13 @@ bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
       only run for a consumable which is requestable NO or FORCED, and for a non consumable -
       and a resource map is always consumable, so the ordinary configuration, requestable YES,
       reaches none of them. */
+   bool rsmap_default_has_params = false;
    if (static_cast<ocs::CEntry::Type>(centry.get<CE_valtype>()) == ocs::CEntry::Type::RSMAP) {
       const char *defaultval = centry.get<CE_defaultval>();
       if (defaultval != nullptr && strchr(defaultval, '[') != nullptr) {
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                  MSG_RSMAP_DEFAULT_HAS_PARAMS_SS, attrname, defaultval);
+         rsmap_default_has_params = true;
          ret = false;
       }
    }
@@ -1274,6 +1309,15 @@ bool centry_elem_validate(const ocs::tom::ConstElement<ocs::tom::CE> centry,
             if (dval != 0) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_INVALID_CENTRY_CONSUMABLE_REQ2_S, attrname);
+               ret = false;
+            }
+         } else if (const char *defaultval = centry.get<CE_defaultval>();
+                    defaultval != nullptr && !rsmap_default_has_params) {
+            /* CS-459: requestable YES - any amount is a valid default, 0 included, but it has to parse,
+               as it has to for requestable NO and FORCED. Before, nothing checked it. */
+            if (!parse_ulong_val(&dval, nullptr, type, defaultval, error_msg, 199)) {
+               answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
+                                       MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, attrname, error_msg);
                ret = false;
             }
          }
