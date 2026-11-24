@@ -1599,7 +1599,7 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          }
 
          if (sub_instr == nullptr || sub_fields == nullptr) {
-            if (sub_instr->show_empty_fields) {
+            if (sub_instr != nullptr && sub_instr->show_empty_fields) {
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                                        ANSWER_QUALITY_WARNING, 
                                        MSG_DONTKNOWHOWTOSPOOLSUBLIST_SS,
@@ -1635,6 +1635,11 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          dstring tmp_buffer = DSTRING_INIT;
 
          value = ocs_spool_row_append(fields[i], object, answer_list, &tmp_buffer);
+         if (value == nullptr) {
+            // CS-3167: the field cannot be rendered, the error is in the answer list
+            sge_dstring_free(&tmp_buffer);
+            continue;
+         }
          if (!show_empty_fields && !strcasecmp(value, NONE_STR)) {
             sge_dstring_free(&tmp_buffer);
             continue;
