@@ -459,12 +459,21 @@ send_slave_jobs_wc(const ocs::tom::Element<ocs::tom::JB> jep, monitoring_t *moni
          uint32_t dummymid = 0;
          sge_pack_buffer send_pb;
 
-         ocs::tom::try_init_buffer(&send_pb, 0);
+         if (ocs::tom::try_init_buffer(&send_pb, 0) != PACK_SUCCESS) {
+            ERROR(MSG_COM_SENDJOBTOHOST_US, jep.get<JB_job_number>(), hostname);
+            ret = -1;
+            break;
+         }
 
+         // CS-3186: a job that cannot be packed is not delivered - a truncated one would be sent otherwise
          try {
             jep.pack(send_pb);
-         } catch (const ocs::tom::PackException &) {
-            // a failed pack is not handled here, as the result of pack_job_delivery() was not
+         } catch (const ocs::tom::PackException &e) {
+            ocs::tom::clear_buffer(&send_pb);
+            ERROR(MSG_COM_SENDJOBTOHOST_US, jep.get<JB_job_number>(), hostname);
+            ERROR("pack error: %s", ocs::tom::pack_error_text(e.code()));
+            ret = -1;
+            break;
          }
          if (simulate_execd) {
             failed = CL_RETVAL_OK;
@@ -610,10 +619,14 @@ send_job(const char *rhost, const ocs::tom::Element<ocs::tom::JB> jep,
       DRETURN(-1);
    }
 
+   // CS-3186: a job that cannot be packed is not delivered - a truncated one would be sent otherwise
    try {
       tmpjep->pack(pb);
-   } catch (const ocs::tom::PackException &) {
-      // a failed pack is not handled here, as the result of pack_job_delivery() was not
+   } catch (const ocs::tom::PackException &e) {
+      ocs::tom::clear_buffer(&pb);
+      ERROR(MSG_COM_SENDJOBTOHOST_US, jep.get<JB_job_number>(), rhost);
+      ERROR("pack error: %s", ocs::tom::pack_error_text(e.code()));
+      DRETURN(-1);
    }
    tmpjep.reset();
 
