@@ -105,8 +105,12 @@
 #define MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS       _MESSAGE(49071, _("the user already has too many group ids"))
 #define MSG_SYSTEM_RESOLVEUSER                  _MESSAGE(49118, _("can't resolve user"))
 #define MSG_SYSTEM_RESOLVEGROUP                 _MESSAGE(49119, _("can't resolve group"))
-#define MSG_FILE_DIRNOTOURS_S                   _MESSAGE(49120, _("refusing " PFNMAX ": not a directory of the daemon or the new owner"))
-#define MSG_FILE_FCHOWNFAILED_SS                _MESSAGE(49121, _("can't change the owner of directory " PFNMAX ": " SFN))
+// 49120 is used by 9.1 (MSG_FILE_SETMODEFAILED_SOS) and stays free here to keep the ids of both lines apart
+#define MSG_FILE_DIRNOTOURS_S                   _MESSAGE(49121, _("refusing " PFNMAX ": not a directory of the daemon or the new owner"))
+#define MSG_FILE_FCHOWNFAILED_SS                _MESSAGE(49122, _("can't change the owner of directory " PFNMAX ": " SFN))
+#define MSG_FILE_FCHMODFAILED_SS                _MESSAGE(49123, _("can't change the mode of directory " PFNMAX ": " SFN))
+#define MSG_FILE_OPENDIRECTORYFAILED_SS         _MESSAGE(49124, _("open(" PFNMAX ") failed: " SFN))
+#define MSG_FILE_REMOVINGPLANTED_S              _MESSAGE(49125, _("removing " PFNMAX ": it is no directory but in the place of one to be created"))
 
 #define MSG_MEMORY_MALLOCFAILED                 _MESSAGE(49072, _("malloc() failure"))
 #define MSG_MEMORY_REALLOCFAILED                _MESSAGE(49073, _("realloc() failure"))

@@ -788,11 +788,13 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       in this queue instance. QU_job_slots_used holds actual number of used
       slots for this job in the queue */
    if (!(used_slots = qinstance_slots_used(master_q))) {
+      bool planted = false;
       if (!(sge_make_tmpdir(master_q, job_id, ja_task_id,
-                            pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX))) {
+                            pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX, planted))) {
          snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTMAKETMPDIR);
          sge_free(&pw_buffer);
-         DRETURN(-2);
+         // a path occupied by a user fails only the job (CS-3203), anything else halts the queue as before
+         DRETURN(planted ? -3 : -2);
       }
    } else {
       SGE_STRUCT_STAT statbuf;

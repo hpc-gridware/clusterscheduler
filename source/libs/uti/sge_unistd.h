@@ -162,6 +162,13 @@ int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exis
 
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);
 
+/** @brief ocs_mkdir_for_owner(): the directory exists and belongs to the new owner */
+constexpr int OCS_MKDIR_FOR_OWNER_OK = 0;
+/** @brief ocs_mkdir_for_owner(): an error not caused by something at the path, e.g. EACCES, ENOSPC */
+constexpr int OCS_MKDIR_FOR_OWNER_ERROR = -1;
+/** @brief ocs_mkdir_for_owner(): the path is occupied by something the caller must not use or remove */
+constexpr int OCS_MKDIR_FOR_OWNER_PLANTED = -2;
+
 int ocs_mkdir_for_owner(const char *path, int fmode, uid_t uid, gid_t gid, dstring *error);
 
 int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true, bool ignore_notempty = false);

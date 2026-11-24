@@ -349,60 +349,93 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
  *
  * Meant for a directory at a predictable path in a parent that users can write to, created by a
  * privileged caller, like the job's TMPDIR made by execd as root (CS-3203). The directory is
- * created with mkdir(), opened with O_DIRECTORY | O_NOFOLLOW and handed over with fchown() on the
- * descriptor, so whatever a user planted at the path cannot redirect the chown:
- * - a symbolic link, a regular file or any other non-directory is an error, its target is not touched;
- * - an existing directory is accepted only when it belongs to the caller (the effective user id) or
+ * created with mkdir(), opened with O_DIRECTORY | O_NOFOLLOW and handed over with fchown() and
+ * fchmod() on the descriptor, so whatever a user planted at the path cannot redirect the change:
+ * - a symbolic link, a regular file or any other non-directory is removed with unlink(), which
+ *   does not follow a link, with a warning, and the directory is created once more; its target
+ *   is not touched. When the path is occupied again, the result is #OCS_MKDIR_FOR_OWNER_PLANTED;
+ * - an existing directory is used when it belongs to the caller (the effective user id) or
  *   already to @p uid, for example the directory left behind by an earlier attempt of the same job;
- *   a directory of any other user is an error.
+ * - a directory of any other user is left alone, the result is #OCS_MKDIR_FOR_OWNER_PLANTED.
  *
  * @param path the directory to create
- * @param fmode the mode for mkdir(), the umask applies
+ * @param fmode the mode of the directory, set with fchmod(), so the umask does not apply
  * @param uid the new owner
  * @param gid the new group
  * @param[out] error destination for an error message, may be nullptr
- * @return 0 when @p path is a directory owned by @p uid and @p gid, -1 on error; a directory this
- *         call created is removed again on error
+ * @return #OCS_MKDIR_FOR_OWNER_OK when @p path is a directory owned by @p uid and @p gid,
+ *         #OCS_MKDIR_FOR_OWNER_PLANTED when something at @p path that the caller does not own blocks it,
+ *         #OCS_MKDIR_FOR_OWNER_ERROR on any other error; a directory this call created is removed again
+ *         on error
  */
 int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, const gid_t gid, dstring *error) {
    DENTER(TOP_LAYER);
 
    if (path == nullptr) {
       sge_dstring_sprintf(error, MSG_POINTER_NULLPARAMETER);
-      DRETURN(-1);
+      DRETURN(OCS_MKDIR_FOR_OWNER_ERROR);
    }
 
-   bool created = true;
-   if (mkdir(path, static_cast<mode_t>(fmode)) != 0) {
-      if (errno != EEXIST) {
-         sge_dstring_sprintf(error, MSG_FILE_CREATEDIRFAILED_SS, path, strerror(errno));
-         DRETURN(-1);
+   bool created = false;
+   int fd = -1;
+   for (int attempt = 0; fd < 0; attempt++) {
+      created = mkdir(path, static_cast<mode_t>(fmode)) == 0;
+      if (!created && errno != EEXIST) {
+         const int saved_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_CREATEDIRFAILED_SS, path, strerror(saved_errno));
+         DRETURN(OCS_MKDIR_FOR_OWNER_ERROR);
       }
-      created = false;
+
+      // O_NOFOLLOW | O_DIRECTORY: a symbolic link or a non-directory at the path is not opened
+      fd = SGE_OPEN2(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
+      if (fd >= 0) {
+         break;
+      }
+      const int saved_errno = errno;
+      SGE_STRUCT_STAT stat_buffer{};
+      if (created || SGE_LSTAT(path, &stat_buffer) != 0 || S_ISDIR(stat_buffer.st_mode)) {
+         // not something planted, the directory cannot be opened
+         sge_dstring_sprintf(error, MSG_FILE_OPENDIRECTORYFAILED_SS, path, strerror(saved_errno));
+         if (created) {
+            rmdir(path);
+         }
+         DRETURN(OCS_MKDIR_FOR_OWNER_ERROR);
+      }
+      if (attempt > 0) {
+         // planted once more after it was removed
+         sge_dstring_sprintf(error, MSG_FILE_DIRNOTOURS_S, path);
+         DRETURN(OCS_MKDIR_FOR_OWNER_PLANTED);
+      }
+      // a symbolic link, a file, a fifo ... in the place of the directory: unlink() does not follow it
+      WARNING(MSG_FILE_REMOVINGPLANTED_S, path);
+      if (unlink(path) != 0) {
+         const int unlink_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS, path, strerror(unlink_errno));
+         DRETURN(OCS_MKDIR_FOR_OWNER_PLANTED);
+      }
    }
 
-   // O_NOFOLLOW | O_DIRECTORY: a symbolic link or a non-directory at the path is not opened
-   const int fd = SGE_OPEN2(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-   if (fd < 0) {
-      sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path, strerror(errno));
-      DRETURN(-1);
-   }
-
-   int ret = 0;
+   int ret = OCS_MKDIR_FOR_OWNER_OK;
    SGE_STRUCT_STAT stat_buffer{};
    if (SGE_FSTAT(fd, &stat_buffer) != 0) {
-      sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path, strerror(errno));
-      ret = -1;
+      const int saved_errno = errno;
+      sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path, strerror(saved_errno));
+      ret = OCS_MKDIR_FOR_OWNER_ERROR;
    } else if (!S_ISDIR(stat_buffer.st_mode) || (stat_buffer.st_uid != geteuid() && stat_buffer.st_uid != uid)) {
       sge_dstring_sprintf(error, MSG_FILE_DIRNOTOURS_S, path);
-      ret = -1;
+      ret = OCS_MKDIR_FOR_OWNER_PLANTED;
    } else if (fchown(fd, uid, gid) != 0) {
-      sge_dstring_sprintf(error, MSG_FILE_FCHOWNFAILED_SS, path, strerror(errno));
-      ret = -1;
+      const int saved_errno = errno;
+      sge_dstring_sprintf(error, MSG_FILE_FCHOWNFAILED_SS, path, strerror(saved_errno));
+      ret = OCS_MKDIR_FOR_OWNER_ERROR;
+   } else if (fchmod(fd, static_cast<mode_t>(fmode)) != 0) {
+      const int saved_errno = errno;
+      sge_dstring_sprintf(error, MSG_FILE_FCHMODFAILED_SS, path, strerror(saved_errno));
+      ret = OCS_MKDIR_FOR_OWNER_ERROR;
    }
    close(fd);
 
-   if (ret != 0 && created) {
+   if (ret != OCS_MKDIR_FOR_OWNER_OK && created) {
       rmdir(path);
    }
    DRETURN(ret);

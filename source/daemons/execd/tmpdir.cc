@@ -58,10 +58,11 @@
  * Created as root (the start user of the daemon) and then handed to the job owner, because the
  * parent directory is usually not writable by users. The parent (QU_tmpdir) is often world
  * writable and the name is predictable, so a user may have planted something at the path:
- * ocs_mkdir_for_owner() never follows a symbolic link and changes the owner through the open
- * descriptor, a link, a file or another user's directory at the path makes the job fail
- * (CS-3203). A directory that already belongs to root or to the job owner, for example one left
- * behind by an earlier start of the same task, is used as before.
+ * ocs_mkdir_for_owner() never follows a symbolic link and changes owner and mode through the open
+ * descriptor (CS-3203). A link, a file or another non-directory at the path is removed and the
+ * directory created; a directory of another user is left alone and @p planted tells the caller
+ * that only this job failed, not the queue. A directory that already belongs to root or to the
+ * job owner, for example one left behind by an earlier start of the same task, is used as before.
  *
  * @param qep the queue instance, which configures where temporary directories live
  * @param jobid the job
@@ -70,12 +71,16 @@
  * @param gid the job owner's group
  * @param[out] tmpdir receives the directory
  * @param tmpdir_size size of that buffer
+ * @param[out] planted set to true when the directory could not be made because a user occupied
+ *             its path, the failure then belongs to the job, not to the queue
  * @return the directory, or nullptr when none was configured or it could not be handed to the job owner
  */
 char *
 sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t jobid, const uint32_t jataskid,
-                const uid_t uid, const gid_t gid, char *tmpdir, const size_t tmpdir_size) {
+                const uid_t uid, const gid_t gid, char *tmpdir, const size_t tmpdir_size, bool &planted) {
    DENTER(TOP_LAYER);
+
+   planted = false;
 
    const char *t = qep.get<QU_tmpdir>();
    if (t == nullptr) {
@@ -97,7 +102,8 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
 
    sge_switch2admin_user();
 
-   if (ret != 0) {
+   if (ret != OCS_MKDIR_FOR_OWNER_OK) {
+      planted = ret == OCS_MKDIR_FOR_OWNER_PLANTED;
       ERROR(SFNMAX, sge_dstring_get_string(&err));
       DRETURN(nullptr);
    }

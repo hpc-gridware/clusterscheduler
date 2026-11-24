@@ -43,7 +43,7 @@
 #include "tom/ocs_Element.h"
 
 char *sge_make_tmpdir(ocs::tom::ConstElement<ocs::tom::QU> qep, uint32_t jobid, uint32_t jataskid,
-                      uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size);
+                      uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size, bool &planted);
 
 char *sge_get_tmpdir(ocs::tom::ConstElement<ocs::tom::QU> qep, uint32_t jobid, uint32_t jataskid, char *tmpdir,
                      size_t tmpdir_size);
