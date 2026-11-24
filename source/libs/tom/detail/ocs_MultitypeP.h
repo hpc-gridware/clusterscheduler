@@ -36,14 +36,14 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal representation of a cull field value
+ * @brief Internal representation of a field value
  */
 
 #include "tom/ocs_Types.h"
 #include "tom/detail/ocs_ListP.h"
 
 /**
- * @brief The value of one cull field
+ * @brief The value of one field
  *
  * Which member is live is decided by the field's type in the descriptor —
  * see @ref _enum_lMultiType and #mt_get_type. Reading the wrong member is not

@@ -20,7 +20,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Counters on the CULL hash tables, descriptors and packing (CS-2993)
+ * @brief Counters on the hash tables, descriptors and packing of the list library (CS-2993)
  *
  * Built only with the CMake option `ENABLE_CULL_STATS`, which defines
  * `OCS_CULL_STATS`. Without it the hook macros below expand to nothing, so a

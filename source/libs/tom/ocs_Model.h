@@ -42,8 +42,7 @@
  * may call it. Readers never take a lock; an index once published is never
  * freed, so a reader holding it stays valid when another model is installed.
  *
- * These functions replace the CULL name space (lInit(), lNm2Str(), lStr2Nm()),
- * which is removed. The list library finds the static descriptor of a type
+ * The list library finds the static descriptor of a type
  * through type_table(), so a descriptor of a type the installed model does not
  * know is never recognised as static.
  */

@@ -390,7 +390,7 @@ namespace ocs::tom {
    static_assert(__atomic_always_lock_free(sizeof(uint64_t), nullptr),
                  "uint64_t cannot be accessed atomically without a lock on this platform");
    static_assert(alignof(lMultiType) >= sizeof(uint64_t),
-                 "a cull value is not aligned well enough to be accessed atomically");
+                 "a field value is not aligned well enough to be accessed atomically");
 
    /**
     * @brief Read a 64 bit unsigned value without being able to observe it torn

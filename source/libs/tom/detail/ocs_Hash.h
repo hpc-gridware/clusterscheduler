@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Hash tables over cull list fields
+ * @brief Hash tables over list fields
  */
 
 #include <cstdint>

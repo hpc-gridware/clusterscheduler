@@ -34,12 +34,12 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal handle of a cull hash table
+ * @brief Internal handle of a hash table of a list
  */
 
 #include <cstdint>
 
-/// Handle of a cull hash table; see @ref _cull_htable
+/// Handle of a hash table of a list; see @ref _cull_htable
 typedef struct _cull_htable *cull_htable;
 
 /**

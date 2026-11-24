@@ -36,9 +36,9 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Localisable message catalogue of the cull library
+ * @brief Localisable message catalogue of the list library of the typed object model
  *
- * Message ids are reserved for the cull library. Do not write the message
+ * Message ids are reserved for the list library. Do not write the message
  * macro's name followed by an opening parenthesis anywhere in this file's
  * comments: the testsuite parses these headers line by line looking for
  * exactly that string, and a prose line carrying it fails

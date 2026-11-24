@@ -34,7 +34,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Internal layout of a cull list and its elements
+ * @brief Internal layout of a list and its elements
  */
 
 #include <atomic>
@@ -105,7 +105,7 @@ static_assert(TOM_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference mark
 /** @} */
 
 /**
- * @brief One element of a cull list
+ * @brief One element of a list
  *
  * An element carries its own descriptor, so it can exist outside any list —
  * `lCreateElem()` produces exactly that. Its field values live in a separate
@@ -335,7 +335,7 @@ struct cull_hash_slot {
 static_assert(std::atomic<cull_htable>::is_always_lock_free, "a hash slot must not hide a mutex");
 
 /**
- * @brief A cull list: a doubly linked list of elements of one object type
+ * @brief A list: a doubly linked list of elements of one object type
  *
  * Every element shares the list's descriptor, so a list is homogeneous. The
  * element count is kept rather than walked, and both ends are held so

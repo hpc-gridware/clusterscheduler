@@ -38,7 +38,7 @@
 #define CHUNK  (1024*1024) ///< bytes a packbuffer grows by when it runs out of room
 /**
  * @defgroup tom_pack_version Packbuffer version control
- * @brief How components of different cull versions reject each other's data
+ * @brief How components of different pack versions reject each other's data
  *
  * Enhancements may change the format in which data is represented for spooling
  * and communication. So that components which cannot understand each other
@@ -75,7 +75,7 @@
 
 #define MAX_USER_GROUP 512 ///< buffer size for a user or group name in a packbuffer
 /**
- * @brief A byte stream that cull data is packed into and unpacked from
+ * @brief A byte stream that lists and elements are packed into and unpacked from
  *
  * Words go in in network byte order, so hosts of different architectures can
  * exchange the result. The buffer grows as needed; in `just_count` mode

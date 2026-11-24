@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Counters on the CULL hash tables, descriptors and packing (CS-2993)
+ * @brief Counters on the hash tables, descriptors and packing of the list library (CS-2993)
  *
  * Each thread counts into a table of its own, without locking. When the thread
  * ends, its table is merged under a mutex into the table of its thread class

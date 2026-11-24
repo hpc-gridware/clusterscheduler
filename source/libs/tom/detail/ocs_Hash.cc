@@ -35,7 +35,7 @@
 /*___INFO__MARK_END__*/
 
 /** @file
- * @brief Hash tables over cull list fields
+ * @brief Hash tables over list fields
  */
 
 #include <cstdio>
@@ -68,13 +68,13 @@
 #include "tom/ocs_Model.h"
 
 /**
- * @defgroup cull_hash Hash tables for cull lists
- * @brief An abstraction layer between cull and the hash tables in libuti
+ * @defgroup tom_hash Hash tables of the lists
+ * @brief An abstraction layer between the lists and the hash tables in libuti
  *
  * A field marked #MT_HASH gets a hash table over its values, so looking an
  * element up by that field does not have to walk the list.
  *
- * libuti's hash tables store one value per key. Cull needs **non unique** keys
+ * libuti's hash tables store one value per key. The lists need **non unique** keys
  * as well, so for those the table stores a pointer to a chain of
  * @ref _non_unique_hash nodes rather than to the element itself. The wrapper
  * functions here hide that difference: insert, remove and search behave the
@@ -161,11 +161,11 @@ typedef struct non_unique_header {
 struct _non_unique_hash {
    non_unique_hash *prev; ///< previous node, or nullptr at the head of the chain
    non_unique_hash *next; ///< next node, or nullptr at the end of the chain
-   const void *data;      ///< the cull element this node stands for
+   const void *data;      ///< the element this node stands for
 };
 
 /**
- * @brief A cull hash table: the key table, plus the chains for non unique keys
+ * @brief A hash table of a list: the key table, plus the chains for non unique keys
  */
 struct _cull_htable {
    htable ht;   ///< maps a field value to an element, or to a @ref non_unique_header
@@ -445,8 +445,7 @@ cull_htable ocs::tom::detail::hash_lookup_table(const lList *lp, const int pos) 
 /**
  * @brief Set the list length below which the calling thread builds no hash table
  *
- * This is what remains of the per-thread initialisation of the list library
- * since the CULL name space is gone. The value is per thread: a thread that
+ * The value is per thread: a thread that
  * never calls this function uses #OCS_CULL_HASH_MIN_ELEMS. Threads with different values may share lists,
  * since a table, once built, is maintained and used by every thread.
  *
@@ -520,7 +519,7 @@ void ocs::tom::set_thread_host_hash_threshold(const std::uint32_t n) {
  * insert after a change drops the table instead (#ocs::tom::detail::hash_insert_changed),
  * both since N-H-18 (CS-3052). So a unique insert is a plain store.
  *
- * @param ep the cull object to be stored in a hash list
+ * @param ep the element to be stored in a hash list
  * @param key the hash key, from #ocs::tom::detail::hash_key
  * @param ht the table to insert into
  * @param unique true when the field was declared #MT_UNIQUE
@@ -574,13 +573,13 @@ void ocs::tom::detail::hash_insert(const lListElem *ep, void *key, cull_htable h
 }
 
 /**
- * @brief Remove a cull object from a hash list
+ * @brief Remove an element from a hash list
  *
  * Removes ep from a hash table for data field specified by pos. A unique
  * table holds each key for one element only (N-H-18), so the entry under the
  * element's key is its own and a plain delete removes it.
  *
- * @param ep the cull object to be removed
+ * @param ep the element to be removed
  * @param pos position of the data field
  */
 void ocs::tom::detail::hash_remove(const lListElem *ep, const int pos) {
@@ -688,14 +687,14 @@ void ocs::tom::detail::hash_insert_changed(const lListElem *ep, const int pos) {
 }
 
 /**
- * @brief Insert cull object into associated hash tables
+ * @brief Insert an element into the hash tables of its list
  *
- * Insert the cull element ep into all hash tables of the list it is bound
+ * Insert the element ep into all hash tables of the list it is bound
  * in. An element that is not bound is in no table. A unique table that
  * already holds one of the element's keys is dropped instead
  * (#ocs::tom::detail::hash_insert_changed).
  *
- * @param ep the cull object to be hashed
+ * @param ep the element to be hashed
  */
 void ocs::tom::detail::hash_elem(const lListElem *ep) {
    if (ep == nullptr) {
@@ -717,13 +716,13 @@ void ocs::tom::detail::hash_elem(const lListElem *ep) {
 }
 
 /**
- * @brief Remove a cull object from all hash tables of its list
+ * @brief Remove an element from all hash tables of its list
  *
  * The counterpart of #ocs::tom::detail::hash_elem: removes the bound element ep from every
  * table of the list that holds it. An element that is not bound is in no
  * table, so nothing is done.
  *
- * @param ep the cull object to be removed from the tables
+ * @param ep the element to be removed from the tables
  */
 void ocs::tom::detail::hash_remove_elem(const lListElem *ep) {
    if (ep == nullptr) {
@@ -750,7 +749,7 @@ void ocs::tom::detail::hash_remove_elem(const lListElem *ep) {
  * @brief Find first object for a certain key
  *
  * Searches for key in the hash table for data field described by
- * pos in the cull list lp.
+ * pos in the list lp.
  * If an element is found, it is returned.
  * If the hash table uses non unique hash keys, iterator returns the
  * necessary data for consecutive calls of ocs::tom::detail::hash_next() returning

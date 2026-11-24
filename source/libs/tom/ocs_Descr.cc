@@ -695,9 +695,9 @@ const void *ocs::tom::descr_registry_id() {
 /**
  * @brief Whether a loaded object uses the descriptor registry of this process (N-A-22)
  *
- * An object that links CULL statically carries its own copy of the registry.
+ * An object that links the list library statically carries its own copy of the registry.
  * Its code must still be bound to the copy of the process, which it is when
- * CULL exports its symbols and the loading executable is linked `-rdynamic`.
+ * the list library exports its symbols and the loading executable is linked `-rdynamic`.
  * The check calls ocs_tom_descr_registry_seen() of the loaded object, whose
  * call to ocs::tom::descr_registry_id() resolves the way all of its calls into
  * the list core do, and compares the result with the registry of the caller.
@@ -707,7 +707,7 @@ const void *ocs::tom::descr_registry_id() {
  * @param handle the handle dlopen() returned for the object
  * @param[out] own receives the file name of the object holding the registry of the caller
  * @param[out] seen receives the file name of the object holding the registry the loaded object uses, or "none" if
- *             it has no CULL
+ *             it has no list library
  * @return true if the loaded object uses the registry of the caller
  */
 bool ocs::tom::descr_registry_shared(void *handle, std::string &own, std::string &seen) {

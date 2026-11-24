@@ -66,7 +66,7 @@ typedef union _lMultiType lMultiType;      ///< the value of one field, of any f
 typedef struct _lSortOrder lSortOrder;     ///< a sort specification, built with `make_sort_order()`
 
 /**
- * @brief The data type of a cull field
+ * @brief The data type of a field
  *
  * @note If you change this enum, change `multitypes[]` in ocs_ElementCore.cc
  *       to match — the array is indexed by these values.
