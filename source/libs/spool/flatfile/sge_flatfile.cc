@@ -1472,7 +1472,8 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
  * Walks the rows of @p fields; the type dependent parts - list or value, the
  * value's format, the list of a list field - come from the record of a
  * row (see ocs_spool_row_is_list() and its siblings), read with the checked
- * accessors. A field the element lacks is skipped with a warning.
+ * accessors. A field the element lacks is skipped with a warning, a field without a text form (an object or a
+ * reference field) is skipped without a message.
  *
  * @param answer_list receives the messages
  * @param object the object to write
@@ -1483,7 +1484,7 @@ spool_flatfile_write_data(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const vo
  *                field delimiter, also the first
  * @param root the object is the root of a share tree, so the field
  *             #recursion_info::supress_field is written
- * @return true; false if a pointer argument is nullptr
+ * @return true, also if fields were skipped; false if a pointer argument is nullptr
  */
 static bool
 spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::ConstRawElement object,
@@ -1636,7 +1637,9 @@ spool_flatfile_write_object_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
 
          value = ocs_spool_row_append(fields[i], object, answer_list, &tmp_buffer);
          if (value == nullptr) {
-            // CS-3167: the field cannot be rendered, the error is in the answer list
+            // CS-3167: the field has no text form (a list, an object or a reference field), it is left out
+            // without a message; the error cases of ocs_spool_append_value() (an empty element, a field the
+            // element does not hold) cannot occur here, the element was tested to hold the field above
             sge_dstring_free(&tmp_buffer);
             continue;
          }

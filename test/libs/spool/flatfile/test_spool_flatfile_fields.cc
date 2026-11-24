@@ -136,6 +136,7 @@ test_write_unrenderable_field() {
    check("T12", "an object field is left out, the writer does not crash", name != nullptr);
    check("T13", "the other fields are written", text.find("all.q@host1") != std::string::npos);
    check("T14", "nothing is written for the object field", text.find("JG_queue") == std::string::npos);
+   check("T15", "leaving out a field without a text form is no error", !answer_list_has_error(&alp));
    sge_free(&name);
 }
 
