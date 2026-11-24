@@ -922,18 +922,21 @@ calculate_reserved_memory(const ocs::tom::ConstElement<ocs::tom::QU> queue, cons
 
 
    if (queue) {
-      double lim, h_mem_lim, s_mem_lim;
+      double h_mem_lim = DBL_MAX;
+      double s_mem_lim = DBL_MAX;
       char err_str[128];
 
-      parse_ulong_val(&h_mem_lim, nullptr, ocs::CEntry::Type::MEM,
-                      queue.get<const char *>(h_nm),
-                      err_str, sizeof(err_str)-1);
+      // CS-3175: a limit that is missing or cannot be parsed is treated as infinity
+      if (parse_ulong_val(&h_mem_lim, nullptr, ocs::CEntry::Type::MEM, queue.get<const char *>(h_nm),
+                          err_str, sizeof(err_str) - 1) == 0) {
+         h_mem_lim = DBL_MAX;
+      }
+      if (parse_ulong_val(&s_mem_lim, nullptr, ocs::CEntry::Type::MEM, queue.get<const char *>(s_nm),
+                          err_str, sizeof(err_str) - 1) == 0) {
+         s_mem_lim = DBL_MAX;
+      }
 
-      parse_ulong_val(&s_mem_lim, nullptr, ocs::CEntry::Type::MEM,
-                      queue.get<const char *>(s_nm),
-                      err_str, sizeof(err_str)-1);
-
-      lim = std::min(h_mem_lim, s_mem_lim);
+      double lim = std::min(h_mem_lim, s_mem_lim);
 
       /* INFINITY is mapped to DBL_MAX -> use 0; we cannot account INFINITY! */
       if (lim == DBL_MAX) {

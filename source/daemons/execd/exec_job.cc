@@ -409,9 +409,39 @@ exec_job_task_limit_is_summed(const ocs::tom::ConstElement<ocs::tom::JB> jep,
 }
 
 /**
+ * @brief Parse a limit of a queue instance, warning about a value that cannot be parsed
+ *
+ * The caller treats a limit that cannot be parsed as INFINITY (CS-3175); the warning names the
+ * queue instance and the value, so a broken limit does not stay silent.
+ *
+ * @param queue the queue instance the limit belongs to
+ * @param limit_name the name of the limit, e.g. h_rt
+ * @param type the type of the limit, e.g. ocs::CEntry::Type::TIME
+ * @param limit_str the text of the limit, not nullptr and not INFINITY
+ * @param[out] dvalp receives the value as a double, nullptr if not wanted
+ * @param[out] uvalp receives the value as a 32 bit unsigned, nullptr if not wanted
+ * @return true if the limit was parsed, false (after logging a warning) if it cannot be parsed
+ */
+bool
+ocs_execd_parse_queue_limit(const ocs::tom::ConstElement<ocs::tom::QU> queue, const char *limit_name,
+                            const ocs::CEntry::Type type, const char *limit_str, double *dvalp, uint32_t *uvalp) {
+   DENTER(TOP_LAYER);
+
+   if (parse_ulong_val(dvalp, uvalp, type, limit_str, nullptr, 0) == 0) {
+      WARNING(MSG_EXECD_INVALIDQUEUELIMIT_SSS, limit_name, queue.get<QU_full_name>(), limit_str);
+      DRETURN(false);
+   }
+
+   DRETURN(true);
+}
+
+/**
  * @brief Sum up a limit over all slots of a job on a host
  *
+ * A limit of a queue instance that cannot be parsed makes the sum infinity.
+ *
  * @tparam F the limit field of the queue instance, e.g. QU_h_rss
+ * @param limit_name the name of the limit, e.g. h_rss
  * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
  * @param jatep the ja_task
  * @param qualified_hostname the host
@@ -420,8 +450,8 @@ exec_job_task_limit_is_summed(const ocs::tom::ConstElement<ocs::tom::JB> jep,
  */
 template <auto F>
 static double
-exec_job_sum_host_limit(const ocs::CEntry::Type type, const ocs::tom::ConstElement<ocs::tom::JAT> jatep,
-                        const char *qualified_hostname) {
+exec_job_sum_host_limit(const char *limit_name, const ocs::CEntry::Type type,
+                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep, const char *qualified_hostname) {
    DENTER(TOP_LAYER);
 
    double limit = 0;
@@ -431,16 +461,17 @@ exec_job_sum_host_limit(const ocs::CEntry::Type type, const ocs::tom::ConstEleme
       if (queue) {
          const char *limit_str = queue.get<F>();
          if (limit_str != nullptr) {
-            // if one of the queue instances has a limit of infinity the sum is infinity
-            if (strcasecmp(limit_str, INFINITY_STR) == 0) {
+            // if one of the queue instances has a limit of infinity the sum is infinity,
+            // CS-3175: so is a limit that cannot be parsed
+            double dbl = 0.0;
+            if (strcasecmp(limit_str, INFINITY_STR) == 0 ||
+                !ocs_execd_parse_queue_limit(queue, limit_name, type, limit_str, &dbl, nullptr)) {
                DPRINTF("exec_job_sum_host_limit: qinstance %s has infinity\n",
                        gdil_ep.get<JG_qname>());
                limit = DBL_MAX;
                break;
             }
             uint32_t slots = gdil_ep.get<JG_slots>();
-            double dbl;
-            parse_ulong_val(&dbl, nullptr, type, limit_str, nullptr, 0);
             limit += dbl * slots;
             DPRINTF("exec_job_sum_host_limit: qinstance %s has limit %s, slots " sge_u32
                     ", sum %f\n",
@@ -480,9 +511,10 @@ execd_get_task_limit(const char *limit_name, const ocs::CEntry::Type type,
    const char *limit_str = queue.get<F>();
    if (limit_str != nullptr && strcasecmp(limit_str, INFINITY_STR) != 0) {
       if (exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
-         limit = exec_job_sum_host_limit<F>(type, jatep, qualified_hostname);
-      } else {
-         parse_ulong_val(&limit, nullptr, type, limit_str, nullptr, 0);
+         limit = exec_job_sum_host_limit<F>(limit_name, type, jatep, qualified_hostname);
+      } else if (!ocs_execd_parse_queue_limit(queue, limit_name, type, limit_str, &limit, nullptr)) {
+         // CS-3175: a limit that cannot be parsed is treated as no limit
+         limit = DBL_MAX;
       }
    }
 
@@ -554,7 +586,7 @@ sge_exec_job_get_limit(dstring *dstr, const char *limit_name, const ocs::CEntry:
    if (strcasecmp(ret, INFINITY_STR) != 0 &&
        exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
       DPRINTF("sge_exec_job_get_limit: we need to sum up the limits\n");
-      double limit = exec_job_sum_host_limit<F>(type, jatep, qualified_hostname);
+      double limit = exec_job_sum_host_limit<F>(limit_name, type, jatep, qualified_hostname);
       if (limit == DBL_MAX) {
          ret = INFINITY_STR;
       } else {

@@ -527,8 +527,8 @@ count_queue_limits(const ocs::tom::ConstElement<ocs::tom::QU> queue, const ocs::
    // @todo: store this once in the ja_task?
    double lim{};
    bool found_limit = false;
-   parse_ulong_val(&lim, nullptr, type, queue.get<F>(), nullptr, 0);
-   if (lim != DBL_MAX) {
+   // CS-3175: a limit that is missing or cannot be parsed is treated as infinity
+   if (parse_ulong_val(&lim, nullptr, type, queue.get<F>(), nullptr, 0) != 0 && lim != DBL_MAX) {
       if (increase) {
          check_queue_limits++;
       } else {

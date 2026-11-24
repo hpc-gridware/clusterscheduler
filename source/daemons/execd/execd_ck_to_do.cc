@@ -380,7 +380,10 @@ static void force_job_rlimit(const char *qualified_hostname) {
 /**
  * @brief The earliest wallclock limit of the queue instances of this host an array task was granted
  *
+ * A limit of a queue instance that is missing or cannot be parsed is treated as INFINITY.
+ *
  * @tparam F the limit field of the queue instance, QU_s_rt or QU_h_rt
+ * @param limit_name the name of the limit, s_rt or h_rt
  * @param qualified_hostname the name of this host, as the granted destination list names it
  * @param gdil_list the granted destination identifier list of the array task
  * @param now the time the limit is measured from
@@ -388,8 +391,8 @@ static void force_job_rlimit(const char *qualified_hostname) {
  */
 template <auto F>
 static uint64_t
-execd_get_wallclock_limit(const char *qualified_hostname, const ocs::tom::ConstList<ocs::tom::JG> gdil_list,
-                          const uint64_t now) {
+execd_get_wallclock_limit(const char *limit_name, const char *qualified_hostname,
+                          const ocs::tom::ConstList<ocs::tom::JG> gdil_list, const uint64_t now) {
    DENTER(TOP_LAYER);
 
    uint64_t ret = std::numeric_limits<uint64_t>::max();
@@ -402,14 +405,15 @@ execd_get_wallclock_limit(const char *qualified_hostname, const ocs::tom::ConstL
       if (queue) {
          limit = queue.get<F>();
 
-         // CS-3175: a queue copy without the limit is treated as having no limit
-         if (limit == nullptr || strcasecmp(limit, INFINITY_STR) == 0) {
+         // CS-3175: a queue copy without the limit or with a limit that cannot be parsed
+         // is treated as having no limit
+         uint32_t timestamp32 = 0;
+         if (limit == nullptr || strcasecmp(limit, INFINITY_STR) == 0 ||
+             !ocs_execd_parse_queue_limit(queue, limit_name, ocs::CEntry::Type::TIME, limit, nullptr, &timestamp32)) {
             clock_val = std::numeric_limits<uint64_t>::max();
          } else {
-            uint32_t timestamp32;
-            parse_ulong_val(nullptr, &timestamp32, ocs::CEntry::Type::TIME, limit, nullptr, 0);
             clock_val = sge_gmt32_to_gmt64(timestamp32);
-         }   
+         }
 
          ret = std::min(ret, clock_val);
       }
@@ -443,9 +447,9 @@ execd_set_wallclock_limits(const ocs::tom::Element<ocs::tom::JB> jep, const ocs:
 
    const auto gdil_list = jatep.get<JAT_granted_destin_identifier_list>();
    jep.set<JB_soft_wallclock_gmt>(
-               execd_get_wallclock_limit<QU_s_rt>(qualified_hostname, gdil_list, start_time));
+               execd_get_wallclock_limit<QU_s_rt>("s_rt", qualified_hostname, gdil_list, start_time));
    jep.set<JB_hard_wallclock_gmt>(
-               execd_get_wallclock_limit<QU_h_rt>(qualified_hostname, gdil_list, start_time));
+               execd_get_wallclock_limit<QU_h_rt>("h_rt", qualified_hostname, gdil_list, start_time));
 
    uint64_t task_wallclock_limit = jatep.get<JAT_wallclock_limit>();
    if (task_wallclock_limit != 0) {
