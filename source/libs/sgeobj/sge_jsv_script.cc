@@ -37,6 +37,7 @@
 #include <vector>
 #include <utility>
 #include <tuple>
+#include <string>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -1872,6 +1873,42 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
    DRETURN(ret);
 }
 
+/**
+ * @brief Read one line a JSV script wrote to its stdout or stderr
+ *
+ * Lines can have any length (CS-3208). The reader keeps the protocol of the former
+ * `fscanf(fp, "%[^\n]\n", buffer)`: whitespace between two lines - the newline, empty lines and
+ * the indentation of the next line - is skipped, and a line that is cut off by the end of the
+ * data available at the moment (EOF or EAGAIN on the non-blocking pipe) is returned as it is.
+ * The whitespace is skipped in front of a line instead of after it, so different from fscanf(),
+ * an empty line at the start of the stream, or one that arrives after the preceding line had
+ * been read, no longer blocks the stream for good.
+ *
+ * @param fp the stream to read from
+ * @param line receives the line without the newline; it is left unchanged if there was none
+ * @return true if a line was read, false if no data was available
+ */
+static bool
+ocs_jsv_read_line(FILE *fp, std::string &line) {
+   DENTER(TOP_LAYER);
+   std::string read;
+   int c;
+
+   // skip empty lines and leading whitespace
+   while ((c = getc(fp)) != EOF && isspace(c)) {
+   }
+   while (c != EOF && c != '\n') {
+      read.push_back(static_cast<char>(c));
+      c = getc(fp);
+   }
+
+   const bool ret = !read.empty();
+   if (ret) {
+      line = std::move(read);
+   }
+   DRETURN(ret);
+}
+
 /****** sgeobj/jsv/jsv_do_communication() **************************************
 *  NAME
 *     jsv_do_communication() -- Starts communicating with a JSV script 
@@ -1911,9 +1948,9 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
     * Try to read some error messages from stderr. There still has no command been send
     * to JSV but the initialization code might also cause errors....
     */
-   char input[10000];
-   while (fscanf(static_cast<FILE *>(lGetRef(jsv, JSV_err)), "%[^\n]\n", input) == 1) {
-      ERROR(MSG_JSV_LOGMSG_S, input);
+   std::string input;
+   while (ocs_jsv_read_line(static_cast<FILE *>(lGetRef(jsv, JSV_err)), input)) {
+      ERROR(MSG_JSV_LOGMSG_S, input.c_str());
       // SGE_EVENT holds a line from the JSV script, never a format
       answer_list_add(answer_list, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
       ret = false;
@@ -1961,8 +1998,8 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                }
                if (ret) {
                   DPRINTF("JSV process gets START command\n");
-                  while (fscanf(static_cast<FILE *>(lGetRef(jsv, JSV_err)), "%[^\n]\n", input) == 1) {
-                     ERROR(MSG_JSV_LOGMSG_S, input);
+                  while (ocs_jsv_read_line(static_cast<FILE *>(lGetRef(jsv, JSV_err)), input)) {
+                     ERROR(MSG_JSV_LOGMSG_S, input.c_str());
                   }
                   ret &= jsv_send_command(jsv, answer_list, "START");
                }
@@ -1984,7 +2021,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
              * but do this only if there was no message an the stderr stream.
              */
             if (ret) {
-               if (fscanf(out_stream, "%[^\n]\n", input) == 1) {
+               if (ocs_jsv_read_line(out_stream, input)) {
                   dstring sub_command = DSTRING_INIT;
                   dstring command = DSTRING_INIT;
                   dstring args = DSTRING_INIT;
@@ -2000,9 +2037,9 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
                   bool handled = false;
                   int i = -1;
 
-                  DPRINTF("JSV << \"%s\"\n", input);
+                  DPRINTF("JSV << \"%s\"\n", input.c_str());
 
-                  jsv_split_commandline(input, &command, &sub_command, &args);
+                  jsv_split_commandline(input.c_str(), &command, &sub_command, &args);
                   const char *command_str = sge_dstring_get_string(&command);
 
                   while(commands[++i].command != nullptr) {
@@ -2041,14 +2078,15 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
              * script before next check, do not communicate with script anymore during shutdown.
              * The last message in the stderr stream will be sent as answer to the calling function.
              */
-            while (fscanf(err_stream, "%[^\n]\n", input) == 1) {
-               ERROR(MSG_JSV_LOGMSG_S, input);
+            while (ocs_jsv_read_line(err_stream, input)) {
+               ERROR(MSG_JSV_LOGMSG_S, input.c_str());
                // SGE_EVENT holds a line from the JSV script, never a format
                answer_list_add(answer_list, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
                ret = false;
             }
             if (!ret && !lGetBool(jsv, JSV_done)) {
-               answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, "JSV stderr is - %s", input);
+               answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, "JSV stderr is - %s",
+                                       input.c_str());
                lSetBool(jsv, JSV_restart, true);
                lSetBool(jsv, JSV_soft_shutdown, false);
                lSetBool(jsv, JSV_done, true);
