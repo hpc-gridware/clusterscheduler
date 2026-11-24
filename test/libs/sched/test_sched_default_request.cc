@@ -50,6 +50,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_job.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -315,10 +316,29 @@ test_fill_default() {
    check("T56", "a missing default is not parsed and gives 0", !parsed && value == 0.0);
    parsed = fill_default(ocs::CEntry::Type::STR, "NONE", value);
    check("T57", "the default of a string complex is not parsed and gives 0", !parsed && value == 0.0);
+}
 
-   auto created = centry_create(nullptr, "created");
-   check("T58", "centry_create() fills the parsed default of its default 0",
-         created->get<CE_default_doubleval>() == 0.0);
+/**
+ * @brief The configuration of a complex value carries the parsed default of its definition (CS-459)
+ *
+ * A consumable configured on a host or queue gets its definition copied in by
+ * centry_list_fill_config(). The parsed default has to come along, or a debit against that
+ * configuration sees no default request. The definition's default is 2, so a copy that is left out
+ * reads 0. centry_create() is not checked here: its default is always 0, which is also the initial
+ * value of CE_default_doubleval, so a fill that is left out could not be seen.
+ */
+static void
+test_fill_config_copies_default() {
+   auto centry_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   add_consumable(*centry_list, "dr_a", "2");
+
+   auto config_list = ocs::tom::ListPtr<ocs::tom::CE>::create("");
+   auto config = config_list->emplace_back<CE_name>("dr_a");
+   config.set<CE_doubleval>(10.0);
+   centry_list_fill_config(*config_list, *centry_list);
+
+   check("T58", "centry_list_fill_config() copies the parsed default 2 of the definition",
+         config_list->front().get<CE_default_doubleval>() == 2.0);
 }
 
 /**
@@ -358,6 +378,36 @@ validate_requestable_consumable(const char *defaultval, ocs::tom::ListPtr<ocs::t
 }
 
 /**
+ * @brief Whether an answer list holds the error about a default value that does not parse
+ *
+ * The second argument of MSG_INVALID_CENTRY_PARSE_DEFAULT_SS is the parser's own text, so only
+ * the part of the message up to it is compared.
+ *
+ * @param answer_list the answer list to search
+ * @param name the name of the complex
+ * @return true if an error of the answer list starts with the message for @p name
+ */
+static bool
+has_parse_default_error(const ocs::tom::ListPtr<ocs::tom::AN> &answer_list, const char *name) {
+   static constexpr char marker[] = "@@parser@@";
+   char expected[512];
+   snprintf(expected, sizeof(expected), MSG_INVALID_CENTRY_PARSE_DEFAULT_SS, name, marker);
+   char *cut = strstr(expected, marker);
+   if (cut == nullptr || !answer_list) {
+      return false;
+   }
+   *cut = '\0';
+   for (const auto answer : *answer_list) {
+      const char *text = answer.get<AN_text>();
+      if (answer.get<AN_quality>() == ANSWER_QUALITY_ERROR && text != nullptr &&
+          strncmp(text, expected, strlen(expected)) == 0) {
+         return true;
+      }
+   }
+   return false;
+}
+
+/**
  * @brief The default of a requestable consumable has to parse (CS-459)
  */
 static void
@@ -372,6 +422,7 @@ test_validate_requestable_consumable_default() {
    answer_list.reset();
    check("T72", "a requestable consumable with default abc is refused",
          !validate_requestable_consumable("abc", answer_list) && answer_list_has_error(&answer_list));
+   check("T73", "the refusal is the message about the default value", has_parse_default_error(answer_list, "dr_v"));
    answer_list.reset();
 }
 
@@ -387,6 +438,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_default_request_leaves_centry_untouched();
    test_implicit_slots_request_in_assignment();
    test_fill_default();
+   test_fill_config_copies_default();
    test_debit_takes_parsed_default();
    test_validate_requestable_consumable_default();
 
