@@ -28,7 +28,7 @@
  * names and the static descriptors of the types from the installed object
  * model (tom/ocs_Model.h), so such a test installs a model of its types at
  * start: install_test_model() builds the field tables from the descriptors and
- * the name tables and installs them. The model replaces the CULL name space
+ * the name tables and installs them. The model replaces the field name space
  * that these tests bound with lInit() before.
  */
 

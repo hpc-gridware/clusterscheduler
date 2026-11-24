@@ -23,7 +23,7 @@
  *
  * The field names, the lookup of a field by name, the sub-types and the type
  * names come from the generated tables, installed with
- * ocs::tom::install_model(). They replace the CULL name space, which is
+ * ocs::tom::install_model(). They replace the field name space, which is
  * removed, so this test compares them with the field tables for every field
  * of every type, and with the generated table all_sub_types for the sub-types. It also checks the answers for unknown fields and
  * descriptors, the fallback text and its buffers, the behaviour without an
@@ -279,7 +279,7 @@ test_inconsistent() {
 /**
  * @brief The model installed by the main thread answers in a thread that did not install it
  *
- * The model is process-wide, unlike the CULL name space it replaces, which
+ * The model is process-wide, unlike the field name space it replaces, which
  * was bound per thread, so another thread finds the static descriptors too.
  *
  * @return nothing; CHECK records the results
@@ -459,7 +459,7 @@ test_rules() {
 /**
  * @brief The list library finds the type of a field and the static descriptor of a type through the model
  *
- * This is the part of the removed CULL name space that the list library
+ * This is the part of the removed field name space that the list library
  * itself needs: a full descriptor is held as the static block of its type,
  * and the unpacking of a type reference finds the block by the type's first
  * field.

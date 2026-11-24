@@ -150,7 +150,7 @@ int main(int, char *[]) {
    CHECK(9, "\"3.14e5\" -> string \"3.14e5\"",
          check_element("x", "\"3.14e5\"", true, "3.14e5", 0.0));
 
-   // Empty pair returns nullptr — see sge_usage.cc comment. CULL's wire
+   // Empty pair returns nullptr — see sge_usage.cc comment. the pack format's wire
    // format cannot distinguish empty string from nullptr, so empty custom
    // usage values are dropped at parse time to keep semantics consistent.
    {

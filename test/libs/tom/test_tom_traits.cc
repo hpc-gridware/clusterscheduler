@@ -84,7 +84,7 @@ static_assert(std::is_convertible_v<Host, const char *>);
  * @brief The object types of the model hold disjoint ranges of field numbers, in ascending order
  *
  * The generator allocates the ranges in the order of `all_type_tables`, one
- * after the other, as the CULL name space listed them; the model that the
+ * after the other, as the field name space listed them; the model that the
  * list library reads is these tables.
  *
  * @return nothing; CHECK records the results

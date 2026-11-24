@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
    }
 
    // Resolve the bootstrap configuration while log output still reaches stderr.
-   // Several of the checks below build CULL objects with hashed host fields, and
+   // Several of the checks below build objects with hashed host fields, and
    // hashing a host key goes through sge_hostcpy(), which needs the ignore_fqdn
    // bootstrap setting. That lookup aborts the process when SGE_ROOT is unset,
    // and once we are daemonized sge_log() no longer writes to stderr - the test
@@ -2868,7 +2868,7 @@ static int PE_minimal_test() {
    const char *file1 = nullptr;
    const char *file2 = nullptr;
 
-   // only name set — all other fields remain at CULL defaults
+   // only name set — all other fields remain at their defaults
    ep->set<PE_name>("minimal_pe");
 
    file1 = spool_flatfile_write_object(&alp, *ep, false,

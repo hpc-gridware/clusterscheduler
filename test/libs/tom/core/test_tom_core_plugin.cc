@@ -21,12 +21,12 @@
 /** @file
  * @brief Module test: one descriptor registry across the plugin boundary (CS-2997, SHD-05 at unit level)
  *
- * The spooling plugins link CULL statically and are loaded with dlopen(RTLD_LOCAL).
+ * The spooling plugins link the list library statically and are loaded with dlopen(RTLD_LOCAL).
  * Their code must use the registry of the loading process, else descriptors are
  * built twice and released into the wrong registry (N-A-22). The loader of the
  * spooling methods checks that with ocs::tom::descr_registry_shared() and refuses
  * a plugin that fails. This test loads two modules built like a plugin, one bound
- * to the CULL of this executable and one bound to its own copy, and runs the same
+ * to the list library of this executable and one bound to its own copy, and runs the same
  * check on both.
  */
 
@@ -113,7 +113,7 @@ static void test_shared() {
    CHECK(3, "the module and the executable intern one descriptor into one registry", r.same_descr && r.growth == 1);
 }
 
-/** @brief PLUGIN-02: a module bound to its own CULL is caught */
+/** @brief PLUGIN-02: a module bound to its own list library is caught */
 static void test_split() {
    const module_result r = probe_module("test_tom_core_plugin_split.so");
    CHECK(4, "the module is loaded", r.loaded);
@@ -125,13 +125,13 @@ static void test_split() {
 int main(int argc, char *argv[]) {
    return ocs::module_test::run(argc, argv, {
       {"PLUGIN-01", "one registry with a plugin",
-       "a library that links CULL statically and is loaded with RTLD_LOCAL uses the registry of the process",
+       "a statically linked library loaded with RTLD_LOCAL uses the registry of the process",
        {"load a module built like a spooling plugin", "run the loader check on it",
         "intern one descriptor through the module and through the executable"},
        "the check passes and both get the same descriptor from one registry",
        {{"SHD-05", "unit level"}}, {1, 2, 3}, test_shared},
       {"PLUGIN-02", "a plugin with its own registry",
-       "the loader check detects a library whose code is bound to its own copy of CULL",
+       "the loader check detects a library whose code is bound to its own copy of the list library",
        {"load a module linked with -Bsymbolic", "run the loader check on it",
         "intern one descriptor through the module and through the executable"},
        "the check fails and names the module, and the module builds its own descriptor",

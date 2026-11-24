@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test: the CULL descriptor registry on its own (CS-2997, SHD-02, SHD-03, SHD-06 at unit level)
+ * @brief Module test: the descriptor registry on its own (CS-2997, SHD-02, SHD-03, SHD-06 at unit level)
  *
  * The registry hands out one shared, reference counted descriptor per distinct
  * sequence of entries, frees it with its last reference and falls back to
@@ -44,7 +44,7 @@
 #include <utility>
 #include <vector>
 
-/** @brief Make this translation unit the one that defines the CULL field names */
+/** @brief Make this translation unit the one that defines the field names */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "tom/ocs_Types.h"

@@ -39,7 +39,7 @@
 #include <utility>
 #include <vector>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it. In a test that file is the test
@@ -66,7 +66,7 @@
 #include "ocs_module_test.h"
 #include "ocs_test_model.h"
 
-/** @brief The selected-from type: one field per CULL type the path handles */
+/** @brief The selected-from type: one field per object type the path handles */
 enum {
    SP_name = 1, ///< unique hashed key
    SP_group,    ///< non unique hashed ulong

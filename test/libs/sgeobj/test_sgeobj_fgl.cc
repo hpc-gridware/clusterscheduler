@@ -313,7 +313,7 @@ int main(int argc, char *argv[]) {
    }
    request = 0;
 
-   // create some CULL objects that simulation functions can access
+   // create some objects that simulation functions can access
    // the lists get the names the free emplace_back() gave a list it created
    const auto job_list = ocs::DataStore::master_list_create<SGE_TYPE_JOB>("ulong_sublist");
    for (int j = 0; j < JOBS; j++) {

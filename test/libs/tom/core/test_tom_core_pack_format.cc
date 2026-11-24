@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test: the CULL pack format matches its recorded reference (CS-2995 HTL-03, CS-2997)
+ * @brief Module test: the pack format matches its recorded reference (CS-2995 HTL-03, CS-2997)
  *
  * The test packs a fixed set of elements and lists, in every element state and
  * with a reduced field selection, and compares the buffers byte by byte with
@@ -46,7 +46,7 @@
 #include <utility>
 #include <vector>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it.

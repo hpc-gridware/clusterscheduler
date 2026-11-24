@@ -24,7 +24,7 @@
  *
  * The converters take their fields as an `int` table or walk the descriptor of
  * an element of any type. The expected results are those of the former
- * implementation on the raw CULL interface: the same lists, return codes and
+ * implementation on the raw list interface: the same lists, return codes and
  * output bytes.
  */
 

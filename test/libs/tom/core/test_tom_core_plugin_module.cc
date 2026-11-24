@@ -19,9 +19,9 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Loadable module for test_tom_core_plugin: a library that links CULL statically, like a spooling plugin
+ * @brief Loadable module for test_tom_core_plugin: links the list library statically, like a spooling plugin
  *
- * Built twice: once as the spooling plugins are, so that its calls into CULL bind
+ * Built twice: once as the spooling plugins are, so that its calls into the list library bind
  * to the copy of the loading executable, and once with -Bsymbolic, so that they
  * bind to its own copy and it ends up with a registry of its own.
  */
@@ -30,7 +30,7 @@
 #include "tom/ocs_Descr.h"
 
 /**
- * @brief Intern a descriptor through the CULL this module is bound to
+ * @brief Intern a descriptor through the list library this module is bound to
  * @param dp the descriptor
  * @return the registered descriptor, holding a reference
  */
@@ -39,7 +39,7 @@ extern "C" const lDescr *test_tom_core_plugin_intern(const lDescr *dp) {
 }
 
 /**
- * @brief Release a descriptor through the CULL this module is bound to
+ * @brief Release a descriptor through the list library this module is bound to
  * @param dpp the holder of the descriptor, set to nullptr; nullptr is ignored
  */
 extern "C" void test_tom_core_plugin_release(const lDescr **dpp) {

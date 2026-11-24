@@ -42,7 +42,7 @@
  * header, which carries the version and the build id, is replaced by a fixed text; host
  * names are fixed strings and never resolved (a throwaway bootstrap with ignore_fqdn is
  * installed, as test_sgeobj_hgroup does, because hashing a host field needs it). The
- * classic job and advance reservation files are packed CULL, written below `classic/`.
+ * classic job and advance reservation files are packed lists, written below `classic/`.
  */
 
 #include <cerrno>
@@ -2031,7 +2031,7 @@ bool write_classic(const tom::Element<tom::JB> job, const tom::ConstElement<tom:
 /**
  * @brief Spool a job with array and parallel tasks, its script and an advance reservation, and read them back
  *
- * The files are packed CULL, not flatfile text; they are pinned here because the classic backend
+ * The files are packed lists, not flatfile text; they are pinned here because the classic backend
  * spools these types this way. The job is spooled as a directory (one file per task) because
  * SGE_MAX_TASKS_PER_FILE is 1 and the job is tightly parallel, which the master PE list installed
  * here makes it.

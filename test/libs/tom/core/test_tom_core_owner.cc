@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test of the owner tag of a CULL element (CS-2995, HTL-01)
+ * @brief Module test of the owner tag of an element (CS-2995, HTL-01)
  *
  * The tag replaces the former element status: its two low bits hold the state, the
  * upper bits the list of a bound element. The test checks the layout, every state
@@ -32,7 +32,7 @@
 #include <cstdint>
 #include <cstring>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it.

@@ -425,7 +425,7 @@ test_update_cache() {
    /*
     * The empty result -- this is what HGRP_cache_version is FOR.
     *
-    * cull represents an empty list as nullptr, so "resolved to no hosts" and
+    * the list library represents an empty list as nullptr, so "resolved to no hosts" and
     * "never computed" are the same value in HGRP_cached_hosts. Only the version
     * tells them apart, and a consumer that checked the list alone would fall
     * back to the walk forever on a group that legitimately resolves to nothing.
@@ -1295,7 +1295,7 @@ test_match_cache() {
 
    // T112-T116: the matching cache is process-local derived state and must not
    // leave the object. The property that says so, MT_NO_TRANSFER, is covered
-   // generically by the cull tests on a synthetic type; what is checked here is
+   // generically by the list library tests on a synthetic type; what is checked here is
    // its first real user, because this is the field where a regression would
    // actually confer - qconf asks for all fields.
    {

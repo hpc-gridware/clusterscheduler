@@ -34,7 +34,7 @@
 #include <cstring>
 #include <initializer_list>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it. In a test that file is the test
@@ -52,12 +52,12 @@
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
-// Local CULL type used by all tests
+// Local object type used by all tests
 // ---------------------------------------------------------------------------
 
-/** @brief A synthetic CULL object type, defined only for these tests
+/** @brief A synthetic object type, defined only for these tests
  *
- * One attribute per sortable CULL data type, plus a unique hashed string key
+ * One attribute per sortable field type, plus a unique hashed string key
  * and a non-unique hashed ulong so the tests can see whether sorting keeps the
  * hash tables consistent with the list.
  */

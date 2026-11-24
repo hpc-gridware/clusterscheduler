@@ -44,7 +44,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it. In a test that file is the test
@@ -61,10 +61,10 @@
 #include "ocs_test_model.h"
 
 // ---------------------------------------------------------------------------
-// Local CULL type used by all tests
+// Local object type used by all tests
 // ---------------------------------------------------------------------------
 
-/** @brief A synthetic CULL object type, defined only for these tests
+/** @brief A synthetic object type, defined only for these tests
  *
  * Every key type carries a non-unique hash, so a list created with hash tables
  * answers lookups through the hash chains and one created without them through

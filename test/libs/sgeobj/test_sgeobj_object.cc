@@ -183,7 +183,7 @@ static void test_object_get_name() {
 }
 
 // ---------------------------------------------------------------------------
-// object_get_name_prefix — CULL attribute name prefix  [T15–T18]
+// object_get_name_prefix — field name prefix  [T15–T18]
 //
 // Derives the prefix string from the first attribute in the descriptor
 // (e.g. QU_qname → "QU_", JB_job_number → "JB_").
@@ -256,7 +256,7 @@ static void test_object_name_get_type() {
 // ---------------------------------------------------------------------------
 // object_type_get_descr / object_type_get_key_nm  [T26–T31]
 //
-// object_type_get_descr() returns the CULL descriptor for a registered type,
+// object_type_get_descr() returns the descriptor for a registered type,
 // or nullptr for synthetic message types (SHUTDOWN, etc.) that carry no
 // objects.
 // object_type_get_key_nm() returns the primary-key attribute nm, or NoName

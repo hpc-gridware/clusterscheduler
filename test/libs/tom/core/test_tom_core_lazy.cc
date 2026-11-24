@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test: CULL hash tables are built by the first lookup (CS-2996, LZY-01 to LZY-06)
+ * @brief Module test: the hash tables of the lists are built by the first lookup (CS-2996, LZY-01 to LZY-06)
  *
  * A list that may be hashed starts with empty hash slots. The first lookup on a
  * field of a list with at least #OCS_CULL_HASH_MIN_ELEMS elements (the default
@@ -43,7 +43,7 @@
 #include <thread>
 #include <vector>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it.

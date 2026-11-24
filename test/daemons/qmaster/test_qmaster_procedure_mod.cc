@@ -100,7 +100,7 @@ static int s_fail = 0;
 static std::string
 calendar_text(const char *name, const char *week) {
    /* The names are the ones CAL_fields declares - "calendar_name", "year" and
-    * "week" - not the CULL field names. Taking them from the struct instead of
+    * "week" - not the field names. Taking them from the struct instead of
     * the attribute names is how a first version of this test failed with
     * "unknown attribute name". */
    return std::string("calendar_name ") + name + "\n"

@@ -56,7 +56,7 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it. In a test that file is the test

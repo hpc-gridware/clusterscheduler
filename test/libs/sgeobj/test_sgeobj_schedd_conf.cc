@@ -80,8 +80,8 @@ typedef struct {
 
 /** @brief Which scheduler configuration attribute a block of settings applies to */
 typedef struct {
-   u_long      test_attribute;   ///< CULL attribute to set (e.g. SC_halflife_decay_list)
-   u_long      type;             ///< CULL attribute type (MT_STRING, MT_DOUBLE, MT_UINT32)
+   u_long      test_attribute;   ///< field to set (e.g. SC_halflife_decay_list)
+   u_long      type;             ///< field type (MT_STRING, MT_DOUBLE, MT_UINT32)
 } schedd_conf_t;
 
 /**

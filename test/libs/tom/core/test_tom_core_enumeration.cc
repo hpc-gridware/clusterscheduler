@@ -48,7 +48,7 @@
 #include <initializer_list>
 #include <span>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors
+/** @brief Make this translation unit the one that defines the descriptors
  *
  * The generated headers define the descriptors only where this is set, so
  * exactly one file per program must set it. In a test that file is the test
@@ -70,9 +70,9 @@
 #include "tom/ocs_SelectCore.h"
 #include "ocs_test_model.h"
 
-/** @brief A synthetic CULL object type, defined only for these tests
+/** @brief A synthetic object type, defined only for these tests
  *
- * One attribute per CULL data type, so the tests can exercise every type
+ * One attribute per field type, so the tests can exercise every type
  * without depending on a real object whose layout may change.
  */
 enum {
@@ -286,7 +286,7 @@ static bool test_what_enumeration(const lEnumeration *what, const int *result,
  * @return true if the entries are the expected ones
  */
 static bool test_what_simple() {
-   // MT_INT32=5, MT_HOST=10, MT_OBJECT=8 in current CULL enum
+   // MT_INT32=5, MT_HOST=10, MT_OBJECT=8 in the current field type enum
    const ocs::tom::RawWhatPtr what(make(TEST_Type, {{TEST_int, nullptr}, {TEST_host, nullptr},
                                                     {TEST_object, nullptr}}));
    const int result[] = {1,       5,  0, 0,   // TEST_int:    nm=1, mt=MT_INT32=5,    pos=0

@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test of the CULL statistics counters (CS-2993)
+ * @brief Module test of the statistics counters of the list library (CS-2993)
  *
  * Built only with `ENABLE_CULL_STATS`. Each scenario runs a list operation
  * whose cost is known and compares the counters before and after it. The test
@@ -40,7 +40,7 @@
 
 #include <rapidjson/document.h>
 
-/** @brief Make this translation unit the one that defines the CULL descriptors */
+/** @brief Make this translation unit the one that defines the descriptors */
 #define __SGE_GDI_LIBRARY_HOME_OBJECT_FILE__
 
 #include "tom/detail/ocs_Hash.h"
