@@ -844,7 +844,7 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
 
          // has contribution from global requests? Then we can do the booking for master and slave task in one step.
          double dval = 0.0;
-         bool tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL);
+         bool tmp_ret = job_get_contribution_by_scope(jep, name, &dval, dcep, JRS_SCOPE_GLOBAL);
          if (tmp_ret) {
             // the resource was requested
             DPRINTF("===> rc_debit_consumable(): %s: we have GLOBAL %s request: %f for %d slots\n", obj_name, name,
@@ -866,7 +866,7 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
             double master_dval = 0.0;
             if (is_master_task) {
                // if the master task is part of this booking, check if we have a master request
-               tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &master_dval, dcep, JRS_SCOPE_MASTER);
+               tmp_ret = job_get_contribution_by_scope(jep, name, &master_dval, dcep, JRS_SCOPE_MASTER);
                if (tmp_ret) {
                   // we have a master request
                   DPRINTF("===> rc_debit_consumable(): %s: we have MASTER %s request: %f for %d slots\n", obj_name,
@@ -899,7 +899,7 @@ int rc_debit_consumable(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
                   }
                } else {
                   // we consider the slave requests
-                  tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &slave_dval, dcep, JRS_SCOPE_SLAVE);
+                  tmp_ret = job_get_contribution_by_scope(jep, name, &slave_dval, dcep, JRS_SCOPE_SLAVE);
                }
                if (tmp_ret && slave_dval != 0.0) {
                   // we have a slave request

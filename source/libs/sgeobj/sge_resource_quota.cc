@@ -881,7 +881,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
 
          // has contribution from global requests? Then we can do the booking for master and slave task in one step.
          double dval = 0.0;
-         bool tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, centry, JRS_SCOPE_GLOBAL);
+         bool tmp_ret = job_get_contribution_by_scope(job, centry_name, &dval, centry, JRS_SCOPE_GLOBAL);
          if (tmp_ret) {
             DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                     obj_name, sge_dstring_get_string(rue_name), debit_slots);
@@ -899,7 +899,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
             if (is_master_task) {
                // if the master task is part of this booking, check if we have a master request
                dval = 0.0;
-               tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, centry, JRS_SCOPE_MASTER);
+               tmp_ret = job_get_contribution_by_scope(job, centry_name, &dval, centry, JRS_SCOPE_MASTER);
                if (tmp_ret) {
                   DPRINTF("debiting %f of %s on rqs %s for %s %d slots\n", dval, centry_name,
                           obj_name, sge_dstring_get_string(rue_name), slot_signum(debit_slots));
@@ -925,7 +925,7 @@ int rqs_debit_rule_usage(const ocs::tom::ConstElement<ocs::tom::JB> job, const o
                      dval = 1.0;
                   }
                } else {
-                  tmp_ret = job_get_contribution_by_scope(job, nullptr, centry_name, &dval, centry,
+                  tmp_ret = job_get_contribution_by_scope(job, centry_name, &dval, centry,
                                                           JRS_SCOPE_SLAVE);
                }
                if (tmp_ret && dval != 0.0) {

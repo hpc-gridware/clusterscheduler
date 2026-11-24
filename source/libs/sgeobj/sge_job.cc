@@ -2077,7 +2077,6 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
  * returned for a default request of 0.
  *
  * @param job the job to read (JB)
- * @param[out] answer_list unused since CS-459, kept for the callers
  * @param name the consumable to ask about
  * @param[out] value receives the amount
  * @param complex_definition the resource's complex entry (CE), for its default
@@ -2087,14 +2086,11 @@ job_get_hard_request(const ocs::tom::ConstElement<ocs::tom::JB> job, const char 
  * @note A default request of 0 is reported as failure, so the caller books
  *       nothing rather than booking zero.
  * @note The default request is not parsed here: it is taken from CE_default_doubleval, which
- *       qmaster fills once per complex definition (ocs_centry_fill_default(), CS-459), so
- *       there is no parsing error to report in @p answer_list any more.
+ *       qmaster fills once per complex definition (ocs_centry_fill_default(), CS-459).
  */
 bool
-job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job,
-                              [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
-                              double *value, const ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
-                              const uint32_t scope) {
+job_get_contribution_by_scope(const ocs::tom::ConstElement<ocs::tom::JB> job, const char *name, double *value,
+                              const ocs::tom::ConstElement<ocs::tom::CE> complex_definition, const uint32_t scope) {
    DENTER(TOP_LAYER);
 
    bool ret = true;

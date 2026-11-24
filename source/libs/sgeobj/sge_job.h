@@ -473,10 +473,8 @@ int job_resolve_host_for_path_list(ocs::tom::List<ocs::tom::PN> path_list,
 
 ocs::tom::ConstElement<ocs::tom::CE> job_get_request(ocs::tom::ConstElement<ocs::tom::JB> job, const char *centry_name);
 
-bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job,
-                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *name,
-                                   double *value, ocs::tom::ConstElement<ocs::tom::CE> complex_definition,
-                                   uint32_t scope);
+bool job_get_contribution_by_scope(ocs::tom::ConstElement<ocs::tom::JB> job, const char *name, double *value,
+                                   ocs::tom::ConstElement<ocs::tom::CE> complex_definition, uint32_t scope);
 
 void adjust_slave_task_debit_slots(ocs::tom::ConstElement<ocs::tom::PE> pe, int &slave_debit_slots);
 

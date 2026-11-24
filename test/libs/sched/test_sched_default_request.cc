@@ -352,12 +352,12 @@ test_debit_takes_parsed_default() {
    auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
 
    double value = -1.0;
-   bool ret = job_get_contribution_by_scope(*job, nullptr, "dr_a", &value, centry_list->find_first<CE_name>("dr_a"),
+   bool ret = job_get_contribution_by_scope(*job, "dr_a", &value, centry_list->find_first<CE_name>("dr_a"),
                                             JRS_SCOPE_GLOBAL);
    check("T60", "the debit takes the parsed default 2", ret && value == 2.0);
 
    value = -1.0;
-   ret = job_get_contribution_by_scope(*job, nullptr, "dr_zero", &value, centry_list->find_first<CE_name>("dr_zero"),
+   ret = job_get_contribution_by_scope(*job, "dr_zero", &value, centry_list->find_first<CE_name>("dr_zero"),
                                        JRS_SCOPE_GLOBAL);
    check("T61", "a default of 0 is no contribution", !ret && value == 0.0);
 }

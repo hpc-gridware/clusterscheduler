@@ -1716,7 +1716,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
 
       // has contribution from global requests? Then we can do the booking for master and slave task in one step.
       double dval = 0.0;
-      if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_GLOBAL)) {
+      if (job_get_contribution_by_scope(jep, name, &dval, dcep, JRS_SCOPE_GLOBAL)) {
          if (dval != 0.0) {
             /* update RUE_utilized resource diagram to reflect jobs utilization */
             ocs::tom::ConstList<ocs::tom::ST> binding_to_use;
@@ -1737,7 +1737,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
          if (is_master_task) {
             // if the master task is part of this booking, check if we have a master request
             dval = 0.0;
-            if (job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_MASTER)) {
+            if (job_get_contribution_by_scope(jep, name, &dval, dcep, JRS_SCOPE_MASTER)) {
                if (dval != 0.0) {
                   /* update RUE_utilized resource diagram to reflect jobs utilization */
                   // book it for one slot (the master task)
@@ -1763,7 +1763,7 @@ rc_add_job_utilization_impl(const ocs::tom::ConstElement<ocs::tom::JG> gdil,
                   dval = 1.0;
                }
             } else {
-               tmp_ret = job_get_contribution_by_scope(jep, nullptr, name, &dval, dcep, JRS_SCOPE_SLAVE);
+               tmp_ret = job_get_contribution_by_scope(jep, name, &dval, dcep, JRS_SCOPE_SLAVE);
             }
 
             if (tmp_ret && dval != 0.0) {
@@ -1929,7 +1929,7 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
 
          // has contribution from global requests? Then we can do the booking for master and slave task in one step.
          double dval = 0.0;
-         if (job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_GLOBAL)) {
+         if (job_get_contribution_by_scope(jep, centry_name, &dval, raw_centry, JRS_SCOPE_GLOBAL)) {
             if (dval != 0.0) {
                /* update RUE_utilized resource diagram to reflect jobs utilization */
                utilization_add(rue_elem, start_time, duration, debit_slots * dval, job_id, task_id,
@@ -1947,7 +1947,7 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
             if (is_master_task) {
                // if the master task is part of this booking, check if we have a master request
                dval = 0.0;
-               if (job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_MASTER)) {
+               if (job_get_contribution_by_scope(jep, centry_name, &dval, raw_centry, JRS_SCOPE_MASTER)) {
                   if (dval != 0.0) {
                      /* update RUE_utilized resource diagram to reflect jobs utilization */
                      // book it for one slot (the master task)
@@ -1975,7 +1975,7 @@ rqs_add_job_utilization(const ocs::tom::ConstElement<ocs::tom::JB> jep, const oc
                      dval = 1.0;
                   }
                } else {
-                  tmp_ret = job_get_contribution_by_scope(jep, nullptr, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE);
+                  tmp_ret = job_get_contribution_by_scope(jep, centry_name, &dval, raw_centry, JRS_SCOPE_SLAVE);
                   if (tmp_ret && dval != 0.0) {
                      /* update RUE_utilized resource diagram to reflect jobs utilization */
                      // book it for the remaining slave tasks
