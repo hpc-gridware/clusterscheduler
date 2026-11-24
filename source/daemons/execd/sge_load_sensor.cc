@@ -52,6 +52,7 @@
 #include "sgeobj/sge_report.h"
 
 #include "execd.h"
+#include "ocs_load_sensor_line.h"
 #include "sge_load_sensor.h"
 #include "sge_report_execd.h"
 #include "msg_execd.h"
@@ -421,40 +422,24 @@ static void sge_ls_stop_ls(lListElem *this_ls, int send_no_quit_command)
    DRETURN_VOID;
 }
 
-/****** execd/loadsensor/read_ls() ********************************************
-*  NAME
-*     read_ls -- read sensor output and add it to load report
-*
-*  SYNOPSIS
-*     static int read_ls()
-*
-*  FUNCTION
-*     This function loops over all loadsensor elements in 
-*     the ls_list (LS_Type). It tries to read from the
-*     output stream (LS_out). The output will be parsed
-*     and stored in the LS_incomplete entry (LR_Type). 
-*     
-*     If the protocol part of the loadsensor is correct
-*     then the entries of LS_incomplete will be moved
-*     LS_complete. 
-* 
-*     The last complete set of load values (LS_complete)
-*     will be added to the load report.
-*     
-*  INPUTS
-*     this_ls - pointer to a CULL element of type LS_Type
-*
-*  RESULT
-*     [this_ls] LS_incomplete and LS_complete will be modified.
-******************************************************************************/
+/**
+ * @brief Read the output of all load sensors
+ *
+ * Reads what every running load sensor wrote since the last call. A load report is framed by "begin" (or
+ * "start") and "end"; the lines in between have the form host:name:value. On "end" the collected report
+ * replaces the complete one of the sensor and the sensor is asked for the next report. Lines and fields of
+ * any length are accepted (CS-3209).
+ *
+ * @return 0
+ */
 static int read_ls()
 {
-   char input[10000];
-   char host[1000];
-   char name[1000];
-   char value[1000];
+   // lines and fields of any length (CS-3209)
+   std::string input;
+   std::string host;
+   std::string name;
+   std::string value;
    lListElem *ls_elem;
-   bool flag = true;
 
    DENTER(TOP_LAYER);
 
@@ -467,40 +452,42 @@ static int read_ls()
 
       DPRINTF("receiving from %s\n", lGetString(ls_elem, LS_command));
 
-      while (flag) {
-         if (fscanf(file, "%[^\n]\n", input) != 1) {
-            break;
-         }
-         DPRINTF("received: >>%s<<\n", input);
-
-         if (!strcmp(input, "begin") || !strcmp(input, "start")) {
-            /* remove last possibly incomplete load report */
-            lSetList(ls_elem, LS_incomplete, lCreateList("", LR_Type));
-            continue;
+      bool done = false;
+      while (!done) {
+         const ocs_ls_line_type type = ocs_ls_read_line(file, input, host, name, value);
+         if (type != ocs_ls_line_type::NONE) {
+            DPRINTF("received: >>%s<<\n", input.c_str());
          }
 
-         if (!strcmp(input, "end")) {
-            /* replace old load report by new one */
-            lList *tmp_list = nullptr;
-            lXchgList(ls_elem, LS_incomplete, &tmp_list);
-            lXchgList(ls_elem, LS_complete, &tmp_list);
-            lFreeList(&tmp_list);
+         switch (type) {
+            case ocs_ls_line_type::NONE:
+               done = true;
+               break;
+            case ocs_ls_line_type::BEGIN:
+               /* remove last possibly incomplete load report */
+               lSetList(ls_elem, LS_incomplete, lCreateList("", LR_Type));
+               break;
+            case ocs_ls_line_type::END: {
+               /* replace old load report by new one */
+               lList *tmp_list = nullptr;
+               lXchgList(ls_elem, LS_incomplete, &tmp_list);
+               lXchgList(ls_elem, LS_complete, &tmp_list);
+               lFreeList(&tmp_list);
 
-            /* request next load report from ls */
-            ls_send_command(ls_elem, "\n");
-            break;
-         }
-
-         /* add a newline for pattern matching in sscanf */
-         strcat(input, "\n");
-         if (sscanf(input, "%[^:]:%[^:]:%[^\n]", host, name, value) != 3) {
-            DPRINTF("format error in line: \"%100s\"\n", input);
-            ERROR(MSG_LS_FORMAT_ERROR_SS, lGetString(ls_elem, LS_command), input);
-         } else {
-            {
-               lList *tmp_list = lGetListRW(ls_elem, LS_incomplete);
-               sge_add_str2load_report(&tmp_list, name, value, host);
+               /* request next load report from ls */
+               ls_send_command(ls_elem, "\n");
+               done = true;
+               break;
             }
+            case ocs_ls_line_type::VALUE: {
+               lList *tmp_list = lGetListRW(ls_elem, LS_incomplete);
+               sge_add_str2load_report(&tmp_list, name.c_str(), value.c_str(), host.c_str());
+               break;
+            }
+            case ocs_ls_line_type::FORMAT_ERROR:
+               DPRINTF("format error in line: \"%.100s\"\n", input.c_str());
+               ERROR(MSG_LS_FORMAT_ERROR_SS, lGetString(ls_elem, LS_command), input.c_str());
+               break;
          }
       }
    }

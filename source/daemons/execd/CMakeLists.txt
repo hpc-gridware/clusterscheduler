@@ -35,6 +35,7 @@ add_executable(
       get_path.cc
       job_report_execd.cc
       load_avg.cc
+      ocs_load_sensor_line.cc
       ptf.cc
       reaper_execd.cc
       setup_execd.cc
