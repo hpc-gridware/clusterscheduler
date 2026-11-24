@@ -402,7 +402,8 @@ execd_get_wallclock_limit(const char *qualified_hostname, const ocs::tom::ConstL
       if (queue) {
          limit = queue.get<F>();
 
-         if (strcasecmp(limit, INFINITY_STR) == 0) {
+         // CS-3175: a queue copy without the limit is treated as having no limit
+         if (limit == nullptr || strcasecmp(limit, INFINITY_STR) == 0) {
             clock_val = std::numeric_limits<uint64_t>::max();
          } else {
             uint32_t timestamp32;
