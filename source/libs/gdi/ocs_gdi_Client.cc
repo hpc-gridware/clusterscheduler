@@ -141,8 +141,8 @@ ocs_gdi_trigger_ids(const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::I
  *
  * The id list stays untyped: its type depends on the action (EH for
  * #EXECD_KILL and #JOB_KILL, ID for the event clients and the thread start).
- * A list created here for the scheduler or for all event clients replaces the
- * caller's for the actions that follow, as it always did.
+ * The list created here for the scheduler or for all event clients is used for
+ * that one request only; every other action works on the caller's list (CS-3153).
  *
  * @param id_list which instances to act on, e.g. host names; nullptr for all
  * @param action_flag a combination of #MASTER_KILL, #SCHEDD_KILL, #EXECD_KILL, #JOB_KILL and their neighbours
@@ -152,7 +152,6 @@ ocs_gdi_trigger_ids(const ocs::gdi::Target target, ocs::tom::ListPtr<ocs::tom::I
  */
 ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(ocs::tom::ListData *id_list, const uint32_t action_flag) {
    DENTER(GDI_LAYER);
-   ocs::tom::ListPtr<ocs::tom::ID> own_ids;
    auto alp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
 
    if (action_flag & MASTER_KILL) {
@@ -166,27 +165,29 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs::gdi::Client::gdi_kill(ocs::tom::ListData *i
       char buffer[10];
 
       snprintf(buffer, sizeof(buffer), "%d", EV_ID_SCHEDD);
-      own_ids = ocs::tom::ListPtr<ocs::tom::ID>::create("kill scheduler");
-      own_ids->emplace_back<ID_str>(buffer);
-      id_list = own_ids.get();
-      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::EV_LIST, own_ids, id_list);
+      // CS-3153: the scheduler's id is sent in a list of its own, the caller's list stays for the other actions
+      auto sched_ids = ocs::tom::ListPtr<ocs::tom::ID>::create("kill scheduler");
+      sched_ids->emplace_back<ID_str>(buffer);
+      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::EV_LIST, sched_ids, nullptr);
       alp->splice(std::move(tmpalp));
    }
 
    if (action_flag & THREAD_START) {
-      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::DUMMY_LIST, own_ids, id_list);
+      ocs::tom::ListPtr<ocs::tom::ID> no_own_ids;
+      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::DUMMY_LIST, no_own_ids, id_list);
       alp->splice(std::move(tmpalp));
    }
 
    if (action_flag & EVENTCLIENT_KILL) {
+      // without ids of the caller all event clients are killed, with a list of its own (CS-3153)
+      ocs::tom::ListPtr<ocs::tom::ID> all_ids;
       if (id_list == nullptr) {
          char buffer[10];
          snprintf(buffer, sizeof(buffer), "%d", EV_ID_ANY);
-         own_ids = ocs::tom::ListPtr<ocs::tom::ID>::create("kill all event clients");
-         own_ids->emplace_back<ID_str>(buffer);
-         id_list = own_ids.get();
+         all_ids = ocs::tom::ListPtr<ocs::tom::ID>::create("kill all event clients");
+         all_ids->emplace_back<ID_str>(buffer);
       }
-      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::EV_LIST, own_ids, id_list);
+      auto tmpalp = ocs_gdi_trigger_ids(ocs::gdi::Target::EV_LIST, all_ids, id_list);
       alp->splice(std::move(tmpalp));
    }
 
