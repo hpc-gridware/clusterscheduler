@@ -984,7 +984,8 @@ jsv_handle_result_command(lListElem *jsv, lList **answer_list, const dstring *c,
       } else if (strcmp(state, "REJECT") == 0) {
          DPRINTF("Job is rejected\n");
          if (message != nullptr) {
-            answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, message);
+            // the message is text from the JSV script, never a format
+            answer_list_add(answer_list, message, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          } else {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_REJECTED);
          }
@@ -993,7 +994,8 @@ jsv_handle_result_command(lListElem *jsv, lList **answer_list, const dstring *c,
       } else if (strcmp(state, "REJECT_WAIT") == 0) {
          DPRINTF("Job is rejected temporarily\n");
          if (message != nullptr) {
-            answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, message);
+            // the message is text from the JSV script, never a format
+            answer_list_add(answer_list, message, STATUS_DENIED, ANSWER_QUALITY_ERROR);
          } else {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_TMPREJECT);
          }
@@ -1912,7 +1914,8 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
    char input[10000];
    while (fscanf(static_cast<FILE *>(lGetRef(jsv, JSV_err)), "%[^\n]\n", input) == 1) {
       ERROR(MSG_JSV_LOGMSG_S, input);
-      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
+      // SGE_EVENT holds a line from the JSV script, never a format
+      answer_list_add(answer_list, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
       ret = false;
    }
    if (ret) {
@@ -2040,7 +2043,8 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
              */
             while (fscanf(err_stream, "%[^\n]\n", input) == 1) {
                ERROR(MSG_JSV_LOGMSG_S, input);
-               answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, SGE_EVENT);
+               // SGE_EVENT holds a line from the JSV script, never a format
+               answer_list_add(answer_list, SGE_EVENT, STATUS_DENIED, ANSWER_QUALITY_ERROR);
                ret = false;
             }
             if (!ret && !lGetBool(jsv, JSV_done)) {
