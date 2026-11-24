@@ -485,7 +485,7 @@ namespace ocs {
       // Valid input data?
       if (job == nullptr || ja_task == nullptr) {
          /* @todo I18N */
-         WARNING("reporting_is_intermediate_acct_required: invalid input data\n");
+         WARNING("reporting_is_intermediate_acct_required: invalid input data");
 #if defined (ENABLE_DEBUG_CHECKS)
          abort();
 #endif

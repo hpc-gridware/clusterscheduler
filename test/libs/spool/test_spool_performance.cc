@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 
    /* parse commandline parameters */
    if(argc != 4) {
-      ERROR("usage: test_sge_spooling <method> <shared lib> <arguments>\n");
+      ERROR("usage: test_sge_spooling <method> <shared lib> <arguments>");
       sge_exit(1);
    }
 

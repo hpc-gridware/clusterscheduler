@@ -647,15 +647,15 @@ sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffe
       if (commproc[0] != '\0' && rhost[0] != '\0') {
          /* The connection was closed, reopen it */
          i = cl_commlib_open_connection(handle, (char *) rhost, (char *) commproc, usid);
-         INFO("reopen connection to %s,%s," sge_U32CFormat " (2)\n", rhost, commproc, sge_u32c(usid));
+         INFO("reopen connection to %s,%s," sge_U32CFormat " (2)", rhost, commproc, sge_u32c(usid));
          if (i == CL_RETVAL_OK) {
-            INFO("reconnected successfully\n");
+            INFO("reconnected successfully");
             i = cl_commlib_receive_message(handle, rhost, commproc, usid,
                                            (bool) synchron, for_request_mid,
                                            &message, &sender);
          }
       } else {
-         DEBUG("can't reopen a connection to unspecified host or commproc (2)\n");
+         DEBUG("can't reopen a connection to unspecified host or commproc (2)");
       }
    }
 
@@ -1144,14 +1144,14 @@ gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
       if (fromcommproc[0] != '\0' && fromhost[0] != '\0') {
          /* The connection was closed, reopen it */
          ret = cl_commlib_open_connection(handle, fromhost, fromcommproc, *fromid);
-         INFO("reopen connection to %s,%s," sge_U32CFormat " (1)\n", fromhost, fromcommproc, sge_u32c( *fromid));
+         INFO("reopen connection to %s,%s," sge_U32CFormat " (1)", fromhost, fromcommproc, sge_u32c( *fromid));
          if (ret == CL_RETVAL_OK) {
-            INFO("reconnected successfully\n");
+            INFO("reconnected successfully");
             ret = cl_commlib_receive_message(handle, fromhost, fromcommproc, *fromid, (bool) synchron, 0, &message,
                                              &sender);
          }
       } else {
-         DEBUG("can't reopen a connection to unspecified host or commproc (1)\n");
+         DEBUG("can't reopen a connection to unspecified host or commproc (1)");
       }
    }
 

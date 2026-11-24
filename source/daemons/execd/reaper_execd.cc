@@ -1303,7 +1303,7 @@ cleanup_jobs_and_states(bool startup, int number_of_shpeherd, pid_t *shepherd_pi
             char path[SGE_PATH_MAX];
             snprintf(path, sizeof(path), ACTIVE_DIR"/%s", job_directory);
             sge_rmdir(path, nullptr);
-            INFO("removed active jobs directory %s\n", path);
+            INFO("removed active jobs directory %s", path);
          }
       } else {
          // here we have a job and task that is still in the job list
