@@ -28,7 +28,7 @@
  * fields compares like a host name.
  *
  * The host comparison reads the bootstrap file of an installed cluster
- * (sge_hostcmp()), so the test needs SGE_ROOT; module_test_cull provides it.
+ * (sge_hostcmp()), so the test needs SGE_ROOT; module_test_tom provides it.
  */
 
 #include <cstdint>
