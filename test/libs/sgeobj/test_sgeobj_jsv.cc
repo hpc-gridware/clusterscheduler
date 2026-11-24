@@ -31,12 +31,20 @@
  * CS-3208: every line of the script was read with `fscanf("%[^\n]\n")` into a fixed stack buffer of 10000
  * characters, so a longer line overflowed the buffer. The tests send lines of 20000 characters on stdout and
  * stderr and check that they arrive complete, and that empty lines and indentation are still skipped.
+ *
+ * CS-3139: the handlers of the protocol commands called strcmp() on tokens that are missing from an incomplete
+ * line (`SEND`, `LOG`, `ENV ADD`, ...), which crashed qmaster (server JSV) or the client (client JSV). Each
+ * such line is fed in a child process, so a crash is reported as a failure of that line instead of ending
+ * the test.
  */
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
@@ -101,14 +109,15 @@ make_stream(const char *text) {
  * @param accepted set to the JSV_accept state after the conversation
  * @param job the job the PARAM lines modify (JSV_new_job), nullptr for none
  * @param errors set to the number of error answers, if not nullptr
+ * @param context the context of the JSV, JSV_CONTEXT_CLIENT or a qmaster thread name for a server JSV
  * @return the text of the first error answer, "<none>" if there was none
  */
 static std::string
 communicate(const char *out, const char *err, bool *accepted, ocs::tom::ElementData *job = nullptr,
-            int *errors = nullptr) {
+            int *errors = nullptr, const char *context = JSV_CONTEXT_CLIENT) {
    auto jsv = ocs::tom::ElementPtr<ocs::tom::JSV>::create();
    jsv->set<JSV_name>("test");
-   jsv->set<JSV_context>(JSV_CONTEXT_CLIENT);
+   jsv->set<JSV_context>(context);
    jsv->set<JSV_command>("/no/such/jsv");
    jsv->set<JSV_pid>("-1");
 
@@ -268,6 +277,88 @@ test_line_separation() {
 }
 
 /**
+ * @brief Feed one incomplete line in a child process and check the answer (CS-3139)
+ *
+ * The child runs the conversation and exits with 0 if the answer is as expected. A crash of the child,
+ * the defect of the unfixed code, is reported with its signal.
+ *
+ * @param id the test number
+ * @param out the lines the "script" writes to stdout
+ * @param context the context of the JSV, JSV_CONTEXT_CLIENT or a qmaster thread name for a server JSV
+ * @param expect_accepted whether the job has to be accepted
+ * @param expect_text the expected text of the first error answer, "<none>" for none
+ */
+static void
+check_incomplete_line(const int id, const char *out, const char *context, const bool expect_accepted,
+                      const std::string &expect_text) {
+   std::string label = "\"";
+   for (const char *p = out; *p != '\0'; ++p) {
+      label += (*p == '\n') ? std::string("\\n") : std::string(1, *p);
+   }
+   label += std::string("\" (") + context + ")";
+
+   fflush(stdout);
+   const pid_t pid = fork();
+   if (pid == 0) {
+      bool accepted = !expect_accepted;
+      auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      const std::string text = communicate(out, "", &accepted, job.get().raw(), nullptr, context);
+      printf("      %s: answer \"%s\", %s\n", label.c_str(), text.c_str(), accepted ? "accepted" : "rejected");
+      fflush(stdout);
+      _exit(accepted == expect_accepted && text == expect_text ? 0 : 1);
+   }
+
+   int status = 0;
+   if (pid < 0 || waitpid(pid, &status, 0) != pid) {
+      printf("cannot run the child process of the test\n");
+      exit(1);
+   }
+   if (WIFSIGNALED(status)) {
+      printf("      %s: crashed with signal %d\n", label.c_str(), WTERMSIG(status));
+   }
+   CHECK(id, label.c_str(), WIFEXITED(status) && WEXITSTATUS(status) == 0);
+}
+
+/**
+ * @brief Incomplete protocol lines are answered as an error and do not crash (CS-3139)
+ */
+static void
+test_incomplete_lines() {
+   printf("\n--- incomplete protocol lines ---\n");
+   const auto client = JSV_CONTEXT_CLIENT;
+   // in qmaster the context is the name of the thread
+   const auto server = "worker";
+   const std::string send_error = std::string("got \"\" as object for SEND command");
+   const std::string env_error = "\"ENV <null> <null> <null>\" is invalid\n";
+   const std::string env_add_error = "\"ENV ADD <null> <null>\" is invalid\n";
+
+   // SEND without the subcommand is rejected like an unknown subcommand
+   check_incomplete_line(18, "SEND\n", client, false, send_error);
+   check_incomplete_line(19, "SEND\n", server, false, send_error);
+   // LOG without the level is logged like an unknown level, the conversation goes on
+   check_incomplete_line(20, "LOG\nRESULT STATE ACCEPT\n", server, true, "<none>");
+   check_incomplete_line(21, "LOG\nRESULT STATE ACCEPT\n", client, true, "<none>");
+   // ENV without the modification or the variable is invalid
+   check_incomplete_line(22, "ENV\n", client, false, env_error);
+   check_incomplete_line(23, "ENV ADD\n", client, false, env_add_error);
+   check_incomplete_line(24, "ENV MOD\n", server, false, "\"ENV MOD <null> <null>\" is invalid\n");
+   check_incomplete_line(25, "ENV DEL\n", server, false, "\"ENV DEL <null> <null>\" is invalid\n");
+   // a test result without the expected value turns off the check instead of crashing the next line
+   check_incomplete_line(26, "PARAM __JSV_TEST_RESULT\nPARAM A acct\nRESULT STATE ACCEPT\n", client, true,
+                         "<none>");
+   check_incomplete_line(27, "ENV ADD __JSV_TEST_RESULT\nENV ADD X y\nRESULT STATE ACCEPT\n", client, true,
+                         "<none>");
+   // PARAM without the name is ignored like an unknown parameter
+   check_incomplete_line(28, "PARAM\nRESULT STATE ACCEPT\n", client, true, "<none>");
+   // RESULT without the subcommand or the state
+   check_incomplete_line(29, "RESULT\n", client, false, "JSV got unknown command \"\"");
+   check_incomplete_line(30, "RESULT STATE\n", server, false, "JSV sent unknown result \"\"");
+   check_incomplete_line(31, "RESULT STATE BOGUS text\n", client, false, "JSV sent unknown result \"BOGUS\"");
+   // a line of blanks only never reaches the dispatcher, ocs_read_line() skips it
+   check_incomplete_line(32, "   \n \t \nRESULT STATE ACCEPT\n", server, true, "<none>");
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -280,6 +371,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_stderr_line();
    test_long_lines();
    test_line_separation();
+   test_incomplete_lines();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

@@ -286,12 +286,13 @@ ocs_jsv_parse_jid_request_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
  *
  * Each parameter maps to a job attribute; the context parameter ac replaces the
  * job's context and drops its context change request (CS-3058).
+ * A line without a parameter name is ignored like one with an unknown name (CS-3139).
  *
  * @param jsv the JSV (JSV), holding the new job
  * @param answer_list receives errors
  * @param c the command, PARAM
- * @param s the parameter name
- * @param a the parameter value, or an empty string
+ * @param s the parameter name, nullptr if the line has none
+ * @param a the parameter value, nullptr if the line has none
  * @return true if the parameter was applied, false on an error
  */
 static bool
@@ -317,7 +318,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
       if (strcmp(param, "__JSV_TEST_RESULT") == 0) {
          jsv.set<JSV_test>(true);
          jsv.set<JSV_test_pos>(0);
-         jsv.set<JSV_result>(value);
+         // a missing expected result means no check (CS-3139)
+         jsv.set<JSV_result>(value != nullptr ? value : "");
          skip_check = true;
       }
 
@@ -385,7 +387,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                job_set_no_shell(new_job, strcmp(value, "y") == 0 ? true : false);
             } else {
                answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
-                                       param);
+                                       param, value);
                ret = false;
             }
          }
@@ -576,7 +578,7 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                new_job.set<JB_checkpoint_interval>(local_ret);
             } else {
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
-                                       param, value);
+                                       param, value != nullptr ? value : "");
                ret = false;
             }
          }
@@ -1045,7 +1047,8 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
       if (jsv.get<JSV_test>() && !skip_check) {
          const char *result_string = jsv.get<JSV_result>();
 
-         if (uint32_t result_pos = jsv.get<JSV_test_pos>(); strlen(result_string) > result_pos) {
+         if (uint32_t result_pos = jsv.get<JSV_test_pos>();
+             result_string != nullptr && strlen(result_string) > result_pos) {
             char result_char = result_string[result_pos];
 
             if (bool result = (result_char == '1') ? true : false; result != ret) {
@@ -1068,11 +1071,12 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
  * @brief Handle a SEND line of a JSV script, which asks for more information about the job
  *
  * Only SEND ENV is known: the environment of the job is sent with the next STARTED answer.
+ * A line without a subcommand is answered like one with an unknown subcommand (CS-3139).
  *
  * @param jsv the JSV
  * @param answer_list receives an error message
  * @param c the command, SEND
- * @param s the subcommand, ENV
+ * @param s the subcommand, ENV; nullptr if the line has none
  * @param a not used
  * @return true if the subcommand is known, false otherwise
  */
@@ -1082,7 +1086,8 @@ jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Li
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (const char *subcommand = sge_dstring_get_string(s); strcmp(subcommand, "ENV") == 0) {
+   const char *subcommand = sge_dstring_get_string(s);
+   if (subcommand != nullptr && strcmp(subcommand, "ENV") == 0) {
       jsv.set<JSV_send_env>(true);
    } else {
       /*
@@ -1090,7 +1095,7 @@ jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Li
        * is not available in this version. Job will be rejected.
        */
       answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_OBJECT_S,
-                              sge_dstring_get_string(s));
+                              subcommand != nullptr ? subcommand : "");
 
       jsv.set<JSV_send_env>(false);
       ret = false;
@@ -1101,11 +1106,15 @@ jsv_handle_send_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Li
 /**
  * @brief Handle a RESULT line of a JSV script, which accepts, corrects or rejects the job
  *
+ * A line without the subcommand or the state is answered like one with an unknown subcommand
+ * or state (CS-3139).
+ *
  * @param jsv the JSV; JSV_accept and JSV_done are set
  * @param answer_list receives the rejection message or an error message
  * @param c the command, RESULT
- * @param s the subcommand, STATE
- * @param a the state (ACCEPT, CORRECT, REJECT, REJECT_WAIT), optionally followed by a message
+ * @param s the subcommand, STATE; nullptr if the line has none
+ * @param a the state (ACCEPT, CORRECT, REJECT, REJECT_WAIT), optionally followed by a message;
+ *          nullptr if the line has none
  * @return true if the line could be understood, false otherwise
  */
 static bool
@@ -1115,14 +1124,17 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
    bool ret = true;
 
    dstring m = DSTRING_INIT;
-   dstring st = DSTRING_INIT; 
+   dstring st = DSTRING_INIT;
    jsv_split_token(a, &st, &m);
 
    const char *sub_command = sge_dstring_get_string(s);
    const char *state = sge_dstring_get_string(&st);
    const char *message = sge_dstring_get_string(&m);
-   if (sub_command != nullptr && strcmp(sub_command, "STATE") == 0 && state != nullptr) {
-      if (strcmp(state, "ACCEPT") == 0) {
+   if (sub_command != nullptr && strcmp(sub_command, "STATE") == 0) {
+      if (state == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, "");
+         ret = false;
+      } else if (strcmp(state, "ACCEPT") == 0) {
          DPRINTF("Job is accepted\n");
          jsv.set<JSV_accept>(true);
          jsv.set<JSV_done>(true);
@@ -1151,11 +1163,12 @@ jsv_handle_result_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
          jsv.set<JSV_accept>(false);
          jsv.set<JSV_done>(true);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, a);
+         answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, state);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_COMMAND_S, sub_command);
+      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_COMMAND_S,
+                              sub_command != nullptr ? sub_command : "");
       ret = false;
    }
    
@@ -1941,12 +1954,13 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
  * @brief Handle a LOG line of a JSV script
  *
  * A server JSV writes the message to the qmaster messages file, a client JSV prints it.
+ * A line without a level is logged like one with an unknown level, as a warning (CS-3139).
  *
  * @param jsv the JSV
  * @param answer_list not used
  * @param c the command, LOG
- * @param s the level, INFO, WARNING or ERROR
- * @param a the message
+ * @param s the level, INFO, WARNING or ERROR; nullptr if the line has none
+ * @param a the message, nullptr if the line has none
  * @return true
  */
 static bool
@@ -1960,15 +1974,18 @@ jsv_handle_log_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
       args = "";
    }
    if (strcmp(jsv.get<JSV_context>(), JSV_CONTEXT_CLIENT) != 0) {
-      if (const char *sub_command = sge_dstring_get_string(s); strcmp(sub_command, "INFO") == 0) {
+      const char *sub_command = sge_dstring_get_string(s);
+      if (sub_command == nullptr) {
+         sub_command = "";
+      }
+      if (strcmp(sub_command, "INFO") == 0) {
          INFO("%s", args);
       } else if (strcmp(sub_command, "WARNING") == 0) {
          WARNING("%s", args);
       } else if (strcmp(sub_command, "ERROR") == 0) {
          ERROR("%s", args);
       } else {
-         const char *command = sge_dstring_get_string(s);
-         WARNING(MSG_JSV_LOG_SS, command, sub_command);
+         WARNING(MSG_JSV_LOG_SS, sge_dstring_get_string(c), sub_command);
       }
    } else {
       printf("%s\n", args);
@@ -1979,11 +1996,14 @@ jsv_handle_log_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
 /**
  * @brief Handle an ENV line of a JSV script, which adds, modifies or deletes an environment variable of the job
  *
+ * A line without the modification or the variable name is answered as invalid, like one with an
+ * unknown modification (CS-3139).
+ *
  * @param jsv the JSV, holding the new job
  * @param answer_list receives an error message
  * @param c the command, ENV
- * @param s the modification, ADD, MOD or DEL
- * @param a the variable name, followed by the value for ADD and MOD
+ * @param s the modification, ADD, MOD or DEL; nullptr if the line has none
+ * @param a the variable name, followed by the value for ADD and MOD; nullptr if the line has none
  * @return true if the line was applied, false on an error
  */
 static bool
@@ -2003,12 +2023,14 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
    const char *var = sge_dstring_get_string(&variable);
    const char *val = sge_dstring_get_string(&value);
 
-   DPRINTF("got from JSV \"%s %s %s\"", mod, var, (val != nullptr) ? val : "");
+   DPRINTF("got from JSV \"%s %s %s\"", (mod != nullptr) ? mod : "", (var != nullptr) ? var : "",
+           (val != nullptr) ? val : "");
 
-   if (strcmp(var, "__JSV_TEST_RESULT") == 0) {
+   if (var != nullptr && strcmp(var, "__JSV_TEST_RESULT") == 0) {
       jsv.set<JSV_test>(true);
       jsv.set<JSV_test_pos>(0);
-      jsv.set<JSV_result>(val);
+      // a missing expected result means no check (CS-3139)
+      jsv.set<JSV_result>(val != nullptr ? val : "");
       skip_check = true;
    }
 
@@ -2056,7 +2078,7 @@ jsv_handle_env_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::Lis
       const char *result_string = jsv.get<JSV_result>();
 
       if (const uint32_t result_pos = jsv.get<JSV_test_pos>();
-          strlen(result_string) > result_pos) {
+          result_string != nullptr && strlen(result_string) > result_pos) {
          if (const bool result = (result_string[result_pos] == '1') ? true : false;
              result != ret) {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR,
@@ -2195,6 +2217,13 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
 
                   jsv_split_commandline(input.c_str(), &command, &sub_command, &args);
                   const char *command_str = sge_dstring_get_string(&command);
+                  /*
+                   * ocs_read_line() returns no line of blanks only, so there always is a command.
+                   * Should there be none, it is answered like an unknown command (CS-3139).
+                   */
+                  if (command_str == nullptr) {
+                     command_str = "";
+                  }
 
                   while(commands[++i].command != nullptr) {
                      if (strcmp(command_str, commands[i].command) == 0) {
