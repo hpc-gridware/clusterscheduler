@@ -1,5 +1,187 @@
 # Full List of Fixes
 
+## v9.1.8
+
+### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
+
+- [CS-1210](https://hpc-gridware.atlassian.net/browse/CS-1210) Qontrol: Implement system and host status in the backend and connect it the UI
+- [CS-2606](https://hpc-gridware.atlassian.net/browse/CS-2606) Qontrol: a refresh token is accepted as an access token
+- [CS-2835](https://hpc-gridware.atlassian.net/browse/CS-2835) Qontrol: In complex config slots example needs to be corrected
+- [CS-2925](https://hpc-gridware.atlassian.net/browse/CS-2925) Qontrol: Support the new AUTO_ADD_HOSTS and AUTO_REMOVE_HOSTS_AFTER qmaster_params in the UI
+- [CS-2926](https://hpc-gridware.atlassian.net/browse/CS-2926) Qontrol: Let an advance reservation choose its PE allocation rule (qrsub -par)
+- [CS-2958](https://hpc-gridware.atlassian.net/browse/CS-2958) Qontrol: Cluster Queues page hides some resource limits
+- [CS-2975](https://hpc-gridware.atlassian.net/browse/CS-2975) Qontrol: Cluster State - let admins clear errors, release, hold, delete and reschedule jobs
+- [CS-2981](https://hpc-gridware.atlassian.net/browse/CS-2981) Qontrol: Share Tree, Log Files, Config Files and License Manager are missing from the menu when a remote cluster is selected
+- [CS-2982](https://hpc-gridware.atlassian.net/browse/CS-2982) Qontrol: Cluster State - show resource quota usage and when a quota keeps a job from starting
+- [CS-2999](https://hpc-gridware.atlassian.net/browse/CS-2999) Qontrol: Cluster State - show which resources are free now (licenses, GPUs, consumable memory)
+- [CS-3004](https://hpc-gridware.atlassian.net/browse/CS-3004) Qontrol: search bar to get to any page or cluster object quickly
+- [CS-3014](https://hpc-gridware.atlassian.net/browse/CS-3014) Qontrol: Share Tree - show configured vs actual share so an admin sees whether the policy works
+- [CS-3015](https://hpc-gridware.atlassian.net/browse/CS-3015) Qontrol: Remove cluster and Delete snapshot dialogs show only a title, no message
+- [CS-3024](https://hpc-gridware.atlassian.net/browse/CS-3024) Qontrol: Calendars - say "no rules" in one sentence instead of drawing an all-On week grid
+- [CS-3035](https://hpc-gridware.atlassian.net/browse/CS-3035) Qontrol MCP: the older job tools miss jobs in combined states (Eqw, hqw, ...) - an assistant cannot find a stalled job
+- [CS-3036](https://hpc-gridware.atlassian.net/browse/CS-3036) Qontrol: Cluster State - show in the header whether the scheduler is active, and let managers start it
+- [CS-3040](https://hpc-gridware.atlassian.net/browse/CS-3040) Qontrol: complex form - help text says what Default, Requestable, Consumable and Urgency really do
+- [CS-3060](https://hpc-gridware.atlassian.net/browse/CS-3060) Qontrol: operations log shows the etag as a change; a config file's etag could be an issue
+- [CS-3070](https://hpc-gridware.atlassian.net/browse/CS-3070) Qontrol: MCP tool get_unstarted_jobs fails on hosts with a time zone east of UTC
+- [CS-3201](https://hpc-gridware.atlassian.net/browse/CS-3201) Qontrol: Cluster State Queues tab is searchable and all tabs share one look
+
+### [CS-1336](https://hpc-gridware.atlassian.net/browse/CS-1336) Add RSMAP features and combine with binding
+
+- [CS-2523](https://hpc-gridware.atlassian.net/browse/CS-2523) Restoring a backup older than the built-in complex "devices" fails: qconf -Mc refuses to remove it
+
+### [CS-1388](https://hpc-gridware.atlassian.net/browse/CS-1388) improvements and fixes to systemd and cgroups integration
+
+- [CS-1389](https://hpc-gridware.atlassian.net/browse/CS-1389) re-evaluate IOAccounting
+- [CS-1414](https://hpc-gridware.atlassian.net/browse/CS-1414) add a separate error code for systemd methods failing at job start
+- [CS-2917](https://hpc-gridware.atlassian.net/browse/CS-2917) Job start fails when a shepherd is moved into the shepherds scope while systemd is stopping it
+- [CS-2920](https://hpc-gridware.atlassian.net/browse/CS-2920) qconf -km deactivates the qmaster systemd service, whose stop command then kills a qmaster started afterwards
+- [CS-2924](https://hpc-gridware.atlassian.net/browse/CS-2924) Validate the devices characteristic of an RSMAP instance against what systemd accepts
+- [CS-3019](https://hpc-gridware.atlassian.net/browse/CS-3019) make the MemoryMax / MemoryHigh of the job scope configurable
+- [CS-3020](https://hpc-gridware.atlassian.net/browse/CS-3020) set OOMPolicy=kill on the job scope, so that a memory cgroup OOM kill ends the whole job
+- [CS-3021](https://hpc-gridware.atlassian.net/browse/CS-3021) failed job scopes are never reset and pile up in systemd
+- [CS-3022](https://hpc-gridware.atlassian.net/browse/CS-3022) sge_execd reports a memory cgroup OOM kill of a job in the accounting record
+- [CS-3023](https://hpc-gridware.atlassian.net/browse/CS-3023) sge_execd logs which systemd related features are not available on its host
+- [CS-3033](https://hpc-gridware.atlassian.net/browse/CS-3033) the job environment contains the name of the job's systemd scope (SGE_JOB_SCOPE)
+
+### [CS-1439](https://hpc-gridware.atlassian.net/browse/CS-1439) improvement and fixes related to job rescheduling
+
+- [CS-3067](https://hpc-gridware.atlassian.net/browse/CS-3067) A rescheduled task of a tightly integrated parallel array job hangs in state Rt when it is dispatched to a host where its old slave task still runs
+- [CS-3076](https://hpc-gridware.atlassian.net/browse/CS-3076) After qmod -r, the old master task of a rescheduled job keeps running when the first report from its host does not contain the job's report
+- [CS-3080](https://hpc-gridware.atlassian.net/browse/CS-3080) After qmod -r, the scheduler does not defer the start of the new run because it checks JDEFERRED_REQ in JAT_status, while qmaster sets it in JAT_state
+- [CS-3081](https://hpc-gridware.atlassian.net/browse/CS-3081) After a restart of sge_qmaster, the old run of a job rescheduled with qmod -r keeps running and its reports are taken as reports of the new run
+
+### [CS-1575](https://hpc-gridware.atlassian.net/browse/CS-1575) improvements and fixes to encryption of messages between commands and daemons
+
+- [CS-1578](https://hpc-gridware.atlassian.net/browse/CS-1578) verify and improve commlib connection shutdown
+- [CS-2600](https://hpc-gridware.atlassian.net/browse/CS-2600) commlib keeps a connection whose SSL accept failed and misreports the socket error as "Success"
+- [CS-3006](https://hpc-gridware.atlassian.net/browse/CS-3006) support OpenSSL 4 for TLS encryption
+- [CS-3065](https://hpc-gridware.atlassian.net/browse/CS-3065) With TLS encryption, a client that connects without sending a TLS handshake blocks the daemon, and the requests of all other clients time out
+- [CS-3073](https://hpc-gridware.atlassian.net/browse/CS-3073) Continue an incomplete TLS handshake from the commlib select loop
+
+### [CS-1626](https://hpc-gridware.atlassian.net/browse/CS-1626) CRA Part1: Compliance Foundation
+
+- [CS-1633](https://hpc-gridware.atlassian.net/browse/CS-1633) Automate CVE monitoring
+- [CS-3160](https://hpc-gridware.atlassian.net/browse/CS-3160) Add CPEs to the C/C++ components of the core SBOM
+- [CS-3162](https://hpc-gridware.atlassian.net/browse/CS-3162) Assess the 16 NVD CVEs of Berkeley DB 5.3.28 for the spooling
+- [CS-3177](https://hpc-gridware.atlassian.net/browse/CS-3177) dbwriter: update jackson to 2.18.12 to fix 19 vulnerabilities in jackson-core and jackson-databind
+
+### [CS-1627](https://hpc-gridware.atlassian.net/browse/CS-1627) CRA Part2: Full Compliance
+
+- [CS-1667](https://hpc-gridware.atlassian.net/browse/CS-1667) Document update & patch strategy
+
+### [CS-2441](https://hpc-gridware.atlassian.net/browse/CS-2441) event master / client cleanup, improvements and issues
+
+- [CS-2937](https://hpc-gridware.atlassian.net/browse/CS-2937) DRMAA exit takes too long for non-manager users
+
+### [CS-2869](https://hpc-gridware.atlassian.net/browse/CS-2869) dbwriter improvements and bug fixes
+
+- [CS-1492](https://hpc-gridware.atlassian.net/browse/CS-1492) dbwriter junit test does not restore the dbwriter database after testing
+- [CS-3187](https://hpc-gridware.atlassian.net/browse/CS-3187) dbwriter: a failed batch insert blames the wrong reporting line and drops valid lines (PostgreSQL, MySQL with batch rewriting)
+
+### [CS-767](https://hpc-gridware.atlassian.net/browse/CS-767) provide means to run performance tests on cloud resources
+
+- [CS-955](https://hpc-gridware.atlassian.net/browse/CS-955) reduce load on testsuite itself when running the performance/throughput test
+
+### [CS-991](https://hpc-gridware.atlassian.net/browse/CS-991) Reservation or advance reservation issues and enhancements
+
+- [CS-1706](https://hpc-gridware.atlassian.net/browse/CS-1706) When queue access is controlled via projects then ARs cannot be submitted
+- [CS-3057](https://hpc-gridware.atlassian.net/browse/CS-3057) qrsub -help describes the options for a job instead of an advance reservation and lists the unsupported -dept
+
+### Bug
+
+- [CS-1697](https://hpc-gridware.atlassian.net/browse/CS-1697) sending of administrator mail, esp. suppressing repeated sends of the same message, is not behaving as expected
+- [CS-1972](https://hpc-gridware.atlassian.net/browse/CS-1972) qstat: TOCTOU race in switch_list_qstat_parse_from_file allows reading arbitrary files
+- [CS-1980](https://hpc-gridware.atlassian.net/browse/CS-1980) qrstat: XML output vulnerable to injection via unescaped scheduler strings
+- [CS-2005](https://hpc-gridware.atlassian.net/browse/CS-2005) qstat -j: job ID parsed with strtoul without overflow or end-pointer check
+- [CS-2352](https://hpc-gridware.atlassian.net/browse/CS-2352) qmaster flatfile spool files created world-writable (mode 0666)
+- [CS-2356](https://hpc-gridware.atlassian.net/browse/CS-2356) sge_peopen/sge_peopen_r: unbounded strcat of shell into fixed arg0[256] (latent stack overflow)
+- [CS-2360](https://hpc-gridware.atlassian.net/browse/CS-2360) sge_peopen: sizeof(pointer) used as write() length truncates error diagnostics
+- [CS-2361](https://hpc-gridware.atlassian.net/browse/CS-2361) sge_gettext_: heap overflow for negative msg_id (sprintf prefix exceeds allocation)
+- [CS-2362](https://hpc-gridware.atlassian.net/browse/CS-2362) sge_strtok: overlapping strcpy (UB) when re-tokenizing its own static buffer (sge_jobname, resolves CS-347 @todo)
+- [CS-2364](https://hpc-gridware.atlassian.net/browse/CS-2364) Flatfile spool: host object key not validated as a safe path component (directory traversal)
+- [CS-2366](https://hpc-gridware.atlassian.net/browse/CS-2366) qstat default view: queue_summary_t stores pointers into stack locals (latent use-after-scope)
+- [CS-2367](https://hpc-gridware.atlassian.net/browse/CS-2367) qstat default view: signed int overflow computing per-task line-count loop bound
+- [CS-2368](https://hpc-gridware.atlassian.net/browse/CS-2368) qstat -g c: uint32 slot-accumulator overflow in cluster-queue totals
+- [CS-2434](https://hpc-gridware.atlassian.net/browse/CS-2434) Missing error handling for setuid()/seteuid()/setgid() calls in shepherd pty, adminrun, and sge_edit
+- [CS-2484](https://hpc-gridware.atlassian.net/browse/CS-2484) Null function pointer call when munge is configured but not initialized
+- [CS-2531](https://hpc-gridware.atlassian.net/browse/CS-2531) execd passes a byte size where sge_get_pids() expects an element count, allowing a 4x stack overflow
+- [CS-2695](https://hpc-gridware.atlassian.net/browse/CS-2695) $sge_root is not expanded in the paths of load_sensor, starter_method and the queue control methods, and is rejected for the global prolog/epilog
+- [CS-2757](https://hpc-gridware.atlassian.net/browse/CS-2757) With max_reservation > 0 a job requesting a load-only consumable is rejected as an unknown resource
+- [CS-2895](https://hpc-gridware.atlassian.net/browse/CS-2895) DSTRING_STATIC and sge_dstring_init disagree about dstring size, so a full static buffer gets one byte of overflow
+- [CS-2912](https://hpc-gridware.atlassian.net/browse/CS-2912) Job verification writes default requests into the global complex definitions, qconf -Mc then always reports them as modified
+- [CS-2913](https://hpc-gridware.atlassian.net/browse/CS-2913) A normal qmaster shutdown skips the final spooling, job and AR IDs can be handed out twice after a restart
+- [CS-2914](https://hpc-gridware.atlassian.net/browse/CS-2914) sge_execd restarted shortly after a job start computes h_rt/s_rt from its own restart time
+- [CS-2915](https://hpc-gridware.atlassian.net/browse/CS-2915) Single-threaded commlib server does not send data to qping -dump while qping -info polls it every second
+- [CS-2921](https://hpc-gridware.atlassian.net/browse/CS-2921) PDC_INTERVAL=NEVER switches off the enforcement of h_rt and s_rt and the online wallclock usage
+- [CS-2923](https://hpc-gridware.atlassian.net/browse/CS-2923) ioops counts only read syscalls because syscw is never parsed
+- [CS-2930](https://hpc-gridware.atlassian.net/browse/CS-2930) Three job error codes have no description, and the sge_diagnostics tables do not list all codes
+- [CS-2931](https://hpc-gridware.atlassian.net/browse/CS-2931) sge_queue_conf.5 promises s_vmem/h_vmem as a combined virtual memory limit, which the default usage collection mode on a systemd host does not deliver
+- [CS-2932](https://hpc-gridware.atlassian.net/browse/CS-2932) inst_sge -bup / -rst do not back up and restore sge_aliases and sge_request
+- [CS-2934](https://hpc-gridware.atlassian.net/browse/CS-2934) Stray backticks in submit.include.md and sge_binding.md are rendered literally in the man pages
+- [CS-2942](https://hpc-gridware.atlassian.net/browse/CS-2942) test_sgeobj_RequestLimits fails on 9.1 on every host that cannot resolve h007
+- [CS-2944](https://hpc-gridware.atlassian.net/browse/CS-2944) slurm-shim: srun -N 2 -n 2 runs both tasks on one node (step nodes without tasks)
+- [CS-2945](https://hpc-gridware.atlassian.net/browse/CS-2945) slurm-shim: jobs sharing a node pin their tasks to the same CPUs and ignore OCS core binding
+- [CS-2980](https://hpc-gridware.atlassian.net/browse/CS-2980) CULL hash lookups treat 64-bit keys that differ only above bit 31 as equal; lDelElemUlong cannot remove the value 0
+- [CS-2988](https://hpc-gridware.atlassian.net/browse/CS-2988) Testsuite: the setup function of a check runs before the execds have reconnected after the previous check restarted sge_qmaster
+- [CS-2989](https://hpc-gridware.atlassian.net/browse/CS-2989) Testsuite: upgrade_config reports a difference when only the order of a queue's pe_list or the case of starter_method NONE changed
+- [CS-3000](https://hpc-gridware.atlassian.net/browse/CS-3000) Testsuite: the kill command line option does not remove the systemd services installed with install_rc
+- [CS-3002](https://hpc-gridware.atlassian.net/browse/CS-3002) AUTO_ADD_HOSTS rule with a plain host name never matches when ignore_fqdn is true or a default_domain is set
+- [CS-3003](https://hpc-gridware.atlassian.net/browse/CS-3003) sgeexecd start script silences its own error message and the output of sge_execd
+- [CS-3005](https://hpc-gridware.atlassian.net/browse/CS-3005) execd keeps PDC_INTERVAL=NEVER after the parameter is removed from execd_params
+- [CS-3013](https://hpc-gridware.atlassian.net/browse/CS-3013) Admin mail subject starts with "NONE" when mail_tag is unset or set to the default NONE
+- [CS-3017](https://hpc-gridware.atlassian.net/browse/CS-3017) sge_execd checks the limits of a parallel job against a different value than sge_shepherd applies
+- [CS-3018](https://hpc-gridware.atlassian.net/browse/CS-3018) sge_execd checks the hard memory limits against the current usage instead of the peak usage
+- [CS-3030](https://hpc-gridware.atlassian.net/browse/CS-3030) sge_shepherd reports exit status 129 for a qrsh task whose qrsh_starter was killed
+- [CS-3032](https://hpc-gridware.atlassian.net/browse/CS-3032) After a mirror resync the qmaster's reader mirror receives no more events, and every read request of a user hangs
+- [CS-3034](https://hpc-gridware.atlassian.net/browse/CS-3034) A qrsh command is not run and its job fails when the job starts before the shepherd has connected to qrsh
+- [CS-3037](https://hpc-gridware.atlassian.net/browse/CS-3037) Rarely, a tightly integrated parallel task is killed with SIGKILL because its shepherd loses the qrsh connection about 30 s after the task starts
+- [CS-3063](https://hpc-gridware.atlassian.net/browse/CS-3063) slurm-shim: mpirun of an OpenMPI built with SGE and Slurm support starts ranks on the wrong nodes (job hangs or crashes)
+- [CS-3064](https://hpc-gridware.atlassian.net/browse/CS-3064) fgl lock and statistics tables are created with an invalid log2 size (undefined shift)
+- [CS-3066](https://hpc-gridware.atlassian.net/browse/CS-3066) range_list_parse_from_string() leaks the partly parsed list on a syntax error
+- [CS-3071](https://hpc-gridware.atlassian.net/browse/CS-3071) lx-riscv64: all binaries crash with stack overflow when NSS loads a module with TLS (jemalloc)
+- [CS-3086](https://hpc-gridware.atlassian.net/browse/CS-3086) sge_qmaster refuses to deliver a job to a host whose load_report_time is close to max_unheard, because the delivery check ignores load_report_time
+- [CS-3090](https://hpc-gridware.atlassian.net/browse/CS-3090) usage_patterns: group names usage/rusage/eusage are accepted, the accounting record gets duplicate JSON keys and qacct -j reports zero usage
+- [CS-3093](https://hpc-gridware.atlassian.net/browse/CS-3093) testsuite does not find Java on the dbwriter host if this host is not a cluster host
+- [CS-3094](https://hpc-gridware.atlassian.net/browse/CS-3094) qacct: when several jobs are listed, custom usage values (usage_patterns) of an earlier job are shown for the jobs after it
+- [CS-3095](https://hpc-gridware.atlassian.net/browse/CS-3095) sge_execd keeps the time of its next load report when load_report_time is lowered, its host can become unknown
+- [CS-3096](https://hpc-gridware.atlassian.net/browse/CS-3096) std::string passed through varargs in the systemd error message of ocs_Systemd.cc
+- [CS-3101](https://hpc-gridware.atlassian.net/browse/CS-3101) Backup/restore with PostgreSQL spooling does not save jobseqnum and arseqnum, the IDs start again at 1 after a restore
+- [CS-3113](https://hpc-gridware.atlassian.net/browse/CS-3113) Deleting an advance reservation with core binding does not release the reserved cores
+- [CS-3128](https://hpc-gridware.atlassian.net/browse/CS-3128) qmaster executes a GDI request although sge_security_verify_user() refused the sender
+- [CS-3130](https://hpc-gridware.atlassian.net/browse/CS-3130) libmunge load check tests the wrong pointer, and sge_peopen child error messages are overwritten by a newline
+- [CS-3135](https://hpc-gridware.atlassian.net/browse/CS-3135) qmaster: ACK from a wrong munge uid is processed, event client exit has no owner check, sge_string2file() misses open() errors
+- [CS-3161](https://hpc-gridware.atlassian.net/browse/CS-3161) Job add with RETURN_NEW_VERSION and more than one job per task submits the returned copies again
+- [CS-3169](https://hpc-gridware.atlassian.net/browse/CS-3169) Complex relop "??" is accepted and stored as an invalid operator
+- [CS-3191](https://hpc-gridware.atlassian.net/browse/CS-3191) qmaster shutdown frees the default spooling context while it is still linked in the default context list
+- [CS-3192](https://hpc-gridware.atlassian.net/browse/CS-3192) qmaster stores the internal topology of a load report on the wrong host or loses it
+- [CS-3198](https://hpc-gridware.atlassian.net/browse/CS-3198) sge_execd child can hang between fork() and exec of sge_shepherd
+- [CS-3199](https://hpc-gridware.atlassian.net/browse/CS-3199) qconf -secl, -stl and -sep leak the answer list and exit with 0 when sge_qmaster rejects the request
+- [CS-363](https://hpc-gridware.atlassian.net/browse/CS-363) high overhead of executing a job within sge_execd
+
+### Improvement
+
+- [CS-1184](https://hpc-gridware.atlassian.net/browse/CS-1184) With Munge authentication, sge_qmaster on FreeBSD ignores the supplementary groups of a user
+- [CS-2764](https://hpc-gridware.atlassian.net/browse/CS-2764) LD_LIBRARY_PATH etc. filtering is incomplete and should be done only for scripts running with different UID as user
+- [CS-2933](https://hpc-gridware.atlassian.net/browse/CS-2933) testsuite: Move the RESTRING pattern cases of the complex check into a module test
+- [CS-2943](https://hpc-gridware.atlassian.net/browse/CS-2943) Add experimental MPI pmix support to slurm-shim to simplify adoption
+- [CS-3082](https://hpc-gridware.atlassian.net/browse/CS-3082) slurm-shim: support dagster-slurm (Dagster assets as cluster jobs)
+- [CS-3087](https://hpc-gridware.atlassian.net/browse/CS-3087) Accounting does not show that a tightly integrated parallel job ended at its h_rt limit
+- [CS-3091](https://hpc-gridware.atlassian.net/browse/CS-3091) qacct -j: custom usage values (usage_patterns) repeat standard names, are cut to three decimals and show no group
+- [CS-3092](https://hpc-gridware.atlassian.net/browse/CS-3092) Custom usage: a non-numeric value in the job's usage file is silently accounted as 0.0
+- [CS-3157](https://hpc-gridware.atlassian.net/browse/CS-3157) Fix errors and internal names in the installation guide
+- [CS-928](https://hpc-gridware.atlassian.net/browse/CS-928) drmaa_job_ps() should use the data provided via event client interface instead of doing GDI requests
+
+### New Feature
+
+- [CS-2253](https://hpc-gridware.atlassian.net/browse/CS-2253) qstat -j does not apply the user filter -u
+- [CS-2964](https://hpc-gridware.atlassian.net/browse/CS-2964) Qontrol: Cluster State - show host state, and let admins drain and clear hosts
+
+### Task
+
+- [CS-2345](https://hpc-gridware.atlassian.net/browse/CS-2345) Document TLS vs Munge authentication scope (GDI security review, by-design clarification)
+- [CS-2382](https://hpc-gridware.atlassian.net/browse/CS-2382) do memory testing on V91_BRANCH for 9.1.8
+- [CS-3129](https://hpc-gridware.atlassian.net/browse/CS-3129) Backport the security fixes of 9.2 that are missing in the 9.1 line
+
 ## v9.1.7
 
 ### [CS-1129](https://hpc-gridware.atlassian.net/browse/CS-1129) Provide a UI for a modern qmon replacement for cluster configuration
