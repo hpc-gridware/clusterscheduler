@@ -148,6 +148,10 @@ typedef struct {
    lList      *rsmap_job_keys;    // for a scope=job request: the instance group the whole job is
                                   // bound to, per resource map (VA_Type, VA_variable is the map
                                   // name, VA_value the group key) - see rsmap_job_scope_key()
+   lListElem  *implicit_slots_request; // the implicit request slots=1 every job makes, created on first use,
+                                       // see ocs_assignment_implicit_slots_request() (CS-482)
+   lList      *implicit_total_list; // scratch capacity list holding the slots of the parallel environment,
+                                    // created on first use (CS-482)
    // -------------------- this section are parallel job related settings --------------------
    lListElem  *pe;                // the parallel environment (PE_Type)
    const char* pe_name;           // name of the PE
@@ -173,13 +177,14 @@ typedef struct {
 #define SGE_ASSIGNMENT_INIT {0, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, \
    0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, false, false, false, false, false, 0,    \
    false, false,                                                                                                       \
-   nullptr, nullptr, nullptr, nullptr,                   /* caching */                                                 \
+   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, /* caching */                                                 \
    nullptr, nullptr, nullptr, 0, nullptr, 0,             /* parallel job related settings */                           \
    nullptr, 0, 0, 0, nullptr, false, nullptr, nullptr, false, /* resulting assignment */                               \
    nullptr                                               /* profiling */                                               \
 }
 
 void assignment_init(sge_assignment_t *a, lListElem *job, lListElem *ja_task, lList *load_adjustments);
+lListElem *ocs_assignment_implicit_slots_request(sge_assignment_t *a);
 void assignment_init_ar(sge_assignment_t *a, lList *ar_list);
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil);
 void assignment_release(sge_assignment_t *a);

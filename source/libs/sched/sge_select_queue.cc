@@ -153,7 +153,7 @@ parallel_assignment(sge_assignment_t *a, category_use_t *use_category, int *avai
 #endif
 
 static dispatch_t
-parallel_available_slots(const sge_assignment_t *a, int *slots);
+parallel_available_slots(sge_assignment_t *a, int *slots);
 
 static dispatch_t
 parallel_tag_queues_suitable4job(sge_assignment_t *assignment, category_use_t *use_category, int *available_slots);
@@ -448,11 +448,26 @@ assignment_init_pe(sge_assignment_t *a, lListElem *pe) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Copies an assignment, optionally moving the owned lists along
+ *
+ * With `move_gdil` the granted list and the caches move to `dst`, freeing what `dst` held; without it
+ * they stay in `src` and `dst` gets none. The scratch elements (implicit slots request, implicit total
+ * list) are no state of the assignment; each keeps its own (CS-482).
+ *
+ * @param[out]    dst        the assignment to copy into
+ * @param[in,out] src        the assignment to copy from
+ * @param[in]     move_gdil  move the granted list and the caches to `dst`
+ */
 void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdil)
 {
    if (dst == nullptr || src == nullptr) {
       return;
    }
+
+   // the scratch elements stay with each assignment
+   lListElem *dst_implicit_slots_request = dst->implicit_slots_request;
+   lList *dst_implicit_total_list = dst->implicit_total_list;
 
    if (move_gdil) {
       lFreeList(&(dst->gdil));
@@ -465,6 +480,8 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    }
 
    memcpy(dst, src, sizeof(sge_assignment_t));
+   dst->implicit_slots_request = dst_implicit_slots_request;
+   dst->implicit_total_list = dst_implicit_total_list;
 
    if (src->load_adjustments != nullptr) {
       dst->load_adjustments = src->load_adjustments;
@@ -479,8 +496,15 @@ void assignment_copy(sge_assignment_t *dst, sge_assignment_t *src, bool move_gdi
    }
 }
 
+/**
+ * @brief Frees everything an assignment owns
+ *
+ * @param[in,out] a the assignment
+ */
 void assignment_release(sge_assignment_t *a)
 {
+   lFreeElem(&(a->implicit_slots_request));
+   lFreeList(&(a->implicit_total_list));
    lFreeList(&(a->gdil));
    lFreeList(&(a->binding_to_use));
    lFreeList(&(a->granted_rsmaps));
@@ -488,6 +512,64 @@ void assignment_release(sge_assignment_t *a)
    lFreeList(&(a->skip_cqueue_list));
    lFreeList(&(a->skip_host_list));
    lFreeList(&(a->rsmap_job_keys));
+}
+
+/**
+ * @brief The implicit request slots=1 every job makes
+ *
+ * The request is created on first use and kept in the assignment, so each thread matching jobs has its
+ * own; it is never changed afterwards (CS-482).
+ *
+ * @param[in,out] a the assignment
+ * @return the request, owned by `a`
+ */
+lListElem *
+ocs_assignment_implicit_slots_request(sge_assignment_t *a)
+{
+   DENTER(TOP_LAYER);
+
+   if (a->implicit_slots_request == nullptr) {
+      a->implicit_slots_request = lCreateElem(CE_Type);
+      lSetString(a->implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
+      // slots is an INT; the type has to be set like on any other request, both
+      // because it is true and because a CE_valtype of 0 is what marks a request
+      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
+      lSetUlong(a->implicit_slots_request, CE_valtype, TYPE_INT);
+      lSetString(a->implicit_slots_request, CE_stringval, "1");
+      lSetDouble(a->implicit_slots_request, CE_doubleval, 1);
+   }
+
+   DRETURN(a->implicit_slots_request);
+}
+
+/**
+ * @brief A capacity list holding the slots of the parallel environment
+ *
+ * The list is created on first use and kept in the assignment; its only entry is set to `total` on every
+ * call (CS-482).
+ *
+ * @param[in,out] a     the assignment
+ * @param[in]     total the slots of the parallel environment
+ * @return the list, owned by `a`
+ */
+static const lList *
+ocs_assignment_implicit_total_list(sge_assignment_t *a, const int total)
+{
+   DENTER(TOP_LAYER);
+
+   lListElem *tep = lGetElemStrRW(a->implicit_total_list, CE_name, SGE_ATTR_SLOTS);
+   if (tep == nullptr) {
+      tep = lAddElemStr(&(a->implicit_total_list), CE_name, SGE_ATTR_SLOTS, CE_Type);
+   }
+
+   char strbuf[100];
+   dstring slots_as_str;
+   sge_dstring_init(&slots_as_str, strbuf, sizeof(strbuf));
+   sge_dstring_sprintf(&slots_as_str, "%d", total);
+   lSetDouble(tep, CE_doubleval, total);
+   lSetString(tep, CE_stringval, strbuf);
+
+   DRETURN(a->implicit_total_list);
 }
 
 void assignment_clear_cache(sge_assignment_t *a)
@@ -1529,7 +1611,6 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
                  u_long64 *start_time, const char *object_name)
 {
    DENTER(TOP_LAYER);
-   static lListElem *implicit_slots_request = nullptr;
    lListElem *attr;
    u_long64 latest_time = DISPATCH_TIME_NOW;
    u_long64 tmp_start;
@@ -1540,22 +1621,12 @@ rc_time_by_slots(sge_assignment_t *a, lList *requested, const lList *load_attr, 
 
    clear_resource_tags(requested, QUEUE_TAG);
 
-   /* ensure availability of implicit slot request */
-   if (!implicit_slots_request) {
-      implicit_slots_request = lCreateElem(CE_Type);
-      lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
-      // slots is an INT; the type has to be set like on any other request, both
-      // because it is true and because a CE_valtype of 0 is what marks a request
-      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-      lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
-      lSetString(implicit_slots_request, CE_stringval, "1");
-      lSetDouble(implicit_slots_request, CE_doubleval, 1);
-   }
+
 
    /* match number of free slots */
    if (slots != -1) {
       tmp_start = *start_time;
-      ret = ri_time_by_slots(a, implicit_slots_request, load_attr, config_attr, actual_attr, host, queue,
+      ret = ri_time_by_slots(a, ocs_assignment_implicit_slots_request(a), load_attr, config_attr, actual_attr, host, queue,
                              reason, allow_non_requestable, slots, layer, lc_factor, &tmp_start, object_name, binding_inuse);
 
       if (ret == DISPATCH_OK && *start_time == DISPATCH_TIME_QUEUE_END) {
@@ -5899,36 +5970,24 @@ parallel_global_slots(sge_assignment_t *a, int *slots)
    DRETURN(result);
 }
 
-/****** sge_select_queue/parallel_available_slots() **********************************
-*  NAME
-*     parallel_available_slots() -- Check if number of PE slots is available
-*
-*  SYNOPSIS
-*
-*  FUNCTION
-*
-*  INPUTS
-*
-*  RESULT
-*     dispatch_t - 0 ok got an assignment
-*                  1 no assignment at the specified time
-*                 -1 assignment will never be possible for all jobs of that category
-*
-*  NOTES
-*     MT-NOTE: parallel_available_slots() is not MT safe
-*******************************************************************************/
+/**
+ * @brief Check if the number of PE slots is available
+ *
+ * The implicit slots request and the capacity list with the PE slots are kept in the assignment, so
+ * concurrent callers (qmaster workers verifying jobs, the scheduler thread) do not share them (CS-482).
+ *
+ * @param[in,out] a     the assignment
+ * @param[out]    slots the slots available in the parallel environment
+ * @return DISPATCH_OK if the slots are available, DISPATCH_NEVER_CAT if they never will be, otherwise
+ *         the result of the static PE match
+ */
 static dispatch_t
-parallel_available_slots(const sge_assignment_t *a, int *slots)
+parallel_available_slots(sge_assignment_t *a, int *slots)
 {
    dstring reason;
    char reason_buf[1024];
    dispatch_t result;
    int total = lGetUlong(a->pe, PE_slots);
-   static lListElem *implicit_slots_request = nullptr;
-   static lList *implicit_total_list = nullptr;
-   lListElem *tep = nullptr;
-   char strbuf[100];
-   dstring slots_as_str;
 
    DENTER(TOP_LAYER);
 
@@ -5938,35 +5997,11 @@ parallel_available_slots(const sge_assignment_t *a, int *slots)
       DRETURN(result);
    }
 
-   // @todo CS-482 we should have the implicit slots request once, e.g. in the assignment structure
-   if (implicit_slots_request == nullptr) {
-      implicit_slots_request = lCreateElem(CE_Type);
-      lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
-      // slots is an INT; the type has to be set like on any other request, both
-      // because it is true and because a CE_valtype of 0 is what marks a request
-      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-      lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
-      lSetString(implicit_slots_request, CE_stringval, "1");
-      lSetDouble(implicit_slots_request, CE_doubleval, 1);
-   }
-
-   // @todo CS-482 PE slots should be stored in a PE_consumable_config_list
-   if (!implicit_total_list) {
-      tep = lAddElemStr(&implicit_total_list, CE_name, SGE_ATTR_SLOTS, CE_Type);
-   }
-
-   if (!tep && !(tep = lGetElemStrRW(implicit_total_list, CE_name, SGE_ATTR_SLOTS))) {
-      DRETURN(DISPATCH_NEVER_CAT);
-   }
-
    total = lGetUlong(a->pe, PE_slots);
-   lSetDouble(tep, CE_doubleval, total);
-   sge_dstring_init(&slots_as_str, strbuf, sizeof(strbuf));
-   sge_dstring_sprintf(&slots_as_str, "%d", total);
-   lSetString(tep, CE_stringval, strbuf);
+   const lList *implicit_total_list = ocs_assignment_implicit_total_list(a, total);
 
    ocs::TopologyString binding_inuse;
-   if (ri_slots_by_time(a, slots, lGetList(a->pe, PE_resource_utilization), implicit_slots_request,
+   if (ri_slots_by_time(a, slots, lGetList(a->pe, PE_resource_utilization), ocs_assignment_implicit_slots_request(a),
                         nullptr, implicit_total_list, nullptr, nullptr, nullptr,
                         0, 0, &reason, true, true, a->pe_name, binding_inuse) != DISPATCH_OK) {
       DRETURN(DISPATCH_NEVER_CAT);
@@ -6928,20 +6963,8 @@ parallel_rc_slots_by_time(sge_assignment_t *a, int *slots, const lList *total_li
 
    // if slots is defined on host level then check how much is available
    if (tep != nullptr) {
-      // @todo CS-482 not thread safe
-      static lListElem *implicit_slots_request = nullptr;
-      if (!implicit_slots_request) {
-         implicit_slots_request = lCreateElem(CE_Type);
-         lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
-         // slots is an INT; the type has to be set like on any other request, both
-         // because it is true and because a CE_valtype of 0 is what marks a request
-         // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-         lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
-         lSetString(implicit_slots_request, CE_stringval, "1");
-         lSetDouble(implicit_slots_request, CE_doubleval, 1);
-      }
-
-      result = ri_slots_by_time(a, &available, rue_list, implicit_slots_request, load_attr, total_list,
+      result = ri_slots_by_time(a, &available, rue_list, ocs_assignment_implicit_slots_request(a), load_attr,
+                                total_list,
                                 nullptr, host, queue, layer, lc_factor,
                                 &reason, allow_non_requestable, false, object_name, binding_inuse);
       if (result != DISPATCH_OK) {

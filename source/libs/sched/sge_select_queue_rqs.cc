@@ -84,7 +84,7 @@
 *                         DISPATCH_MISSING_ATTR rule does not match requested attributes
 *
 *  NOTES
-*     MT-NOTE: rqs_limitation_reached() is not MT safe
+*     MT-NOTE: rqs_limitation_reached() is MT safe
 *
 *******************************************************************************/
 static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *rule, const char* host, const char* queue, u_long64 *start)
@@ -92,23 +92,13 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
    dispatch_t ret = DISPATCH_MISSING_ATTR;
    const lList *limit_list = nullptr;
    lListElem * limit = nullptr;
-   static lListElem *implicit_slots_request = nullptr;
    lListElem *exec_host = host_list_locate(a->host_list, host);
    dstring rue_name = DSTRING_INIT;
    dstring reason = DSTRING_INIT;
 
    DENTER(TOP_LAYER);
 
-    if (implicit_slots_request == nullptr) {
-      implicit_slots_request = lCreateElem(CE_Type);
-      lSetString(implicit_slots_request, CE_name, SGE_ATTR_SLOTS);
-      // slots is an INT; the type has to be set like on any other request, both
-      // because it is true and because a CE_valtype of 0 is what marks a request
-      // centry_list_fill_request() could not resolve - see ri_time_by_slots()
-      lSetUlong(implicit_slots_request, CE_valtype, TYPE_INT);
-      lSetString(implicit_slots_request, CE_stringval, "1");
-      lSetDouble(implicit_slots_request, CE_doubleval, 1);
-   }
+
 
    limit_list = lGetList(rule, RQR_limit);
    for_each_rw(limit, limit_list) {
@@ -131,7 +121,7 @@ static dispatch_t rqs_limitation_reached(sge_assignment_t *a, const lListElem *r
       /* check for implicit slot and default request */
       if (job_centry == nullptr) {
          if (strcmp(lGetString(raw_centry, CE_name), SGE_ATTR_SLOTS) == 0) {
-            job_centry = implicit_slots_request;
+            job_centry = ocs_assignment_implicit_slots_request(a);
          } else if (lGetString(raw_centry, CE_defaultval) != nullptr && lGetUlong(raw_centry, CE_consumable)) {
             double request;
             parse_ulong_val(&request, nullptr, lGetUlong(raw_centry, CE_valtype), lGetString(raw_centry, CE_defaultval), nullptr, 0);
