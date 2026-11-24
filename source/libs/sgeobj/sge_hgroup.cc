@@ -193,7 +193,7 @@ bool hgroup_has_host_cache(const ocs::tom::ConstElement<ocs::tom::HGRP> hgroup) 
  * of a walk of the nested group tree.
  * The lookup is equivalent to the walk's sge_hostcmp() comparison, not merely
  * similar: the list library normalises host keys with sge_hostcpy() + sge_strtoupper()
- * (cull_multitype.cc), and sge_hostcpy() honours the same ignore_fqdn and
+ * (ocs_ElementCore.cc), and sge_hostcpy() honours the same ignore_fqdn and
  * default_domain rules as sge_hostcmp() (sge_hostname.cc). HR_name carries
  * the HASH flag, so the lookup is O(1).
  *

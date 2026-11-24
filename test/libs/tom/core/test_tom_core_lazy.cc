@@ -22,7 +22,7 @@
  * @brief Module test: the hash tables of the lists are built by the first lookup (CS-2996, LZY-01 to LZY-06)
  *
  * A list that may be hashed starts with empty hash slots. The first lookup on a
- * field of a list with at least #OCS_CULL_HASH_MIN_ELEMS elements (the default
+ * field of a list with at least #TOM_HASH_MIN_ELEMS elements (the default
  * threshold of ocs::tom::detail::hash_set_min_elems(), which also holds in threads that never call it) builds the
  * table of that field; shorter lists are searched linearly. The test checks
  * that no table is built before a lookup, that the built table answers like a
@@ -256,7 +256,7 @@ static void sort_by(lList *lp, const int nm, const bool ascending) {
  */
 static void test_no_table() {
    const ocs::tom::UniqueCheckSuspension suspension;
-   const int n = 2 * OCS_CULL_HASH_MIN_ELEMS;
+   const int n = 2 * TOM_HASH_MIN_ELEMS;
    const auto lp = make_list(n);
    CHECK(1, "a created and filled list is hashable without a slot array or a table", slots_empty(lp.get()));
 
@@ -287,7 +287,7 @@ static void test_no_table() {
  * @return nothing; CHECK records the results
  */
 static void test_first_lookup() {
-   const auto owner = make_list(2 * OCS_CULL_HASH_MIN_ELEMS);
+   const auto owner = make_list(2 * TOM_HASH_MIN_ELEMS);
    const ocs::tom::RawList lp = owner.get();
    const lListElem *e3 = find_name(lp, "e3");
    CHECK(5, "the first lookup builds the table of its field only and answers like the linear search",
@@ -313,7 +313,7 @@ static void test_first_lookup() {
 static void test_concurrent() {
    const int threads = 16;
    const int rounds = 500;
-   const int n = 4 * OCS_CULL_HASH_MIN_ELEMS;
+   const int n = 4 * TOM_HASH_MIN_ELEMS;
    std::atomic<int> wrong{0};
    bool published = true;
 
@@ -360,12 +360,12 @@ static void test_concurrent() {
  * @return nothing; CHECK records the results
  */
 static void test_threshold() {
-   const auto owner = make_list(OCS_CULL_HASH_MIN_ELEMS / 2);
+   const auto owner = make_list(TOM_HASH_MIN_ELEMS / 2);
    const ocs::tom::RawList lp = owner.get();
    CHECK(10, "a lookup on a list below the threshold answers without building a table",
          find_name(lp, "e2") == linear_find(lp, "e2") && slots_empty(lp));
 
-   for (uint32_t i = OCS_CULL_HASH_MIN_ELEMS / 2; i < OCS_CULL_HASH_MIN_ELEMS; i++) {
+   for (uint32_t i = TOM_HASH_MIN_ELEMS / 2; i < TOM_HASH_MIN_ELEMS; i++) {
       add_named(lp, name_of(i).c_str());
    }
    CHECK(11, "a list grown to the threshold gets the table on its next lookup",
@@ -390,7 +390,7 @@ static void test_threshold() {
  */
 static void test_duplicate() {
    const ocs::tom::UniqueCheckSuspension suspension;
-   const auto owner = make_list(OCS_CULL_HASH_MIN_ELEMS);
+   const auto owner = make_list(TOM_HASH_MIN_ELEMS);
    const ocs::tom::RawList lp = owner.get();
    const ocs::tom::RawElement first = add_named(lp, "dup");
    const ocs::tom::RawElement second = add_named(lp, "dup");
@@ -414,11 +414,11 @@ static void test_duplicate() {
  * @return nothing; CHECK records the results
  */
 static void test_sort() {
-   const auto owner = make_list(2 * OCS_CULL_HASH_MIN_ELEMS);
+   const auto owner = make_list(2 * TOM_HASH_MIN_ELEMS);
    const ocs::tom::RawList lp = owner.get();
    const std::vector<uint32_t> before = group_values(lp, 1);
    static_cast<void>(find_name(lp, "e1"));
-   const cull_htable unique_table = list_hash_table(lp, POS_NAME);
+   const tom_htable unique_table = list_hash_table(lp, POS_NAME);
 
    sort_by(lp, LZ_value, false);
    CHECK(15, "the sort drops the non unique table and keeps the unique one",

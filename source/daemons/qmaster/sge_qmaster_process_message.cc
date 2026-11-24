@@ -161,7 +161,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
    while (ocs::tom::buffer_has_unread(&(message->buf))) {
       ocs::tom::ElementPtr<ocs::tom::ACK> ack;
 
-      // get the ACK element; bytes that cannot be unpacked end the request, as cull_unpack_elem() failing did.
+      // get the ACK element; bytes that cannot be unpacked end the request, as tom_unpack_elem() failing did.
       // The element type comes from the wire: an element of another type throws here, as the checked handle on
       // the unpacked element threw before.
       try {
@@ -726,7 +726,7 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
    try {
       rep = ocs::tom::ListPtr<ocs::tom::REP>::unpack(aMsg->buf);
    } catch (const ocs::tom::PackException &) {
-      // the bytes cut off or no memory, where cull_unpack_list() returned an error
+      // the bytes cut off or no memory, where tom_unpack_list() returned an error
       ERROR(SFNMAX, MSG_QMASTER_UNPACKREPORTFAILED);
       DRETURN_VOID;
    } catch (const ocs::tom::FieldException &) {

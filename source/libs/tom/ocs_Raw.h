@@ -310,7 +310,7 @@ namespace ocs::tom {
          if (pos < 0) [[unlikely]] {
             ocs::tom::throw_field_exception(FieldException::Reason::ForeignField, key_nm, lp->descr);
          }
-         if (lp->descr[pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+         if (lp->descr[pos].off == TOM_ABSENT) [[unlikely]] {
             ocs::tom::throw_field_exception(FieldException::Reason::AbsentField, key_nm, lp->descr);
          }
          if (ocs::tom::field_type_of(lp->descr[pos].mt) != type) [[unlikely]] {
@@ -489,7 +489,7 @@ namespace ocs::tom {
       if (field_type_of(ep->descr[pos].mt) != detail::raw_field_type_for<V>()) [[unlikely]] {
          throw_field_exception(FieldException::Reason::WrongType, nm, ep->descr, ep->descr);
       }
-      if (ep->descr[pos].off == OCS_CULL_ABSENT) {
+      if (ep->descr[pos].off == TOM_ABSENT) {
          return fallback;
       }
       return detail::raw_value<V>(detail::slot(ep, pos));
@@ -507,7 +507,7 @@ namespace ocs::tom {
          return false;
       }
       const int pos = field_pos(ep->descr, nm);
-      return pos >= 0 && ep->descr[pos].off != OCS_CULL_ABSENT;
+      return pos >= 0 && ep->descr[pos].off != TOM_ABSENT;
    }
 
    /**
@@ -1035,10 +1035,10 @@ namespace ocs::tom {
     * Named apart from the core's unpack_list(), which returns the raw list.
     *
     * @param pb the buffer to read from
-    * @param flags the unpack flags of cull_unpack_list_partial()
+    * @param flags the unpack flags of tom_unpack_list_partial()
     * @return the owner of the list, empty for a list that was packed as none
     * @throw PackException on a format error or for lack of memory
-    * @see Old form: cull_unpack_list(), cull_unpack_list_partial(); core: ocs::tom::unpack_list()
+    * @see Old form: tom_unpack_list(), tom_unpack_list_partial(); core: ocs::tom::unpack_list()
     */
    [[nodiscard]] RawListPtr unpack_raw_list(sge_pack_buffer *pb, int flags = 0);
 
@@ -1051,11 +1051,11 @@ namespace ocs::tom {
     * @param pb the buffer to read from
     * @param descr nullptr for an element that was free at the sender, the descriptor of one that was bound; for
     *        a free element of flag-filtered data the expected type, or nullptr
-    * @param flags the unpack flags of cull_unpack_elem_partial()
+    * @param flags the unpack flags of tom_unpack_elem_partial()
     * @return the owner of the element
     * @throw PackException on a format error, for a bound element without @p descr (PACK_BADARG) or for lack of
     *        memory; everything read before is freed
-    * @see Old form: cull_unpack_elem(), cull_unpack_elem_partial(); core: ocs::tom::unpack_elem()
+    * @see Old form: tom_unpack_elem(), tom_unpack_elem_partial(); core: ocs::tom::unpack_elem()
     */
    [[nodiscard]] RawElementPtr unpack_raw_elem(sge_pack_buffer *pb, const lDescr *descr, int flags = 0);
 

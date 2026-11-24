@@ -497,7 +497,7 @@ static void test_users_release() {
 /** @brief DESCR-08: a hash added to one list does not change other lists */
 static void test_hash_new() {
    const size_t base = ocs::tom::descr_registry_size();
-   ocs::tom::RawListPtr a_owner = make_list(4 * OCS_CULL_HASH_MIN_ELEMS);
+   ocs::tom::RawListPtr a_owner = make_list(4 * TOM_HASH_MIN_ELEMS);
    ocs::tom::RawListPtr b_owner = make_list(4);
    lList *a = a_owner.get();
    const lList *b = b_owner.get();
@@ -841,9 +841,9 @@ static void test_grown_types() {
  * @param flag_first true to put TD_flag into slot 0 and TD_name into slot 1
  */
 static void full_length_name_flag(lDescr out[5], const bool flag_first) {
-   out[0] = {TD_id, MT_UINT32 | MT_HASH | MT_UNIQUE | MT_IS_REDUCED, OCS_CULL_ABSENT};
+   out[0] = {TD_id, MT_UINT32 | MT_HASH | MT_UNIQUE | MT_IS_REDUCED, TOM_ABSENT};
    out[1] = {TD_name, MT_STRING | MT_IS_REDUCED, flag_first ? 0 : -1};
-   out[2] = {TD_value, MT_UINT32 | MT_IS_REDUCED, OCS_CULL_ABSENT};
+   out[2] = {TD_value, MT_UINT32 | MT_IS_REDUCED, TOM_ABSENT};
    out[3] = {TD_flag, MT_BOOL | MT_IS_REDUCED, flag_first ? -3 : -2};
    out[4] = {NoName, MT_END | MT_IS_REDUCED, 0};
 }
@@ -859,7 +859,7 @@ static void test_slots() {
          lCountPresent(built) == 2 && ocs::tom::descr_length(built) == 4);
 
    const lDescr *dp = ocs::tom::descr_intern(built);
-   const cull_descr_header *h = dp != nullptr ? ocs::tom::descr_header_of(dp) : nullptr;
+   const tom_descr_header *h = dp != nullptr ? ocs::tom::descr_header_of(dp) : nullptr;
    bool range_ok = h != nullptr && h->n == 4 && h->np == 2 &&
                    lCountPresent(dp) == 2 && ocs::tom::descr_length(dp) == 4;
    std::vector<std::pair<int, int>> seen;
@@ -917,7 +917,7 @@ static void test_reduce() {
       }
    }
    bool order_ok = a != nullptr && a == b && lCountPresent(a) == 2 && ocs::tom::descr_length(a) == 4 &&
-                   seen == (std::vector<std::pair<int, int>>{{1, 0}, {3, 1}}) && a[0].off == OCS_CULL_ABSENT &&
+                   seen == (std::vector<std::pair<int, int>>{{1, 0}, {3, 1}}) && a[0].off == TOM_ABSENT &&
                    mt_get_type(a[1].mt) == MT_STRING && (a[0].mt & MT_IS_REDUCED) != 0 &&
                    (a[4].mt & MT_IS_REDUCED) != 0 && ocs::tom::descr_refs(a) == 2 &&
                    ocs::tom::descr_registry_size() == base + 1;

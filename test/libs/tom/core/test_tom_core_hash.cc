@@ -368,7 +368,7 @@ static BenchTimes do_test(const bool unique_hash, const bool non_unique_hash,
    struct mallinfo meminfo;
 #endif
 #ifdef HASH_STATISTICS
-   cull_htable cht;
+   tom_htable cht;
    dstring stat_dstring = DSTRING_INIT;
 #endif
 

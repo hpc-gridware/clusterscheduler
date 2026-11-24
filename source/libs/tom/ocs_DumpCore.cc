@@ -820,11 +820,11 @@ namespace ocs::tom {
          std::vector<int> found(n, -1);
          for (int j = 0; fdp.get()[j].nm != NoName; j++) {
             const lDescr &from = fdp.get()[j];
-            if (from.off == OCS_CULL_ABSENT) {
+            if (from.off == TOM_ABSENT) {
                continue;
             }
             for (int i = 0; i < n; i++) {
-               if (dp[i].nm == from.nm && dp[i].off != OCS_CULL_ABSENT &&
+               if (dp[i].nm == from.nm && dp[i].off != TOM_ABSENT &&
                    (dp[i].mt & ~(MT_DESCR_INTERNED | MT_IS_REDUCED)) == (from.mt & ~MT_IS_REDUCED)) {
                   found[i] = j;
                   break;

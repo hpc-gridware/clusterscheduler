@@ -57,7 +57,7 @@
  * @tparam F a callable taking the buffer
  * @param pb the buffer to pack into
  * @param pack the pack function, which throws ocs::tom::PackException on an error
- * @return true if it packed without error, as `PACK_SUCCESS` of cull_pack_cond() and cull_pack_enum() was
+ * @return true if it packed without error, as `PACK_SUCCESS` of tom_pack_cond() and tom_pack_enum() was
  */
 template <typename F>
 static bool
@@ -119,7 +119,7 @@ lCondition *ocs_where_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> whe
          try {
             cond = ocs::tom::unpack_where(&pb);
          } catch (const ocs::tom::PackException &) {
-            // bytes cut off, an unknown operator or no memory: no condition, as cull_unpack_cond() gave
+            // bytes cut off, an unknown operator or no memory: no condition, as tom_unpack_cond() gave
          }
          ocs::tom::clear_buffer(&pb);
       } else {
@@ -183,7 +183,7 @@ lEnumeration *ocs_what_from_elem(const ocs::tom::ConstElement<ocs::tom::PACK> wh
          try {
             cond = ocs::tom::unpack_what(&pb);
          } catch (const ocs::tom::PackException &) {
-            // bytes cut off or no memory: no selection, as cull_unpack_enum() gave
+            // bytes cut off or no memory: no selection, as tom_unpack_enum() gave
          }
          ocs::tom::clear_buffer(&pb);
       } else {

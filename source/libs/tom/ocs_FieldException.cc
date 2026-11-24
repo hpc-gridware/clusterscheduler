@@ -81,7 +81,7 @@ namespace ocs::tom {
       int length = 0;
       int present = 0;
       for (; mt_get_type(descr[length].mt) != MT_END; length++) {
-         if (descr[length].off != OCS_CULL_ABSENT) {
+         if (descr[length].off != TOM_ABSENT) {
             present++;
          }
       }

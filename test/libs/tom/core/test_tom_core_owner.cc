@@ -103,7 +103,7 @@ NAMEEND
  * @param lp the expected list; nullptr for every state but BOUND_ELEM
  * @return true if state and list are as expected
  */
-static bool is_owned(const lListElem *ep, cull_elem_kind kind, const lList *lp) {
+static bool is_owned(const lListElem *ep, tom_elem_kind kind, const lList *lp) {
    return ep != nullptr && elem_kind(ep) == kind && elem_list(ep) == lp;
 }
 

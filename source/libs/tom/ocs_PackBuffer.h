@@ -64,7 +64,7 @@
  * | `0x10010000` | added information about attribute changes |
  * | `0x10000000` | introduction of version control |
  *
- * @see @ref cull_packing
+ * @see @ref tom_packing
  */
 
 #define TOM_PACK_VERSION 0x10023000 ///< format id written into every packbuffer; see @ref tom_pack_version
@@ -83,9 +83,9 @@
  * caller sizes a buffer before filling it.
  *
  * Every buffer carries the sender's identity, so the receiver can check who
- * sent it — see #cull_reresolve_check_user.
+ * sent it — see #tom_reresolve_check_user.
  *
- * @see @ref cull_packing
+ * @see @ref tom_packing
  */
 namespace ocs::tom {
    /// the descriptor table of a pack buffer (N-W-4), see tom/ocs_PackCore.cc

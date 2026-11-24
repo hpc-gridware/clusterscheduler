@@ -62,7 +62,7 @@ namespace ocs::tom::detail {
    int sort_slot(const lDescr *descr) {
       constexpr int pos = FieldTraits<F>::pos;
       const int off = descr[pos].off;
-      if (off == OCS_CULL_ABSENT) [[unlikely]] {
+      if (off == TOM_ABSENT) [[unlikely]] {
          throw_field_exception(FieldException::Reason::AbsentField, F, descr);
       }
       return pos + off;
@@ -151,7 +151,7 @@ namespace ocs::tom {
       [[nodiscard]] inline int typed_pos(const lDescr *descr) noexcept {
          using Tr = FieldTraits<F>;
          if (descr == nullptr || descr[0].nm != Tr::Type::fields[0].nm ||
-             descr[Tr::pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+             descr[Tr::pos].off == TOM_ABSENT) [[unlikely]] {
             return -1;
          }
          return Tr::pos;
@@ -730,14 +730,14 @@ namespace ocs::tom {
 
 
       /**
-       * @brief Pack the list, as cull_pack_list() does; an empty handle packs a null list
+       * @brief Pack the list, as tom_pack_list() does; an empty handle packs a null list
        *
        * Does not compile for a type with an Int32 or Int64 field, which the pack format cannot carry (see
        * PackableType); such a type packs with pack(pb, what) and a selection without it.
        *
        * @param pb the buffer to append to
        * @throw PackException if the buffer cannot grow
-       * @see Old form: cull_pack_list(); core: ocs::tom::pack_list()
+       * @see Old form: tom_pack_list(); core: ocs::tom::pack_list()
        */
       void pack(sge_pack_buffer &pb) const {
          static_assert(PackableType<T>, "the type holds an Int32 or Int64 field, which cannot be packed");
@@ -745,12 +745,12 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Pack the fields of the elements a selection names, as cull_pack_list_partial() does
+       * @brief Pack the fields of the elements a selection names, as tom_pack_list_partial() does
        * @param pb the buffer to append to
        * @param what the selection
        * @throw PackException with PACK_BADARG if the elements do not hold a selected field, or if the buffer
        *        cannot grow
-       * @see Old form: cull_pack_list_partial(); core: ocs::tom::pack_list()
+       * @see Old form: tom_pack_list_partial(); core: ocs::tom::pack_list()
        */
       void pack(sge_pack_buffer &pb, const What<T> &what) const {
          pack_list(&pb, lp_, what.get(), 0);
@@ -1819,13 +1819,13 @@ namespace ocs::tom {
 
 
       /**
-       * @brief Unpack a list packed by pack() or cull_pack_list(), as cull_unpack_list() does
+       * @brief Unpack a list packed by pack() or tom_pack_list(), as tom_unpack_list() does
        * @param pb the buffer to read from
        * @param flags read only the fields whose flags match, 0 for all
        * @return the owning handle on the list, empty for a list that was null
        * @throw FieldException with reason WrongType if the buffer holds a list of another type; it is freed
        * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
-       * @see Old form: cull_unpack_list(), cull_unpack_list_partial(); core: ocs::tom::unpack_list()
+       * @see Old form: tom_unpack_list(), tom_unpack_list_partial(); core: ocs::tom::unpack_list()
        */
       [[nodiscard]] static ListPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
          lList *lp = unpack_list(&pb, flags);

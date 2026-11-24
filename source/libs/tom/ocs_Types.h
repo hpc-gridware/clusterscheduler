@@ -118,7 +118,7 @@ static_assert(MT_IS_REDUCED < (1 << 30), "the flags fit into the mt word");
 #define MAX_DESCR_SIZE  (4*BASIC_UNIT) ///< largest number of fields an object type may have
 
 /*
- * An object type is a static descriptor block: a cull_descr_header followed by the
+ * An object type is a static descriptor block: a tom_descr_header followed by the
  * fields and the terminating #MT_END entry, built at compile time by
  * ocs::tom::descr_make() as an inline variable, so every translation unit sees the
  * same block and its contents are constant expressions. The descriptor of a type
@@ -135,29 +135,29 @@ static_assert(MT_IS_REDUCED < (1 << 30), "the flags fit into the mt word");
 struct _lDescr {
    int nm;         ///< the field number, or #NoName in the terminating entry
    int mt;         ///< the field's type and attributes: a @ref _enum_lMultiType or-ed with @ref mt_field_attributes flags
-   int off;        ///< the field's value slot relative to its index (slot = index + off), or #OCS_CULL_ABSENT; 0 in a full descriptor (CS-439)
+   int off;        ///< the field's value slot relative to its index (slot = index + off), or #TOM_ABSENT; 0 in a full descriptor (CS-439)
 };
 static_assert(sizeof(lDescr) == 12, "a descriptor entry is field number, type and slot offset without padding");
 
 /** @brief Slot offset of a field that a reduced descriptor does not hold (CS-439, N-B-1) */
-constexpr int OCS_CULL_ABSENT = INT32_MIN;
+constexpr int TOM_ABSENT = INT32_MIN;
 
 /**
  * @brief Header in front of the fields of a static or counted descriptor
  *
- * The fields follow the header at a fixed offset (see #cull_descr_block), so
+ * The fields follow the header at a fixed offset (see #tom_descr_block), so
  * the header of a descriptor can be found from its first field. A counted
  * descriptor with absent fields (np < n) holds behind its terminating entry the
  * reverse map: one `int16_t` per slot, the position of the field held there
  * (CS-439, N-B-6).
  */
-struct cull_descr_header {
+struct tom_descr_header {
    std::atomic<uint32_t> refs; ///< reference count; 0 for a static block, which is never released
    uint32_t n;                 ///< number of fields, without the terminating #MT_END entry
    uint32_t np;                ///< number of fields that have a value, the slots of an element
    uint64_t hash;              ///< FNV-1a over field numbers, types and slot offsets, see ocs::tom::descr_hash()
 };
-static_assert(sizeof(cull_descr_header) == 24, "the fields must start 24 bytes after the header");
+static_assert(sizeof(tom_descr_header) == 24, "the fields must start 24 bytes after the header");
 
 /**
  * @brief A descriptor as one block: header, fields, terminating #MT_END entry
@@ -165,8 +165,8 @@ static_assert(sizeof(cull_descr_header) == 24, "the fields must start 24 bytes a
  * @tparam N number of entries including the terminating one
  */
 template<size_t N>
-struct cull_descr_block {
-   cull_descr_header h; ///< header of the block
+struct tom_descr_block {
+   tom_descr_header h; ///< header of the block
    lDescr e[N];         ///< the fields, the last one is {#NoName, #MT_END}
 };
 
@@ -204,7 +204,7 @@ namespace ocs::tom {
     * @return the block with header and fields
     */
    template<size_t N, size_t... I>
-   consteval cull_descr_block<N> descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
+   consteval tom_descr_block<N> descr_make_impl(const lDescr (&e)[N], std::index_sequence<I...>) {
       return {{0, N - 1, N - 1, ocs::tom::descr_hash(e, N - 1)}, {e[I]...}};
    }
 
@@ -218,7 +218,7 @@ namespace ocs::tom {
     * @return the block with header and fields
     */
    template<size_t N>
-   consteval cull_descr_block<N> descr_make(const lDescr (&e)[N]) {
+   consteval tom_descr_block<N> descr_make(const lDescr (&e)[N]) {
       static_assert(N >= 1, "a descriptor needs at least its terminating entry");
       return ocs::tom::descr_make_impl(e, std::make_index_sequence<N>{});
    }

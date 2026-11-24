@@ -370,7 +370,7 @@ int do_ack(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
       try {
          ack = ocs::tom::ElementPtr<ocs::tom::ACK>::unpack(aMsg->buf);
       } catch (const ocs::tom::PackException &) {
-         // the bytes cut off or no memory, where cull_unpack_elem() returned an error
+         // the bytes cut off or no memory, where tom_unpack_elem() returned an error
          ERROR(SFNMAX, MSG_COM_UNPACKJOB);
          DRETURN(0);
       } catch (const ocs::tom::FieldException &) {

@@ -47,7 +47,7 @@
 #include "tom/ocs_FieldTraits.h"
 
 /*
- * An object type is a static descriptor block: a cull_descr_header followed by the
+ * An object type is a static descriptor block: a tom_descr_header followed by the
  * fields and the terminating #MT_END entry. LISTDEF/LISTEND build it at compile
  * time as an inline variable, so every translation unit sees the same block and
  * its contents are constant expressions. The descriptor of a type points at its first field.

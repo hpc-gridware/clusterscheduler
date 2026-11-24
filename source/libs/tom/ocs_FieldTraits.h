@@ -189,7 +189,7 @@ namespace ocs::tom {
     * @return the descriptor block
     */
    template <std::size_t N, std::size_t... I>
-   consteval cull_descr_block<N + 1> make_descriptor_impl(const FieldInfo (&fields)[N], std::index_sequence<I...>) {
+   consteval tom_descr_block<N + 1> make_descriptor_impl(const FieldInfo (&fields)[N], std::index_sequence<I...>) {
       const lDescr entries[N + 1] = {{fields[I].nm, mt_type_of(fields[I].type) | mt_flags_of(fields[I].flags), 0}...,
                                      {NoName, MT_END, 0}};
       return ocs::tom::descr_make(entries);
@@ -239,7 +239,7 @@ namespace ocs::tom {
     * @return the descriptor block
     */
    template <std::size_t N>
-   consteval cull_descr_block<N + 1> make_descriptor(const FieldInfo (&fields)[N]) {
+   consteval tom_descr_block<N + 1> make_descriptor(const FieldInfo (&fields)[N]) {
       check_hash_flags(fields);
       return make_descriptor_impl(fields, std::make_index_sequence<N>{});
    }
@@ -248,7 +248,7 @@ namespace ocs::tom {
     * @brief Whether every field of a field table can be packed
     *
     * The pack format has no encoding for Int32 and Int64 fields (pack_value() fails with PACK_FORMAT, as
-    * cull_pack_switch() did), also when they are declared NoTransfer: such a field keeps its place on the
+    * tom_pack_switch() did), also when they are declared NoTransfer: such a field keeps its place on the
     * wire with a default value. A type holding one is packed only with a selection that leaves it out.
     *
     * @tparam N number of fields

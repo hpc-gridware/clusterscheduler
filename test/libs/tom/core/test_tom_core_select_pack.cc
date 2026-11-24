@@ -159,10 +159,10 @@ static bool elem_equal(const lListElem *a, const lListElem *b) {
    }
    for (int i = 0; i < n; i++) {
       if (da[i].nm != db[i].nm || mt_get_type(da[i].mt) != mt_get_type(db[i].mt) ||
-          (da[i].off == OCS_CULL_ABSENT) != (db[i].off == OCS_CULL_ABSENT)) {
+          (da[i].off == TOM_ABSENT) != (db[i].off == TOM_ABSENT)) {
          return false;
       }
-      if (da[i].off == OCS_CULL_ABSENT) {
+      if (da[i].off == TOM_ABSENT) {
          continue;
       }
       const int nm = da[i].nm;

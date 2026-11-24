@@ -25,7 +25,7 @@
  * A descriptor is either static or counted. A static descriptor is the
  * compile-time block of an object type (ocs::tom::descr_make()); it lives as long as
  * the program, and reference operations on it do nothing. A counted descriptor
- * is allocated together with its #cull_descr_header, carries
+ * is allocated together with its #tom_descr_header, carries
  * #MT_DESCR_INTERNED in entry 0 and is freed by the release of its last
  * reference.
  *
@@ -60,7 +60,7 @@
 int lCountPresent(const lDescr *dp);
 
 /** @brief Default number of registered descriptors above which interning falls back to private copies */
-#define OCS_CULL_DESCR_SOFT_CAP 4096
+#define TOM_DESCR_SOFT_CAP 4096
 
 namespace ocs::tom {
    const lDescr *descr_intern(const lDescr *dp);

@@ -183,7 +183,7 @@ namespace ocs::tom {
       inline void check_holds(const lListElem *ep) {
          using Tr = FieldTraits<F>;
          const bool foreign = !Typed && ep != nullptr && ep->descr[0].nm != Tr::Type::fields[0].nm;
-         if (ep == nullptr || foreign || ep->descr[Tr::pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+         if (ep == nullptr || foreign || ep->descr[Tr::pos].off == TOM_ABSENT) [[unlikely]] {
             throw_access_error(ep, F, Tr::Type::fields[0].nm);
          }
       }
@@ -269,7 +269,7 @@ namespace ocs::tom {
       inline int present_slot(const lListElem *ep) {
          constexpr int pos = FieldTraits<F>::pos;
          const int off = ep->descr[pos].off;
-         if (off == OCS_CULL_ABSENT) [[unlikely]] {
+         if (off == TOM_ABSENT) [[unlikely]] {
             throw_field_exception(FieldException::Reason::AbsentField, F, ep->descr);
          }
          return pos + off;
@@ -926,7 +926,7 @@ namespace ocs::tom {
          if (ep_ == nullptr) [[unlikely]] {
             throw_field_exception(FieldException::Reason::EmptyHandle, F, T::descriptor.e);
          }
-         return ep_->descr[FieldTraits<F>::pos].off != OCS_CULL_ABSENT;
+         return ep_->descr[FieldTraits<F>::pos].off != TOM_ABSENT;
       }
 
       /**
@@ -1046,7 +1046,7 @@ namespace ocs::tom {
 
 
       /**
-       * @brief Pack the element, as cull_pack_elem() does
+       * @brief Pack the element, as tom_pack_elem() does
        *
        * Does not compile for a type with an Int32 or Int64 field, which the pack format cannot carry (see
        * PackableType); such a type packs with pack(pb, what) and a selection without it.
@@ -1054,7 +1054,7 @@ namespace ocs::tom {
        * @param pb the buffer to append to
        * @throw FieldException with reason EmptyHandle if the handle is empty
        * @throw PackException if the buffer cannot grow
-       * @see Old form: cull_pack_elem(); core: ocs::tom::pack_elem()
+       * @see Old form: tom_pack_elem(); core: ocs::tom::pack_elem()
        */
       void pack(sge_pack_buffer &pb) const {
          static_assert(PackableType<T>, "the type holds an Int32 or Int64 field, which cannot be packed");
@@ -1065,13 +1065,13 @@ namespace ocs::tom {
       }
 
       /**
-       * @brief Pack the fields of the element a selection names, as cull_pack_elem_partial() does
+       * @brief Pack the fields of the element a selection names, as tom_pack_elem_partial() does
        * @param pb the buffer to append to
        * @param what the selection
        * @throw FieldException with reason EmptyHandle if the handle is empty
        * @throw PackException with PACK_BADARG if the element does not hold a selected field, or if the buffer
        *        cannot grow
-       * @see Old form: cull_pack_elem_partial(); core: ocs::tom::pack_elem()
+       * @see Old form: tom_pack_elem_partial(); core: ocs::tom::pack_elem()
        */
       void pack(sge_pack_buffer &pb, const What<T> &what) const {
          if (ep_ == nullptr) [[unlikely]] {
@@ -2079,13 +2079,13 @@ namespace ocs::tom {
 
 
       /**
-       * @brief Unpack an element packed by pack() or cull_pack_elem(), as cull_unpack_elem() does
+       * @brief Unpack an element packed by pack() or tom_pack_elem(), as tom_unpack_elem() does
        * @param pb the buffer to read from
        * @param flags read only the fields whose flags match, 0 for all
        * @return the owning handle on the element
        * @throw FieldException with reason WrongType if the buffer holds an element of another type; it is freed
        * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
-       * @see Old form: cull_unpack_elem(), cull_unpack_elem_partial(); core: ocs::tom::unpack_elem()
+       * @see Old form: tom_unpack_elem(), tom_unpack_elem_partial(); core: ocs::tom::unpack_elem()
        */
       [[nodiscard]] static ElementPtr unpack(sge_pack_buffer &pb, const int flags = 0) {
          lListElem *ep = unpack_elem(&pb, T::descriptor.e, flags);

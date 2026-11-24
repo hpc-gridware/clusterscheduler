@@ -547,8 +547,8 @@ namespace ocs::tom {
        */
       void count_descr(const sge_pack_buffer *pb, const int nm, const std::size_t start) {
          if (!pb->just_count) {
-            CULL_STATS_TYPE(nm, PACK_DESCR, 1);
-            CULL_STATS_TYPE(nm, PACK_DESCR_B, pb->bytes_used - start);
+            TOM_STATS_TYPE(nm, PACK_DESCR, 1);
+            TOM_STATS_TYPE(nm, PACK_DESCR_B, pb->bytes_used - start);
          }
       }
 
@@ -573,7 +573,7 @@ namespace ocs::tom {
        */
       void count_value(const sge_pack_buffer *pb, const int nm, const int type, const std::size_t start) {
          if (!pb->just_count && type != MT_LIST && type != MT_OBJECT) {
-            CULL_STATS_FIELD(nm, PACK_VALUE_B, pb->bytes_used - start);
+            TOM_STATS_FIELD(nm, PACK_VALUE_B, pb->bytes_used - start);
          }
       }
 #endif
@@ -911,8 +911,8 @@ namespace ocs::tom {
                if (count == 0) {
                   format_error("a descriptor without fields");
                }
-               CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
-               CULL_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
+               TOM_STATS_TYPE(type[0].nm, DCOPY_UNPACK, 1);
+               TOM_STATS_TYPE(type[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (count + 1));
                OwnedDescr shared(ocs::tom::descr_build(type, keep));
                if (shared == nullptr) {
                   no_memory("building a descriptor");
@@ -963,8 +963,8 @@ namespace ocs::tom {
                return type;
             }
          }
-         CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
-         CULL_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
+         TOM_STATS_TYPE(dp[0].nm, DCOPY_UNPACK, 1);
+         TOM_STATS_TYPE(dp[0].nm, DCOPY_UNPACK_B, sizeof(lDescr) * (n + 1));
 
          // the fields on the wire are held by a full-length descriptor of their type, with mt from the local type
          // as for a table entry by index (N-B-1, N-B-8); fields of no known type, or of several, are a format error
@@ -1015,7 +1015,7 @@ namespace ocs::tom {
             put_uint32(pb, TOM_PACK_DESCR_TYPE_REF);
             put_uint32(pb, dp[0].nm);
             put_uint32(pb, n);
-            CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TYPE_REF);)
+            TOM_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TYPE_REF);)
             return;
          }
 
@@ -1024,12 +1024,12 @@ namespace ocs::tom {
             if (tab->entries[k] == dp) {
                put_uint32(pb, TOM_PACK_DESCR_TABLE_REF);
                put_uint32(pb, static_cast<std::uint32_t>(k));
-               CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_REF);)
+               TOM_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_REF);)
                return;
             }
          }
          tab->entries.push_back(ocs::tom::descr_ref(dp));
-         CULL_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_DEF);)
+         TOM_STATS_CODE(count_shared(pb, dp[0].nm, ocs::tom::stats::DESCR_PACK_TABLE_DEF);)
 
          // by index if every field belongs to the type of the first one, with the same data type
          int pos = 0;
@@ -1084,16 +1084,16 @@ namespace ocs::tom {
                        const int flags) {
          static constexpr lMultiType no_transfer_value{};
 
-         CULL_STATS_CODE(if (!pb->just_count) { CULL_STATS_TYPE(dp->nm, PACK_ELEMS, 1); })
+         TOM_STATS_CODE(if (!pb->just_count) { TOM_STATS_TYPE(dp->nm, PACK_ELEMS, 1); })
          if (what == nullptr) {
             for (const auto f : ocs::tom::present_fields(dp)) {
                const lDescr &d = dp[f.pos];
                // with flags only the fields matching them, e.g. MT_SPOOL
                if (flags == 0 || (d.mt & flags) != 0) {
                   const lMultiType *value = mt_do_transfer(d.mt) ? &cp[f.slot] : &no_transfer_value;
-                  CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
+                  TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
                   pack_value(pb, value, nullptr, mt_get_type(d.mt), flags);
-                  CULL_STATS_CODE(count_value(pb, d.nm, mt_get_type(d.mt), stats_start);)
+                  TOM_STATS_CODE(count_value(pb, d.nm, mt_get_type(d.mt), stats_start);)
                }
             }
          } else {
@@ -1104,9 +1104,9 @@ namespace ocs::tom {
                   const lMultiType *value =
                         do_transfer ? &cp[ocs::tom::detail::slot_index(dp, what[i].pos)] : &no_transfer_value;
                   const lEnumeration *sub_what = do_transfer ? what[i].ep : nullptr;
-                  CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
+                  TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
                   pack_value(pb, value, sub_what, mt_get_type(what[i].mt), flags);
-                  CULL_STATS_CODE(count_value(pb, what[i].nm, mt_get_type(what[i].mt), stats_start);)
+                  TOM_STATS_CODE(count_value(pb, what[i].nm, mt_get_type(what[i].mt), stats_start);)
                }
             }
          }
@@ -1167,7 +1167,7 @@ namespace ocs::tom {
             fail(PACK_ENOMEM, "unpacking an element");
          }
 
-         cull_elem_kind kind;
+         tom_elem_kind kind;
          if (!elem_kind_from_wire(get_uint32(pb), &kind)) {
             fail(PACK_FORMAT, "unpacking an element of an unknown kind");
          }
@@ -1260,7 +1260,7 @@ namespace ocs::tom {
       if (descr == nullptr) {
          fail(PACK_BADARG, "packing a null descriptor");
       }
-      CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
+      TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
 
       if (flags == 0) {
          // the shared descriptor: what a list or a free element holds, or the one equal to a plain array
@@ -1271,7 +1271,7 @@ namespace ocs::tom {
             fail(PACK_ENOMEM, "packing a descriptor");
          }
          pack_shared_descr(pb, shared);
-         CULL_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
+         TOM_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
          return;
       }
 
@@ -1282,12 +1282,12 @@ namespace ocs::tom {
          // the reference count flag is process local and never leaves the process
          put_uint32(pb, descr[f.pos].mt & ~MT_DESCR_INTERNED);
       }
-      CULL_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
+      TOM_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
    }
 
    void pack_what_as_descr(sge_pack_buffer *pb, const lEnumeration *what, const lDescr *descr, const int flags) {
       need_buffer(pb, "packing a selection as a descriptor");
-      CULL_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
+      TOM_STATS_CODE(const std::size_t stats_start = pb->bytes_used;)
 
       // a selection on the full type applies to a reduction holding its fields (N-B-11)
       if (!ocs::tom::detail::what_fits(what, descr)) {
@@ -1303,7 +1303,7 @@ namespace ocs::tom {
          }
          OwnedDescr release(owned ? shared : nullptr);
          pack_shared_descr(pb, shared);
-         CULL_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
+         TOM_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
          return;
       }
       // the number of fields, without the end mark
@@ -1328,7 +1328,7 @@ namespace ocs::tom {
             break;
          }
       }
-      CULL_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
+      TOM_STATS_CODE(count_descr(pb, descr->nm, stats_start);)
    }
 
    void pack_elem(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, const int flags) {
@@ -1390,7 +1390,7 @@ namespace ocs::tom {
       if (get_uint32(pb) == 0) {
          return nullptr;
       }
-      CULL_STATS_CODE(const std::uint64_t stats_start = ocs::tom::stats::now_ns();)
+      TOM_STATS_CODE(const std::uint64_t stats_start = ocs::tom::stats::now_ns();)
 
       OwnedList lp(static_cast<lList *>(calloc(1, sizeof(lList))));
       if (lp == nullptr) {
@@ -1414,10 +1414,10 @@ namespace ocs::tom {
          static_cast<void>(ep.release());
       }
 
-      CULL_STATS_CODE(const std::uint64_t stats_end = ocs::tom::stats::now_ns();
-                      CULL_STATS_TYPE(lp->descr->nm, UNPACK_LISTS, 1);
-                      CULL_STATS_TYPE(lp->descr->nm, UNPACK_ELEMS, lp->nelem);
-                      CULL_STATS_TYPE(lp->descr->nm, UNPACK_NS, stats_end - stats_start);)
+      TOM_STATS_CODE(const std::uint64_t stats_end = ocs::tom::stats::now_ns();
+                      TOM_STATS_TYPE(lp->descr->nm, UNPACK_LISTS, 1);
+                      TOM_STATS_TYPE(lp->descr->nm, UNPACK_ELEMS, lp->nelem);
+                      TOM_STATS_TYPE(lp->descr->nm, UNPACK_NS, stats_end - stats_start);)
       return lp.release();
    }
 
@@ -1505,7 +1505,7 @@ namespace ocs::tom {
    int peek_elem_type(const sge_pack_buffer *pb) {
       need_buffer(pb, "peeking at an element");
       sge_pack_buffer copy = *pb;
-      cull_elem_kind kind;
+      tom_elem_kind kind;
       if (!elem_kind_from_wire(get_uint32(&copy), &kind)) {
          fail(PACK_FORMAT, "peeking at an element of an unknown kind");
       }

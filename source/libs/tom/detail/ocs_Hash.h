@@ -46,11 +46,11 @@
 #include "tom/detail/ocs_HashP.h"
 
 namespace ocs::tom::detail {
-   cull_htable hash_create(const lDescr *dp, int pos, int size);
+   tom_htable hash_create(const lDescr *dp, int pos, int size);
 
-   cull_htable hash_build(const lList *lp, int pos);
+   tom_htable hash_build(const lList *lp, int pos);
 
-   cull_htable hash_lookup_table(const lList *lp, int pos);
+   tom_htable hash_lookup_table(const lList *lp, int pos);
 
    void hash_set_min_elems(uint32_t n);
 
@@ -62,7 +62,7 @@ namespace ocs::tom::detail {
 
    int hash_new_check(lList *lp, int nm, bool unique);
 
-   void hash_insert(const lListElem *ep, void *key, cull_htable ht, bool unique);
+   void hash_insert(const lListElem *ep, void *key, tom_htable ht, bool unique);
 
    void hash_insert_changed(const lListElem *ep, int pos);
 
@@ -72,9 +72,9 @@ namespace ocs::tom::detail {
 
    void hash_remove_elem(const lListElem *ep);
 
-   lListElem *hash_first(cull_htable ht, const void *key, bool unique, const void **iterator);
+   lListElem *hash_first(tom_htable ht, const void *key, bool unique, const void **iterator);
 
-   lListElem *hash_next(cull_htable ht, const void **iterator);
+   lListElem *hash_next(tom_htable ht, const void **iterator);
 
    bool hash_init_slots(lList *lp, bool hashable);
 
@@ -84,7 +84,7 @@ namespace ocs::tom::detail {
 
    void *hash_key(const lListElem *ep, int pos, char *host_key);
 
-   const char *hash_statistics(cull_htable ht, dstring *buffer);
+   const char *hash_statistics(tom_htable ht, dstring *buffer);
 
    void hash_recreate_after_sort(lList *lp);
 } // namespace ocs::tom::detail

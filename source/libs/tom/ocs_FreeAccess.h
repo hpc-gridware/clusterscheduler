@@ -990,7 +990,7 @@ namespace ocs::tom {
       template <auto F>
          requires TypedField<decltype(F)>
       [[nodiscard]] bool has_unchecked(const lListElem *ep) noexcept {
-         return ep != nullptr && ep->descr[FieldTraits<F>::pos].off != OCS_CULL_ABSENT;
+         return ep != nullptr && ep->descr[FieldTraits<F>::pos].off != TOM_ABSENT;
       }
    } // namespace detail
 

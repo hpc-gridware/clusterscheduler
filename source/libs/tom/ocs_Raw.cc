@@ -472,7 +472,7 @@ namespace ocs::tom {
    void select_pack(sge_pack_buffer *pb, const char *name, const lList *lp, const lCondition *where,
                     const lEnumeration *what) {
       if (what == nullptr) {
-         // no selection: the whole list under its own name, the condition not applied - as cull_pack_list()
+         // no selection: the whole list under its own name, the condition not applied - as tom_pack_list()
          try {
             pack_list(pb, lp, nullptr, 0);
          } catch (const PackException &) {

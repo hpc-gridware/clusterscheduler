@@ -189,8 +189,8 @@ namespace ocs::tom {
                   throw ListCoreError("out of memory creating an element");
                }
                memcpy(normalised, descr, sizeof(lDescr) * (n + 1));
-               CULL_STATS_TYPE(descr[0].nm, DCOPY_ELEM, 1);
-               CULL_STATS_TYPE(descr[0].nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
+               TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM, 1);
+               TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM_B, sizeof(lDescr) * (n + 1));
                for (int j = 0; j <= n; j++) {
                   normalised[j].mt |= MT_IS_REDUCED;
                }
@@ -616,7 +616,7 @@ namespace ocs::tom {
       template <typename Store>
       lListElem *add_with_key(lList *&lp, const int pos, const lDescr *descr, const char *list_name, Store store) {
          const bool created = lp == nullptr;
-         if (!created && (lp->descr[0].nm != descr[0].nm || lp->descr[pos].off == OCS_CULL_ABSENT)) [[unlikely]] {
+         if (!created && (lp->descr[0].nm != descr[0].nm || lp->descr[pos].off == TOM_ABSENT)) [[unlikely]] {
             throw_field_exception(FieldException::Reason::WrongType, descr[pos].nm, lp->descr);
          }
          if (created) {

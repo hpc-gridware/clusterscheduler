@@ -160,7 +160,7 @@ namespace ocs::tom {
     *
     * An element's values are laid out by the descriptor it was created with:
     * a reduced descriptor has the full length of its type, marks the fields
-    * it leaves out #OCS_CULL_ABSENT and packs the others into fewer slots. An
+    * it leaves out #TOM_ABSENT and packs the others into fewer slots. An
     * element linked into a list borrows the list's descriptor, so both must
     * have the same layout: the same length and, at every position, the same
     * field number, field type and slot offset. Attributes such as the hash
@@ -182,7 +182,7 @@ namespace ocs::tom {
     * @brief Whether two descriptors describe the same object type, either of them possibly reduced (CS-3125)
     *
     * A reduced descriptor has the full length of its type and marks the
-    * fields it leaves out #OCS_CULL_ABSENT, so two descriptors of one type
+    * fields it leaves out #TOM_ABSENT, so two descriptors of one type
     * have the same length and, at every position, the same field number and
     * field type - whichever fields each of them holds. Data received from a
     * client is checked with this before qmaster works on it: it may be
@@ -221,7 +221,7 @@ namespace ocs::tom {
       if (pos < 0) [[unlikely]] {
          throw_field_exception(FieldException::Reason::ForeignField, nm, ep->descr);
       }
-      if (ep->descr[pos].off == OCS_CULL_ABSENT) [[unlikely]] {
+      if (ep->descr[pos].off == TOM_ABSENT) [[unlikely]] {
          throw_field_exception(FieldException::Reason::AbsentField, nm, ep->descr);
       }
       if (field_type_of(ep->descr[pos].mt) != type) [[unlikely]] {

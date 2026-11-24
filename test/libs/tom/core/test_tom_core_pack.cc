@@ -235,7 +235,7 @@ static bool compare_objects(const ocs::tom::ConstRawElement a, const ocs::tom::C
  * @param pb the buffer
  * @param ep the element
  * @param flags write only the fields whose flags match, 0 for all
- * @return PACK_SUCCESS or the code of the PackException, as cull_pack_elem_partial() returned it
+ * @return PACK_SUCCESS or the code of the PackException, as tom_pack_elem_partial() returned it
  */
 static int pack_elem_code(sge_pack_buffer *pb, const lListElem *ep, const int flags) {
    try {
@@ -250,7 +250,7 @@ static int pack_elem_code(sge_pack_buffer *pb, const lListElem *ep, const int fl
  * @brief Write a list into a buffer, returning the code instead of throwing
  * @param pb the buffer
  * @param lp the list
- * @return PACK_SUCCESS or the code of the PackException, as cull_pack_list() returned it
+ * @return PACK_SUCCESS or the code of the PackException, as tom_pack_list() returned it
  */
 static int pack_list_code(sge_pack_buffer *pb, const lList *lp) {
    try {
@@ -267,7 +267,7 @@ static int pack_list_code(sge_pack_buffer *pb, const lList *lp) {
  * @param[out] ep receives the element
  * @param descr the descriptor of the element
  * @param flags read only the fields whose flags match, 0 for all
- * @return PACK_SUCCESS or the code of the PackException, as cull_unpack_elem_partial() returned it
+ * @return PACK_SUCCESS or the code of the PackException, as tom_unpack_elem_partial() returned it
  */
 static int unpack_elem_code(sge_pack_buffer *pb, ocs::tom::RawElementPtr &ep, const lDescr *descr, const int flags) {
    try {
@@ -282,7 +282,7 @@ static int unpack_elem_code(sge_pack_buffer *pb, ocs::tom::RawElementPtr &ep, co
  * @brief Read a list from a buffer, returning the code instead of throwing
  * @param pb the buffer
  * @param[out] lp receives the list
- * @return PACK_SUCCESS or the code of the PackException, as cull_unpack_list() returned it
+ * @return PACK_SUCCESS or the code of the PackException, as tom_unpack_list() returned it
  */
 static int unpack_list_code(sge_pack_buffer *pb, ocs::tom::RawListPtr &lp) {
    try {

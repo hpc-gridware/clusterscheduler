@@ -77,7 +77,7 @@ int pack_ack(sge_pack_buffer *pb, uint32_t type, uint32_t id, uint32_t id2, cons
    try {
       ack->pack(*pb);
    } catch (const ocs::tom::PackException &e) {
-      // the code cull_pack_elem() returned; qmaster threads and execd must not see the exception
+      // the code tom_pack_elem() returned; qmaster threads and execd must not see the exception
       ret = e.code();
    }
    ack.reset();

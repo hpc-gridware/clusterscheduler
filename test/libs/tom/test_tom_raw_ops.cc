@@ -896,7 +896,7 @@ test_write_to() {
 
 /**
  * @brief unpack_raw_elem() reads a packed element of the type the buffer names, and reports a cut-off buffer
- *        with the code cull_unpack_elem() returned, that of the core unpack_elem()
+ *        with the code tom_unpack_elem() returned, that of the core unpack_elem()
  * @return nothing; CHECK records the results
  */
 static void
@@ -915,7 +915,7 @@ test_unpack_elem() {
                          std::strcmp(raw->get<const char *>(JB_owner), "owner") == 0;
    const auto typed = ocs::tom::adopt<ocs::tom::JB>(std::move(raw));
 
-   // cull_unpack_elem() returned the code of the PackException of the core unpack_elem(): PACK_FORMAT here
+   // tom_unpack_elem() returned the code of the PackException of the core unpack_elem(): PACK_FORMAT here
    ocs::tom::PackBuffer old_cut = ocs::tom::PackBuffer::reading(out.data(), out.size() / 2);
    int old_code = PACK_SUCCESS;
    try {
@@ -932,7 +932,7 @@ test_unpack_elem() {
       code = e.code();
    }
    CHECK(20, "unpack_raw_elem() reads the packed job as a job, which adopt<JB>() takes; a cut-off buffer throws "
-             "PackException with the code of cull_unpack_elem()",
+             "PackException with the code of tom_unpack_elem()",
          unpacked && typed && typed->get<JB_job_number>() == 7 && code == PACK_FORMAT && code == old_code);
 }
 
@@ -1208,7 +1208,7 @@ test_select_pack() {
       {66, 0x9d7e196be5adc6deULL},   // no field, no condition, list, name nullptr
       {13, 0x07725da35b047ccdULL},   // no field, no condition, no list, name ""
       {13, 0x07725da35b047ccdULL},   // no field, no condition, no list, name nullptr
-      // no selection packs the whole list as cull_pack_list() did; TEST_int is an MT_INT32 field, which is never
+      // no selection packs the whole list as tom_pack_list() did; TEST_int is an MT_INT32 field, which is never
       // packed, so the write ends there with PACK_FORMAT, which select_pack() does not report (as before)
       {54, 0xf247e4ab439a013aULL},   // no selection, condition, list, name ""
       {54, 0xf247e4ab439a013aULL},   // no selection, condition, list, name nullptr
@@ -1781,7 +1781,7 @@ namespace typed_ops {
          return false;
       }
       const int pos = ocs::tom::field_pos(lp->descr, nm);
-      const cull_hash_slot *slot = pos >= 0 ? list_hash_slot(lp, pos) : nullptr;
+      const tom_hash_slot *slot = pos >= 0 ? list_hash_slot(lp, pos) : nullptr;
       return slot != nullptr && slot->get() != nullptr;
    }
 
@@ -1969,7 +1969,7 @@ namespace typed_ops {
                    "finds what moved where it moved",
                seen == expected && tables);
       }
-      ocs::tom::detail::hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+      ocs::tom::detail::hash_set_min_elems(TOM_HASH_MIN_ELEMS);
 
       // host fields have a threshold of their own: with it at 0, a short list gets the table of its host key on
       // the first lookup, while a short list of another key type stays linear under the general threshold
@@ -1983,7 +1983,7 @@ namespace typed_ops {
          static_cast<void>(sets->find_first<US_name>(set_name(2).c_str()));
          const bool host_table = has_table(hosts->raw(), EH_name);
          const bool set_table = has_table(sets->raw(), US_name);
-         ocs::tom::detail::hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+         ocs::tom::detail::hash_set_min_elems(TOM_HASH_MIN_ELEMS);
          CHECK(56, "the threshold of host fields applies apart from the general one: a short host list is hashed "
                    "at host threshold 0, a short list of a string key is not",
                found && host_table && !set_table);
@@ -2000,7 +2000,7 @@ namespace typed_ops {
          static_cast<void>(hosts->find_first<EH_name>(ocs::tom::Host("hosta")));
          const bool set_table = has_table(sets->raw(), US_name);
          const bool host_table = has_table(hosts->raw(), EH_name);
-         ocs::tom::detail::hash_set_min_elems(OCS_CULL_HASH_MIN_ELEMS);
+         ocs::tom::detail::hash_set_min_elems(TOM_HASH_MIN_ELEMS);
          CHECK(57, "the threshold of string fields applies apart from the others: a short list of a string key is "
                    "hashed at string threshold 0, a short host list at host threshold 16 is not",
                found && set_table && !host_table);
@@ -2681,7 +2681,7 @@ int main(int argc, char *argv[]) {
        "the same bytes; nothing written, as by the old functions", {}, {18, 19}, test_write_to},
       {"RAW-OPS-11", "unpack element", "unpack_raw_elem() reads an element of the type the buffer names",
        {"pack a typed job, unpack it raw, adopt it as a job", "unpack a cut-off buffer raw and through the core"},
-       "a job with the same fields; PackException with the code of cull_unpack_elem(), PACK_FORMAT", {}, {20},
+       "a job with the same fields; PackException with the code of tom_unpack_elem(), PACK_FORMAT", {}, {20},
        test_unpack_elem},
       {"RAW-OPS-12", "select_as",
        "select_as() and select_elem_as() give what lSelect(), lSelectHashPack() and lSelectElemPack() gave",

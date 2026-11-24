@@ -105,7 +105,7 @@ namespace ocs::tom {
        * @return the other element, or nullptr
        */
       const lListElem *find_other(const lList *lp, const int pos, const lListElem *self, const void *key) {
-         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
+         if (const tom_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
             const void *iterator = nullptr;
             const lListElem *found = ocs::tom::detail::hash_first(ht, key, true, &iterator);
             return found != self ? found : nullptr;
@@ -205,7 +205,7 @@ namespace ocs::tom {
       template <typename Match>
       lListElem *search_first(const lList *lp, const int pos, const void *hash_key, Match match,
                               const void **iterator) {
-         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
+         if (const tom_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
             *iterator = nullptr;
             return ocs::tom::detail::hash_first(ht, hash_key, mt_is_unique(lp->descr[pos].mt), iterator);
          }
@@ -231,7 +231,7 @@ namespace ocs::tom {
          if (*iterator == nullptr) {
             return nullptr;
          }
-         if (const cull_htable ht = list_hash_table(lp, pos); ht != nullptr) {
+         if (const tom_htable ht = list_hash_table(lp, pos); ht != nullptr) {
             return ocs::tom::detail::hash_next(ht, iterator);
          }
          for (lListElem *ep = static_cast<const lListElem *>(*iterator)->next; ep != nullptr; ep = ep->next) {
@@ -327,7 +327,7 @@ namespace ocs::tom {
       } else {
          // the table path needs the upper case key, the linear one the normalised name; as lGetElemHostFirst()
          // did, only the key of the path taken is built, a host lookup being among the most frequent ones
-         if (const cull_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
+         if (const tom_htable ht = ocs::tom::detail::hash_lookup_table(lp, pos); ht != nullptr) {
             char host_key[CL_MAXHOSTNAMELEN + 1];
             sge_hostcpy(host_key, value);
             sge_strtoupper(host_key, CL_MAXHOSTNAMELEN);
@@ -410,7 +410,7 @@ namespace ocs::tom {
       char host_key[CL_MAXHOSTNAMELEN + 1];
       for (uint32_t pos = 0; pos < n; pos++) {
          const int mt = descr[pos].mt;
-         if (!mt_do_hashing(mt) || !mt_is_unique(mt) || ep->descr[pos].off == OCS_CULL_ABSENT) {
+         if (!mt_do_hashing(mt) || !mt_is_unique(mt) || ep->descr[pos].off == TOM_ABSENT) {
             continue;
          }
          const void *key = ocs::tom::detail::hash_key(ep, static_cast<int>(pos), host_key);
@@ -448,7 +448,7 @@ namespace ocs::tom {
 
    int present_pos(const lDescr *descr, const int nm) noexcept {
       const int pos = field_pos(descr, nm);
-      if (pos < 0 || descr[pos].off == OCS_CULL_ABSENT) {
+      if (pos < 0 || descr[pos].off == TOM_ABSENT) {
          return -1;
       }
       return pos;
@@ -492,7 +492,7 @@ namespace ocs::tom {
       for (int i = 0; i < n; i++) {
          // both full length: the same fields must be present (CS-439)
          if (a[i].nm != b[i].nm || mt_get_type(a[i].mt) != mt_get_type(b[i].mt) ||
-             (a[i].off == OCS_CULL_ABSENT) != (b[i].off == OCS_CULL_ABSENT)) {
+             (a[i].off == TOM_ABSENT) != (b[i].off == TOM_ABSENT)) {
             return 3;
          }
       }

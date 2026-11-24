@@ -47,7 +47,7 @@
  *
  * Which member is live is decided by the field's type in the descriptor —
  * see @ref _enum_lMultiType and #mt_get_type. Reading the wrong member is not
- * detected by the compiler, which is why the accessors in cull_multitype.cc
+ * detected by the compiler, which is why the accessors in ocs_ElementCore.cc
  * check the type first and abort on a mismatch.
  */
 union _lMultiType {
@@ -82,8 +82,8 @@ namespace ocs::tom::detail {
     */
    inline lMultiType &value(const lListElem *ep, const int pos) {
 #if defined(ENABLE_DEBUG_CHECKS)
-      const cull_descr_header *h = ocs::tom::descr_header_of(ep->descr);
-      if (pos < 0 || static_cast<uint32_t>(pos) >= h->n || ep->descr[pos].off == OCS_CULL_ABSENT ||
+      const tom_descr_header *h = ocs::tom::descr_header_of(ep->descr);
+      if (pos < 0 || static_cast<uint32_t>(pos) >= h->n || ep->descr[pos].off == TOM_ABSENT ||
           static_cast<uint32_t>(ocs::tom::detail::slot_index(ep->descr, pos)) >= h->np) {
          ocs::tom::detail::bad_slot(ep, pos);
       }

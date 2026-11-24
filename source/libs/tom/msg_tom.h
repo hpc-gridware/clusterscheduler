@@ -73,12 +73,12 @@
 #define MSG_TOM_ERRORININITPACKBUFFER_S                    _MESSAGE(41015, _("error initializing a pack buffer: " SFN))
 #define MSG_TOM_NOTENOUGHMEMORY_D                          _MESSAGE(41016, _("not enough memory to allocate %d bytes for a pack buffer"))
 
-#define MSG_CULL_ADDELEMSTRERRORXRUNTIMETYPE_S           _MESSAGE(41053, _("error: lAddElemStr(" SFN "): run time type error"))
-#define MSG_CULL_ADDELEMHOSTERRORXRUNTIMETYPE_S           _MESSAGE(41054, _("error: lAddElemHost(" SFN "): run time type error"))
-#define MSG_CULL_ADDELEMULONGERRORXRUNTIMETYPE_S         _MESSAGE(41063, _("error: lAddElemUlong(" SFN "): run time type error"))
-#define MSG_CULL_GETELEMULONGERRORXRUNTIMETYPE_S         _MESSAGE(41067, _("error: lGetElemUlong(" SFN "): run time type error"))
-#define MSG_CULL_GETELEMCASESTRERRORXRUNTIMETYPE_S       _MESSAGE(41074, _("error: lGetElemCaseStr(" SFN "): run time type error"))
-#define MSG_CULL_GETELEMHOSTERRORXRUNTIMETYPE_S          _MESSAGE(41076, _("error: lGetElemHost(" SFN "): run time type error"))
+#define MSG_TOM_ADDELEMSTRERRORXRUNTIMETYPE_S           _MESSAGE(41053, _("error: lAddElemStr(" SFN "): run time type error"))
+#define MSG_TOM_ADDELEMHOSTERRORXRUNTIMETYPE_S           _MESSAGE(41054, _("error: lAddElemHost(" SFN "): run time type error"))
+#define MSG_TOM_ADDELEMULONGERRORXRUNTIMETYPE_S         _MESSAGE(41063, _("error: lAddElemUlong(" SFN "): run time type error"))
+#define MSG_TOM_GETELEMULONGERRORXRUNTIMETYPE_S         _MESSAGE(41067, _("error: lGetElemUlong(" SFN "): run time type error"))
+#define MSG_TOM_GETELEMCASESTRERRORXRUNTIMETYPE_S       _MESSAGE(41074, _("error: lGetElemCaseStr(" SFN "): run time type error"))
+#define MSG_TOM_GETELEMHOSTERRORXRUNTIMETYPE_S          _MESSAGE(41076, _("error: lGetElemHost(" SFN "): run time type error"))
 
 
 #define MSG_TOM_MALLOCFAILURE                              _MESSAGE(41088, _("malloc failure"))
@@ -95,10 +95,10 @@
 #define MSG_TOM_PACK_VERSION                               _MESSAGE(41157, _("wrong packing version"))
 #define MSG_TOM_PACK_AUTHINFO                              _MESSAGE(41158, _("incorrect authentication information"))
 
-#define MSG_CULL_XNOTFOUNDINELEMENT_S                      _MESSAGE(41068, _("!!!!!!!!!! " SFN " not found in element !!!!!!!!!!"))
+#define MSG_TOM_XNOTFOUNDINELEMENT_S                      _MESSAGE(41068, _("!!!!!!!!!! " SFN " not found in element !!!!!!!!!!"))
 
-#define MSG_CULL_ADDELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41173, _("error: lAddElemUlong64(" SFN "): run time type error"))
-#define MSG_CULL_GETELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41175, _("error: lGetElemUlong64(" SFN "): run time type error"))
+#define MSG_TOM_ADDELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41173, _("error: lAddElemUlong64(" SFN "): run time type error"))
+#define MSG_TOM_GETELEMULONG64ERRORXRUNTIMETYPE_S         _MESSAGE(41175, _("error: lGetElemUlong64(" SFN "): run time type error"))
 
 #define MSG_TOM_DESCR_SOFTCAPREACHED_U                     _MESSAGE(41185, _("descriptor registry of the object model holds " sge_u32 " descriptors, further ones are private copies"))
 #define MSG_TOM_BADSLOT_IIUU                               _MESSAGE(41186, _("value access at position %d of the type starting at field %d lies outside its " sge_u32 " fields or " sge_u32 " values"))

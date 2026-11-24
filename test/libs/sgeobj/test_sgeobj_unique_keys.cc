@@ -278,7 +278,7 @@ test_context_change() {
    const bool found = big->find_first<CX_variable>("+") != nullptr && big->find_first<CX_variable>("x0") != nullptr;
    set_context(*big, *job);
    CHECK(19, "above the hash threshold the lookups work; c and the 20 added variables remain, x0 with its new value",
-         big->size() > OCS_CULL_HASH_MIN_ELEMS && found &&
+         big->size() > TOM_HASH_MIN_ELEMS && found &&
          job->get<JB_context>().size() == 21 && context_has(*job, "x0", "new"));
 
    // a request without a marker replaces the context

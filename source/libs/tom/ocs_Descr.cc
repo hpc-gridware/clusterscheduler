@@ -45,18 +45,18 @@
 #include "tom/ocs_Descr.h"
 #include "tom/ocs_Model.h"
 
-static_assert(offsetof(cull_descr_block<2>, e) == sizeof(cull_descr_header),
+static_assert(offsetof(tom_descr_block<2>, e) == sizeof(tom_descr_header),
               "the entries of a block must follow its header without a gap");
 
 namespace {
 
    /** @brief The registered descriptors of the process, keyed by their hash */
-   struct cull_descr_registry {
+   struct tom_descr_registry {
       std::mutex mtx;                                               ///< guards everything below
-      std::unordered_multimap<uint64_t, cull_descr_header *> map; ///< registered descriptors by hash
-      size_t soft_cap{OCS_CULL_DESCR_SOFT_CAP};                     ///< registry size above which copies are private
+      std::unordered_multimap<uint64_t, tom_descr_header *> map; ///< registered descriptors by hash
+      size_t soft_cap{TOM_DESCR_SOFT_CAP};                     ///< registry size above which copies are private
       bool cap_reported{false};                                     ///< the soft cap warning was logged since the last shrink
-      CULL_STATS_CODE(size_t peak{0};)                              ///< largest size the map reached (statistics build)
+      TOM_STATS_CODE(size_t peak{0};)                              ///< largest size the map reached (statistics build)
    };
 
    /**
@@ -69,8 +69,8 @@ namespace {
     *
     * @return the pointer, set to the registry
     */
-   cull_descr_registry *&registry_slot() {
-      static cull_descr_registry *r = new cull_descr_registry;
+   tom_descr_registry *&registry_slot() {
+      static tom_descr_registry *r = new tom_descr_registry;
       return r;
    }
 
@@ -78,7 +78,7 @@ namespace {
     * @brief The one registry of the process
     * @return the registry
     */
-   cull_descr_registry &registry() {
+   tom_descr_registry &registry() {
       return *registry_slot();
    }
 
@@ -100,8 +100,8 @@ namespace {
     * @param dp the entries of a static or counted descriptor
     * @return its header
     */
-   cull_descr_header *header_of(const lDescr *dp) {
-      return reinterpret_cast<cull_descr_header *>(const_cast<lDescr *>(dp)) - 1;
+   tom_descr_header *header_of(const lDescr *dp) {
+      return reinterpret_cast<tom_descr_header *>(const_cast<lDescr *>(dp)) - 1;
    }
 
    /**
@@ -109,7 +109,7 @@ namespace {
     * @param h the header of a counted descriptor
     * @return its entries
     */
-   lDescr *entries_of(cull_descr_header *h) {
+   lDescr *entries_of(tom_descr_header *h) {
       return reinterpret_cast<lDescr *>(h + 1);
    }
 
@@ -150,12 +150,12 @@ namespace {
     * @brief Number of entries of a descriptor that have a value
     * @param dp the entries
     * @param n their number, without the terminating one
-    * @return the count of entries whose slot offset is not #OCS_CULL_ABSENT
+    * @return the count of entries whose slot offset is not #TOM_ABSENT
     */
    uint32_t count_present(const lDescr *dp, const uint32_t n) {
       uint32_t np = 0;
       for (uint32_t i = 0; i < n; i++) {
-         if (dp[i].off != OCS_CULL_ABSENT) {
+         if (dp[i].off != TOM_ABSENT) {
             np++;
          }
       }
@@ -169,7 +169,7 @@ namespace {
     * @return the bytes to allocate
     */
    size_t counted_size(const uint32_t n, const uint32_t np) {
-      return sizeof(cull_descr_header) + (n + 1) * sizeof(lDescr) + (np < n ? np * sizeof(int16_t) : 0);
+      return sizeof(tom_descr_header) + (n + 1) * sizeof(lDescr) + (np < n ? np * sizeof(int16_t) : 0);
    }
 
    /**
@@ -183,20 +183,20 @@ namespace {
     * @param hash their hash
     * @return the header of the copy, or nullptr if out of memory
     */
-   cull_descr_header *alloc_counted(const lDescr *dp, const uint32_t n, const uint64_t hash) {
+   tom_descr_header *alloc_counted(const lDescr *dp, const uint32_t n, const uint64_t hash) {
       const uint32_t np = count_present(dp, n);
       void *mem = sge_malloc(counted_size(n, np));
       if (mem == nullptr) {
          return nullptr;
       }
-      auto *h = new (mem) cull_descr_header{1, n, np, hash};
+      auto *h = new (mem) tom_descr_header{1, n, np, hash};
       lDescr *e = entries_of(h);
       memcpy(e, dp, (n + 1) * sizeof(lDescr));
       e[0].mt |= MT_DESCR_INTERNED;
       if (np < n) {
          auto *rmap = reinterpret_cast<int16_t *>(e + n + 1);
          for (uint32_t pos = 0; pos < n; pos++) {
-            if (e[pos].off != OCS_CULL_ABSENT) {
+            if (e[pos].off != TOM_ABSENT) {
                rmap[pos + e[pos].off] = static_cast<int16_t>(pos);
             }
          }
@@ -208,8 +208,8 @@ namespace {
     * @brief Free a counted descriptor whose last reference is gone
     * @param h its header
     */
-   void free_counted(cull_descr_header *h) {
-      h->~cull_descr_header();
+   void free_counted(tom_descr_header *h) {
+      h->~tom_descr_header();
       sge_free(&h);
    }
 
@@ -222,7 +222,7 @@ namespace {
     * @param h the header
     * @return true if a reference was taken
     */
-   bool ref_if_alive(cull_descr_header *h) {
+   bool ref_if_alive(tom_descr_header *h) {
       uint32_t refs = h->refs.load(std::memory_order_relaxed);
       while (refs != 0) {
          if (h->refs.compare_exchange_weak(refs, refs + 1, std::memory_order_acquire, std::memory_order_relaxed)) {
@@ -324,18 +324,18 @@ const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
 
    const uint32_t n = count_entries(dp);
    const uint64_t hash = ocs::tom::descr_hash(dp, n);
-   cull_descr_registry &reg = registry();
-   cull_descr_header *fresh = nullptr;
+   tom_descr_registry &reg = registry();
+   tom_descr_header *fresh = nullptr;
    size_t cap;
    {
       std::lock_guard<std::mutex> lock(reg.mtx);
 
       auto [first, last] = reg.map.equal_range(hash);
       for (auto it = first; it != last; ++it) {
-         cull_descr_header *h = it->second;
+         tom_descr_header *h = it->second;
          if (h->n == n && same_entries(entries_of(h), dp, n)) {
             if (ref_if_alive(h)) {
-               CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_HIT, 1);
+               TOM_STATS_TYPE(dp[0].nm, DESCR_INTERN_HIT, 1);
                DRETURN(entries_of(h));
             }
             // dead, its releasing thread frees it; replace the entry
@@ -344,8 +344,8 @@ const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
                DRETURN(nullptr);
             }
             it->second = fresh;
-            CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
-            CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, counted_size(n, count_present(dp, n)));
+            TOM_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
+            TOM_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, counted_size(n, count_present(dp, n)));
             DRETURN(entries_of(fresh));
          }
       }
@@ -356,13 +356,13 @@ const lDescr *ocs::tom::descr_intern(const lDescr *dp) {
       }
       if (reg.map.size() < reg.soft_cap) {
          reg.map.emplace(hash, fresh);
-         CULL_STATS_CODE(reg.peak = std::max(reg.peak, reg.map.size());)
-         CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
-         CULL_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, counted_size(n, count_present(dp, n)));
+         TOM_STATS_CODE(reg.peak = std::max(reg.peak, reg.map.size());)
+         TOM_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW, 1);
+         TOM_STATS_TYPE(dp[0].nm, DESCR_INTERN_NEW_B, counted_size(n, count_present(dp, n)));
          DRETURN(entries_of(fresh));
       }
-      CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
-      CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
+      TOM_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
+      TOM_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
       if (reg.cap_reported) {
          DRETURN(entries_of(fresh));
       }
@@ -448,12 +448,12 @@ const lDescr *ocs::tom::descr_private(const lDescr *dp) {
       return nullptr;
    }
    const uint32_t n = count_entries(dp);
-   cull_descr_header *h = alloc_counted(dp, n, ocs::tom::descr_hash(dp, n));
+   tom_descr_header *h = alloc_counted(dp, n, ocs::tom::descr_hash(dp, n));
    if (h == nullptr) {
       return nullptr;
    }
-   CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
-   CULL_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
+   TOM_STATS_TYPE(dp[0].nm, DESCR_PRIVATE, 1);
+   TOM_STATS_TYPE(dp[0].nm, DESCR_PRIVATE_B, counted_size(n, count_present(dp, n)));
    return entries_of(h);
 }
 
@@ -462,7 +462,7 @@ const lDescr *ocs::tom::descr_private(const lDescr *dp) {
  *
  * Every entry of @p src is copied, so the result has the length of the type.
  * The kept fields get their slots in type order; all others are marked
- * #OCS_CULL_ABSENT. Unless every field is kept, every entry is marked
+ * #TOM_ABSENT. Unless every field is kept, every entry is marked
  * #MT_IS_REDUCED. The process-local #MT_DESCR_INTERNED stays with the source.
  *
  * @param src a full-length descriptor: a type or a reduction of it
@@ -478,12 +478,12 @@ int ocs::tom::descr_layout(const lDescr *src, const std::vector<bool> &keep, lDe
    // a reduction is the common case; a selection of every field drops the mark again
    int slot = 0;
    for (uint32_t pos = 0; pos < n; pos++) {
-      if (keep[pos] && src[pos].off == OCS_CULL_ABSENT) {
+      if (keep[pos] && src[pos].off == TOM_ABSENT) {
          return -1;
       }
       out[pos].nm = src[pos].nm;
       out[pos].mt = (src[pos].mt & ~MT_DESCR_INTERNED) | MT_IS_REDUCED;
-      out[pos].off = keep[pos] ? slot++ - static_cast<int>(pos) : OCS_CULL_ABSENT;
+      out[pos].off = keep[pos] ? slot++ - static_cast<int>(pos) : TOM_ABSENT;
    }
    out[n] = {NoName, MT_END | MT_IS_REDUCED, 0};
    if (static_cast<uint32_t>(slot) == n) {
@@ -588,13 +588,13 @@ void ocs::tom::release_descr(const lDescr *&descr) noexcept {
       return;
    }
 
-   cull_descr_header *h = header_of(descr);
+   tom_descr_header *h = header_of(descr);
    descr = nullptr;
    if (h->refs.fetch_sub(1, std::memory_order_acq_rel) != 1) {
       return;
    }
 
-   cull_descr_registry &reg = registry();
+   tom_descr_registry &reg = registry();
    {
       std::lock_guard<std::mutex> lock(reg.mtx);
 
@@ -653,7 +653,7 @@ int lCountPresent(const lDescr *dp) {
  * @param pos the position that was accessed
  */
 void ocs::tom::detail::bad_slot(const lListElem *ep, const int pos) {
-   const cull_descr_header *h = ocs::tom::descr_header_of(ep->descr);
+   const tom_descr_header *h = ocs::tom::descr_header_of(ep->descr);
    CRITICAL(MSG_TOM_BADSLOT_IIUU, pos, ep->descr[0].nm, h->n, h->np);
    abort();
 }
@@ -663,7 +663,7 @@ void ocs::tom::detail::bad_slot(const lListElem *ep, const int pos) {
  * @return the size of the registry, without private copies
  */
 size_t ocs::tom::descr_registry_size() {
-   cull_descr_registry &reg = registry();
+   tom_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    return reg.map.size();
 }
@@ -674,7 +674,7 @@ size_t ocs::tom::descr_registry_size() {
  * @return the peak size of the registry since the process started
  */
 size_t ocs::tom::descr_registry_peak() {
-   cull_descr_registry &reg = registry();
+   tom_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    return reg.peak;
 }
@@ -730,14 +730,14 @@ bool ocs::tom::descr_registry_shared(void *handle, std::string &own, std::string
 /**
  * @brief Set the soft cap of the registry
  *
- * Meant for tests; the default is #OCS_CULL_DESCR_SOFT_CAP. Lowering the cap
+ * Meant for tests; the default is #TOM_DESCR_SOFT_CAP. Lowering the cap
  * does not remove registered descriptors.
  *
  * @param cap the new soft cap
  * @return the previous soft cap
  */
 size_t ocs::tom::descr_set_soft_cap(const size_t cap) {
-   cull_descr_registry &reg = registry();
+   tom_descr_registry &reg = registry();
    std::lock_guard<std::mutex> lock(reg.mtx);
    const size_t prev = reg.soft_cap;
    reg.soft_cap = cap;

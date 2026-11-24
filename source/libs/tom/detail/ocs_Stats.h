@@ -31,11 +31,11 @@
  * by `OCS_CULL_STATS_DIR`; nothing is written when the variable is unset.
  *
  * A counter is booked either on an object type or on a field:
- * - type counters (#CULL_STATS_TYPE) take the field number of the first field
+ * - type counters (#TOM_STATS_TYPE) take the field number of the first field
  *   of a descriptor; the dump resolves it to the type through the installed
  *   object model (ocs::tom::install_model(); without one the number is written),
  *   so a reduced descriptor counts towards the type it was reduced from;
- * - field counters (#CULL_STATS_FIELD) take the number of the field itself,
+ * - field counters (#TOM_STATS_FIELD) take the number of the field itself,
  *   e.g. the field a hash table is built on.
  *
  * The document holds `format`, `program`, `pid`, `written`,
@@ -139,16 +139,16 @@ namespace ocs::tom::stats {
 }
 
 /** @brief Book @p v on counter @p c of the object type whose first field is @p nm */
-#define CULL_STATS_TYPE(nm, c, v) ocs::tom::stats::add_type((nm), ocs::tom::stats::c, (v))
+#define TOM_STATS_TYPE(nm, c, v) ocs::tom::stats::add_type((nm), ocs::tom::stats::c, (v))
 /** @brief Book @p v on counter @p c of field @p nm */
-#define CULL_STATS_FIELD(nm, c, v) ocs::tom::stats::add_field((nm), ocs::tom::stats::c, (v))
+#define TOM_STATS_FIELD(nm, c, v) ocs::tom::stats::add_field((nm), ocs::tom::stats::c, (v))
 /** @brief Compile the code in the argument only in a statistics build */
-#define CULL_STATS_CODE(...) __VA_ARGS__
+#define TOM_STATS_CODE(...) __VA_ARGS__
 
 #else
 
-#define CULL_STATS_TYPE(nm, c, v)
-#define CULL_STATS_FIELD(nm, c, v)
-#define CULL_STATS_CODE(...)
+#define TOM_STATS_TYPE(nm, c, v)
+#define TOM_STATS_FIELD(nm, c, v)
+#define TOM_STATS_CODE(...)
 
 #endif

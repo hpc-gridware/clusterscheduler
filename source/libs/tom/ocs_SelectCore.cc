@@ -765,8 +765,8 @@ namespace ocs::tom {
             const int maxpos = std::min(descr_length(src->descr), descr_length(dst->descr));
             for (int i = 0; what[i].nm != NoName; i++) {
                const int pos = what[i].pos;
-               if (pos >= maxpos || pos < 0 || src->descr[pos].off == OCS_CULL_ABSENT ||
-                   dst->descr[pos].off == OCS_CULL_ABSENT) {
+               if (pos >= maxpos || pos < 0 || src->descr[pos].off == TOM_ABSENT ||
+                   dst->descr[pos].off == TOM_ABSENT) {
                   throw ListCoreError("a selected field is absent in an element");
                }
                copy_field_or_throw(src, dst, pos, hash, what[i].ep, skip_no_transfer);
@@ -852,14 +852,14 @@ namespace ocs::tom {
             return 0;
          case WHAT_ALL:
             for (int i = 0; i < n; i++) {
-               keep[i] = sdp[i].off != OCS_CULL_ABSENT;
+               keep[i] = sdp[i].off != TOM_ABSENT;
             }
             break;
          default:
             for (int i = 0; mt_get_type(enp[i].mt) != MT_END; i++) {
                const int pos = enp[i].pos;
                if (pos < 0 || pos >= n || enp[i].nm != sdp[pos].nm || mt_get_type(enp[i].mt) != mt_get_type(sdp[pos].mt) ||
-                   sdp[pos].off == OCS_CULL_ABSENT) {
+                   sdp[pos].off == TOM_ABSENT) {
                   return -1;
                }
                keep[pos] = true;
@@ -1051,7 +1051,7 @@ bool ocs::tom::detail::what_fits(const lEnumeration *enp, const lDescr *dp) {
    const int n = ocs::tom::descr_length(dp);
    for (int i = 0; enp[i].nm != NoName; i++) {
       const int pos = enp[i].pos;
-      if (pos < 0 || pos >= n || dp[pos].nm != enp[i].nm || dp[pos].off == OCS_CULL_ABSENT) {
+      if (pos < 0 || pos >= n || dp[pos].nm != enp[i].nm || dp[pos].off == TOM_ABSENT) {
          return false;
       }
    }

@@ -25,7 +25,7 @@
  * The pack buffer and the reading and writing of values, elements, lists,
  * selections and conditions. The functions are untyped and throw on every
  * error; the typed handles call them, and the old functions of the list
- * library (packint(), unpackstr(), cull_pack_list(), cull_unpack_elem(), ...)
+ * library (packint(), unpackstr(), tom_pack_list(), tom_unpack_elem(), ...)
  * are thin wrappers that turn the exception back into the PACK_* code they
  * returned (N-L-1, N-L-2). The bytes on the wire are those of before; the
  * format is pinned by test_tom_core_pack_format.
@@ -70,7 +70,7 @@ namespace ocs::tom {
    };
 
    /**
-    * @brief The message of a PACK_* code, as cull_pack_strerror() gave it
+    * @brief The message of a PACK_* code, as tom_pack_strerror() gave it
     * @param code the code
     * @return the message, static; empty for an unknown code
     */
@@ -227,7 +227,7 @@ namespace ocs::tom {
    void free_descr_table(sge_pack_buffer *pb) noexcept;
 
    /**
-    * @brief Write an object type descriptor, as cull_pack_descr() did
+    * @brief Write an object type descriptor, as tom_pack_descr() did
     *
     * Without flags a static descriptor is written as a reference to its type
     * and a reduced one through the descriptor table of the buffer (N-W-3,
@@ -241,7 +241,7 @@ namespace ocs::tom {
    void pack_descr(sge_pack_buffer *pb, const lDescr *descr, int flags);
 
    /**
-    * @brief Write a field selection as the descriptor it reduces another one to, as cull_pack_enum_as_descr() did
+    * @brief Write a field selection as the descriptor it reduces another one to, as tom_pack_enum_as_descr() did
     * @param pb the buffer
     * @param what the selection
     * @param descr the descriptor it applies to
@@ -252,7 +252,7 @@ namespace ocs::tom {
    void pack_what_as_descr(sge_pack_buffer *pb, const lEnumeration *what, const lDescr *descr, int flags);
 
    /**
-    * @brief Write an element, or the fields of it a selection names, as cull_pack_elem_partial() did
+    * @brief Write an element, or the fields of it a selection names, as tom_pack_elem_partial() did
     * @param pb the buffer
     * @param ep the element
     * @param what the selection, or nullptr for every field
@@ -263,7 +263,7 @@ namespace ocs::tom {
    void pack_elem(sge_pack_buffer *pb, const lListElem *ep, const lEnumeration *what, int flags);
 
    /**
-    * @brief Read an element, as cull_unpack_elem_partial() did
+    * @brief Read an element, as tom_unpack_elem_partial() did
     *
     * A free element takes its descriptor from the buffer; an element that was
     * bound at the sender takes @p descr. Everything read before an error is
@@ -280,7 +280,7 @@ namespace ocs::tom {
    lListElem *unpack_elem(sge_pack_buffer *pb, const lDescr *descr, int flags);
 
    /**
-    * @brief Write a list, or the fields of its elements a selection names, as cull_pack_list_partial() did
+    * @brief Write a list, or the fields of its elements a selection names, as tom_pack_list_partial() did
     * @param pb the buffer
     * @param lp the list, or nullptr
     * @param what the selection, or nullptr for every field
@@ -290,7 +290,7 @@ namespace ocs::tom {
    void pack_list(sge_pack_buffer *pb, const lList *lp, const lEnumeration *what, int flags);
 
    /**
-    * @brief Read a list, as cull_unpack_list_partial() did
+    * @brief Read a list, as tom_unpack_list_partial() did
     *
     * The checks for duplicate keys are suspended while it is read (N-H-18).
     * Everything read before an error is freed.
@@ -308,7 +308,7 @@ namespace ocs::tom {
     * The position of the buffer and its descriptor table stay as they are;
     * every form of descriptor on the wire is understood (N-W-3 to N-W-6).
     *
-    * @param pb the buffer, positioned in front of a list written by pack_list() or cull_pack_list()
+    * @param pb the buffer, positioned in front of a list written by pack_list() or tom_pack_list()
     * @return the first field number of the type, as `T::fields[0].nm` of the typed object model, or NoName for a
     *         list that was null
     * @throw PackException with PACK_BADARG for a null buffer, PACK_FORMAT for bytes that are cut off or a
@@ -323,7 +323,7 @@ namespace ocs::tom {
     * sender is read with the descriptor of its list, which the buffer does not
     * name.
     *
-    * @param pb the buffer, positioned in front of an element written by pack_elem() or cull_pack_elem()
+    * @param pb the buffer, positioned in front of an element written by pack_elem() or tom_pack_elem()
     * @return the first field number of the type, or NoName for an element that was bound at the sender
     * @throw PackException with PACK_BADARG for a null buffer, PACK_FORMAT for bytes that are cut off, an element of
     *        no known kind or a descriptor of no known type
@@ -331,7 +331,7 @@ namespace ocs::tom {
    int peek_elem_type(const sge_pack_buffer *pb);
 
    /**
-    * @brief Write a field selection, as cull_pack_enum() did
+    * @brief Write a field selection, as tom_pack_enum() did
     * @param pb the buffer
     * @param what the selection, or nullptr
     * @throw PackException with PACK_BADARG for a null buffer, PACK_ENOMEM
@@ -339,7 +339,7 @@ namespace ocs::tom {
    void pack_what(sge_pack_buffer *pb, const lEnumeration *what);
 
    /**
-    * @brief Read a field selection, as cull_unpack_enum() did
+    * @brief Read a field selection, as tom_unpack_enum() did
     * @param pb the buffer
     * @return the selection, owned by the caller, or nullptr for a selection that was null
     * @throw PackException with PACK_FORMAT for bytes that are cut off, PACK_ENOMEM
@@ -347,7 +347,7 @@ namespace ocs::tom {
    lEnumeration *unpack_what(sge_pack_buffer *pb);
 
    /**
-    * @brief Write a condition, as cull_pack_cond() did
+    * @brief Write a condition, as tom_pack_cond() did
     * @param pb the buffer
     * @param cp the condition, or nullptr
     * @throw PackException with PACK_BADARG for a null buffer, PACK_ENOMEM, PACK_FORMAT for an unknown operator
@@ -355,7 +355,7 @@ namespace ocs::tom {
    void pack_where(sge_pack_buffer *pb, const lCondition *cp);
 
    /**
-    * @brief Read a condition, as cull_unpack_cond() did
+    * @brief Read a condition, as tom_unpack_cond() did
     * @param pb the buffer
     * @return the condition, owned by the caller, or nullptr for a condition that was null
     * @throw PackException with PACK_FORMAT for bytes that are cut off or an unknown operator, PACK_ENOMEM

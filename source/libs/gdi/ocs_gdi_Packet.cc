@@ -666,7 +666,7 @@ ocs::gdi::Packet::unpack(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, sge_pack_
       task->target = static_cast<Target>(target_ulong32);
 
       // data list, answer list, condition and selection, in this order; a format error or no memory is mapped
-      // to an answer as the return code of cull_unpack_list(), cull_unpack_cond() and cull_unpack_enum() was
+      // to an answer as the return code of tom_unpack_list(), tom_unpack_cond() and tom_unpack_enum() was
       try {
          // the data list is of any type: the listener checks it against the target (CS-3125)
          task->reset_data_list(ocs::tom::unpack_raw_list(pb));
@@ -833,7 +833,7 @@ ocs::gdi::Packet::pack_task(Task *task, ocs::tom::ListPtr<ocs::tom::AN> *answer_
       }
 
       // the data list unless it was selected above, then the answer list, the condition and the selection, the
-      // bytes of cull_pack_list(), cull_pack_cond() and cull_pack_enum(); an error is mapped as their return code
+      // bytes of tom_pack_list(), tom_pack_cond() and tom_pack_enum(); an error is mapped as their return code
       try {
          if (!task->do_select_pack_simultaneous) {
             ocs::tom::pack_list(pb, task->data_list, nullptr, 0);

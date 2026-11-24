@@ -45,7 +45,7 @@
 #include "tom/detail/ocs_HashP.h"
 
 /**
- * @defgroup cull_elem_status Element state
+ * @defgroup tom_elem_status Element state
  * @brief The state of an element, held in the two low bits of _lListElem::owner
  *
  * The state records who owns an element, which decides whether it may be
@@ -76,7 +76,7 @@
  */
 
 /// the state of an element
-enum cull_elem_kind : uintptr_t {
+enum tom_elem_kind : uintptr_t {
    FREE_ELEM = 0,        ///< not part of a list and not a sub-object; the holder must free it
    BOUND_ELEM = 1,       ///< contained in a list, which owns it and whose address the owner word carries
    OBJECT_ELEM = 2,      ///< a sub-object of another element's field
@@ -115,7 +115,7 @@ static_assert(TOM_PACK_DESCR_TYPE_REF > MAX_DESCR_SIZE, "the type reference mark
 struct _lListElem {
    lListElem *next;   ///< next element, or nullptr at the end of the list
    lListElem *prev;   ///< previous element, or nullptr at the head
-   uintptr_t owner;   ///< two parts in one word: the state in the two low bits, the list of a bound element in the upper bits (see @ref cull_elem_status)
+   uintptr_t owner;   ///< two parts in one word: the state in the two low bits, the list of a bound element in the upper bits (see @ref tom_elem_status)
    const lDescr *descr; ///< the object type, shared: a static block or a counted descriptor (see tom/ocs_Descr.h)
    lMultiType *cont;  ///< the field values, at the slots ocs::tom::detail::slot_index() gives for the positions
 };
@@ -126,8 +126,8 @@ namespace ocs::tom {
     * @param dp the entries of a static or counted descriptor; a plain array has no header
     * @return its header
     */
-   inline const cull_descr_header *descr_header_of(const lDescr *dp) {
-      return reinterpret_cast<const cull_descr_header *>(dp) - 1;
+   inline const tom_descr_header *descr_header_of(const lDescr *dp) {
+      return reinterpret_cast<const tom_descr_header *>(dp) - 1;
    }
 
    /**
@@ -248,7 +248,7 @@ namespace ocs::tom {
           * @brief Move an entry walk past absent entries
           */
          void skip_absent() {
-            while (mt_get_type(dp_[i_].mt) != MT_END && dp_[i_].off == OCS_CULL_ABSENT) {
+            while (mt_get_type(dp_[i_].mt) != MT_END && dp_[i_].off == TOM_ABSENT) {
                ++i_;
             }
          }
@@ -276,7 +276,7 @@ namespace ocs::tom {
             return {dp_, nullptr, 0, true};
          }
          if ((dp_[0].mt & MT_DESCR_INTERNED) != 0) {
-            const cull_descr_header *h = ocs::tom::descr_header_of(dp_);
+            const tom_descr_header *h = ocs::tom::descr_header_of(dp_);
             if (h->np < h->n) {
                return {dp_, ocs::tom::descr_rmap(dp_), static_cast<int>(h->np), false};
             }
@@ -312,15 +312,15 @@ namespace ocs::tom {
  * list never run concurrently with other access to it, so set() needs no more
  * than release semantics.
  */
-struct cull_hash_slot {
+struct tom_hash_slot {
    int pos;                     ///< position of the hashed field in the list's descriptor
-   std::atomic<cull_htable> ht; ///< the table over that field, or nullptr while none is built
+   std::atomic<tom_htable> ht; ///< the table over that field, or nullptr while none is built
 
    /**
     * @brief The table of the slot
     * @return the table, or nullptr while none is built
     */
-   cull_htable get() const {
+   tom_htable get() const {
       return ht.load(std::memory_order_acquire);
    }
 
@@ -328,11 +328,11 @@ struct cull_hash_slot {
     * @brief Store a table in the slot, by a thread that modifies the list
     * @param t the table, or nullptr to empty the slot
     */
-   void set(const cull_htable t) {
+   void set(const tom_htable t) {
       ht.store(t, std::memory_order_release);
    }
 };
-static_assert(std::atomic<cull_htable>::is_always_lock_free, "a hash slot must not hide a mutex");
+static_assert(std::atomic<tom_htable>::is_always_lock_free, "a hash slot must not hide a mutex");
 
 /**
  * @brief A list: a doubly linked list of elements of one object type
@@ -352,9 +352,9 @@ struct _lList {
    /// nslots hash slots, or nullptr until the first table build; atomic and
    /// mutable because concurrent first lookups on a const list publish it,
    /// which does not change the list logically, see #ocs::tom::detail::hash_lookup_table
-   mutable std::atomic<cull_hash_slot *> ht;
+   mutable std::atomic<tom_hash_slot *> ht;
 };
-static_assert(std::atomic<cull_hash_slot *>::is_always_lock_free, "the slot array pointer must not hide a mutex");
+static_assert(std::atomic<tom_hash_slot *>::is_always_lock_free, "the slot array pointer must not hide a mutex");
 
 // The owner word replaces the former 4-byte status and the 4 bytes of padding
 // behind it, so the element keeps its five words.
@@ -372,8 +372,8 @@ static_assert(alignof(lList) >= 4 && alignof(lListElem) >= 4,
  * @param ep the element, not nullptr
  * @return the state held in the low bits of its owner word
  */
-inline cull_elem_kind elem_kind(const lListElem *ep) {
-   return static_cast<cull_elem_kind>(ep->owner & TOM_ELEM_KIND_MASK);
+inline tom_elem_kind elem_kind(const lListElem *ep) {
+   return static_cast<tom_elem_kind>(ep->owner & TOM_ELEM_KIND_MASK);
 }
 
 /**
@@ -453,7 +453,7 @@ inline void elem_set_trans_bound(lListElem *ep) {
  * @param kind the state
  * @return the former status value of that state
  */
-inline uint32_t elem_kind_to_wire(const cull_elem_kind kind) {
+inline uint32_t elem_kind_to_wire(const tom_elem_kind kind) {
    switch (kind) {
       case BOUND_ELEM:
          return TOM_PACK_BOUND_ELEM;
@@ -474,7 +474,7 @@ inline uint32_t elem_kind_to_wire(const cull_elem_kind kind) {
  * @param kind receives the state
  * @return false if the value names no state
  */
-inline bool elem_kind_from_wire(const uint32_t wire, cull_elem_kind *kind) {
+inline bool elem_kind_from_wire(const uint32_t wire, tom_elem_kind *kind) {
    switch (wire) {
       case TOM_PACK_FREE_ELEM:
          *kind = FREE_ELEM;
@@ -502,7 +502,7 @@ inline bool elem_kind_from_wire(const uint32_t wire, cull_elem_kind *kind) {
  * @param lp the list, not nullptr
  * @return the lp->nslots slots, or nullptr while no table of the list was built
  */
-inline cull_hash_slot *list_slots(const lList *lp) {
+inline tom_hash_slot *list_slots(const lList *lp) {
    return lp->ht.load(std::memory_order_acquire);
 }
 
@@ -516,8 +516,8 @@ inline cull_hash_slot *list_slots(const lList *lp) {
  * @param pos position of the field in the list's descriptor
  * @return the slot, or nullptr when the field is not hashed in this list or the list has no slot array yet
  */
-inline cull_hash_slot *list_hash_slot(const lList *lp, const int pos) {
-   cull_hash_slot *slots = list_slots(lp);
+inline tom_hash_slot *list_hash_slot(const lList *lp, const int pos) {
+   tom_hash_slot *slots = list_slots(lp);
    if (slots == nullptr) {
       return nullptr;
    }
@@ -536,8 +536,8 @@ inline cull_hash_slot *list_hash_slot(const lList *lp, const int pos) {
  * @param pos position of the field in the list's descriptor
  * @return the table, or nullptr when the field is not hashed or its table is not built
  */
-inline cull_htable list_hash_table(const lList *lp, const int pos) {
-   const cull_hash_slot *slot = list_hash_slot(lp, pos);
+inline tom_htable list_hash_table(const lList *lp, const int pos) {
+   const tom_hash_slot *slot = list_hash_slot(lp, pos);
    return slot != nullptr ? slot->get() : nullptr;
 }
 
@@ -552,7 +552,7 @@ inline cull_htable list_hash_table(const lList *lp, const int pos) {
  * @param pos position of the field in the element's descriptor
  * @return the table, or nullptr when the element is not bound or the field is not hashed
  */
-inline cull_htable elem_hash_table(const lListElem *ep, const int pos) {
+inline tom_htable elem_hash_table(const lListElem *ep, const int pos) {
    // most fields are not hashed: their flag answers without looking at the list
    if (!mt_do_hashing(ep->descr[pos].mt)) {
       return nullptr;

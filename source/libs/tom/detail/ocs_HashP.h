@@ -39,8 +39,8 @@
 
 #include <cstdint>
 
-/// Handle of a hash table of a list; see @ref _cull_htable
-typedef struct _cull_htable *cull_htable;
+/// Handle of a hash table of a list; see @ref _tom_htable
+typedef struct _tom_htable *tom_htable;
 
 /**
  * @brief Default list length below which no hash table is built
@@ -50,7 +50,7 @@ typedef struct _cull_htable *cull_htable;
  * ocs::tom::detail::hash_set_min_elems().
  * Provisional until fixed by measurement.
  */
-constexpr uint32_t OCS_CULL_HASH_MIN_ELEMS = 16;
+constexpr uint32_t TOM_HASH_MIN_ELEMS = 16;
 
 /**
  * @brief Default list length below which no hash table is built for a host field
@@ -61,4 +61,4 @@ constexpr uint32_t OCS_CULL_HASH_MIN_ELEMS = 16;
  * ocs::tom::detail::hash_set_min_elems_host(), a process with the environment variable
  * `OCS_TOM_HASH_MIN_ELEMS_HOST`.
  */
-constexpr uint32_t OCS_CULL_HASH_MIN_ELEMS_HOST = 0;
+constexpr uint32_t TOM_HASH_MIN_ELEMS_HOST = 0;
