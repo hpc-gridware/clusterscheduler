@@ -10,6 +10,37 @@ For details see the *Installation Guide*, chapter **"Enabling TLS Encryption"**.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### 5.1.2 Cluster State and Search in Qontrol
+
+Qontrol, the web-based replacement for qmon, so far covered the configuration of a cluster. With 9.1.8 it also
+shows what the cluster is doing right now, and lets an administrator act on what they see. The new Cluster State
+view answers the questions that otherwise take a series of `qstat`, `qhost` and `qquota` calls: is the scheduler
+running, which hosts are in trouble, why is this job not starting, and what is free at the moment.
+
+Cluster State covers:
+
+* **Scheduler status.** The header shows whether the scheduler is active. A manager can start it from there.
+* **Hosts.** Each host is shown with its state. An administrator can drain a host, so that it takes no new
+  jobs while the running ones finish, and clear a host again.
+* **Queues.** The Queues tab provides an overview about the state of the queue instances.
+* **Jobs.** An administrator can clear the error state of a job, hold and release it, reschedule it, and
+  delete it, without leaving the view.
+* **Resource quotas.** The usage of the resource quotas is shown, and so is the case where a quota is what
+  keeps a job from starting.
+* **Free resources.** The view shows which resources are free now, such as licenses, GPUs and consumable
+  memory.
+
+All tabs of Cluster State share one look, so the hosts, queues and jobs of a cluster read the same way. The
+actions can be limited to users who hold the corresponding rights in the cluster; a user without them sees the
+state but cannot change it.
+
+Two further additions help an administrator find their way around. A search bar leads to any page of Qontrol
+and to any cluster object, so a queue, a host or a configuration page is reached by typing its name instead
+of going through the menu. The Share Tree page now shows the configured share of each node next to the
+actual one, so an administrator sees whether the policy has the effect it was meant to have.
+
+(Available in Gridware Cluster Scheduler only.)
+
 ## v9.1.7
 
 ### Further Resource Map Improvements
