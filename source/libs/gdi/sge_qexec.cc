@@ -226,7 +226,8 @@ sge_qexecve(const char *hostname, const char *queuename, const char *cwd,
          } catch (const ocs::tom::PackException &e) {
             ocs::tom::clear_buffer(&pb);
             petrep.reset();
-            snprintf(lasterror, sizeof(lasterror), SFN, ocs::tom::pack_error_text(e.code()));
+            snprintf(lasterror, sizeof(lasterror), MSG_GDI_SENDTASKTOEXECDFAILED_SS, hostname,
+                     ocs::tom::pack_error_text(e.code()));
             DRETURN(nullptr);
          }
 
