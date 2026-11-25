@@ -112,8 +112,9 @@
 #define MSG_FILE_OPENDIRECTORYFAILED_SS         _MESSAGE(49124, _("open(" PFNMAX ") failed: " SFN))
 #define MSG_FILE_REMOVINGPLANTED_S              _MESSAGE(49125, _("removing " PFNMAX ": not a directory, it blocks the one to be created"))
 #define MSG_FILE_RMDIRTOODEEP_IS                _MESSAGE(49126, _("the directory tree is deeper than %d levels below " PFNMAX))
-#define MSG_FILE_MOVINGASIDE_SS                 _MESSAGE(49127, _("moving " PFNMAX " aside to " PFNMAX ": a directory of another user in the place of one to be created"))
+// 49127 (MSG_FILE_MOVINGASIDE_SS) was replaced by 49129, which names the owner of the directory
 #define MSG_FILE_RENAMEFAILED_SSS               _MESSAGE(49128, _("rename(" PFNMAX ", " PFNMAX ") failed: " SFN))
+#define MSG_FILE_MOVINGASIDE_SSUU               _MESSAGE(49129, _("moving " PFNMAX " aside to " PFNMAX ": a directory of another user (uid " uid_t_fmt ", gid " gid_t_fmt ") in the place of one to be created"))
 
 #define MSG_MEMORY_MALLOCFAILED                 _MESSAGE(49072, _("malloc() failure"))
 #define MSG_MEMORY_REALLOCFAILED                _MESSAGE(49073, _("realloc() failure"))

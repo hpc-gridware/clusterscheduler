@@ -37,6 +37,8 @@
  */
 
 #include <cerrno>
+#include <string>
+#include <vector>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -60,9 +62,10 @@
  * writable and the name is predictable, so a user may have planted something at the path:
  * ocs_mkdir_for_owner() never follows a symbolic link and changes owner and mode through the open
  * descriptor (CS-3203). A link, a file or another non-directory at the path is removed, a
- * directory of another user is renamed aside, and the directory is created. A directory that
- * already belongs to root or to the job owner, for example one left behind by an earlier start of
- * the same task, is used as before. A failing mkdir(), fchown() or fchmod() is a problem of the
+ * directory of another user is renamed aside, which logs a warning naming its uid and gid, and the
+ * directory is created; sge_remove_tmpdir() removes what was renamed aside when the job ends
+ * (CS-3221). A directory that already belongs to root or to the job owner, for example one left
+ * behind by an earlier start of the same task, is used as before. A failing mkdir(), fchown() or fchmod() is a problem of the
  * host; when the path cannot be made the directory for any other reason, @p planted tells the
  * caller that only this job failed, not the queue.
  *
@@ -122,37 +125,61 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
  * never follows a symbolic link, also not one the owner swaps in for a subdirectory while the
  * tree is being removed (CS-3202).
  *
+ * The directories of other users that sge_make_tmpdir() renamed aside from the path
+ * (`<tmpdir>.stale.<pid>.<time>`, CS-3203) are removed the same way (CS-3221). Their names are
+ * derived from the path of the temporary directory, so nothing has to be remembered between the
+ * start and the end of the job, and directories renamed aside before a restart of execd or by a
+ * further task of a parallel job are found as well. A directory that cannot be removed is logged,
+ * the job is not affected.
+ *
  * @param dir the configured parent of the temporary directories (QU_tmpdir), may be nullptr
  * @param job_owner the job owner (unused)
  * @param jobid the job
  * @param jataskid the array task
  * @param queue_name the queue instance, part of the directory's name
- * @return 0 on success or when no parent is configured, -1 when the directory could not be removed
+ * @return 0 on success or when no parent is configured, -1 when the directory or one renamed aside
+ *         from its path could not be removed
  */
-int sge_remove_tmpdir(const char *dir, const char *job_owner, uint32_t jobid, uint32_t jataskid, const char *queue_name) {
+int sge_remove_tmpdir(const char *dir, [[maybe_unused]] const char *job_owner, const uint32_t jobid,
+                      const uint32_t jataskid, const char *queue_name) {
    DENTER(TOP_LAYER);
-
-   stringT tmpstr;
-   char err_str_buffer[1024];
-   dstring err_str;
-
-   sge_dstring_init(&err_str, err_str_buffer, sizeof(err_str_buffer));
 
    if (!dir) {
       DRETURN(0);
    }
 
+   stringT tmpstr;
    snprintf(tmpstr, sizeof(tmpstr), "%s/" sge_u32 "." sge_u32 ".%s", dir, jobid, jataskid, queue_name);
-   DPRINTF("recursively unlinking \"%s\"\n", tmpstr);
+
+   int ret = 0;
+   DSTRING_STATIC(err_str, MAX_STRING_SIZE);
+
    sge_switch2start_user();
+
+   DPRINTF("recursively unlinking \"%s\"\n", tmpstr);
    if (sge_rmdir(tmpstr, &err_str)) {
-      ERROR(MSG_FILE_RECURSIVERMDIR_SS, tmpstr, err_str_buffer);
-      sge_switch2admin_user();
-      DRETURN(-1);
+      ERROR(MSG_FILE_RECURSIVERMDIR_SS, tmpstr, sge_dstring_get_string(&err_str));
+      ret = -1;
    }
+
+   std::vector<std::string> aside;
+   sge_dstring_clear(&err_str);
+   if (ocs_moved_aside_paths(tmpstr, aside, &err_str) != 0) {
+      ERROR(SFNMAX, sge_dstring_get_string(&err_str));
+      ret = -1;
+   }
+   for (const auto &path : aside) {
+      DPRINTF("recursively unlinking \"%s\", moved aside from \"%s\"\n", path.c_str(), tmpstr);
+      sge_dstring_clear(&err_str);
+      if (sge_rmdir(path.c_str(), &err_str)) {
+         ERROR(MSG_FILE_RECURSIVERMDIR_SS, path.c_str(), sge_dstring_get_string(&err_str));
+         ret = -1;
+      }
+   }
+
    sge_switch2admin_user();
 
-   DRETURN(0);
+   DRETURN(ret);
 }
 
 /**

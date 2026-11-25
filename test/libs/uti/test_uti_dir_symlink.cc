@@ -31,6 +31,10 @@
  * the job owner. A symbolic link or file a user planted at that path is removed itself, a directory
  * of someone else is refused, and nothing outside the directory it creates is ever changed.
  *
+ * CS-3221: ocs_moved_aside_paths() finds exactly the directories ocs_mkdir_for_owner() renamed aside
+ * from a path, never a symbolic link or file of such a name, and sge_rmdir() removes them without
+ * touching the target of a link inside.
+ *
  * Everything runs as the calling user inside a scratch directory under $TMPDIR or /tmp.
  */
 
@@ -38,7 +42,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <string>
+#include <vector>
 
 #include <fcntl.h>
 #include <sys/resource.h>
@@ -522,6 +528,76 @@ static void test_mkdir_for_owner(const std::string &base, int &id) {
    CHECK(id++, "nullptr is an error", ocs_mkdir_for_owner(nullptr, 0755, uid, gid, &err) == OCS_MKDIR_FOR_OWNER_ERROR);
 }
 
+/**
+ * @brief Test ocs_moved_aside_paths() and the removal of what it finds (CS-3221)
+ *
+ * Next to the path of a TMPDIR lie directories named like those ocs_mkdir_for_owner() moves aside,
+ * one with a symbolic link to a file outside, and decoys: a symbolic link and a file that bear such
+ * a name, and directories whose names only resemble it. Only the two directories are listed;
+ * removing them with sge_rmdir() leaves the link's target and every decoy in place.
+ *
+ * @param base scratch directory
+ * @param id running test number, incremented per check
+ */
+static void test_moved_aside(const std::string &base, int &id) {
+   printf("\n--- ocs_moved_aside_paths() (CS-3221)\n");
+   DSTRING_STATIC(err, 1024);
+
+   const std::string parent = base + "/aside";
+   const std::string path = parent + "/7.1.all.q";
+   const std::string first = path + ".stale.123.1700000000";
+   const std::string second = path + ".stale.4.5";
+   const std::string target = base + "/aside_target";
+   const std::string link_named = path + ".stale.6.7";
+   const std::string file_named = path + ".stale.8.9";
+   const std::vector<std::string> decoys = {path + ".stale.1", path + ".stale.1.2x", path + ".stale..2",
+                                            path + ".stale.1.2.3", parent + "/17.1.all.q.stale.1.2",
+                                            path + "x.stale.1.2"};
+   bool ok = make_dir(parent) && make_dir(path) && make_dir(first) && make_file(first + "/keep") &&
+             make_dir(second) && make_file(target) && symlink(target.c_str(), (second + "/link").c_str()) == 0 &&
+             symlink(target.c_str(), link_named.c_str()) == 0 && make_file(file_named);
+   for (const auto &decoy : decoys) {
+      ok = ok && make_dir(decoy);
+   }
+   if (!ok) {
+      CHECK(id++, "setup of the moved aside directories", false);
+      cleanup(parent);
+      return;
+   }
+
+   std::vector<std::string> paths;
+   CHECK(id++, "the parent is read", ocs_moved_aside_paths(path.c_str(), paths, &err) == 0);
+   std::sort(paths.begin(), paths.end());
+   std::vector<std::string> expected = {first, second};
+   std::sort(expected.begin(), expected.end());
+   CHECK(id++, "exactly the two directories are listed, no link, no file, no look-alike", paths == expected);
+   for (const auto &listed : paths) {
+      printf("      listed: %s\n", listed.c_str());
+   }
+
+   bool removed = true;
+   for (const auto &listed : paths) {
+      sge_dstring_clear(&err);
+      removed = removed && sge_rmdir(listed.c_str(), &err) == 0;
+   }
+   CHECK(id++, "the listed directories are removed", removed && !exists(first) && !exists(second));
+   CHECK(id++, "the target of the link inside is untouched", exists(target) && !is_symlink(target));
+   bool kept = exists(path) && is_symlink(link_named) && exists(file_named);
+   for (const auto &decoy : decoys) {
+      kept = kept && exists(decoy);
+   }
+   CHECK(id++, "the directory itself and every decoy are still there", kept);
+   CHECK(id++, "a second search finds nothing",
+         ocs_moved_aside_paths(path.c_str(), paths, &err) == 0 && paths.empty());
+
+   CHECK(id++, "a missing parent is no error and lists nothing",
+         ocs_moved_aside_paths((base + "/missing/7.1.all.q").c_str(), paths, &err) == 0 && paths.empty());
+   CHECK(id++, "nullptr is an error", ocs_moved_aside_paths(nullptr, paths, &err) == -1);
+
+   cleanup(parent);
+   cleanup(target);
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_uti_dir_symlink");
 
@@ -537,6 +613,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_rmdir(base, id);
    test_rmdir_deep(base, id);
    test_mkdir_for_owner(base, id);
+   test_moved_aside(base, id);
 
    cleanup(base);
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
