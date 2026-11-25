@@ -165,8 +165,8 @@ ocs_path_alias_split_line(const std::string &line, std::array<std::string, 4> &f
  *   by a Windows editor) and lines beginning with a # sign in the first
  *   column are skipped.
  * - Each line - other than a blank line or a line preceded by # -
- *   must contain four strings separated by any number of blanks
- *   or tabs. Further strings are ignored.
+ *   must contain four strings separated by whitespace. Further
+ *   strings are ignored.
  * - The first string specifies a source path, the second a submit
  *   host, the third an execution host, and the fourth the source
  *   path replacement.
@@ -219,7 +219,7 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
       }
 
       /*
-       * skip blank lines (blanks, tabs, a '\r' of a CRLF line end), check the others for correctness
+       * skip blank lines (whitespace only, e.g. a '\r' of a CRLF line end), check the others for correctness
        */
       const size_t field_count = ocs_path_alias_split_line(line, fields);
       if (field_count == 0) {
