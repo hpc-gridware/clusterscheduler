@@ -1081,7 +1081,10 @@ sge_get_config_version_for_host(const char *aName) {
       if (CL_RETVAL_OK != ret) {
          DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
       }
-      conf = config_list.find_first<CONF_name>(ocs::tom::Host(unique_name));
+      // CS-3214: an over-long name leaves unique_name empty - no configuration has it
+      if (unique_name[0] != '\0') {
+         conf = config_list.find_first<CONF_name>(ocs::tom::Host(unique_name));
+      }
    }
 
    if (!conf) {

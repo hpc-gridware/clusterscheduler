@@ -23,11 +23,16 @@
  *
  * Covers host_list_locate(), which takes the host list as a raw handle, and
  * the freeing of the master list slots of the data store, which are indexed
- * by the object type at run time.
+ * by the object type at run time, and sge_resolve_hostname() on names that
+ * never reach the resolver.
  */
 
 #include <cstdio>
+#include <cstring>
+#include <string>
 #include <utility>
+
+#include "comm/commlib.h"
 
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_DataStore.h"
@@ -170,6 +175,41 @@ test_raw_master_list_access() {
 }
 
 // ---------------------------------------------------------------------------
+// sge_resolve_hostname()
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief sge_resolve_hostname() refuses an over-long name instead of truncating it (CS-3214)
+ *
+ * None of the names checked here reaches the resolver, so no commlib setup is needed.
+ */
+static void
+test_resolve_hostname() {
+   char unique[CL_MAXHOSTNAMELEN];
+
+   // a name of exactly CL_MAXHOSTNAMELEN characters does not fit with its terminator
+   const std::string at_limit(CL_MAXHOSTNAMELEN, 'h');
+   memset(unique, 'x', sizeof(unique));
+   int ret = sge_resolve_hostname(at_limit.c_str(), unique, EH_name);
+   CHECK(19, "name of CL_MAXHOSTNAMELEN characters: length error", ret == CL_RETVAL_HOSTNAME_LENGTH_ERROR);
+   CHECK(20, "name of CL_MAXHOSTNAMELEN characters: unique is empty", unique[0] == '\0');
+
+   // its first CL_MAXHOSTNAMELEN - 1 characters could be the name of another host
+   const std::string over_long(300, 'h');
+   memset(unique, 'x', sizeof(unique));
+   ret = sge_resolve_hostname(over_long.c_str(), unique, NoName);
+   CHECK(21, "name of 300 characters: length error", ret == CL_RETVAL_HOSTNAME_LENGTH_ERROR);
+   CHECK(22, "name of 300 characters: unique is empty", unique[0] == '\0');
+
+   // the special names are kept as they are, without a resolver
+   memset(unique, 'x', sizeof(unique));
+   ret = sge_resolve_hostname(SGE_GLOBAL_NAME, unique, EH_name);
+   CHECK(23, "global: kept as it is", ret == CL_RETVAL_OK && strcmp(unique, SGE_GLOBAL_NAME) == 0);
+
+   CHECK(24, "nullptr name: parameter error", sge_resolve_hostname(nullptr, unique, EH_name) == CL_RETVAL_PARAMS);
+}
+
+// ---------------------------------------------------------------------------
 
 /**
  * @brief Run the checks of this module test
@@ -181,6 +221,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_host_list_locate();
    test_free_master_lists();
    test_raw_master_list_access();
+   test_resolve_hostname();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

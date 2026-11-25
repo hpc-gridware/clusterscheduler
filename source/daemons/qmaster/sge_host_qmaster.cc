@@ -342,12 +342,13 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom:
    }
 
    ret = sge_resolve_hostname(host, unique, EH_name);
-   if (ret != CL_RETVAL_OK) {
-      /* 
-       * Due to CR 6319231, IZ 1760 this is allowed 
-       */
-      ;
+   if (ret == CL_RETVAL_HOSTNAME_LENGTH_ERROR && unique[0] == '\0') {
+      // CS-3214: no host has a name this long - never look one up by a shortened name
+      ERROR(MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN - 1);
+      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_ESYNTAX);
    }
+   // any other error: the name is used as it was given, due to CR 6319231, IZ 1760
 
    /* check if host is in host list (host_list_locate() has a raw form only, the list holds execution hosts) */
    if ((ep = ocs::tom::Element<ocs::tom::EH>(host_list_locate(host_list, unique))) == nullptr) {

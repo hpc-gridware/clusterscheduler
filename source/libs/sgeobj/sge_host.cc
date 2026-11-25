@@ -509,18 +509,31 @@ int ocs_resolve_host_name(const char *hostname, const int nm, const bool is_stri
 /**
  * @brief Resolve a host name to its unique form
  *
+ * A name that cannot be resolved is copied to @p unique as it is, so a caller
+ * may still look up an object by the name it was given. A name of
+ * `CL_MAXHOSTNAMELEN` characters or more is not: it does not fit, and a
+ * truncated copy could name a different host (CS-3214), so @p unique is left
+ * empty and `CL_RETVAL_HOSTNAME_LENGTH_ERROR` is returned.
+ *
  * @param hostname the name to resolve
- * @param[out] unique receives the resolved name; must hold `CL_MAXHOSTNAMELEN` bytes
+ * @param[out] unique receives the resolved name; must hold `CL_MAXHOSTNAMELEN` bytes; empty for an over-long name
  * @param nm the attribute the name belongs to, which decides how strictly it is resolved
- * @return `CL_RETVAL_OK` on success, otherwise a commlib error code
+ * @return `CL_RETVAL_OK` on success, `CL_RETVAL_HOSTNAME_LENGTH_ERROR` for an over-long name, otherwise a
+ *         commlib error code
  */
-int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
+int sge_resolve_hostname(const char *hostname, char *unique, const int nm) {
    DENTER(TOP_LAYER);
 
    int ret = CL_RETVAL_OK;
 
    if (hostname == nullptr) {
       DRETURN(CL_RETVAL_PARAMS);
+   }
+
+   // CS-3214: never truncate - the first CL_MAXHOSTNAMELEN - 1 characters may be the name of another host
+   if (strlen(hostname) >= CL_MAXHOSTNAMELEN) {
+      unique[0] = '\0';
+      DRETURN(CL_RETVAL_HOSTNAME_LENGTH_ERROR);
    }
 
    /* 
@@ -551,9 +564,8 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
    }
 
    if (ret != CL_RETVAL_OK) {
-      // strncpy() does not terminate a name of CL_MAXHOSTNAMELEN - 1 characters or more
-      strncpy(unique, hostname, CL_MAXHOSTNAMELEN - 1);
-      unique[CL_MAXHOSTNAMELEN - 1] = '\0';
+      // the length was checked above, the name fits
+      sge_strlcpy(unique, hostname, CL_MAXHOSTNAMELEN);
    }
 
    DRETURN(ret);
