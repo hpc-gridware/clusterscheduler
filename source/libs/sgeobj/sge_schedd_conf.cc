@@ -2070,9 +2070,11 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    /* --- SC_algorithm */
    s = get_algorithm();
    if ( !s || (strcmp(s, "default") && strcmp(s, "simple_sched") && strncmp(s, "ext_", 4))) {
-      if (!s)
-         s = "not defined";
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_ALGORITHMNOVALIDNAME_S, s);
+      if (!s) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XNOTDEFINED_S, "algorithm");
+      } else {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_ALGORITHMNOVALIDNAME_S, s);
+      }
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }

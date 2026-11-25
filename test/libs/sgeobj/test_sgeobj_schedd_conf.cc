@@ -378,6 +378,8 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    printf("\n--- error messages ---\n");
    check_long_job_load_adjustments(&id);
+   check_unset_attribute(&id, SC_algorithm, "attribute \"algorithm\" is not defined",
+                         "algorithm: an unset value is reported as not defined");
    check_unset_attribute(&id, SC_schedule_interval, "attribute \"schedule_interval\" is not defined",
                          "schedule_interval: an unset value is reported as not defined");
    check_unset_attribute(&id, SC_load_adjustment_decay_time, "attribute \"load_adjustment_decay_time\" is not defined",
