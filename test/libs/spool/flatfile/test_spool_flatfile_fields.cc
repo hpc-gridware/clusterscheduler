@@ -24,7 +24,8 @@
  * - The load formula of the scheduler configuration is validated as it is stored, without blanks (CS-3166).
  * - A field the writer cannot render is left out instead of crashing the writer (CS-3167).
  * - A configuration entry admin_user followed only by blanks is refused, not read through a null pointer (CS-3165).
- * - A configuration entry without value is refused with a message naming it, for every kind of entry (CS-3215).
+ * - A configuration entry without value is refused with a message naming it, for every kind of entry (CS-3215);
+ *   the classic reader of a configuration file checks every value it gets in the same field reader.
  * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170), also of a
  *   bit field and of an enumeration.
  */
@@ -198,8 +199,10 @@ test_write_unrenderable_field() {
  * @brief A configuration entry admin_user with only blanks as its value is refused (CS-3165)
  *
  * The JSON reader hands the text of a configuration value to read_CF_value() as it is, so `"   "` reaches it;
- * the tokenizer gives no token for it, and the value was dereferenced without a null check. (The ASCII reader
- * does not get there: it does not call read_CF_value() for a name without a value.)
+ * the tokenizer gives no token for it, and the value was dereferenced without a null check. The classic
+ * (ASCII) reader calls read_CF_value() with the rest of the line whether it parses values or not, but only when
+ * the line has a value after the name; a name followed by blanks only is stored without value and refused by
+ * qmaster's check_config() (see test_conf_entry_classic()).
  */
 static void
 test_conf_admin_user_without_value() {
@@ -283,8 +286,8 @@ read_conf_json(const char *name, const char *value, ocs::tom::ListPtr<ocs::tom::
  * read_CF_value() reads the values of the JSON reader. gid_range with blanks only was accepted with a null
  * value, an entry that takes the rest of the line (prolog) with blanks only was stored as an empty text, and
  * the other rejections only logged a warning: the caller saw the read fail without a reason. Every kind of
- * entry has to be refused with a message naming the entry. (The ASCII reader of qconf -Mconf keeps the values
- * as text, qmaster refuses an entry without value in check_config() with a message naming it.)
+ * entry has to be refused with a message naming the entry. The classic (ASCII) reader of a configuration file
+ * calls read_CF_value() too, for every line with a value; test_conf_entry_classic() covers that path.
  */
 static void
 test_conf_entry_without_value() {
@@ -321,6 +324,96 @@ test_conf_entry_without_value() {
       id++;
       check(tid, label.c_str(), read_conf_json(name, value, alp) && !answer_list_has_error(&alp));
    }
+}
+
+/**
+ * @brief Read a cluster configuration from a text as the classic (ASCII) reader of a configuration file does
+ *
+ * The same call as spooldefaults makes for the global configuration: values are not parsed by the reader, the
+ * field reader read_CF_value() gets the rest of the line all the same.
+ *
+ * @param text the content of the file
+ * @param[out] alp receives the messages
+ * @return the configuration, empty if it was refused
+ */
+static ocs::tom::ElementPtr<ocs::tom::CONF>
+read_conf_classic(const char *text, ocs::tom::ListPtr<ocs::tom::AN> &alp) {
+   char path[64];
+   ocs::tom::ElementPtr<ocs::tom::CONF> conf;
+   spooling_field *fields = sge_build_CONF_field_list(true);
+   if (fields != nullptr && write_tmp_file(text, path)) {
+      conf = ocs::tom::ElementPtr<ocs::tom::CONF>::from_typed(
+         spool_flatfile_read_object(&alp, ocs::tom::CONF::descriptor.e, nullptr, fields, nullptr, false,
+                                    &qconf_sfi, SP_FORM_ASCII, nullptr, path));
+      unlink(path);
+   }
+   sge_free(&fields);
+   print_answers(alp);
+   return conf;
+}
+
+/**
+ * @brief The value of a configuration entry as the classic reader stored it
+ * @param conf the configuration
+ * @param name the name of the entry
+ * @return the value, nullptr if there is no such entry or it has no value
+ */
+static const char *
+conf_value_of(const ocs::tom::ElementPtr<ocs::tom::CONF> &conf, const char *name) {
+   if (conf) {
+      const auto cf = conf->get<CONF_entries>().find_first<CF_name>(name);
+      if (cf) {
+         return cf.get<CF_value>();
+      }
+   }
+   return nullptr;
+}
+
+/**
+ * @brief The classic reader of a configuration file checks its values in read_CF_value() too (CS-3215)
+ *
+ * The flatfile reader hands the rest of the line to the field reader read_CF_value() also when it does not
+ * parse values, so a refused value of a configuration file is refused with a message naming the entry, as from
+ * JSON. A name followed by blanks only is different: the line ends before the value field, the field reader is
+ * not called and the entry is stored without value; qmaster's check_config() refuses such an entry naming it.
+ * Valid entries are read with their values.
+ */
+static void
+test_conf_entry_classic() {
+   const char *names[] = {"gid_range", "prolog", "load_report_time"};
+   int id = 50;
+   for (const char *name : names) {
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
+      const std::string text = std::string(name) + "   \n";
+      const auto conf = read_conf_classic(text.c_str(), alp);
+      const std::string label = std::string("classic reader: ") + name + " with blanks only is stored without value";
+      char tid[16];
+      snprintf(tid, sizeof(tid), "T%02d", id++);
+      check(tid, label.c_str(), conf && conf->get<CONF_entries>().find_first<CF_name>(name) &&
+            conf_value_of(conf, name) == nullptr);
+   }
+
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   check("T53", "classic reader: a gid_range that is no range is refused naming the entry",
+         !read_conf_classic("gid_range   x-y\n", alp) && has_error_naming(alp, "gid_range"));
+   alp.reset();
+   check("T57", "classic reader: two values of load_report_time are refused naming the entry",
+         !read_conf_classic("load_report_time   00:00:40 00:00:50\n", alp) &&
+         has_error_naming(alp, "load_report_time"));
+   alp.reset();
+   check("T58", "classic reader: a gid_range below the allowed minimum is refused with a message",
+         !read_conf_classic("gid_range   50-200\n", alp) && answer_list_has_error(&alp));
+
+   alp.reset();
+   const auto conf = read_conf_classic("gid_range   20000-20100\nprolog   /bin/true arg\n"
+                                       "load_report_time   00:00:40\n", alp);
+   check("T54", "classic reader: valid entries are read", conf && !answer_list_has_error(&alp));
+   const char *gid_range = conf_value_of(conf, "gid_range");
+   const char *prolog = conf_value_of(conf, "prolog");
+   check("T55", "classic reader: gid_range keeps its value", gid_range != nullptr &&
+         strcmp(gid_range, "20000-20100") == 0);
+   check("T56", "classic reader: prolog keeps the rest of the line", prolog != nullptr &&
+         strcmp(prolog, "/bin/true arg") == 0);
 }
 
 /**
@@ -492,6 +585,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_json_sublist_bitfield_unknown_word();
    test_conf_admin_user_without_value();
    test_conf_entry_without_value();
+   test_conf_entry_classic();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);
