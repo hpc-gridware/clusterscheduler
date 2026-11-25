@@ -42,6 +42,9 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_AQTLIST.h"
+#include "sgeobj/tom/ocs_tom_CQ.h"
+#include "sgeobj/sge_qinstance.h"
 #include "sgeobj/tom/ocs_tom_STN.h"
 #include "sgeobj/tom/ocs_tom_US.h"
 #include "sgeobj/sge_userset.h"
@@ -209,13 +212,16 @@ test_json_by_name_unknown_word() {
  * @param replacement the replacement, with its quotes
  * @param[out] written true if the element was written and the word found
  * @param[out] error true if the read failed with an error in the answer list
+ * @param object_fields the spooling fields of the object, nullptr for those derived from @p descr
  * @return true if the read gave an element
  */
 static bool
 json_read_with_replaced_word(const ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr,
-                             const std::string &word, const std::string &replacement, bool *written, bool *error) {
+                             const std::string &word, const std::string &replacement, bool *written, bool *error,
+                             spooling_field *object_fields = nullptr) {
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   spooling_field *fields = spool_get_fields_to_spool(&alp, descr, &spool_config_instr);
+   spooling_field *fields = object_fields != nullptr ? object_fields
+                                                     : spool_get_fields_to_spool(&alp, descr, &spool_config_instr);
    *written = false;
    *error = false;
    if (fields == nullptr) {
@@ -237,7 +243,9 @@ json_read_with_replaced_word(const ocs::tom::ConstRawElement ep, const ocs::tom:
    } else {
       printf("      %s not found once in:\n%s\n", word.c_str(), json.c_str());
    }
-   spool_free_spooling_fields(fields);
+   if (object_fields == nullptr) {
+      spool_free_spooling_fields(fields);
+   }
    return read;
 }
 
@@ -273,6 +281,29 @@ test_json_bitfield_enum_unknown_word() {
 }
 
 /**
+ * @brief The JSON reader rejects an unknown word of a bit field inside a sub-list (CS-3170)
+ *
+ * The queue type of a cluster queue is a list of host specific values, each a bit field. The word of one value
+ * is replaced by an unknown one; the reader has to fail with a message instead of dropping the bit.
+ */
+static void
+test_json_sublist_bitfield_unknown_word() {
+   auto cq = ocs::tom::ElementPtr<ocs::tom::CQ>::create();
+   cq->set<CQ_name>("test.q");
+   const auto qtype = cq->emplace_back_in<CQ_qtype, AQTLIST_href>("@/");
+   qtype.set<AQTLIST_value>(BQ);
+   bool written = false;
+   bool error = false;
+   bool read = json_read_with_replaced_word(cq.get(), ocs::tom::CQ::descriptor.e, "\"BATCH\"", "\"BATCH\"",
+                                            &written, &error, CQ_fields);
+   check("T34", "the queue type in the sub-list reads back unchanged", written && read && !error);
+   read = json_read_with_replaced_word(cq.get(), ocs::tom::CQ::descriptor.e, "\"BATCH\"", "\"BOGUS\"",
+                                       &written, &error, CQ_fields);
+   check("T35", "an unknown queue type word in the sub-list fails the read with a message",
+         written && !read && error);
+}
+
+/**
  * @brief Run the tests
  * @return 0 if all checks held, 1 otherwise
  */
@@ -285,6 +316,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_write_unrenderable_field();
    test_json_by_name_unknown_word();
    test_json_bitfield_enum_unknown_word();
+   test_json_sublist_bitfield_unknown_word();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);
