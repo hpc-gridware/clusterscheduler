@@ -408,8 +408,8 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
       int runs = 0;
       int retries;
 
-      strcpy(rcv_host, host);
-      strcpy(rcv_commproc, commproc);
+      sge_strlcpy(rcv_host, host, sizeof(rcv_host));
+      sge_strlcpy(rcv_commproc, commproc, sizeof(rcv_commproc));
 
       // running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request
       do {

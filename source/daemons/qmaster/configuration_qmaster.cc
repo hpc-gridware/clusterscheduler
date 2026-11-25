@@ -64,6 +64,7 @@
 #include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_host.h"
 #include "sgeobj/sge_userprj.h"
 #include "sgeobj/sge_userset.h"
@@ -265,6 +266,14 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       DRETURN(STATUS_EUNKNOWN);
    }
 
+   // CS-3214: the client sends a name it could not resolve as it was typed - no configuration can have a
+   // name that does not fit into a host name buffer
+   if (strlen(tmp_name) >= CL_MAXHOSTNAMELEN) {
+      ERROR(MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN - 1);
+      answer_list_add(anAnswer, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_ESYNTAX);
+   }
+
    /*
     * Due to CR 6319231 IZ 1760:
     *    try to resolve the hostname
@@ -279,7 +288,7 @@ sge_del_configuration(ocs::gdi::Packet *packet, ocs::gdi::Task *task,
       const auto conf_obj = sge_get_configuration_for_host(tmp_name);
       if (conf_obj) {
          DPRINTF("using hostname stored in configuration object\n");
-         strcpy(unique_name, conf_obj->get<CONF_name>());
+         sge_strlcpy(unique_name, conf_obj->get<CONF_name>(), sizeof(unique_name));
       } else {
          ERROR(MSG_SGETEXT_CANT_DEL_CONFIG2_S, tmp_name);
          answer_list_add(anAnswer, SGE_EVENT,
@@ -1093,7 +1102,7 @@ sge_get_config_version_for_host(const char *aName) {
  * various host name formats or the host name alias mechanism.
  *
  * @param aName the execution host
- * @return the configuration, empty if there is none
+ * @return the configuration, empty if there is none or the name is longer than a host name may be
  */
 ocs::tom::ElementPtr<ocs::tom::CONF>
 sge_get_configuration_for_host(const char *aName) {
@@ -1102,6 +1111,13 @@ sge_get_configuration_for_host(const char *aName) {
    char unique_name[CL_MAXHOSTNAMELEN];
 
    SGE_ASSERT((nullptr != aName));
+
+   // CS-3214: no configuration has a name that does not fit into a host name buffer - a truncated
+   // copy could match the configuration of a different host
+   if (strlen(aName) >= CL_MAXHOSTNAMELEN) {
+      DPRINTF("%s: host name %.32s... exceeds %d characters\n", __func__, aName, CL_MAXHOSTNAMELEN - 1);
+      DRETURN(nullptr);
+   }
 
    /*
     * Due to CR 6319231 IZ 1760:
@@ -1112,7 +1128,7 @@ sge_get_configuration_for_host(const char *aName) {
    const int ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
       DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
-      strcpy(unique_name, aName);
+      sge_strlcpy(unique_name, aName, sizeof(unique_name));
    }
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);

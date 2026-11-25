@@ -119,9 +119,9 @@ ocs_store_packet(const ocs::gdi::ClientServerBase::struct_msg_t *message, ocs::t
                  const gdi_packet_request_type_t type) {
    // create a GDI packet to transport the list to a thread that is able to handle it
    auto *packet = new ocs::gdi::Packet();
-   strcpy(packet->host, message->snd_host);
-   strcpy(packet->ip, message->snd_ip);
-   strcpy(packet->commproc, message->snd_name);
+   sge_strlcpy(packet->host, message->snd_host, sizeof(packet->host));
+   sge_strlcpy(packet->ip, message->snd_ip, sizeof(packet->ip));
+   sge_strlcpy(packet->commproc, message->snd_name, sizeof(packet->commproc));
    packet->commproc_id = message->snd_id;
    packet->response_id = message->request_mid;
    packet->is_intern_request = false;
@@ -481,9 +481,9 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
    sge_pack_buffer *pb_in = &aMsg->buf;
    auto *packet = new ocs::gdi::Packet();
 
-   strcpy(packet->host, aMsg->snd_host);
-   strcpy(packet->ip, aMsg->snd_ip);
-   strcpy(packet->commproc, aMsg->snd_name);
+   sge_strlcpy(packet->host, aMsg->snd_host, sizeof(packet->host));
+   sge_strlcpy(packet->ip, aMsg->snd_ip, sizeof(packet->ip));
+   sge_strlcpy(packet->commproc, aMsg->snd_name, sizeof(packet->commproc));
    packet->commproc_id = aMsg->snd_id;
    packet->response_id = aMsg->request_mid;
    packet->is_intern_request = false;
