@@ -102,6 +102,16 @@
 }
 
 {
+   gperftools: the CPU profiler (libprofiler, WITH_GPERF) probes memory through libunwind with write(2), when it is loaded and in its SIGPROF handler - not a defect
+   Memcheck:Param
+   write(buf)
+   fun:syscall
+   ...
+   fun:_ULx86_64_step
+   obj:*/libprofiler.so*
+}
+
+{
    @todo CS-633 (2) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
    Memcheck:Leak
    match-leak-kinds: definite
