@@ -386,7 +386,7 @@ sge_del_centry(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs::tom::C
    const auto master_ehost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
    const auto master_rqs_list = ocs::DataStore::master_list<SGE_TYPE_RQS>();
 
-   if (centry || remote_user != nullptr || remote_host != nullptr) {
+   if (centry && remote_user != nullptr && remote_host != nullptr) {
       const char *name = centry.get<CE_name>();
 
       if (name != nullptr) {
