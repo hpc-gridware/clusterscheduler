@@ -299,7 +299,7 @@ te_event_t
 te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, uint32_t aKey2, const char *aStrKey) {
    DENTER(EVENT_LAYER);
 
-   te_event_t ev = (te_event_t) sge_malloc(sizeof(struct te_event));
+   te_event_t ev = ocs::uti::c_alloc<te_event>();
 
    if (ONE_TIME_EVENT == aMode) {
       ev->when = aTime;
@@ -621,7 +621,7 @@ void te_init() {
    static constexpr ocs::tom::SortKey by_due_time[] = {{TE_when, true}};
    Event_Control.sort_order = ocs::tom::make_sort_order(ocs::tom::TE::descriptor.e, by_due_time);
 
-   Handler_Tbl.list = (struct tbl_elem *) sge_malloc(TBL_INIT_SIZE * sizeof(struct tbl_elem));
+   Handler_Tbl.list = ocs::uti::c_alloc<tbl_elem>(TBL_INIT_SIZE);
    Handler_Tbl.max = TBL_INIT_SIZE;
    Handler_Tbl.num = 0;
 
@@ -701,7 +701,7 @@ te_event_t te_event_from_list_elem(const ocs::tom::ConstElement<ocs::tom::TE> aL
    te_event_t ev = nullptr;
    const char *str = nullptr;
 
-   ev = (te_event_t) sge_malloc(sizeof(struct te_event));
+   ev = ocs::uti::c_alloc<te_event>();
 
    ev->when = aListElem.get<TE_when>();
    ev->interval = aListElem.get<TE_interval>();
