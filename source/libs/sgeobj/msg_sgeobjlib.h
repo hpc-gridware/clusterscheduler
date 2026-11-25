@@ -442,7 +442,7 @@
 #define MSG_ULNG_INVALID_BAMOUNT_S             _MESSAGE(64604, _("invalid binding amount " SFQ ". must be an integer >= 0"))
 
 // CS-3219: a task concurrency or a number that is not a whole number or out of range
-#define MSG_ULNG_INVALID_TASK_CONCURRENCY_S    _MESSAGE(64605, _("invalid task concurrency number " SFQ ". Must be an integer greater or equal to 0."))
+#define MSG_ULNG_INVALID_TASK_CONCURRENCY_S    _MESSAGE(64605, _("invalid task concurrency number " SFQ ". Must be an integer from 0 to 2147483647."))
 #define MSG_ULNG_INVALID_VALUE_S               _MESSAGE(64606, _("invalid number " SFQ ". Must be an integer from 0 to 4294967295."))
 
 // clang-format on
