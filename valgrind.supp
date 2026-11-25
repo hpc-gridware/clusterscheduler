@@ -112,18 +112,6 @@
 }
 
 {
-   @todo CS-633 (2) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z20sge_evc_class_create18ev_registration_idPP6_lListPKc
-   fun:_ZL26japi_implementation_threadPv
-   fun:start_thread
-   fun:clone
-}
-
-{
    some issue in libtirpc.so
    Memcheck:Leak
    match-leak-kinds: definite
