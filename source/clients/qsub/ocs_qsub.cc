@@ -85,11 +85,16 @@ extern char **environ;
 static pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t exit_cv = PTHREAD_COND_INITIALIZER;
 static bool exited = false;
+/// the signal handler thread got SIGINT or SIGTERM and terminates qsub, guarded by exit_mutex
+static bool terminating = false;
+/// sent by main() to make the signal handler thread end without terminating qsub (CS-988)
+static constexpr int OCS_QSUB_SIG_THREAD_STOP = SIGUSR2;
 
 static char *get_bulk_jobid_string(long job_id, int start, int end, int step);
 static void qsub_setup_sig_handlers();
 static void qsub_terminate();
 static void *sig_thread(void *dummy);
+static void ocs_qsub_stop_sig_thread(pthread_t thread, bool started);
 static int report_exit_status(int stat, const char *jobid);
 static void error_handler(const char *message);
 
@@ -123,6 +128,8 @@ int main(int argc, const char **argv) {
    char *jobid_string = nullptr;
    bool has_terse = false;
    drmaa_attr_values_t *jobids = nullptr;
+   pthread_t sig_thread_id{};
+   bool sig_thread_started = false;
 
    uint32_t prog_number = 0;
    uint32_t myuid = 0;
@@ -263,11 +270,11 @@ int main(int argc, const char **argv) {
    }
 
    if (is_immediate || sync_opt != SYNC_NO) {
-      pthread_t sigt;
-
       qsub_setup_sig_handlers();
 
-      if (pthread_create(&sigt, nullptr, sig_thread, (void *)nullptr) != 0) {
+      if (pthread_create(&sig_thread_id, nullptr, sig_thread, (void *)nullptr) == 0) {
+         sig_thread_started = true;
+      } else {
          fprintf(stderr, "\n");
          fprintf(stderr, MSG_QSUB_COULDNOTINITIALIZEENV_S,
                  " error preparing signal handling thread");
@@ -515,6 +522,8 @@ Error:
       }
    }
 
+   ocs_qsub_stop_sig_thread(sig_thread_id, sig_thread_started);
+
    /* This is an exit() instead of an sge_exit() because when the qmaster is
     * supended, sge_exit() hangs. */
    exit(exit_status);
@@ -599,7 +608,9 @@ static void qsub_terminate() {
 /**
  * @brief Signal handler thread
  *
- * Waits for a SIGINT or SIGTERM and then calls qsub_terminate().
+ * Waits for a SIGINT or SIGTERM and then calls qsub_terminate(). The signal
+ * OCS_QSUB_SIG_THREAD_STOP, sent by ocs_qsub_stop_sig_thread(), ends the
+ * thread without terminating qsub.
  *
  * @param dummy Unused
  *
@@ -608,25 +619,65 @@ static void qsub_terminate() {
  * @note MT-NOTES: sig_thread() is MT safe
  */
 static void *sig_thread(void *dummy) {
-   int sig;
+   int sig = 0;
    sigset_t signal_set;
    dstring diag = DSTRING_INIT;
 
    sigemptyset(&signal_set);
    sigaddset(&signal_set, SIGINT);
    sigaddset(&signal_set, SIGTERM);
+   sigaddset(&signal_set, OCS_QSUB_SIG_THREAD_STOP);
 
    /* Set up this thread so that when japi_exit() gets called, the GDI is
     * ready for use. */
    japi_init_mt(&diag);
+   sge_dstring_free(&diag);
 
    /* We don't care about sigwait's return(error) code because our response
     * to an error would be the same thing we're doing anyway: shutting down. */
    sigwait(&signal_set, &sig);
 
-   qsub_terminate();
+   if (sig != OCS_QSUB_SIG_THREAD_STOP) {
+      sge_mutex_lock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
+      terminating = true;
+      sge_mutex_unlock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
+
+      qsub_terminate();
+   }
 
    return (void *)nullptr;
+}
+
+/**
+ * @brief Stop the signal handler thread and wait for its end
+ *
+ * Without the join the thread is still running at exit() and valgrind reports
+ * its stack as leaked (CS-988). A thread that got SIGINT or SIGTERM and is still
+ * terminating qsub after the wait in main() is left alone: joining it could block
+ * as long as japi_exit() takes.
+ *
+ * @param thread the signal handler thread
+ * @param started whether the thread was started at all
+ *
+ * @note MT-NOTES: ocs_qsub_stop_sig_thread() is MT safe
+ */
+static void ocs_qsub_stop_sig_thread(pthread_t thread, bool started) {
+   if (!started) {
+      return;
+   }
+
+   sge_mutex_lock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
+   const bool still_terminating = terminating && !exited;
+   const bool wake_up = !terminating;
+   sge_mutex_unlock("qsub_exit_mutex", __func__, __LINE__, &exit_mutex);
+
+   if (still_terminating) {
+      return;
+   }
+   if (wake_up) {
+      pthread_kill(thread, OCS_QSUB_SIG_THREAD_STOP);
+   }
+   pthread_join(thread, nullptr);
 }
 
 /**
