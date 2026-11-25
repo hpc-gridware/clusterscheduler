@@ -148,6 +148,19 @@ jsv_split_token(const dstring *input, dstring *token, dstring *args) {
    DRETURN(true);
 }
 
+/**
+ * @brief Handle a PARAM line of a JSV script, which sets one parameter of the job
+ *
+ * Each parameter maps to a job attribute. A line without a parameter name is ignored like one with an
+ * unknown name (CS-3139).
+ *
+ * @param jsv the JSV (JSV_Type), holding the new job
+ * @param answer_list receives errors
+ * @param c the command, PARAM
+ * @param s the parameter name, nullptr if the line has none
+ * @param a the parameter value, nullptr if the line has none
+ * @return true if the parameter was applied, false on an error
+ */
 static bool
 jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
    bool ret = true;
@@ -169,7 +182,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
       if (strcmp(param, "__JSV_TEST_RESULT") == 0) {
          lSetBool(jsv, JSV_test, true);
          lSetUlong(jsv, JSV_test_pos, 0);
-         lSetString(jsv, JSV_result, value);
+         // a missing expected result means no check (CS-3139)
+         lSetString(jsv, JSV_result, value != nullptr ? value : "");
          skip_check = true;
       }
 
@@ -233,7 +247,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
             } else if (strcmp(param, "shell") == 0) {
                job_set_no_shell(new_job, strcmp(value, "y") == 0 ? true : false);
             } else {
-               answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param);
+               answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
+                                       param, value);
                ret = false;
             }
          }
@@ -435,7 +450,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
             if (int local_ret = sge_parse_checkpoint_attr(value); local_ret != 0) {
                lSetUlong(new_job, JB_checkpoint_interval, local_ret);
             } else {
-               answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param, value);
+               answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
+                                       param, value != nullptr ? value : "");
                ret = false;
             }
          }
@@ -924,7 +940,8 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
       if (lGetBool(jsv, JSV_test) && !skip_check) {
          const char *result_string = lGetString(jsv, JSV_result);
 
-         if (u_long32 result_pos = lGetUlong(jsv, JSV_test_pos); strlen(result_string) > result_pos) {
+         if (u_long32 result_pos = lGetUlong(jsv, JSV_test_pos);
+             result_string != nullptr && strlen(result_string) > result_pos) {
             char result_char = result_string[result_pos];
 
             if (bool result = (result_char == '1') ? true : false; result != ret) {
@@ -942,19 +959,34 @@ jsv_handle_param_command(lListElem *jsv, lList **answer_list, const dstring *c, 
    DRETURN(ret);
 }
 
+/**
+ * @brief Handle a SEND line of a JSV script, which asks for more information about the job
+ *
+ * Only SEND ENV is known: the environment of the job is sent with the next STARTED answer.
+ * A line without a subcommand is answered like one with an unknown subcommand (CS-3139).
+ *
+ * @param jsv the JSV (JSV_Type)
+ * @param answer_list receives an error message
+ * @param c the command, SEND
+ * @param s the subcommand, ENV; nullptr if the line has none
+ * @param a not used
+ * @return true if the subcommand is known, false otherwise
+ */
 static bool
 jsv_handle_send_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
-   if (const char *subcommand = sge_dstring_get_string(s); strcmp(subcommand, "ENV") == 0) {
+   const char *subcommand = sge_dstring_get_string(s);
+   if (subcommand != nullptr && strcmp(subcommand, "ENV") == 0) {
       lSetBool(jsv, JSV_send_env, true);
    } else {
       /*
        * Invalid subcommand. JSV seems to wait for information which
        * is not available in this version. Job will be rejected.
        */
-      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_OBJECT_S, sge_dstring_get_string(s));
+      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_OBJECT_S,
+                              subcommand != nullptr ? subcommand : "");
 
       lSetBool(jsv, JSV_send_env, false);
       ret = false;
@@ -962,20 +994,37 @@ jsv_handle_send_command(lListElem *jsv, lList **answer_list, const dstring *c, c
    DRETURN(ret);
 }
 
+/**
+ * @brief Handle a RESULT line of a JSV script, which accepts, corrects or rejects the job
+ *
+ * A line without the subcommand or the state is answered like one with an unknown subcommand
+ * or state (CS-3139).
+ *
+ * @param jsv the JSV (JSV_Type); JSV_accept and JSV_done are set
+ * @param answer_list receives the rejection message or an error message
+ * @param c the command, RESULT
+ * @param s the subcommand, STATE; nullptr if the line has none
+ * @param a the state (ACCEPT, CORRECT, REJECT, REJECT_WAIT), optionally followed by a message;
+ *          nullptr if the line has none
+ * @return true if the line could be understood, false otherwise
+ */
 static bool
 jsv_handle_result_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
    bool ret = true;
 
    dstring m = DSTRING_INIT;
-   dstring st = DSTRING_INIT; 
+   dstring st = DSTRING_INIT;
    jsv_split_token(a, &st, &m);
 
    const char *sub_command = sge_dstring_get_string(s);
    const char *state = sge_dstring_get_string(&st);
    const char *message = sge_dstring_get_string(&m);
-   if (sub_command != nullptr && strcmp(sub_command, "STATE") == 0 && state != nullptr) {
-      if (strcmp(state, "ACCEPT") == 0) {
+   if (sub_command != nullptr && strcmp(sub_command, "STATE") == 0) {
+      if (state == nullptr) {
+         answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, "");
+         ret = false;
+      } else if (strcmp(state, "ACCEPT") == 0) {
          DPRINTF("Job is accepted\n");
          lSetBool(jsv, JSV_accept, true);
          lSetBool(jsv, JSV_done, true);
@@ -1004,11 +1053,12 @@ jsv_handle_result_command(lListElem *jsv, lList **answer_list, const dstring *c,
          lSetBool(jsv, JSV_accept, false);
          lSetBool(jsv, JSV_done, true);
       } else {
-         answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, a);
+         answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_STATE_S, state);
          ret = false;
       }
    } else {
-      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_COMMAND_S, sub_command);
+      answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_COMMAND_S,
+                              sub_command != nullptr ? sub_command : "");
       ret = false;
    }
    
@@ -1762,6 +1812,19 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
    DRETURN(ret);
 }
 
+/**
+ * @brief Handle a LOG line of a JSV script
+ *
+ * A server JSV writes the message to the qmaster messages file, a client JSV prints it.
+ * A line without a level is logged like one with an unknown level, as a warning (CS-3139).
+ *
+ * @param jsv the JSV (JSV_Type)
+ * @param answer_list not used
+ * @param c the command, LOG
+ * @param s the level, INFO, WARNING or ERROR; nullptr if the line has none
+ * @param a the message, nullptr if the line has none
+ * @return true
+ */
 static bool
 jsv_handle_log_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a) {
    DENTER(TOP_LAYER);
@@ -1772,15 +1835,18 @@ jsv_handle_log_command(lListElem *jsv, lList **answer_list, const dstring *c, co
       args = "";
    }
    if (strcmp(lGetString(jsv, JSV_context), JSV_CONTEXT_CLIENT) != 0) {
-      if (const char *sub_command = sge_dstring_get_string(s); strcmp(sub_command, "INFO") == 0) {
+      const char *sub_command = sge_dstring_get_string(s);
+      if (sub_command == nullptr) {
+         sub_command = "";
+      }
+      if (strcmp(sub_command, "INFO") == 0) {
          INFO("%s", args);
       } else if (strcmp(sub_command, "WARNING") == 0) {
          WARNING("%s", args);
       } else if (strcmp(sub_command, "ERROR") == 0) {
          ERROR("%s", args);
       } else {
-         const char *command = sge_dstring_get_string(s);
-         WARNING(MSG_JSV_LOG_SS, command, sub_command);
+         WARNING(MSG_JSV_LOG_SS, sge_dstring_get_string(c), sub_command);
       }
    } else {
       printf("%s\n", args);
@@ -1788,6 +1854,19 @@ jsv_handle_log_command(lListElem *jsv, lList **answer_list, const dstring *c, co
    DRETURN(true);
 }
 
+/**
+ * @brief Handle an ENV line of a JSV script, which adds, modifies or deletes an environment variable of the job
+ *
+ * A line without the modification or the variable name is answered as invalid, like one with an
+ * unknown modification (CS-3139).
+ *
+ * @param jsv the JSV (JSV_Type), holding the new job
+ * @param answer_list receives an error message
+ * @param c the command, ENV
+ * @param s the modification, ADD, MOD or DEL; nullptr if the line has none
+ * @param a the variable name, followed by the value for ADD and MOD; nullptr if the line has none
+ * @return true if the line was applied, false on an error
+ */
 static bool
 jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, const dstring *s, const dstring *a)
 {
@@ -1805,12 +1884,14 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
    const char *var = sge_dstring_get_string(&variable);
    const char *val = sge_dstring_get_string(&value);
 
-   DPRINTF("got from JSV \"%s %s %s\"", mod, var, (val != nullptr) ? val : "");
+   DPRINTF("got from JSV \"%s %s %s\"", (mod != nullptr) ? mod : "", (var != nullptr) ? var : "",
+           (val != nullptr) ? val : "");
 
-   if (strcmp(var, "__JSV_TEST_RESULT") == 0) {
+   if (var != nullptr && strcmp(var, "__JSV_TEST_RESULT") == 0) {
       lSetBool(jsv, JSV_test, true);
       lSetUlong(jsv, JSV_test_pos, 0);
-      lSetString(jsv, JSV_result, val);
+      // a missing expected result means no check (CS-3139)
+      lSetString(jsv, JSV_result, val != nullptr ? val : "");
       skip_check = true;
    }
 
@@ -1855,7 +1936,7 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
       const char *result_string = lGetString(jsv, JSV_result);
 
       if (const u_long32 result_pos = lGetUlong(jsv, JSV_test_pos);
-          strlen(result_string) > result_pos) {
+          result_string != nullptr && strlen(result_string) > result_pos) {
          if (const bool result = (result_string[result_pos] == '1') ? true : false;
              result != ret) {
             answer_list_add_sprintf(answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, "\"ENV %s %s %s\" was unexpectedly %s\n",
@@ -1874,35 +1955,18 @@ jsv_handle_env_command(lListElem *jsv, lList **answer_list, const dstring *c, co
    DRETURN(ret);
 }
 
-/****** sgeobj/jsv/jsv_do_communication() **************************************
-*  NAME
-*     jsv_do_communication() -- Starts communicating with a JSV script 
-*
-*  SYNOPSIS
-*     bool 
-*     jsv_do_communication(sge_gdi_ctx_class_t *ctx, lListElem *jsv, 
-*                          lList **answer_list) 
-*
-*  FUNCTION
-*     Start a communication cycle to verify one job. The job to
-*     be verified has to be store in 'jsv' as attribute 'JSV_new_job'.
-*     Depending on the response of the JSV instance certain attributes
-*     in the 'jsv' will be changes (JSV_restart, JSV_soft_shutdown, 
-*     JSV_done, JSV_new_job)
-*
-*  INPUTS
-*     ocs::gdi::Client::sge_gdi_ctx_class_t *ctx - GE context
-*     lListElem *jsv           - JSV_Type instance
-*     lList **answer_list      - AN_Type list 
-*
-*  RESULT
-*     bool - error state
-*        true  - success
-*        false - error
-*
-*  NOTES
-*     MT-NOTE: jsv_do_communication() is MT safe 
-*******************************************************************************/
+/**
+ * @brief Start a communication cycle with a JSV script to verify one job
+ *
+ * The job to be verified has to be stored in 'jsv' as attribute JSV_new_job. Depending on the response
+ * of the JSV instance, JSV_restart, JSV_soft_shutdown, JSV_done and JSV_new_job of 'jsv' are changed.
+ * A line without a command is answered like one with an unknown command (CS-3139).
+ *
+ * @param jsv the JSV (JSV_Type)
+ * @param answer_list receives errors (AN_Type)
+ * @return true on success, false on an error
+ * @note MT-NOTE: jsv_do_communication() is MT safe
+ */
 bool 
 jsv_do_communication(lListElem *jsv, lList **answer_list)
 {
@@ -2006,6 +2070,13 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
 
                   jsv_split_commandline(input.c_str(), &command, &sub_command, &args);
                   const char *command_str = sge_dstring_get_string(&command);
+                  /*
+                   * ocs_read_line() returns no line of blanks only, so there always is a command.
+                   * Should there be none, it is answered like an unknown command (CS-3139).
+                   */
+                  if (command_str == nullptr) {
+                     command_str = "";
+                  }
 
                   while(commands[++i].command != nullptr) {
                      if (strcmp(command_str, commands[i].command) == 0) {
@@ -2059,7 +2130,7 @@ jsv_do_communication(lListElem *jsv, lList **answer_list)
          }
       }
    }
-   return ret;
+   DRETURN(ret);
 }
 
 /**
