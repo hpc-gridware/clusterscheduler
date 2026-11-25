@@ -57,6 +57,34 @@
 #include "ocs_gdi_ClientServerBase.h"
 #include "tom/ocs_PackCore.h"
 
+/**
+ * @brief Whether the sender host and component name of a received message fit into the GDI buffers
+ *
+ * The callers keep both names in buffers of CL_MAXHOSTNAMELEN bytes. Neither name is bounded where it comes
+ * from: the component name is chosen by the client in its connect message, the host name is what the
+ * resolver returns. A name that does not fit is refused, not cut: a cut name could equal the name of another
+ * host or component (CS-3224, cf. CS-3214).
+ *
+ * @param sender the sender of the message, may be nullptr
+ * @return true if both names fit or there is no sender, false (and an error is logged) otherwise
+ */
+static bool
+ocs_gdi_sender_names_fit(const cl_com_endpoint_t *sender) {
+   DENTER(GDI_LAYER);
+   bool ret = true;
+   if (sender != nullptr) {
+      const size_t host_len = sender->comp_host != nullptr ? strlen(sender->comp_host) : 0;
+      const size_t name_len = sender->comp_name != nullptr ? strlen(sender->comp_name) : 0;
+      if (host_len >= CL_MAXHOSTNAMELEN || name_len >= CL_MAXHOSTNAMELEN) {
+         ERROR(MSG_GDI_SENDERNAMETOOLONG_UUUU, static_cast<uint32_t>(sender->comp_id),
+               static_cast<uint32_t>(host_len), static_cast<uint32_t>(name_len),
+               static_cast<uint32_t>(CL_MAXHOSTNAMELEN - 1));
+         ret = false;
+      }
+   }
+   DRETURN(ret);
+}
+
 /************************************************************
    TODO: rewrite this function
    COMMLIB/SECURITY WRAPPERS
@@ -213,14 +241,14 @@ ocs::gdi::ClientServerBase::gdi_send_message_pb(int synchron, const char *tocomp
  * accepts any.
  *
  * @param[in,out] fromcommproc component to accept from, then the actual sender; a buffer of at least
- *                CL_MAXHOSTNAMELEN bytes, the name is cut to fit (CS-3224)
+ *                CL_MAXHOSTNAMELEN bytes, a message whose sender names do not fit is refused (CS-3224)
  * @param[in,out] fromid commlib id to accept from, then the actual one
  * @param[in,out] fromhost host to accept from, then the actual one; a buffer of at least CL_MAXHOSTNAMELEN bytes
  * @param[in,out] tag tag to accept, then the actual one
  * @param[out] buffer receives the payload, allocated here; the caller owns it
  * @param[out] buflen receives the payload length
  * @param synchron non-zero to block until a message arrives
- * @return CL_RETVAL_OK on success, otherwise a commlib error
+ * @return CL_RETVAL_OK on success, CL_RETVAL_READ_ERROR when the sender names do not fit, otherwise a commlib error
  */
 int
 ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fromid, char *fromhost,
@@ -314,6 +342,11 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
       }
    }
 
+   // a sender whose names do not fit is refused like an invalid message, nothing is handed over (CS-3224)
+   if (message != nullptr && ret == CL_RETVAL_OK && !ocs_gdi_sender_names_fit(sender)) {
+      ret = CL_RETVAL_READ_ERROR;
+   }
+
    if (message != nullptr && ret == CL_RETVAL_OK) {
       *buffer = (char *) message->message;
       message->message = nullptr;
@@ -325,7 +358,7 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
       if (sender != nullptr) {
          DEBUG("received from: %s,%lu\n", sender->comp_host, sender->comp_id);
          if (fromcommproc != nullptr && fromcommproc[0] == '\0') {
-            sge_strlcpy(fromcommproc, sender->comp_name, CL_MAXHOSTNAMELEN);
+            sge_strlcpy(fromcommproc, sender->comp_name, CL_MAXHOSTNAMELEN); // fits, checked above
          }
          if (fromhost != nullptr) {
             sge_strlcpy(fromhost, sender->comp_host, CL_MAXHOSTNAMELEN);
@@ -437,7 +470,7 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
  * and can wait for the answer to one specific request.
  *
  * @param[in,out] rhost host to accept from, then the actual one; a buffer of at least CL_MAXHOSTNAMELEN
- *                bytes, the name is cut to fit (CS-3224)
+ *                bytes, a message whose sender names do not fit is refused (CS-3224)
  * @param[in,out] commproc component to accept from, then the actual one; a buffer of at least
  *                CL_MAXHOSTNAMELEN bytes
  * @param[in,out] id commlib id to accept from, then the actual one
@@ -447,7 +480,8 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
  * @param for_request_mid accept only the answer to this request id, or 0 for any
  * @param[out] mid receives the id of the message received
  * @param[out] rip receives the address the sender host name resolves to, may be nullptr
- * @return CL_RETVAL_OK on success, otherwise a commlib error
+ * @return CL_RETVAL_OK on success, CL_RETVAL_READ_ERROR when the payload cannot be unpacked or the sender names
+ *         do not fit, otherwise a commlib error
  */
 int
 ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
@@ -511,6 +545,14 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       DRETURN(i);
    }
 
+   // a sender whose names do not fit is refused like an invalid message, nothing is handed over (CS-3224)
+   if (message != nullptr && !ocs_gdi_sender_names_fit(sender)) {
+      cl_com_free_message(&message);
+      cl_com_free_endpoint(&sender);
+      PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
+      DRETURN(CL_RETVAL_READ_ERROR);
+   }
+
    /* ok, we received a message */
    if (message != nullptr) {
       /* TODO: there are two cases for any and addressed communication partner, two functions are needed */
@@ -541,7 +583,7 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       if (sender != nullptr) {
          DEBUG("received from: %s,%ld\n", sender->comp_host, sender->comp_id);
          if (rhost[0] == '\0') {
-            // if we receive from anybody return the sender (CS-3224: bounded)
+            // if we receive from anybody return the sender; the name fits, checked above (CS-3224)
             sge_strlcpy(rhost, sender->comp_host, CL_MAXHOSTNAMELEN);
          }
          if (commproc[0] == '\0') {

@@ -129,5 +129,6 @@
 #define MSG_GDI_AUTHINFO_COULDNOTRESOLVEGROUP_U _MESSAGE(55021, _("could not resolve group name for gid " gid_t_fmt))
 #define MSG_GDI_AUTHINFO_CORRECTINGUSERNAME_SS  _MESSAGE(55022, _("correcting user name from authinfo: " SFQ " to re-resolved name " SFQ))
 #define MSG_GDI_AUTHINFO_CORRECTINGGROUPNAME_SS _MESSAGE(55023, _("correcting group name from authinfo: " SFQ " to re-resolved name " SFQ))
+#define MSG_GDI_SENDERNAMETOOLONG_UUUU          _MESSAGE(55024, _("refusing a message from component id " sge_u32 ": its sender host name has " sge_u32 " and its component name " sge_u32 " characters, at most " sge_u32 " are allowed"))
 
 // clang-format on
