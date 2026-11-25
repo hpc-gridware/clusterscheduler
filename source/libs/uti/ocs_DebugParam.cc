@@ -24,52 +24,33 @@
 
 #include "ocs_DebugParam.h"
 
-#include <cstdio>
+#include <cstdlib>
 
-#include "sge_stdlib.h"
-
-/** @brief Get thread name pattern from environment variable SGE_DEBUG_THREAD_NAME_PATTERN
- *
- *  The pattern is only read once and cached for subsequent calls.
- *
- *  @return thread name pattern or nullptr if not set
- */
 /**
  * @brief Which threads should produce debug output
+ *
+ * The pattern is read from `SGE_DEBUG_THREAD_NAME_PATTERN` once and cached. The trace output calls this
+ * function, so it reads the environment with getenv() and not with a traced helper like sge_getenv(),
+ * which would come back here before the value is cached.
+ *
  * @return the pattern from the environment, or nullptr when unset;
- *         owned by the class, do not free
+ *         owned by the environment, do not free
  */
 const char *
 ocs::DebugParam::get_thread_name_pattern() {
-   static bool initialized = false;
-   static const char *thread_name_pattern = nullptr;
-
-   if (!initialized) {
-      thread_name_pattern = sge_getenv("SGE_DEBUG_THREAD_NAME_PATTERN");
-      initialized = true;
-   }
-
+   static const char *const thread_name_pattern = std::getenv("SGE_DEBUG_THREAD_NAME_PATTERN");
    return thread_name_pattern;
 }
 
-/** @brief Check if the component is running in ND mode based on environment variable SGE_ND
- *
- *  The check is only performed once and the result is cached for subsequent calls.
- *
- *  @return true if the component is running in ND mode, false otherwise
- */
 /**
  * @brief Is this component running in no-daemon mode?
+ *
+ * `SGE_ND` is read once and the result cached. Like get_thread_name_pattern(), the environment is read
+ * with getenv(), as the debug infrastructure must not use traced helpers.
+ *
  * @return true when the component was asked to stay in the foreground
  */
 bool ocs::DebugParam::is_component_in_nd_mode() {
-   static bool initialized = false;
-   static bool in_nd_mode = false;
-
-   if (!initialized) {
-      const char *env = sge_getenv("SGE_ND");
-      in_nd_mode = (env != nullptr);
-      initialized = true;
-   }
+   static const bool in_nd_mode = std::getenv("SGE_ND") != nullptr;
    return in_nd_mode;
 }
