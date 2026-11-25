@@ -165,6 +165,11 @@ execd_setup_reap_wakeup(cl_com_handle_t *handle) {
 }
 
 /** @brief The daemon's main loop: receive a message, act on it, repeat
+ *
+ * A lost or failed connection to qmaster makes execd reconnect. A message that GDI refused
+ * (CL_RETVAL_READ_ERROR, e.g. an over-long sender name, CS-3224) does not: any client could send one, and
+ * the connection to qmaster is fine.
+ *
  * @return the exit status the daemon should end with
  */
 int sge_execd_process_messages() {
@@ -331,6 +336,10 @@ int sge_execd_process_messages() {
                break;
             case CL_RETVAL_NO_MESSAGE:
             case CL_RETVAL_SYNC_RECEIVE_TIMEOUT:
+               break;
+            case CL_RETVAL_READ_ERROR:
+               // a message GDI refused, the commlib receive never returns this code; dropped, no reconnect
+               // (CS-3224)
                break;
             default:
                do_reconnect = true;
