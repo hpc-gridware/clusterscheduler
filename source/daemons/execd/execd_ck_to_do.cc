@@ -409,7 +409,8 @@ execd_get_wallclock_limit(const char *limit_name, const char *qualified_hostname
          // is treated as having no limit
          uint32_t timestamp32 = 0;
          if (limit == nullptr || strcasecmp(limit, INFINITY_STR) == 0 ||
-             !ocs_execd_parse_queue_limit(queue, limit_name, ocs::CEntry::Type::TIME, limit, nullptr, &timestamp32)) {
+             !ocs_execd_parse_queue_limit(queue, limit_name, ocs::CEntry::Type::TIME, limit, nullptr, &timestamp32,
+                                          true)) {
             clock_val = std::numeric_limits<uint64_t>::max();
          } else {
             clock_val = sge_gmt32_to_gmt64(timestamp32);

@@ -80,8 +80,7 @@ static void pushlimit(int, struct RLIMIT_STRUCT_TAG *, bool trace_rlimit);
 static int get_resource_info(uint32_t resource, const char **name, int *resource_type);
 
 static int rlimcmp(sge_rlim_t r1, sge_rlim_t r2);
-static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
-                           int error_len);
+static int sge_parse_limit(sge_rlim_t *rlvalp, const char *name, const char *s, char *error_str, int error_len);
 
 /*
  * compare two sge_rlim_t values
@@ -101,29 +100,32 @@ static int rlimcmp(sge_rlim_t r1, sge_rlim_t r2) {
    return (r1>r2)?1:-1;
 }
 
-/* -----------------------------------------
-
-NAME
-   sge_parse_limit()
-
-DESCR
-   is a wrapper around sge_parse_num_val()
-   for migration to code that returns an
-   error and does not exit()
-
-PARAM
-   uvalp - where to write the parsed value
-   s     - string to parse
-
-RETURN
-      1 - ok, value in *uvalp is valid
-      0 - parsing error
-
-*/
-static int sge_parse_limit(sge_rlim_t *rlvalp, char *s, char *error_str,
-                           int error_len) {
-   sge_parse_num_val(rlvalp, nullptr, s, s, error_str, error_len);
-
+/**
+ * @brief Parse a limit of the job configuration
+ *
+ * A wrapper around sge_parse_num_val(). A text that cannot be parsed is treated as INFINITY and written to
+ * the trace file, as sge_execd treats it (CS-3175); the value is never left unset.
+ *
+ * @param[out] rlvalp receives the limit, RLIM_INFINITY if the text cannot be parsed
+ * @param name the name of the limit, for the trace message
+ * @param s the text to parse
+ * @param error_str buffer for the error message of the parser
+ * @param error_len size of @p error_str
+ * @return 1 if the text was parsed, 0 if it is treated as INFINITY
+ */
+static int sge_parse_limit(sge_rlim_t *rlvalp, const char *name, const char *s, char *error_str,
+                           const int error_len) {
+   *rlvalp = RLIM_INFINITY;
+   error_str[0] = '\0';
+   if (s != nullptr) {
+      sge_parse_num_val(rlvalp, nullptr, s, s, error_str, error_len);
+   }
+   if (s == nullptr || error_str[0] != '\0') {
+      shepherd_trace("limit %s has the invalid value \"%s\", it is treated as INFINITY: %s", name,
+                     s != nullptr ? s : "", error_str);
+      *rlvalp = RLIM_INFINITY;
+      return 0;
+   }
    return 1;
 }
 
@@ -199,38 +201,38 @@ scale_memory_limit(sge_rlim_t limit, double factor) {
  * @param trace_rlimit write each limit to the shepherd's trace file as it is set
  */
 void setrlimits(bool trace_rlimit) {
-   sge_rlim_t s_cpu;
-   sge_rlim_t h_cpu;
+   sge_rlim_t s_cpu = RLIM_INFINITY;
+   sge_rlim_t h_cpu = RLIM_INFINITY;
 
-   sge_rlim_t s_data;
-   sge_rlim_t h_data;
+   sge_rlim_t s_data = RLIM_INFINITY;
+   sge_rlim_t h_data = RLIM_INFINITY;
 
-   sge_rlim_t s_stack;
-   sge_rlim_t h_stack;
+   sge_rlim_t s_stack = RLIM_INFINITY;
+   sge_rlim_t h_stack = RLIM_INFINITY;
 
-   sge_rlim_t s_vmem;
-   sge_rlim_t h_vmem;
+   sge_rlim_t s_vmem = RLIM_INFINITY;
+   sge_rlim_t h_vmem = RLIM_INFINITY;
 
-   sge_rlim_t s_fsize;
-   sge_rlim_t h_fsize;
+   sge_rlim_t s_fsize = RLIM_INFINITY;
+   sge_rlim_t h_fsize = RLIM_INFINITY;
 
-   sge_rlim_t s_core;
-   sge_rlim_t h_core;
+   sge_rlim_t s_core = RLIM_INFINITY;
+   sge_rlim_t h_core = RLIM_INFINITY;
 
-   sge_rlim_t s_descriptors;
-   sge_rlim_t h_descriptors;
+   sge_rlim_t s_descriptors = RLIM_INFINITY;
+   sge_rlim_t h_descriptors = RLIM_INFINITY;
 
-   sge_rlim_t s_maxproc;
-   sge_rlim_t h_maxproc;
+   sge_rlim_t s_maxproc = RLIM_INFINITY;
+   sge_rlim_t h_maxproc = RLIM_INFINITY;
 
-   sge_rlim_t s_memorylocked;
-   sge_rlim_t h_memorylocked;
+   sge_rlim_t s_memorylocked = RLIM_INFINITY;
+   sge_rlim_t h_memorylocked = RLIM_INFINITY;
 
-   sge_rlim_t s_locks;
-   sge_rlim_t h_locks;
+   sge_rlim_t s_locks = RLIM_INFINITY;
+   sge_rlim_t h_locks = RLIM_INFINITY;
 
-   sge_rlim_t s_rss;
-   sge_rlim_t h_rss; 
+   sge_rlim_t s_rss = RLIM_INFINITY;
+   sge_rlim_t h_rss = RLIM_INFINITY; 
 
    int host_slots, priority;
    char *s, error_str[1024];
@@ -238,14 +240,14 @@ void setrlimits(bool trace_rlimit) {
 
 #define PARSE_IT(dstp, attr) \
    s = get_conf_val(attr); \
-   sge_parse_limit(dstp, s, error_str, sizeof(error_str));
+   sge_parse_limit(dstp, attr, s, error_str, sizeof(error_str));
 
 #define PARSE_IT_UNDEF(dstp, attr) \
    s = get_conf_val(attr); \
    if (!strncasecmp(s, "UNDEFINED", sizeof("UNDEFINED")-1)) { \
       *dstp = RLIMIT_UNDEFINED; \
    } else { \
-      sge_parse_limit(dstp, s, error_str, sizeof(error_str)); \
+      sge_parse_limit(dstp, attr, s, error_str, sizeof(error_str)); \
    }
    /*
     * The limits of the task. For a task of a parallel job, sge_execd already wrote the limits of
@@ -517,8 +519,8 @@ void setrlimits(bool trace_rlimit) {
          // without a swap limit, a job reaching MemoryMax is swapped out instead of being killed
          char *swap_max_str = search_conf_val("memory_swap_max");
          if (swap_max_str != nullptr) {
-            sge_rlim_t swap_max;
-            sge_parse_limit(&swap_max, swap_max_str, error_str, sizeof(error_str));
+            sge_rlim_t swap_max = RLIM_INFINITY;
+            sge_parse_limit(&swap_max, "memory_swap_max", swap_max_str, error_str, sizeof(error_str));
             shepherd_trace("SYSTEMD MemorySwapMax = " sge_u64, swap_max);
             ocs::g_systemd_properties["MemorySwapMax"] = static_cast<uint64_t>(swap_max);
          }

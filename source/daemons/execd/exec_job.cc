@@ -412,7 +412,9 @@ exec_job_task_limit_is_summed(const ocs::tom::ConstElement<ocs::tom::JB> jep,
  * @brief Parse a limit of a queue instance, warning about a value that cannot be parsed
  *
  * The caller treats a limit that cannot be parsed as INFINITY (CS-3175); the warning names the
- * queue instance and the value, so a broken limit does not stay silent.
+ * queue instance and the value, so a broken limit does not stay silent. The paths that run every
+ * load report interval (force_job_rlimit()) pass @p warn false, they would repeat the warning the
+ * start of the task logged already.
  *
  * @param queue the queue instance the limit belongs to
  * @param limit_name the name of the limit, e.g. h_rt
@@ -420,15 +422,22 @@ exec_job_task_limit_is_summed(const ocs::tom::ConstElement<ocs::tom::JB> jep,
  * @param limit_str the text of the limit, not nullptr and not INFINITY
  * @param[out] dvalp receives the value as a double, nullptr if not wanted
  * @param[out] uvalp receives the value as a 32 bit unsigned, nullptr if not wanted
- * @return true if the limit was parsed, false (after logging a warning) if it cannot be parsed
+ * @param warn true to log a warning for a limit that cannot be parsed, false for a debug message only
+ * @return true if the limit was parsed, false if it cannot be parsed
  */
 bool
 ocs_execd_parse_queue_limit(const ocs::tom::ConstElement<ocs::tom::QU> queue, const char *limit_name,
-                            const ocs::CEntry::Type type, const char *limit_str, double *dvalp, uint32_t *uvalp) {
+                            const ocs::CEntry::Type type, const char *limit_str, double *dvalp, uint32_t *uvalp,
+                            const bool warn) {
    DENTER(TOP_LAYER);
 
    if (parse_ulong_val(dvalp, uvalp, type, limit_str, nullptr, 0) == 0) {
-      WARNING(MSG_EXECD_INVALIDQUEUELIMIT_SSS, limit_name, queue.get<QU_full_name>(), limit_str);
+      if (warn) {
+         WARNING(MSG_EXECD_INVALIDQUEUELIMIT_SSS, limit_name, queue.get<QU_full_name>(), limit_str);
+      } else {
+         DPRINTF("limit %s of queue instance %s has the invalid value %s, it is treated as INFINITY\n", limit_name,
+                 queue.get<QU_full_name>(), limit_str);
+      }
       DRETURN(false);
    }
 
@@ -445,13 +454,15 @@ ocs_execd_parse_queue_limit(const ocs::tom::ConstElement<ocs::tom::QU> queue, co
  * @param type the type of the limit, e.g. ocs::CEntry::Type::MEM
  * @param jatep the ja_task
  * @param qualified_hostname the host
+ * @param warn true to log a warning for a limit that cannot be parsed, see ocs_execd_parse_queue_limit()
  * @return the sum of the limit of every queue instance of the job on the host multiplied by its
  *         slots, DBL_MAX (infinity) if one of the queue instances has no limit
  */
 template <auto F>
 static double
 exec_job_sum_host_limit(const char *limit_name, const ocs::CEntry::Type type,
-                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep, const char *qualified_hostname) {
+                        const ocs::tom::ConstElement<ocs::tom::JAT> jatep, const char *qualified_hostname,
+                        const bool warn) {
    DENTER(TOP_LAYER);
 
    double limit = 0;
@@ -465,7 +476,7 @@ exec_job_sum_host_limit(const char *limit_name, const ocs::CEntry::Type type,
             // CS-3175: so is a limit that cannot be parsed
             double dbl = 0.0;
             if (strcasecmp(limit_str, INFINITY_STR) == 0 ||
-                !ocs_execd_parse_queue_limit(queue, limit_name, type, limit_str, &dbl, nullptr)) {
+                !ocs_execd_parse_queue_limit(queue, limit_name, type, limit_str, &dbl, nullptr, warn)) {
                DPRINTF("exec_job_sum_host_limit: qinstance %s has infinity\n",
                        gdil_ep.get<JG_qname>());
                limit = DBL_MAX;
@@ -497,7 +508,9 @@ exec_job_sum_host_limit(const char *limit_name, const ocs::CEntry::Type type,
  * @param jatep the ja_task
  * @param petep the pe task, an empty handle for the master task
  * @param qualified_hostname the host the task is running on
- * @return the limit, DBL_MAX (infinity) if the task has no limit
+ * @return the limit, DBL_MAX (infinity) if the task has no limit or a limit that cannot be parsed; the
+ *         latter is logged at debug level only, as this runs every load report interval and the start of the
+ *         task warned about it already
  */
 template <auto F>
 double
@@ -511,8 +524,8 @@ execd_get_task_limit(const char *limit_name, const ocs::CEntry::Type type,
    const char *limit_str = queue.get<F>();
    if (limit_str != nullptr && strcasecmp(limit_str, INFINITY_STR) != 0) {
       if (exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
-         limit = exec_job_sum_host_limit<F>(limit_name, type, jatep, qualified_hostname);
-      } else if (!ocs_execd_parse_queue_limit(queue, limit_name, type, limit_str, &limit, nullptr)) {
+         limit = exec_job_sum_host_limit<F>(limit_name, type, jatep, qualified_hostname, false);
+      } else if (!ocs_execd_parse_queue_limit(queue, limit_name, type, limit_str, &limit, nullptr, false)) {
          // CS-3175: a limit that cannot be parsed is treated as no limit
          limit = DBL_MAX;
       }
@@ -563,7 +576,7 @@ execd_get_task_limit<QU_s_vmem>(const char *, ocs::CEntry::Type, ocs::tom::Const
  * @param jatep the ja_task
  * @param petep the pe task, an empty handle for the master task
  * @param qualified_hostname the host the task is running on
- * @return the limit as a string
+ * @return the limit as a string, INFINITY for a limit that cannot be parsed (CS-3175)
  */
 template <auto F>
 static const char *
@@ -586,7 +599,7 @@ sge_exec_job_get_limit(dstring *dstr, const char *limit_name, const ocs::CEntry:
    if (strcasecmp(ret, INFINITY_STR) != 0 &&
        exec_job_task_limit_is_summed(jep, jatep, petep, limit_name)) {
       DPRINTF("sge_exec_job_get_limit: we need to sum up the limits\n");
-      double limit = exec_job_sum_host_limit<F>(limit_name, type, jatep, qualified_hostname);
+      double limit = exec_job_sum_host_limit<F>(limit_name, type, jatep, qualified_hostname, true);
       if (limit == DBL_MAX) {
          ret = INFINITY_STR;
       } else {
@@ -596,6 +609,10 @@ sge_exec_job_get_limit(dstring *dstr, const char *limit_name, const ocs::CEntry:
          ret = sge_dstring_get_string(dstr);
       }
       DPRINTF("sge_exec_job_get_limit: sum of limits %s\n", ret);
+   } else if (strcasecmp(ret, INFINITY_STR) != 0 &&
+              !ocs_execd_parse_queue_limit(master_q, limit_name, type, ret, nullptr, nullptr, true)) {
+      // CS-3175: sge_shepherd gets INFINITY for a limit that cannot be parsed, as sge_execd treats it
+      ret = INFINITY_STR;
    }
 
    DRETURN(ret);
