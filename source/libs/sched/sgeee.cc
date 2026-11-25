@@ -291,12 +291,19 @@ static void tix_range_get(double *min_tix, double *max_tix) {
       *max_tix = Master_max_tix;
 }
 
+/**
+ * @brief Prepare the task reference table for a number of tasks
+ *
+ * Reallocates the table when the number of entries changes (and is not 0), then zeroes every entry.
+ *
+ * @param number_of_tasks number of entries the table needs; 0 keeps the current table
+ */
 static void task_ref_initialize_table(uint32_t number_of_tasks) {
    const size_t size = number_of_tasks * sizeof(sge_task_ref_t);
 
    if (task_ref_entries != number_of_tasks && number_of_tasks > 0) {
       task_ref_destroy_table();
-      task_ref_table = (sge_task_ref_t *) sge_malloc(size);
+      task_ref_table = ocs::uti::c_alloc<sge_task_ref_t>(number_of_tasks);
       task_ref_entries = number_of_tasks;
    }
    if (task_ref_table != nullptr) {
@@ -1343,7 +1350,7 @@ build_functional_categories(sge_ref_t *job_ref, const uint32_t num_jobs,
    int ref_array_pos = 0;
    uint32_t job_counter = 0;
 
-   *ref_array = (sge_ref_list_t *)sge_malloc(sizeof(sge_ref_list_t) * num_jobs);
+   *ref_array = ocs::uti::c_alloc<sge_ref_list_t>(num_jobs);
    if (*ref_array == nullptr) {
       DRETURN(0);
    }
