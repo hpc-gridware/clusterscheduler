@@ -515,12 +515,18 @@ static bool ocs_is_moved_aside_name(const char *name, const std::string &prefix)
  * the directories with sge_rmdir(), which does not follow a symbolic link either, also not one that
  * replaces a listed directory in between (CS-3221).
  *
+ * The name alone does not prove that a directory was moved aside: another directory may carry the
+ * same name, e.g. the live TMPDIR `<job>.<task>.<queue>` of a queue named like `all.q.stale.5.6` next
+ * to that of `all.q`. ocs_mkdir_for_owner() moves a directory aside only when it belongs to a user
+ * other than @p owner, so a directory that belongs to @p owner is never listed.
+ *
  * @param path the directory that was to be created
+ * @param owner the user the directory at @p path was created for; a directory of this user is not listed
  * @param[out] paths receives the full paths of the directories moved aside, in no particular order
  * @param[out] error destination for an error message, may be nullptr
  * @return 0 on success, also when the parent does not exist, -1 when the parent cannot be read
  */
-int ocs_moved_aside_paths(const char *path, std::vector<std::string> &paths, dstring *error) {
+int ocs_moved_aside_paths(const char *path, const uid_t owner, std::vector<std::string> &paths, dstring *error) {
    DENTER(TOP_LAYER);
 
    paths.clear();
@@ -564,7 +570,7 @@ int ocs_moved_aside_paths(const char *path, std::vector<std::string> &paths, dst
       }
       SGE_STRUCT_STAT stat_buffer{};
       if (SGE_FSTATAT(dirfd(dir), entry->d_name, &stat_buffer, AT_SYMLINK_NOFOLLOW) == 0 &&
-          S_ISDIR(stat_buffer.st_mode)) {
+          S_ISDIR(stat_buffer.st_mode) && stat_buffer.st_uid != owner) {
          paths.push_back(parent + separator + entry->d_name);
       }
    }

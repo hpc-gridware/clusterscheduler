@@ -130,17 +130,20 @@ sge_make_tmpdir(const ocs::tom::ConstElement<ocs::tom::QU> qep, const uint32_t j
  * derived from the path of the temporary directory, so nothing has to be remembered between the
  * start and the end of the job, and directories renamed aside before a restart of execd or by a
  * further task of a parallel job are found as well. A directory that cannot be removed is logged,
- * the job is not affected.
+ * the job is not affected. Only a directory that does not belong to the job owner was renamed aside,
+ * so one that does is left in place: a name alone may also match the live temporary directory of
+ * the same job in a queue named like `<queue>.stale.<digits>.<digits>`. When the job owner cannot be
+ * resolved, nothing renamed aside is removed.
  *
  * @param dir the configured parent of the temporary directories (QU_tmpdir), may be nullptr
- * @param job_owner the job owner (unused)
+ * @param job_owner the name of the job owner, whose directories are never removed as renamed aside
  * @param jobid the job
  * @param jataskid the array task
  * @param queue_name the queue instance, part of the directory's name
  * @return 0 on success or when no parent is configured, -1 when the directory or one renamed aside
  *         from its path could not be removed
  */
-int sge_remove_tmpdir(const char *dir, [[maybe_unused]] const char *job_owner, const uint32_t jobid,
+int sge_remove_tmpdir(const char *dir, const char *job_owner, const uint32_t jobid,
                       const uint32_t jataskid, const char *queue_name) {
    DENTER(TOP_LAYER);
 
@@ -163,8 +166,13 @@ int sge_remove_tmpdir(const char *dir, [[maybe_unused]] const char *job_owner, c
    }
 
    std::vector<std::string> aside;
+   uid_t owner_uid;
    sge_dstring_clear(&err_str);
-   if (ocs_moved_aside_paths(tmpstr, aside, &err_str) != 0) {
+   if (job_owner == nullptr || sge_user2uid(job_owner, &owner_uid, nullptr, MAX_NIS_RETRIES) != 0) {
+      // without the owner's uid a live directory of the owner cannot be told apart, keep everything
+      ERROR(MSG_SYSTEM_GETPWNAMFAILED_S, job_owner != nullptr ? job_owner : "");
+      ret = -1;
+   } else if (ocs_moved_aside_paths(tmpstr, owner_uid, aside, &err_str) != 0) {
       ERROR(SFNMAX, sge_dstring_get_string(&err_str));
       ret = -1;
    }

@@ -33,7 +33,8 @@
  *
  * CS-3221: ocs_moved_aside_paths() finds exactly the directories ocs_mkdir_for_owner() renamed aside
  * from a path, never a symbolic link or file of such a name, and sge_rmdir() removes them without
- * touching the target of a link inside.
+ * touching the target of a link inside. A directory of such a name that belongs to the job owner is
+ * never listed, it may be the live TMPDIR of a queue whose name ends like that.
  *
  * Everything runs as the calling user inside a scratch directory under $TMPDIR or /tmp.
  */
@@ -536,6 +537,13 @@ static void test_mkdir_for_owner(const std::string &base, int &id) {
  * a name, and directories whose names only resemble it. Only the two directories are listed;
  * removing them with sge_rmdir() leaves the link's target and every decoy in place.
  *
+ * A directory is listed only when it does not belong to the given owner. As a non-root user the
+ * test can only create directories of its own uid, so every directory here belongs to the test:
+ * passing a different uid as owner stands for the job owner whose TMPDIR the others were moved
+ * aside from, passing the test's own uid stands for a match that belongs to the job owner, e.g.
+ * the live TMPDIR of the same job in a queue named `all.q.stale.5.6`. That one is neither listed
+ * nor removed. A parent holding directories of both kinds needs root and is not covered.
+ *
  * @param base scratch directory
  * @param id running test number, incremented per check
  */
@@ -565,8 +573,16 @@ static void test_moved_aside(const std::string &base, int &id) {
       return;
    }
 
+   // the test's own uid stands for the job owner, any other uid for the owner of a foreign directory
+   const uid_t self = getuid();
+   const uid_t other = self + 1;
+
    std::vector<std::string> paths;
-   CHECK(id++, "the parent is read", ocs_moved_aside_paths(path.c_str(), paths, &err) == 0);
+   CHECK(id++, "a directory that belongs to the owner is not listed",
+         ocs_moved_aside_paths(path.c_str(), self, paths, &err) == 0 && paths.empty());
+   CHECK(id++, "the directories of the owner are still there", exists(first) && exists(second));
+
+   CHECK(id++, "the parent is read", ocs_moved_aside_paths(path.c_str(), other, paths, &err) == 0);
    std::sort(paths.begin(), paths.end());
    std::vector<std::string> expected = {first, second};
    std::sort(expected.begin(), expected.end());
@@ -588,11 +604,11 @@ static void test_moved_aside(const std::string &base, int &id) {
    }
    CHECK(id++, "the directory itself and every decoy are still there", kept);
    CHECK(id++, "a second search finds nothing",
-         ocs_moved_aside_paths(path.c_str(), paths, &err) == 0 && paths.empty());
+         ocs_moved_aside_paths(path.c_str(), other, paths, &err) == 0 && paths.empty());
 
    CHECK(id++, "a missing parent is no error and lists nothing",
-         ocs_moved_aside_paths((base + "/missing/7.1.all.q").c_str(), paths, &err) == 0 && paths.empty());
-   CHECK(id++, "nullptr is an error", ocs_moved_aside_paths(nullptr, paths, &err) == -1);
+         ocs_moved_aside_paths((base + "/missing/7.1.all.q").c_str(), other, paths, &err) == 0 && paths.empty());
+   CHECK(id++, "nullptr is an error", ocs_moved_aside_paths(nullptr, other, paths, &err) == -1);
 
    cleanup(parent);
    cleanup(target);
