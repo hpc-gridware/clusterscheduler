@@ -48,6 +48,7 @@
 #include <cstring>
 #include <cerrno>
 #include <climits>
+#include <memory>
 
 #include "uti/sge.h"               // INFINITY_STR
 #include "uti/sge_dstring.h"
@@ -350,6 +351,8 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    sge_strlcpy(inp_date_str, string, sizeof(inp_date_str));
    non_seconds=sge_strtok_r(inp_date_str, ".", &context);
    seconds=sge_strtok_r(nullptr, ".", &context);
+   // the tokens live in the context, which is freed on every return
+   const std::unique_ptr<saved_vars_s, void (*)(saved_vars_s *)> context_guard(context, sge_free_saved_vars);
 
    if (seconds) {
       i=strlen(seconds);
@@ -358,7 +361,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    }
 
    if ((i != 0) && (i != 2)) {
-      sge_free_saved_vars(context);
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDSECONDS);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -373,7 +375,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    i=strlen(non_seconds);
 
    if ((i != 8) && (i != 10) && (i != 12)) {
-      sge_free_saved_vars(context);
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDHOURMIN);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -416,7 +417,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    memcpy(tmp_str, non_seconds, 2);
    timeptr.tm_mon=atoi(tmp_str)-1;/* 00==Jan, we don't like that do we */
    if ((timeptr.tm_mon>11)||(timeptr.tm_mon<0)) {
-      sge_free_saved_vars(context);
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDMONTH);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -438,7 +438,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    /* yea, we should do it by mon ths */
    if ((timeptr.tm_mday > 31) || (timeptr.tm_mday < 1)) {
       /* actually mktime() should frigging do it */
-      sge_free_saved_vars(context);
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDDAY);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -472,7 +471,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    timeptr.tm_min=atoi(tmp_str);
 
    if ((timeptr.tm_min > 59)||(timeptr.tm_min < 0)) {
-      sge_free_saved_vars(context);
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDMINUTE);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -487,8 +485,7 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    if (seconds) {
       timeptr.tm_sec=atoi(seconds);
    }
-   if ((timeptr.tm_sec>59)||(timeptr.tm_mday<0)) {
-      sge_free_saved_vars(context);
+   if ((timeptr.tm_sec>59)||(timeptr.tm_sec<0)) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDSECOND);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -510,7 +507,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
    DPRINTF("mktime returned: %ld\n",gmt_secs);
 
    if (gmt_secs < 0) {
-      sge_free_saved_vars(context);
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_NODATEFROMINPUT);
       if (answer_list) {
          answer_list_add(answer_list, SGE_EVENT, 
@@ -522,7 +518,6 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
       DRETURN(false);
    }
 
-   sge_free_saved_vars(context);
 
    *this_ulong = gmt_secs;
    DRETURN(true);

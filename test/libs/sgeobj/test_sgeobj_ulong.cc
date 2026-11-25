@@ -240,6 +240,47 @@ test_parse_priority_and_binding_amount_range() {
 // ---------------------------------------------------------------------------
 
 /**
+ * @brief Range check of the seconds of ulong_parse_date_time_from_string() [T27–T29] (CS-3144)
+ *
+ * The check of the seconds tested the day of the month instead of the seconds, so a negative value
+ * such as `.-1` was accepted and normalized by mktime() into the previous minute. T28 therefore fails
+ * against the unpatched code. T29 runs the error path for an invalid hour, which leaked the tokenizer
+ * context before; a leak checker run of this test covers that.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_parse_date_time_seconds() {
+   // T27: valid seconds are accepted
+   {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      uint32_t t = 0;
+      bool ok = ulong_parse_date_time_from_string(&t, &al, "06151200.59");
+      CHECK(27, "seconds 59 accepted", ok);
+   }
+
+   // T28: RED->GREEN. Negative seconds are rejected as an invalid second
+   {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      uint32_t t = 0;
+      bool ok = ulong_parse_date_time_from_string(&t, &al, "06151200.-1");
+      const char *msg = first_answer_text(al);
+      printf("   answer: %s\n", msg);
+      CHECK(28, "negative seconds rejected", !ok && *msg != '\0');
+   }
+
+   // T29: an invalid hour is rejected
+   {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      uint32_t t = 0;
+      bool ok = ulong_parse_date_time_from_string(&t, &al, "202612012500");
+      CHECK(29, "hour 25 rejected", !ok);
+   }
+}
+
+// ---------------------------------------------------------------------------
+
+/**
  * @brief Module-test entry point; runs the scenarios through the shared frame.
  * @param argc argument count, see ocs_module_test.h for the frame's options
  * @param argv argument vector
@@ -274,5 +315,12 @@ int main(int argc, char *argv[]) {
         "parse the largest valid priority"},
        "the numbers out of range are rejected with an error answer, 1024 is accepted",
        {}, {21, 22, 23, 24, 25, 26}, test_parse_priority_and_binding_amount_range},
+      {"ULONG-04", "range of the seconds and the error path of an invalid hour (CS-3144)",
+       "ulong_parse_date_time_from_string() accepts seconds from 0 to 59 only and rejects an invalid hour",
+       {"parse a date with seconds 59",
+        "parse a date with seconds -1",
+        "parse a date with hour 25"},
+       "seconds 59 are accepted, seconds -1 and hour 25 are rejected",
+       {}, {27, 28, 29}, test_parse_date_time_seconds},
    });
 }
