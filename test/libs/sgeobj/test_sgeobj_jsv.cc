@@ -42,6 +42,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <initializer_list>
 #include <string>
 
 #include <sys/wait.h>
@@ -398,6 +399,90 @@ test_checkpoint_params() {
 }
 
 /**
+ * @brief The arguments of the job as one string, "<none>" for a job without an argument list
+ * @param job the job
+ * @return the arguments separated by commas
+ */
+static std::string
+job_args(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   const auto args = job.get<JB_job_args>();
+   if (!args) {
+      return "<none>";
+   }
+   std::string result;
+   bool first = true;
+   for (const auto arg : args) {
+      if (!first) {
+         result += ",";
+      }
+      first = false;
+      result += arg.get<ST_name>() != nullptr ? arg.get<ST_name>() : "";
+   }
+   return result;
+}
+
+/**
+ * @brief Add arguments to a job
+ * @param job the job
+ * @param args the arguments
+ */
+static void
+set_job_args(const ocs::tom::Element<ocs::tom::JB> job, std::initializer_list<const char *> args) {
+   auto list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+   for (const char *arg : args) {
+      list->emplace_back<ST_name>(arg);
+   }
+   job.set<JB_job_args>(std::move(list));
+}
+
+/**
+ * @brief PARAM CMDARGS and CMDARG<n> change the arguments of the job (CS-3142)
+ */
+static void
+test_cmdarg_params() {
+   printf("\n--- PARAM CMDARGS / CMDARG<n> ---\n");
+   bool accepted = false;
+
+   // a job without arguments gets the arguments of the JSV
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   std::string text = communicate("PARAM CMDARGS 1\nPARAM CMDARG0 x\nRESULT STATE ACCEPT\n", "", &accepted,
+                                  job.get().raw());
+   printf("      arguments: %s\n", job_args(*job).c_str());
+   CHECK(37, "job without arguments: CMDARGS and CMDARG0 are applied", accepted && job_args(*job) == "x");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM CMDARG1 y\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      arguments: %s\n", job_args(*job).c_str());
+   CHECK(38, "job without arguments: CMDARG1 alone adds two arguments", accepted && job_args(*job) == ",y");
+
+   // n equal to the number of arguments appends one
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b"});
+   text = communicate("PARAM CMDARG2 x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      arguments: %s\n", job_args(*job).c_str());
+   CHECK(39, "two arguments: CMDARG2 appends a third one", accepted && job_args(*job) == "a,b,x");
+
+   // n beyond the end fills the gap with empty arguments
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a"});
+   text = communicate("PARAM CMDARG3 x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      arguments: %s\n", job_args(*job).c_str());
+   CHECK(40, "one argument: CMDARG3 creates exactly four", accepted && job_args(*job) == "a,,,x");
+
+   // an existing argument is replaced, the count is unchanged
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b"});
+   text = communicate("PARAM CMDARG0 x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(41, "two arguments: CMDARG0 replaces the first one", accepted && job_args(*job) == "x,b");
+
+   // CMDARGS shrinks the list
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b", "c"});
+   text = communicate("PARAM CMDARGS 1\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(42, "three arguments: CMDARGS 1 keeps the first one", accepted && job_args(*job) == "a");
+}
+
+/**
  * @brief The seconds since the epoch of a local date and time
  * @param year the year
  * @param month the month, 1 for January
@@ -472,6 +557,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_line_separation();
    test_incomplete_lines();
    test_checkpoint_params();
+   test_cmdarg_params();
    test_date_params();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

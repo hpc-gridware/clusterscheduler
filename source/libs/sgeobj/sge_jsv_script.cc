@@ -444,12 +444,12 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
       {         
          if (ret && strncmp("CMDARG", param, 6) == 0) {
             auto arg_list = new_job.get<JB_job_args>();
-            // A job without arguments has no list. As before, the arguments then go into a list that is
-            // not stored in the job, so they are lost (the list is freed now instead of leaking).
-            ocs::tom::ListPtr<ocs::tom::ST> detached_arg_list;
+            // a job without arguments has no list: it gets one, stored in the job below when it is not
+            // empty (CS-3142)
+            ocs::tom::ListPtr<ocs::tom::ST> created_arg_list;
             if (!arg_list) {
-               detached_arg_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
-               arg_list = detached_arg_list.get();
+               created_arg_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+               arg_list = created_arg_list.get();
             }
             uint32_t id = 0;
             uint32_t length;
@@ -479,9 +479,9 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                length = static_cast<uint32_t>(arg_list.size());
                ret &= ulong_parse_from_string(&id, &local_answer_list, id_string);
 
-               if (id > length) {
-                  uint32_t to_create = 0;
-                  to_create = id - length + 1;
+               // CMDARG<n> with n equal to the number of arguments appends one (CS-3142)
+               if (ret && id >= length) {
+                  uint32_t to_create = id - length + 1;
                   while (to_create > 0) {
                      arg_list.emplace_back<ST_name>("");
                      to_create--;
@@ -497,7 +497,10 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
                   i++;
                }
             }
-         } 
+            if (created_arg_list && !created_arg_list->empty()) {
+               new_job.set<JB_job_args>(std::move(created_arg_list));
+            }
+         }
       }
 
       /* -a */
