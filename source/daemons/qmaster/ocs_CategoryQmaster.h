@@ -82,6 +82,9 @@ namespace ocs {
       static bool
       detach_job(ocs::tom::Element<ocs::tom::JB> job, bool send_events, uint32_t gdi_session);
 
+      static bool
+      detach_job_if_categorized(ocs::tom::Element<ocs::tom::JB> job, bool send_events, uint32_t gdi_session);
+
       static void
       reattach_job(ocs::tom::Element<ocs::tom::JB> job,
                    ocs::tom::ConstList<ocs::tom::US> master_userset_list,

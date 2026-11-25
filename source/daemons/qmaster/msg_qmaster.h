@@ -786,4 +786,7 @@
 #define MSG_QMASTER_UNIQUEKEYSFAILED_S             _MESSAGE(34021, _("the spool holds duplicate keys in unique attributes; remove one object of each duplicate, or the repeated entry, and start the qmaster again: " SFNMAX))
 #define MSG_QMASTER_REQUESTSTRUCTURE_SSSS          _MESSAGE(34022, _("refused request of " SFN "@" SFN ": the data of " SFN " " SFN " are not of the expected type"))
 
+// CS-3149: a job that refers to a category which does not exist
+#define MSG_CATEGORY_JOBWITHOUTCATEGORY_UU         _MESSAGE(34023, _("job " sge_u32 " refers to category " sge_u32 " which does not exist, it is not detached from it"))
+
 // clang-format on

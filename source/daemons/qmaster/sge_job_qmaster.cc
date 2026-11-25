@@ -1436,13 +1436,11 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
                ocs::DataStore::master_list_rw<SGE_TYPE_CATEGORY>().find_first<CT_id>(old_category_id);
 
             // check if the category string changed and trigger corresponding events. CS-3149: a job whose
-            // category does not exist (the inconsistency detach_job() asserts on) is not detached but only
-            // attached anew, instead of reading the string of an empty handle
+            // category does not exist is not detached but only attached anew, instead of reading the string
+            // of an empty handle
             if (!old_category || sge_strnullcmp(old_category.get<CT_str>(), cat_str) != 0) {
                // remove the job from the category
-               if (old_category) {
-                  ocs::CategoryQmaster::detach_job(new_job, true, packet->gdi_session);
-               }
+               ocs::CategoryQmaster::detach_job_if_categorized(new_job, true, packet->gdi_session);
 
                // add the job to the new category
                ocs::CategoryQmaster::attach_job(new_job, master_userset_list, master_project_list, master_rqs_list,

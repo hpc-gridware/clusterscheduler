@@ -42,6 +42,7 @@
 #include "sgeobj/tom/ocs_tom_US.h"
 
 #include "ocs_CategoryQmaster.h"
+#include "msg_qmaster.h"
 #include "ocs_DataStore.h"
 #include "sge_event_master.h"
 #include "sge_resource_quota_qmaster.h"
@@ -319,6 +320,34 @@ ocs::CategoryQmaster::detach_job(const ocs::tom::Element<ocs::tom::JB> job, cons
    DRETURN(true);
 }
 
+/** @brief Detach a job from its category if that category exists
+ *
+ * Each category a job refers to should exist, and detach_job() asserts on it. A job whose category does not
+ * exist is not detached but reported with a warning, so the inconsistency does not pass silently (CS-3149).
+ *
+ * @param job the job (`JB`)
+ * @param send_events whether to announce the category change to the event clients
+ * @param gdi_session the session the change belongs to
+ * @return true when the job was detached, false for an empty job handle or when its category does not exist
+ */
+bool
+ocs::CategoryQmaster::detach_job_if_categorized(const ocs::tom::Element<ocs::tom::JB> job, const bool send_events,
+                                                const uint32_t gdi_session) {
+   DENTER(TOP_LAYER);
+
+   if (!job) {
+      DRETURN(false);
+   }
+
+   const uint32_t category_id = job.get<JB_category_id>();
+   if (!DataStore::master_list<SGE_TYPE_CATEGORY>().find_first<CT_id>(category_id)) {
+      WARNING(MSG_CATEGORY_JOBWITHOUTCATEGORY_UU, job.get<JB_job_number>(), category_id);
+      DRETURN(false);
+   }
+
+   DRETURN(detach_job(job, send_events, gdi_session));
+}
+
 
 /** @brief Recompute a job's category and move it if it changed
  *
@@ -340,11 +369,8 @@ ocs::CategoryQmaster::reattach_job(const ocs::tom::Element<ocs::tom::JB> job,
                                    const bool send_events, const uint64_t now, const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   // remove the job from current category. CS-3149: a job whose category does not exist (the inconsistency
-   // detach_job() asserts on) is not detached but only attached anew
-   if (DataStore::master_list<SGE_TYPE_CATEGORY>().find_first<CT_id>(job.get<JB_category_id>())) {
-      detach_job(job, send_events, gdi_session);
-   }
+   // remove the job from current category; a job whose category does not exist is only attached anew (CS-3149)
+   detach_job_if_categorized(job, send_events, gdi_session);
 
    // add the job to the new category
    attach_job(job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);
