@@ -45,6 +45,7 @@
 #include "uti/sge_os.h"
 #include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_thread_ctrl.h"
 #include "uti/sge_time.h"
 
 #include "gdi/ocs_gdi_ClientServerBase.h"
@@ -237,8 +238,11 @@ sge_worker_main(void *arg) {
 
       MONITOR_SET_QLEN(p_monitor, sge_tq_get_task_count(GlobalRequestQueue));
 
-      // handle the packet only if it is not nullptr and the shutdown has not started
-      if (packet != nullptr) {
+      // during shutdown sge_tq_wait_for_task() returns at once, also without a packet
+      const bool got_packet = packet != nullptr;
+
+      // handle the packet if there is one, also during shutdown
+      if (got_packet) {
          bool is_only_read_request = true;
 
          DPRINTF("Request should be handled by thread type %d\n", packet->ds_type);
@@ -380,7 +384,12 @@ sge_worker_main(void *arg) {
       cl_thread_func_testcancel(thread_config);
       pthread_cleanup_pop(execute); // cleanup monitor
 
-      // we still process requests also during shutdown until the thread is explicitly cancelled
+      // we still process requests also during shutdown until the thread is explicitly cancelled;
+      // without a request wait a little like the reader, listener and timer threads do, else the
+      // loop spins and can starve the main thread that is to cancel it
+      if (!got_packet) {
+         sge_thread_usleep_during_shutdown();
+      }
    }
 
    // Don't add cleanup code here. It will never be executed. Instead, register a cleanup function with
