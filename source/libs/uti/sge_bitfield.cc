@@ -61,16 +61,11 @@
  */
 bitfield *
 sge_bitfield_new(unsigned int size) {
-   bitfield *bf;
-
    /* allocate storage for bitfield object */
-   bf = (bitfield *) sge_malloc(sizeof(bitfield));
-   SGE_ASSERT(bf != nullptr);
-   if (bf != nullptr) {
-      /* initialize bitfield, on errors, free bitfield */
-      if (!sge_bitfield_init(bf, size)) {
-         sge_free(&bf);
-      }
+   bitfield *bf = ocs::uti::c_alloc<bitfield>();
+   /* initialize bitfield, on errors, free bitfield */
+   if (!sge_bitfield_init(bf, size)) {
+      sge_free(&bf);
    }
 
    return bf;

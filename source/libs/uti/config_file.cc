@@ -264,11 +264,7 @@ int read_config(const char *fname) {
  * @return 0 on success, 1 if memory could not be allocated
  */
 int add_config_entry(const char *name, const char *value) {
-   config_entry *new_entry;
-
-   if ((new_entry = (config_entry *) sge_malloc(sizeof(config_entry))) == nullptr) {
-      return 1;
-   }
+   config_entry *new_entry = ocs::uti::c_alloc<config_entry>();
 
    if ((new_entry->name = strdup(name)) == nullptr) {
       sge_free(&new_entry);

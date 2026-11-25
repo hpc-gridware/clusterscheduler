@@ -1233,7 +1233,7 @@ ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_s
    }
 
    // fetch group names and store them with corresponding IDs in the array to be returned
-   auto array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(grp_ids * sizeof(ocs_grp_elem_t)));
+   auto array = ocs::uti::c_alloc<ocs_grp_elem_t>(grp_ids);
    if (array == nullptr) {
        snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group information");
        sge_free(&grp_id_list);
@@ -1323,7 +1323,7 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
    }
 
    // fetch group names and store them with corresponding IDs in the array to be returned
-   auto array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(num_group_ids * sizeof(ocs_grp_elem_t)));
+   auto array = ocs::uti::c_alloc<ocs_grp_elem_t>(num_group_ids);
    if (array == nullptr) {
        sge_dstring_sprintf(error_dstr, "Unable to allocate buffer that should hold group information");
        sge_free(&grp_id_list);

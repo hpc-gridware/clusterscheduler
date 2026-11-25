@@ -527,8 +527,7 @@ void fgl_lock() {
       if (found == False) {
 
          // create data lock and initialize reference rounter 
-         fgl_lck = (fgl_lck_t *) sge_malloc(sizeof(fgl_lck_t));
-         SGE_ASSERT(fgl_lck != nullptr);
+         fgl_lck = ocs::uti::c_alloc<fgl_lck_t>();
 #if USE_FIFO_LOCK
          sge_fifo_lock_init(&fgl_lck->lck);
 #else
@@ -579,7 +578,7 @@ void fgl_lock() {
       fgl_stats_t *stats;
       found = sge_htable_lookup(fgl_stats, sge_dstring_get_string(&key), (const void **) &stats);
       if (found == False) {
-         stats = (fgl_stats_t *) sge_malloc(sizeof(fgl_stats_t));
+         stats = ocs::uti::c_alloc<fgl_stats_t>();
          stats->qpos = counter;
          stats->measurements = 1;
          stats->min_wait_time = wait_time;

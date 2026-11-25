@@ -225,13 +225,8 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
    monitor->thread_name = thread_name;
 
-   monitor->output_line1 = (dstring *) sge_malloc(sizeof(dstring));
-   monitor->output_line2 = (dstring *) sge_malloc(sizeof(dstring));
-
-   if (monitor->output_line1 == nullptr || monitor->output_line2 == nullptr) {
-      CRITICAL(SFNMAX, MSG_UTI_MONITOR_MEMERROR);
-      exit(1);
-   }
+   monitor->output_line1 = ocs::uti::c_alloc<dstring>();
+   monitor->output_line2 = ocs::uti::c_alloc<dstring>();
 
    memset(monitor->output_line1, 0, sizeof(dstring));
    memset(monitor->output_line2, 0, sizeof(dstring));
@@ -244,63 +239,38 @@ sge_monitor_init(monitoring_t *monitor, const char *thread_name, extension_t ext
 
    switch (ext) {
       case SCH_EXT :
-         monitor->ext_data = sge_malloc(sizeof(m_sch_t));
-         if (monitor->ext_data != nullptr) {
-            monitor->ext_type = SCH_EXT;
-            monitor->ext_data_size = sizeof(m_sch_t);
-            monitor->ext_output = &ext_sch_output;
-         } else {
-            monitor->ext_type = NONE_EXT;
-            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
-         }
+         monitor->ext_data = ocs::uti::c_alloc<m_sch_t>();
+         monitor->ext_type = SCH_EXT;
+         monitor->ext_data_size = sizeof(m_sch_t);
+         monitor->ext_output = &ext_sch_output;
          break;
 
       case GDI_EXT :
-         monitor->ext_data = sge_malloc(sizeof(m_gdi_t));
-         if (monitor->ext_data != nullptr) {
-            monitor->ext_type = GDI_EXT;
-            monitor->ext_data_size = sizeof(m_gdi_t);
-            monitor->ext_output = &ext_gdi_output;
-         } else {
-            monitor->ext_type = NONE_EXT;
-            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
-         }
+         monitor->ext_data = ocs::uti::c_alloc<m_gdi_t>();
+         monitor->ext_type = GDI_EXT;
+         monitor->ext_data_size = sizeof(m_gdi_t);
+         monitor->ext_output = &ext_gdi_output;
          break;
 
       case LIS_EXT :
-         monitor->ext_data = sge_malloc(sizeof(m_lis_t));
-         if (monitor->ext_data != nullptr) {
-            monitor->ext_type = LIS_EXT;
-            monitor->ext_data_size = sizeof(m_lis_t);
-            monitor->ext_output = &ext_lis_output;
-         } else {
-            monitor->ext_type = NONE_EXT;
-            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
-         }
+         monitor->ext_data = ocs::uti::c_alloc<m_lis_t>();
+         monitor->ext_type = LIS_EXT;
+         monitor->ext_data_size = sizeof(m_lis_t);
+         monitor->ext_output = &ext_lis_output;
          break;
 
       case EMAT_EXT :
-         monitor->ext_data = sge_malloc(sizeof(m_edt_t));
-         if (monitor->ext_data != nullptr) {
-            monitor->ext_type = EMAT_EXT;
-            monitor->ext_data_size = sizeof(m_edt_t);
-            monitor->ext_output = &ext_edt_output;
-         } else {
-            monitor->ext_type = NONE_EXT;
-            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
-         }
+         monitor->ext_data = ocs::uti::c_alloc<m_edt_t>();
+         monitor->ext_type = EMAT_EXT;
+         monitor->ext_data_size = sizeof(m_edt_t);
+         monitor->ext_output = &ext_edt_output;
          break;
 
       case TET_EXT :
-         monitor->ext_data = sge_malloc(sizeof(m_tet_t));
-         if (monitor->ext_data != nullptr) {
-            monitor->ext_type = TET_EXT;
-            monitor->ext_data_size = sizeof(m_tet_t);
-            monitor->ext_output = &ext_tet_output;
-         } else {
-            monitor->ext_type = NONE_EXT;
-            ERROR(SFNMAX, MSG_UTI_MONITOR_MEMERROREXT);
-         }
+         monitor->ext_data = ocs::uti::c_alloc<m_tet_t>();
+         monitor->ext_type = TET_EXT;
+         monitor->ext_data_size = sizeof(m_tet_t);
+         monitor->ext_output = &ext_tet_output;
          break;
 
       case NONE_EXT :

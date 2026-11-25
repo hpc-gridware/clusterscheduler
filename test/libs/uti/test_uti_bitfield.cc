@@ -243,10 +243,8 @@ int main(int argc, char *argv[]) {
    }
 
    /* performance benchmark — not a functional test */
-   bitfield *b1 = (bitfield *) sge_malloc(test_bf_loops * sizeof(bitfield));
-   SGE_ASSERT(b1 != nullptr);
-   bitfield *b2 = (bitfield *) sge_malloc(test_bf_loops * sizeof(bitfield));
-   SGE_ASSERT(b2 != nullptr);
+   bitfield *b1 = ocs::uti::c_alloc<bitfield>(test_bf_loops);
+   bitfield *b2 = ocs::uti::c_alloc<bitfield>(test_bf_loops);
 
    long clk_tck = sysconf(_SC_CLK_TCK);
    const char *header_format = "%5s %8s %8s %8s %8s %8s %8s %8s %8s %8s %8s\n";

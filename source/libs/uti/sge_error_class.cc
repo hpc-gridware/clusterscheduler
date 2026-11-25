@@ -107,18 +107,14 @@ static bool sge_error_iterator_next(sge_error_iterator_class_t *thiz);
 /**
  * @brief Create an empty error collector
  *
- * @return the new collector with its function table wired up, or nullptr if it
- *         could not be allocated. Release it with #sge_error_class_destroy.
+ * @return the new collector with its function table wired up; out of memory aborts the process.
+ *         Release it with #sge_error_class_destroy.
  */
 sge_error_class_t *sge_error_class_create() {
-   auto *ret = (sge_error_class_t *) sge_malloc(sizeof(sge_error_class_t));
-   if (ret == nullptr) {
-      return nullptr;
-   }
+   auto *ret = ocs::uti::c_alloc<sge_error_class_t>();
    memset(ret, 0, sizeof(sge_error_class_t));
 
-   ret->sge_error_handle = sge_malloc(sizeof(sge_error_t));
-   SGE_ASSERT(ret->sge_error_handle != nullptr);
+   ret->sge_error_handle = ocs::uti::c_alloc<sge_error_t>();
    memset(ret->sge_error_handle, 0, sizeof(sge_error_t));
 
    ret->has_error = sge_error_has_error;
@@ -258,13 +254,11 @@ static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_cla
    DENTER(TOP_LAYER);
 
    auto *et = (sge_error_t *) ec->sge_error_handle;
-   auto *elem = (sge_error_iterator_t *) sge_malloc(sizeof(sge_error_iterator_t));
-   SGE_ASSERT(elem != nullptr);
+   auto *elem = ocs::uti::c_alloc<sge_error_iterator_t>();
    elem->current = et->first;
    elem->is_first_flag = true;
 
-   auto ret = (sge_error_iterator_class_t *) sge_malloc(sizeof(sge_error_iterator_class_t));
-   SGE_ASSERT(ret != nullptr);
+   auto ret = ocs::uti::c_alloc<sge_error_iterator_class_t>();
    ret->sge_error_iterator_handle = elem;
    ret->get_message = sge_error_iterator_get_message;
    ret->get_quality = sge_error_iterator_get_quality;
@@ -280,8 +274,7 @@ static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_
    auto *et = (sge_error_t *) thiz->sge_error_handle;
    dstring ds = DSTRING_INIT;
 
-   auto *error = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
-   SGE_ASSERT(error != nullptr);
+   auto *error = ocs::uti::c_alloc<sge_error_message_t>();
    error->error_quality = error_quality;
    error->error_type = error_type;
 

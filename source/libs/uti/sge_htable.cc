@@ -188,9 +188,7 @@ htable sge_htable_create(int size,
                          int (*compare_func)(const void *, const void *)) {
    SGE_ASSERT(size >= 0 && size < std::numeric_limits<int>::digits);
 
-   auto ht = (htable) sge_malloc(sizeof(htable_rec));
-
-   SGE_ASSERT(ht != nullptr);
+   auto ht = ocs::uti::c_alloc<htable_rec>();
 
    ht->size = size;
    ht->mask = (1 << size) - 1;
@@ -274,8 +272,7 @@ void sge_htable_store(htable table, const void *key, const void *data) {
          return;
       }
    }
-   bucket = (Bucket *) sge_malloc(sizeof(Bucket));
-   SGE_ASSERT(bucket != nullptr);
+   bucket = ocs::uti::c_alloc<Bucket>();
    bucket->key = table->dup_func(key);
    SGE_ASSERT(bucket->key != nullptr);
    bucket->data = data;

@@ -1287,8 +1287,7 @@ static void init_array(pthread_t num) {
          break;
       } else if (theInfo[i] == nullptr) {
 
-         theInfo[i] = (sge_prof_info_t *) sge_malloc((SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
-         SGE_ASSERT(theInfo[i] != nullptr);
+         theInfo[i] = ocs::uti::c_alloc<sge_prof_info_t>(SGE_PROF_ALL + 1);
          memset(theInfo[i], 0, (SGE_PROF_ALL + 1) * sizeof(sge_prof_info_t));
 
          for (c = 0; c <= SGE_PROF_ALL; c++) {
@@ -1349,7 +1348,7 @@ static void init_thread_info() {
    pthread_mutex_lock(&thrdInfo_mutex);
 
    if (thrdInfo == nullptr) {
-      thrdInfo = (sge_thread_info_t *) sge_malloc(MAX_THREAD_NUM * sizeof(sge_thread_info_t));
+      thrdInfo = ocs::uti::c_alloc<sge_thread_info_t>(MAX_THREAD_NUM);
       memset(thrdInfo, 0, MAX_THREAD_NUM * sizeof(sge_thread_info_t));
    }
 

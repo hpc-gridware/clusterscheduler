@@ -98,10 +98,7 @@ rmon_helper_t *rmon_get_helper() {
     pthread_once(&rmon_helper_key_once, rmon_helper_key_init);
     auto *helper = (rmon_helper_t *) pthread_getspecific(rmon_helper_key);
     if (helper == nullptr) {
-        helper = (rmon_helper_t *) sge_malloc(sizeof(rmon_helper_t));
-        if (helper == nullptr) {
-           ocs::TerminationManager::trigger_abort();
-        }
+        helper = ocs::uti::c_alloc<rmon_helper_t>();
         memset(helper, 0, sizeof(rmon_helper_t));
         pthread_setspecific(rmon_helper_key, helper);
     }

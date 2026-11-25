@@ -1179,8 +1179,7 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
                         ret = false;
                         break;
                      }
-                     const size_t size = static_cast<size_t>(*amount) * sizeof(ocs_grp_elem_t);
-                     *grp_array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(size));
+                     *grp_array = ocs::uti::c_alloc<ocs_grp_elem_t>(static_cast<size_t>(*amount));
                      if (*grp_array == nullptr) {
                         sge_dstring_sprintf(error_dstr, SFNMAX, MSG_UTI_UNABLE_TO_EXTRACT_NSUP);
                         ret = false;

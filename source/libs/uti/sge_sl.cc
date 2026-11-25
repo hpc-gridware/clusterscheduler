@@ -61,8 +61,7 @@
  * On success the function creates the element stores the 'data' pointer
  * in it and returns the element pointer in 'elem'.
  *
- * On error false is returned by this function and 'elem' contains a
- * nullptr pointer.
+ * Out of memory aborts the process.
  *
  * sge_sl_elem_destroy() can be used to destroy elements that were
  * created with this function.
@@ -70,7 +69,7 @@
  * @param elem location were the pointer to the new element will be stored
  * @param data data pointer that will be stored in elem
  *
- * @return error state true  - success false - error
+ * @return true
  *
  * @note MT-NOTE: sge_sl_elem_create() is MT safe
  *
@@ -80,25 +79,14 @@ bool
 sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
    DENTER(SL_LAYER);
 
-   bool ret = true;
-
    if (elem != nullptr) {
-      const size_t size = sizeof(sge_sl_elem_t);
-      sge_sl_elem_t *new_elem;
-
-      new_elem = (sge_sl_elem_t *) sge_malloc(size);
-      if (new_elem != nullptr) {
-         new_elem->prev = nullptr;
-         new_elem->next = nullptr;
-         new_elem->data = data;
-         *elem = new_elem;
-      } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         *elem = nullptr;
-         ret = false;
-      }
+      sge_sl_elem_t *new_elem = ocs::uti::c_alloc<sge_sl_elem_t>();
+      new_elem->prev = nullptr;
+      new_elem->next = nullptr;
+      new_elem->data = data;
+      *elem = new_elem;
    }
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 /**
@@ -473,11 +461,11 @@ sge_sl_elem_search(sge_sl_list_t *list, sge_sl_elem_t **elem, void *key,
  * @brief Create a new simple list
  *
  * This function creates a new simple list and returns the list in the
- * 'list' parameter. In case of an error nullptr will be returned.
+ * 'list' parameter. Out of memory aborts the process.
  *
  * @param list new simple list
  *
- * @return error state true  - success false - error
+ * @return true
  *
  * @note MT-NOTE: sge_sl_create() is MT safe
  *
@@ -487,35 +475,24 @@ bool
 sge_sl_create(sge_sl_list_t **list) {
    DENTER(SL_LAYER);
 
-   bool ret = true;
-
    if (list != nullptr) {
-      const size_t size = sizeof(sge_sl_list_t);
-      sge_sl_list_t *new_list;
+      sge_sl_list_t *new_list = ocs::uti::c_alloc<sge_sl_list_t>();
+      pthread_mutexattr_t mutex_attr;
 
-      new_list = (sge_sl_list_t *) sge_malloc(size);
-      if (new_list != nullptr) {
-         pthread_mutexattr_t mutex_attr;
+      /* initialize the mutex */
+      pthread_mutexattr_init(&mutex_attr);
+      pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+      pthread_mutex_init(&new_list->mutex, &mutex_attr);
+      pthread_mutexattr_destroy(&mutex_attr);
 
-         /* initialize the mutex */
-         pthread_mutexattr_init(&mutex_attr);
-         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
-         pthread_mutex_init(&new_list->mutex, &mutex_attr);
-         pthread_mutexattr_destroy(&mutex_attr);
+      /* other members */
+      new_list->first = nullptr;
+      new_list->last = nullptr;
+      new_list->elements = 0;
 
-         /* other members */
-         new_list->first = nullptr;
-         new_list->last = nullptr;
-         new_list->elements = 0;
-
-         *list = new_list;
-      } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         ret = false;
-         *list = nullptr;
-      }
+      *list = new_list;
    }
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 /**

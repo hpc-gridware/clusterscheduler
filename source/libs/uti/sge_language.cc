@@ -575,8 +575,7 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
          const size_t trans_size = strlen(gettext_return_string) + 1 + 16;
          trans_message = sge_malloc(trans_size);
          SGE_ASSERT(trans_message != nullptr);
-         new_mp = (sge_error_message_t *) sge_malloc(sizeof(sge_error_message_t));
-         SGE_ASSERT(new_mp != nullptr);
+         new_mp = ocs::uti::c_alloc<sge_error_message_t>();
          DPRINTF_("add new hash table entry for message id: %d\n", msg_id);
          new_mp->id = msg_id;
          new_mp->category = 0;

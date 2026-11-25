@@ -360,7 +360,7 @@ char *sge_strtok_r(const char *str, const char *delimitor,
       if (*context != nullptr) {
          ERROR(SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL);
       }
-      *context = (struct saved_vars_s *) sge_malloc(sizeof(struct saved_vars_s));
+      *context = ocs::uti::c_alloc<saved_vars_s>();
       memset(*context, 0, sizeof(struct saved_vars_s));
       saved = *context;
 

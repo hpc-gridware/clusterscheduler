@@ -109,7 +109,7 @@ sge_tq_task_compare_type(const void *data1, const void *data2) {
  * @param type type id
  * @param data data pointer
  *
- * @return error state true  - success false - error
+ * @return true; out of memory aborts the process
  *
  * @note MT-NOTE: sge_tq_task_create() is MT safe
  */
@@ -117,25 +117,14 @@ static bool
 sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
    DENTER(TQ_LAYER);
 
-   bool ret = true;
-
    if (task != nullptr && type != SGE_TQ_UNKNOWN && data != nullptr) {
-      sge_tq_task_t *new_task;
-      int size = sizeof(sge_tq_task_t);
+      sge_tq_task_t *new_task = ocs::uti::c_alloc<sge_tq_task_t>();
+      new_task->type = type;
+      new_task->data = data;
 
-      new_task = (sge_tq_task_t *) sge_malloc(size);
-      if (new_task != nullptr) {
-         new_task->type = type;
-         new_task->data = data;
-
-         *task = new_task;
-      } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         *task = nullptr;
-         ret = false;
-      }
+      *task = new_task;
    }
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 /**
@@ -168,7 +157,7 @@ sge_tq_task_destroy(sge_tq_task_t **task) {
  *
  * @param queue task queue
  *
- * @return error state true  - success false - error
+ * @return true; out of memory aborts the process
  *
  * @note MT-NOTE: sge_tq_create() is MT safe
  *
@@ -178,26 +167,15 @@ bool
 sge_tq_create(sge_tq_queue_t **queue) {
    DENTER(TQ_LAYER);
 
-   bool ret = true;
-
    if (queue != nullptr) {
-      sge_tq_queue_t *new_queue;
-      int size = sizeof(sge_tq_queue_t);
+      sge_tq_queue_t *new_queue = ocs::uti::c_alloc<sge_tq_queue_t>();
+      sge_sl_create(&new_queue->list);
+      ocs::uti::condition_initialize(&new_queue->cond);
+      new_queue->waiting = 0;
 
-      new_queue = (sge_tq_queue_t *) sge_malloc(size);
-      if (new_queue != nullptr) {
-         sge_sl_create(&new_queue->list);
-         ocs::uti::condition_initialize(&new_queue->cond);
-         new_queue->waiting = 0;
-
-         *queue = new_queue;
-      } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         *queue = nullptr;
-         ret = false;
-      }
+      *queue = new_queue;
    }
-   DRETURN(ret);
+   DRETURN(true);
 }
 
 /**

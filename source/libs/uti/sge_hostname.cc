@@ -421,8 +421,7 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
       char buffer[4096];
       struct hostent *help_he = nullptr;
 
-      he = (struct hostent *)sge_malloc (sizeof (struct hostent));
-      SGE_ASSERT(he != nullptr);
+      he = ocs::uti::c_alloc<hostent>();
       memset(he, 0, sizeof(struct hostent));
       /* On Solaris, this function returns the pointer to my struct on success
        * and nullptr on failure. */
@@ -508,66 +507,64 @@ struct hostent *sge_gethostbyname(const char *name, int *system_error_retval) {
 struct hostent *sge_copy_hostent(struct hostent *orig) {
    DENTER(GDI_LAYER);
 
-   struct hostent *copy = (struct hostent *) sge_malloc(sizeof(struct hostent));
+   struct hostent *copy = ocs::uti::c_alloc<hostent>();
    char **p = nullptr;
    int count = 0;
 
-   if (copy != nullptr) {
-      /* reset the malloced memory */
-      memset(copy, 0, sizeof(struct hostent));
+   /* reset the malloced memory */
+   memset(copy, 0, sizeof(struct hostent));
 
-      /* Easy stuff first */
-      copy->h_name = strdup(orig->h_name);
-      copy->h_addrtype = orig->h_addrtype;
-      copy->h_length = orig->h_length;
+   /* Easy stuff first */
+   copy->h_name = strdup(orig->h_name);
+   copy->h_addrtype = orig->h_addrtype;
+   copy->h_length = orig->h_length;
 
-      /* Count the number of entries */
-      count = 0;
-      for (p = orig->h_addr_list; *p != nullptr; p++) {
-         count++;
-      }
+   /* Count the number of entries */
+   count = 0;
+   for (p = orig->h_addr_list; *p != nullptr; p++) {
+      count++;
+   }
 
-      DPRINTF("%d names in h_addr_list\n", count);
+   DPRINTF("%d names in h_addr_list\n", count);
 
-      copy->h_addr_list = (char **) sge_malloc(sizeof(char *) * (count + 1));
+   copy->h_addr_list = (char **) sge_malloc(sizeof(char *) * (count + 1));
 
-      /* Copy the entries */
-      count = 0;
-      for (p = orig->h_addr_list; *p != nullptr; p++) {
+   /* Copy the entries */
+   count = 0;
+   for (p = orig->h_addr_list; *p != nullptr; p++) {
 
 #ifndef in_addr_t
-         int tmp_size = sizeof(uint32_t); /* POSIX definition for AF_INET */
+      int tmp_size = sizeof(uint32_t); /* POSIX definition for AF_INET */
 #else
-         int tmp_size = sizeof (in_addr_t);
+      int tmp_size = sizeof (in_addr_t);
 #endif
-         /* struct in_addr */
-         copy->h_addr_list[count] = sge_malloc(tmp_size);
-         memcpy(copy->h_addr_list[count++], *p, tmp_size);
-      }
-
-      copy->h_addr_list[count] = nullptr;
-
-      /* Count the number of entries */
-      count = 0;
-      for (p = orig->h_aliases; *p != 0; p++) {
-         count++;
-      }
-
-      DPRINTF("%d names in h_aliases\n", count);
-
-      copy->h_aliases = (char **) sge_malloc(sizeof(char *) * (count + 1));
-
-      /* Copy the entries */
-      count = 0;
-      for (p = orig->h_aliases; *p != 0; p++) {
-         int tmp_size = (strlen(*p) + 1) * sizeof(char);
-
-         copy->h_aliases[count] = sge_malloc(tmp_size);
-         memcpy(copy->h_aliases[count++], *p, tmp_size);
-      }
-
-      copy->h_aliases[count] = nullptr;
+      /* struct in_addr */
+      copy->h_addr_list[count] = sge_malloc(tmp_size);
+      memcpy(copy->h_addr_list[count++], *p, tmp_size);
    }
+
+   copy->h_addr_list[count] = nullptr;
+
+   /* Count the number of entries */
+   count = 0;
+   for (p = orig->h_aliases; *p != 0; p++) {
+      count++;
+   }
+
+   DPRINTF("%d names in h_aliases\n", count);
+
+   copy->h_aliases = (char **) sge_malloc(sizeof(char *) * (count + 1));
+
+   /* Copy the entries */
+   count = 0;
+   for (p = orig->h_aliases; *p != 0; p++) {
+      int tmp_size = (strlen(*p) + 1) * sizeof(char);
+
+      copy->h_aliases[count] = sge_malloc(tmp_size);
+      memcpy(copy->h_aliases[count++], *p, tmp_size);
+   }
+
+   copy->h_aliases[count] = nullptr;
    DRETURN(copy);
 }
 
@@ -637,23 +634,21 @@ struct hostent *sge_gethostbyaddr(const struct in_addr *addr, int *system_error_
    {
       char buffer[4096];
       struct hostent *help_he = nullptr;
-      he = (struct hostent *)sge_malloc(sizeof(struct hostent));
-      if (he != nullptr) {
-         memset(he, 0, sizeof(struct hostent));
+      he = ocs::uti::c_alloc<hostent>();
+      memset(he, 0, sizeof(struct hostent));
 
-         /* On Solaris, this function returns the pointer to my struct on success
-          * and nullptr on failure. */
-         help_he = gethostbyaddr_r((const char *)addr, 4, AF_INET, he, buffer, 4096, &l_errno);
+      /* On Solaris, this function returns the pointer to my struct on success
+       * and nullptr on failure. */
+      help_he = gethostbyaddr_r((const char *)addr, 4, AF_INET, he, buffer, 4096, &l_errno);
       
-         /* Since he contains pointers into buffer, and buffer goes away when we
-          * exit this code block, we make a deep copy to return. */
-         if (help_he != nullptr) {
-            struct hostent *new_he = sge_copy_hostent(help_he);
-            sge_free(&he);
-            he = new_he;
-         } else {
-            sge_free(&he);
-         }
+      /* Since he contains pointers into buffer, and buffer goes away when we
+       * exit this code block, we make a deep copy to return. */
+      if (help_he != nullptr) {
+         struct hostent *new_he = sge_copy_hostent(help_he);
+         sge_free(&he);
+         he = new_he;
+      } else {
+         sge_free(&he);
       }
    }
 #endif

@@ -62,40 +62,36 @@ sge_fifo_lock_init(sge_fifo_rw_lock_t *lock) {
    bool ret = true;
    int lret = pthread_mutex_init(&(lock->mutex), nullptr);
    if (lret == 0) {
-      lock->array = (sge_fifo_elem_t *) sge_malloc(sizeof(sge_fifo_elem_t) * FIFO_LOCK_QUEUE_LENGTH);
+      lock->array = ocs::uti::c_alloc<sge_fifo_elem_t>(FIFO_LOCK_QUEUE_LENGTH);
 
-      if (lock->array != nullptr) {
-         int i;
+      int i;
 
-         for (i = 0; i < FIFO_LOCK_QUEUE_LENGTH; i++) {
-            lock->array[i].is_reader = false;
-            lock->array[i].is_signaled = false;
-            lret = ocs::uti::condition_initialize(&(lock->array[i].cond));
-            if (lret != 0) {
-               ret = false;
-               break;
-            }
+      for (i = 0; i < FIFO_LOCK_QUEUE_LENGTH; i++) {
+         lock->array[i].is_reader = false;
+         lock->array[i].is_signaled = false;
+         lret = ocs::uti::condition_initialize(&(lock->array[i].cond));
+         if (lret != 0) {
+            ret = false;
+            break;
          }
+      }
+      if (lret == 0) {
+         lret = ocs::uti::condition_initialize(&(lock->cond));
          if (lret == 0) {
-            lret = ocs::uti::condition_initialize(&(lock->cond));
-            if (lret == 0) {
-               lock->head = 0;
-               lock->tail = 0;
-               lock->size = FIFO_LOCK_QUEUE_LENGTH;
-               lock->reader_active = 0;
-               lock->reader_waiting = 0;
-               lock->writer_active = 0;
-               lock->writer_waiting = 0;
-               lock->waiting = 0;
-               lock->signaled = 0;
-            } else {
-               ret = false;
-            }
+            lock->head = 0;
+            lock->tail = 0;
+            lock->size = FIFO_LOCK_QUEUE_LENGTH;
+            lock->reader_active = 0;
+            lock->reader_waiting = 0;
+            lock->writer_active = 0;
+            lock->writer_waiting = 0;
+            lock->waiting = 0;
+            lock->signaled = 0;
          } else {
-            // has already been handled in the for loop above
+            ret = false;
          }
       } else {
-         ret = false;
+         // has already been handled in the for loop above
       }
    } else {
       ret = false;
