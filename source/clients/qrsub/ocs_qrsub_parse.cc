@@ -332,7 +332,7 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
    }
 
    /*   -M user[@host],... 	 notify these e-mail addresses SGE_LIST*/
-   parse_list_merge<AR_mail_list, MR_host, MR_user>(pcmdline, "-M", ar);
+   ocs_parse_mail_list_merge<AR_mail_list>(pcmdline, "-M", ar);
 
    /*  -he yes/no 	 hard error handling SGE_ULONG */
    while ((ep = pcmdline.find_first<SPA_switch_val>("-he"))) {

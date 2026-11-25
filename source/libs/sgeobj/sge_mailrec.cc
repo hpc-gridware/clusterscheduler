@@ -55,6 +55,29 @@
 #include "msg_common.h"
 
 /**
+ * @brief Whether a list of mail recipients holds an address
+ *
+ * An address is the user and the mail domain; both are compared as they are written, a missing domain only
+ * matches a missing domain.
+ *
+ * @param list the mail recipients (MR), maybe empty
+ * @param user the user of the address
+ * @param host the mail domain of the address, nullptr for none
+ * @return true if the list holds an entry with the same user and the same domain
+ */
+static bool ocs_mailrec_contains(const ocs::tom::ConstList<ocs::tom::MR> list, const char *user, const char *host) {
+   if (!list) {
+      return false;
+   }
+   for (const auto ep : list) {
+      if (sge_strnullcmp(user, ep.get<MR_user>()) == 0 && sge_strnullcmp(host, ep.get<MR_host>()) == 0) {
+         return true;
+      }
+   }
+   return false;
+}
+
+/**
  * @brief Parse a list of mail recipients into a list
  *
  * Parse a list of mail recipients: user[`@host`][,user[`@host`],...].
@@ -90,12 +113,10 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
       struct saved_vars_s *context = nullptr;
       const char *user = sge_strtok_r(*pstr, "@", &context);
       const char *host = sge_strtok_r(nullptr, "@", &context);
-      if (const auto tmp = list->find_first<MR_user>(user)) {
-         if (!sge_strnullcmp(host, tmp.get<MR_host>())) {
-            /* got this mail adress twice */
-            sge_free_saved_vars(context);
-            continue;
-         }
+      // CS-3188: an address given twice is kept once, every entry of the user is compared, not only the first
+      if (ocs_mailrec_contains(*list, user, host)) {
+         sge_free_saved_vars(context);
+         continue;
       }
 
       /* got a new adress - add it */
@@ -132,6 +153,34 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_s
    ocs::tom::ListPtr<ocs::tom::MR> list;
    const int ret = mailrec_parse_into(list, mail_str);
    DRETURN(std::make_pair(ret, std::move(list)));
+}
+
+/**
+ * @brief Add mail recipients to a list, keeping each address once
+ *
+ * An address is the user and the mail domain: a recipient of a domain the list already holds for another user
+ * is added (CS-3188), only an address the list holds already is dropped. The order of the recipients is kept.
+ *
+ * @param[in,out] list the mail recipients (MR) to add to; created if it is empty and there is something to add
+ * @param add the recipients to add, taken over
+ *
+ * @note MT-NOTE: ocs_mailrec_merge() is MT safe
+ */
+void ocs_mailrec_merge(ocs::tom::ListPtr<ocs::tom::MR> &list, ocs::tom::ListPtr<ocs::tom::MR> add) {
+   DENTER(TOP_LAYER);
+
+   if (add) {
+      if (!list) {
+         list = ocs::tom::ListPtr<ocs::tom::MR>::create("mail_list");
+      }
+      for (const auto ep : *add) {
+         if (!ocs_mailrec_contains(*list, ep.get<MR_user>(), ep.get<MR_host>())) {
+            list->push_back(ep.clone());
+         }
+      }
+   }
+
+   DRETURN_VOID;
 }
 
 /**

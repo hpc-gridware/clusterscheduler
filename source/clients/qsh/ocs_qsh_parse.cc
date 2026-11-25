@@ -483,7 +483,7 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_qsh_parameter(const uint32_t prog_numb
       cmdline.erase(ep);
    }
 
-   parse_list_merge<JB_mail_list, MR_host, MR_user>(cmdline, "-M", job);
+   ocs_parse_mail_list_merge<JB_mail_list>(cmdline, "-M", job);
 
    if (!job.get<JB_mail_list>()) {
       const auto mail_ep = job.emplace_back_in<JB_mail_list, MR_user>(username);

@@ -51,6 +51,8 @@
 
 [[nodiscard]] std::pair<int, ocs::tom::ListPtr<ocs::tom::MR>> mailrec_parse(const char *mail_str);
 
+void ocs_mailrec_merge(ocs::tom::ListPtr<ocs::tom::MR> &list, ocs::tom::ListPtr<ocs::tom::MR> add);
+
 int mailrec_unparse(ocs::tom::ConstList<ocs::tom::MR> head, char *mail_str, unsigned int mail_str_len);
 
 bool

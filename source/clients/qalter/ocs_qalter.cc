@@ -748,7 +748,7 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          select_field(JB_mail_options);
       }
 
-      parse_list_merge<JB_mail_list, MR_host, MR_user>(cmdline, "-M", job);
+      ocs_parse_mail_list_merge<JB_mail_list>(cmdline, "-M", job);
       if (job.get<JB_mail_list>())
          select_field(JB_mail_list);
 

@@ -26,6 +26,8 @@
  * an element of any type. The expected results are those of the former
  * implementation on the raw list interface: the same lists, return codes and
  * output bytes.
+ *
+ * Also: repeated -M options keep every address (CS-3188).
  */
 
 #include <cstdint>
@@ -41,6 +43,9 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/ocs_object_xml.h"
+#include "sgeobj/sge_mailrec.h"
+#include "sgeobj/tom/ocs_tom_JB.h"
+#include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
 #include "sgeobj/tom/ocs_tom_PN.h"
 #include "sgeobj/tom/ocs_tom_RDE.h"
@@ -657,6 +662,71 @@ static void test_xml_document() {
                      "</root>\n");
 }
 
+/**
+ * @brief Append a -M switch with its parsed recipients to a command line
+ * @param cmdline the parsed option list
+ * @param recipients the argument of -M, e.g. `alice@example.com`
+ */
+static void add_mail_option(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *recipients) {
+   auto [ret, mail_list] = mailrec_parse(recipients);
+   auto ep = ocs::tom::ElementPtr<ocs::tom::SPA>::create();
+   ep->set<SPA_switch_val>("-M");
+   ep->set<SPA_switch_arg>(recipients);
+   ep->set<SPA_argval_lListT>(std::move(mail_list));
+   cmdline.push_back(std::move(ep));
+}
+
+/**
+ * @brief The mail list of a job as qstat -j shows it
+ * @param job the job
+ * @return the recipients, comma separated
+ */
+static std::string mail_list_text(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   char text[1024];
+   mailrec_unparse(job.get<JB_mail_list>(), text, sizeof(text));
+   return text;
+}
+
+/**
+ * @brief Repeated -M options keep every address, also of the same mail domain (CS-3188) [T38-T41]
+ * @return nothing; CHECK records the results
+ */
+static void test_mail_list_merge() {
+   {
+      auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::create("cmdline");
+      add_mail_option(*cmdline, "alice@example.com");
+      add_mail_option(*cmdline, "bob@example.com");
+      auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      ocs_parse_mail_list_merge<JB_mail_list>(*cmdline, "-M", *job);
+      CHECK(38, "two recipients of the same domain are both kept, in their order",
+            mail_list_text(*job) == "alice@example.com,bob@example.com" && cmdline->empty());
+   }
+   {
+      auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::create("cmdline");
+      add_mail_option(*cmdline, "alice@example.com,carol");
+      add_mail_option(*cmdline, "alice@example.com");
+      add_mail_option(*cmdline, "carol");
+      auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      ocs_parse_mail_list_merge<JB_mail_list>(*cmdline, "-M", *job);
+      CHECK(39, "an address given again is kept once, a user without a domain as well",
+            mail_list_text(*job) == "alice@example.com,carol");
+   }
+   {
+      auto cmdline = ocs::tom::ListPtr<ocs::tom::SPA>::create("cmdline");
+      add_mail_option(*cmdline, "bob@example.com");
+      auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+      job->set<JB_mail_list>(mailrec_parse("alice@example.com").second);
+      ocs_parse_mail_list_merge<JB_mail_list>(*cmdline, "-M", *job);
+      CHECK(40, "a recipient of the domain of one the job holds already is added",
+            mail_list_text(*job) == "alice@example.com,bob@example.com");
+   }
+   {
+      const auto [ret, mail_list] = mailrec_parse("alice@a.com,alice@b.com,alice@b.com");
+      CHECK(41, "one -M with a user of two domains, one of them twice, keeps both domains once",
+            ret == 0 && mail_list && mail_list->size() == 2);
+   }
+}
+
 // ---------------------------------------------------------------------------
 
 /**
@@ -708,5 +778,11 @@ int main(int argc, char *argv[]) {
        {"write a time stamp", "write an element with an unset and a set object field",
         "write an object nesting another object", "write a reduced element"},
        "the output equals the output the former code derives", {}, {34, 35, 36, 37}, test_xml_values},
+      {"PARSE-07", "merging repeated -M options",
+       "ocs_parse_mail_list_merge() keeps every address of repeated -M options, also of the same mail domain, and "
+       "drops only an address given again (CS-3188)",
+       {"merge two recipients of one domain", "merge an address given twice", "merge into the list of a job",
+        "parse one -M with a user of two domains"},
+       "every address is kept once, in the order given", {}, {38, 39, 40, 41}, test_mail_list_merge},
    });
 }

@@ -40,6 +40,7 @@
  */
 
 #include <ostream>
+#include <type_traits>
 #include <utility>
 
 #include "tom/ocs_Types.h"
@@ -55,6 +56,7 @@
 #include "sgeobj/tom/ocs_tom_SPA.h"
 #include "sgeobj/tom/ocs_tom_ST.h"
 #include "sgeobj/sge_object.h"
+#include "sgeobj/sge_mailrec.h"
 
 /// Is this field type one whose value is printed as a number?
 #define L_IS_NUM_TYPE(x) ((x == MT_DOUBLE) || (x == MT_UINT32) || (x == MT_INT64)  || (x == MT_INT32))
@@ -178,6 +180,35 @@ void parse_list_merge(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
          destlist.get().template merge_by_key<Key, Value>(list);
          list.reset();
       }
+   }
+   job.template set<F>(std::move(destlist));
+   DRETURN_VOID;
+}
+
+/**
+ * @brief Parse a switch's list of mail recipients into a list attribute, keeping each address once
+ *
+ * Every occurrence of the switch is taken out of the command line; its recipients are appended to the
+ * attribute unless the attribute holds the same address (user and mail domain) already (CS-3188). Merging by
+ * the mail domain alone, as parse_list_merge() does, replaced a recipient by the next one of the same domain.
+ *
+ * @tparam F the mail list field (MR) of the object type of @p job
+ * @param cmdline the parsed option list to consume from
+ * @param option the switch to look for, `-M`
+ * @param[in,out] job the object the list is stored in, a job or an advance reservation
+ */
+template <auto F>
+   requires (ocs::tom::FieldTraits<F>::type == ocs::tom::FieldType::List && ocs::tom::FieldTraits<F>::has_sub &&
+             std::is_same_v<typename ocs::tom::FieldTraits<F>::Sub, ocs::tom::MR>)
+void ocs_parse_mail_list_merge(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *option,
+                               const ocs::tom::Element<typename ocs::tom::FieldTraits<F>::Type> job) {
+   DENTER(TOP_LAYER);
+
+   auto destlist = job.template get<F>().clone("mail_list");
+   ocs::tom::ListPtr<ocs::tom::MR> list;
+   while (ocs::detail::take_list_option(cmdline, option, list)) {
+      DPRINTF("OPTION: %s\n", option);
+      ocs_mailrec_merge(destlist, std::move(list));
    }
    job.template set<F>(std::move(destlist));
    DRETURN_VOID;

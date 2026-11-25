@@ -592,7 +592,7 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_job_parameter([[maybe_unused]] const u
       cmdline.erase(ep);
    }
 
-   parse_list_merge<JB_mail_list, MR_host, MR_user>(cmdline, "-M", *pjob);
+   ocs_parse_mail_list_merge<JB_mail_list>(cmdline, "-M", *pjob);
 
 #ifndef USE_CLIENT_QALTER
    if (!pjob->get<JB_mail_list>()) {   
