@@ -42,6 +42,8 @@
  * @see sge_jsv_script.h
  */
 
+#include <algorithm>
+#include <cerrno>
 #include <ctime>
 #include <cctype>
 #include <vector>
@@ -282,6 +284,109 @@ ocs_jsv_parse_jid_request_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
 }
 
 /**
+ * @brief The number of arguments up to which a JSV may extend the arguments of a job
+ *
+ * PARAM CMDARGS <n> and PARAM CMDARG<n> grow the argument list of the job up to the count or the
+ * index they name, with empty arguments in between. Without a bound, a faulty JSV made qmaster
+ * (server JSV) or the client (client JSV) create billions of list elements (CS-3220). The bound is
+ * above what a job can be started with: on Linux the arguments and the environment of exec() share
+ * ARG_MAX, by default 2 MB, and every argument takes at least a pointer and its terminating byte.
+ * A JSV may still change every argument of a job that already has more.
+ */
+static constexpr uint32_t OCS_JSV_MAX_CMDARGS = 262144;
+
+/**
+ * @brief Apply PARAM CMDARGS <n> or PARAM CMDARG<n> <value> to the arguments of the new job
+ *
+ * CMDARGS sets the number of arguments, dropping arguments at the end or appending empty ones.
+ * CMDARG<n> sets the argument with the index n, appending empty arguments up to it when n is beyond
+ * the end (CS-3142). An index that is not a decimal number and a count or an index that would grow
+ * the list beyond #OCS_JSV_MAX_CMDARGS arguments are rejected, the arguments stay unchanged (CS-3220).
+ *
+ * @param new_job the job the JSV modifies
+ * @param answer_list receives the error
+ * @param param the parameter name, starting with CMDARG
+ * @param value the parameter value, nullptr if the line has none
+ * @return true if the parameter was applied, false on an error
+ */
+static bool
+ocs_jsv_set_cmdarg_param(const ocs::tom::Element<ocs::tom::JB> new_job, ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
+                         const char *param, const char *value) {
+   DENTER(TOP_LAYER);
+
+   auto arg_list = new_job.get<JB_job_args>();
+   const uint64_t length = arg_list ? arg_list.size() : 0;
+   const char *id_string = param + 6;
+   const bool is_count = strcmp(id_string, "S") == 0;
+
+   // the number of arguments afterwards, and for CMDARG<n> the index n
+   uint64_t new_length = length;
+   uint64_t id = 0;
+   if (is_count) {
+      if (value == nullptr) {
+         // CMDARGS without a value leaves the arguments as they are
+         DRETURN(true);
+      }
+      uint32_t count = 0;
+      if (!ulong_parse_from_string(&count, answer_list, value)) {
+         DRETURN(false);
+      }
+      new_length = count;
+   } else {
+      // only decimal digits; before, CMDARG followed by anything else was taken for CMDARGS
+      bool valid = id_string[0] != '\0';
+      for (const char *cp = id_string; valid && *cp != '\0'; cp++) {
+         valid = isdigit(static_cast<unsigned char>(*cp)) != 0;
+      }
+      if (valid) {
+         errno = 0;
+         id = strtoull(id_string, nullptr, 10);
+         valid = errno != ERANGE && id < UINT32_MAX;
+      }
+      if (!valid) {
+         answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param,
+                                 value != nullptr ? value : "");
+         DRETURN(false);
+      }
+      // CMDARG<n> with n equal to the number of arguments appends one (CS-3142)
+      new_length = std::max(length, id + 1);
+   }
+   if (new_length > length && new_length > OCS_JSV_MAX_CMDARGS) {
+      answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS, param,
+                              value != nullptr ? value : "");
+      DRETURN(false);
+   }
+
+   // a job without arguments has no list: it gets one, stored in the job below when it is not empty (CS-3142)
+   ocs::tom::ListPtr<ocs::tom::ST> created_arg_list;
+   if (!arg_list) {
+      created_arg_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
+      arg_list = created_arg_list.get();
+   }
+   for (uint64_t i = length; i < new_length; i++) {
+      arg_list.emplace_back<ST_name>("");
+   }
+   for (uint64_t i = new_length; i < length; i++) {
+      arg_list.erase(arg_list.back());
+   }
+   if (!is_count) {
+      uint64_t i = 0;
+      for (const auto elem : arg_list) {
+         if (i == id) {
+            elem.set<ST_name>(value != nullptr ? value : "");
+            break;
+         }
+         i++;
+      }
+   }
+
+   if (created_arg_list && !created_arg_list->empty()) {
+      new_job.set<JB_job_args>(std::move(created_arg_list));
+   }
+   DRETURN(true);
+}
+
+/**
  * @brief Apply a PARAM line the JSV script sent back to the new job
  *
  * Each parameter maps to a job attribute; the context parameter ac replaces the
@@ -440,67 +545,9 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          }
       }
 
-      /* CMDARG<id> */
-      {         
-         if (ret && strncmp("CMDARG", param, 6) == 0) {
-            auto arg_list = new_job.get<JB_job_args>();
-            // a job without arguments has no list: it gets one, stored in the job below when it is not
-            // empty (CS-3142)
-            ocs::tom::ListPtr<ocs::tom::ST> created_arg_list;
-            if (!arg_list) {
-               created_arg_list = ocs::tom::ListPtr<ocs::tom::ST>::create("");
-               arg_list = created_arg_list.get();
-            }
-            uint32_t id = 0;
-            uint32_t length;
-            if (const char *id_string = param + 6; !isdigit(id_string[0])) {
-               if (value) {
-
-                  length = static_cast<uint32_t>(arg_list.size());
-                  ret &= ulong_parse_from_string(&id, &local_answer_list, value);
-                  if (ret) {
-                     if (id > length) {
-                        uint32_t to_create = id - length;
-
-                        while (to_create > 0) {
-                           arg_list.emplace_back<ST_name>("");
-                           to_create--;
-                        }
-                     } else {
-                        uint32_t to_remove = length - id;
-                        while (to_remove > 0) {
-                           arg_list.erase(arg_list.back());
-                           to_remove--;
-                        }
-                     }
-                  }
-               }
-            } else {
-               length = static_cast<uint32_t>(arg_list.size());
-               ret &= ulong_parse_from_string(&id, &local_answer_list, id_string);
-
-               // CMDARG<n> with n equal to the number of arguments appends one (CS-3142)
-               if (ret && id >= length) {
-                  uint32_t to_create = id - length + 1;
-                  while (to_create > 0) {
-                     arg_list.emplace_back<ST_name>("");
-                     to_create--;
-                  }
-               }
-
-               uint32_t i = 0;
-               for (const auto elem : arg_list) {
-                  if (i == id) {
-                     elem.set<ST_name>((value != nullptr) ? value : "");
-                     break;
-                  }
-                  i++;
-               }
-            }
-            if (created_arg_list && !created_arg_list->empty()) {
-               new_job.set<JB_job_args>(std::move(created_arg_list));
-            }
-         }
+      /* CMDARGS, CMDARG<id> */
+      if (ret && strncmp("CMDARG", param, 6) == 0) {
+         ret = ocs_jsv_set_cmdarg_param(new_job, &local_answer_list, param, value);
       }
 
       /* -a */

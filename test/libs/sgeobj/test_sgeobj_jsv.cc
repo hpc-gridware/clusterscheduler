@@ -40,6 +40,8 @@
  * CS-3136, CS-3137, CS-3142, CS-3143: PARAM c_occasion set the checkpoint interval, the start time and the
  * deadline were sent with the month off by one, CMDARG<n> was lost for a job without arguments or for n equal
  * to the number of arguments, and a priority or binding amount that is not a number was taken as 0.
+ *
+ * CS-3220: a CMDARG index without an upper bound made the receiver create billions of arguments.
  */
 
 #include <cstdio>
@@ -487,6 +489,59 @@ test_cmdarg_params() {
 }
 
 /**
+ * @brief A CMDARG index or a CMDARGS count beyond any sane number of arguments is rejected (CS-3220)
+ *
+ * Before the fix CMDARG4000000000 made the receiver create four billion empty arguments, CMDARG4294967295 on a
+ * job without arguments lost the value, and CMDARG followed by anything but digits was taken for CMDARGS.
+ */
+static void
+test_cmdarg_limits() {
+   printf("\n--- PARAM CMDARG<n> / CMDARGS out of range ---\n");
+   bool accepted = true;
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b"});
+   std::string text = communicate("PARAM CMDARG4000000000 x\nRESULT STATE ACCEPT\n", "", &accepted,
+                                  job.get().raw());
+   printf("      answer: \"%s\", arguments: %s\n", text.c_str(), job_args(*job).c_str());
+   CHECK(52, "CMDARG4000000000 is an error, the arguments are unchanged",
+         text != "<none>" && job_args(*job) == "a,b");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM CMDARG4294967295 x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\", arguments: %s\n", text.c_str(), job_args(*job).c_str());
+   CHECK(53, "CMDARG4294967295 on a job without arguments is an error, no arguments",
+         text != "<none>" && job_args(*job) == "<none>");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b"});
+   text = communicate("PARAM CMDARGx 1\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\", arguments: %s\n", text.c_str(), job_args(*job).c_str());
+   CHECK(54, "CMDARGx is an error, not CMDARGS", text != "<none>" && job_args(*job) == "a,b");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b"});
+   text = communicate("PARAM CMDARG1y z\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(55, "CMDARG1y is an error", text != "<none>" && job_args(*job) == "a,b");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   set_job_args(*job, {"a", "b"});
+   text = communicate("PARAM CMDARGS 4000000000\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\", arguments: %s\n", text.c_str(), job_args(*job).c_str());
+   CHECK(56, "CMDARGS 4000000000 is an error, the arguments are unchanged",
+         text != "<none>" && job_args(*job) == "a,b");
+
+   // the limit itself is still accepted
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM CMDARG262143 x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   const auto args = job->get<JB_job_args>();
+   CHECK(57, "CMDARG262143 is accepted and creates 262144 arguments",
+         accepted && text == "<none>" && args && args.size() == 262144);
+   text = communicate("PARAM CMDARG262144 x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(58, "CMDARG262144 is an error", text != "<none>" && job->get<JB_job_args>().size() == 262144);
+}
+
+/**
  * @brief The seconds since the epoch of a local date and time
  * @param year the year
  * @param month the month, 1 for January
@@ -585,6 +640,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_incomplete_lines();
    test_checkpoint_params();
    test_cmdarg_params();
+   test_cmdarg_limits();
    test_date_params();
    test_number_params();
 
