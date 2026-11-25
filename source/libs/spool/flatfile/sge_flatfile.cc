@@ -868,7 +868,9 @@ bool spool_flatfile_align_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, con
  * @param line_breaks whether long lines are broken, see
  *                    #spool_flatfile_line_breaks
  *
- * @return on success the name of the spool file / stream, else nullptr
+ * @return on success the name of the spool file / stream, else nullptr; when the
+ *         fields cannot be written, nothing is written and an existing file is
+ *         kept (CS-3217)
  *
  * @see #spool_flatfile_write_object
  */
@@ -949,9 +951,10 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
          
          if (!spool_flatfile_write_list_fields(answer_list, list, &char_buffer, 
                                               instr, fields, false, nullptr)) {
-            /* in case of errors, messages are in answer_list,
-             * clear data - we don't want to write erroneous data */
+            /* in case of errors, messages are in answer_list; nothing is written, so an
+             * existing file is kept rather than replaced by a newline (CS-3217) */
             sge_dstring_clear(&char_buffer); 
+            break;
          }
 
          if (instr->record_end != '\n') {
@@ -1041,7 +1044,8 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
  *                       #SP_DEST_STREAM
  *
  * @return on success the name of the file or stream written, which the caller
- *         has to free, else nullptr
+ *         has to free, else nullptr; when the fields cannot be written, nothing
+ *         is written and an existing file is kept (CS-3217)
  *
  * @see #spool_flatfile_write_list, #spool_flatfile_read_object
  */
@@ -1096,9 +1100,10 @@ spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
          if (!spool_flatfile_write_object_fields(answer_list, object, 
                                                 &char_buffer, instr, fields_in,
                                                 false, is_root)) {
-            /* in case of errors, messages are in answer_list,
-             * clear data - we don't want to write erroneous data */
+            /* in case of errors, messages are in answer_list; nothing is written, so an
+             * existing file is kept rather than replaced by a newline (CS-3217) */
             sge_dstring_clear(&char_buffer); 
+            break;
          }
 
          sge_dstring_append_char(&char_buffer, '\n');
@@ -1137,7 +1142,7 @@ spool_flatfile_write_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
          break;
    }
 
-   if (data_len == 0) {
+   if (data == nullptr || data_len == 0) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
                               ANSWER_QUALITY_ERROR, MSG_FLATFILE_NODATATOSPOOL);
       sge_dstring_free(&char_buffer);
