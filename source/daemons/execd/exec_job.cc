@@ -804,10 +804,17 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          DRETURN(-2);
       }
 
-      if (SGE_STAT(tmpdir, &statbuf)) {
-         snprintf(err_str, err_length, MSG_SYSTEM_CANTOPENTMPDIR_S, tmpdir);
-         sge_free(&pw_buffer);
-         DRETURN(-2);
+      // The directory belongs to the job owner, who may have removed it or put something else at its
+      // path. That must not halt the queue: the directory is made again the safe way, and only a path
+      // that cannot become the directory fails the job (CS-3222).
+      if (SGE_LSTAT(tmpdir, &statbuf) != 0 || !S_ISDIR(statbuf.st_mode) || statbuf.st_uid != pw->pw_uid) {
+         bool planted = false;
+         if (!(sge_make_tmpdir(master_q, job_id, ja_task_id,
+                               pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX, planted))) {
+            snprintf(err_str, err_length, MSG_SYSTEM_CANTOPENTMPDIR_S, tmpdir);
+            sge_free(&pw_buffer);
+            DRETURN(planted ? -3 : -2);
+         }
       }
    }
 
