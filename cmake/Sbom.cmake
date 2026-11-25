@@ -40,11 +40,18 @@
 # ecosystems like Maven, Go or PyPI, but not the pkg:github and pkg:generic purls our C/C++
 # components have - so these components carry the CPE the NVD files their vulnerabilities under.
 #
+# A vulnerability filed for a component does not always affect the product, e.g. when the product
+# does not use the affected function or when the attack is not possible in its environment. The
+# VEX document vex.cyclonedx.json, installed next to the SBOM, states these cases and the reasons,
+# so that a scanner records them with its findings instead of reporting the vulnerability again.
+#
 # The JSON is written as plain text rather than with string(JSON), which needs CMake 3.19 - more
 # than some of the older build hosts have. Every value written is a constant of the build, so
 # escaping backslashes and double quotes is all it needs.
 
 set(SBOM_FILE_NAME "sbom.cyclonedx.json")
+# the VEX document: which vulnerabilities of the components do not affect the product, and why
+set(SBOM_VEX_FILE_NAME "vex.cyclonedx.json")
 
 # @brief escape a value for a JSON string
 #
@@ -71,13 +78,15 @@ endfunction()
 # @param VCS          optional: URL of the source repository
 # @param DISTRIBUTION optional: URL the source is downloaded from
 # @param SHA256       optional: SHA-256 hash of what DISTRIBUTION refers to
+# @param PEDIGREE     optional: the CycloneDX pedigree object as JSON, e.g. our patches, see
+#                     sbom_patch_pedigree()
 # @param SCOPE        "required" or "optional" (runtime loaded, used only when configured)
 # @param LINKAGE      how it is part of the product: static, shared, header-only, executable,
 #                     runtime-loaded
 # @param PROVIDED_BY  "product" (built and shipped or compiled in by us) or "operating-system"
 function(sbom_add_component)
    set(one_value_args BOM_REF NAME VERSION DESCRIPTION LICENSE PURL CPE VCS DISTRIBUTION SHA256
-                      SCOPE LINKAGE PROVIDED_BY)
+                      PEDIGREE SCOPE LINKAGE PROVIDED_BY)
    cmake_parse_arguments(C "" "${one_value_args}" "" ${ARGN})
 
    foreach (field BOM_REF NAME DESCRIPTION LICENSE PURL VCS DISTRIBUTION)
@@ -124,6 +133,9 @@ function(sbom_add_component)
       string(REPLACE ";" ", " refs "${refs}")
       string(APPEND json "        \"externalReferences\": [ ${refs} ],\n")
    endif ()
+   if (C_PEDIGREE)
+      string(APPEND json "        \"pedigree\": ${C_PEDIGREE},\n")
+   endif ()
    string(APPEND json "        \"properties\": [\n")
    set(linkage "{ \"name\": \"ocs:linkage\", \"value\": \"${C_LINKAGE}\" }")
    set(provided_by "{ \"name\": \"ocs:provided-by\", \"value\": \"${C_PROVIDED_BY}\" }")
@@ -152,6 +164,72 @@ endfunction()
 # @param version version as the NVD records it, e.g. 5.3.28
 function(sbom_cpe out vendor product version)
    set(${out} "cpe:2.3:a:${vendor}:${product}:${version}:*:*:*:*:*:*:*" PARENT_SCOPE)
+endfunction()
+
+# @brief the CycloneDX pedigree of a component we patch
+#
+# Each patch is listed as a backport which resolves the security issue its CVE names, so a
+# scanner or a reader of the SBOM can tell that the vulnerability is fixed although the version
+# says otherwise.
+#
+# @param out     name of the variable receiving the pedigree object as JSON, empty without patches
+# @param patches list of <patch file>=<CVE>, e.g. PROJECT_3RDPARTY_BERKELEYDB_PATCHES
+function(sbom_patch_pedigree out patches)
+   set(entries "")
+   foreach (entry ${patches})
+      string(REGEX REPLACE "^.*=" "" cve "${entry}")
+      set(source "{ \"name\": \"NVD\", \"url\": \"https://nvd.nist.gov/vuln/detail/${cve}\" }")
+      set(resolves "{ \"type\": \"security\", \"id\": \"${cve}\", \"source\": ${source} }")
+      list(APPEND entries "{ \"type\": \"backport\", \"resolves\": [ ${resolves} ] }")
+   endforeach ()
+   set(pedigree "")
+   if (entries)
+      string(REPLACE ";" ", " entries "${entries}")
+      set(pedigree "{ \"patches\": [ ${entries} ] }")
+   endif ()
+   set(${out} "${pedigree}" PARENT_SCOPE)
+endfunction()
+
+# @brief add a statement to the VEX document
+#
+# A statement says how a vulnerability reported for a component affects the product, e.g. that
+# it does not, and why. The statements are collected in the global property SBOM_VEX_STATEMENTS
+# and written by sbom_write() into a VEX document of their own. Dependency-Track and other
+# scanners import it and record the analysis with the finding of the vulnerability.
+#
+# A statement names the product as the affected item, not the component: Dependency-Track keeps
+# no bom-ref of the components it imports, and matches the bom-ref of the product only, applying
+# the analysis to every component of the project which has the vulnerability.
+#
+# @param ID            the CVE id of the vulnerability, as the NVD files it
+# @param STATE         CycloneDX analysis state, e.g. not_affected
+# @param JUSTIFICATION CycloneDX justification, required with not_affected, e.g.
+#                      protected_by_mitigating_control
+# @param DETAIL        the reasoning
+function(sbom_add_vex_statement)
+   cmake_parse_arguments(V "" "ID;STATE;JUSTIFICATION;DETAIL" "" ${ARGN})
+   sbom_json_escape(V_DETAIL "${V_DETAIL}")
+
+   set(source "{ \"name\": \"NVD\", \"url\": \"https://nvd.nist.gov/vuln/detail/${V_ID}\" }")
+   set(analysis "\"state\": \"${V_STATE}\"")
+   if (V_JUSTIFICATION)
+      string(APPEND analysis ", \"justification\": \"${V_JUSTIFICATION}\"")
+   endif ()
+   string(APPEND analysis ", \"detail\": \"${V_DETAIL}\"")
+
+   set(json "    {\n")
+   string(APPEND json "      \"id\": \"${V_ID}\",\n")
+   string(APPEND json "      \"source\": ${source},\n")
+   string(APPEND json "      \"analysis\": { ${analysis} },\n")
+   string(APPEND json "      \"affects\": [ { \"ref\": \"product\" } ]\n")
+   string(APPEND json "    }")
+
+   get_property(statements GLOBAL PROPERTY SBOM_VEX_STATEMENTS)
+   if (statements)
+      string(APPEND statements ",\n")
+   endif ()
+   string(APPEND statements "${json}")
+   set_property(GLOBAL PROPERTY SBOM_VEX_STATEMENTS "${statements}")
 endfunction()
 
 # @brief add a component provided by the operating system
@@ -193,8 +271,10 @@ function(sbom_collect_components)
       else ()
          set(bdb_commit ${PROJECT_3RDPARTY_BERKELEYDB_COMMIT})
          set(description "Berkeley DB, spooling - libdb and the db_* utilities, built from")
-         string(APPEND description " commit ${bdb_commit} of the libdb5 repository")
+         string(APPEND description " commit ${bdb_commit} of the libdb5 repository, with the")
+         string(APPEND description " security patches the distributions apply to 5.3.28")
          sbom_cpe(bdb_cpe "oracle" "berkeley_db" "${PROJECT_3RDPARTY_BERKELEYDB_VERSION}")
+         sbom_patch_pedigree(bdb_pedigree "${PROJECT_3RDPARTY_BERKELEYDB_PATCHES}")
          sbom_add_component(BOM_REF "berkeleydb" NAME "berkeleydb"
                             VERSION "${PROJECT_3RDPARTY_BERKELEYDB_VERSION}"
                             DESCRIPTION "${description}"
@@ -202,7 +282,29 @@ function(sbom_collect_components)
                             PURL "pkg:github/Positeral/libdb5@${bdb_commit}"
                             CPE "${bdb_cpe}"
                             VCS "https://github.com/Positeral/libdb5.git"
+                            PEDIGREE "${bdb_pedigree}"
                             SCOPE "required" LINKAGE "shared" PROVIDED_BY "product")
+
+         # The Oracle vulnerabilities the NVD files for 5.3.28 which do not affect the product.
+         # Oracle published no details and no fix for 5.x. CVE-2019-2708 is not listed: there is
+         # a fix, but it is taken from a later, AGPL licensed version.
+         set(bdb_not_affected CVE-2017-3604 CVE-2017-3605 CVE-2017-3606 CVE-2017-3607
+                              CVE-2017-3608 CVE-2017-3609 CVE-2017-3610 CVE-2017-3611
+                              CVE-2017-3612 CVE-2017-3613 CVE-2017-3614 CVE-2017-3615
+                              CVE-2017-3616 CVE-2017-3617 CVE-2020-2981)
+         set(detail "Oracle describes the vulnerability as a local one: the attacker has to be")
+         string(APPEND detail " logged in on the host where Berkeley DB runs. The product uses")
+         string(APPEND detail " Berkeley DB for the BDB spooling only and opens the database")
+         string(APPEND detail " environment with an explicit home directory, the BDB spooling")
+         string(APPEND detail " directory. Only the admin user can write to it (directory mode")
+         string(APPEND detail " 755, database files mode 0600). The database utilities run as")
+         string(APPEND detail " the admin user on the same directory. Debian and Ubuntu consider")
+         string(APPEND detail " the vulnerability not applicable to Berkeley DB 5.3.28.")
+         foreach (cve ${bdb_not_affected})
+            sbom_add_vex_statement(ID "${cve}" STATE "not_affected"
+                                   JUSTIFICATION "protected_by_mitigating_control"
+                                   DETAIL "${detail}")
+         endforeach ()
       endif ()
    endif ()
 
@@ -288,9 +390,12 @@ function(sbom_collect_components)
    endif ()
 endfunction()
 
-# @brief write the SBOM document and install it
+# @brief write the SBOM document and the VEX document and install them
 #
-# @param file the file to write, installed into 3rd_party/ when INSTALL_SGE_COMMON is set
+# The VEX document is written next to the SBOM, as SBOM_VEX_FILE_NAME, when there is a statement
+# (see sbom_add_vex_statement()).
+#
+# @param file the SBOM file to write, installed into 3rd_party/ when INSTALL_SGE_COMMON is set
 function(sbom_write file)
    if (PROJECT_FEATURES MATCHES "gcs-extensions")
       set(product_name "Gridware Cluster Scheduler")
@@ -334,17 +439,19 @@ function(sbom_write file)
       string(APPEND tools " \"hashes\": [ ${cpm_hash} ] }")
    endif ()
    string(APPEND json "    \"tools\": { \"components\": [ ${tools} ] },\n")
-   string(APPEND json "    \"component\": {\n")
-   string(APPEND json "      \"type\": \"application\",\n")
-   string(APPEND json "      \"bom-ref\": \"product\",\n")
-   string(APPEND json "      \"name\": \"${product_name}\",\n")
-   string(APPEND json "      \"version\": \"${product_version}\",\n")
+   # the product, described by the SBOM and by the VEX document
+   set(product "    \"component\": {\n")
+   string(APPEND product "      \"type\": \"application\",\n")
+   string(APPEND product "      \"bom-ref\": \"product\",\n")
+   string(APPEND product "      \"name\": \"${product_name}\",\n")
+   string(APPEND product "      \"version\": \"${product_version}\",\n")
    set(supplier_url "https://www.hpc-gridware.com")
    set(supplier "{ \"name\": \"HPC-Gridware GmbH\", \"url\": [ \"${supplier_url}\" ] }")
    set(arch "{ \"name\": \"ocs:arch\", \"value\": \"${SGE_ARCH}\" }")
-   string(APPEND json "      \"supplier\": ${supplier},\n")
-   string(APPEND json "      \"properties\": [ ${arch} ]\n")
-   string(APPEND json "    }\n")
+   string(APPEND product "      \"supplier\": ${supplier},\n")
+   string(APPEND product "      \"properties\": [ ${arch} ]\n")
+   string(APPEND product "    }\n")
+   string(APPEND json "${product}")
    string(APPEND json "  },\n")
    string(APPEND json "  \"components\": [\n${components}\n  ],\n")
    string(APPEND json "  \"dependencies\": [\n")
@@ -358,12 +465,42 @@ function(sbom_write file)
    if (INSTALL_SGE_COMMON)
       install(FILES "${file}" DESTINATION 3rd_party)
    endif ()
+
+   # the VEX document, next to the SBOM, when there is a statement
+   get_property(statements GLOBAL PROPERTY SBOM_VEX_STATEMENTS)
+   get_filename_component(vex_file "${file}" DIRECTORY)
+   set(vex_file "${vex_file}/${SBOM_VEX_FILE_NAME}")
+   if (NOT statements)
+      file(REMOVE "${vex_file}")
+      return()
+   endif ()
+   string(UUID vex_serial NAMESPACE "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+          NAME "${product_name} ${product_version} ${timestamp} VEX" TYPE SHA1)
+   set(json "{\n")
+   string(APPEND json "  \"bomFormat\": \"CycloneDX\",\n")
+   string(APPEND json "  \"specVersion\": \"1.6\",\n")
+   string(APPEND json "  \"serialNumber\": \"urn:uuid:${vex_serial}\",\n")
+   string(APPEND json "  \"version\": 1,\n")
+   string(APPEND json "  \"metadata\": {\n")
+   string(APPEND json "    \"timestamp\": \"${timestamp}\",\n")
+   string(APPEND json "${product}")
+   string(APPEND json "  },\n")
+   string(APPEND json "  \"vulnerabilities\": [\n${statements}\n  ]\n")
+   string(APPEND json "}\n")
+
+   file(WRITE "${vex_file}" "${json}")
+   message(STATUS "VEX written to ${vex_file}")
+
+   if (INSTALL_SGE_COMMON)
+      install(FILES "${vex_file}" DESTINATION 3rd_party)
+   endif ()
 endfunction()
 
 # @brief collect the components of this build, write the SBOM and install it
 function(sbom_generate)
    set_property(GLOBAL PROPERTY SBOM_COMPONENTS "")
    set_property(GLOBAL PROPERTY SBOM_COMPONENT_REFS "")
+   set_property(GLOBAL PROPERTY SBOM_VEX_STATEMENTS "")
    sbom_collect_components()
    sbom_write("${CMAKE_BINARY_DIR}/${SBOM_FILE_NAME}")
 endfunction()

@@ -81,8 +81,11 @@ xxQS_NAMExx uses two kinds of third-party components:
 
 The software bill of materials (SBOM) lists all components and the versions of the components
 shipped with xxQS_NAMExx. It is installed as `$SGE_ROOT/3rd_party/sbom.cyclonedx.json` in the
-CycloneDX format, which vulnerability scanners can read. The licenses of the third-party components
-are listed in `$SGE_ROOT/3rd_party/3rd_party_licscopyrights.md`.
+CycloneDX format, which vulnerability scanners can read. Not every vulnerability reported for a
+component affects xxQS_NAMExx. `$SGE_ROOT/3rd_party/vex.cyclonedx.json` lists the vulnerabilities
+that do not, with the reason, in the CycloneDX VEX format. Vulnerability scanners like
+Dependency-Track import it and record the reasons with their findings. The licenses of the
+third-party components are listed in `$SGE_ROOT/3rd_party/3rd_party_licscopyrights.md`.
 
 ## Patch Installation
 

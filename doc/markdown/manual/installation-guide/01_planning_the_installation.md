@@ -301,6 +301,10 @@ running the master service.
 Ensure that the spooling location meets the requirements of the spooling mechanism. Classic spooling can be done on 
 any shared filesystem, whereas BDB spooling can only be done on NFS v4 network locations.
 
+The BDB spooling directory must be writable by the admin user only. The installer creates it with
+the permissions 755. A user who can create files in this directory can change the configuration
+of the database environment.
+
 By default, the installation process assumes that the installation directory is on a shared network location and 
 suggests a subdirectory below the main installation directory.
 
