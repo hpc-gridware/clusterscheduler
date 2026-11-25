@@ -726,38 +726,6 @@ bool ulong_parse_binding_amount(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, in
 }
 
 /**
- * @brief Parse an unsigned 32 bit number
- *
- * A text that is not a whole decimal number, also one with trailing characters, is rejected, and so
- * is a negative number and one beyond UINT32_MAX, which strtol() wrapped or truncated (CS-3219).
- *
- * @param[out] this_ulong receives the parsed value, unchanged on an error
- * @param[out] answer_list receives the message naming the bad text
- * @param string the text to parse
- * @return true when the text was understood
- */
-bool ulong_parse_value_from_string(uint32_t *this_ulong,
-                                   ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string) {
-   DENTER(TOP_LAYER);
-
-   bool ret = true;
-   char *s = nullptr;
-
-   // parse wide and check the range before narrowing
-   errno = 0;
-   const long long value = string != nullptr ? strtoll(string, &s, 10) : 0;
-   if (string == nullptr || s == string || *s != '\0' || errno == ERANGE || value < 0 || value > UINT32_MAX) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_VALUE_S, string != nullptr ? string : "");
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      ret = false;
-   } else {
-      *this_ulong = static_cast<uint32_t>(value);
-   }
-
-   DRETURN(ret);
-}
-
-/**
  * @brief Parse the array task concurrency limit
  *
  * A negative value is rejected, and so is a text that is not a whole number, also one with trailing

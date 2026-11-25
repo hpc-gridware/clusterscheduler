@@ -95,8 +95,4 @@ bool
 ulong_parse_binding_amount(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *valp, const char *bamount_str);
 
 bool
-ulong_parse_value_from_string(uint32_t *this_ulong,
-                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *string);
-
-bool
 ulong_parse_task_concurrency(ocs::tom::ListPtr<ocs::tom::AN> *alpp, int *valp, const char *task_concurrency_str);
