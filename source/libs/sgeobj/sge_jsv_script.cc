@@ -574,8 +574,9 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
             }
          }
          if (ret && strcmp("c_occasion", param) == 0) {
-            if (int local_ret = sge_parse_checkpoint_attr(value); local_ret != 0) {
-               new_job.set<JB_checkpoint_interval>(local_ret);
+            // the occasion, not the interval (CS-3136); -1 is an unknown letter
+            if (int local_ret = sge_parse_checkpoint_attr(value); local_ret > 0) {
+               new_job.set<JB_checkpoint_attr>(local_ret);
             } else {
                answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
                                        param, value != nullptr ? value : "");

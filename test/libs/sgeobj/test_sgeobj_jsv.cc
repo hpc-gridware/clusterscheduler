@@ -51,6 +51,7 @@
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JSV.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/msg_sgeobjlib.h"
@@ -359,6 +360,27 @@ test_incomplete_lines() {
 }
 
 /**
+ * @brief PARAM c_occasion sets the checkpoint occasion, not the interval (CS-3136)
+ */
+static void
+test_checkpoint_params() {
+   printf("\n--- PARAM c_occasion ---\n");
+   bool accepted = false;
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   std::string text = communicate("PARAM c_occasion sx\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(33, "c_occasion: the job is accepted without an error", accepted && text == "<none>");
+   CHECK(34, "c_occasion: the occasion is set",
+         job->get<JB_checkpoint_attr>() == static_cast<uint32_t>(sge_parse_checkpoint_attr("sx")));
+   CHECK(35, "c_occasion: the interval is not touched", job->get<JB_checkpoint_interval>() == 0);
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM c_occasion sq\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(36, "c_occasion with an unknown letter is an error and sets nothing",
+         text != "<none>" && job->get<JB_checkpoint_attr>() == 0 && job->get<JB_checkpoint_interval>() == 0);
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -372,6 +394,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_long_lines();
    test_line_separation();
    test_incomplete_lines();
+   test_checkpoint_params();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
