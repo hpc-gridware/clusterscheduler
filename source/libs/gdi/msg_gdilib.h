@@ -130,5 +130,7 @@
 #define MSG_GDI_MUNGE_INIT_FAILED_S          _MESSAGE(55016, _("Munge initialization failed: " SFNMAX))
 #define MSG_GDI_PARSING_AUTHINFO_FAILED_SSIS _MESSAGE(55017, _("parsing auth info failed for " SFN "/" SFN "/%uh: " SFN))
 #define MSG_GDI_TLS_CLIENT_CERT_DEFERRED_S   _MESSAGE(55018, _("qmaster client certificate file " SFQ " is not yet available; deferring client TLS setup until act_qmaster points to a host with a valid certificate"))
+// 55019 to 55023 are used by 9.2 only; 55024 carries the same id as in 9.2 (CS-3224)
+#define MSG_GDI_SENDERNAMETOOLONG_UUUU          _MESSAGE(55024, _("refusing a message from component id " sge_u32 ": its sender host name has " sge_u32 " and its component name " sge_u32 " characters, at most " sge_u32 " are allowed"))
 
 // clang-format on
