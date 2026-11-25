@@ -270,15 +270,20 @@ ocs::CategoryQmaster::attach_job(const ocs::tom::Element<ocs::tom::JB> job,
  *
  * The category (`CT`) is looked up in the master category list of the data store.
  *
- * @param job the job (`JB`), must not be an empty handle
+ * @param job the job (`JB`)
  * @param send_events whether to announce the category change to the event clients
  * @param gdi_session the session the change belongs to
- * @return true when the job was detached
+ * @return true when the job was detached, false for an empty job handle or when its category does not exist
  */
 bool
 ocs::CategoryQmaster::detach_job(const ocs::tom::Element<ocs::tom::JB> job, const bool send_events,
                                  const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
+
+   // check if the input parameters are valid
+   if (!job) {
+      DRETURN(false);
+   }
 
    // an empty slot gives an empty handle, which finds no category
    const auto category_list = DataStore::master_list_rw<SGE_TYPE_CATEGORY>();
@@ -286,6 +291,9 @@ ocs::CategoryQmaster::detach_job(const ocs::tom::Element<ocs::tom::JB> job, cons
 
    // each category that is referenced in a job should also exist
    SGE_ASSERT(category);
+   if (!category) {
+      DRETURN(false);
+   }
 
    job.set<JB_category_id>(0);
 
