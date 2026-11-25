@@ -515,16 +515,21 @@ exec_job_errno_name(int err) {
    DRETURN(ret);
 }
 
-/************************************************************************
- part of execd. Setup job environment then start shepherd.
-
- If we encounter an error we return an error
- return -1==error
-        -2==general error (Halt queue)
-        -3==general error (Halt job)
-        err_str set to error string
-        err_length size of err_str
- ************************************************************************/
+/** @brief Write the job's configuration to disk and fork its shepherd
+ *
+ * Everything the shepherd will need - the `config` file, the `environment`
+ * file, the job script - is written into the job's active_jobs directory
+ * first, because once the shepherd is forked the daemon can no longer tell it
+ * anything.
+ *
+ * @param jep the job
+ * @param jatep the array task
+ * @param petep the PE task, or nullptr
+ * @param[out] err_str receives the reason on failure
+ * @param err_length size of that buffer
+ * @return the pid of the shepherd (in the parent) on success; on failure -1 (error), -2 (general
+ *         error, halt the queue) or -3 (general error, halt the job), with err_str set to the reason
+ */
 int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_str, int err_length) {
    int i;
    FILE *fp;
@@ -672,11 +677,13 @@ int sge_exec_job(lListElem *jep, lListElem *jatep, lListElem *petep, char *err_s
       in this queue instance. QU_job_slots_used holds actual number of used
       slots for this job in the queue */
    if (!(used_slots = qinstance_slots_used(master_q))) {
+      bool planted = false;
       if (!(sge_make_tmpdir(master_q, job_id, ja_task_id,
-                            pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX))) {
+                            pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX, planted))) {
          snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTMAKETMPDIR);
          sge_free(&pw_buffer);
-         DRETURN(-2);
+         // a path occupied by a user fails only the job (CS-3203), anything else halts the queue as before
+         DRETURN(planted ? -3 : -2);
       }
    } else {
       SGE_STRUCT_STAT statbuf;

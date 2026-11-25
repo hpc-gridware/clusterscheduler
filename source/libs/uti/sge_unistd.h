@@ -37,6 +37,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <functional>
+
 #include "basis_types.h"
 
 #include "sge_dstring.h"
@@ -55,6 +57,7 @@
 #  define SGE_STAT(filename, buffer) stat64(filename, buffer)
 #  define SGE_LSTAT(filename, buffer) lstat64(filename, buffer)
 #  define SGE_FSTAT(filename, buffer) fstat64(filename, buffer)
+#  define SGE_FSTATAT(dirfd, name, buffer, flag) fstatat64(dirfd, name, buffer, flag)
 #  define SGE_STRUCT_STAT struct stat64
 #  define SGE_INO_T ino64_t
 #  define SGE_OFF_T off64_t
@@ -62,6 +65,7 @@
 #  define SGE_STAT(filename, buffer) stat(filename, buffer)
 #  define SGE_LSTAT(filename, buffer) lstat(filename, buffer)
 #  define SGE_FSTAT(filename, buffer) fstat(filename, buffer)
+#  define SGE_FSTATAT(dirfd, name, buffer, flag) fstatat(dirfd, name, buffer, flag)
 #  define SGE_STRUCT_STAT struct stat
 #  define SGE_INO_T ino_t
 #  define SGE_OFF_T off_t
@@ -98,6 +102,16 @@ int sge_chdir(const char *dir);
 int sge_mkdir(const char *path, int fmode, bool exit_on_error, bool may_not_exist);
 
 int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_error);
+
+/** @brief ocs_mkdir_for_owner(): the directory exists and belongs to the new owner */
+constexpr int OCS_MKDIR_FOR_OWNER_OK = 0;
+/** @brief ocs_mkdir_for_owner(): mkdir(), fchown() or fchmod() failed, a problem of the host, e.g. EACCES or ENOSPC */
+constexpr int OCS_MKDIR_FOR_OWNER_ERROR = -1;
+/** @brief ocs_mkdir_for_owner(): what is at the path keeps it from becoming the directory */
+constexpr int OCS_MKDIR_FOR_OWNER_PLANTED = -2;
+
+int ocs_mkdir_for_owner(const char *path, int fmode, uid_t uid, gid_t gid, dstring *error,
+                        const std::function<void(int)> &before_attempt = nullptr);
 
 int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true, bool ignore_notempty = false);
 

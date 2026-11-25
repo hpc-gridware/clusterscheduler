@@ -46,48 +46,83 @@
 #include "msg_common.h"
 #include "msg_execd.h"
 
-/*******************************************************/
+/**
+ * @brief Create the temporary directory a job runs with as `$TMPDIR`
+ *
+ * Created as root (the start user of the daemon) and then handed to the job owner, because the
+ * parent directory is usually not writable by users. The parent (QU_tmpdir) is often world
+ * writable and the name is predictable, so a user may have planted something at the path:
+ * ocs_mkdir_for_owner() never follows a symbolic link and changes owner and mode through the open
+ * descriptor (CS-3203). A link, a file or another non-directory at the path is removed, a
+ * directory of another user is renamed aside, and the directory is created. A directory that
+ * already belongs to root or to the job owner, for example one left behind by an earlier start of
+ * the same task, is used as before. A failing mkdir(), fchown() or fchmod() is a problem of the
+ * host; when the path cannot be made the directory for any other reason, @p planted tells the
+ * caller that only this job failed, not the queue.
+ *
+ * @param qep the queue instance, which configures where temporary directories live
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param uid the job owner
+ * @param gid the job owner's group
+ * @param[out] tmpdir receives the directory
+ * @param tmpdir_size size of that buffer
+ * @param[out] planted set to true when the directory could not be made because a user occupied
+ *             its path, the failure then belongs to the job, not to the queue
+ * @return the directory, or nullptr when none was configured or it could not be handed to the job owner
+ */
 char *
-sge_make_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, uid_t uid, gid_t gid, char *tmpdir, size_t tmpdir_size)
-{
-   const char *t;
-
+sge_make_tmpdir(const lListElem *qep, const u_long32 jobid, const u_long32 jataskid, const uid_t uid, const gid_t gid,
+                char *tmpdir, const size_t tmpdir_size, bool &planted) {
    DENTER(TOP_LAYER);
 
-   t = lGetString(qep, QU_tmpdir);
+   planted = false;
+
+   const char *t = lGetString(qep, QU_tmpdir);
    if (t == nullptr) {
       DRETURN(nullptr);
    }
 
-   /* Note could have multiple instantiations of same job, */
-   /* on same machine, under same queue */
-   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32"." sge_u32".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
+   // the same job may run in several queue instances of the same host
+   snprintf(tmpdir, tmpdir_size, "%s/" sge_u32 "." sge_u32 ".%s", t, jobid, jataskid, lGetString(qep, QU_qname));
 
    DPRINTF("making TMPDIR=%s\n", tmpdir);
 
    sge_switch2start_user();
-   sge_mkdir(tmpdir, 0755, false, false);
 
-   /*
-    * chown is considered to be a security flaw, as an attacker might move the 
-    * directory between the mkdir and chown.
-    * This is both nearly impossible here and would have no effect.
-    * Make flawfinder ignore it
-    */
-   /* Flawfinder: ignore */
-   if (chown(tmpdir, uid, gid) != 0) {
-      DSTRING_STATIC(ds, MAX_STRING_SIZE);
-      ERROR(MSG_FILE_NOCHOWN_SS, tmpdir, sge_strerror(errno, &ds));
-      unlink(tmpdir);
-      DRETURN(nullptr);
-   }
+   // the configured parent is created when missing, as before; it is the administrator's path
+   sge_mkdir(t, 0755, false, false);
+
+   DSTRING_STATIC(err, MAX_STRING_SIZE);
+   const int ret = ocs_mkdir_for_owner(tmpdir, 0755, uid, gid, &err);
 
    sge_switch2admin_user();
+
+   if (ret != OCS_MKDIR_FOR_OWNER_OK) {
+      planted = ret == OCS_MKDIR_FOR_OWNER_PLANTED;
+      ERROR(SFNMAX, sge_dstring_get_string(&err));
+      DRETURN(nullptr);
+   }
 
    DRETURN(tmpdir);
 }
 
-/************************************************************************/
+/**
+ * @brief Delete a job's temporary directory when it ends
+ *
+ * The directory belongs to the job owner, but it is removed as root (the start user of the
+ * daemon): files that a prolog or epilog running as root left in it have to go as well, and
+ * root can remove a subdirectory the owner made read-only. That is safe because sge_rmdir()
+ * never follows a symbolic link, also not one the owner swaps in for a subdirectory while the
+ * tree is being removed (CS-3202).
+ *
+ * @param dir the configured parent of the temporary directories (QU_tmpdir), may be nullptr
+ * @param job_owner the job owner (unused)
+ * @param jobid the job
+ * @param jataskid the array task
+ * @param queue_name the queue instance, part of the directory's name
+ * @return 0 on success or when no parent is configured, -1 when the directory could not be removed
+ */
 int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_long32 jataskid, const char *queue_name)
 {
    stringT tmpstr;
