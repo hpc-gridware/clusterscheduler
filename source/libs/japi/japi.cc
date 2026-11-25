@@ -76,6 +76,7 @@
 #include <csignal>
 #include <pthread.h>
 #include <pwd.h>
+#include <memory>
 #include <tuple>
 
 #include "uti/ocs_cond.h"
@@ -1005,17 +1006,14 @@ int japi_exit(int flag, dstring *diag) {
  *
  * @param type JAPI_ITERATOR_BULK_JOBS or JAPI_ITERATOR_STRINGS
  *
- * @return the iterator
+ * @return the iterator, release it with japi_delete_string_vector(); nullptr for any other type.
+ *         Out of memory aborts the process.
  *
  * @note MT-NOTE: japi_allocate_string_vector() is MT safe
  *       should be moved to drmaa.c
  */
 drmaa_attr_values_t *japi_allocate_string_vector(int type) {
-   drmaa_attr_values_t *iter;
-
-   if (!(iter = (drmaa_attr_values_t *)sge_malloc(sizeof(drmaa_attr_values_t)))) {
-      return nullptr;
-   }
+   auto *iter = ocs::uti::create<drmaa_attr_values_t>();
    iter->iterator_type = type;
 
    switch (type) {
@@ -1027,11 +1025,12 @@ drmaa_attr_values_t *japi_allocate_string_vector(int type) {
       iter->it.ji.next_pos = 0;
       break;
    case JAPI_ITERATOR_STRINGS:
-      iter->it.si.strings = nullptr;
-      iter->it.si.next_pos = nullptr;
+      // ji is the active union member after create(); begin the lifetime of si instead, its handles start
+      // empty. Its destructor is trivial, so japi_delete_string_vector() needs no std::destroy_at().
+      std::construct_at(&iter->it.si);
       break;
    default:
-      sge_free(&iter);
+      ocs::uti::destroy(iter);
    }
 
    return iter;
@@ -1142,9 +1141,7 @@ void japi_delete_string_vector(drmaa_attr_values_t *iter) {
    default:
       break;
    }
-   sge_free(&iter);
-
-   return;
+   ocs::uti::destroy(iter);
 }
 
 /**

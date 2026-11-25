@@ -92,7 +92,7 @@ struct drmaa_bulk_jobid_iterator_s {
 struct drmaa_string_array_iterator_s {
    /**
     * The strings, owned by the iterator and freed by japi_delete_string_vector();
-    * a non-owning handle, as the struct lives in a union and in memory from sge_malloc()
+    * a non-owning handle, as the struct lives in a union whose destructor does not know the active member
     */
    ocs::tom::List<ocs::tom::ST> strings;
    /** Element the next call returns, empty once the iterator is exhausted */
@@ -108,7 +108,7 @@ struct drmaa_attr_names_s {
    int iterator_type;   ///< Which member of `it` is in use, see #JAPI_ITERATOR_STRINGS
    /** The iterator itself, in one of its two implementations */
    union {
-      struct drmaa_bulk_jobid_iterator_s ji;
+      struct drmaa_bulk_jobid_iterator_s ji{}; ///< zeroed, so that the vector can be made with `new`
       struct drmaa_string_array_iterator_s si;
    } it;
 };
@@ -117,7 +117,7 @@ struct drmaa_attr_values_s {
    int iterator_type;   ///< Which member of `it` is in use, see #JAPI_ITERATOR_STRINGS
    /** The iterator itself, in one of its two implementations */
    union {
-      struct drmaa_bulk_jobid_iterator_s ji;
+      struct drmaa_bulk_jobid_iterator_s ji{}; ///< zeroed, so that the vector can be made with `new`
       struct drmaa_string_array_iterator_s si;
    } it;
 };
@@ -126,15 +126,18 @@ struct drmaa_job_ids_s {
    int iterator_type;   ///< Which member of `it` is in use, see #JAPI_ITERATOR_STRINGS
    /** The iterator itself, in one of its two implementations */
    union {
-      struct drmaa_bulk_jobid_iterator_s ji;
+      struct drmaa_bulk_jobid_iterator_s ji{}; ///< zeroed, so that the vector can be made with `new`
       struct drmaa_string_array_iterator_s si;
    } it;
 };
 
-// the string vectors are allocated with sge_malloc() and released with sge_free(): no constructor or destructor runs
+// the string vectors are made with ocs::uti::create() as drmaa_attr_values_s and released with
+// ocs::uti::destroy() through a pointer of that type; the destructor is trivial, so the union needs none
 static_assert(std::is_trivially_copyable_v<drmaa_attr_names_s> &&
               std::is_trivially_destructible_v<drmaa_attr_names_s>);
 static_assert(std::is_trivially_copyable_v<drmaa_attr_values_s> &&
               std::is_trivially_destructible_v<drmaa_attr_values_s>);
 static_assert(std::is_trivially_copyable_v<drmaa_job_ids_s> &&
               std::is_trivially_destructible_v<drmaa_job_ids_s>);
+// japi_allocate_string_vector() starts the lifetime of `si` with std::construct_at(); nothing has to end it
+static_assert(std::is_trivially_destructible_v<drmaa_string_array_iterator_s>);
