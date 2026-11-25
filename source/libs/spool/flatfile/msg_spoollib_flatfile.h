@@ -77,5 +77,6 @@
 #define MSG_FLATFILE_ERROR_READINGTEXT       _MESSAGE(62029, _("error reading the object text"))
 #define MSG_SPOOL_CANNOT_RESTRICT_MODE_SS    _MESSAGE(62030, _("cannot restrict the permissions of " SFQ " to the owner: " SFN))
 #define MSG_FLATFILE_INVALIDNUMBER_SS        _MESSAGE(62031, _("value " SFQ " of field " SFQ " is not a number in the range of the field"))
+#define MSG_FLATFILE_UNKNOWNWORD_SS          _MESSAGE(62032, _("value " SFQ " of field " SFQ " is not one of the words of the field"))
 
 // clang-format on

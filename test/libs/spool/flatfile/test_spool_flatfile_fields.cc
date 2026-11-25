@@ -22,7 +22,8 @@
  * @brief Unit tests for single fields of the flatfile reader and writer in `libs/spool/flatfile`
  *
  * - A field the writer cannot render is left out instead of crashing the writer (CS-3167).
- * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170).
+ * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170), also of a
+ *   bit field and of an enumeration.
  */
 
 #include <cstdio>
@@ -41,6 +42,9 @@
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_STN.h"
+#include "sgeobj/tom/ocs_tom_US.h"
+#include "sgeobj/sge_userset.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_JG.h"
 #include "tom/ocs_Element.h"
@@ -198,6 +202,77 @@ test_json_by_name_unknown_word() {
 }
 
 /**
+ * @brief Write an element as JSON, replace one word and read it back
+ * @param ep the element
+ * @param descr the descriptor of the element
+ * @param word the word as written, with its quotes; it has to occur exactly once
+ * @param replacement the replacement, with its quotes
+ * @param[out] written true if the element was written and the word found
+ * @param[out] error true if the read failed with an error in the answer list
+ * @return true if the read gave an element
+ */
+static bool
+json_read_with_replaced_word(const ocs::tom::ConstRawElement ep, const ocs::tom::FieldDescr *descr,
+                             const std::string &word, const std::string &replacement, bool *written, bool *error) {
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   spooling_field *fields = spool_get_fields_to_spool(&alp, descr, &spool_config_instr);
+   *written = false;
+   *error = false;
+   if (fields == nullptr) {
+      return false;
+   }
+   dstring out = DSTRING_INIT;
+   std::string json = spool_json_write_object(&alp, ep, fields, &out) ? sge_dstring_get_string(&out) : "";
+   sge_dstring_free(&out);
+   const std::size_t pos = json.find(word);
+   bool read = false;
+   if (pos != std::string::npos && json.find(word, pos + 1) == std::string::npos) {
+      *written = true;
+      json.replace(pos, word.size(), replacement);
+      alp.reset();
+      auto rp = spool_json_read_object(&alp, descr, fields, nullptr, json.c_str());
+      print_answers(alp);
+      *error = answer_list_has_error(&alp);
+      read = static_cast<bool>(rp);
+   } else {
+      printf("      %s not found once in:\n%s\n", word.c_str(), json.c_str());
+   }
+   spool_free_spooling_fields(fields);
+   return read;
+}
+
+/**
+ * @brief The JSON reader rejects an unknown word of a bit field or of an enumeration (CS-3170)
+ *
+ * A userset type and a share tree node type are written as JSON, the word is replaced by an unknown one. The
+ * reader dropped an unknown bit and read an unknown enumeration word as 0; it has to fail with a message.
+ */
+static void
+test_json_bitfield_enum_unknown_word() {
+   auto us = ocs::tom::ElementPtr<ocs::tom::US>::create();
+   us->set<US_name>("test_us");
+   us->set<US_type>(US_ACL);
+   bool written = false;
+   bool error = false;
+   bool read = json_read_with_replaced_word(us.get(), ocs::tom::US::descriptor.e, "\"ACL\"", "\"ACL\"", &written,
+                                            &error);
+   check("T25", "the userset type reads back unchanged", written && read && !error);
+   read = json_read_with_replaced_word(us.get(), ocs::tom::US::descriptor.e, "\"ACL\"", "\"BOGUS\"", &written,
+                                       &error);
+   check("T26", "an unknown userset type word fails the read with a message", written && !read && error);
+
+   auto stn = ocs::tom::ElementPtr<ocs::tom::STN>::create();
+   stn->set<STN_name>("test_node");
+   stn->set<STN_type>(1);
+   read = json_read_with_replaced_word(stn.get(), ocs::tom::STN::descriptor.e, "\"PROJECT\"", "\"PROJECT\"",
+                                       &written, &error);
+   check("T27", "the share tree node type reads back unchanged", written && read && !error);
+   read = json_read_with_replaced_word(stn.get(), ocs::tom::STN::descriptor.e, "\"PROJECT\"", "\"BOGUS\"",
+                                       &written, &error);
+   check("T28", "an unknown share tree node type word fails the read with a message", written && !read && error);
+}
+
+/**
  * @brief Run the tests
  * @return 0 if all checks held, 1 otherwise
  */
@@ -209,6 +284,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    test_write_unrenderable_field();
    test_json_by_name_unknown_word();
+   test_json_bitfield_enum_unknown_word();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);

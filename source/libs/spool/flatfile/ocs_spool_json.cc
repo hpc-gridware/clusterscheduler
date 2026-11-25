@@ -473,28 +473,59 @@ spool_json_write_enum_value(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wr
    }
 }
 
+static const char *spool_json_value_to_string(const rapidjson::Value &v, dstring *out);
+
+/**
+ * @brief Report a value of a field written as words that is not one of its words
+ * @param answer_list  receives the error, may be nullptr
+ * @param field_name   the name of the field, may be nullptr
+ * @param text         the value as written
+ */
+static void
+spool_json_unknown_word(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *field_name, const char *text) {
+   answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_FLATFILE_UNKNOWNWORD_SS,
+                           text != nullptr ? text : "", field_name != nullptr ? field_name : "");
+}
+
 /**
  * @brief Parse a single-valued enum token (or raw number) back into its value.
  *
  * The inverse of spool_json_write_enum_value; a string is matched case-insensitively
- * against the table, a number is taken as the value directly.
+ * against the table, a number is taken as the value directly (the writer keeps a value
+ * outside of the table as a number), null reads as 0. CS-3170: a string that is no word
+ * of the table, or a value of another JSON type, is reported instead of read as 0.
  *
- * @param v      the JSON value (symbolic token or number)
- * @param names  null-terminated value-name table
- * @return the enum value
+ * @param v            the JSON value (symbolic token or number)
+ * @param names        null-terminated value-name table
+ * @param field_name   the name of the field, for the message
+ * @param answer_list  receives the error, may be nullptr
+ * @param[out] out     receives the enum value
+ * @return true if the value was understood, false (with a message) otherwise
  */
-static uint32_t
-spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names) {
+static bool
+spool_json_enum_from_value(const rapidjson::Value &v, const char *const *names, const char *field_name,
+                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, std::uint32_t *out) {
    if (v.IsString()) {
       for (uint32_t i = 0; names[i] != nullptr; i++) {
          if (sge_strnullcasecmp(v.GetString(), names[i]) == 0) {
-            return i;
+            *out = i;
+            return true;
          }
       }
+      spool_json_unknown_word(answer_list, field_name, v.GetString());
+      return false;
    }
-   std::uint32_t value = 0;   /* numeric form; an unmatched string or a number out of range gives 0 */
-   static_cast<void>(spool_json_value_to_u32(v, &value));
-   return value;
+   if (v.IsNull() || v.IsNumber()) {
+      std::uint32_t value = 0;
+      if (spool_json_value_to_u32(v, &value)) {
+         *out = value;
+         return true;
+      }
+   }
+   dstring text = DSTRING_INIT;
+   spool_json_unknown_word(answer_list, field_name, spool_json_value_to_string(v, &text));
+   sge_dstring_free(&text);
+   return false;
 }
 
 /**
@@ -1689,31 +1720,50 @@ spool_json_set_u32(const ocs::tom::RawElement ep, const spooling_field &field, c
  * @brief Parse a JSON array of bit names back into the bitfield value.
  *
  * The inverse of spool_json_write_bitfield_array (e.g. ["BATCH","INTERACTIVE"],
- * ["ACL","DEPT"]).
+ * ["ACL","DEPT"]); null reads as no bit. CS-3170: a name that is not in the table, an
+ * element that is not a string or a value that is not an array is reported instead of
+ * dropping the bit.
  *
- * @param v      the JSON array of bit-name strings
- * @param names  null-terminated bit-name table (names[i] is the name of bit i)
- * @return the reconstructed bitmask
+ * @param v            the JSON array of bit-name strings
+ * @param names        null-terminated bit-name table (names[i] is the name of bit i)
+ * @param field_name   the name of the field, for the message
+ * @param answer_list  receives the error, may be nullptr
+ * @param[out] out     receives the bitmask
+ * @return true if every name was understood, false (with a message) otherwise
  */
-static uint32_t
-spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *names) {
+static bool
+spool_json_bitfield_from_array(const rapidjson::Value &v, const char *const *names, const char *field_name,
+                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list, std::uint32_t *out) {
    uint32_t value = 0;
    if (v.IsArray()) {
       for (rapidjson::SizeType i = 0; i < v.Size(); i++) {
-         if (!v[i].IsString()) {
-            continue;
-         }
-         uint32_t bitmask = 1;
-         for (const char *const *ptr = names; *ptr != nullptr; ptr++) {
-            if (sge_strnullcasecmp(v[i].GetString(), *ptr) == 0) {
-               value |= bitmask;
-               break;
+         bool found = false;
+         if (v[i].IsString()) {
+            uint32_t bitmask = 1;
+            for (const char *const *ptr = names; *ptr != nullptr; ptr++) {
+               if (sge_strnullcasecmp(v[i].GetString(), *ptr) == 0) {
+                  value |= bitmask;
+                  found = true;
+                  break;
+               }
+               bitmask <<= 1;
             }
-            bitmask <<= 1;
+         }
+         if (!found) {
+            dstring text = DSTRING_INIT;
+            spool_json_unknown_word(answer_list, field_name, spool_json_value_to_string(v[i], &text));
+            sge_dstring_free(&text);
+            return false;
          }
       }
+   } else if (!v.IsNull()) {
+      dstring text = DSTRING_INIT;
+      spool_json_unknown_word(answer_list, field_name, spool_json_value_to_string(v, &text));
+      sge_dstring_free(&text);
+      return false;
    }
-   return value;
+   *out = value;
+   return true;
 }
 
 /**
@@ -1801,7 +1851,14 @@ spool_json_read_sublist(const spooling_field &field, ocs::tom::ListPtr<ocs::tom:
          if (sub.has(fields[1].nm) && mv != el.MemberEnd()) {
             if (fields[1].ops->json == ocs_spool_render::bitfield) {
                /* bitfield value is a name array -> bitmask */
-               spool_json_set_u32(sub, fields[1], spool_json_bitfield_from_array(mv->value, fields[1].ops->names));
+               std::uint32_t bits = 0;
+               const char *value_name = fields[1].name != nullptr ? fields[1].name
+                                                                   : ocs::tom::field_name(fields[1].nm);
+               if (spool_json_bitfield_from_array(mv->value, fields[1].ops->names, value_name, answer_list, &bits)) {
+                  spool_json_set_u32(sub, fields[1], bits);
+               } else {
+                  *ok = false;
+               }
             } else if (fields[1].ops->type == ocs::tom::FieldType::List) {
                /* the value is itself a list (e.g. the cqueue threshold value is a
                 * complex list) -> read it as a nested sublist */
@@ -1997,10 +2054,18 @@ spool_json_populate_members(const ocs::tom::RawElement ep, const spooling_field 
          ep.set(nm, timestamp);
       } else if (field.ops->json == ocs_spool_render::bitfield) {
          /* bit-name array -> bitfield */
-         spool_json_set_u32(ep, field, spool_json_bitfield_from_array(m->value, field.ops->names));
+         std::uint32_t bits = 0;
+         if (!spool_json_bitfield_from_array(m->value, field.ops->names, field.name, answer_list, &bits)) {
+            return false;
+         }
+         spool_json_set_u32(ep, field, bits);
       } else if (field.ops->json == ocs_spool_render::enumeration) {
          /* symbolic enum token ("USER"/"PROJECT") or raw number -> enum value */
-         spool_json_set_u32(ep, field, spool_json_enum_from_value(m->value, field.ops->names));
+         std::uint32_t value = 0;
+         if (!spool_json_enum_from_value(m->value, field.ops->names, field.name, answer_list, &value)) {
+            return false;
+         }
+         spool_json_set_u32(ep, field, value);
       } else if (field.ops->json == ocs_spool_render::perm_list) {
          /* array of rule objects -> comma/colon-joined perm_list string; a non-array
           * value is rejected rather than silently wiping the rule set to NONE */
