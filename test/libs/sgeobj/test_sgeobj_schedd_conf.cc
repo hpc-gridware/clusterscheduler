@@ -378,12 +378,16 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    printf("\n--- error messages ---\n");
    check_long_job_load_adjustments(&id);
-   check_unset_attribute(&id, SC_load_adjustment_decay_time, "load_adjustment_decay_time",
-                         "load_adjustment_decay_time: an unset value is reported for load_adjustment_decay_time");
-   check_unset_attribute(&id, SC_reprioritize_interval, "reprioritize_interval",
-                         "reprioritize_interval: an unset value is reported for reprioritize_interval");
-   check_unset_attribute(&id, SC_policy_hierarchy, "attribute \"policy_hierarchy\" is not a not defined",
-                         "policy_hierarchy: an unset value is reported as \"not defined\" for policy_hierarchy");
+   check_unset_attribute(&id, SC_schedule_interval, "attribute \"schedule_interval\" is not defined",
+                         "schedule_interval: an unset value is reported as not defined");
+   check_unset_attribute(&id, SC_load_adjustment_decay_time, "attribute \"load_adjustment_decay_time\" is not defined",
+                         "load_adjustment_decay_time: an unset value is reported as not defined");
+   check_unset_attribute(&id, SC_reprioritize_interval, "attribute \"reprioritize_interval\" is not defined",
+                         "reprioritize_interval: an unset value is reported as not defined");
+   check_unset_attribute(&id, SC_policy_hierarchy, "attribute \"policy_hierarchy\" is not defined",
+                         "policy_hierarchy: an unset value is reported as not defined");
+   check_unset_attribute(&id, SC_default_duration, "attribute \"default_duration\" is not defined",
+                         "default_duration: an unset value is reported as not defined");
    check_long_usage_weight_list(&id);
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);

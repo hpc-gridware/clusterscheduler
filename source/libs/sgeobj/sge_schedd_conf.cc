@@ -2082,7 +2082,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0,
                                        true)) {
       if (!s)
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XNOTDEFINED_S, "schedule_interval");
       else
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", tmp_error);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
@@ -2094,7 +2094,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0,
                                        true)) {
       if (!s) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "load_adjustment_decay_time", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XNOTDEFINED_S, "load_adjustment_decay_time");
       }
       else {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS, "load_adjustment_decay_time", tmp_error);
@@ -2162,7 +2162,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error,
                                               sizeof(tmp_error), 0, true)) {
       if (s == nullptr) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "reprioritize_interval", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XNOTDEFINED_S, "reprioritize_interval");
       }
       else {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "reprioritize_interval", tmp_error);
@@ -2222,7 +2222,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
          }
       }
       else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "policy_hierarchy", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XNOTDEFINED_S, "policy_hierarchy");
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret = false;
       }
@@ -2235,7 +2235,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
       if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error,
                                                  sizeof(tmp_error), 1, true) ) {
          if (s == nullptr) {
-            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "default_duration", "not defined");
+            snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XNOTDEFINED_S, "default_duration");
          } else {
             snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "default_duration", tmp_error);
          }

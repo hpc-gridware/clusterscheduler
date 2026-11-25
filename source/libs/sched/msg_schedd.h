@@ -209,6 +209,7 @@
 #define MSG_READ_PARAM_S                        _MESSAGE(47260, _("using param: " SFQ))
 #define MSG_UNKNOWN_PARAM_S                     _MESSAGE(47261, _("found unknown param: " SFQ))
 #define MSG_ATTRIB_WRONG_SETTING_SS             _MESSAGE(47262, _("invalid setting for param: " SFQ "(should be " SFQ ")"))
+#define MSG_ATTRIB_XNOTDEFINED_S                _MESSAGE(47263, _("attribute " SFQ " is not defined"))
 
 #define MSG_SCHEDD_WHYEXCEEDINVALIDLOAD_SS            _MESSAGE(47310, _("invalid load value " SFQ " for theshold " SFN))
 #define MSG_SCHEDD_WHYEXCEEDINVALIDTHRESHOLD_SS       _MESSAGE(47311, _("invalid threshold value " SFN "=" SFN))
