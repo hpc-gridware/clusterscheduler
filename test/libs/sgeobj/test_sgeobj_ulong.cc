@@ -306,6 +306,67 @@ test_parse_date_time_dots_only() {
 // ---------------------------------------------------------------------------
 
 /**
+ * @brief Task concurrency and plain numbers reject trailing characters and values out of range [T32–T45] (CS-3219)
+ *
+ * ulong_parse_task_concurrency() (`qsub -tc`) and ulong_parse_value_from_string() only checked that strtol()
+ * read a digit: `-tc 5x` was taken as 5, 4294967301 was truncated to 5, and the value of the output parameter
+ * was reported for a text without digits.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_parse_task_concurrency_and_value() {
+   /**
+    * @brief Parse a task concurrency
+    * @param text the text
+    * @param value receives the parsed value
+    * @return true when it was accepted without an error answer, false when it was rejected with one
+    */
+   auto concurrency = [](const char *text, int &value) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      const bool ok = ulong_parse_task_concurrency(&al, &value, text);
+      return ok && al == nullptr;
+   };
+   /**
+    * @brief Parse a plain number
+    * @param text the text
+    * @param value receives the parsed value
+    * @return true when it was accepted without an error answer, false when it was rejected with one
+    */
+   auto number = [](const char *text, uint32_t &value) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      const bool ok = ulong_parse_value_from_string(&value, &al, text);
+      return ok && al == nullptr;
+   };
+
+   int value = 99;
+   CHECK(32, "task concurrency 5 is accepted", concurrency("5", value) && value == 5);
+   CHECK(33, "task concurrency 0 is accepted", concurrency("0", value) && value == 0);
+   value = 99;
+   CHECK(34, "task concurrency 5x is rejected, the value is unchanged", !concurrency("5x", value) && value == 99);
+   CHECK(35, "an empty task concurrency is rejected", !concurrency("", value) && value == 99);
+   CHECK(36, "task concurrency -1 is rejected", !concurrency("-1", value) && value == 99);
+   CHECK(37, "task concurrency 4294967301 is rejected", !concurrency("4294967301", value) && value == 99);
+   CHECK(38, "task concurrency 99999999999999999999 is rejected", !concurrency("99999999999999999999", value));
+   {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      ulong_parse_task_concurrency(&al, &value, "5x");
+      CHECK(39, "the message names the text as given", strstr(first_answer_text(al), "5x") != nullptr);
+   }
+
+   uint32_t uvalue = 99;
+   CHECK(40, "number 4294967295 is accepted", number("4294967295", uvalue) && uvalue == 4294967295U);
+   uvalue = 99;
+   CHECK(41, "number 7x is rejected, the value is unchanged", !number("7x", uvalue) && uvalue == 99);
+   CHECK(42, "an empty number is rejected", !number("", uvalue) && uvalue == 99);
+   CHECK(43, "number 4294967296 is rejected", !number("4294967296", uvalue) && uvalue == 99);
+   CHECK(44, "number -1 is rejected", !number("-1", uvalue) && uvalue == 99);
+   CHECK(45, "number 0 is accepted", number("0", uvalue) && uvalue == 0);
+}
+
+// ---------------------------------------------------------------------------
+
+/**
  * @brief Module-test entry point; runs the scenarios through the shared frame.
  * @param argc argument count, see ocs_module_test.h for the frame's options
  * @param argv argument vector
@@ -352,5 +413,12 @@ int main(int argc, char *argv[]) {
        {"parse \".\"", "parse \"..\""},
        "both are rejected as an invalid date/hour-minute field",
        {}, {30, 31}, test_parse_date_time_dots_only},
+      {"ULONG-06", "task concurrency and plain numbers with trailing characters or out of range (CS-3219)",
+       "ulong_parse_task_concurrency() and ulong_parse_value_from_string() reject a text that is not a whole "
+       "number in their range, also one with trailing characters, and leave the output unchanged",
+       {"parse valid values",
+        "parse values with trailing characters, empty texts, negative values and values out of range"},
+       "the valid values are accepted, everything else is rejected with an error answer naming the text",
+       {}, {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45}, test_parse_task_concurrency_and_value},
    });
 }

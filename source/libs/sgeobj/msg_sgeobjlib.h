@@ -347,8 +347,6 @@
 #define MSG_CQUEUE_UNKNOWNSHELL_S                _MESSAGE(64509, _("Invalid value " SFQ " for shell "))
 #define MSG_CENTRY_NOTREQUESTABLE_S              _MESSAGE(64510, _("Complex attribute " SFQ " is not requestable"))
 #define MSG_ULNG_INVALIDPRIO_I                   _MESSAGE(64511, _("invalid priority %d. must be an integer from -1023 to 1024"))
-#define MSG_ULNG_INVALID_TASK_CONCURRENCY_I      _MESSAGE(64512, _("invalid task concurrency number %d. Must be an integer greater or equal to 0."))
-#define MSG_ULNG_INVALID_VALUE                   _MESSAGE(64513, _("Invalid or not existing number."))
 #define MSG_ULNG_INVALID_BAMOUNT_I               _MESSAGE(64514, _("invalid binding amount %d. must be an integer > 0"))
 
 #define MSG_JSV_EXISTS_S         _MESSAGE(64521, _("JSV file " PFQMAX " does not exist"))
@@ -442,5 +440,9 @@
 // CS-3143: a priority or a binding amount that is not a whole number
 #define MSG_ULNG_INVALIDPRIO_S                 _MESSAGE(64603, _("invalid priority " SFQ ". must be an integer from -1023 to 1024"))
 #define MSG_ULNG_INVALID_BAMOUNT_S             _MESSAGE(64604, _("invalid binding amount " SFQ ". must be an integer >= 0"))
+
+// CS-3219: a task concurrency or a number that is not a whole number or out of range
+#define MSG_ULNG_INVALID_TASK_CONCURRENCY_S    _MESSAGE(64605, _("invalid task concurrency number " SFQ ". Must be an integer greater or equal to 0."))
+#define MSG_ULNG_INVALID_VALUE_S               _MESSAGE(64606, _("invalid number " SFQ ". Must be an integer from 0 to 4294967295."))
 
 // clang-format on

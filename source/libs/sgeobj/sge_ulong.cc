@@ -725,13 +725,13 @@ bool ulong_parse_binding_amount(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, in
    DRETURN(ret);
 }
 
-/* DG: TODO: add ADOC */
 /**
- * @brief Parse a value that may carry a unit or be `infinity`
+ * @brief Parse an unsigned 32 bit number
  *
- * Accepts the memory and time forms as well as a plain number.
+ * A text that is not a whole decimal number, also one with trailing characters, is rejected, and so
+ * is a negative number and one beyond UINT32_MAX, which strtol() wrapped or truncated (CS-3219).
  *
- * @param[out] this_ulong receives the parsed value
+ * @param[out] this_ulong receives the parsed value, unchanged on an error
  * @param[out] answer_list receives the message naming the bad text
  * @param string the text to parse
  * @return true when the text was understood
@@ -741,13 +741,17 @@ bool ulong_parse_value_from_string(uint32_t *this_ulong,
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   char *s;
-   
-   *this_ulong = strtol(string, &s, 10);
-   if (string == s) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_ULNG_INVALID_VALUE);
+   char *s = nullptr;
+
+   // parse wide and check the range before narrowing
+   errno = 0;
+   const long long value = string != nullptr ? strtoll(string, &s, 10) : 0;
+   if (string == nullptr || s == string || *s != '\0' || errno == ERANGE || value < 0 || value > UINT32_MAX) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_VALUE_S, string != nullptr ? string : "");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
+   } else {
+      *this_ulong = static_cast<uint32_t>(value);
    }
 
    DRETURN(ret);
@@ -756,10 +760,11 @@ bool ulong_parse_value_from_string(uint32_t *this_ulong,
 /**
  * @brief Parse the array task concurrency limit
  *
- * A negative value is rejected.
+ * A negative value is rejected, and so is a text that is not a whole number, also one with trailing
+ * characters, and a number that does not fit into an int (CS-3219).
  *
  * @param[out] answer_list receives the message naming the bad value
- * @param[out] valp receives the parsed value
+ * @param[out] valp receives the parsed value, unchanged on an error
  * @param task_concurrency_str the text to parse
  * @return true when the text was understood
  */
@@ -768,13 +773,19 @@ bool ulong_parse_task_concurrency(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, 
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   char *s;
+   char *s = nullptr;
 
-   *valp = strtol(task_concurrency_str, &s, 10);
-   if (task_concurrency_str == s || *valp < 0) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_TASK_CONCURRENCY_I, (int) *valp);
+   // parse wide and check the range before narrowing, an int would wrap 4294967301 to 5
+   errno = 0;
+   const long long value = task_concurrency_str != nullptr ? strtoll(task_concurrency_str, &s, 10) : 0;
+   if (task_concurrency_str == nullptr || s == task_concurrency_str || *s != '\0' || errno == ERANGE ||
+       value < 0 || value > INT_MAX) {
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_TASK_CONCURRENCY_S,
+               task_concurrency_str != nullptr ? task_concurrency_str : "");
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
+   } else {
+      *valp = static_cast<int>(value);
    }
    DRETURN(ret);
 }
