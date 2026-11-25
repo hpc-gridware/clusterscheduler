@@ -835,6 +835,35 @@ static void test_full_what_on_reduction() {
          received.get()[0].pos == ocs::tom::field_pos(SP_Type, SP_group));
 }
 
+/**
+ * @brief Unpack a selection whose wire data declares a field count, without the fields
+ * @param n the declared number of fields
+ * @return true if unpack_what() rejects it with a PackException
+ */
+static bool forged_what_count_rejected(const std::uint32_t n) {
+   ocs::tom::PackBuffer pb(false, 1024);
+   ocs::tom::put_uint32(&pb.raw(), 1); // a selection, not null
+   ocs::tom::put_uint32(&pb.raw(), 2); // an explicit list of fields follows
+   ocs::tom::put_uint32(&pb.raw(), n);
+   ocs::tom::PackBuffer in = ocs::tom::PackBuffer::reading(pb.data(), pb.size(), false);
+   try {
+      ocs::tom::RawWhatPtr what(ocs::tom::unpack_what(&in.raw()));
+   } catch (const ocs::tom::PackException &) {
+      return true;
+   }
+   return false;
+}
+
+/**
+ * @brief A field count the receiver cannot hold is rejected before anything is allocated
+ *
+ * 0xFFFFFFFF used to wrap in `n + 1` to 0, passed the size check and wrote past an empty allocation.
+ */
+static void test_forged_what_count() {
+   CHECK(38, "a selection declaring 0xFFFFFFFF fields is rejected", forged_what_count_rejected(0xFFFFFFFFU));
+   CHECK(39, "a selection declaring MAX_DESCR_SIZE fields is rejected", forged_what_count_rejected(MAX_DESCR_SIZE));
+}
+
 // ---------------------------------------------------------------------------
 
 /**
@@ -913,5 +942,11 @@ int main(int argc, char *argv[]) {
        "the held fields are selected, packed and copied as from the full list, an absent field is rejected, and "
        "the unpacked what has the local position",
        {{"FLD-01", "partly"}}, {32, 33, 34, 35, 37}, test_full_what_on_reduction},
+      {"SELPACK-10", "a forged field count of a selection",
+       "unpack_what() rejects a field count it cannot hold instead of allocating for it, also when count + 1 "
+       "wraps around",
+       {"unpack a selection that declares 0xFFFFFFFF fields", "unpack one that declares MAX_DESCR_SIZE fields"},
+       "both are rejected with a PackException",
+       {{"CLN-03", "partly"}}, {38, 39}, test_forged_what_count},
    });
 }

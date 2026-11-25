@@ -1600,7 +1600,7 @@ namespace ocs::tom {
 
       // the number of fields, without the end mark
       const std::uint32_t n = get_uint32(pb);
-      if (n + 1 > MAX_DESCR_SIZE) {
+      if (n >= MAX_DESCR_SIZE) {
          no_memory("unpacking a selection of too many fields");
       }
       OwnedWhat what(static_cast<ocs::tom::WhatData *>(calloc(n + 1, sizeof(ocs::tom::WhatData))));
