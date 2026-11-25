@@ -19,7 +19,7 @@
 /*___INFO__MARK_END_NEW__*/
 
 /** @file
- * @brief Module test of the allocation helpers ocs_new(), ocs_delete(), ocs_c_alloc() and ocs_c_ptr (CS-3105)
+ * @brief Module test of the allocation helpers ocs::uti::create(), destroy(), c_alloc() and c_ptr (CS-3105)
  */
 
 #include <cstdlib>
@@ -85,25 +85,27 @@ namespace {
       return true;
    }
 
-   // ocs_c_alloc() keys its static_assert on ocs_c_allocatable, so these assertions state at compile time
-   // which types it accepts: `ocs_c_alloc<std::string>()` or `ocs_c_alloc<owning_t>()` does not compile.
-   static_assert(ocs_c_allocatable<plain_t>);
-   static_assert(ocs_c_allocatable<int>);
-   static_assert(!ocs_c_allocatable<std::string>);
-   static_assert(!ocs_c_allocatable<owning_t>);
-   static_assert(!ocs_c_allocatable<counted_t>);
+   // c_alloc() keys its static_assert on c_allocatable, so these assertions state at compile time
+   // which types it accepts: `c_alloc<std::string>()` or `c_alloc<owning_t>()` does not compile.
+   static_assert(ocs::uti::c_allocatable<plain_t>);
+   static_assert(ocs::uti::c_allocatable<int>);
+   static_assert(!ocs::uti::c_allocatable<std::string>);
+   static_assert(!ocs::uti::c_allocatable<owning_t>);
+   static_assert(!ocs::uti::c_allocatable<counted_t>);
 
-   // ocs_delete() and ocs_delete_array() take the pointer by reference, so they cannot be called on a
-   // temporary whose nulling would get lost; `void *` and incomplete types are rejected by static_assert.
+   // destroy() and destroy_array() take the pointer by reference, so they cannot be called on a
+   // temporary whose nulling would get lost. `void *`, incomplete types and polymorphic types without a
+   // virtual destructor (destroy_array(): without `final`) are rejected at compile time by static_assert
+   // (not testable here).
    template <typename P>
-   concept deletable = requires { ocs_delete(std::declval<P>()); };
+   concept deletable = requires { ocs::uti::destroy(std::declval<P>()); };
    static_assert(deletable<plain_t *&>);
    static_assert(!deletable<plain_t *>);
 
 } // namespace
 
 /**
- * @brief ocs_new() value-initialises like calloc() and forwards its arguments
+ * @brief create() value-initialises like calloc() and forwards its arguments
  */
 static void
 test_new() {
@@ -114,61 +116,62 @@ test_new() {
       free(dirty);
    }
 
-   plain_t *plain = ocs_new<plain_t>();
-   CHECK(1, "ocs_new<plain_t>() is not nullptr", plain != nullptr);
-   CHECK(2, "ocs_new<plain_t>() zeroes every member",
+   plain_t *plain = ocs::uti::create<plain_t>();
+   CHECK(1, "create<plain_t>() is not nullptr", plain != nullptr);
+   CHECK(2, "create<plain_t>() zeroes every member",
          plain->number == 0 && plain->value == 0.0 && plain->name == nullptr && plain->buffer[0] == '\0' &&
          all_zero(plain->buffer, sizeof(plain->buffer)));
-   ocs_delete(plain);
+   CHECK(7, "create<plain_t>() zeroes the padding too, like calloc()", all_zero(plain, sizeof(*plain)));
+   ocs::uti::destroy(plain);
 
-   plain = ocs_new<plain_t>(7, 2.5);
-   CHECK(3, "ocs_new<plain_t>(7, 2.5) fills an aggregate member by member, the rest is zero",
+   plain = ocs::uti::create<plain_t>(7, 2.5);
+   CHECK(3, "create<plain_t>(7, 2.5) fills an aggregate member by member, the rest is zero",
          plain->number == 7 && plain->value == 2.5 && plain->name == nullptr);
-   ocs_delete(plain);
+   ocs::uti::destroy(plain);
 
-   auto *vec = ocs_new<std::vector<int>>(3, 7);
-   CHECK(4, "ocs_new<std::vector<int>>(3, 7) calls the size constructor, not the initializer_list one",
+   auto *vec = ocs::uti::create<std::vector<int>>(3, 7);
+   CHECK(4, "create<std::vector<int>>(3, 7) calls the size constructor, not the initializer_list one",
          vec->size() == 3 && (*vec)[2] == 7);
-   ocs_delete(vec);
+   ocs::uti::destroy(vec);
 
-   auto *owning = ocs_new<owning_t>("name");
-   CHECK(5, "ocs_new<owning_t>(\"name\") constructs the std::string member", owning->name == "name");
-   ocs_delete(owning);
+   auto *owning = ocs::uti::create<owning_t>("name");
+   CHECK(5, "create<owning_t>(\"name\") constructs the std::string member", owning->name == "name");
+   ocs::uti::destroy(owning);
 
-   int *array = ocs_new_array<int>(8);
-   CHECK(6, "ocs_new_array<int>(8) zeroes every element", all_zero(array, 8 * sizeof(int)));
-   ocs_delete_array(array);
+   int *array = ocs::uti::create_array<int>(8);
+   CHECK(6, "create_array<int>(8) zeroes every element", all_zero(array, 8 * sizeof(int)));
+   ocs::uti::destroy_array(array);
 }
 
 /**
- * @brief ocs_delete() and ocs_delete_array() run the destructors, null the pointer and accept nullptr
+ * @brief destroy() and destroy_array() run the destructors, null the pointer and accept nullptr
  */
 static void
 test_delete() {
    destroyed = 0;
-   auto *one = ocs_new<counted_t>(42);
-   CHECK(10, "ocs_new<counted_t>(42) calls the constructor", one->id == 42);
-   ocs_delete(one);
-   CHECK(11, "ocs_delete() runs the destructor once", destroyed == 1);
-   CHECK(12, "ocs_delete() sets the pointer to nullptr", one == nullptr);
-   ocs_delete(one);
-   CHECK(13, "ocs_delete() of nullptr does nothing", one == nullptr && destroyed == 1);
+   auto *one = ocs::uti::create<counted_t>(42);
+   CHECK(10, "create<counted_t>(42) calls the constructor", one->id == 42);
+   ocs::uti::destroy(one);
+   CHECK(11, "destroy() runs the destructor once", destroyed == 1);
+   CHECK(12, "destroy() sets the pointer to nullptr", one == nullptr);
+   ocs::uti::destroy(one);
+   CHECK(13, "destroy() of nullptr does nothing", one == nullptr && destroyed == 1);
 
    destroyed = 0;
-   auto *many = ocs_new_array<counted_t>(5);
-   ocs_delete_array(many);
-   CHECK(14, "ocs_delete_array() runs the destructor of all 5 elements", destroyed == 5);
-   CHECK(15, "ocs_delete_array() sets the pointer to nullptr", many == nullptr);
-   ocs_delete_array(many);
-   CHECK(16, "ocs_delete_array() of nullptr does nothing", many == nullptr && destroyed == 5);
+   auto *many = ocs::uti::create_array<counted_t>(5);
+   ocs::uti::destroy_array(many);
+   CHECK(14, "destroy_array() runs the destructor of all 5 elements", destroyed == 5);
+   CHECK(15, "destroy_array() sets the pointer to nullptr", many == nullptr);
+   ocs::uti::destroy_array(many);
+   CHECK(16, "destroy_array() of nullptr does nothing", many == nullptr && destroyed == 5);
 
-   const plain_t *constant = ocs_new<plain_t>();
-   ocs_delete(constant);
-   CHECK(17, "ocs_delete() accepts a pointer to const", constant == nullptr);
+   const plain_t *constant = ocs::uti::create<plain_t>();
+   ocs::uti::destroy(constant);
+   CHECK(17, "destroy() accepts a pointer to const", constant == nullptr);
 }
 
 /**
- * @brief ocs_c_alloc() returns zeroed C memory for n elements that sge_free() releases
+ * @brief c_alloc() returns zeroed C memory for n elements that sge_free() releases
  */
 static void
 test_c_alloc() {
@@ -179,41 +182,46 @@ test_c_alloc() {
       free(dirty);
    }
 
-   plain_t *one = ocs_c_alloc<plain_t>();
-   CHECK(20, "ocs_c_alloc<plain_t>() returns zeroed memory", one != nullptr && all_zero(one, sizeof(*one)));
+   plain_t *one = ocs::uti::c_alloc<plain_t>();
+   CHECK(20, "c_alloc<plain_t>() returns zeroed memory", one != nullptr && all_zero(one, sizeof(*one)));
    sge_free(&one);
    CHECK(21, "sge_free() releases it and nulls the pointer", one == nullptr);
 
-   plain_t *many = ocs_c_alloc<plain_t>(n);
-   CHECK(22, "ocs_c_alloc<plain_t>(100) zeroes all 100 elements",
+   plain_t *many = ocs::uti::c_alloc<plain_t>(n);
+   CHECK(22, "c_alloc<plain_t>(100) zeroes all 100 elements",
          many != nullptr && all_zero(many, n * sizeof(plain_t)));
    many[n - 1].number = 1; // the last element is writable
    free(many);
 
-   CHECK(23, "ocs_c_alloc<int>(0) returns nullptr like sge_malloc(0)", ocs_c_alloc<int>(0) == nullptr);
+   CHECK(23, "c_alloc<int>(0) returns nullptr like sge_malloc(0)", ocs::uti::c_alloc<int>(0) == nullptr);
 }
 
 /**
- * @brief ocs_c_ptr owns memory from C calls and releases it with free()
+ * @brief c_ptr owns memory from C calls and releases it with free()
  */
 static void
 test_c_ptr() {
-   ocs_c_ptr<char> copy{strdup("text")};
-   CHECK(30, "ocs_c_ptr<char> holds a strdup() result", copy != nullptr && strcmp(copy.get(), "text") == 0);
+   ocs::uti::c_ptr<char> copy{strdup("text")};
+   CHECK(30, "c_ptr<char> holds a strdup() result", copy != nullptr && strcmp(copy.get(), "text") == 0);
    copy.reset(strdup("other"));
    CHECK(31, "reset() frees the old block and takes the new one", strcmp(copy.get(), "other") == 0);
    copy.reset();
    CHECK(32, "reset() without argument frees the block", copy == nullptr);
 
-   ocs_c_ptr<char> real{realpath("/", nullptr)};
-   CHECK(33, "ocs_c_ptr<char> holds a realpath(path, nullptr) result",
+   ocs::uti::c_ptr<char> real{realpath("/", nullptr)};
+   CHECK(33, "c_ptr<char> holds a realpath(path, nullptr) result",
          real != nullptr && strcmp(real.get(), "/") == 0);
 
-   ocs_c_ptr<plain_t[]> array{ocs_c_alloc<plain_t>(4)};
+   ocs::uti::c_ptr<plain_t[]> array{ocs::uti::c_alloc<plain_t>(4)};
    array[3].number = 3;
-   CHECK(34, "ocs_c_ptr<plain_t[]> owns an ocs_c_alloc() array", array[3].number == 3 && array[0].number == 0);
+   CHECK(34, "c_ptr<plain_t[]> owns a c_alloc() array", array[3].number == 3 && array[0].number == 0);
 
-   CHECK(35, "ocs_c_ptr adds no size to the pointer", sizeof(ocs_c_ptr<char>) == sizeof(char *));
+   CHECK(35, "c_ptr adds no size to the pointer", sizeof(ocs::uti::c_ptr<char>) == sizeof(char *));
+
+   // free_deleter takes `const void *`, so a block that is only read can be owned as const
+   ocs::uti::c_ptr<const char> constant{strdup("constant")};
+   CHECK(36, "c_ptr<const char> owns a strdup() result and frees it",
+         constant != nullptr && strcmp(constant.get(), "constant") == 0);
 }
 
 /**
@@ -224,30 +232,31 @@ test_c_ptr() {
  */
 int main(int argc, char *argv[]) {
    return ocs::module_test::run(argc, argv, {
-      {"STDLIB-01", "ocs_new() and ocs_new_array() (CS-3105)",
-       "objects from ocs_new() are value-initialised like calloc() and get their arguments forwarded",
+      {"STDLIB-01", "create() and create_array() (CS-3105)",
+       "objects from create() are value-initialised like calloc() and get their arguments forwarded",
        {"allocate a plain struct without arguments on a dirtied heap",
         "allocate it with member arguments, a std::vector with constructor arguments and a struct with a "
         "std::string member",
         "allocate an int array"},
-       "all members and elements that get no argument are zero, the arguments arrive",
-       {}, {1, 2, 3, 4, 5, 6}, test_new},
-      {"STDLIB-02", "ocs_delete() and ocs_delete_array() (CS-3105)",
+       "all members, the padding and the elements that get no argument are zero, the arguments arrive",
+       {}, {1, 2, 7, 3, 4, 5, 6}, test_new},
+      {"STDLIB-02", "destroy() and destroy_array() (CS-3105)",
        "deleting runs the destructors and leaves the pointer nullptr, like sge_free()",
        {"delete one counted object twice", "delete an array of 5 counted objects twice",
         "delete through a pointer to const"},
        "the destructors run once each, the pointer is nullptr, the second call does nothing",
        {}, {10, 11, 12, 13, 14, 15, 16, 17}, test_delete},
-      {"STDLIB-03", "ocs_c_alloc() (CS-3105)",
-       "ocs_c_alloc() gives zeroed C memory for n elements of a trivial type",
+      {"STDLIB-03", "c_alloc() (CS-3105)",
+       "c_alloc() gives zeroed C memory for n elements of a trivial type",
        {"allocate one and 100 plain structs on a dirtied heap", "release them with sge_free() and free()",
         "allocate 0 elements"},
        "the memory is zero, sge_free() nulls the pointer, 0 elements give nullptr",
        {}, {20, 21, 22, 23}, test_c_alloc},
-      {"STDLIB-04", "ocs_c_ptr (CS-3105)",
-       "ocs_c_ptr owns memory from C library calls and releases it with free()",
-       {"hold and replace strdup() results", "hold a realpath() result", "hold an ocs_c_alloc() array"},
+      {"STDLIB-04", "c_ptr (CS-3105)",
+       "c_ptr owns memory from C library calls and releases it with free()",
+       {"hold and replace strdup() results", "hold a realpath() result", "hold a c_alloc() array",
+        "hold a strdup() result as const char"},
        "the blocks are reachable while owned and released on reset() and at scope end",
-       {}, {30, 31, 32, 33, 34, 35}, test_c_ptr},
+       {}, {30, 31, 32, 33, 34, 35, 36}, test_c_ptr},
    });
 }

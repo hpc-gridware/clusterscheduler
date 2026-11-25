@@ -79,22 +79,23 @@ char *sge_malloc(size_t size) {
 /**
  * @brief Allocate zeroed memory for `n` elements of `size` bytes, abort on failure
  *
- * The untyped part of ocs_c_alloc(): checks `n * size` for overflow, calls `calloc()` and aborts the
+ * The untyped part of c_alloc(): checks `n * size` for overflow, calls `calloc()` and aborts the
  * process like sge_malloc() when there is no memory. The block is released with sge_free() or `free()`.
  *
  * @param n number of elements
  * @param size size of one element in bytes
  * @return pointer to the zeroed block, `nullptr` if `n` or `size` is 0
  *
- * @note MT-NOTE: ocs_c_calloc() is MT safe
+ * @note MT-NOTE: ocs::uti::c_calloc() is MT safe
  */
-void *ocs_c_calloc(const size_t n, const size_t size) {
+void *ocs::uti::c_calloc(const size_t n, const size_t size) {
    if (n == 0 || size == 0) {
       return nullptr;
    }
    if (n > SIZE_MAX / size) {
       CRITICAL(SFNMAX, MSG_MEMORY_MALLOCFAILED);
       ocs::TerminationManager::trigger_abort();
+      return nullptr; // trigger_abort() is not [[noreturn]], never go on to calloc() with an overflowed size
    }
    void *p = calloc(n, size);
    if (p == nullptr) {
