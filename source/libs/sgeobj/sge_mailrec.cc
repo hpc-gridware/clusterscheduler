@@ -57,8 +57,8 @@
 /**
  * @brief Whether a list of mail recipients holds an address
  *
- * An address is the user and the mail domain; both are compared as they are written, a missing domain only
- * matches a missing domain.
+ * An address is the user and the mail domain. The user is compared as it is written, the domain without regard
+ * to case, as domain names are case-insensitive (RFC 5321); a missing domain only matches a missing domain.
  *
  * @param list the mail recipients (MR), maybe empty
  * @param user the user of the address
@@ -70,7 +70,7 @@ static bool ocs_mailrec_contains(const ocs::tom::ConstList<ocs::tom::MR> list, c
       return false;
    }
    for (const auto ep : list) {
-      if (sge_strnullcmp(user, ep.get<MR_user>()) == 0 && sge_strnullcmp(host, ep.get<MR_host>()) == 0) {
+      if (sge_strnullcmp(user, ep.get<MR_user>()) == 0 && sge_strnullcasecmp(host, ep.get<MR_host>()) == 0) {
          return true;
       }
    }
