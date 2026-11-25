@@ -31,6 +31,7 @@
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/msg_sgeobjlib.h"
 #include "sgeobj/sge_ulong.h"
 #include "tom/ocs_Element.h"
 
@@ -266,7 +267,8 @@ test_parse_date_time_seconds() {
       bool ok = ulong_parse_date_time_from_string(&t, &al, "06151200.-1");
       const char *msg = first_answer_text(al);
       printf("   answer: %s\n", msg);
-      CHECK(28, "negative seconds rejected", !ok && *msg != '\0');
+      CHECK(28, "negative seconds rejected as an invalid second",
+            !ok && strcmp(msg, MSG_PARSE_INVALIDSECOND) == 0);
    }
 
    // T29: an invalid hour is rejected
@@ -275,6 +277,29 @@ test_parse_date_time_seconds() {
       uint32_t t = 0;
       bool ok = ulong_parse_date_time_from_string(&t, &al, "202612012500");
       CHECK(29, "hour 25 rejected", !ok);
+   }
+}
+
+/**
+ * @brief Inputs without digits around the dot [T30–T31] (CS-3144)
+ *
+ * For "." and ".." the tokenizer finds no token, so the date part was a nullptr that went into strlen().
+ * Both crashed the parser, and through the server JSV the qmaster, before the fix.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_parse_date_time_dots_only() {
+   const char *inputs[] = {".", ".."};
+   int id = 30;
+   for (const char *input : inputs) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      uint32_t t = 0;
+      const bool ok = ulong_parse_date_time_from_string(&t, &al, input);
+      const char *msg = first_answer_text(al);
+      const std::string label = std::string("\"") + input + "\" rejected as an invalid date/hour-minute field";
+      CHECK(id, label.c_str(), !ok && strcmp(msg, MSG_PARSE_INVALIDHOURMIN) == 0);
+      ++id;
    }
 }
 
@@ -322,5 +347,10 @@ int main(int argc, char *argv[]) {
         "parse a date with hour 25"},
        "seconds 59 are accepted, seconds -1 and hour 25 are rejected",
        {}, {27, 28, 29}, test_parse_date_time_seconds},
+      {"ULONG-05", "a date/time of dots only (CS-3144)",
+       "ulong_parse_date_time_from_string() rejects an input without digits around the dot instead of crashing",
+       {"parse \".\"", "parse \"..\""},
+       "both are rejected as an invalid date/hour-minute field",
+       {}, {30, 31}, test_parse_date_time_dots_only},
    });
 }

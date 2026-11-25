@@ -372,7 +372,8 @@ bool ulong_parse_date_time_from_string(uint32_t *this_ulong,
       DRETURN(false);
    }
 
-   i=strlen(non_seconds);
+   // CS-3144: an input of dots only ("." or "..") has no token at all
+   i = non_seconds != nullptr ? strlen(non_seconds) : 0;
 
    if ((i != 8) && (i != 10) && (i != 12)) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, SFNMAX, MSG_PARSE_INVALIDHOURMIN);
