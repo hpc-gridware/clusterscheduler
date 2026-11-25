@@ -1253,7 +1253,7 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
    int all_jobs_flag;
    int all_users_flag;
    bool job_name_flag = false;
-   char *job_mod_name = nullptr;
+   std::string job_mod_name;
    const char *job_name = nullptr;
    const auto job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
 
@@ -1315,8 +1315,8 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          *del_pos = '\0';
          del_pos++;
 
-         job_mod_name = sge_strdup(nullptr, job_id_str);
-         job_id_str = job_mod_name;
+         job_mod_name = job_id_str;
+         job_id_str = job_mod_name.c_str();
 
          if (strlen(del_pos) > 0) {
             jep.set<JB_job_name>(del_pos);
@@ -1370,7 +1370,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
           && !manop_is_manager(packet)) {
          ERROR(MSG_SGETEXT_MUST_BE_JOB_OWN_TO_SUS, packet->user, jobid, MSG_JOB_CHANGEATTR);
          answer_list_add(alpp, SGE_EVENT, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR);
-         sge_free(&job_mod_name);
          DRETURN(STATUS_ENOTOWNER);
       }
 
@@ -1383,7 +1382,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
          }
          (*alpp)->splice(std::move(tmp_alp));
-         sge_free(&job_mod_name);
          DRETURN(lret);
       }
 
@@ -1395,7 +1393,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
                *alpp = ocs::tom::ListPtr<ocs::tom::AN>::create("answer");
             }
             (*alpp)->splice(std::move(tmp_alp));
-            sge_free(&job_mod_name);
             DRETURN(STATUS_EUNKNOWN);
          }
       }
@@ -1415,7 +1412,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             ERROR(MSG_JOB_NOALTERNOWRITE_U, jobid);
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             tmp_alp.reset();
-            sge_free(&job_mod_name);
             DRETURN(STATUS_EDISK);
          }
 
@@ -1465,7 +1461,6 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
             answer_list_add(alpp, SGE_EVENT, STATUS_EDISK, ANSWER_QUALITY_ERROR);
             sge_dstring_free(&buffer);
             tmp_alp.reset();
-            sge_free(&job_mod_name);
             DRETURN(STATUS_EDISK);
          }
          sge_dstring_free(&buffer);
@@ -1563,18 +1558,16 @@ sge_gdi_mod_job(const ocs::gdi::Packet *packet, ocs::gdi::Task *task, const ocs:
          snprintf(job_id, sizeof(job_id), sge_u32, jep.get<JB_job_number>());
          job_id_str = job_id;
       } else {
-         job_id_str = job_mod_name;
+         job_id_str = job_mod_name.c_str();
       }
 
       empty_job_list_filter(packet, alpp, 1, user_list_flag,
                             user_list_flag ? jep.get<JB_user_list>() : ocs::tom::List<ocs::tom::ST>(),
                             jid_flag, jid_flag ? job_id_str : "0",
                             all_users_flag, all_jobs_flag, 0, 0, 0, 0);
-      sge_free(&job_mod_name);
       DRETURN(STATUS_EEXIST);
    }
 
-   sge_free(&job_mod_name);
    DRETURN(STATUS_OK);
 }
 
@@ -3927,7 +3920,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
    DENTER(TOP_LAYER);
 
    int njobs = 0;
-   char *dupped_session = nullptr;
    int deleted_unenrolled_tasks;
    uint32_t task_number = 0;
    uint32_t existing_tasks;
@@ -3947,15 +3939,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
     * the ja_task was buried WITHOUT dereferencing the possibly-freed
     * `job` element after the commit. */
    bool retention_enabled = (mconf_get_finished_jobs_keep_time() > 0 || mconf_get_finished_jobs_max() > 0);
-
-   /* In certain cases sge_commit_job() free's the job structure passed.
-    * The session information is needed after sge_commit_job() so we make
-    * a copy of the job session before calling sge_commit_job(). This copy
-    * must be free'd!
-    */
-   if (job.get<JB_session>()) {
-      dupped_session = strdup(job.get<JB_session>());
-   }
 
    /*
     * Repeat until all requested taskid ranges are handled
@@ -4199,7 +4182,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
                   INFO(MSG_JOB_DISCONTTASKTRANS_SUU, packet->user, job_number, task_number);
                   answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
                   *deletion_time_reached = true;
-                  sge_free(&dupped_session);
                   DRETURN(njobs);
                }
 
@@ -4275,7 +4257,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
          INFO(MSG_JOB_DISCONTINUEDTRANS_SU, packet->user, job_number);
          answer_list_add(alpp, SGE_EVENT, STATUS_OK_DOAGAIN, ANSWER_QUALITY_INFO);
          *deletion_time_reached = true;
-         sge_free(&dupped_session);
          DRETURN(njobs);
       }
 
@@ -4293,7 +4274,6 @@ static int sge_delete_all_tasks_of_job(const ocs::gdi::Packet *packet, ocs::tom:
 
    /* free task id range list of this iteration */
    range_list.reset();
-   sge_free(&dupped_session);
 
    DRETURN(njobs);
 }
@@ -4375,14 +4355,13 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
       }
 
       if (ret == STATUS_OK) {
-         char *enforce_project = mconf_get_enforce_project();
+         const ocs::uti::c_ptr<char> enforce_project{mconf_get_enforce_project()};
 
-         if (enforce_project != nullptr && strcasecmp(enforce_project, "true") == 0) {
+         if (enforce_project != nullptr && strcasecmp(enforce_project.get(), "true") == 0) {
             ERROR(SFNMAX, MSG_SGETEXT_NO_PROJECT);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;
          }
-         sge_free(&enforce_project);
       }
    }
 

@@ -171,17 +171,17 @@ namespace ocs {
    }
 
    /**
+    * @brief Re-read the reporting configuration into every writer
+    *
     * If the reporting_params were changed
     * - creates newly enabled writers
     * - removes the no longer necessary writers
     * - makes all configured writers read their configuration from the reporting_params
     */
-/** @brief Re-read the reporting configuration into every writer */
    void ReportingFileWriter::update_config_all() {
       bool config_changed = false;
-      const char *rp_str = mconf_get_reporting_params();
-      std::string current_reporting_params = rp_str ? rp_str : "";
-      sge_free(&rp_str);
+      const ocs::uti::c_ptr<const char> rp_str{mconf_get_reporting_params()};
+      std::string current_reporting_params = rp_str ? rp_str.get() : "";
 
       // check if the config has changed and update it
       sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);

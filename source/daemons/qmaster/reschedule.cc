@@ -144,7 +144,7 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    ocs::tom::Element<ocs::tom::EH> hep;
    uint64_t timeout = sge_gmt32_to_gmt64(te_get_first_numeric_key(anEvent));
    uint64_t new_timeout;
-   char *hostname = te_get_alphanumeric_key(anEvent);
+   const char *hostname = te_get_alphanumeric_key(anEvent);
 
    MONITOR_WAIT_TIME(SGE_LOCK(LOCK_GLOBAL, LOCK_WRITE), monitor);
 
@@ -209,7 +209,6 @@ void reschedule_unknown_event(te_event_t anEvent, monitoring_t *monitor) {
    answer_list.reset();
 
    Error:
-   sge_free(&hostname);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
    DRETURN_VOID;

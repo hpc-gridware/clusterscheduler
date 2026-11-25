@@ -1197,15 +1197,12 @@ resend_signal_event(te_event_t anEvent, monitoring_t *monitor) {
       if (!qep) {
          ERROR(MSG_EVE_RESENTSIGNALQ_S, queue);
          SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
-         sge_free(&queue);
          DRETURN_VOID;
       }
 
       sge_signal_queue(qep.get<QU_pending_signal>(), qep, ocs::tom::Element<ocs::tom::JB>(),
                        ocs::tom::Element<ocs::tom::JAT>(), monitor);
    }
-
-   sge_free(&queue);
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 

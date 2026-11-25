@@ -318,8 +318,6 @@ void sge_calendar_event_handler(te_event_t anEvent, monitoring_t *monitor) {
 
    SGE_UNLOCK(LOCK_GLOBAL, LOCK_WRITE);
 
-   sge_free(&cal_name);
-
    DRETURN_VOID;
 } /* sge_calendar_event_handler() */
 

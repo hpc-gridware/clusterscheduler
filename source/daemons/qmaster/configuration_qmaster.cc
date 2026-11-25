@@ -504,7 +504,6 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::L
    */
    if (strcmp(unique_name, SGE_GLOBAL_NAME) == 0 || sge_hostcmp(unique_name, qualified_hostname) == 0) {
       ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-      char *qmaster_params = nullptr;
 
       auto local = sge_get_configuration_for_host(qualified_hostname);
       if (!local) {
@@ -527,9 +526,8 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::L
       sge_show_conf();
 
       /* updating the commlib parameter list and gdi_timeout with new or changed parameters */
-      qmaster_params = mconf_get_qmaster_params();
-      cl_com_update_parameter_list(qmaster_params);
-      sge_free(&qmaster_params);
+      const ocs::uti::c_ptr<char> qmaster_params{mconf_get_qmaster_params()};
+      cl_com_update_parameter_list(qmaster_params.get());
 
       // propagate possible changes in the reporting_params to reporting writers
       ocs::ReportingFileWriter::update_config_all();
@@ -808,18 +806,12 @@ check_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const ocs::tom::ConstElement
          }
       } else if (!strcmp(name, "admin_user")) {
          struct passwd pw_struct;
-         char *buffer;
-         int size;
-
-         size = get_pw_buffer_size();
-         buffer = sge_malloc(size);
-         if (strcasecmp(value, "none") && !sge_getpwnam_r(value, &pw_struct, buffer, size)) {
+         std::vector<char> buffer(get_pw_buffer_size());
+         if (strcasecmp(value, "none") && !sge_getpwnam_r(value, &pw_struct, buffer.data(), buffer.size())) {
             ERROR(MSG_CONF_GOTINVALIDVALUEXASADMINUSER_S, value);
             answer_list_add(alpp, SGE_EVENT, STATUS_EEXIST, ANSWER_QUALITY_ERROR);
-            sge_free(&buffer);
             DRETURN(STATUS_EEXIST);
          }
-         sge_free(&buffer);
       } else if (!strcmp(name, "user_lists") || !strcmp(name, "xuser_lists")) {
          /* parse just for .. */
          ocs::tom::ListPtr<ocs::tom::US> tmp;

@@ -50,6 +50,9 @@
 #include <sys/types.h>
 
 #include <cinttypes>
+#include <optional>
+#include <string>
+#include <vector>
 #include "tom/ocs_Types.h"
 #include "tom/ocs_Element.h"
 #include "sgeobj/tom/ocs_tom_TE.h"
@@ -57,7 +60,7 @@
 #include "sgeobj/sge_daemonize.h"
 
 enum {
-   TBL_GROW_FACTOR = 2,/**< How much the handler table grows by when it is full */TBL_INIT_SIZE = 10/**< How many handlers the table holds to begin with */
+   TBL_INIT_SIZE = 10/**< How many handlers the table holds to begin with */
 };
 
 /** @brief What a timed event is for
@@ -111,7 +114,7 @@ struct te_event {
    te_mode_t mode;        ///< event mode
    uint32_t ulong_key_1; ///< 1st numeric key
    uint32_t ulong_key_2; ///< 2nd numeric key
-   const char *str_key;     ///< alphanumeric key
+   std::optional<std::string> str_key; ///< alphanumeric key, none if not used
    uint32_t seq_no;      ///< event sequence number
 };
 
@@ -151,9 +154,7 @@ struct tbl_elem {
 /** @brief The registered handlers, one per event type */
 typedef struct {
    pthread_mutex_t mutex; ///< used for mutual exclusion
-   int num;   ///< number of event handler in table
-   int max;   ///< max number of handler, before resize
-   struct tbl_elem *list;  ///< event handler list
+   std::vector<tbl_elem> list;  ///< event handler list
 } handler_tbl_t;
 
 extern handler_tbl_t Handler_Tbl;      ///< The registered handlers
@@ -198,4 +199,4 @@ extern uint32_t te_get_first_numeric_key(te_event_t);
 
 extern uint32_t te_get_second_numeric_key(te_event_t);
 
-extern char *te_get_alphanumeric_key(te_event_t);
+extern const char *te_get_alphanumeric_key(te_event_t);

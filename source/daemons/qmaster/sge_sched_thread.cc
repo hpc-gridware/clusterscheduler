@@ -36,6 +36,7 @@
  * @brief The scheduler thread inside qmaster, and the lists it schedules from
  */
 #include <cstring>
+#include <string>
 #include <pthread.h>
 
 #ifdef SOLARISAMD64
@@ -848,7 +849,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
          switch (result) {
             case DISPATCH_OK: /* now assignment */
             {
-               char *owner = strdup(orig_job.get<JB_owner>());
+               // the job may be freed below, the owner name is needed after that
+               const std::string owner{orig_job.get<JB_owner>()};
                /* here the job got an assignment that will cause it be started immediately */
 
                DPRINTF("Found NOW assignment\n");
@@ -874,9 +876,8 @@ dispatch_jobs(sge_evc_class_t *evc, scheduler_all_data_t *lists, order_t *orders
                 */
                job_lists_split_with_reference_to_max_running(evc->monitor_next_run, splitted_job_lists,
                                                              *user_list,
-                                                             owner,
+                                                             owner.c_str(),
                                                              maxujobs);
-               sge_free(&owner);
 
                // do not send job start orders in between, if we have an immediate array job.
                // and only if we have at least 10 jobs to start (why?)

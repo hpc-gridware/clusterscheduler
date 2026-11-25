@@ -80,10 +80,18 @@ static int event_control_cond_init_ret = ocs::uti::condition_initialize(&Event_C
 
 handler_tbl_t Handler_Tbl = {
         PTHREAD_MUTEX_INITIALIZER,
-        0,
-        0,
-        nullptr
+        {}
 };
+
+/**
+ * @brief The alphanumeric key of an event for a log or debug message
+ *
+ * @param anEvent timed event
+ * @return the key, or MSG_SMALLNULL if the event has none
+ */
+static const char *te_str_key_for_message(const te_event *anEvent) {
+   return anEvent->str_key ? anEvent->str_key->c_str() : MSG_SMALLNULL;
+}
 
 /**
  * @brief Delete one time events
@@ -250,21 +258,9 @@ void te_register_event_handler(te_handler_t aHandler, te_type_t aType) {
 
    sge_mutex_lock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
-   if (Handler_Tbl.num >= Handler_Tbl.max) /* grow table */
-   {
-      int sz = (TBL_GROW_FACTOR * Handler_Tbl.max) * sizeof(struct tbl_elem);
+   Handler_Tbl.list.push_back({aType, aHandler});
 
-      Handler_Tbl.list = (struct tbl_elem *) sge_realloc((char *) Handler_Tbl.list, sz, 1);
-      Handler_Tbl.max *= TBL_GROW_FACTOR;
-
-      DPRINTF("%s: grow handler table to %d elements\n", __func__, Handler_Tbl.max);
-   }
-
-   Handler_Tbl.list[Handler_Tbl.num].type = aType;
-   Handler_Tbl.list[Handler_Tbl.num].handler = aHandler;
-   Handler_Tbl.num++;
-
-   DPRINTF("%s: handler #%d for event type %d\n", __func__, (Handler_Tbl.num - 1), aType);
+   DPRINTF("%s: handler #%zu for event type %d\n", __func__, Handler_Tbl.list.size() - 1, aType);
 
    sge_mutex_unlock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
@@ -299,7 +295,7 @@ te_event_t
 te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, uint32_t aKey2, const char *aStrKey) {
    DENTER(EVENT_LAYER);
 
-   te_event_t ev = ocs::uti::c_alloc<te_event>();
+   te_event_t ev = ocs::uti::create<te_event>();
 
    if (ONE_TIME_EVENT == aMode) {
       ev->when = aTime;
@@ -313,7 +309,9 @@ te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, u
    ev->mode = aMode;
    ev->ulong_key_1 = aKey1;
    ev->ulong_key_2 = aKey2;
-   ev->str_key = (aStrKey != nullptr) ? strdup(aStrKey) : nullptr;
+   if (aStrKey != nullptr) {
+      ev->str_key = aStrKey;
+   }
    ev->seq_no = 0;
 
    DRETURN(ev);
@@ -322,11 +320,10 @@ te_new_event(uint64_t aTime, te_type_t aType, te_mode_t aMode, uint32_t aKey1, u
 /**
  * @brief Free timed event
  *
- * Free timed event 'anEvent'. Upon return, 'anEvent' will be 'nullptr'.
+ * Destroys the event made by te_new_event() or te_event_from_list_elem(). Upon return, '*anEvent' is 'nullptr',
+ * and a key returned by te_get_alphanumeric_key() for it is no longer valid.
  *
- * @param anEvent timed event, must NOT be 'nullptr'.
- *
- * @note none, 'anEvent' will be 'nullptr'
+ * @param anEvent pointer to the timed event; the pointer itself must NOT be 'nullptr'
  *
  * @note MT-NOTE: te_free_event() is MT safe.
  */
@@ -336,8 +333,7 @@ te_free_event(te_event_t *anEvent) {
 
    SGE_ASSERT((anEvent != nullptr));
 
-   sge_free(&((*anEvent)->str_key));
-   sge_free(anEvent);
+   ocs::uti::destroy(*anEvent);
 
    DRETURN_VOID;
 } /* te_free_event() */
@@ -384,10 +380,10 @@ te_add_event(te_event_t anEvent) {
    le->set<TE_interval>(anEvent->interval);
    le->set<TE_uval0>(anEvent->ulong_key_1);
    le->set<TE_uval1>(anEvent->ulong_key_2);
-   le->set<TE_sval>(anEvent->str_key);
+   le->set<TE_sval>(anEvent->str_key ? anEvent->str_key->c_str() : nullptr);
 
    DPRINTF("%s: (t:" sge_u32" w:" sge_u64" m:" sge_u32" s:%s)\n", __func__, static_cast<uint32_t>(anEvent->type),
-           when, static_cast<uint32_t>(anEvent->mode), anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
+           when, static_cast<uint32_t>(anEvent->mode), te_str_key_for_message(anEvent));
 
    sge_mutex_lock("event_control_mutex", __func__, __LINE__, &Event_Control.mutex);
 
@@ -400,7 +396,7 @@ te_add_event(te_event_t anEvent) {
       // the event is lost here - without this message nothing would ever tell that the timer
       // for e.g. a calendar state change was never armed
       ERROR(MSG_TE_CANNOTADDEVENT_US, static_cast<uint32_t>(anEvent->type),
-            anEvent->str_key != nullptr ? anEvent->str_key : MSG_SMALLNULL);
+            te_str_key_for_message(anEvent));
       le.reset();
    } else {
       try {
@@ -580,23 +576,21 @@ uint32_t te_get_second_numeric_key(te_event_t anEvent) {
 /**
  * @brief Return timed event alphanumeric key
  *
- * Return timed event alphanumeric key.
- * The caller of this function MUST free the string returned.
+ * The key is not copied: the pointer refers into the event and is valid as long as the event exists and its
+ * key is not changed - for an event handler, until the handler returns.
  *
  * @param anEvent timed event
  *
- * @return alphanumeric key or MSG_SMALLNULL if no key is set.
+ * @return alphanumeric key, or nullptr if no key is set
  *
  * @note MT-NOTE: 'te_get_alphanumeric_key()' is MT safe.
  */
-char *te_get_alphanumeric_key(te_event_t anEvent) {
+const char *te_get_alphanumeric_key(te_event_t anEvent) {
    DENTER(EVENT_LAYER);
-
-   char *res = nullptr;
 
    SGE_ASSERT(nullptr != anEvent);
 
-   res = (anEvent->str_key != nullptr) ? strdup(anEvent->str_key) : nullptr;
+   const char *res = anEvent->str_key ? anEvent->str_key->c_str() : nullptr;
 
    DRETURN(res);
 }
@@ -621,9 +615,8 @@ void te_init() {
    static constexpr ocs::tom::SortKey by_due_time[] = {{TE_when, true}};
    Event_Control.sort_order = ocs::tom::make_sort_order(ocs::tom::TE::descriptor.e, by_due_time);
 
-   Handler_Tbl.list = ocs::uti::c_alloc<tbl_elem>(TBL_INIT_SIZE);
-   Handler_Tbl.max = TBL_INIT_SIZE;
-   Handler_Tbl.num = 0;
+   Handler_Tbl.list.clear();
+   Handler_Tbl.list.reserve(TBL_INIT_SIZE);
 
    DRETURN_VOID;
 } /* te_init() */
@@ -643,7 +636,8 @@ void te_init() {
 void te_shutdown() {
    DENTER(EVENT_LAYER);
 
-   sge_free(&(Handler_Tbl.list));
+   Handler_Tbl.list.clear();
+   Handler_Tbl.list.shrink_to_fit();
 
    DRETURN_VOID;
 } /* te_shutdown() */
@@ -698,10 +692,7 @@ void te_check_time(uint64_t aTime) {
 te_event_t te_event_from_list_elem(const ocs::tom::ConstElement<ocs::tom::TE> aListElem) {
    DENTER(EVENT_LAYER);
 
-   te_event_t ev = nullptr;
-   const char *str = nullptr;
-
-   ev = ocs::uti::c_alloc<te_event>();
+   te_event_t ev = ocs::uti::create<te_event>();
 
    ev->when = aListElem.get<TE_when>();
    ev->interval = aListElem.get<TE_interval>();
@@ -711,8 +702,9 @@ te_event_t te_event_from_list_elem(const ocs::tom::ConstElement<ocs::tom::TE> aL
    ev->ulong_key_2 = aListElem.get<TE_uval1>();
    ev->seq_no = aListElem.get<TE_seqno>();
 
-   str = aListElem.get<TE_sval>();
-   ev->str_key = ((str != nullptr) ? strdup(str) : nullptr);
+   if (const char *str = aListElem.get<TE_sval>(); str != nullptr) {
+      ev->str_key = str;
+   }
 
    DRETURN(ev);
 } /* te_event_from_list_elem() */
@@ -735,20 +727,17 @@ te_event_t te_event_from_list_elem(const ocs::tom::ConstElement<ocs::tom::TE> aL
 void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
    DENTER(EVENT_LAYER);
 
-   int i = 0;
    te_handler_t handler = nullptr;
 
    DPRINTF("%s: event (t:" sge_u32 " w:" sge_u64 " m:" sge_u32" s:%s)\n",
            __func__, static_cast<uint32_t>(anEvent->type), anEvent->when, static_cast<uint32_t>(anEvent->mode),
-           anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
+           te_str_key_for_message(anEvent));
 
    sge_mutex_lock("handler_table_mutex", __func__, __LINE__, &Handler_Tbl.mutex);
 
-   for (i = 0; i < Handler_Tbl.num; i++) {
-      te_type_t type = Handler_Tbl.list[i].type;
-
-      if (type == anEvent->type) {
-         handler = Handler_Tbl.list[i].handler;
+   for (const auto &entry : Handler_Tbl.list) {
+      if (entry.type == anEvent->type) {
+         handler = entry.handler;
          break;
       }
    }
@@ -766,7 +755,7 @@ void te_scan_table_and_deliver(te_event_t anEvent, monitoring_t *monitor) {
 
       DPRINTF("%s: reccuring event (t:" sge_u32 " w:" sge_u64" m:" sge_u32" s:%s)\n",
               __func__, static_cast<uint32_t>(anEvent->type), anEvent->when, static_cast<uint32_t>(anEvent->mode),
-              anEvent->str_key ? anEvent->str_key : MSG_SMALLNULL);
+              te_str_key_for_message(anEvent));
 
       te_add_event(anEvent);
    }

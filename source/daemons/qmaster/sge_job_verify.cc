@@ -923,26 +923,23 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* if enforce_user flag is "auto", add or update the user */
    {
-      char *enforce_user = mconf_get_enforce_user();
+      const ocs::uti::c_ptr<char> enforce_user{mconf_get_enforce_user()};
 
-      if (enforce_user && !strcasecmp(enforce_user, "auto")) {
+      if (enforce_user && !strcasecmp(enforce_user.get(), "auto")) {
          int status = sge_add_auto_user(packet, task, packet->user, alpp, monitor);
 
          if (status != STATUS_OK) {
-            sge_free(&enforce_user);
             DRETURN(status);
          }
       }
 
       /* ensure user exists if enforce_user flag is set */
-      if (enforce_user && !strcasecmp(enforce_user, "true") &&
+      if (enforce_user && !strcasecmp(enforce_user.get(), "true") &&
           !master_user_list.find_first<UU_name>(packet->user)) {
          ERROR(MSG_JOB_USRUNKNOWN_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-         sge_free(&enforce_user);
          DRETURN(STATUS_EUNKNOWN);
       }
-      sge_free(&enforce_user);
    }
 
    /* set default project */

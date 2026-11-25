@@ -546,7 +546,6 @@ static void
 communication_setup() {
    DENTER(TOP_LAYER);
 
-   char *qmaster_params = nullptr;
    struct rlimit qmaster_rlimits{};
 
    const char *qualified_hostname = component_get_qualified_hostname();
@@ -562,15 +561,11 @@ communication_setup() {
 
       if (is_qmaster_already_running(qmaster_spool_dir)) {
          char *host = nullptr;
-         int res;
-
-         res = cl_com_gethostname(&host, nullptr, nullptr, nullptr);
+         const int res = cl_com_gethostname(&host, nullptr, nullptr, nullptr);
+         // commlib allocates the name with malloc(), on success only
+         const ocs::uti::c_ptr<char> host_owner{CL_RETVAL_OK == res ? host : nullptr};
 
          CRITICAL(MSG_QMASTER_FOUNDRUNNINGQMASTERONHOSTXNOTSTARTING_S, ((CL_RETVAL_OK == res) ? host : "unknown"));
-
-         if (CL_RETVAL_OK == res) {
-            sge_free(&host);
-         }
       }
 
       sge_exit(1);
@@ -613,12 +608,11 @@ communication_setup() {
    sge_update_heard_from_timeout();
 
    /* fetching qmaster_params and begin to parse */
-   qmaster_params = mconf_get_qmaster_params();
+   const ocs::uti::c_ptr<char> qmaster_params{mconf_get_qmaster_params()};
 
    /* updating the commlib parameterlist with new or changed parameters */
-   cl_com_update_parameter_list(qmaster_params);
-   DPRINTF("received qmaster_params are: %s\n", qmaster_params);
-   sge_free(&qmaster_params);
+   cl_com_update_parameter_list(qmaster_params.get());
+   DPRINTF("received qmaster_params are: %s\n", qmaster_params.get());
 
    /* now enable qmaster communication */
    cl_commlib_set_global_param(CL_COMMLIB_DELAYED_LISTEN, false);

@@ -99,9 +99,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
       CHECK(2, "te_get_type returns correct type", te_get_type(ev) == TYPE_CALENDAR_EVENT);
       CHECK(3, "te_get_first_numeric_key returns 42", te_get_first_numeric_key(ev) == 42);
       CHECK(4, "te_get_second_numeric_key returns 43", te_get_second_numeric_key(ev) == 43);
-      char *key = te_get_alphanumeric_key(ev);
+      // a view into the event, valid until te_free_event()
+      const char *key = te_get_alphanumeric_key(ev);
       CHECK(5, "te_get_alphanumeric_key returns test-key", key != nullptr && strcmp(key, "test-key") == 0);
-      sge_free(&key);
       te_free_event(&ev);
       CHECK(6, "te_free_event nulls the pointer", ev == nullptr);
    }

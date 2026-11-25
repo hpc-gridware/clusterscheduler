@@ -1844,7 +1844,7 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
    const char *last_hostname = nullptr;
    for (const auto gep : gdil) {
       const char *queue_name = gep.get<JG_qname>();
-      char *cqueue_name = cqueue_get_name_from_qinstance(queue_name);
+      const ocs::uti::c_ptr<char> cqueue_name{cqueue_get_name_from_qinstance(queue_name)};
       const char *host_name = gep.get<JG_qhostname>();
 
       // add the binding_touse information (copy from JG to GRU)
@@ -1856,12 +1856,12 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
          queue_list = ocs::tom::ListPtr<ocs::tom::QU>::create("", queue_layout);
       }
       const auto queue = queue_list->emplace_back<QU_full_name>(queue_name);
-      queue.set<QU_qname>(cqueue_name);
+      queue.set<QU_qname>(cqueue_name.get());
       queue.set<QU_qhostname>(ocs::tom::Host(host_name));
       uint32_t slots = gep.get<JG_slots>();
       queue.set<QU_job_slots>(slots);
 
-      const auto master_cqueue = master_cqueue_list.find_first<CQ_name>(cqueue_name);
+      const auto master_cqueue = master_cqueue_list.find_first<CQ_name>(cqueue_name.get());
       const auto master_queue = cqueue_locate_qinstance(master_cqueue, host_name);
 
       bool do_per_host_booking = host_do_per_host_booking(&last_hostname, host_name);
@@ -1973,7 +1973,6 @@ ar_initialize_resource_booking(const ocs::tom::Element<ocs::tom::AR> ar) {
          qinstance_set_error(queue, QI_ERROR, sge_dstring_get_string(&buffer), true);
       }
 
-      sge_free(&cqueue_name);
       is_master_queue = false;
    }
 

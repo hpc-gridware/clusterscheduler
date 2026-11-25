@@ -36,6 +36,7 @@
  * @brief One finished job, as it is written to the accounting and reporting files
  */
 #include <cstring>
+#include <string>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_log.h"
@@ -369,8 +370,6 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
    ocs::tom::ConstList<ocs::tom::UA> usage_list = nullptr; /* usage list of ja_task or pe_task */
    ocs::tom::List<ocs::tom::UA> reported_list = nullptr; /* already reported usage of ja_task or pe_task */
-   char *qname = nullptr;
-   char *hostname = nullptr;
    ocs::tom::Element<ocs::tom::PET> pe_task = nullptr;
    uint64_t submission_time = 0;
    uint64_t start_time = 0;
@@ -471,8 +470,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
 
    cqueue_name_split(jr.get<JR_queue_name>(), &cqueue, &hname, nullptr, nullptr);
 
-   qname = strdup(sge_dstring_get_string(&cqueue));
-   hostname = strdup(sge_dstring_get_string(&hname));
+   const std::string qname{sge_dstring_get_string(&cqueue)};
+   const std::string hostname{sge_dstring_get_string(&hname)};
 
    /* get submission_time, start_time, end_time */
    end_time = usage_list_get_ulong64_usage(usage_list, "end_time", 0);
@@ -532,8 +531,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
     */
    if (buffer != nullptr) {
       sge_dstring_sprintf(buffer, ACTFILE_FPRINTF_FORMAT,
-                                qname, delimiter,
-                                hostname, delimiter,
+                                qname.c_str(), delimiter,
+                                hostname.c_str(), delimiter,
                                 job.get<JB_group>(), delimiter,
                                 job.get<JB_owner>(), delimiter,
                                 job.get<JB_job_name>(), delimiter,
@@ -634,8 +633,8 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       write_json(*writer, "group", job.get<JB_group>());
       write_json(*writer, "account", job.get<JB_account>());
 
-      write_json(*writer, "qname", qname);
-      write_json(*writer, "hostname", hostname);
+      write_json(*writer, "qname", qname.c_str());
+      write_json(*writer, "hostname", hostname.c_str());
 
       write_json(*writer, "project", job.get<JB_project>());
       write_json(*writer, "department", job.get<JB_department>());
@@ -802,9 +801,6 @@ sge_write_rusage(dstring *buffer, rapidjson::Writer<rapidjson::StringBuffer> *wr
       writer->EndObject(); // usage
       writer->EndObject();
    }
-
-   sge_free(&qname);
-   sge_free(&hostname);
 
    DRETURN(true);
 }
