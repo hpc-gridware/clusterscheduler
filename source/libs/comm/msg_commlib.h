@@ -81,7 +81,7 @@
 #define MSG_CL_COMMLIB_CLOSING_SSL                                            _MESSAGE(85044, _("closing \"" SFN "/" SFN "/%ld\""))
 #define MSG_CL_COMMLIB_COMPILE_SOURCE_WITH_LARGER_FD_SETSIZE                  _MESSAGE(85045, _("compile source code with larger FD_SETSIZE value"))
 #define MSG_CL_COMMLIB_CHECK_SSL_CERTIFICATE                                  _MESSAGE(85046, _("please check certificate validity"))
-#define MSG_CL_COMMLIB_HOSTNAME_EXEEDS_MAX_HOSTNAME_LENGTH_SU                 _MESSAGE(85047, _("hostname " SFQ " exceeds MAXHOSTNAMELEN(=" sge_u32 ")"))
+#define MSG_CL_COMMLIB_HOSTNAME_EXEEDS_MAX_HOSTNAME_LENGTH_SU                 _MESSAGE(85047, _("hostname " SFQ " exceeds " sge_u32 " characters"))
 #define MSG_CL_COMMLIB_SSL_ERROR_USS                                          _MESSAGE(85048, _("SSL error(nr.:" sge_u32 ") in %s: %s"))
 
 

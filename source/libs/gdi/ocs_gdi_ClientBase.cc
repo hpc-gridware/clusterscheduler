@@ -822,18 +822,6 @@ int ocs::gdi::ClientBase::shutdown() {
    DRETURN(0);
 }
 
-/*-----------------------------------------------------------------------
- * Read name of qmaster from master_file
- * -> master_file
- * <- return -1  error in err_str
- *           0   host name of master in master_host
- *           don't copy error to err_str if err_str = nullptr
- *    master_file name of file which should point to act_qmaster file
- *    copy name of qmaster host to master_host
- *
- * NOTES
- *    MT-NOTE: get_qm_name() is MT safe
- *-----------------------------------------------------------------------*/
 /**
  * @brief Read the active qmaster host out of the `act_qmaster` file
  *
@@ -842,6 +830,8 @@ int ocs::gdi::ClientBase::shutdown() {
  * @param[out] err_str receives the reason on failure
  * @param err_str_size size of @p err_str
  * @return 0 on success, -1 on error
+ *
+ * @note MT-NOTE: get_qm_name() is MT safe
  */
 int
 ocs::gdi::ClientBase::get_qm_name(char *master_host, const char *master_file, char *err_str, size_t err_str_size) {
@@ -900,7 +890,7 @@ ocs::gdi::ClientBase::get_qm_name(char *master_host, const char *master_file, ch
 
    if (len > CL_MAXHOSTNAMELEN - 1) {
       if (err_str) {
-         snprintf(err_str, err_str_size, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, CL_MAXHOSTNAMELEN);
+         snprintf(err_str, err_str_size, MSG_GDI_MASTERHOSTNAMEEXCEEDSCHARS_SI, master_file, CL_MAXHOSTNAMELEN - 1);
       }
       FCLOSE(fp);
       DRETURN(-1);

@@ -8395,7 +8395,7 @@ int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
       if (strlen(resolved_host) >= CL_MAXHOSTNAMELEN) {
          char tmp_buffer[1024];
          snprintf(tmp_buffer, 1024, MSG_CL_COMMLIB_HOSTNAME_EXEEDS_MAX_HOSTNAME_LENGTH_SU,
-                  resolved_host, static_cast<uint32_t>(CL_MAXHOSTNAMELEN));
+                  resolved_host, static_cast<uint32_t>(CL_MAXHOSTNAMELEN - 1));
          cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_HOSTNAME_LENGTH_ERROR, tmp_buffer);
          sge_free(&resolved_host);
          return CL_RETVAL_HOSTNAME_LENGTH_ERROR;
