@@ -1211,8 +1211,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
 
       localtime_r(&clocks, &time_struct);
       sge_dstring_clear(&buffer);
-      sge_dstring_sprintf(&buffer, "%s a %04d%02d%02d%02d%02d.%02d", prefix, time_struct.tm_year + 1900, time_struct.tm_mon,
-                          time_struct.tm_mday, time_struct.tm_hour, time_struct.tm_min, time_struct.tm_sec);
+      // tm_mon counts from 0, the date format from 1 (CS-3137)
+      sge_dstring_sprintf(&buffer, "%s a %04d%02d%02d%02d%02d.%02d", prefix, time_struct.tm_year + 1900,
+                          time_struct.tm_mon + 1, time_struct.tm_mday, time_struct.tm_hour, time_struct.tm_min,
+                          time_struct.tm_sec);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 
@@ -1313,8 +1315,10 @@ jsv_handle_started_command(lListElem *jsv, lList **answer_list, const dstring *c
 
       localtime_r(&clocks, &time_struct);
       sge_dstring_clear(&buffer);
-      sge_dstring_sprintf(&buffer, "%s dl %04d%02d%02d%02d%02d.%02d", prefix, time_struct.tm_year + 1900, time_struct.tm_mon,
-                          time_struct.tm_mday, time_struct.tm_hour, time_struct.tm_min, time_struct.tm_sec);
+      // tm_mon counts from 0, the date format from 1 (CS-3137)
+      sge_dstring_sprintf(&buffer, "%s dl %04d%02d%02d%02d%02d.%02d", prefix, time_struct.tm_year + 1900,
+                          time_struct.tm_mon + 1, time_struct.tm_mday, time_struct.tm_hour, time_struct.tm_min,
+                          time_struct.tm_sec);
       jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
    }
 

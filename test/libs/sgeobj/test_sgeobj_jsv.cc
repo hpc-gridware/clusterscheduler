@@ -36,11 +36,16 @@
  * line (`SEND`, `LOG`, `ENV ADD`, ...), which crashed qmaster (server JSV) or the client (client JSV). Each
  * such line is fed in a child process, so a crash is reported as a failure of that line instead of ending
  * the test.
+ *
+ * CS-3137: the start time (`a`) and the deadline (`dl`) were sent to the JSV with `tm_mon`, which counts the
+ * months from 0, so the JSV saw the previous month. The tests check the text sent and that the values passed
+ * back unchanged keep the job's timestamps.
  */
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <string>
 
 #include <sys/wait.h>
@@ -52,6 +57,7 @@
 #include "sgeobj/sge_jsv.h"
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/msg_sgeobjlib.h"
+#include "uti/sge_time.h"
 
 // ---------------------------------------------------------------------------
 // Test infrastructure
@@ -106,18 +112,20 @@ make_stream(const char *text) {
  * @param job the job the PARAM lines modify (JSV_new_job), nullptr for none
  * @param errors set to the number of error answers, if not nullptr
  * @param context the context of the JSV, JSV_CONTEXT_CLIENT or a qmaster thread name for a server JSV
+ * @param old_job the job the STARTED line sends the parameters of (JSV_old_job), nullptr for none
+ * @param sent receives what was sent to the JSV, if not nullptr
  * @return the text of the first error answer, "<none>" if there was none
  */
 static std::string
 communicate(const char *out, const char *err, bool *accepted, lListElem *job = nullptr, int *errors = nullptr,
-            const char *context = JSV_CONTEXT_CLIENT) {
+            const char *context = JSV_CONTEXT_CLIENT, lListElem *old_job = nullptr, std::string *sent = nullptr) {
    lListElem *jsv = lCreateElem(JSV_Type);
    lSetString(jsv, JSV_name, "test");
    lSetString(jsv, JSV_context, context);
    lSetString(jsv, JSV_command, "/no/such/jsv");
    lSetString(jsv, JSV_pid, "-1");
 
-   FILE *fp_in = fopen("/dev/null", "w");
+   FILE *fp_in = sent != nullptr ? tmpfile() : fopen("/dev/null", "w");
    FILE *fp_out = make_stream(out);
    FILE *fp_err = make_stream(err);
    if (fp_in == nullptr || fp_out == nullptr || fp_err == nullptr) {
@@ -128,6 +136,7 @@ communicate(const char *out, const char *err, bool *accepted, lListElem *job = n
    lSetRef(jsv, JSV_out, fp_out);
    lSetRef(jsv, JSV_err, fp_err);
    lSetRef(jsv, JSV_new_job, job);
+   lSetRef(jsv, JSV_old_job, old_job);
 
    lList *alp = nullptr;
    jsv_do_communication(jsv, &alp);
@@ -152,7 +161,17 @@ communicate(const char *out, const char *err, bool *accepted, lListElem *job = n
    lSetRef(jsv, JSV_out, nullptr);
    lSetRef(jsv, JSV_err, nullptr);
    lSetRef(jsv, JSV_new_job, nullptr);
+   lSetRef(jsv, JSV_old_job, nullptr);
    lFreeElem(&jsv);
+   if (sent != nullptr) {
+      sent->clear();
+      fflush(fp_in);
+      rewind(fp_in);
+      char buffer[1024];
+      while (fgets(buffer, sizeof(buffer), fp_in) != nullptr) {
+         *sent += buffer;
+      }
+   }
    fclose(fp_in);
    fclose(fp_out);
    fclose(fp_err);
@@ -358,6 +377,70 @@ test_incomplete_lines() {
 }
 
 /**
+ * @brief The seconds since the epoch of a local date and time
+ * @param year the year
+ * @param month the month, 1 for January
+ * @param day the day of the month
+ * @param hour the hour
+ * @param minute the minute
+ * @param second the second
+ * @return the time
+ */
+static time_t
+local_time(const int year, const int month, const int day, const int hour, const int minute, const int second) {
+   struct tm tm{};
+   tm.tm_year = year - 1900;
+   tm.tm_mon = month - 1;
+   tm.tm_mday = day;
+   tm.tm_hour = hour;
+   tm.tm_min = minute;
+   tm.tm_sec = second;
+   tm.tm_isdst = -1;
+   return mktime(&tm);
+}
+
+/**
+ * @brief The start time and the deadline reach the JSV with the right month and come back unchanged (CS-3137)
+ */
+static void
+test_date_params() {
+   printf("\n--- PARAM a / dl sent to the JSV ---\n");
+   lListElem *old_job = lCreateElem(JB_Type);
+   lSetString(old_job, JB_owner, "user");
+   lSetString(old_job, JB_group, "group");
+   const time_t start = local_time(2026, 12, 1, 12, 0, 0);
+   const time_t deadline = local_time(2027, 1, 15, 8, 30, 5);
+   // both are stored as microseconds since the epoch
+   lSetUlong64(old_job, JB_execution_time, sge_time_t_to_gmt64(start));
+   lSetUlong64(old_job, JB_deadline, sge_time_t_to_gmt64(deadline));
+
+   bool accepted = false;
+   std::string sent;
+   std::string text = communicate("STARTED\nRESULT STATE ACCEPT\n", "", &accepted, nullptr, nullptr,
+                                  JSV_CONTEXT_CLIENT, old_job, &sent);
+   CHECK(43, "STARTED: the job is accepted without an error", accepted && text == "<none>");
+   const bool a_ok = sent.find("PARAM a 202612011200.00\n") != std::string::npos;
+   const bool dl_ok = sent.find("PARAM dl 202701150830.05\n") != std::string::npos;
+   if (!a_ok || !dl_ok) {
+      printf("      sent:\n%s", sent.c_str());
+   }
+   CHECK(44, "the start time is sent with its month, December as 12", a_ok);
+   CHECK(45, "the deadline is sent with its month, January as 01", dl_ok);
+
+   // a JSV that passes both values back unchanged leaves the job unchanged
+   lListElem *job = lCreateElem(JB_Type);
+   text = communicate("PARAM a 202612011200.00\nPARAM dl 202701150830.05\nRESULT STATE ACCEPT\n", "", &accepted,
+                      job);
+   CHECK(46, "the values passed back are accepted", accepted && text == "<none>");
+   CHECK(47, "the start time passed back is the one sent",
+         lGetUlong64(job, JB_execution_time) == sge_time_t_to_gmt64(start));
+   CHECK(48, "the deadline passed back is the one sent",
+         lGetUlong64(job, JB_deadline) == sge_time_t_to_gmt64(deadline));
+   lFreeElem(&job);
+   lFreeElem(&old_job);
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -371,6 +454,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_long_lines();
    test_line_separation();
    test_incomplete_lines();
+   test_date_params();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
