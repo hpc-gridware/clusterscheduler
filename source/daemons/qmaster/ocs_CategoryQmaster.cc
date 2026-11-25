@@ -340,8 +340,11 @@ ocs::CategoryQmaster::reattach_job(const ocs::tom::Element<ocs::tom::JB> job,
                                    const bool send_events, const uint64_t now, const uint32_t gdi_session) {
    DENTER(TOP_LAYER);
 
-   // remove the job from current category
-   detach_job(job, send_events, gdi_session);
+   // remove the job from current category. CS-3149: a job whose category does not exist (the inconsistency
+   // detach_job() asserts on) is not detached but only attached anew
+   if (DataStore::master_list<SGE_TYPE_CATEGORY>().find_first<CT_id>(job.get<JB_category_id>())) {
+      detach_job(job, send_events, gdi_session);
+   }
 
    // add the job to the new category
    attach_job(job, master_userset_list, master_project_list, master_rqs_list, send_events, gdi_session);

@@ -2212,8 +2212,12 @@ sge_bury_ja_task([[maybe_unused]] const char *sge_root, ocs::tom::ElementData *r
        * runs back-to-back with the finish-side steps, matching pre-CS-1908
        * behaviour; under retention it fires only at prune time from the
        * U5 sweep, so retained-JFINISHED JBs keep their category slot for
-       * the full retention window. */
-      ocs::CategoryQmaster::detach_job(job, !no_events, gdi_session);
+       * the full retention window. CS-3149: a job whose category does not
+       * exist (the inconsistency detach_job() asserts on) has nothing to
+       * detach from. */
+      if (ocs::DataStore::master_list<SGE_TYPE_CATEGORY>().find_first<CT_id>(job.get<JB_category_id>())) {
+         ocs::CategoryQmaster::detach_job(job, !no_events, gdi_session);
+      }
 
       // final job removal
       master_job_list.erase(job);
