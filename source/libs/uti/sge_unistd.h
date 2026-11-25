@@ -165,7 +165,7 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
 
 /** @brief ocs_mkdir_for_owner(): the directory exists and belongs to the new owner */
 constexpr int OCS_MKDIR_FOR_OWNER_OK = 0;
-/** @brief ocs_mkdir_for_owner(): mkdir() failed, a problem of the host, e.g. EACCES or ENOSPC */
+/** @brief ocs_mkdir_for_owner(): mkdir(), fchown() or fchmod() failed, a problem of the host, e.g. EACCES or ENOSPC */
 constexpr int OCS_MKDIR_FOR_OWNER_ERROR = -1;
 /** @brief ocs_mkdir_for_owner(): what is at the path keeps it from becoming the directory */
 constexpr int OCS_MKDIR_FOR_OWNER_PLANTED = -2;

@@ -360,10 +360,13 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
  *   (`<path>.stale.<pid>.<time>`, rename() does not follow a link either), with a warning, and the
  *   directory is created once more.
  *
- * Only a failing mkdir() is a problem of the host (#OCS_MKDIR_FOR_OWNER_ERROR, e.g. EACCES or
- * ENOSPC). Everything that goes wrong after mkdir() succeeded or found the path occupied is caused
- * by what is at the path and gives #OCS_MKDIR_FOR_OWNER_PLANTED, also when the path is occupied
- * again after every attempt.
+ * A failing mkdir() (e.g. EACCES or ENOSPC) and a failing fchown() or fchmod() are problems of the
+ * host and give #OCS_MKDIR_FOR_OWNER_ERROR: the latter two act on the descriptor of a directory
+ * that was verified to belong to the caller or to @p uid, so a user cannot make them fail, but the
+ * environment can (an NFS export with root_squash, a filesystem without ownership). Everything
+ * else that goes wrong after mkdir() succeeded or found the path occupied is caused by what is at
+ * the path and gives #OCS_MKDIR_FOR_OWNER_PLANTED, also when the path is occupied again after
+ * every attempt.
  *
  * @param path the directory to create
  * @param fmode the mode of the directory, set with fchmod(), so the umask does not apply
@@ -374,7 +377,8 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
  *                       a seam for module tests that occupy the path again between attempts
  * @return #OCS_MKDIR_FOR_OWNER_OK when @p path is a directory owned by @p uid and @p gid,
  *         #OCS_MKDIR_FOR_OWNER_PLANTED when what is at @p path keeps it from being one,
- *         #OCS_MKDIR_FOR_OWNER_ERROR when mkdir() fails for another reason
+ *         #OCS_MKDIR_FOR_OWNER_ERROR when mkdir() fails for another reason or the directory cannot
+ *         be handed over with fchown() or fchmod()
  */
 int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, const gid_t gid, dstring *error,
                         const std::function<void(int)> &before_attempt) {
@@ -447,15 +451,16 @@ int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, cons
          continue;
       }
 
+      // the directory is verified, a failure from here on is one of the host, not of what is at the path
       int ret = OCS_MKDIR_FOR_OWNER_OK;
       if (fchown(fd, uid, gid) != 0) {
          const int saved_errno = errno;
          sge_dstring_sprintf(error, MSG_FILE_FCHOWNFAILED_SS, path, strerror(saved_errno));
-         ret = OCS_MKDIR_FOR_OWNER_PLANTED;
+         ret = OCS_MKDIR_FOR_OWNER_ERROR;
       } else if (fchmod(fd, static_cast<mode_t>(fmode)) != 0) {
          const int saved_errno = errno;
          sge_dstring_sprintf(error, MSG_FILE_FCHMODFAILED_SS, path, strerror(saved_errno));
-         ret = OCS_MKDIR_FOR_OWNER_PLANTED;
+         ret = OCS_MKDIR_FOR_OWNER_ERROR;
       }
       close(fd);
       if (ret != OCS_MKDIR_FOR_OWNER_OK && created) {

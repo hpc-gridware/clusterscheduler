@@ -500,6 +500,20 @@ static void test_mkdir_for_owner(const std::string &base, int &id) {
       printf("SKIP  [T%02d] a directory of another user: the test runs as root\n", id++);
    }
 
+   // a failing fchown() is an error of the host, not a planted path: the directory was verified, only the
+   // environment can make it fail (root_squash, a filesystem without ownership); unprivileged, handing a
+   // directory to another user fails the same way
+   if (uid != 0) {
+      const std::string foreign = parent + "/9.1.all.q";
+      sge_dstring_clear(&err);
+      CHECK(id++, "a failing fchown() is an error of the host, the new directory is removed again",
+            ocs_mkdir_for_owner(foreign.c_str(), 0755, uid + 1, gid, &err) == OCS_MKDIR_FOR_OWNER_ERROR &&
+            !exists(foreign));
+      printf("      error: %s\n", sge_dstring_get_string(&err));
+   } else {
+      printf("SKIP  [T%02d] a failing fchown(): the test runs as root\n", id++);
+   }
+
    // a missing parent is an error of the host, and so is a nullptr
    sge_dstring_clear(&err);
    CHECK(id++, "a missing parent is an error, not a planted path",

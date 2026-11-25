@@ -110,7 +110,7 @@
 #define MSG_FILE_FCHOWNFAILED_SS                _MESSAGE(49122, _("can't change the owner of directory " PFNMAX ": " SFN))
 #define MSG_FILE_FCHMODFAILED_SS                _MESSAGE(49123, _("can't change the mode of directory " PFNMAX ": " SFN))
 #define MSG_FILE_OPENDIRECTORYFAILED_SS         _MESSAGE(49124, _("open(" PFNMAX ") failed: " SFN))
-#define MSG_FILE_REMOVINGPLANTED_S              _MESSAGE(49125, _("removing " PFNMAX ": is not a directory, but in the place of one to be created"))
+#define MSG_FILE_REMOVINGPLANTED_S              _MESSAGE(49125, _("removing " PFNMAX ": not a directory, it blocks the one to be created"))
 #define MSG_FILE_RMDIRTOODEEP_IS                _MESSAGE(49126, _("the directory tree is deeper than %d levels below " PFNMAX))
 #define MSG_FILE_MOVINGASIDE_SS                 _MESSAGE(49127, _("moving " PFNMAX " aside to " PFNMAX ": a directory of another user in the place of one to be created"))
 #define MSG_FILE_RENAMEFAILED_SSS               _MESSAGE(49128, _("rename(" PFNMAX ", " PFNMAX ") failed: " SFN))
