@@ -856,8 +856,11 @@ static void *pty_to_commlib(void *t_conf) {
    int                  ret;
    fd_set               read_fds;
    struct timeval       timeout;
-   char                 *stdout_buf = nullptr;
-   char                 *stderr_buf = nullptr;
+   // The working buffers (BUFSIZE = 64k) are static: the main thread cancels this thread in
+   // thread_testcancel() below, a heap buffer would never be freed then. There is only one
+   // pty_to_commlib thread per shepherd.
+   static char          stdout_buf[BUFSIZE];
+   static char          stderr_buf[BUFSIZE];
    int                  stdout_bytes = 0;
    int                  stderr_bytes = 0;
    bool                 b_select_timeout = false;
@@ -865,10 +868,6 @@ static void *pty_to_commlib(void *t_conf) {
 
    /* Report to thread lib that this thread starts up now */
    thread_func_startup(t_conf);
-
-   /* Allocate working buffers, BUFSIZE = 64k */
-   stdout_buf = sge_malloc(BUFSIZE);
-   stderr_buf = sge_malloc(BUFSIZE);
 
    /* The main loop of this thread */
    while (do_exit == 0) {
@@ -1163,8 +1162,6 @@ static void *pty_to_commlib(void *t_conf) {
 #ifdef EXTENSIVE_TRACING
    shepherd_trace("pty_to_commlib: shutting down thread");
 #endif
-   sge_free(&stdout_buf);
-   sge_free(&stderr_buf);
 
    // Close X11 listen socket and all X11 client connections
    pthread_mutex_lock(&g_x11_mutex);
@@ -1415,6 +1412,13 @@ static void *commlib_to_pty(void *t_conf) {
       recv_mess.data       = nullptr;
       sge_dstring_clear(&err_msg);
 
+      /*
+       * Check if the thread was canceled. Exit the thread if it was.
+       * The check is done before a message is received: a thread canceled after
+       * comm_recv_message() would leak the received message.
+       */
+      thread_testcancel(t_conf);
+
 #ifdef EXTENSIVE_TRACING
       shepherd_trace("commlib_to_pty: calling comm_recv_message() synchronously, timeout %d",
                      g_comm_handle->synchron_receive_timeout);
@@ -1427,13 +1431,8 @@ static void *commlib_to_pty(void *t_conf) {
                      ret, sge_dstring_get_string(&err_msg));
 #endif
 
-      /*
-       * Check if the thread was canceled. Exit the thread if it was.
-       * It shouldn't be necessary to do the check here, as the cancel state
-       * of the thread is 1, i.e., the thread may be canceled at any time,
-       * but this doesn't work on some architectures (Darwin, older Solaris).
-       */
-      thread_testcancel(t_conf);
+      // The main thread cancels this thread only after an event was raised, so this check ends
+      // the thread as well; it is needed where thread_testcancel() doesn't work (Darwin).
       if (g_raised_event > 0) {
          // a message received together with the event is not processed any more, but freed
          comm_free_message(&recv_mess, &err_msg);
