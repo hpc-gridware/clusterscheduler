@@ -458,8 +458,9 @@ ocs::CategoryQmaster::reset_tmp_data(const ocs::tom::List<ocs::tom::CT> master_c
 
       // deallocate memory stored in the cache itself
       for (ocs::tom::Element<ocs::tom::CCT> cache : cat.get<CT_cache>()) {
-         auto *range = static_cast<int *>(cache.get<CCT_pe_job_slots>());
-         sge_free(&range);
+         // made with ocs::uti::create_array<uint32_t>() by the scheduler, see add_pe_slots_to_category()
+         auto *range = static_cast<uint32_t *>(cache.get<CCT_pe_job_slots>());
+         ocs::uti::destroy_array(range);
          cache.set<CCT_pe_job_slots>(nullptr);
       }
 

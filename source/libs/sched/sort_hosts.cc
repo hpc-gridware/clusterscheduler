@@ -43,6 +43,7 @@
  */
 #include <cstring>
 #include <cstdlib>
+#include <string>
 
 #if !defined(DARWIN) && !defined(FREEBSD)
 #   include <malloc.h>
@@ -113,7 +114,7 @@ static int get_load_value(double *dvalp, ocs::tom::ConstElement<ocs::tom::EH> gl
 int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
    const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(hl, SGE_GLOBAL_NAME));
-   const char *load_formula = sconf_get_load_formula();
+   const ocs::uti::c_ptr<char> load_formula{sconf_get_load_formula()};
 
    for (const auto hlp : hl) {
       if (hlp == global) {
@@ -121,11 +122,11 @@ int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstL
       }
 
       /* build complexes for that host */
-      double load = scaled_mixed_load(load_formula, global, hlp, centry_list, ocs::tom::ConstList<ocs::tom::CE>());
+      double load = scaled_mixed_load(load_formula.get(), global, hlp, centry_list,
+                                      ocs::tom::ConstList<ocs::tom::CE>());
       hlp.set<EH_sort_value>(load);
       DPRINTF("%s: %f\n", hlp.get<EH_name>().c_str(), load);
    }
-   sge_free(&load_formula);
 
    // as lPSortList() did, an absent list is an error
    if (hl == nullptr) {
@@ -163,10 +164,8 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
    DENTER(TOP_LAYER);
 
    char *cp = nullptr;
-   char *tf = nullptr;
    char *ptr = nullptr;
    char *ptr2 = nullptr;
-   char *par_name = nullptr;
    char *op_ptr=nullptr;
 
    double val=0, val2=0;
@@ -174,10 +173,8 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
    int op_pos, next_op=LOAD_OP_NONE;
    char *lasts = nullptr;
 
-   /* we'll use strtok ==> we need a safety copy */
-   if ((tf = strdup(load_formula)) == nullptr) {
-      DRETURN(ERROR_LOAD_VAL);
-   }
+   // we'll use strtok ==> we need a safety copy
+   std::string tf{load_formula};
 
    /* 
     * + and - have the lowest precedence. all else are equal,
@@ -189,21 +186,19 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
       next_op = LOAD_OP_MINUS;
    }
 
-   for (cp=strtok_r(tf, "+-", &lasts); cp; cp = strtok_r(nullptr, "+-", &lasts)) {
+   for (cp=strtok_r(tf.data(), "+-", &lasts); cp; cp = strtok_r(nullptr, "+-", &lasts)) {
 
       /* ---------------------------------------- */
       /* get scaled load value                    */
       /* determine 1st components value           */
       if (!(val = strtod(cp, &ptr)) && ptr == cp) {
          /* it is not an integer ==> it's got to be a load value */
-         if (!(par_name = sge_delim_str(cp, &ptr, load_ops)) ||
-               get_load_value(&val, global, host, centry_list, load_adjustments, par_name)) {
-            sge_free(&par_name);
-            sge_free(&tf);
-
+         // the operand ends at the next operator or at the end of the subexpression
+         ptr = cp + strcspn(cp, load_ops);
+         const std::string par_name(cp, ptr);
+         if (get_load_value(&val, global, host, centry_list, load_adjustments, par_name.c_str())) {
             DRETURN(ERROR_LOAD_VAL);
          }
-         sge_free(&par_name);
       }
 
       /* ---------------------------------------- */
@@ -212,7 +207,6 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
       if (*ptr) {
          /* if the delimiter is not \0 it's got to be a operator -> find it */
          if (!(op_ptr=strchr((char *)load_ops, (int) *ptr))) {
-            sge_free(&tf);
             DRETURN(ERROR_LOAD_VAL);
          }
          op_pos = (int) (op_ptr - load_ops);
@@ -223,13 +217,10 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
          ptr++;
          if (!(val2 = strtod(ptr,&ptr2)) && ptr2 == ptr) {
             /* it is not an integer ==> it's got to be a load value */
-            if (!(par_name = sge_delim_str(ptr,nullptr,load_ops)) ||
-               get_load_value(&val2, global, host, centry_list, load_adjustments, par_name)) {
-               sge_free(&par_name);
-               sge_free(&tf);
+            const std::string par_name(ptr, strcspn(ptr, load_ops));
+            if (get_load_value(&val2, global, host, centry_list, load_adjustments, par_name.c_str())) {
                DRETURN(ERROR_LOAD_VAL);
             }
-            sge_free(&par_name);
          }
 
          /* ------------------------------- */
@@ -284,15 +275,13 @@ double scaled_mixed_load(const char *load_formula, const ocs::tom::ConstElement<
       }
 
       /* determine next_op from the safety copy of the stripped formula */
-      if (load_formula[cp-tf+strlen(cp)] == '+') {
+      if (load_formula[cp - tf.data() + strlen(cp)] == '+') {
          next_op = LOAD_OP_PLUS;
       }   
       else {
          next_op = LOAD_OP_MINUS;
       }   
    }
-
-   sge_free(&tf);
 
    DRETURN(load);
 }

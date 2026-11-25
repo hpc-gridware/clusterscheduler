@@ -166,10 +166,11 @@ typedef struct {
    bool       use_category;
    bool       mod_category;       ///< Update the category with new messages, queues and hosts
    /**
-    * All slot counts a parallel job with a range could get. Stored in the job
-    * category cache as `CCT_pe_job_slots` and therefore **not** freed with
-    * this struct - unless `is_pe_slots_rev` is false, which means it is not
-    * referenced by the cache.
+    * All slot counts a parallel job with a range could get, made with
+    * ocs::uti::create_array(). Stored in the job category cache as
+    * `CCT_pe_job_slots` and therefore **not** freed with this struct - unless
+    * `is_pe_slots_rev` is false, which means it is not referenced by the cache.
+    * The cache releases it with ocs::uti::destroy_array().
     */
    uint32_t  *possible_pe_slots;
    bool      is_pe_slots_rev;     ///< The `possible_pe_slots` are stored in the category
@@ -178,7 +179,7 @@ typedef struct {
 static void
 fill_category_use_t(const sge_assignment_t *a, category_use_t *use_category, const char *pe_name);
 
-static bool
+static void
 add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint32_t *max_slotsp,
                          int min_slots, int max_slots, ocs::tom::ConstList<ocs::tom::RN> pe_range);
 /* -- these implement parallel assignment ------------------------- */
@@ -1214,14 +1215,11 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
 
    /* --- prepare the possible slots for the binary search */
    max_slotsp = (max_slots - min_slots+1);
-   if (!add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots, pe_range)) {
-      ERROR(SFNMAX, MSG_SGETEXT_NOMEM);
-      DRETURN(DISPATCH_NEVER_CAT);
-   }
+   add_pe_slots_to_category(best, &use_category, &max_slotsp, min_slots, max_slots, pe_range);
    if (max_slotsp == 0) {
       DPRINTF("no slots in PE %s available for job " sge_u32 "\n", pe_name, best->job_id);
       if (!use_category.is_pe_slots_rev) {
-         sge_free(&(use_category.possible_pe_slots));
+         ocs::uti::destroy_array(use_category.possible_pe_slots);
       }
       DRETURN(DISPATCH_NEVER_CAT);
    }
@@ -1326,7 +1324,7 @@ parallel_maximize_slots_pe(sge_assignment_t *best, int *available_slots) {
 
    /* --- we are done --- */
    if (!use_category.is_pe_slots_rev) {
-      sge_free(&(use_category.possible_pe_slots));
+      ocs::uti::destroy_array(use_category.possible_pe_slots);
    }
 
    assignment_release(&tmp);
@@ -3811,7 +3809,8 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
  *
  * In case of pe ranges does this function alocate memory and filles it wil
  * valid pe slot values. If a category is set, it stores them the category
- * for further jobs.
+ * for further jobs. The array is made with ocs::uti::create_array() and released with
+ * ocs::uti::destroy_array().
  *
  * @param a the assignment
  * @param use_category category caching structure, must not be nullptr
@@ -3820,11 +3819,9 @@ sequential_tag_queues_suitable4job(sge_assignment_t *a) {
  * @param max_slots max slot setting (pe range)
  * @param pe_range pe range, must not be empty
  *
- * @return true, if successful
- *
  * @note MT-NOTE: add_pe_slots_to_category() is MT safe
  */
-static bool
+static void
 add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint32_t *max_slotsp,
                          const int min_slots, const int max_slots, const ocs::tom::ConstList<ocs::tom::RN> pe_range) {
    DENTER(TOP_LAYER);
@@ -3851,10 +3848,7 @@ add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint
          }
 
          if (use_category->possible_pe_slots == nullptr) {
-            use_category->possible_pe_slots = (uint32_t *)sge_malloc((max_slots - min_slots + 1) * sizeof(uint32_t));
-            if (use_category->possible_pe_slots == nullptr) {
-               DRETURN(false);
-            }
+            use_category->possible_pe_slots = ocs::uti::create_array<uint32_t>(max_slots - min_slots + 1);
          }
          use_category->possible_pe_slots[(*max_slotsp)] = slots;
          (*max_slotsp)++;
@@ -3873,7 +3867,7 @@ add_pe_slots_to_category(sge_assignment_t *a, category_use_t *use_category, uint
       *max_slotsp = use_category->cache.get<CCT_pe_job_slot_count>();
    }
 
-   DRETURN(true);
+   DRETURN_VOID;
 }
 
 /**

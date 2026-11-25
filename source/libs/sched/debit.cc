@@ -290,7 +290,6 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
    DENTER(TOP_LAYER);
 
    const char *hnm = nullptr;
-   const char *load_formula = nullptr;
    uint64_t load_adjustment_decay_time = sge_gmt32_to_gmt64(sconf_get_load_adjustment_decay_time());
    bool is_master_task = true;
 
@@ -301,7 +300,7 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
    const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(host_list, "global"));
    bool do_per_global_host_booking = true;
 
-   load_formula = sconf_get_load_formula();
+   const ocs::uti::c_ptr<char> load_formula{sconf_get_load_formula()};
 
    /* debit from hosts */
    const char *last_hostname = nullptr;
@@ -331,7 +330,8 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
       /* compute new combined load for this host and put it into the host */
       old_sort_value = hep.get<EH_sort_value>();
 
-      new_sort_value = scaled_mixed_load(load_formula, global, hep, centry_list, ocs::tom::ConstList<ocs::tom::CE>());
+      new_sort_value = scaled_mixed_load(load_formula.get(), global, hep, centry_list,
+                                         ocs::tom::ConstList<ocs::tom::CE>());
 
       if (new_sort_value != old_sort_value) {
          hep.set<EH_sort_value>(new_sort_value);
@@ -345,8 +345,6 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
          host_list.resort(so, hep);
       }
    }
-
-   sge_free(&load_formula);
 
    DRETURN(0);
 }

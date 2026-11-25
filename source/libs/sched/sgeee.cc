@@ -58,7 +58,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <memory>
+#include <vector>
 #include <sys/types.h>
 #include <unistd.h>
 #include <math.h>
@@ -224,10 +226,10 @@ static int sge_init_share_tree_node_fields( ocs::tom::ElementData *node, void *p
 
 static double calc_pjob_override_tickets_shared( sge_ref_t *ref);
 
-static void free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, sge_ref_list_t **ref_array);
+static void free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, std::vector<sge_ref_list_t> &ref_array);
 static uint32_t build_functional_categories(sge_ref_t *job_ref, uint32_t num_jobs,
                                             ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories,
-                                            sge_ref_list_t **ref_array, int dependent,
+                                            std::vector<sge_ref_list_t> &ref_array, int dependent,
                                             JB_Field job_tickets, UU_Field user_tickets, PR_Field project_tickets,
                                             US_Field dp_tickets);
 static void copy_ftickets(sge_ref_list_t *source, sge_ref_list_t *dest);
@@ -245,14 +247,12 @@ static void calc_intern_pending_job_functional_tickets(
 
 
 static void task_ref_initialize_table(uint32_t number_of_tasks);
-static void task_ref_destroy_table();
 static sge_task_ref_t *task_ref_get_entry(uint32_t index);
 
 static scheduler_all_data_t *all_lists; /* thread local */
 static uint32_t sge_scheduling_run = 0; /* thread local */
 
-static sge_task_ref_t *task_ref_table = nullptr; /* thread local */
-static uint32_t task_ref_entries = 0;   /* thread local */
+static std::vector<sge_task_ref_t> task_ref_table; /* thread local */
 static uint32_t task_ref_job_pos = 0;   /* thread local */
 static double Master_min_tix = 0.0;     /* thread local */
 static double Master_max_tix = 0.0;     /* thread local */
@@ -294,48 +294,43 @@ static void tix_range_get(double *min_tix, double *max_tix) {
 /**
  * @brief Prepare the task reference table for a number of tasks
  *
- * Reallocates the table when the number of entries changes (and is not 0), then zeroes every entry.
+ * Resizes the table to the number of entries and zeroes every entry; the capacity is kept for the next run.
  *
- * @param number_of_tasks number of entries the table needs; 0 keeps the current table
+ * @param number_of_tasks number of entries the table needs; 0 leaves the table as it is
  */
-static void task_ref_initialize_table(uint32_t number_of_tasks) {
-   const size_t size = number_of_tasks * sizeof(sge_task_ref_t);
-
-   if (task_ref_entries != number_of_tasks && number_of_tasks > 0) {
-      task_ref_destroy_table();
-      task_ref_table = ocs::uti::c_alloc<sge_task_ref_t>(number_of_tasks);
-      task_ref_entries = number_of_tasks;
-   }
-   if (task_ref_table != nullptr) {
-      memset(task_ref_table, 0, size);
+static void task_ref_initialize_table(const uint32_t number_of_tasks) {
+   if (number_of_tasks > 0) {
+      task_ref_table.assign(number_of_tasks, sge_task_ref_t{});
    }
 }
 
-static void task_ref_destroy_table() {
-   if (task_ref_table != nullptr) {
-      sge_free(&task_ref_table);
-      task_ref_entries = 0;
-   }
-}
-
+/**
+ * @brief Get one entry of the task reference table
+ *
+ * @param index position of the entry in the table
+ * @return the entry, or nullptr if `index` is beyond the end of the table
+ */
 static sge_task_ref_t *task_ref_get_entry(uint32_t index) {
    DENTER(BASIS_LAYER);
 
    sge_task_ref_t *ret = nullptr;
 
-   if (index < task_ref_entries) {
+   if (index < task_ref_table.size()) {
       ret = &task_ref_table[index];
    }
    DRETURN(ret);
 }
 
 #ifdef DEBUG_TASK_REF
+/**
+ * @brief Print every entry of the task reference table as debug output
+ */
 static void task_ref_print_table() {
    DENTER(BASIS_LAYER);
 
    uint32_t i;
 
-   for (i = 0; i < task_ref_entries; i++) {
+   for (i = 0; i < task_ref_table.size(); i++) {
       sge_task_ref_t *tref = task_ref_get_entry(i);
 
       if (tref == nullptr) {
@@ -369,13 +364,20 @@ static void task_ref_print_table_entry(sge_task_ref_t *tref) {
 }
 #endif
 
+/**
+ * @brief Find the first entry of the task reference table for an array task
+ *
+ * @param job_number job number of the task
+ * @param ja_task_number array task id of the task
+ * @return the entry, or nullptr if the table has none for this task
+ */
 static sge_task_ref_t *task_ref_get_first(uint32_t job_number, uint32_t ja_task_number) {
    DENTER(TOP_LAYER);
 
    sge_task_ref_t *ret = nullptr;
    uint32_t i;
 
-   for (i = 0; i < task_ref_entries; i++) {
+   for (i = 0; i < task_ref_table.size(); i++) {
       sge_task_ref_t *tref = task_ref_get_entry(i);
 
       if (tref != nullptr && tref->job_number == job_number &&
@@ -388,18 +390,32 @@ static sge_task_ref_t *task_ref_get_first(uint32_t job_number, uint32_t ja_task_
    DRETURN(ret);
 }
 
+/**
+ * @brief Start iterating the task reference table job by job
+ *
+ * Resets the job position to the start of the table.
+ *
+ * @return the first entry, or nullptr if the table is empty
+ */
 static sge_task_ref_t *task_ref_get_first_job_entry() {
    DENTER(BASIS_LAYER);
 
    sge_task_ref_t *ret = nullptr;
 
    task_ref_job_pos = 0;
-   if (task_ref_job_pos < task_ref_entries) {
+   if (task_ref_job_pos < task_ref_table.size()) {
       ret = task_ref_get_entry(task_ref_job_pos);
    }
    DRETURN(ret);
 }
 
+/**
+ * @brief Continue iterating the task reference table job by job
+ *
+ * Moves the job position to the next entry that belongs to another job than the current one.
+ *
+ * @return the first entry of the next job, or nullptr if there is none
+ */
 static sge_task_ref_t *task_ref_get_next_job_entry() {
    DENTER(BASIS_LAYER);
 
@@ -410,7 +426,7 @@ static sge_task_ref_t *task_ref_get_next_job_entry() {
    if (current_entry != nullptr) {
       uint32_t current_job_number = current_entry->job_number;
 
-      while (++pos < task_ref_entries) {
+      while (++pos < task_ref_table.size()) {
          sge_task_ref_t *next_entry = task_ref_get_entry(pos);
 
          if (next_entry != nullptr &&
@@ -1315,8 +1331,8 @@ destribute_ftickets(const ocs::tom::ConstList<ocs::tom::FCAT> fcategories, const
  * @param job_ref array of the job reference structures
  * @param num_jobs amount of elements in the job_ref array
  * @param fcategories the functional category list; created here when the first category is added
- * @param ref_array has to be a pointer to nullptr pointer. The memory will be allocated in this function and freed
- *                  with free_fcategories.
+ * @param ref_array storage for the list items of the categories, one per job; filled here and released
+ *                  with free_fcategories(). The categories point into it, so it must not change in between.
  * @param dependent does the functional tickets depend on prior computed tickets?
  * @param job_tickets job field, which has the tickets (JB_jobshare, JB_override_tickets)
  * @param user_tickets source for the user tickets/shares (UU_fshare, UU_oticket)
@@ -1341,7 +1357,7 @@ destribute_ftickets(const ocs::tom::ConstList<ocs::tom::FCAT> fcategories, const
 static uint32_t
 build_functional_categories(sge_ref_t *job_ref, const uint32_t num_jobs,
                             ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories,
-                            sge_ref_list_t **ref_array, const int dependent,
+                            std::vector<sge_ref_list_t> &ref_array, const int dependent,
                             const JB_Field job_tickets, const UU_Field user_tickets, const PR_Field project_tickets,
                             const US_Field dp_tickets) {
    DENTER(TOP_LAYER);
@@ -1350,12 +1366,10 @@ build_functional_categories(sge_ref_t *job_ref, const uint32_t num_jobs,
    int ref_array_pos = 0;
    uint32_t job_counter = 0;
 
-   *ref_array = ocs::uti::c_alloc<sge_ref_list_t>(num_jobs);
-   if (*ref_array == nullptr) {
+   if (num_jobs == 0) {
       DRETURN(0);
    }
-
-   memset(*ref_array, 0, sizeof(sge_ref_list_t) * num_jobs);
+   ref_array.assign(num_jobs, sge_ref_list_t{});
 
    for(job_ndx=0; job_ndx<num_jobs; job_ndx++) {
       sge_ref_t *jref = &job_ref[job_ndx];
@@ -1431,7 +1445,7 @@ build_functional_categories(sge_ref_t *job_ref, const uint32_t num_jobs,
 
          {  /* create new job entry */
             sge_ref_list_t  *cur_ref_entry = nullptr;
-            sge_ref_list_t *new_elem = &((*ref_array)[ref_array_pos++]);
+            sge_ref_list_t *new_elem = &ref_array[ref_array_pos++];
 
             new_elem->ref = jref;
 
@@ -1505,14 +1519,13 @@ build_functional_categories(sge_ref_t *job_ref, const uint32_t num_jobs,
  * frees all fcategories and their job lists.
  *
  * @param fcategories the functional categories, empty afterwards
- * @param ref_array memory for internal structures, allocated with build_functional_categories. Needs to be freed
- *                  as well.
+ * @param ref_array storage for the list items, filled by build_functional_categories(); released here
  *
  * @note - it does not delete the sge_ref_t structures, which are stored in
  *       in the job lists.
  */
 static void
-free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, sge_ref_list_t **ref_array) {
+free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, std::vector<sge_ref_list_t> &ref_array) {
    DENTER(TOP_LAYER);
 
    for (const auto fcategory : *fcategories) {
@@ -1524,7 +1537,8 @@ free_fcategories(ocs::tom::ListPtr<ocs::tom::FCAT> &fcategories, sge_ref_list_t 
    }
 
    fcategories.reset();
-   sge_free(ref_array);
+   ref_array.clear();
+   ref_array.shrink_to_fit();
 
    DRETURN_VOID;
 }
@@ -2607,14 +2621,13 @@ sge_calc_tickets(scheduler_all_data_t *lists,
        *-----------------------------------------------------------------*/
       DPRINTF("calc funktional tickets %.3f\n", total_functional_tickets);
       if (total_functional_tickets > 0 && num_queued_jobs > 0) {
-         sge_ref_t **sort_list=nullptr;
          ocs::tom::ListPtr<ocs::tom::FCAT> fcategories;
 
          uint32_t i=0;
 
          double weight[k_last];
 
-         sge_ref_list_t *ref_array = nullptr;
+         std::vector<sge_ref_list_t> ref_array;
          double pending_user_fshares = sum_of_user_functional_shares;
          double pending_proj_fshares = sum_of_project_functional_shares;
          double pending_dept_fshares = sum_of_department_functional_shares;
@@ -2622,26 +2635,14 @@ sge_calc_tickets(scheduler_all_data_t *lists,
 
          uint32_t max =   sconf_get_max_functional_jobs_to_schedule();
          uint32_t pjobs = build_functional_categories(job_ref.get(), num_jobs, fcategories,
-                                     &ref_array, hierarchy[policy_ndx].dependent,
+                                     ref_array, hierarchy[policy_ndx].dependent,
                                      JB_jobshare, UU_fshare, PR_fshare, US_fshare);
 
 
          max = std::min(max, pjobs);
 
          if (max > 0) {
-            sort_list = (sge_ref_t **)sge_malloc(max * sizeof(sge_ref_t *));
-
-            if(sort_list == nullptr){
-               /* error message to come */
-
-               sge_free(&sort_list);
-
-               if (fcategories != nullptr) {
-                  free_fcategories(fcategories, &ref_array);
-               }
-
-               DRETURN(sge_scheduling_run);
-            }
+            std::vector<sge_ref_t *> sort_list(max);
 
             get_functional_weighting_parameters(1, 1, 1, 1, weight);
 
@@ -2756,8 +2757,7 @@ sge_calc_tickets(scheduler_all_data_t *lists,
          }
 
          /* free the allocated memory */
-         sge_free(&sort_list);
-         free_fcategories(fcategories, &ref_array);
+         free_fcategories(fcategories, ref_array);
 
       }
 
@@ -3680,28 +3680,16 @@ calculate_pending_shared_override_tickets(sge_ref_t *job_ref, const uint32_t num
          DENTER(TOP_LAYER);
 
          ocs::tom::ListPtr<ocs::tom::FCAT> fcategories;
-         sge_ref_list_t *ref_array = nullptr;
-         sge_ref_t **sort_list=nullptr;
+         std::vector<sge_ref_list_t> ref_array;
          uint32_t i;
          uint32_t max;
          uint32_t job_ndx;
 
-         max = build_functional_categories(job_ref, num_jobs, fcategories, &ref_array, dependent,
+         max = build_functional_categories(job_ref, num_jobs, fcategories, ref_array, dependent,
                                      JB_override_tickets, UU_oticket, PR_oticket, US_oticket);
 
          if (max > 0) {
-            sort_list = (sge_ref_t **)sge_malloc(max * sizeof(sge_ref_t *));
-
-            if (sort_list == nullptr) {
-               /* error message to come */
-
-               sge_free(&sort_list);
-
-               if (fcategories != nullptr) {
-                  free_fcategories(fcategories, &ref_array);
-               }
-               DRETURN_VOID;
-            }
+            std::vector<sge_ref_t *> sort_list(max);
 
             for (i = 0; i < max; i++) {
                double max_otickets=-1;
@@ -3763,11 +3751,10 @@ calculate_pending_shared_override_tickets(sge_ref_t *job_ref, const uint32_t num
             for(job_ndx=0; job_ndx < max; job_ndx++) {
                sge_unset_job_cnts(sort_list[job_ndx], 0);
             }
-            sge_free(&sort_list);
          }
          /* free the allocated memory */
 
-         free_fcategories(fcategories, &ref_array);
+         free_fcategories(fcategories, ref_array);
 
    DRETURN_VOID;
 }
