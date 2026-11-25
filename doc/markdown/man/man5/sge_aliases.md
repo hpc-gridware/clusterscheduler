@@ -19,11 +19,13 @@ directories for executing batch jobs.
 
 There is a system global path aliasing file and a user local file. xxqs_name_sxx_aliases defines the format of both:
 
--   Blank lines and lines with a '#' sign in the first column are skipped. A line that holds only blanks, tabs or a
-    carriage return (as left by an editor writing Windows line ends) counts as a blank line.
+-   Blank lines and lines with a '#' sign in the first column are skipped. A line that holds only whitespace (blanks,
+    tabs, carriage returns, vertical tabs or form feeds) counts as a blank line, for example one holding only the
+    carriage return of a Windows line end.
 
--   Each line other than a blank line or a line lead by '#' has to contain four strings separated by any number of blanks or tabs.
-    Further strings on the line are ignored. Lines may have any length.
+-   Each line other than a blank line or a line lead by '#' has to contain four strings separated by any number of
+    whitespace characters. Further strings on the line are ignored, and so is a carriage return at the end of the line.
+    Lines may have any length.
 
 -   Each of the four strings must be shorter than 1024 characters. A line with a string of 1024 characters or more is
     rejected as an error.
