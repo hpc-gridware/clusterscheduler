@@ -109,7 +109,7 @@ bdb_destroy_connection(void *connection);
 bdb_info
 bdb_create(const char *path) {
    int ret, i;
-   bdb_info info = (bdb_info) sge_malloc(sizeof(struct _bdb_info));
+   bdb_info info = ocs::uti::c_alloc<_bdb_info>();
 
    pthread_mutex_init(&(info->mtx), nullptr);
    ret = pthread_key_create(&(info->key), bdb_destroy_connection);

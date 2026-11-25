@@ -725,7 +725,7 @@ spooling_field *ocs_spool_select_rows(const spooling_field *view, const unsigned
       }
    }
 
-   auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * (count + 1)));
+   auto *fields = ocs::uti::c_alloc<spooling_field>(count + 1);
    size_t j = 0;
    for (size_t i = 0; i < size; i++) {
       if ((needs[i] & ~variant) == 0) {
@@ -810,7 +810,7 @@ spooling_field *sge_build_STN_field_list(const bool spool, const bool recurse) {
  */
 spooling_field *sge_build_STN_json_field_list() {
    /* name, type, shares, childnodes, terminator = 5 fields */
-   auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * 5));
+   auto *fields = ocs::uti::c_alloc<spooling_field>(5);
    int count = 0;
 
    create_spooling_field(&fields[count++], STN_name, 0, "name", nullptr, &ocs_spool_ops<STN_name>);

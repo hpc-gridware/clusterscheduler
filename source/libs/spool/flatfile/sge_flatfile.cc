@@ -2918,7 +2918,7 @@ static spooling_field *get_recursion_field_list(const spool_flatfile_instr *inst
    DENTER(FLATFILE_LAYER);
 
    /* Only 2 entries in a recursion field list */
-   auto *fields = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * 2));
+   auto *fields = ocs::uti::c_alloc<spooling_field>(2);
    memset(fields, 0, sizeof(spooling_field) * 2);
    fields[0].nm = instr->recursion_info.id_field;
    fields[0].ops = ocs_spool_field_ops_of(instr->recursion_info.id_field);

@@ -166,7 +166,7 @@ spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
          flatfile_info *field_info;
 
          /* create info which fields to spool once */
-         field_info = (flatfile_info *)sge_malloc(sizeof(flatfile_info) * SGE_TYPE_ALL);
+         field_info = ocs::uti::c_alloc<flatfile_info>(SGE_TYPE_ALL);
          for (i = (int)SGE_TYPE_FIRST; i < (int)SGE_TYPE_ALL; i++) {
             switch (i) {
                /* pseudo types without spooling action */

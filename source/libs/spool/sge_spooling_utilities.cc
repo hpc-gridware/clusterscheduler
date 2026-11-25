@@ -229,14 +229,7 @@ _spool_get_fields_to_spool(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
    }
 
    /* allocate memory */
-   fields = (spooling_field *) sge_malloc((size + 1) * sizeof(spooling_field));
-   if (fields == nullptr) {
-      answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
-                              ANSWER_QUALITY_ERROR,
-                              MSG_UNABLETOALLOCATEBYTES_DS,
-                              (size * 1) * sizeof(spooling_field), __func__);
-      DRETURN(nullptr);
-   }
+   fields = ocs::uti::c_alloc<spooling_field>(size + 1);
 
    /* initialize fields, the terminating entry included, so an error path can free a partial array */
    for (i = 0; i <= size; i++) {
