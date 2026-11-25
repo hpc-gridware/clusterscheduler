@@ -212,9 +212,10 @@ ocs::gdi::ClientServerBase::gdi_send_message_pb(int synchron, const char *tocomp
  * are overwritten with the actual sender on return; an empty string or 0
  * accepts any.
  *
- * @param[in,out] fromcommproc component to accept from, then the actual sender
+ * @param[in,out] fromcommproc component to accept from, then the actual sender; a buffer of at least
+ *                CL_MAXHOSTNAMELEN bytes, the name is cut to fit (CS-3224)
  * @param[in,out] fromid commlib id to accept from, then the actual one
- * @param[in,out] fromhost host to accept from, then the actual one
+ * @param[in,out] fromhost host to accept from, then the actual one; a buffer of at least CL_MAXHOSTNAMELEN bytes
  * @param[in,out] tag tag to accept, then the actual one
  * @param[out] buffer receives the payload, allocated here; the caller owns it
  * @param[out] buflen receives the payload length
@@ -324,10 +325,10 @@ ocs::gdi::ClientServerBase::gdi_receive_message(char *fromcommproc, u_short *fro
       if (sender != nullptr) {
          DEBUG("received from: %s,%lu\n", sender->comp_host, sender->comp_id);
          if (fromcommproc != nullptr && fromcommproc[0] == '\0') {
-            strcpy(fromcommproc, sender->comp_name);
+            sge_strlcpy(fromcommproc, sender->comp_name, CL_MAXHOSTNAMELEN);
          }
          if (fromhost != nullptr) {
-            strcpy(fromhost, sender->comp_host);
+            sge_strlcpy(fromhost, sender->comp_host, CL_MAXHOSTNAMELEN);
          }
          if (fromid != nullptr) {
             *fromid = (u_short) sender->comp_id;
@@ -435,8 +436,10 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
  * Like #gdi_receive_message, but hands the payload over as a packbuffer
  * and can wait for the answer to one specific request.
  *
- * @param[in,out] rhost host to accept from, then the actual one
- * @param[in,out] commproc component to accept from, then the actual one
+ * @param[in,out] rhost host to accept from, then the actual one; a buffer of at least CL_MAXHOSTNAMELEN
+ *                bytes, the name is cut to fit (CS-3224)
+ * @param[in,out] commproc component to accept from, then the actual one; a buffer of at least
+ *                CL_MAXHOSTNAMELEN bytes
  * @param[in,out] id commlib id to accept from, then the actual one
  * @param[out] pb receives the payload
  * @param[in,out] tag tag to accept, then the actual one
@@ -538,10 +541,11 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       if (sender != nullptr) {
          DEBUG("received from: %s,%ld\n", sender->comp_host, sender->comp_id);
          if (rhost[0] == '\0') {
-            strcpy(rhost, sender->comp_host); /* If we receive from anybody return the sender */
+            // if we receive from anybody return the sender (CS-3224: bounded)
+            sge_strlcpy(rhost, sender->comp_host, CL_MAXHOSTNAMELEN);
          }
          if (commproc[0] == '\0') {
-            strcpy(commproc, sender->comp_name); /* If we receive from anybody return the sender */
+            sge_strlcpy(commproc, sender->comp_name, CL_MAXHOSTNAMELEN);
          }
          if (rip != nullptr) {
             /* this is the address which the host name of the sender resolves to - the commlib
