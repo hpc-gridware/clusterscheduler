@@ -2616,7 +2616,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
 }
 
 /**
- * @brief Covert the DRMAA attributes
+ * @brief Convert the DRMAA attributes
  *
  * All DRMAA job template attributes are translated into qsub style option
  * ocs::tom::ElementData for parsing by ocs_parse_job_parameter()
@@ -2778,17 +2778,13 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
    /* email address -- -M */
    if ((nsv = vattrs.find_first<NSV_name>(DRMAA_V_EMAIL))) {
       dstring email = DSTRING_INIT;
-      char *user = nullptr;
-      char *host = nullptr;
       ocs::tom::ConstList<ocs::tom::ST> olp = nsv.get<NSV_strings>();
       auto nlp = ocs::tom::ListPtr<ocs::tom::MR>::create("mail list");
-      ocs::tom::ConstElement<ocs::tom::MR> tmp = nullptr;
       int first_time = 1;
 
       DPRINTF("processing %s = ", DRMAA_V_EMAIL);
 
       for (ocs::tom::ConstElement<ocs::tom::ST> oep : olp) {
-         struct saved_vars_s *context = nullptr;
          const char *str = oep.get<ST_name>();
 
          if (first_time) {
@@ -2799,25 +2795,9 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
          }
          sge_dstring_append(&email, str);
 
-         user = sge_strtok_r(str, "@", &context);
-         host = sge_strtok_r(nullptr, "@", &context);
-
-         if ((tmp=nlp->find_first<MR_user>(user))) {
-            if (!sge_strnullcmp(host, tmp.get<MR_host>())) {
-               /* got this mail adress twice */
-               sge_free_saved_vars(context);
-               continue;
-            }
-         }
-
-         /* got a new adress - add it */
-         auto nep = ocs::tom::ElementPtr<ocs::tom::MR>::create();
-         nep->set<MR_user>(user);
-         if (host)
-            nep->set<MR_host>(host);
-         nlp->push_back(std::move(nep));
-
-         sge_free_saved_vars(context);
+         // CS-3188: parsed and merged like qsub -M - an address is kept once, every entry of a user is compared,
+         // the mail domain without regard to case
+         ocs_mailrec_merge(nlp, mailrec_parse(str).second);
       }
 
 
