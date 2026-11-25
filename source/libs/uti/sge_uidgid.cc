@@ -1246,13 +1246,17 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
    }
 
    // fetch group IDs
+   // the number of groups is returned in the last argument: getgrouplist() returns it on Linux
+   // only, on BSD and macOS it returns 0 on success
+   int num_group_ids = max_groups;
 #ifdef DARWIN
    static_assert(sizeof(gid_t) == sizeof(int), "Size of gid_t does not match that of type int!");
-   int num_group_ids = getgrouplist(user, static_cast<int>(gid), reinterpret_cast<int *>(grp_id_list), &max_groups);
+   int lret = getgrouplist(user, static_cast<int>(gid), reinterpret_cast<int *>(grp_id_list),
+                           &num_group_ids);
 #else
-   int num_group_ids = getgrouplist(user, gid, grp_id_list, &max_groups);
+   int lret = getgrouplist(user, gid, grp_id_list, &num_group_ids);
 #endif
-   if (num_group_ids == -1) {
+   if (lret == -1) {
       sge_dstring_sprintf(error_dstr, "getgrouplist() failed.");
       sge_free(&grp_id_list);
       DRETURN(false);
