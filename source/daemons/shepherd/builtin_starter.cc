@@ -131,8 +131,9 @@ static int count_command(char *command) {
  * @brief The shepherd's builtin starter, run in the child that becomes the job or one of its procedures
  *
  * It is also used to start the external starter command. Does not return: it execs the command or exits
- * through shepherd_error(). A missing `min_uid` or `min_gid` is an error, a missing `job_owner` counts as a
- * different user and a missing `qsub_gid` as `no` (CS-3225).
+ * through shepherd_error(). get_conf_val() normally ends the shepherd on a missing entry; its nullptr checks
+ * only guard a nullptr return when no error function is set. `qsub_gid` is looked up with search_conf_val(),
+ * which does return nullptr for a missing entry; that counts as `no` (CS-3225).
  *
  * @param childname what is started: `job`, `prolog`, `epilog`, `pe_start`, `pe_stop`
  * @param script_file the script or command to start, or a job type word of an interactive job
@@ -344,7 +345,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
     * therefore scrub where it would not have been necessary, which is the harmless
     * direction.
     */
-   // a missing job owner counts as another user, which scrubs: the harmless direction (CS-3225)
+   // get_conf_val() normally ends the shepherd on a missing entry; this only guards a nullptr return when no
+   // error function is set: it counts as another user, which scrubs, the harmless direction (CS-3225)
    const char *job_owner = get_conf_val("job_owner");
    bool runs_as_job_owner = target_user != nullptr && job_owner != nullptr && strcmp(target_user, job_owner) == 0;
 
@@ -362,7 +364,8 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
    shepherd_trace("Initializing error file");
    shepherd_error_init( );
 
-   // the lower bounds of the ids must not fall back to 0 when they are missing (CS-3225)
+   // get_conf_val() normally ends the shepherd on a missing entry; this only guards a nullptr return when no
+   // error function is set: the lower bounds of the ids must not fall back to 0 (CS-3225)
    const char *min_gid_str = get_conf_val("min_gid");
    const char *min_uid_str = get_conf_val("min_uid");
    if (min_gid_str == nullptr || min_uid_str == nullptr) {

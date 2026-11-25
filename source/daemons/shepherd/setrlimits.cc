@@ -166,7 +166,8 @@ scale_memory_limit(sge_rlim_t limit, double factor) {
 /** @def PARSE_IT_UNDEF
  * @brief #PARSE_IT for a limit that may be the string `UNDEFINED`
  *
- * A missing value is not compared, sge_parse_limit() takes it as INFINITY (CS-3225).
+ * get_conf_val() normally ends the shepherd on a missing entry; this only guards a nullptr return when no
+ * error function is set: the value is not compared, sge_parse_limit() takes it as INFINITY (CS-3225).
  *
  * @param dstp receives the parsed value, or `RLIMIT_UNDEFINED`
  * @param attr the configuration entry's name
@@ -199,8 +200,8 @@ scale_memory_limit(sge_rlim_t limit, double factor) {
  *
  * Reads the `s_*` and `h_*` values out of the job's configuration, scales the
  * job-wide ones by the slots held on this host, raises anything below the
- * `LIMIT_*_MIN` floors, and calls `setrlimit()` for each. Without a `priority` value the nice value of the
- * process is left as it is (CS-3225).
+ * `LIMIT_*_MIN` floors, and calls `setrlimit()` for each. get_conf_val() normally ends the shepherd on a
+ * missing entry; the nullptr checks only guard a nullptr return when no error function is set (CS-3225).
  *
  * @param trace_rlimit write each limit to the shepherd's trace file as it is set
  */
@@ -348,7 +349,8 @@ void setrlimits(bool trace_rlimit) {
    h_data = RL_MIN(h_data, h_vmem);
    h_stack = RL_MIN(h_stack, h_vmem);*/
 
-   // a missing priority leaves the nice value as it is (CS-3225)
+   // get_conf_val() normally ends the shepherd on a missing entry; this only guards a nullptr return when no
+   // error function is set: the nice value is then left as it is (CS-3225)
    s = get_conf_val("priority");
    if (s != nullptr) {
       priority = atoi(s);
