@@ -488,11 +488,7 @@ sge_evc_class_t *
 sge_evc_class_create(ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name) {
    DENTER(EVC_LAYER);
 
-   auto *ret = (sge_evc_class_t *)sge_malloc(sizeof(sge_evc_class_t));
-   if (!ret) {
-      answer_list_add_sprintf(alpp, STATUS_EMALLOC, ANSWER_QUALITY_ERROR, MSG_MEMORY_MALLOCFAILED);
-      DRETURN(nullptr);
-   }
+   auto *ret = ocs::uti::c_alloc<sge_evc_class_t>();
 
    /*
    ** get type of connection internal/external
