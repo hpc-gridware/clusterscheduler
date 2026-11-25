@@ -109,15 +109,51 @@ namespace ocs::uti {
    sd_bus_error_free_func_t Systemd::sd_bus_error_free_func = nullptr;
    sd_bus_set_method_call_timeout_func_t Systemd::sd_bus_set_method_call_timeout_func = nullptr;
 
-   std::string Systemd::slice_name{};
-   std::string Systemd::service_name{};
    bool Systemd::running_as_service{false};
    int Systemd::cgroup_version{};
    int Systemd::systemd_version{};
 
-   const std::string Systemd::execd_service_name{"execd.service"};
-   const std::string Systemd::shepherd_scope_name{"shepherds.scope"};
-   std::map<std::string, bool> Systemd::unclear_properties;
+   /**
+    * @brief Name of the toplevel slice.
+    *
+    * A function-local static instead of a static data member. libuti is linked statically into
+    * the executables and into the shared libraries they load (e.g. the spooling libraries). A
+    * static data member with a destructor is defined in each of them; the executable's
+    * definition interposes the others, but every module registers its destructor for it, so the
+    * one object is destroyed several times at exit. A function-local static is constructed by
+    * the copy of the function which runs, and only that copy registers its destructor.
+    *
+    * @return the slice name, empty when not running under systemd control
+    */
+   std::string &Systemd::slice_name() {
+      static std::string name;
+      return name;
+   }
+
+   /**
+    * @brief Name of the service (or scope) this process runs in.
+    *
+    * A function-local static instead of a static data member, see slice_name().
+    *
+    * @return the service name, empty before initialize()
+    */
+   std::string &Systemd::service_name() {
+      static std::string name;
+      return name;
+   }
+
+   /**
+    * @brief Properties which are not available on all OSes or systemd versions.
+    *
+    * Maps the property name to whether it is available. A function-local static instead of a
+    * static data member, see slice_name().
+    *
+    * @return the properties checked so far
+    */
+   std::map<std::string, bool> &Systemd::unclear_properties() {
+      static std::map<std::string, bool> properties;
+      return properties;
+   }
 
    // @todo move somewhere else
    static std::string
@@ -446,12 +482,12 @@ namespace ocs::uti {
       if (ret) {
          // We will need the slice name for the service name, read it once.
          // If we have a slice name, we can figure out if we are running as a service.
-         service_name = service_name_in;
+         service_name() = service_name_in;
          std::string slice_file_name = get_slice_file_name();
-         ret = read_one_line_file(slice_file_name, slice_name);
+         ret = read_one_line_file(slice_file_name, slice_name());
          if (ret) {
             // build service name, e.g. "ocs6444-execd.service"
-            std::string full_service_name = slice_name + "-" + service_name;
+            std::string full_service_name = slice_name() + "-" + service_name();
             // get unit path of service
             Systemd systemd;
             if (systemd.connect(error_dstr)) {
@@ -554,8 +590,8 @@ namespace ocs::uti {
 
       // Check if the property is already cached
       bool ret = false;
-      if (unclear_properties.contains(property_name)) {
-         ret = unclear_properties[property_name];
+      if (unclear_properties().contains(property_name)) {
+         ret = unclear_properties()[property_name];
       } else {
          // we do not yet know if this property is available
          uint64_t value;
@@ -575,7 +611,7 @@ namespace ocs::uti {
                    state.compare("active") == 0) {
                   DPRINTF("property %s is reported by systemd but returns UINT64_MAX (no data)",
                           property_name.c_str());
-                  unclear_properties[property_name] = false;
+                  unclear_properties()[property_name] = false;
                } else {
                   DPRINTF("property %s returned UINT64_MAX for scope %s, which is not active - "
                           "the answer is about the scope, not about the property",
@@ -583,12 +619,12 @@ namespace ocs::uti {
                }
             } else {
                DPRINTF("property %s is reported by systemd", property_name.c_str());
-               unclear_properties[property_name] = true;
+               unclear_properties()[property_name] = true;
                ret = true;
             }
          } else if (property_unknown) {
             DPRINTF("property %s is not reported by systemd", property_name.c_str());
-            unclear_properties[property_name] = false;
+            unclear_properties()[property_name] = false;
          } else {
             DPRINTF("retrieving property %s for scope %s failed: %s",
                     property_name.c_str(), scope_name.c_str(), sge_dstring_get_string(&error_dstr));
@@ -1003,8 +1039,8 @@ namespace ocs::uti {
          DRETURN(false);
       }
 
-      std::string full_scope_name = slice_name + "-" + "shepherds.scope";
-      std::string full_slice_name = slice_name + ".slice";
+      std::string full_scope_name = slice_name() + "-" + "shepherds.scope";
+      std::string full_slice_name = slice_name() + ".slice";
 
       bool ret = false;
       for (int attempt = 0; attempt < NUM_SCOPE_ATTEMPTS; attempt++) {

@@ -133,12 +133,14 @@ namespace ocs::uti {
          static sd_bus_set_method_call_timeout_func_t sd_bus_set_method_call_timeout_func;
 
          // name of toplevel slice (from $SGE_ROOT/$SGE_CELL/common/slice_name, when running under Systemd control)
-         static std::string slice_name;
-         static std::string service_name;
+         // accessors instead of static data members, see slice_name() in ocs_Systemd.cc
+         static std::string &slice_name();
+         static std::string &service_name();
          static bool running_as_service;
          static int cgroup_version;
          static int systemd_version;
-         static std::map<std::string, bool>unclear_properties;   // properties that are not available on all OSes or Systemd versions
+         // properties that are not available on all OSes or Systemd versions
+         static std::map<std::string, bool> &unclear_properties();
 
       public:
          // What a failed call ran into. Every method still returns bool; a caller which has to
@@ -162,10 +164,12 @@ namespace ocs::uti {
          /// must carry the same value, see #SYSTEMD_TIMEOUT_DEFAULT.
          static constexpr uint64_t DEFAULT_METHOD_CALL_TIMEOUT = 2 * 1000000;
 
+         // literals, not std::string: an object with a destructor would be destroyed once per
+         // module which carries libuti, see slice_name() in ocs_Systemd.cc
          /// Name of the systemd service the execd runs as
-         static const std::string execd_service_name;
+         static constexpr const char *execd_service_name = "execd.service";
          /// Name prefix of the systemd scope created for each job's shepherd
-         static const std::string shepherd_scope_name;
+         static constexpr const char *shepherd_scope_name = "shepherds.scope";
 
          // static methods
          static bool initialize(const std::string &service_name_in, dstring *error_dstr);
@@ -176,7 +180,7 @@ namespace ocs::uti {
           * @return the slice name, read from the cell's `slice_name` file, or
           *         empty when not running under systemd control
           */
-         static std::string get_slice_name() { return slice_name; }
+         static std::string get_slice_name() { return slice_name(); }
          /**
           * @brief Which cgroup hierarchy the host uses
           * @return 1 or 2, or 0 when it could not be determined

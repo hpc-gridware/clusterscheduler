@@ -193,7 +193,7 @@ namespace ocs::execd {
          INFO(MSG_SYSTEMD_INITIALIZED_II, ocs::uti::Systemd::get_systemd_version(),
                                           ocs::uti::Systemd::get_cgroup_version());
          if (ocs::uti::Systemd::is_running_as_service()) {
-            INFO(MSG_SYSTEMD_RUNNING_AS_SERVICE_S, ocs::uti::Systemd::execd_service_name.c_str());
+            INFO(MSG_SYSTEMD_RUNNING_AS_SERVICE_S, ocs::uti::Systemd::execd_service_name);
          }
          log_state_set_log_level(old_ll);
       } else if (sge_dstring_strlen(&error_dstr) > 0) {

@@ -78,7 +78,7 @@ namespace ocs {
             if (ocs::uti::Systemd::is_running_as_service()) {
                // we are running under systemd control
                shepherd_trace("shepherd is running under systemd control in scope %s",
-                              ocs::uti::Systemd::shepherd_scope_name.c_str());
+                              ocs::uti::Systemd::shepherd_scope_name);
             }
          } else {
             shepherd_trace("initializing systemd library failed: %s", sge_dstring_get_string(&error_dstr));
