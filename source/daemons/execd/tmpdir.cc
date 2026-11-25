@@ -65,9 +65,9 @@
  * directory of another user is renamed aside, which logs a warning naming its uid and gid, and the
  * directory is created; sge_remove_tmpdir() removes what was renamed aside when the job ends
  * (CS-3221). A directory that already belongs to root or to the job owner, for example one left
- * behind by an earlier start of the same task, is used as before. A failing mkdir(), fchown() or fchmod() is a problem of the
- * host; when the path cannot be made the directory for any other reason, @p planted tells the
- * caller that only this job failed, not the queue.
+ * behind by an earlier start of the same task, is used as before. A failing mkdir(), fchown() or
+ * fchmod() is a problem of the host; when the path cannot be made the directory for any other
+ * reason, @p planted tells the caller that only this job failed, not the queue.
  *
  * @param qep the queue instance, which configures where temporary directories live
  * @param jobid the job
