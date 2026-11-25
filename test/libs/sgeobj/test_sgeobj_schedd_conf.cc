@@ -51,6 +51,7 @@
 #include "sgeobj/tom/ocs_tom_SC.h"
 #include "sgeobj/tom/ocs_tom_AN.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
+#include "sgeobj/tom/ocs_tom_UA.h"
 
 static int s_fail = 0;
 
@@ -324,6 +325,32 @@ static void check_long_job_load_adjustments(int *id) {
    (*id)++;
 }
 
+/**
+ * @brief Validate a configuration whose usage weight list is too long and check that the message shows the list
+ *
+ * The message printed an unrelated buffer instead of the list before CS-3145.
+ *
+ * @param id the number of the check; advanced by one
+ */
+static void check_long_usage_weight_list(int *id) {
+   auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
+   const auto schedd_conf = schedd_list->push_back(sconf_create_default());
+   // 100 entries of "usage_weight_NN=0.500000," are far beyond the 1024 characters the validation allows
+   for (int i = 0; i < 100; i++) {
+      const std::string name = "usage_weight_" + std::to_string(i);
+      const auto added = schedd_conf.emplace_back_in<SC_usage_weight_list, UA_name>(name.c_str());
+      added.set<UA_value>(0.5);
+   }
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
+   const bool result = sconf_validate_config(&answer_list, *schedd_list);
+   const bool ok = !result && answers_contain(answer_list, "cannot parse usage weight list \"cpu=");
+   if (!ok) {
+      print_answers(answer_list);
+   }
+   CHECK(*id, "usage_weight_list: a list too long is refused and the message shows the list", ok);
+   (*id)++;
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_schedd_conf");
    component_set_daemonized(true);
@@ -355,8 +382,9 @@ int main(int /*argc*/, char * /*argv*/[]) {
                          "load_adjustment_decay_time: an unset value is reported for load_adjustment_decay_time");
    check_unset_attribute(&id, SC_reprioritize_interval, "reprioritize_interval",
                          "reprioritize_interval: an unset value is reported for reprioritize_interval");
-   check_unset_attribute(&id, SC_policy_hierarchy, "not defined",
-                         "policy_hierarchy: an unset value is reported as \"not defined\"");
+   check_unset_attribute(&id, SC_policy_hierarchy, "attribute \"policy_hierarchy\" is not a not defined",
+                         "policy_hierarchy: an unset value is reported as \"not defined\" for policy_hierarchy");
+   check_long_usage_weight_list(&id);
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

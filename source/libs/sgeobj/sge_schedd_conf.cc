@@ -373,7 +373,7 @@ const char *delis[] = {"=", ",", ""};
  *
  * @param lp the list, e.g. the job load adjustments (`CE`) or the usage weights (`UA`)
  * @param fields the fields to print, ended by 0
- * @return the list as `name=value,...`, empty for an empty list
+ * @return the list as `name=value,...`; `NONE` for a nullptr list, as uni_print_list() prints it
  */
 static std::string ocs_sconf_list_string(const ocs::tom::ConstRawList lp, const int *fields) {
    std::ostringstream ss;
@@ -2222,7 +2222,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
          }
       }
       else {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "policy hierarchy", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "policy_hierarchy", "not defined");
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret = false;
       }
