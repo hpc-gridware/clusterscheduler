@@ -201,7 +201,8 @@ is_week_entry_active(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstEle
                      int rec_count);
 
 static std::pair<uint32_t, time_t>
-is_year_entry_active(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstElement<ocs::tom::CA> year_entry);
+is_year_entry_active(ocs::tom::ConstElement<ocs::tom::TM> tm, ocs::tom::ConstElement<ocs::tom::CA> year_entry,
+                     int rec_count);
 
 static std::pair<time_t, bool>
 compute_limit(bool today, bool active, ocs::tom::ConstList<ocs::tom::TMR> year_time,
@@ -293,7 +294,7 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
 
    /* ycal */
    for (const auto yc : ycal) {
-      std::tie(y_is_active, limit) = is_year_entry_active(*tm, yc);
+      std::tie(y_is_active, limit) = is_year_entry_active(*tm, yc, 0);
       if (state != y_is_active || state == QI_DO_NOTHING) {
          state |= y_is_active;
 
@@ -392,7 +393,7 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
  *
  * @param tm TM - represeting now (time)
  * @param week_entry CA - calendar entries for the week setup
- * @param rec_count current recoursion level
+ * @param rec_count current recursion level, 0 for the first call
  *
  * @return the current state, the next state change (0, if there is no further state change) and the
  *         state after that change (0, if there is no further state change)
@@ -439,11 +440,11 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
       auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
       tm_to_element(*new_tm, tm_now);
 
-      /* more than 2 recursion should never be needed, we allow 4 to be save.*/
+      // more than 2 recursions should never be needed, we allow 4 to be safe; the next level gets the
+      // incremented count, otherwise the limit is never reached (CS-3131)
       if (rec_count < 4) {
-         std::tie(state, limit, next_state) = is_week_entry_active(*new_tm, week_entry, rec_count++);
-      }
-      else {
+         std::tie(state, limit, next_state) = is_week_entry_active(*new_tm, week_entry, rec_count + 1);
+      } else {
          ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
       }
 
@@ -475,6 +476,7 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
  *
  * @param tm TM - represeting now (time)
  * @param year_entry CA - calendar entry of the year setup
+ * @param rec_count current recursion level, 0 for the first call
  *
  * @return the current state and the next state change (0, if there is no further state change)
  *
@@ -482,7 +484,7 @@ is_week_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
  */
 static std::pair<uint32_t, time_t>
 is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
-                     const ocs::tom::ConstElement<ocs::tom::CA> year_entry) {
+                     const ocs::tom::ConstElement<ocs::tom::CA> year_entry, const int rec_count) {
    DENTER(TOP_LAYER);
 
    uint32_t state;
@@ -503,7 +505,12 @@ is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
       compute_limit(in_yday_range, in_daytime_range, year_entry.get<CA_yday_range_list>(), nullptr,
                     year_entry.get<CA_daytime_range_list>(), tm);
 
-   if (is_end_of_the_day_reached) {
+   // the same recursion limit as in is_week_entry_active() (CS-3131)
+   if (is_end_of_the_day_reached && rec_count >= 4) {
+      ERROR(SFNMAX, MSG_CALENDAR_CALCTERMINATED);
+      // the limit stays the end of the day, as in is_week_entry_active()
+      limit++;
+   } else if (is_end_of_the_day_reached) {
       struct tm *tm_now;
       struct tm res;
       DPRINTF("trying the next time slot\n");
@@ -518,7 +525,7 @@ is_year_entry_active(const ocs::tom::ConstElement<ocs::tom::TM> tm,
       auto new_tm= ocs::tom::ElementPtr<ocs::tom::TM>::create();
       tm_to_element(*new_tm, tm_now);
 
-      auto [next_day_state, next_day_limit] = is_year_entry_active(*new_tm, year_entry);
+      auto [next_day_state, next_day_limit] = is_year_entry_active(*new_tm, year_entry, rec_count + 1);
 
       /* The state does not change for the rest of the day, that is why we look at the next day.
          If the next day starts in a different state then the change happens right at midnight
