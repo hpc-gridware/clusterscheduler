@@ -513,18 +513,25 @@ int ocs_resolve_host_name(const char *hostname, const int nm, const bool is_stri
  * may still look up an object by the name it was given. A name of
  * `CL_MAXHOSTNAMELEN` characters or more is not: it does not fit, and a
  * truncated copy could name a different host (CS-3214), so @p unique is left
- * empty and `CL_RETVAL_HOSTNAME_LENGTH_ERROR` is returned.
+ * empty and `CL_RETVAL_HOSTNAME_LENGTH_ERROR` is returned. A missing @p hostname also leaves @p unique empty.
  *
  * @param hostname the name to resolve
- * @param[out] unique receives the resolved name; must hold `CL_MAXHOSTNAMELEN` bytes; empty for an over-long name
+ * @param[out] unique receives the resolved name; must hold `CL_MAXHOSTNAMELEN` bytes; empty for an over-long or
+ *                    missing name
  * @param nm the attribute the name belongs to, which decides how strictly it is resolved
- * @return `CL_RETVAL_OK` on success, `CL_RETVAL_HOSTNAME_LENGTH_ERROR` for an over-long name, otherwise a
- *         commlib error code
+ * @return `CL_RETVAL_OK` on success, `CL_RETVAL_HOSTNAME_LENGTH_ERROR` for an over-long name, `CL_RETVAL_PARAMS`
+ *         for a missing @p hostname or @p unique, otherwise a commlib error code
  */
 int sge_resolve_hostname(const char *hostname, char *unique, const int nm) {
    DENTER(TOP_LAYER);
 
    int ret = CL_RETVAL_OK;
+
+   if (unique == nullptr) {
+      DRETURN(CL_RETVAL_PARAMS);
+   }
+   // an error return before a name has been resolved or copied leaves the result empty
+   unique[0] = '\0';
 
    if (hostname == nullptr) {
       DRETURN(CL_RETVAL_PARAMS);
@@ -532,7 +539,6 @@ int sge_resolve_hostname(const char *hostname, char *unique, const int nm) {
 
    // CS-3214: never truncate - the first CL_MAXHOSTNAMELEN - 1 characters may be the name of another host
    if (strlen(hostname) >= CL_MAXHOSTNAMELEN) {
-      unique[0] = '\0';
       DRETURN(CL_RETVAL_HOSTNAME_LENGTH_ERROR);
    }
 
