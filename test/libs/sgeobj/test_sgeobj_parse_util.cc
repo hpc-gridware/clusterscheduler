@@ -27,7 +27,8 @@
  * implementation on the raw list interface: the same lists, return codes and
  * output bytes.
  *
- * Also: repeated -M options keep every address (CS-3188).
+ * Also: repeated -M options keep every address (CS-3188), and sge_parse_bitfield_str() can be called from
+ * several threads at once (CS-3171).
  */
 
 #include <cstdint>
@@ -37,13 +38,16 @@
 #include <initializer_list>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "basis_types.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/ocs_parse_util.h"
 #include "sgeobj/ocs_object_xml.h"
+#include "sgeobj/parse.h"
 #include "sgeobj/sge_mailrec.h"
+#include "sgeobj/sge_qinstance_type.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_MR.h"
 #include "sgeobj/tom/ocs_tom_CE.h"
@@ -736,6 +740,47 @@ static void test_mail_list_merge() {
    }
 }
 
+/**
+ * @brief sge_parse_bitfield_str() gives the right bits when it runs in several threads at once (CS-3171) [T42]
+ * @return nothing; CHECK records the results
+ */
+static void test_bitfield_parse_threads() {
+   struct Case {
+      const char *text;
+      uint32_t expected;
+   };
+   static constexpr Case cases[] = {{"BATCH INTERACTIVE", 3}, {"INTERACTIVE", 2}, {"BATCH", 1},
+                                    {"INTERACTIVE,BATCH", 3}};
+   constexpr int rounds = 20000;
+   int wrong[std::size(cases)] = {};
+
+   std::vector<std::thread> threads;
+   for (std::size_t i = 0; i < std::size(cases); i++) {
+      threads.emplace_back([&wrong, i] {
+         for (int r = 0; r < rounds; r++) {
+            uint32_t value = 0;
+            ocs::tom::ListPtr<ocs::tom::AN> alp;
+            if (!sge_parse_bitfield_str(cases[i].text, queue_types, &value, "qtype", &alp, true) ||
+                value != cases[i].expected) {
+               wrong[i]++;
+            }
+         }
+      });
+   }
+   for (auto &thread : threads) {
+      thread.join();
+   }
+
+   int wrong_sum = 0;
+   for (const int w : wrong) {
+      wrong_sum += w;
+   }
+   if (wrong_sum > 0) {
+      printf("      %d of %d parses gave a wrong result\n", wrong_sum, static_cast<int>(std::size(cases)) * rounds);
+   }
+   CHECK(42, "four threads parsing queue types at once all get their own bits", wrong_sum == 0);
+}
+
 // ---------------------------------------------------------------------------
 
 /**
@@ -794,5 +839,10 @@ int main(int argc, char *argv[]) {
         "parse one -M with a user of two domains", "merge addresses differing in the case of the domain or user"},
        "every address is kept once, in the order given, the domain compared without regard to case", {},
        {38, 39, 40, 41, 43}, test_mail_list_merge},
+      {"PARSE-08", "parsing bit fields in several threads",
+       "sge_parse_bitfield_str() uses the reentrant tokenizer, threads parsing at the same time do not see each "
+       "other's tokens (CS-3171)",
+       {"parse four different queue type texts in four threads, 20000 times each"},
+       "every parse succeeds with the bits of its own text", {}, {42}, test_bitfield_parse_threads},
    });
 }

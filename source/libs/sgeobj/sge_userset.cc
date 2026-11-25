@@ -236,7 +236,7 @@ const char *ocs_userset_type_append_to_dstring(const uint32_t type, dstring *buf
  * @param value the type names, or nullptr
  * @return whether the value was understood, and the bits to store in either case
  *
- * @note MT-NOTE: ocs_userset_type_parse() is not MT safe, as sge_parse_bitfield_str() is not
+ * @note MT-NOTE: ocs_userset_type_parse() is MT safe
  *
  * @see #ocs_userset_type_append_to_dstring
  */

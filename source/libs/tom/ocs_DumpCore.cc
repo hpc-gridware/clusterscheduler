@@ -221,14 +221,17 @@ namespace ocs::tom {
                   break;
                case MT_STRING: {
                   // a " inside the string is escaped
-                  char *tok;
-                  if ((tok = sge_strtok(value.str, "\"")) != nullptr) {
+                  // CS-3171: the reentrant tokenizer, sge_strtok() keeps its state in static variables
+                  struct saved_vars_s *context = nullptr;
+                  const char *tok;
+                  if ((tok = sge_strtok_r(value.str, "\"", &context)) != nullptr) {
                      sge_dstring_append(&dstr, tok);
-                     while ((tok = sge_strtok(nullptr, "\"")) != nullptr) {
+                     while ((tok = sge_strtok_r(nullptr, "\"", &context)) != nullptr) {
                         sge_dstring_append(&dstr, "\\\"");
                         sge_dstring_append(&dstr, tok);
                      }
                   }
+                  sge_free_saved_vars(context);
                   const char *str = sge_dstring_get_string(&dstr);
                   ret = fprintf(fp, "%s/* %-20.20s */ \"%s\"\n", space, name, str != nullptr ? str : "");
                   sge_dstring_clear(&dstr);

@@ -45,6 +45,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_set>
@@ -404,9 +405,14 @@ namespace {
             tmp_list = ocs::tom::ListPtr<ocs::tom::SO>::from_string<SO_name>(sub_queues_text, ",) \t");
             for (const auto tmp_elem : *tmp_list) {
                const char *queue_value = tmp_elem.get<SO_name>();
-               char *queuename = sge_strtok(queue_value, ":");
-               char *value_str = sge_strtok(nullptr, ":");
-               char *action_str = sge_strtok(nullptr, ":");
+               // CS-3171: the reentrant tokenizer, a subordinate list is parsed in the worker threads of qmaster
+               struct saved_vars_s *so_context = nullptr;
+               char *queuename = sge_strtok_r(queue_value, ":", &so_context);
+               char *value_str = sge_strtok_r(nullptr, ":", &so_context);
+               char *action_str = sge_strtok_r(nullptr, ":", &so_context);
+               // the tokens live in the context, which is freed when the entry is done
+               const std::unique_ptr<saved_vars_s, void (*)(saved_vars_s *)> so_context_guard(
+                  so_context, sge_free_saved_vars);
 
                sge_strip_blanks(queuename);
                sge_strip_blanks(value_str);
@@ -479,8 +485,12 @@ namespace {
                 */
                for (const auto tmp_elem : *tmp_list) {
                   const char *queue_value = tmp_elem.get<SO_name>();
-                  const char *queuename = sge_strtok(queue_value, ":=");
-                  const char *value_str = sge_strtok(nullptr, ":=");
+                  // CS-3171: the reentrant tokenizer, see above
+                  struct saved_vars_s *so_context = nullptr;
+                  const char *queuename = sge_strtok_r(queue_value, ":=", &so_context);
+                  const char *value_str = sge_strtok_r(nullptr, ":=", &so_context);
+                  const std::unique_ptr<saved_vars_s, void (*)(saved_vars_s *)> so_context_guard(
+                     so_context, sge_free_saved_vars);
 
                   tmp_elem.set<SO_name>(queuename);
                   if (value_str != nullptr) {
@@ -576,7 +586,7 @@ ocs_object_append_symbolic(dstring *buffer, const ocs_object_symbolic kind, cons
  * @param value the text
  * @return whether the text was understood, whether to store, and the value to store
  *
- * @note MT-NOTE: ocs_object_parse_symbolic() is not MT safe for the bit fields, as sge_parse_bitfield_str() is not
+ * @note MT-NOTE: ocs_object_parse_symbolic() is MT safe
  */
 ocs_object_parsed_symbol
 ocs_object_parse_symbolic(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs_object_symbolic kind,
@@ -937,7 +947,7 @@ ocs_object_append_field(const ocs::tom::ConstElement<typename ocs::tom::FieldTra
  * @param value the text
  * @return true on success, false on an error, described in the answer list for most fields
  *
- * @note MT-NOTE: ocs_object_parse_field() is not MT safe for the bit fields, as sge_parse_bitfield_str() is not
+ * @note MT-NOTE: ocs_object_parse_field() is MT safe
  *
  * @see #ocs_object_append_field
  */

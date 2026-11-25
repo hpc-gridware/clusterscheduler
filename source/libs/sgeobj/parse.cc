@@ -115,7 +115,9 @@ static void sge_parse_string_list(ocs::tom::ListPtr<typename ocs::tom::FieldTrai
    DENTER(TOP_LAYER);
 
    using Type = typename ocs::tom::FieldTraits<F>::Type;
-   for (const char *cp = sge_strtok(str, ","); cp != nullptr; cp = sge_strtok(nullptr, ",")) {
+   // CS-3171: the reentrant tokenizer, sge_strtok() keeps its state in static variables
+   struct saved_vars_s *context = nullptr;
+   for (const char *cp = sge_strtok_r(str, ",", &context); cp != nullptr; cp = sge_strtok_r(nullptr, ",", &context)) {
       if (!ocs::tom::FieldTraits<F>::unique || list->template find_first<F>(cp) == nullptr) {
          if (!list) {
             list = ocs::tom::ListPtr<Type>::create("");
@@ -123,6 +125,7 @@ static void sge_parse_string_list(ocs::tom::ListPtr<typename ocs::tom::FieldTrai
          list->template emplace_back<F>(cp);
       }
    }
+   sge_free_saved_vars(context);
 
    DRETURN_VOID;
 }
@@ -609,7 +612,7 @@ parse_group_options(const ocs::tom::ConstList<ocs::tom::ST> string_list, ocs::to
  * @param none_allowed true to accept `NONE` as the empty mask
  * @return true when every name was understood
  *
- * @note MT-NOTE: sge_parse_bitfield_str() is not MT safe (uses sge_strtok())
+ * @note MT-NOTE: sge_parse_bitfield_str() is MT safe (CS-3171: uses sge_strtok_r())
  */
 bool sge_parse_bitfield_str(const char *str, const char *const *set_specifier,
                             uint32_t *value, const char *name, ocs::tom::ListPtr<ocs::tom::AN> *alpp,
@@ -627,7 +630,9 @@ bool sge_parse_bitfield_str(const char *str, const char *const *set_specifier,
       DRETURN(true);
    }
 
-   for (s = sge_strtok(str, delim); s; s=sge_strtok(nullptr, delim)) {
+   // CS-3171: the reentrant tokenizer, the queue and userset types are parsed in the worker threads of qmaster
+   struct saved_vars_s *context = nullptr;
+   for (s = sge_strtok_r(str, delim, &context); s; s = sge_strtok_r(nullptr, delim, &context)) {
 
       bitmask = 1;
       for (cpp=set_specifier; *cpp != nullptr; cpp++) {
@@ -635,8 +640,9 @@ bool sge_parse_bitfield_str(const char *str, const char *const *set_specifier,
 
             if ( *value & bitmask ) {
                /* whops! same specifier, already supplied! */
-               snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILESPECGIVENTWICE_SS, *cpp, name);
-               answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+               answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                       MSG_GDI_READCONFIGFILESPECGIVENTWICE_SS, *cpp, name);
+               sge_free_saved_vars(context);
                DRETURN(false);
             }
 
@@ -649,17 +655,18 @@ bool sge_parse_bitfield_str(const char *str, const char *const *set_specifier,
 
       if ( *cpp == nullptr ) {
          /* whops! unknown specifier */
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILEUNKNOWNSPEC_SS, s, name);
-         answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+         answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_GDI_READCONFIGFILEUNKNOWNSPEC_SS,
+                                 s, name);
+         sge_free_saved_vars(context);
          DRETURN(false);
       }
 
    }
+   sge_free_saved_vars(context);
 
    if (*value == 0) {
       /* empty or no specifier for userset type */
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_GDI_READCONFIGFILEEMPTYSPEC_S, name);
-      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      answer_list_add_sprintf(alpp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_GDI_READCONFIGFILEEMPTYSPEC_S, name);
       DRETURN(false);
 
    }
