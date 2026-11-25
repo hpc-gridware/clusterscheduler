@@ -706,6 +706,77 @@ static void test_range_list_parse_extended() {
 }
 
 // ---------------------------------------------------------------------------
+// range_list_move_first_n_ids  [T66–T75]
+//
+// Moves the first n ids of a list with several ranges into a second list
+// (CS-3108: the count used to end only the inner loop, so every id of the
+// following ranges was moved as well, and n == 0 moved everything).
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Moves the first n ids of the list {1-3, 7-10} and checks both lists
+ * @param n the number of ids to move
+ * @param moved out: number of ids in the destination afterwards
+ * @param left out: number of ids left in the source afterwards
+ * @return true when the destination holds exactly the n smallest ids
+ */
+static bool move_first_n(const uint32_t n, uint32_t &moved, uint32_t &left) {
+   auto src = make_range_list({1, 2, 3, 7, 8, 9, 10});
+   ocs::tom::ListPtr<ocs::tom::RN> dst;
+   range_list_move_first_n_ids(src, nullptr, dst, n);
+   moved = range_list_get_number_of_ids(dst);
+   left = range_list_get_number_of_ids(src);
+   const uint32_t ids[] = {1, 2, 3, 7, 8, 9, 10};
+   bool ok = true;
+   for (uint32_t i = 0; i < 7; i++) {
+      ok = ok && range_list_is_id_within(dst, ids[i]) == (i < n);
+      ok = ok && range_list_is_id_within(src, ids[i]) == (i >= n);
+   }
+   return ok;
+}
+
+/**
+ * @brief range_list_move_first_n_ids() with several ranges [T66-T75]
+ */
+static void test_range_list_move_first_n_ids() {
+   printf("\n--- range_list_move_first_n_ids ---\n");
+   uint32_t moved;
+   uint32_t left;
+
+   CHECK(66, "n == 0 moves nothing", move_first_n(0, moved, left) && moved == 0 && left == 7);
+   CHECK(67, "n smaller than the first range moves 2 ids", move_first_n(2, moved, left) && moved == 2 && left == 5);
+   CHECK(68, "n equal to the first range moves 3 ids", move_first_n(3, moved, left) && moved == 3 && left == 4);
+   CHECK(69, "n reaching into the second range moves 5 ids", move_first_n(5, moved, left) && moved == 5 && left == 2);
+   CHECK(70, "n equal to all ids moves 7 ids", move_first_n(7, moved, left) && moved == 7 && left == 0);
+   CHECK(71, "n larger than all ids moves 7 ids", move_first_n(20, moved, left) && moved == 7 && left == 0);
+
+   // the emptied source is freed, not left behind as an empty list
+   {
+      auto src = make_range_list({1, 2, 3, 7});
+      ocs::tom::ListPtr<ocs::tom::RN> dst;
+      range_list_move_first_n_ids(src, nullptr, dst, 4);
+      CHECK(72, "emptied source is freed", src == nullptr);
+   }
+
+   // ranges with a step
+   {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      ocs::tom::ListPtr<ocs::tom::RN> src;
+      // the parser keeps the ranges in no particular order, the ids are moved in list order
+      range_list_parse_from_string(src, &al, "1-9:2,20-30:5", false, true, false);
+      range_list_sort_uniq_compress(*src, &al, true);
+      ocs::tom::ListPtr<ocs::tom::RN> dst;
+      range_list_move_first_n_ids(src, nullptr, dst, 6);
+      CHECK(73, "stepped ranges: 6 ids moved", range_list_get_number_of_ids(dst) == 6);
+      CHECK(74, "stepped ranges: 20 moved, 25 stays",
+            range_list_is_id_within(dst, 20) && !range_list_is_id_within(dst, 25) &&
+            range_list_is_id_within(src, 25));
+      CHECK(75, "stepped ranges: 2 ids left", range_list_get_number_of_ids(src) == 2);
+      al.reset();
+   }
+}
+
+// ---------------------------------------------------------------------------
 
 int main(int /*argc*/, char * /*argv*/[]) {
    component_set_daemonized(true);   // suppress sge_log stderr output during tests
@@ -730,6 +801,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_range_list_containes_id_less_than();
    test_range_list_first_last_nullptr();
    test_range_list_parse_extended();
+   test_range_list_move_first_n_ids();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

@@ -857,27 +857,25 @@ void range_list_remove_id(ocs::tom::ListPtr<ocs::tom::RN> &range_list, ocs::tom:
  * @param range_list2 in-out: the RN list (destination), created if the handle is empty
  * @param n number of ids
  *
- * @note range_list, range_list2, answer_list may be modified
- *
- * @note Known defect CS-3108: the `break` at n == 0 leaves only the inner
- *       loop, so the outer loop continues with the next range and n wraps
- *       around; kept unchanged here.
+ * @note range_list, range_list2, answer_list may be modified. With n == 0
+ *       nothing is moved, with n larger than the number of ids all ids are moved.
  */
 void range_list_move_first_n_ids(ocs::tom::ListPtr<ocs::tom::RN> &range_list,
                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                  ocs::tom::ListPtr<ocs::tom::RN> &range_list2, uint32_t n) {
    DENTER(RANGE_LAYER);
-   if (range_list) {
+   if (range_list && n > 0) {
+      // the count ends both loops: the ids of the following ranges stay where they are (CS-3108)
       for (const auto range : *range_list) {
          for (uint32_t id = range.get<RN_min>();
-              id <= range.get<RN_max>();
+              n > 0 && id <= range.get<RN_max>();
               id += range.get<RN_step>()) {
             range_list_insert_id(range_list2, answer_list, id);
             range_list_compress(*range_list2);
             n--;
-            if (n == 0) {
-               break;
-            }
+         }
+         if (n == 0) {
+            break;
          }
       }
       for (const auto range : *range_list2) {
