@@ -127,11 +127,18 @@ static int count_command(char *command) {
    return argc;
 }
 
-/************************************************************************
- This is the shepherds builtin starter.
-
- It is also used to start the external starter command.
- ************************************************************************/
+/**
+ * @brief The shepherd's builtin starter, run in the child that becomes the job or one of its procedures
+ *
+ * It is also used to start the external starter command. Does not return: it execs the command or exits
+ * through shepherd_error(). A missing `min_uid` or `min_gid` is an error, a missing `job_owner` counts as a
+ * different user and a missing `qsub_gid` as `no` (CS-3225).
+ *
+ * @param childname what is started: `job`, `prolog`, `epilog`, `pe_start`, `pe_stop`
+ * @param script_file the script or command to start, or a job type word of an interactive job
+ * @param truncate_stderr_out non-zero to truncate the output files instead of appending to them
+ * @param is_interactive_job whether the job is an interactive one
+ */
 void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job) {
    int   in, out, err;          /* hold fds */
    int   merge_stderr;
@@ -337,7 +344,9 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
     * therefore scrub where it would not have been necessary, which is the harmless
     * direction.
     */
-   bool runs_as_job_owner = (strcmp(target_user, get_conf_val("job_owner")) == 0);
+   // a missing job owner counts as another user, which scrubs: the harmless direction (CS-3225)
+   const char *job_owner = get_conf_val("job_owner");
+   bool runs_as_job_owner = target_user != nullptr && job_owner != nullptr && strcmp(target_user, job_owner) == 0;
 
    shepherd_trace("setting environment%s", runs_as_job_owner ? "" :
                   " (without the loader variables of the submission)");
@@ -353,15 +362,21 @@ void son(const char *childname, char *script_file, int truncate_stderr_out, bool
    shepherd_trace("Initializing error file");
    shepherd_error_init( );
 
-   min_gid = atoi(get_conf_val("min_gid"));
-   min_uid = atoi(get_conf_val("min_uid"));
+   // the lower bounds of the ids must not fall back to 0 when they are missing (CS-3225)
+   const char *min_gid_str = get_conf_val("min_gid");
+   const char *min_uid_str = get_conf_val("min_uid");
+   if (min_gid_str == nullptr || min_uid_str == nullptr) {
+      shepherd_error(1, "no value for %s in the configuration", min_gid_str == nullptr ? "min_gid" : "min_uid");
+   }
+   min_gid = atoi(min_gid_str);
+   min_uid = atoi(min_uid_str);
 
    /**
     ** Set uid and gid and
     ** (add additional group id), switches to start user (root)
     **/
    tmp_str = search_conf_val("qsub_gid");
-   if (strcmp(tmp_str, "no") != 0) {
+   if (tmp_str != nullptr && strcmp(tmp_str, "no") != 0) {
       use_qsub_gid = 1;
       gid = atol(tmp_str);
    } else {

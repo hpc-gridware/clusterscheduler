@@ -199,7 +199,8 @@ scale_memory_limit(sge_rlim_t limit, double factor) {
  *
  * Reads the `s_*` and `h_*` values out of the job's configuration, scales the
  * job-wide ones by the slots held on this host, raises anything below the
- * `LIMIT_*_MIN` floors, and calls `setrlimit()` for each.
+ * `LIMIT_*_MIN` floors, and calls `setrlimit()` for each. Without a `priority` value the nice value of the
+ * process is left as it is (CS-3225).
  *
  * @param trace_rlimit write each limit to the shepherd's trace file as it is set
  */
@@ -347,15 +348,21 @@ void setrlimits(bool trace_rlimit) {
    h_data = RL_MIN(h_data, h_vmem);
    h_stack = RL_MIN(h_stack, h_vmem);*/
 
-   priority = atoi(get_conf_val("priority"));
-   // We might need root privileges to set the nice value, depending on the soft RLIMIT_NICE,
-   // see man page setpriority.2:
-   //    Traditionally, only a privileged process could lower the nice value (i.e., set a higher priority).
-   //    However, since Linux 2.6.12, an unprivileged process can decrease the nice value of a target process
-   //    that has a suitable RLIMIT_NICE soft limit; see getrlimit(2) for details.
-   sge_switch2start_user(); 
-   setpriority(PRIO_PROCESS, 0, priority);
-   sge_switch2admin_user();
+   // a missing priority leaves the nice value as it is (CS-3225)
+   s = get_conf_val("priority");
+   if (s != nullptr) {
+      priority = atoi(s);
+      // We might need root privileges to set the nice value, depending on the soft RLIMIT_NICE,
+      // see man page setpriority.2:
+      //    Traditionally, only a privileged process could lower the nice value (i.e., set a higher priority).
+      //    However, since Linux 2.6.12, an unprivileged process can decrease the nice value of a target process
+      //    that has a suitable RLIMIT_NICE soft limit; see getrlimit(2) for details.
+      sge_switch2start_user();
+      setpriority(PRIO_PROCESS, 0, priority);
+      sge_switch2admin_user();
+   } else {
+      shepherd_trace("no priority in the configuration, the nice value is left as it is");
+   }
 
    /* how many slots do we have at this host */
    if (!(s=search_nonone_conf_val("host_slots")) || !(host_slots=atoi(s)))
