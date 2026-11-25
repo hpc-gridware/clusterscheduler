@@ -27,6 +27,7 @@
 #include <string>
 
 #include "basis_types.h"
+#include "comm/cl_communication.h"
 #include "sgeobj/tom/ocs_tom_all.h"
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/sge_answer.h"
@@ -223,7 +224,7 @@ static void test_verify_str_key() {
 }
 
 // ---------------------------------------------------------------------------
-// verify_host_name  [T33–T42]
+// verify_host_name  [T33–T42, T57–T59]
 //
 // SECURITY REGRESSION (CS-2364, LOW-SPOOL-002, CWE-22): host names become spool
 // file keys (EXECHOST_DIR/<name>) and are NOT run through verify_str_key(), so
@@ -251,7 +252,18 @@ static void test_verify_host_name() {
    // T41/T42: nullptr / empty rejected
    CHECK(41, "nullptr rejected",  !verify_host_name(&al, nullptr));
    CHECK(42, "empty rejected",    !verify_host_name(&al, ""));
+   al.reset();
 
+   // T57-T59 (CS-3214): the length limit. A name longer than CL_MAXHOSTNAMELEN
+   // added an error to the answer list but returned true, so callers that check
+   // only the return value accepted it. T58 fails against that code.
+   const std::string at_limit(CL_MAXHOSTNAMELEN, 'a');
+   const std::string above_limit(CL_MAXHOSTNAMELEN + 1, 'a');
+   CHECK(57, "name of CL_MAXHOSTNAMELEN accepted", verify_host_name(&al, at_limit.c_str())
+         && !answer_list_has_error(&al));
+   al.reset();
+   CHECK(58, "name of CL_MAXHOSTNAMELEN + 1 rejected", !verify_host_name(&al, above_limit.c_str()));
+   CHECK(59, "too long name leaves an error", answer_list_has_error(&al));
    al.reset();
 }
 

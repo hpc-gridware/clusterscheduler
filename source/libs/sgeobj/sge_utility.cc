@@ -298,6 +298,7 @@ verify_obj_name(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *str, size_t s
  * @return true if the hostname is acceptable, false otherwise (with answer_list set)
  */
 bool verify_host_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *host_name) {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
    if (host_name == nullptr || *host_name == '\0') {
@@ -310,6 +311,7 @@ bool verify_host_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *
       if (strlen(host_name) > CL_MAXHOSTNAMELEN) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
                                  MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN);
+         ret = false;
       }
    }
 
@@ -335,7 +337,7 @@ bool verify_host_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *
       ret = false;
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 /**
