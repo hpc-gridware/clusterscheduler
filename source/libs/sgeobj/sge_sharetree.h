@@ -103,7 +103,7 @@ enum {
 /// The path from the share tree root down to one node
 typedef struct {
    int depth;           ///< how many entries `nodes` has
-   ocs::tom::Element<ocs::tom::STN> *nodes;   ///< the nodes, root first; allocated with sge_malloc()
+   ocs::tom::Element<ocs::tom::STN> *nodes;   ///< the nodes, root first; from ocs::uti::create_array()
 } ancestors_t;
 
 bool id_sharetree(ocs::tom::ListPtr<ocs::tom::AN> *alpp, ocs::tom::Element<ocs::tom::STN> ep, int id);

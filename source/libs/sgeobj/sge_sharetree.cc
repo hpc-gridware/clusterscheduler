@@ -258,8 +258,8 @@ ocs::tom::ElementPtr<ocs::tom::STN> getSNTemplate() {
  */
 void free_ancestors(ancestors_t *ancestors) {
    DENTER(TOP_LAYER);
-   if (ancestors && ancestors->nodes) {
-      sge_free(&(ancestors->nodes));
+   if (ancestors != nullptr) {
+      ocs::uti::destroy_array(ancestors->nodes);
    }
    DRETURN_VOID;
 }
@@ -275,9 +275,8 @@ static void
 ocs_ancestors_alloc(ancestors_t *ancestors, const int depth) {
    DENTER(TOP_LAYER);
    ancestors->depth = depth;
-   // a handle is trivially copyable and destructible, so a malloc'ed array of them is fine
-   ancestors->nodes = static_cast<ocs::tom::Element<ocs::tom::STN> *>(
-      static_cast<void *>(sge_malloc(depth * sizeof(ocs::tom::Element<ocs::tom::STN>))));
+   // a handle has a default member initializer, so the array is made with new[]; every handle starts empty
+   ancestors->nodes = ocs::uti::create_array<ocs::tom::Element<ocs::tom::STN>>(depth);
    DRETURN_VOID;
 }
 

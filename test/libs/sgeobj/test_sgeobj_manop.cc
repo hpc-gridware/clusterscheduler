@@ -125,7 +125,7 @@ make_packet(const char *user, const char *group, std::initializer_list<const cha
 
    packet->amount = static_cast<int>(sup_groups.size());
    if (packet->amount > 0) {
-      packet->grp_array = reinterpret_cast<ocs_grp_elem_t *>(sge_malloc(sizeof(ocs_grp_elem_t) * packet->amount));
+      packet->grp_array = ocs::uti::c_alloc<ocs_grp_elem_t>(packet->amount);
       int i = 0;
       for (const char *g : sup_groups) {
          packet->grp_array[i].id = static_cast<gid_t>(1000 + i);
