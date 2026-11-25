@@ -254,15 +254,17 @@ static void test_verify_host_name() {
    CHECK(42, "empty rejected",    !verify_host_name(&al, ""));
    al.reset();
 
-   // T57-T59 (CS-3214): the length limit. A name longer than CL_MAXHOSTNAMELEN
-   // added an error to the answer list but returned true, so callers that check
-   // only the return value accepted it. T58 fails against that code.
-   const std::string at_limit(CL_MAXHOSTNAMELEN, 'a');
-   const std::string above_limit(CL_MAXHOSTNAMELEN + 1, 'a');
-   CHECK(57, "name of CL_MAXHOSTNAMELEN accepted", verify_host_name(&al, at_limit.c_str())
+   // T57-T59 (CS-3214): the length limit. A host name is held in char[CL_MAXHOSTNAMELEN]
+   // buffers, so it may have CL_MAXHOSTNAMELEN - 1 characters at most. A too long name once
+   // added an error to the answer list but returned true, and a name of exactly
+   // CL_MAXHOSTNAMELEN characters was accepted although it does not fit. T58 fails against
+   // both of these.
+   const std::string at_limit(CL_MAXHOSTNAMELEN - 1, 'a');
+   const std::string above_limit(CL_MAXHOSTNAMELEN, 'a');
+   CHECK(57, "name of CL_MAXHOSTNAMELEN - 1 accepted", verify_host_name(&al, at_limit.c_str())
          && !answer_list_has_error(&al));
    al.reset();
-   CHECK(58, "name of CL_MAXHOSTNAMELEN + 1 rejected", !verify_host_name(&al, above_limit.c_str()));
+   CHECK(58, "name of CL_MAXHOSTNAMELEN rejected", !verify_host_name(&al, above_limit.c_str()));
    CHECK(59, "too long name leaves an error", answer_list_has_error(&al));
    al.reset();
 }

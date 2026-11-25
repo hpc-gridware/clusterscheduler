@@ -551,7 +551,9 @@ int sge_resolve_hostname(const char *hostname, char *unique, int nm) {
    }
 
    if (ret != CL_RETVAL_OK) {
+      // strncpy() does not terminate a name of CL_MAXHOSTNAMELEN - 1 characters or more
       strncpy(unique, hostname, CL_MAXHOSTNAMELEN - 1);
+      unique[CL_MAXHOSTNAMELEN - 1] = '\0';
    }
 
    DRETURN(ret);

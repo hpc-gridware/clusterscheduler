@@ -308,9 +308,11 @@ bool verify_host_name(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const char *
    }
 
    if (ret) {
-      if (strlen(host_name) > CL_MAXHOSTNAMELEN) {
+      // a host name is held in char[CL_MAXHOSTNAMELEN] buffers, which need one byte for the terminator,
+      // and the commlib refuses to resolve a name of CL_MAXHOSTNAMELEN characters (CS-3214)
+      if (strlen(host_name) >= CL_MAXHOSTNAMELEN) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                 MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN);
+                                 MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN - 1);
          ret = false;
       }
    }
