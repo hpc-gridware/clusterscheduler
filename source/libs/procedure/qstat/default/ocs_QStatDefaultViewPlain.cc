@@ -76,7 +76,6 @@ void ocs::QStatDefaultViewPlain::show_header_with_title(std::ostream &os, const 
       << "\n" << title
       << "\n" << line;
 
-   last_job_id = 0;
    DRETURN_VOID;
 }
 
@@ -229,13 +228,16 @@ void ocs::QStatDefaultViewPlain::report_queue_resource(std::ostream &os,
    DRETURN_VOID;
 }
 
+/** @brief Start the pending jobs section: write its header once, in full mode only
+ * @param os stream to write to
+ * @param parameter the call's parameters
+ */
 void ocs::QStatDefaultViewPlain::report_pending_jobs_started(std::ostream &os, QStatParameter &parameter) {
    DENTER(TOP_LAYER);
    if (!pending_header_printed && (parameter.show_ & QSTAT_DISPLAY_FULL) && (parameter.show_ & QSTAT_DISPLAY_PENDING)) {
       show_header_with_title(os, parameter, MSG_QSTAT_PRT_PEDINGJOBS);
       pending_header_printed = true;
    }
-   last_job_id = 0;
    DRETURN_VOID;
 }
 
@@ -285,6 +287,13 @@ void ocs::QStatDefaultViewPlain::report_error_jobs_started(std::ostream &os, QSt
 void ocs::QStatDefaultViewPlain::report_error_jobs_finished(std::ostream &os) {
 }
 
+/** @brief Write one job line, preceded by the job table header when it is still missing
+ * @param os stream to write to
+ * @param jid the job number
+ * @param summary the job, already reduced to what is printed
+ * @param parameter the call's parameters
+ * @param model the fetched lists
+ */
 void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_summary_t *summary, QStatParameter &parameter, QStatModelBase &model) {
    DENTER(TOP_LAYER);
    const bool sge_ext = ((parameter.show_ & QSTAT_DISPLAY_EXTENDED) == QSTAT_DISPLAY_EXTENDED);
@@ -298,13 +307,6 @@ void ocs::QStatDefaultViewPlain::report_job(std::ostream &os, uint32_t jid, job_
    }
 
    const bool print_job_id = summary->print_jobid;
-
-   last_job_id = jid;
-   if (summary->queue == nullptr) {
-      sge_dstring_clear(&last_queue_name);
-   } else {
-      sge_dstring_copy_string(&last_queue_name, summary->queue);
-   }
 
    if (!job_header_printed) {
       std::ostringstream oss;

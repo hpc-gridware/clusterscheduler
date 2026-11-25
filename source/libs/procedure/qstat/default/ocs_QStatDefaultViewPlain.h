@@ -42,10 +42,6 @@ namespace ocs {
       bool header_printed = false;            ///< Whether the queue table already has its header
       bool job_header_printed = false;        ///< Whether the job table already has its header
 
-      /* id of the last reported job */
-      uint32_t last_job_id = 0;                     ///< The job of the previous line, so a job spanning lines prints its id once
-      dstring  last_queue_name = DSTRING_INIT;      ///< The queue of the previous line, for the same reason
-
       int  sub_task_count = 0;                      ///< Tasks written for the current job
       int  hard_resource_count = 0;                 ///< Hard resource requests written for the current job
       int  soft_resource_count = 0;                 ///< Soft resource requests written for the current job
