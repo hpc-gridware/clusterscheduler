@@ -215,7 +215,16 @@ Number of arguments which will be passed to the job script or command when the j
 always be sent as part of a job verification. If no arguments should be passed to the job script or
 command it will have the value 0. This parameter can be changed by JSV instances. If the value of *CMDARGS* is bigger 
 than the number of available *CMDARG\<id>* parameters then the missing parameters will be automatically passed as 
-empty parameters to the job script.
+empty parameters to the job script. A JSV can raise the number of arguments to at most 262144; a larger value is 
+rejected and the arguments of the job stay unchanged. A job that already has more arguments can still have them 
+changed or reduced by a JSV.
+
+CMDARG\<id>  
+The argument with the index *\<id>* that will be passed to the job script or command, counted from 0 up to 
+*CMDARGS* - 1. It will be sent for every argument as part of a job verification and can be changed by JSV instances. 
+*\<id>* consists of decimal digits only. Setting an argument beyond the last one appends empty arguments up to it. 
+A *CMDARG\<id>* whose *\<id>* is not a decimal number, or which would raise the number of arguments beyond 262144, 
+is rejected and the arguments of the job stay unchanged.
 
 CMDNAME  
 Either the path to the script or the command name in case of binary submission. It will always be sent as part of 
