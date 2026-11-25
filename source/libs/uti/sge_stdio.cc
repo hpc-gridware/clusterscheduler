@@ -85,6 +85,32 @@ static void addenv(const char *key, const char *value) {
    /* there is intentionally no sge_free(&str) */
 }
 
+/**
+ * @brief Write an error message of the sge_peopen() child to stderr
+ *
+ * Appends a newline to the message in err_str and writes it to file descriptor 2. A message
+ * which fills the whole buffer gets its last character replaced by the newline. Called in
+ * the child after fork(), so nothing is allocated.
+ *
+ * @param err_str buffer holding the message, the newline is appended in place
+ * @param size size of the buffer err_str
+ */
+static void
+sge_peopen_child_error(char *err_str, size_t size) {
+   DENTER(TOP_LAYER);
+   size_t len = strlen(err_str);
+   if (len + 1 < size) {
+      err_str[len++] = '\n';
+      err_str[len] = '\0';
+   } else if (len > 0) {
+      err_str[len - 1] = '\n';
+   }
+   if (write(2, err_str, len) != static_cast<ssize_t>(len)) {
+      // nothing we can do here - the child is about to exit anyway
+   }
+   DRETURN_VOID;
+}
+
 /* 
  * TODO: CLEANUP
  *
@@ -116,7 +142,6 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
                  const char *user, char **env, FILE **fp_in, FILE **fp_out,
                  FILE **fp_err, bool null_stderr) {
    DENTER(TOP_LAYER);
-
    pid_t pid;
    int pipefds[3][2];
    const char *could_not = MSG_SYSTEM_EXECBINSHFAILED;
@@ -159,10 +184,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          int fd = open("/dev/null", O_WRONLY);
          if (fd == -1) {
             snprintf(err_str, sizeof(err_str), MSG_ERROROPENINGFILEFORWRITING_SS, "/dev/null", strerror(errno));
-            snprintf(err_str, sizeof(err_str), "\n");
-            if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
-               /* nothing we can do here - we are anyway about to exit */
-            }
+            sge_peopen_child_error(err_str, sizeof(err_str));
             sge_exit(1);
          }
 
@@ -204,10 +226,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
          SGE_ASSERT(buffer != nullptr);
          if (!(pw = sge_getpwnam_r(user, &pw_struct, buffer, size))) {
             snprintf(err_str, sizeof(err_str), MSG_SYSTEM_NOUSERFOUND_SS, user, strerror(errno));
-            snprintf(err_str, sizeof(err_str), "\n");
-            if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
-               /* nothing we can do here - we are anyway about to exit */
-            }
+            sge_peopen_child_error(err_str, sizeof(err_str));
             sge_free(&buffer);
             sge_exit(1);
          }
@@ -232,10 +251,7 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
             res = initgroups(pw->pw_name, pw->pw_gid);
             if (res) {
                snprintf(err_str, sizeof(err_str), MSG_SYSTEM_INITGROUPSFORUSERFAILED_ISS, res, user, strerror(errno));
-               snprintf(err_str, sizeof(err_str), "\n");
-               if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
-                  /* nothing we can do here - we are anyway about to exit */
-               }
+               sge_peopen_child_error(err_str, sizeof(err_str));
                sge_free(&buffer);
                sge_exit(1);
             }
@@ -246,20 +262,14 @@ pid_t sge_peopen(const char *shell, int login_shell, const char *command,
              * we are still privileged. */
             if (setgid(pw->pw_gid)) {
                snprintf(err_str, sizeof(err_str), MSG_SYSTEM_SETGIDFAILED_g, pw->pw_gid);
-               snprintf(err_str, sizeof(err_str), "\n");
-               if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
-                  /* nothing we can do here - we are anyway about to exit */
-               }
+               sge_peopen_child_error(err_str, sizeof(err_str));
                sge_free(&buffer);
                sge_exit(1);
             }
 
             if (setuid(pw->pw_uid)) {
                snprintf(err_str, sizeof(err_str), MSG_SYSTEM_SWITCHTOUSERFAILED_SS, user, strerror(errno));
-               snprintf(err_str, sizeof(err_str), "\n");
-               if (write(2, err_str, strlen(err_str)) != (ssize_t)strlen(err_str)) {
-                  /* nothing we can do here - we are anyway about to exit */
-               }
+               sge_peopen_child_error(err_str, sizeof(err_str));
                sge_free(&buffer);
                sge_exit(1);
             }
