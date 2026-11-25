@@ -614,8 +614,11 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          if (ret && strcmp("c_interval", param) == 0) {
             uint32_t timeval = 0;
 
+            // a time like qsub -c takes it and like it is sent to the JSV, not a date (CS-3218)
             if (value != nullptr) {
-               if (int local_ret = ulong_parse_date_time_from_string(&timeval, &local_answer_list, value); !local_ret) {
+               if (!parse_ulong_val(nullptr, &timeval, ocs::CEntry::Type::TIME, value, nullptr, 0)) {
+                  answer_list_add_sprintf(&local_answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
+                                          MSG_JSV_PARSE_VAL_SS, param, value);
                   ret = false;
                }
             }

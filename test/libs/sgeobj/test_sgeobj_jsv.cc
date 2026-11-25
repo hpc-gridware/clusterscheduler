@@ -41,6 +41,8 @@
  * deadline were sent with the month off by one, CMDARG<n> was lost for a job without arguments or for n equal
  * to the number of arguments, and a priority or binding amount that is not a number was taken as 0.
  *
+ * CS-3218: the checkpoint interval was sent to the JSV as a time but parsed back as a date.
+ *
  * CS-3220: a CMDARG index without an upper bound made the receiver create billions of arguments.
  */
 
@@ -602,6 +604,50 @@ test_date_params() {
 }
 
 /**
+ * @brief The checkpoint interval is sent as a time and read back as one (CS-3218)
+ *
+ * Before the fix c_interval was parsed as a date, so the value the JSV was sent was rejected when it came back.
+ */
+static void
+test_checkpoint_interval() {
+   printf("\n--- PARAM c_interval ---\n");
+   auto old_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   old_job->set<JB_owner>("user");
+   old_job->set<JB_group>("group");
+   old_job->set<JB_checkpoint_interval>(3725);
+
+   bool accepted = false;
+   std::string sent;
+   std::string text = communicate("STARTED\nRESULT STATE ACCEPT\n", "", &accepted, nullptr, nullptr,
+                                  JSV_CONTEXT_CLIENT, old_job.get().raw(), &sent);
+   const bool sent_ok = sent.find("PARAM c_interval 01:02:05\n") != std::string::npos;
+   if (!sent_ok) {
+      printf("      sent:\n%s", sent.c_str());
+   }
+   CHECK(59, "the checkpoint interval is sent as hh:mm:ss", sent_ok);
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM c_interval 01:02:05\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\", interval: %u\n", text.c_str(), job->get<JB_checkpoint_interval>());
+   CHECK(60, "the interval passed back unchanged is the one sent",
+         accepted && text == "<none>" && job->get<JB_checkpoint_interval>() == 3725);
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM c_interval 00:05:00\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(61, "c_interval 00:05:00 is 300 seconds",
+         accepted && text == "<none>" && job->get<JB_checkpoint_interval>() == 300);
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM c_interval 600\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(62, "c_interval 600 is 600 seconds, as with qsub -c",
+         accepted && text == "<none>" && job->get<JB_checkpoint_interval>() == 600);
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM c_interval 5x\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(63, "c_interval 5x is an error", text != "<none>" && job->get<JB_checkpoint_interval>() == 0);
+}
+
+/**
  * @brief A priority or a binding amount that is not a number is rejected (CS-3143)
  */
 static void
@@ -642,6 +688,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_cmdarg_params();
    test_cmdarg_limits();
    test_date_params();
+   test_checkpoint_interval();
    test_number_params();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
