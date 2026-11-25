@@ -19,9 +19,14 @@ directories for executing batch jobs.
 
 There is a system global path aliasing file and a user local file. xxqs_name_sxx_aliases defines the format of both:
 
--   Blank lines and lines with a '#' sign in the first column are skipped.
+-   Blank lines and lines with a '#' sign in the first column are skipped. A line that holds only blanks, tabs or a
+    carriage return (as left by an editor writing Windows line ends) counts as a blank line.
 
 -   Each line other than a blank line or a line lead by '#' has to contain four strings separated by any number of blanks or tabs.
+    Further strings on the line are ignored. Lines may have any length.
+
+-   Each of the four strings must be shorter than 1024 characters. A line with a string of 1024 characters or more is
+    rejected as an error.
 
 -   The first string specifies a source-path, the second a submit-host, the third an execution-host and the fourth the source-path replacement.
 

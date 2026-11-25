@@ -96,7 +96,7 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
  *
  * Reads up to the next newline or the end of the file. Unlike ocs_read_line(), the line is returned
  * as it is: empty lines and leading whitespace are kept, because a '#' only starts a comment in the
- * first column and a line of blanks is a syntax error of the alias file format.
+ * first column.
  *
  * @param fp the alias file
  * @param[out] line the line without its newline
@@ -161,7 +161,8 @@ ocs_path_alias_split_line(const std::string &line, std::array<std::string, 4> &f
  * Read and parse the file with the name "file_name" and append
  * entries into "path_alias_list". Errors will be logged in "alpp".
  * File format:
- * - Blank lines and lines beginning with a # sign in the first
+ * - Blank lines (empty or whitespace only, including a lone '\r' left
+ *   by a Windows editor) and lines beginning with a # sign in the first
  *   column are skipped.
  * - Each line - other than a blank line or a line preceded by # -
  *   must contain four strings separated by any number of blanks
@@ -218,9 +219,13 @@ static int path_alias_read_from_file(ocs::tom::ListPtr<ocs::tom::PA> &path_alias
       }
 
       /*
-       * check for correctness of path alias file
+       * skip blank lines (blanks, tabs, a '\r' of a CRLF line end), check the others for correctness
        */
-      if (ocs_path_alias_split_line(line, fields) < fields.size()) {
+      const size_t field_count = ocs_path_alias_split_line(line, fields);
+      if (field_count == 0) {
+         continue;
+      }
+      if (field_count < fields.size()) {
          snprintf(err, sizeof(err), MSG_ALIAS_INVALIDSYNTAXOFPATHALIASFILEX_S, file_name);
          answer_list_add(alpp, err, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret = -1;

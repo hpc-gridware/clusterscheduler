@@ -205,10 +205,27 @@ test_regular_files() {
       CHECK(8, "fewer than four fields: syntax error",
             r.ret == -1 && r.first_error.find("invalid syntax of path alias file") != std::string::npos);
    }
+   // T9, T19-T21 (CS-3213): sge_aliases(5) says blank lines are skipped, so a line of whitespace only
+   // is one, whatever the whitespace is. Before the fix each of these was a syntax error.
    {
-      const auto r = read_aliases("/a * * /b\n   \n");
-      CHECK(9, "a line of blanks only is a syntax error, as before",
-            r.ret == -1 && r.first_error.find("invalid syntax of path alias file") != std::string::npos);
+      const auto r = read_aliases("/a * * /b\n   \n/c * * /d\n");
+      CHECK(9, "a line of blanks only is skipped",
+            r.ret == 0 && entries(r.list) == 2 && entry_is(r.list, 1, "/c", "*", "/d"));
+   }
+   {
+      const auto r = read_aliases("/a * * /b\n\t\t\n/c * * /d\n");
+      CHECK(19, "a line of tabs only is skipped",
+            r.ret == 0 && entries(r.list) == 2 && entry_is(r.list, 1, "/c", "*", "/d"));
+   }
+   {
+      const auto r = read_aliases("/a * * /b\r\n\r\n/c * * /d\r\n");
+      CHECK(20, "a line of a carriage return only (Windows editor) is skipped",
+            r.ret == 0 && entries(r.list) == 2 && entry_is(r.list, 1, "/c", "*", "/d"));
+   }
+   {
+      const auto r = read_aliases(" \t\r\n/a * * /b\n \t ");
+      CHECK(21, "mixed whitespace lines, also first and last without newline, are skipped",
+            r.ret == 0 && entries(r.list) == 1 && entry_is(r.list, 0, "/a", "*", "/b"));
    }
 }
 
