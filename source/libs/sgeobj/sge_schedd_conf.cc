@@ -53,6 +53,8 @@
 #include <cstring>
 #include <pthread.h>
 #include <limits>
+#include <sstream>
+#include <string>
 #include <tuple>
 #include <utility>
 
@@ -363,6 +365,21 @@ int load_adjustment_fields[] = { CE_name, CE_stringval, 0 };
 int usage_fields[] = { UA_name, UA_value, 0 };
 /// Delimiters of the `name=value,name=value` lists parsed here
 const char *delis[] = {"=", ",", ""};
+
+/**
+ * @brief The text form of a list attribute of the scheduler configuration, of any length
+ *
+ * Used for error messages about a list that did not fit into the fixed size buffer of the validation.
+ *
+ * @param lp the list, e.g. the job load adjustments (`CE`) or the usage weights (`UA`)
+ * @param fields the fields to print, ended by 0
+ * @return the list as `name=value,...`, empty for an empty list
+ */
+static std::string ocs_sconf_list_string(const ocs::tom::ConstRawList lp, const int *fields) {
+   std::ostringstream ss;
+   uni_print_list(ss, lp, fields, delis, 0);
+   return ss.str();
+}
 
 /**
  * @brief Resets the values cached from the configuration
@@ -2077,7 +2094,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (!s || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error, sizeof(tmp_error), 0,
                                        true)) {
       if (!s) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "load_adjustment_decay_time", "not defined");
       }
       else {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS, "load_adjustment_decay_time", tmp_error);
@@ -2145,7 +2162,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    if (s == nullptr || !extended_parse_ulong_val(nullptr, &uval, ocs::CEntry::Type::TIME, s, tmp_error,
                                               sizeof(tmp_error), 0, true)) {
       if (s == nullptr) {
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "schedule_interval", "not defined");
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "reprioritize_interval", "not defined");
       }
       else {
          snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "reprioritize_interval", tmp_error);
@@ -2205,9 +2222,7 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
          }
       }
       else {
-         if (!s)
-         value_string = "not defined";
-         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "policy hierarchy", value_string);
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ATTRIB_XISNOTAY_SS , "policy hierarchy", "not defined");
          answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
          ret = false;
       }
@@ -2241,7 +2256,8 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    /* --- SC_usage_weight_list */
    if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer),
        get_usage_weight_list(), usage_fields, delis, 0) < 0) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_USAGE_WEIGHT_LIST_S, tmp_error);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_USAGE_WEIGHT_LIST_S,
+               ocs_sconf_list_string(get_usage_weight_list(), usage_fields).c_str());
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }
@@ -2249,7 +2265,8 @@ bool sconf_validate_config_(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    /* --- SC_job_load_adjustments */
    if (uni_print_list(nullptr, tmp_buffer, sizeof(tmp_buffer), get_job_load_adjustments(), load_adjustment_fields,
                       delis, 0) < 0) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S, s);
+      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_SCHEDD_JOB_LOAD_ADJUSTMENTS_S,
+               ocs_sconf_list_string(get_job_load_adjustments(), load_adjustment_fields).c_str());
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
    }

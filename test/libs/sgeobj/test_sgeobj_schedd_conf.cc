@@ -37,6 +37,7 @@
  */
 
 #include <cstdio>
+#include <string>
 
 #include "uti/sge_component.h"
 #include "uti/sge_rmon_macros.h"
@@ -48,6 +49,8 @@
 #include "tom/ocs_Element.h"
 #include "tom/ocs_Raw.h"
 #include "sgeobj/tom/ocs_tom_SC.h"
+#include "sgeobj/tom/ocs_tom_AN.h"
+#include "sgeobj/tom/ocs_tom_CE.h"
 
 static int s_fail = 0;
 
@@ -242,6 +245,85 @@ static conf_settings_t params_settings[] = {
    {nullptr, false, nullptr}
 };
 
+// --- error messages (CS-3145) ---
+// a refused configuration names the attribute and the value that failed
+
+/**
+ * @brief Whether one of the answers holds the given text
+ * @param answer_list the answers of a validation
+ * @param text the text to look for
+ * @return true if an answer's text contains @p text
+ */
+static bool answers_contain(const ocs::tom::ListPtr<ocs::tom::AN> &answer_list, const std::string &text) {
+   if (!answer_list) {
+      return false;
+   }
+   for (const auto answer : *answer_list) {
+      const char *answer_text = answer.get<AN_text>();
+      if (answer_text != nullptr && std::string(answer_text).find(text) != std::string::npos) {
+         return true;
+      }
+   }
+   return false;
+}
+
+/**
+ * @brief Print the answers of a validation, for the log of a failed check
+ * @param answer_list the answers
+ */
+static void print_answers(const ocs::tom::ListPtr<ocs::tom::AN> &answer_list) {
+   if (answer_list) {
+      for (const auto answer : *answer_list) {
+         const char *answer_text = answer.get<AN_text>();
+         printf("      answer: %s\n", answer_text != nullptr ? answer_text : "(null)");
+      }
+   }
+}
+
+/**
+ * @brief Validate a default configuration with one string attribute unset and check the message
+ * @param id the number of the check; advanced by one
+ * @param attribute the attribute to unset
+ * @param expected the text the message must contain
+ * @param desc the check's label
+ */
+static void check_unset_attribute(int *id, const int attribute, const char *expected, const char *desc) {
+   auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
+   const auto schedd_conf = schedd_list->push_back(sconf_create_default());
+   schedd_conf.set(attribute, static_cast<const char *>(nullptr));
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
+   const bool result = sconf_validate_config(&answer_list, *schedd_list);
+   const bool ok = !result && answers_contain(answer_list, expected);
+   if (!ok) {
+      print_answers(answer_list);
+   }
+   CHECK(*id, desc, ok);
+   (*id)++;
+}
+
+/**
+ * @brief Validate a configuration whose job load adjustments are too long and check that the message shows them
+ * @param id the number of the check; advanced by one
+ */
+static void check_long_job_load_adjustments(int *id) {
+   auto schedd_list = ocs::tom::ListPtr<ocs::tom::SC>::create("schedd_conf");
+   const auto schedd_conf = schedd_list->push_back(sconf_create_default());
+   // 100 entries of "load_adjustment_NN=0.50," are far beyond the 1024 characters the validation allows
+   for (int i = 0; i < 100; i++) {
+      const std::string name = "load_adjustment_" + std::to_string(i);
+      const auto added = schedd_conf.emplace_back_in<SC_job_load_adjustments, CE_name>(name.c_str());
+      added.set<CE_stringval>("0.50");
+   }
+   ocs::tom::ListPtr<ocs::tom::AN> answer_list;
+   const bool result = sconf_validate_config(&answer_list, *schedd_list);
+   const bool ok = !result && answers_contain(answer_list, "np_load_avg=0.50,load_adjustment_0=0.50");
+   if (!ok) {
+      print_answers(answer_list);
+   }
+   CHECK(*id, "job_load_adjustments: a list too long is refused and the message shows the list", ok);
+   (*id)++;
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    DENTER_MAIN(TOP_LAYER, "test_sgeobj_schedd_conf");
    component_set_daemonized(true);
@@ -266,6 +348,15 @@ int main(int /*argc*/, char * /*argv*/[]) {
 
    printf("\n--- params ---\n");
    run_tests(&id, &params_conf, params_settings);
+
+   printf("\n--- error messages ---\n");
+   check_long_job_load_adjustments(&id);
+   check_unset_attribute(&id, SC_load_adjustment_decay_time, "load_adjustment_decay_time",
+                         "load_adjustment_decay_time: an unset value is reported for load_adjustment_decay_time");
+   check_unset_attribute(&id, SC_reprioritize_interval, "reprioritize_interval",
+                         "reprioritize_interval: an unset value is reported for reprioritize_interval");
+   check_unset_attribute(&id, SC_policy_hierarchy, "not defined",
+                         "policy_hierarchy: an unset value is reported as \"not defined\"");
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
