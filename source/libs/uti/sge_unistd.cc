@@ -522,7 +522,7 @@ static int ocs_rmdir_contents(const int top_fd, const char *path, dstring *error
          ret = -1;
       } else if (S_ISDIR(stat_buffer.st_mode)) {
          if (levels.size() > OCS_RMDIR_MAX_DEPTH) {
-            sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, path_of(name).c_str(), strerror(ENAMETOOLONG));
+            sge_dstring_sprintf(error, MSG_FILE_RMDIRTOODEEP_IS, static_cast<int>(OCS_RMDIR_MAX_DEPTH), path);
             ret = -1;
             continue;
          }

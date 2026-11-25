@@ -111,6 +111,7 @@
 #define MSG_FILE_FCHMODFAILED_SS                _MESSAGE(49123, _("can't change the mode of directory " PFNMAX ": " SFN))
 #define MSG_FILE_OPENDIRECTORYFAILED_SS         _MESSAGE(49124, _("open(" PFNMAX ") failed: " SFN))
 #define MSG_FILE_REMOVINGPLANTED_S              _MESSAGE(49125, _("removing " PFNMAX ": it is no directory but in the place of one to be created"))
+#define MSG_FILE_RMDIRTOODEEP_IS                _MESSAGE(49126, _("the directory tree is deeper than %d levels below " PFNMAX))
 
 #define MSG_MEMORY_MALLOCFAILED                 _MESSAGE(49072, _("malloc() failure"))
 #define MSG_MEMORY_REALLOCFAILED                _MESSAGE(49073, _("realloc() failure"))

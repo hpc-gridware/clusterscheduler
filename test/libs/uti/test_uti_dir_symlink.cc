@@ -225,7 +225,7 @@ static bool get_stat(const std::string &path, struct stat &st) {
 }
 
 /**
- * @brief Build a chain of nested directories relative to descriptors, so PATH_MAX is no limit
+ * @brief Build a chain of nested directories `dd` relative to descriptors, so PATH_MAX is no limit
  * @param top the directory to build in, it must exist
  * @param depth number of nested levels below @p top
  * @return true on success
@@ -237,12 +237,12 @@ static bool make_deep_tree(const std::string &top, const int depth) {
       return false;
    }
    for (int i = 0; i < depth; i++) {
-      if (mkdirat(fd, "d", 0755) != 0) {
+      if (mkdirat(fd, "dd", 0755) != 0) {
          printf("setup: mkdirat() at level %d failed: %s\n", i, strerror(errno));
          close(fd);
          return false;
       }
-      const int sub = openat(fd, "d", O_RDONLY | O_DIRECTORY);
+      const int sub = openat(fd, "dd", O_RDONLY | O_DIRECTORY);
       close(fd);
       if (sub < 0) {
          printf("setup: openat() at level %d failed: %s\n", i, strerror(errno));
@@ -279,7 +279,8 @@ static void test_rmdir_deep(const std::string &base, int &id) {
 
    DSTRING_STATIC(err, 1024);
 
-   // 2000 levels: removed when the descriptors suffice, else a clean error
+   // 2000 levels of "dd/", 6000 characters: longer than PATH_MAX; removed when the descriptors suffice,
+   // else a clean error
    const std::string deep = base + "/deep";
    CHECK(id++, "setup of a tree 2000 levels deep", make_dir(deep) && make_deep_tree(deep, 2000));
    sge_dstring_clear(&err);
@@ -300,8 +301,16 @@ static void test_rmdir_deep(const std::string &base, int &id) {
    CHECK(id++, "setup of a tree 5000 levels deep", make_dir(too_deep) && make_deep_tree(too_deep, 5000));
    sge_dstring_clear(&err);
    CHECK(id++, "a tree 5000 levels deep fails cleanly",
-         sge_rmdir(too_deep.c_str(), &err) != 0 && sge_dstring_strlen(&err) > 0 && exists(too_deep + "/d"));
-   printf("      error: %.200s\n", sge_dstring_get_string(&err));
+         sge_rmdir(too_deep.c_str(), &err) != 0 && sge_dstring_strlen(&err) > 0 && exists(too_deep + "/dd"));
+   const std::string too_deep_error = sge_dstring_get_string(&err);
+   printf("      error: %.200s\n", too_deep_error.c_str());
+   if (now.rlim_cur > 4200) {
+      CHECK(id++, "... and it is the depth limit of the walk, not the descriptor limit",
+            too_deep_error.find("deeper than 4096 levels") != std::string::npos);
+   } else {
+      printf("SKIP  [T%02d] ... the depth limit: the descriptor limit %llu is reached first\n", id++,
+             (unsigned long long) now.rlim_cur);
+   }
    cleanup(too_deep);
 
    // running out of descriptors: a clean error, a second call with enough descriptors finishes
@@ -314,7 +323,7 @@ static void test_rmdir_deep(const std::string &base, int &id) {
    const int low_ret = sge_rmdir(fds.c_str(), &err);
    setrlimit(RLIMIT_NOFILE, &now);
    CHECK(id++, "with 64 descriptors the removal fails cleanly and leaves the tree",
-         low_ret != 0 && sge_dstring_strlen(&err) > 0 && exists(fds + "/d"));
+         low_ret != 0 && sge_dstring_strlen(&err) > 0 && exists(fds + "/dd"));
    printf("      error: %.200s\n", sge_dstring_get_string(&err));
    sge_dstring_clear(&err);
    CHECK(id++, "with enough descriptors a second removal finishes",
