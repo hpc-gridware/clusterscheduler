@@ -36,6 +36,10 @@
  * line (`SEND`, `LOG`, `ENV ADD`, ...), which crashed qmaster (server JSV) or the client (client JSV). Each
  * such line is fed in a child process, so a crash is reported as a failure of that line instead of ending
  * the test.
+ *
+ * CS-3136, CS-3137, CS-3142, CS-3143: PARAM c_occasion set the checkpoint interval, the start time and the
+ * deadline were sent with the month off by one, CMDARG<n> was lost for a job without arguments or for n equal
+ * to the number of arguments, and a priority or binding amount that is not a number was taken as 0.
  */
 
 #include <cstdio>
@@ -543,6 +547,29 @@ test_date_params() {
 }
 
 /**
+ * @brief A priority or a binding amount that is not a number is rejected (CS-3143)
+ */
+static void
+test_number_params() {
+   printf("\n--- PARAM p / bamount that are not a number ---\n");
+   bool accepted = true;
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   std::string text = communicate("PARAM p abc\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\"\n", text.c_str());
+   CHECK(49, "priority abc is an error", text != "<none>");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM bamount abc\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\"\n", text.c_str());
+   CHECK(50, "binding amount abc is an error", text != "<none>");
+
+   job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM p -10\nPARAM bamount 2\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(51, "priority -10 and binding amount 2 are accepted", accepted && text == "<none>");
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -559,6 +586,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_checkpoint_params();
    test_cmdarg_params();
    test_date_params();
+   test_number_params();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

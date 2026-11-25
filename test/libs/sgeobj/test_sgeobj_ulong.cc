@@ -144,6 +144,58 @@ test_parse_date_time() {
 // ---------------------------------------------------------------------------
 
 /**
+ * @brief Priority and binding amount reject a value that is not a number [T09–T20] (CS-3143)
+ *
+ * ulong_parse_priority() and ulong_parse_binding_amount() compared the end pointer of strtol() with the
+ * address of the output variable instead of with the input, so a text without digits parsed as 0 and
+ * `qsub -p abc` was accepted with priority 0. Trailing characters were accepted as well.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_parse_priority_and_binding_amount() {
+   /**
+    * @brief Parse a priority
+    * @param text the text
+    * @param value receives the parsed value
+    * @return true when it was accepted without an error answer, false when it was rejected with one
+    */
+   auto priority = [](const char *text, int &value) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      const bool ok = ulong_parse_priority(&al, &value, text);
+      return ok && al == nullptr;
+   };
+   /**
+    * @brief Parse a binding amount
+    * @param text the text
+    * @param value receives the parsed value
+    * @return true when it was accepted without an error answer, false otherwise
+    */
+   auto amount = [](const char *text, int &value) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      const bool ok = ulong_parse_binding_amount(&al, &value, text);
+      return ok && al == nullptr;
+   };
+
+   int value = 99;
+   CHECK(9, "priority 10 is accepted", priority("10", value) && value == 10);
+   CHECK(10, "priority -1023 is accepted", priority("-1023", value) && value == -1023);
+   CHECK(11, "priority 0 is accepted", priority("0", value) && value == 0);
+   CHECK(12, "priority abc is rejected", !priority("abc", value));
+   CHECK(13, "an empty priority is rejected", !priority("", value));
+   CHECK(14, "priority 10abc is rejected", !priority("10abc", value));
+   CHECK(15, "priority 1025 is rejected", !priority("1025", value));
+
+   CHECK(16, "binding amount 4 is accepted", amount("4", value) && value == 4);
+   CHECK(17, "binding amount abc is rejected", !amount("abc", value));
+   CHECK(18, "an empty binding amount is rejected", !amount("", value));
+   CHECK(19, "binding amount 4x is rejected", !amount("4x", value));
+   CHECK(20, "binding amount -1 is rejected", !amount("-1", value));
+}
+
+// ---------------------------------------------------------------------------
+
+/**
  * @brief Module-test entry point; runs the scenarios through the shared frame.
  * @param argc argument count, see ocs_module_test.h for the frame's options
  * @param argv argument vector
@@ -163,5 +215,13 @@ int main(int argc, char *argv[]) {
        "the valid date is accepted, both over-long inputs are rejected by the length guard, the "
        "input that fits reaches the format check, nullptr and the empty string are rejected",
        {}, {1, 2, 3, 4, 5, 6, 7, 8}, test_parse_date_time},
+      {"ULONG-02", "priority and binding amount that are not a number (CS-3143)",
+       "ulong_parse_priority() and ulong_parse_binding_amount() reject a text that is not a whole number, "
+       "also one with trailing characters, instead of taking it as 0",
+       {"parse valid priorities and binding amounts",
+        "parse abc, an empty text and a number with trailing characters",
+        "parse values out of range"},
+       "the valid values are accepted, everything else is rejected with an error answer",
+       {}, {9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, test_parse_priority_and_binding_amount},
    });
 }

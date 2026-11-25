@@ -832,8 +832,12 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
 
          if (binding_elem) {
             if (ret && strcmp("bamount", param) == 0) {
-               if (value != nullptr) {
-                  binding_elem.set<BN_amount>(std::atoi(value));
+               // a value that is not a number is rejected as with qsub -bamount, not taken as 0 (CS-3143)
+               if (int amount = 0; value != nullptr) {
+                  ret = ulong_parse_binding_amount(&local_answer_list, &amount, value);
+                  if (ret) {
+                     binding_elem.set<BN_amount>(amount);
+                  }
                } else {
                   binding_elem.set<BN_amount>(0);
                }

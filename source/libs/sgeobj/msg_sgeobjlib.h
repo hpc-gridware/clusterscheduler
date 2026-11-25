@@ -439,4 +439,8 @@
 // CS-3170: an unknown word for relop, requestable or consumable of a complex is reported
 #define MSG_CENTRY_UNKNOWNVALUE_SS             _MESSAGE(64602, _("unknown value " SFQ " for attribute " SFQ " of a complex"))
 
+// CS-3143: a priority or a binding amount that is not a whole number
+#define MSG_ULNG_INVALIDPRIO_S                 _MESSAGE(64603, _("invalid priority " SFQ ". must be an integer from -1023 to 1024"))
+#define MSG_ULNG_INVALID_BAMOUNT_S             _MESSAGE(64604, _("invalid binding amount " SFQ ". must be an integer >= 0"))
+
 // clang-format on
