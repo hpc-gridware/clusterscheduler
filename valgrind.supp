@@ -102,20 +102,6 @@
 }
 
 {
-   @todo CS-631 Packet auth info is not cleaned up properly
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_Z10sge_mallocm
-   fun:_Z30sge_gdi_packet_parse_auth_infoP23_sge_gdi_packet_class_tPP6_lListPjPcmS4_S5_mPiPP14ocs_grp_elem_t
-   fun:_ZL13do_gdi_packetP12struct_msg_tP12monitoring_t
-   fun:_Z27sge_qmaster_process_messageP12monitoring_t
-   fun:_Z17sge_listener_mainPv
-   fun:start_thread
-   fun:clone
-}
-
-{
    @todo CS-633 (2) test_drmaa binaries (or the libdrmaa.so?) do not properly shutdown threads
    Memcheck:Leak
    match-leak-kinds: definite
