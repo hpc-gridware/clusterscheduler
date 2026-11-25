@@ -2796,8 +2796,15 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
          sge_dstring_append(&email, str);
 
          // CS-3188: parsed and merged like qsub -M - an address is kept once, every entry of a user is compared,
-         // the mail domain without regard to case
-         ocs_mailrec_merge(nlp, mailrec_parse(str).second);
+         // the mail domain without regard to case. An entry qsub -M refuses, such as an empty one, is refused
+         // here as well instead of being dropped silently
+         auto [mail_ret, mail_list] = mailrec_parse(str);
+         if (mail_ret != 0) {
+            sge_dstring_sprintf(diag, MSG_PARSE_WRONGMAILLISTFORMATXSPECTOMOPTION_S, str != nullptr ? str : "");
+            sge_dstring_free(&email);
+            DRETURN(DRMAA_ERRNO_INVALID_ATTRIBUTE_VALUE);
+         }
+         ocs_mailrec_merge(nlp, std::move(mail_list));
       }
 
 
