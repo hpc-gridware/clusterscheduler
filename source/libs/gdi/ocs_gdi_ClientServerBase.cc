@@ -57,6 +57,30 @@
 #include "ocs_gdi_ClientServerBase.h"
 #include "tom/ocs_PackCore.h"
 
+namespace {
+   /**
+    * @brief Owns a message received from commlib and its sender endpoint until the scope ends
+    *
+    * Every return path of a receive function frees both, also the early ones on an error (CS-3230).
+    * The members are handed to cl_commlib_receive_message() by address; the free functions accept
+    * nullptr and set the pointers to nullptr, so a member freed or handed over earlier is skipped.
+    */
+   struct OcsReceivedMessage {
+      cl_com_message_t *message = nullptr;   ///< the received message, nullptr if none
+      cl_com_endpoint_t *sender = nullptr;   ///< the sender of the message, nullptr if none
+
+      OcsReceivedMessage() = default;
+      OcsReceivedMessage(const OcsReceivedMessage &) = delete;
+      OcsReceivedMessage &operator=(const OcsReceivedMessage &) = delete;
+
+      /** @brief Free the message and the sender, whichever is still held */
+      ~OcsReceivedMessage() {
+         cl_com_free_message(&message);
+         cl_com_free_endpoint(&sender);
+      }
+   };
+} // namespace
+
 /**
  * @brief Whether the sender host and component name of a received message fit into the GDI buffers
  *
@@ -453,21 +477,13 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
 }
 
 
-/*----------------------------------------------------------
- * sge_get_any_request
- *
- * returns 0               on success
- *         -1              rhost is nullptr
- *         commlib return values (always positive)
- *
- * NOTES
- *    MT-NOTE: sge_get_any_request() is MT safe (assumptions)
- *----------------------------------------------------------*/
 /**
  * @brief Receive one message into a packbuffer
  *
  * Like #gdi_receive_message, but hands the payload over as a packbuffer
- * and can wait for the answer to one specific request.
+ * and can wait for the answer to one specific request. On any return other
+ * than CL_RETVAL_OK nothing is handed over: the message, its sender and a
+ * partly initialised @p pb are freed here (CS-3230). MT safe.
  *
  * @param[in,out] rhost host to accept from, then the actual one; a buffer of at least CL_MAXHOSTNAMELEN
  *                bytes, a message whose sender names do not fit is refused (CS-3224)
@@ -480,8 +496,8 @@ ocs::gdi::ClientServerBase::sge_gdi_send_any_request(int synchron, uint32_t *mid
  * @param for_request_mid accept only the answer to this request id, or 0 for any
  * @param[out] mid receives the id of the message received
  * @param[out] rip receives the address the sender host name resolves to, may be nullptr
- * @return CL_RETVAL_OK on success, CL_RETVAL_READ_ERROR when the payload cannot be unpacked or the sender names
- *         do not fit, otherwise a commlib error
+ * @return CL_RETVAL_OK on success, -1 when @p rhost is nullptr, CL_RETVAL_READ_ERROR when the payload cannot be
+ *         unpacked or the sender names do not fit, otherwise a commlib error
  */
 int
 ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc, u_short *id, sge_pack_buffer *pb,
@@ -490,8 +506,9 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
    DENTER(GDI_LAYER);
    int i;
    ushort usid = 0;
-   cl_com_message_t *message = nullptr;
-   cl_com_endpoint_t *sender = nullptr;
+   OcsReceivedMessage received;
+   cl_com_message_t *&message = received.message;
+   cl_com_endpoint_t *&sender = received.sender;
 
    PROF_START_MEASUREMENT(SGE_PROF_GDI);
 
@@ -538,17 +555,13 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
          /* This if for errors */
          DPRINTF(SGE_EVENT, MSG_GDI_RECEIVEMESSAGEFROMCOMMPROCFAILED_SISS, (commproc[0] ? commproc : "any"), (int) usid, (commproc[0] ? commproc : "any"), cl_get_error_text(i));
       }
-      cl_com_free_message(&message);
-      cl_com_free_endpoint(&sender);
-      /* This is if no message is there */
+      // also if no message is there; received frees what commlib may have handed out
       PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
       DRETURN(i);
    }
 
    // a sender whose names do not fit is refused like an invalid message, nothing is handed over (CS-3224)
    if (message != nullptr && !ocs_gdi_sender_names_fit(sender)) {
-      cl_com_free_message(&message);
-      cl_com_free_endpoint(&sender);
       PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
       DRETURN(CL_RETVAL_READ_ERROR);
    }
@@ -569,12 +582,15 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
       /* fill it in the packing buffer */
       i = ocs::tom::try_init_buffer_from(pb, (char *) message->message, message->message_length);
 
-      /* TODO: the packbuffer must be hold, not deleted !!! */
+      // the payload belongs to pb from here on, also when its header could not be read
       message->message = nullptr;
 
       if (i != PACK_SUCCESS) {
-         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS, sender->comp_host, sender->comp_name,
-               static_cast<uint32_t>(sender->comp_id), ocs::tom::pack_error_text(i));
+         // nothing is handed over: the callers clear pb only on success (CS-3230)
+         ocs::tom::clear_buffer(pb);
+         ERROR(MSG_GDI_ERRORUNPACKINGGDIREQUEST_SSUS,
+               sender != nullptr ? sender->comp_host : "", sender != nullptr ? sender->comp_name : "",
+               sender != nullptr ? static_cast<uint32_t>(sender->comp_id) : 0U, ocs::tom::pack_error_text(i));
          PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
          DRETURN(CL_RETVAL_READ_ERROR);
       }
@@ -599,9 +615,6 @@ ocs::gdi::ClientServerBase::sge_gdi_get_any_request(char *rhost, char *commproc,
             }
          }
       }
-
-      cl_com_free_endpoint(&sender);
-      cl_com_free_message(&message);
    }
    PROF_STOP_MEASUREMENT(SGE_PROF_GDI);
    DRETURN(CL_RETVAL_OK);
