@@ -229,7 +229,8 @@ test_conf_admin_user_without_value() {
       alp.reset();
       auto ep = spool_json_read_object(&alp, ocs::tom::CONF::descriptor.e, fields, nullptr, json.c_str());
       print_answers(alp);
-      check("T33", "admin_user with only blanks is refused, the reader does not crash", !ep);
+      check("T33", "admin_user with only blanks is refused with a message, the reader does not crash",
+            !ep && answer_list_has_error(&alp));
    }
    sge_free(&fields);
 }

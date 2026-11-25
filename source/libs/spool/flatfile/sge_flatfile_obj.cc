@@ -990,7 +990,10 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
       if (value != nullptr) {
          cf.set<CF_value>(value);
       } else {
+         // the caller sees why the read failed, not only the log (CS-3165)
          WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
+         answer_list_add_sprintf(alp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S,
+                                 name);
 
          sge_free_saved_vars(context);
          sge_free(&buffer);
