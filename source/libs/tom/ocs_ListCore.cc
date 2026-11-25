@@ -155,10 +155,7 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
-      auto *ep = reinterpret_cast<ocs::tom::ElementData *>(sge_malloc(sizeof(ocs::tom::ElementData)));
-      if (ep == nullptr) {
-         throw ListCoreError("out of memory creating an element");
-      }
+      auto *ep = ocs::uti::c_alloc<ocs::tom::ElementData>();
       ep->next = nullptr;
       ep->prev = nullptr;
 
@@ -183,12 +180,7 @@ namespace ocs::tom {
          const int n = descr_length(descr);
          for (int i = 0; i <= n; i++) {
             if ((descr[i].mt & MT_IS_REDUCED) == 0) {
-               normalised =
-                     reinterpret_cast<ocs::tom::FieldDescr *>(sge_malloc(sizeof(ocs::tom::FieldDescr) * (n + 1)));
-               if (normalised == nullptr) {
-                  sge_free(&ep);
-                  throw ListCoreError("out of memory creating an element");
-               }
+               normalised = ocs::uti::c_alloc<ocs::tom::FieldDescr>(n + 1);
                memcpy(normalised, descr, sizeof(ocs::tom::FieldDescr) * (n + 1));
                TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM, 1);
                TOM_STATS_TYPE(descr[0].nm, DCOPY_ELEM_B, sizeof(ocs::tom::FieldDescr) * (n + 1));
@@ -207,14 +199,9 @@ namespace ocs::tom {
       }
 
       elem_set_free(ep);
-      // the held descriptor is static or counted, so its header knows the number of values
-      ep->cont = static_cast<ocs::tom::FieldValue *>(
-            calloc(1, sizeof(ocs::tom::FieldValue) * ocs::tom::descr_header_of(ep->descr)->np));
-      if (ep->cont == nullptr) {
-         ocs::tom::release_descr(ep->descr);
-         sge_free(&ep);
-         throw ListCoreError("out of memory creating an element");
-      }
+      // the held descriptor is static or counted, so its header knows the number of values; at least one
+      // slot, so that an element without values gets a block as well, as calloc(1, 0) gave it
+      ep->cont = ocs::uti::c_alloc<ocs::tom::FieldValue>(std::max(ocs::tom::descr_header_of(ep->descr)->np, 1U));
 
       return ep;
    }
@@ -227,12 +214,9 @@ namespace ocs::tom {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
 
-      auto *lp = reinterpret_cast<ocs::tom::ListData *>(sge_malloc(sizeof(ocs::tom::ListData)));
-      if (lp == nullptr) {
-         throw ListCoreError("out of memory creating a list");
-      }
+      auto *lp = ocs::uti::create<ocs::tom::ListData>();
       if ((lp->listname = strdup(name)) == nullptr) {
-         sge_free(&lp);
+         ocs::uti::destroy(lp);
          throw ListCoreError("out of memory copying a list name");
       }
       lp->nelem = 0;
@@ -241,14 +225,14 @@ namespace ocs::tom {
       // the list holds a reference on the shared descriptor instead of a copy
       if ((lp->descr = ocs::tom::descr_acquire(descr)) == nullptr) {
          sge_free(&(lp->listname));
-         sge_free(&lp);
+         ocs::uti::destroy(lp);
          throw ListCoreError("out of memory creating a list");
       }
       // the hash tables belong to the list: one slot per hashed field if it may be hashed
       if (!ocs::tom::detail::hash_init_slots(lp, hash)) {
          ocs::tom::release_descr(lp->descr);
          sge_free(&(lp->listname));
-         sge_free(&lp);
+         ocs::uti::destroy(lp);
          throw ListCoreError("out of memory creating a list");
       }
 
@@ -329,7 +313,7 @@ namespace ocs::tom {
       if (lp->listname) {
          sge_free(&(lp->listname));
       }
-      sge_free(&lp);
+      ocs::uti::destroy(lp);
    }
 
    ocs::tom::ElementData *copy_elem(const ocs::tom::ElementData *ep, const bool hash, const bool skip_no_transfer) {

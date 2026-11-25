@@ -1135,10 +1135,7 @@ namespace ocs::tom {
          if (wire_n > static_cast<std::uint32_t>(n)) {
             format_error("more values than the descriptor has fields");
          }
-         ep->cont = static_cast<ocs::tom::FieldValue *>(calloc(1, sizeof(ocs::tom::FieldValue) * (n + 1)));
-         if (ep->cont == nullptr) {
-            no_memory("unpacking the values of an element");
-         }
+         ep->cont = ocs::uti::c_alloc<ocs::tom::FieldValue>(n + 1);
          std::uint32_t i = 0;
          for (const auto f : ocs::tom::present_fields(dp)) {
             if (i++ == wire_n) {
@@ -1165,10 +1162,7 @@ namespace ocs::tom {
                                            const int flags) {
          PackingProfile profile;
 
-         PartialElem ep(static_cast<ocs::tom::ElementData *>(calloc(1, sizeof(ocs::tom::ElementData))));
-         if (ep == nullptr) {
-            fail(PACK_ENOMEM, "unpacking an element");
-         }
+         PartialElem ep(ocs::uti::c_alloc<ocs::tom::ElementData>());
 
          tom_elem_kind kind;
          if (!elem_kind_from_wire(get_uint32(pb), &kind)) {
@@ -1398,10 +1392,7 @@ namespace ocs::tom {
       }
       TOM_STATS_CODE(const std::uint64_t stats_start = ocs::tom::stats::now_ns();)
 
-      OwnedList lp(static_cast<ocs::tom::ListData *>(calloc(1, sizeof(ocs::tom::ListData))));
-      if (lp == nullptr) {
-         fail(PACK_ENOMEM, "unpacking a list");
-      }
+      OwnedList lp(ocs::uti::create<ocs::tom::ListData>());
       lp->listname = get_str(pb);
 
       // the descriptor; the list holds the shared descriptor equal to it
@@ -1575,10 +1566,7 @@ namespace ocs::tom {
 
       const std::uint32_t flag = get_uint32(pb);
       if (flag != PackWhatArray) {
-         OwnedWhat what(static_cast<ocs::tom::WhatData *>(calloc(2, sizeof(ocs::tom::WhatData))));
-         if (what == nullptr) {
-            fail(PACK_ENOMEM, "unpacking a selection");
-         }
+         OwnedWhat what(ocs::uti::c_alloc<ocs::tom::WhatData>(2));
          switch (flag) {
             case PackWhatAll:
                what.get()[0].pos = WHAT_ALL;
@@ -1603,10 +1591,7 @@ namespace ocs::tom {
       if (n >= MAX_DESCR_SIZE) {
          no_memory("unpacking a selection of too many fields");
       }
-      OwnedWhat what(static_cast<ocs::tom::WhatData *>(calloc(n + 1, sizeof(ocs::tom::WhatData))));
-      if (what == nullptr) {
-         fail(PACK_ENOMEM, "unpacking a selection");
-      }
+      OwnedWhat what(ocs::uti::c_alloc<ocs::tom::WhatData>(n + 1));
       // the end mark first, so that freeing a selection cut off after some fields finds its end
       ocs::tom::WhatData *ep = what.get();
       for (std::uint32_t i = 0; i <= n; i++) {
@@ -1690,10 +1675,7 @@ namespace ocs::tom {
       if (get_uint32(pb) == 0) {
          return nullptr;
       }
-      OwnedWhere cp(static_cast<ocs::tom::WhereData *>(calloc(1, sizeof(ocs::tom::WhereData))));
-      if (cp == nullptr) {
-         no_memory("unpacking a condition");
-      }
+      OwnedWhere cp(ocs::uti::c_alloc<ocs::tom::WhereData>());
       cp->op = static_cast<int>(get_uint32(pb));
       switch (cp->op) {
          case EQUAL:

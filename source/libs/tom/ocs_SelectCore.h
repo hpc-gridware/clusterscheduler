@@ -100,7 +100,7 @@ namespace ocs::tom {
     * @brief Build the selection of every field or of none
     * @param pos WHAT_ALL or WHAT_NONE
     * @return the selection, owned by the caller, freed with lFreeWhat()
-    * @throw ListCoreError if there is no memory
+    * @note Out of memory aborts the process (ocs::uti::c_alloc()).
     */
    ocs::tom::WhatData *make_what_special(int pos);
 

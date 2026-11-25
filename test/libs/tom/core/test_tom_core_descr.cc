@@ -148,7 +148,7 @@ static ocs::tom::FieldDescr *heap_copy(const ocs::tom::FieldDescr *dp) {
    while (mt_get_type(dp[n].mt) != MT_END) {
       n++;
    }
-   auto *copy = reinterpret_cast<ocs::tom::FieldDescr *>(sge_malloc((n + 1) * sizeof(ocs::tom::FieldDescr)));
+   auto *copy = ocs::uti::c_alloc<ocs::tom::FieldDescr>(n + 1);
    memcpy(copy, dp, (n + 1) * sizeof(ocs::tom::FieldDescr));
    return copy;
 }

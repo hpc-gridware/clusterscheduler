@@ -66,15 +66,10 @@ namespace ocs::tom {
 
       /**
        * @brief Allocate a condition node
-       * @return the node, zeroed
-       * @throw ListCoreError if there is no memory
+       * @return the node, zeroed; out of memory aborts the process
        */
       ocs::tom::WhereData *new_node() {
-         auto *cp = static_cast<ocs::tom::WhereData *>(calloc(1, sizeof(ocs::tom::WhereData)));
-         if (cp == nullptr) {
-            throw ListCoreError("out of memory building a condition");
-         }
-         return cp;
+         return ocs::uti::c_alloc<ocs::tom::WhereData>();
       }
 
       /**
@@ -281,11 +276,7 @@ namespace ocs::tom {
             throw;
          }
       }
-      auto *ep = static_cast<ocs::tom::WhatData *>(calloc(entries.size() + 1, sizeof(ocs::tom::WhatData)));
-      if (ep == nullptr) {
-         free_subs(entries);
-         throw ListCoreError("out of memory building a selection");
-      }
+      auto *ep = ocs::uti::c_alloc<ocs::tom::WhatData>(entries.size() + 1);
       std::size_t i = 0;
       for (const WhatEntry &entry : entries) {
          ep[i].pos = present_pos(descr, entry.nm);
@@ -303,10 +294,7 @@ namespace ocs::tom {
    }
 
    ocs::tom::WhatData *make_what_special(const int pos) {
-      auto *ep = static_cast<ocs::tom::WhatData *>(calloc(2, sizeof(ocs::tom::WhatData)));
-      if (ep == nullptr) {
-         throw ListCoreError("out of memory building a selection");
-      }
+      auto *ep = ocs::uti::c_alloc<ocs::tom::WhatData>(2);
       ep[0].pos = pos;
       ep[0].nm = -99;
       ep[0].mt = -99;
@@ -622,10 +610,7 @@ namespace ocs::tom {
          n++;
       }
       // the cache of the reduced descriptor is not copied; the copy builds its own
-      auto *copy = static_cast<ocs::tom::WhatData *>(calloc(n + 1, sizeof(ocs::tom::WhatData)));
-      if (copy == nullptr) {
-         throw ListCoreError("out of memory copying a selection");
-      }
+      auto *copy = ocs::uti::c_alloc<ocs::tom::WhatData>(n + 1);
       try {
          for (int i = 0; i <= n; i++) {
             copy[i].pos = ep[i].pos;
@@ -937,11 +922,7 @@ namespace ocs::tom {
          give_up();
          throw;
       }
-      auto *ep = static_cast<ocs::tom::WhatData *>(calloc(entries.size() + 1, sizeof(ocs::tom::WhatData)));
-      if (ep == nullptr) {
-         give_up();
-         throw ListCoreError("out of memory merging two selections");
-      }
+      auto *ep = ocs::uti::c_alloc<ocs::tom::WhatData>(entries.size() + 1);
       std::ranges::copy(entries, ep);
       ep[entries.size()].pos = 0;
       ep[entries.size()].nm = NoName;
@@ -1010,11 +991,7 @@ const ocs::tom::FieldDescr *ocs::tom::detail::what_descr(const ocs::tom::WhatDat
       return nullptr;
    }
    // the reduction has the full length of the type (N-B-1)
-   auto *tmp = reinterpret_cast<ocs::tom::FieldDescr *>(
-         sge_malloc(sizeof(ocs::tom::FieldDescr) * (ocs::tom::descr_length(src) + 1)));
-   if (tmp == nullptr) {
-      return nullptr;
-   }
+   auto *tmp = ocs::uti::c_alloc<ocs::tom::FieldDescr>(ocs::tom::descr_length(src) + 1);
    int index = 0;
    if (ocs::tom::partial_descr(enp, src, tmp, &index) < 0) {
       sge_free(&tmp);

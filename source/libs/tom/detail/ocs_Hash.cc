@@ -246,22 +246,13 @@ tom_htable ocs::tom::detail::hash_create(const ocs::tom::FieldDescr *dp, const i
 
    /* hashtables OK? Then create tom_htable */
    if (ht != nullptr) {
-      ret = (tom_htable) sge_malloc(sizeof(struct _tom_htable));
-
-      /* malloc error? destroy hashtables */
-      if (ret == nullptr) {
-         sge_htable_destroy(ht);
-         if (nuht != nullptr) {
-            sge_htable_destroy(nuht);
-         }
-      } else {
-         ret->ht = ht;
-         ret->nuht = nuht;
-         ret->pos = pos;
-         TOM_STATS_CODE(ret->nm = descr->nm; ret->looked_up = false;)
-         TOM_STATS_FIELD(descr->nm, HASH_CREATE, 1);
-         TOM_STATS_FIELD(descr->nm, HASH_BUCKET_B, (sizeof(void *) << size) * (nuht != nullptr ? 2 : 1));
-      }
+      ret = ocs::uti::c_alloc<_tom_htable>();
+      ret->ht = ht;
+      ret->nuht = nuht;
+      ret->pos = pos;
+      TOM_STATS_CODE(ret->nm = descr->nm; ret->looked_up = false;)
+      TOM_STATS_FIELD(descr->nm, HASH_CREATE, 1);
+      TOM_STATS_FIELD(descr->nm, HASH_BUCKET_B, (sizeof(void *) << size) * (nuht != nullptr ? 2 : 1));
    }
 
    return ret;
@@ -274,32 +265,28 @@ tom_htable ocs::tom::detail::hash_create(const ocs::tom::FieldDescr *dp, const i
  * descriptor order. That includes a field added by ocs::tom::detail::hash_new(), which marks
  * it in the descriptor.
  *
+ * The array comes from ocs::uti::create_array(): a slot holds a std::atomic, which does not come into
+ * existence by malloc alone. It is released with ocs::uti::destroy_array() (hash_free_slots()).
+ *
  * @param lp the list, with lp->nslots > 0
- * @return the array of lp->nslots slots, or nullptr if it cannot be allocated
- *         or the descriptor does not match lp->nslots
+ * @return the array of lp->nslots slots, or nullptr if the descriptor does not match lp->nslots;
+ *         out of memory aborts the process
  */
 tom_hash_slot *ocs::tom::detail::hash_alloc_slots(const ocs::tom::ListData *lp) {
-   auto *slots = (tom_hash_slot *) sge_malloc(sizeof(tom_hash_slot) * lp->nslots);
-   if (slots == nullptr) {
-      return nullptr;
-   }
-   /* Placement new allocates nothing, it constructs each slot in the memory
-    * from sge_malloc() above. A slot holds a std::atomic, which (unlike a plain
-    * struct) does not come into existence by malloc alone, so storing into the
-    * raw memory would be undefined behaviour. The array is still freed with
-    * sge_free(): the slots need no destructor. */
+   auto *slots = ocs::uti::create_array<tom_hash_slot>(lp->nslots);
    uint32_t n = 0;
    for (const auto f : ocs::tom::present_fields(lp->descr)) {
       if (mt_do_hashing(lp->descr[f.pos].mt)) {
          if (n == lp->nslots) {
             break;
          }
-         new (&slots[n++]) tom_hash_slot{f.pos, nullptr};
+         // value-initialised: the table pointer is nullptr already
+         slots[n++].pos = f.pos;
       }
    }
    if (n != lp->nslots) {
       // cannot happen while only ocs::tom::detail::hash_new() adds hashed fields; the list stays linear
-      sge_free(&slots);
+      ocs::uti::destroy_array(slots);
    }
    return slots;
 }
@@ -312,7 +299,7 @@ tom_hash_slot *ocs::tom::detail::hash_alloc_slots(const ocs::tom::ListData *lp) 
  * theirs and use the winner's.
  *
  * @param lp the list, with lp->nslots > 0
- * @return the slot array, or nullptr if it cannot be allocated
+ * @return the slot array, or nullptr if the descriptor does not match lp->nslots
  */
 tom_hash_slot *ocs::tom::detail::hash_publish_slots(const ocs::tom::ListData *lp) {
    tom_hash_slot *slots = list_slots(lp);
@@ -327,7 +314,7 @@ tom_hash_slot *ocs::tom::detail::hash_publish_slots(const ocs::tom::ListData *lp
       return fresh;
    }
    // another reader published its array first; slots now holds that one
-   sge_free(&fresh);
+   ocs::uti::destroy_array(fresh);
    return slots;
 }
 
@@ -550,7 +537,7 @@ void ocs::tom::detail::hash_insert(const ocs::tom::ElementData *ep, void *key, t
       if (sge_htable_lookup(ht->ht, key, (const void **) &head.p) == True) {
          /* We only have something to do if ep isn't already stored */
          if (sge_htable_lookup(ht->nuht, &ep, (const void **) &nuh.p) == False) {
-            nuh.l = (non_unique_hash *) sge_malloc(sizeof(non_unique_hash));
+            nuh.l = ocs::uti::c_alloc<non_unique_hash>();
             nuh.l->data = ep;
             nuh.l->prev = head.l->last;
             nuh.l->next = nullptr;
@@ -559,8 +546,8 @@ void ocs::tom::detail::hash_insert(const ocs::tom::ElementData *ep, void *key, t
             sge_htable_store(ht->nuht, &ep, nuh.p);
          }
       } else { /* no list of non unique elements for this key, create new */
-         head.l = (non_unique_header *) sge_malloc(sizeof(non_unique_header));
-         nuh.l = (non_unique_hash *) sge_malloc(sizeof(non_unique_hash));
+         head.l = ocs::uti::c_alloc<non_unique_header>();
+         nuh.l = ocs::uti::c_alloc<non_unique_hash>();
          head.l->first = nuh.l;
          head.l->last = nuh.l;
          nuh.l->prev = nullptr;
@@ -907,8 +894,7 @@ void ocs::tom::detail::hash_destroy(tom_htable *htp) {
  */
 bool ocs::tom::detail::hash_init_slots(ocs::tom::ListData *lp, const bool hashable) {
    lp->nslots = 0;
-   // the list comes from sge_malloc()/calloc(): construct the atomic before it is used
-   new (&lp->ht) std::atomic<tom_hash_slot *>(nullptr);
+   lp->ht.store(nullptr, std::memory_order_relaxed);
    if (!hashable) {
       return true;
    }
@@ -958,7 +944,7 @@ void ocs::tom::detail::hash_free_slots(ocs::tom::ListData *lp) {
    }
    ocs::tom::detail::hash_free_tables(lp);
    tom_hash_slot *slots = list_slots(lp);
-   sge_free(&slots);
+   ocs::uti::destroy_array(slots);
    lp->ht.store(nullptr, std::memory_order_release);
    lp->nslots = 0;
 }
@@ -1067,20 +1053,18 @@ int ocs::tom::detail::hash_new(ocs::tom::ListData *lp, int nm, bool unique) {
     * first lookup allocates from the descriptor contains it. A list that has
     * an array already gets the slot added to it. The slots hold atomics:
     * realloc() would copy their bytes without constructing them, so the slots
-    * are constructed in a new array by placement new instead (see
+    * are built in a new array from ocs::uti::create_array() instead (see
     * ocs::tom::detail::hash_alloc_slots()). */
    if (!mt_do_hashing(descr[pos].mt)) {
       tom_hash_slot *old = list_slots(lp);
       if (old != nullptr) {
-         auto *slots = (tom_hash_slot *) sge_malloc(sizeof(tom_hash_slot) * (lp->nslots + 1));
-         if (slots == nullptr) {
-            DRETURN(0);
-         }
+         auto *slots = ocs::uti::create_array<tom_hash_slot>(lp->nslots + 1);
          for (uint32_t i = 0; i < lp->nslots; i++) {
-            new (&slots[i]) tom_hash_slot{old[i].pos, old[i].get()};
+            slots[i].pos = old[i].pos;
+            slots[i].set(old[i].get());
          }
-         new (&slots[lp->nslots]) tom_hash_slot{pos, nullptr};
-         sge_free(&old);
+         slots[lp->nslots].pos = pos;
+         ocs::uti::destroy_array(old);
          lp->ht.store(slots, std::memory_order_release);
       }
       lp->nslots++;

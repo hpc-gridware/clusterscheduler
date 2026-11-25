@@ -53,7 +53,7 @@ namespace ocs::tom {
     * @return the order, owned by the caller, freed with free_sort_order()
     * @throw FieldException with reason NullDescriptor if @p descr is null, ForeignField for a field the type does
     *        not hold, AbsentField for a field a reduced descriptor does not hold
-    * @throw ListCoreError if there is no memory
+    * @note Out of memory aborts the process (ocs::uti::c_alloc()).
     */
    ocs::tom::SortOrderData *make_sort_order(const ocs::tom::FieldDescr *descr, std::span<const SortKey> keys);
 

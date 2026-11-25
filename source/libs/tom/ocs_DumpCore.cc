@@ -704,10 +704,7 @@ namespace ocs::tom {
          if (!known) {
             fail("reading a descriptor of no known type");
          }
-         auto *out = reinterpret_cast<ocs::tom::FieldDescr *>(sge_malloc(sizeof(ocs::tom::FieldDescr) * (type_n + 1)));
-         if (out == nullptr) {
-            fail("reading a descriptor");
-         }
+         auto *out = ocs::uti::c_alloc<ocs::tom::FieldDescr>(type_n + 1);
          ocs::tom::descr_layout(type, keep, out);
          return out;
       }

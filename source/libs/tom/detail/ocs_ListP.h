@@ -317,8 +317,8 @@ namespace ocs::tom {
  * than release semantics.
  */
 struct tom_hash_slot {
-   int pos;                     ///< position of the hashed field in the list's descriptor
-   std::atomic<tom_htable> ht; ///< the table over that field, or nullptr while none is built
+   int pos{0};                          ///< position of the hashed field in the list's descriptor
+   std::atomic<tom_htable> ht{nullptr}; ///< the table over that field, or nullptr while none is built
 
    /**
     * @brief The table of the slot
@@ -348,16 +348,17 @@ namespace ocs::tom {
  * not to the descriptor, so that a descriptor carries nothing list specific.
  */
 struct ListData {
-   uint32_t nelem;      ///< number of elements currently in the list
-   uint32_t nslots;     ///< number of hashed fields of the type, 0 if the list is never hashed
-   char *listname;      ///< name of the list, used in dumps and error messages
-   const ocs::tom::FieldDescr *descr; ///< the object type every element has; one reference, see tom/ocs_Descr.h
-   ocs::tom::ElementData *first;    ///< first element, or nullptr when the list is empty
-   ocs::tom::ElementData *last;     ///< last element, or nullptr when the list is empty
+   uint32_t nelem{0};                          ///< number of elements currently in the list
+   uint32_t nslots{0};                         ///< number of hashed fields of the type, 0 if the list is never hashed
+   char *listname{nullptr};                    ///< name of the list, used in dumps and error messages
+   /// the object type every element has; one reference, see tom/ocs_Descr.h
+   const ocs::tom::FieldDescr *descr{nullptr};
+   ocs::tom::ElementData *first{nullptr};      ///< first element, or nullptr when the list is empty
+   ocs::tom::ElementData *last{nullptr};       ///< last element, or nullptr when the list is empty
    /// nslots hash slots, or nullptr until the first table build; atomic and
    /// mutable because concurrent first lookups on a const list publish it,
    /// which does not change the list logically, see #ocs::tom::detail::hash_lookup_table
-   mutable std::atomic<tom_hash_slot *> ht;
+   mutable std::atomic<tom_hash_slot *> ht{nullptr};
 };
 } // namespace ocs::tom
 static_assert(std::atomic<tom_hash_slot *>::is_always_lock_free, "the slot array pointer must not hide a mutex");

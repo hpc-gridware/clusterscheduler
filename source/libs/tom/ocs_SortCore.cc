@@ -25,6 +25,7 @@
 #include <new>
 #include <vector>
 
+#include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 
 #include "tom/detail/ocs_SortElems.h"
@@ -93,10 +94,7 @@ namespace ocs::tom {
       if (descr == nullptr) {
          throw_field_exception(FieldException::Reason::NullDescriptor, NoName, nullptr);
       }
-      auto *so = static_cast<ocs::tom::SortOrderData *>(malloc(sizeof(ocs::tom::SortOrderData) * (keys.size() + 1)));
-      if (so == nullptr) {
-         throw ListCoreError("no memory for a sort order");
-      }
+      auto *so = ocs::uti::c_alloc<ocs::tom::SortOrderData>(keys.size() + 1);
       std::size_t i = 0;
       for (const SortKey &key : keys) {
          const int pos = present_pos(descr, key.nm);
