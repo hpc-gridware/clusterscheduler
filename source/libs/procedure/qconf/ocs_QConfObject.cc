@@ -887,11 +887,8 @@ qconf_copy_fields(const spooling_field *fields) {
       n++;
    }
 
-   // sge_malloc() hands back char*, so the pointer type genuinely changes here
-   auto *copy = reinterpret_cast<spooling_field *>(sge_malloc(sizeof(spooling_field) * (n + 1)));
-   if (copy != nullptr) {
-      memcpy(copy, fields, sizeof(spooling_field) * (n + 1));
-   }
+   auto *copy = ocs::uti::c_alloc<spooling_field>(n + 1);
+   memcpy(copy, fields, sizeof(spooling_field) * (n + 1));
    return copy;
 }
 
