@@ -165,6 +165,9 @@ scale_memory_limit(sge_rlim_t limit, double factor) {
 
 /** @def PARSE_IT_UNDEF
  * @brief #PARSE_IT for a limit that may be the string `UNDEFINED`
+ *
+ * A missing value is not compared, sge_parse_limit() takes it as INFINITY (CS-3225).
+ *
  * @param dstp receives the parsed value, or `RLIMIT_UNDEFINED`
  * @param attr the configuration entry's name
  */
@@ -244,7 +247,7 @@ void setrlimits(bool trace_rlimit) {
 
 #define PARSE_IT_UNDEF(dstp, attr) \
    s = get_conf_val(attr); \
-   if (!strncasecmp(s, "UNDEFINED", sizeof("UNDEFINED")-1)) { \
+   if (s != nullptr && !strncasecmp(s, "UNDEFINED", sizeof("UNDEFINED")-1)) { \
       *dstp = RLIMIT_UNDEFINED; \
    } else { \
       sge_parse_limit(dstp, attr, s, error_str, sizeof(error_str)); \
