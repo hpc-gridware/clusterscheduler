@@ -574,6 +574,48 @@ int main(int /*argc*/, char * /*argv*/[]) {
       }
    }
 
+   /*
+    * CS-3133: a complex used only in the formula of a dynamic limit is referenced. The formula is the value
+    * of the limit (`slots=$num_proc*2`), the name is the limited complex.
+    */
+   printf("\n--- complexes referenced in a resource quota set ---\n");
+   {
+      auto rqs = ocs::tom::ElementPtr<ocs::tom::RQS>::create();
+      rqs->set<RQS_name>("cs3133");
+      auto rule = ocs::tom::ElementPtr<ocs::tom::RQR>::create();
+      auto dynamic_limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
+      dynamic_limit->set<RQRL_name>("slots");
+      dynamic_limit->set<RQRL_value>("$num_proc*2");
+      auto static_limit = ocs::tom::ElementPtr<ocs::tom::RQRL>::create();
+      static_limit->set<RQRL_name>("h_vmem");
+      static_limit->set<RQRL_value>("4G");
+      auto limits = ocs::tom::ListPtr<ocs::tom::RQRL>::create("");
+      limits->push_back(std::move(dynamic_limit));
+      limits->push_back(std::move(static_limit));
+      rule->set<RQR_limit>(std::move(limits));
+      auto rules = ocs::tom::ListPtr<ocs::tom::RQR>::create("");
+      rules->push_back(std::move(rule));
+      rqs->set<RQS_rule>(std::move(rules));
+
+      /**
+       * @brief Is the complex of this name referenced by the resource quota set?
+       * @param name the name of the complex
+       * @return the result of sge_centry_referenced_in_rqs()
+       */
+      auto referenced = [&rqs](const char *name) {
+         auto centry = ocs::tom::ElementPtr<ocs::tom::CE>::create();
+         centry->set<CE_name>(name);
+         return sge_centry_referenced_in_rqs(*rqs, *centry);
+      };
+
+      CHECK(id++, "the complex in the formula of a dynamic limit is referenced", referenced("num_proc"));
+      CHECK(id++, "the complex a dynamic limit limits is referenced", referenced("slots"));
+      CHECK(id++, "the complex of a static limit is referenced", referenced("h_vmem"));
+      CHECK(id++, "a complex that appears nowhere is not referenced", !referenced("mem_free"));
+      CHECK(id++, "a complex whose name is a prefix of the one in the formula is not referenced",
+            !referenced("num"));
+   }
+
    hgroup_list.reset();
    userset_list.reset();
 

@@ -1400,9 +1400,10 @@ bool rqs_filter_match(const ocs::tom::ConstElement<ocs::tom::RQRF> filter, const
 
 
 /**
- * @brief Search for a centry reference in
+ * @brief Search for a centry reference in a resource quota set
  *
- * This function search a centry reference in a resource quota set
+ * A limit references the complex it limits (RQRL_name) and, for a dynamic limit such as
+ * `slots=$num_proc*2`, every complex in the formula of its value (RQRL_value).
  *
  * @param rqs resource quota set (RQS)
  * @param centry complex entry (CE)
@@ -1421,19 +1422,18 @@ bool sge_centry_referenced_in_rqs(const ocs::tom::ConstElement<ocs::tom::RQS> rq
    for (const auto rule : rqs.get<RQS_rule>()) {
       for (const auto limit : rule.get<RQR_limit>()) {
          const char *limit_name = limit.get<RQRL_name>();
+         const char *limit_value = limit.get<RQRL_value>();
          DPRINTF("limit name %s\n", limit_name);
-         if (strchr(limit_name, '$') != nullptr) {
-            /* dynamical limit */
-            if (load_formula_is_centry_referenced(limit_name, centry)) {
-               ret = true;
-               break;
-            }
-         } else {
-            /* static limit */
-            if (strcmp(limit_name, centry_name) == 0) {
-               ret = true;
-               break;
-            }
+         // the limited complex, also of a dynamic limit
+         if (limit_name != nullptr && strcmp(limit_name, centry_name) == 0) {
+            ret = true;
+            break;
+         }
+         // a dynamic limit: the formula is the value of the limit, not its name (CS-3133)
+         if (limit_value != nullptr && strchr(limit_value, '$') != nullptr &&
+             load_formula_is_centry_referenced(limit_value, centry)) {
+            ret = true;
+            break;
          }
       }
       if (ret) {
