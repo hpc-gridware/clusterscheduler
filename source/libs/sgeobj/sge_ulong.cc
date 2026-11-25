@@ -46,6 +46,7 @@
 #include <cfloat>
 #include <ctime>
 #include <cstring>
+#include <cerrno>
 #include <climits>
 
 #include "uti/sge.h"               // INFINITY_STR
@@ -662,7 +663,7 @@ ulong_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
  * @brief Parse a POSIX job priority
  *
  * The accepted range is -1023 to 1024. A text that is not a whole number, also one with trailing
- * characters, is rejected (CS-3143).
+ * characters, is rejected (CS-3143), and so is a number that does not fit into an int.
  *
  * @param[out] answer_list receives the message naming the bad value
  * @param[out] valp receives the parsed value
@@ -675,15 +676,20 @@ bool ulong_parse_priority(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *val
    bool ret = true;
    char *s;
 
-   *valp = strtol(priority_str, &s, 10);
-   if (s == priority_str || *s != '\0') {
+   // parse wide and check the range before narrowing, an int would wrap 4294967306 to 10
+   errno = 0;
+   const long long value = strtoll(priority_str, &s, 10);
+   if (s == priority_str || *s != '\0' || errno == ERANGE || value > INT_MAX || value < INT_MIN) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALIDPRIO_S, priority_str);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
-   } else if (*valp > 1024 || *valp < -1023) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALIDPRIO_I, (int) *valp);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      ret = false;
+   } else {
+      *valp = static_cast<int>(value);
+      if (*valp > 1024 || *valp < -1023) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALIDPRIO_I, *valp);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
    }
    DRETURN(ret);
 }
@@ -692,7 +698,7 @@ bool ulong_parse_priority(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, int *val
  * @brief Parse the number of cores a binding request asks for
  *
  * A negative value is rejected, and so is a text that is not a whole number, also one with
- * trailing characters (CS-3143).
+ * trailing characters (CS-3143), and a number that does not fit into an int.
  *
  * @param[out] answer_list receives the message naming the bad value
  * @param[out] valp receives the parsed value
@@ -705,15 +711,20 @@ bool ulong_parse_binding_amount(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, in
    bool ret = true;
    char *s;
 
-   *valp = strtol(bamount_str, &s, 10);
-   if (s == bamount_str || *s != '\0') {
+   // parse wide and check the range before narrowing, an int would wrap 4294967300 to 4
+   errno = 0;
+   const long long value = strtoll(bamount_str, &s, 10);
+   if (s == bamount_str || *s != '\0' || errno == ERANGE || value > INT_MAX || value < INT_MIN) {
       snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_BAMOUNT_S, bamount_str);
       answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
       ret = false;
-   } else if (*valp < 0) {
-      snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_BAMOUNT_I, (int) *valp);
-      answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
-      ret = false;
+   } else {
+      *valp = static_cast<int>(value);
+      if (*valp < 0) {
+         snprintf(SGE_EVENT, SGE_EVENT_SIZE, MSG_ULNG_INVALID_BAMOUNT_I, *valp);
+         answer_list_add(answer_list, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+         ret = false;
+      }
    }
    DRETURN(ret);
 }

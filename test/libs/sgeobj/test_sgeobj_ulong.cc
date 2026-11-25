@@ -196,6 +196,50 @@ test_parse_priority_and_binding_amount() {
 // ---------------------------------------------------------------------------
 
 /**
+ * @brief Priority and binding amount reject a number that does not fit into an int [T21–T26] (CS-3143)
+ *
+ * Both parsers stored the result of strtol() in an int, so 4294967306 wrapped to 10 and `qsub -p 4294967306`
+ * was accepted with priority 10; a binding amount of 4294967300 became 4.
+ *
+ * @return nothing; CHECK records the results
+ */
+static void
+test_parse_priority_and_binding_amount_range() {
+   /**
+    * @brief Parse a priority
+    * @param text the text
+    * @param value receives the parsed value
+    * @return true when it was accepted without an error answer, false when it was rejected with one
+    */
+   auto priority = [](const char *text, int &value) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      const bool ok = ulong_parse_priority(&al, &value, text);
+      return ok && al == nullptr;
+   };
+   /**
+    * @brief Parse a binding amount
+    * @param text the text
+    * @param value receives the parsed value
+    * @return true when it was accepted without an error answer, false otherwise
+    */
+   auto amount = [](const char *text, int &value) {
+      ocs::tom::ListPtr<ocs::tom::AN> al;
+      const bool ok = ulong_parse_binding_amount(&al, &value, text);
+      return ok && al == nullptr;
+   };
+
+   int value = 99;
+   CHECK(21, "priority 4294967306 is rejected", !priority("4294967306", value));
+   CHECK(22, "priority -4294967296 is rejected", !priority("-4294967296", value));
+   CHECK(23, "priority 99999999999999999999 is rejected", !priority("99999999999999999999", value));
+   CHECK(24, "priority 1024 is accepted", priority("1024", value) && value == 1024);
+   CHECK(25, "binding amount 4294967300 is rejected", !amount("4294967300", value));
+   CHECK(26, "binding amount 99999999999999999999 is rejected", !amount("99999999999999999999", value));
+}
+
+// ---------------------------------------------------------------------------
+
+/**
  * @brief Module-test entry point; runs the scenarios through the shared frame.
  * @param argc argument count, see ocs_module_test.h for the frame's options
  * @param argv argument vector
@@ -223,5 +267,12 @@ int main(int argc, char *argv[]) {
         "parse values out of range"},
        "the valid values are accepted, everything else is rejected with an error answer",
        {}, {9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, test_parse_priority_and_binding_amount},
+      {"ULONG-03", "priority and binding amount out of the int range (CS-3143)",
+       "ulong_parse_priority() and ulong_parse_binding_amount() reject a number that does not fit into an int "
+       "instead of wrapping it into the accepted range",
+       {"parse numbers above and below the int range and above the long long range",
+        "parse the largest valid priority"},
+       "the numbers out of range are rejected with an error answer, 1024 is accepted",
+       {}, {21, 22, 23, 24, 25, 26}, test_parse_priority_and_binding_amount_range},
    });
 }
