@@ -38,6 +38,8 @@
 #include <sys/stat.h>
 
 #include <functional>
+#include <string>
+#include <vector>
 
 #include "basis_types.h"
 
@@ -112,6 +114,11 @@ constexpr int OCS_MKDIR_FOR_OWNER_PLANTED = -2;
 
 int ocs_mkdir_for_owner(const char *path, int fmode, uid_t uid, gid_t gid, dstring *error,
                         const std::function<void(int)> &before_attempt = nullptr);
+
+/** @brief ocs_mkdir_for_owner(): what follows the path in the name of a directory it moved aside */
+#define OCS_MOVED_ASIDE_INFIX ".stale."
+
+int ocs_moved_aside_paths(const char *path, uid_t owner, std::vector<std::string> &paths, dstring *error);
 
 int sge_rmdir(const char *cp, dstring *err_str, bool recursive = true, bool ignore_notempty = false);
 

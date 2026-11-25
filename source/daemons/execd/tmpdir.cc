@@ -33,6 +33,8 @@
 /*___INFO__MARK_END__*/
 
 #include <cerrno>
+#include <string>
+#include <vector>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -54,11 +56,12 @@
  * writable and the name is predictable, so a user may have planted something at the path:
  * ocs_mkdir_for_owner() never follows a symbolic link and changes owner and mode through the open
  * descriptor (CS-3203). A link, a file or another non-directory at the path is removed, a
- * directory of another user is renamed aside, and the directory is created. A directory that
- * already belongs to root or to the job owner, for example one left behind by an earlier start of
- * the same task, is used as before. A failing mkdir(), fchown() or fchmod() is a problem of the
- * host; when the path cannot be made the directory for any other reason, @p planted tells the
- * caller that only this job failed, not the queue.
+ * directory of another user is renamed aside, which logs a warning naming its uid and gid, and the
+ * directory is created; sge_remove_tmpdir() removes what was renamed aside when the job ends
+ * (CS-3221). A directory that already belongs to root or to the job owner, for example one left
+ * behind by an earlier start of the same task, is used as before. A failing mkdir(), fchown() or
+ * fchmod() is a problem of the host; when the path cannot be made the directory for any other
+ * reason, @p planted tells the caller that only this job failed, not the queue.
  *
  * @param qep the queue instance, which configures where temporary directories live
  * @param jobid the job
@@ -116,12 +119,23 @@ sge_make_tmpdir(const lListElem *qep, const u_long32 jobid, const u_long32 jatas
  * never follows a symbolic link, also not one the owner swaps in for a subdirectory while the
  * tree is being removed (CS-3202).
  *
+ * The directories of other users that sge_make_tmpdir() renamed aside from the path
+ * (`<tmpdir>.stale.<pid>.<time>`, CS-3203) are removed the same way (CS-3221). Their names are
+ * derived from the path of the temporary directory, so nothing has to be remembered between the
+ * start and the end of the job, and directories renamed aside before a restart of execd or by a
+ * further task of a parallel job are found as well. A directory that cannot be removed is logged,
+ * the job is not affected. Only a directory that does not belong to the job owner was renamed aside,
+ * so one that does is left in place: a name alone may also match the live temporary directory of
+ * the same job in a queue named like `<queue>.stale.<digits>.<digits>`. When the job owner cannot be
+ * resolved, nothing renamed aside is removed.
+ *
  * @param dir the configured parent of the temporary directories (QU_tmpdir), may be nullptr
- * @param job_owner the job owner (unused)
+ * @param job_owner the name of the job owner, whose directories are never removed as renamed aside
  * @param jobid the job
  * @param jataskid the array task
  * @param queue_name the queue instance, part of the directory's name
- * @return 0 on success or when no parent is configured, -1 when the directory could not be removed
+ * @return 0 on success or when no parent is configured, -1 when the directory or one renamed aside
+ *         from its path could not be removed
  */
 int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_long32 jataskid, const char *queue_name)
 {
@@ -138,16 +152,37 @@ int sge_remove_tmpdir(const char *dir, const char *job_owner, u_long32 jobid, u_
    }
 
    snprintf(tmpstr, sizeof(tmpstr), "%s/" sge_u32 "." sge_u32 ".%s", dir, jobid, jataskid, queue_name);
+   int ret = 0;
    DPRINTF("recursively unlinking \"%s\"\n", tmpstr);
    sge_switch2start_user();
    if (sge_rmdir(tmpstr, &err_str)) {
       ERROR(MSG_FILE_RECURSIVERMDIR_SS, tmpstr, err_str_buffer);
-      sge_switch2admin_user();
-      DRETURN(-1);
+      ret = -1;
+   }
+
+   // directories of other users moved aside from the path by sge_make_tmpdir() (CS-3221)
+   std::vector<std::string> aside;
+   uid_t owner_uid;
+   sge_dstring_clear(&err_str);
+   if (job_owner == nullptr || sge_user2uid(job_owner, &owner_uid, nullptr, MAX_NIS_RETRIES) != 0) {
+      // without the owner's uid a live directory of the owner cannot be told apart, keep everything
+      ERROR(MSG_SYSTEM_GETPWNAMFAILED_S, job_owner != nullptr ? job_owner : "");
+      ret = -1;
+   } else if (ocs_moved_aside_paths(tmpstr, owner_uid, aside, &err_str) != 0) {
+      ERROR(SFNMAX, err_str_buffer);
+      ret = -1;
+   }
+   for (const auto &path : aside) {
+      DPRINTF("recursively unlinking \"%s\", moved aside from \"%s\"\n", path.c_str(), tmpstr);
+      sge_dstring_clear(&err_str);
+      if (sge_rmdir(path.c_str(), &err_str)) {
+         ERROR(MSG_FILE_RECURSIVERMDIR_SS, path.c_str(), err_str_buffer);
+         ret = -1;
+      }
    }
    sge_switch2admin_user();
 
-   DRETURN(0);
+   DRETURN(ret);
 }
 
 char *sge_get_tmpdir(lListElem *qep, u_long32 jobid, u_long32 jataskid, char *tmpdir, size_t tmpdir_size)

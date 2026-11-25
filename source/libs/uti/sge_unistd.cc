@@ -393,8 +393,10 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
  * - an existing directory is used when it belongs to the caller (the effective user id) or
  *   already to @p uid, for example the directory left behind by an earlier attempt of the same job;
  * - a directory of any other user is renamed aside within the same parent
- *   (`<path>.stale.<pid>.<time>`, rename() does not follow a link either), with a warning, and the
- *   directory is created once more.
+ *   (`<path>.stale.<pid>.<time>`, rename() does not follow a link either), with a warning that names
+ *   both paths and the uid and gid of the directory, and the directory is created once more. Nothing
+ *   here removes it: the caller does that with ocs_moved_aside_paths() and sge_rmdir() once the
+ *   directory at @p path is no longer needed (CS-3221).
  *
  * A failing mkdir() (e.g. EACCES or ENOSPC) and a failing fchown() or fchmod() are problems of the
  * host and give #OCS_MKDIR_FOR_OWNER_ERROR: the latter two act on the descriptor of a directory
@@ -474,9 +476,10 @@ int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, cons
          // a directory of another user: keep it, but out of the way
          close(fd);
          DSTRING_STATIC(aside, SGE_PATH_MAX);
-         sge_dstring_sprintf(&aside, "%s.stale.%d.%ld", path, static_cast<int>(getpid()),
+         sge_dstring_sprintf(&aside, "%s" OCS_MOVED_ASIDE_INFIX "%d.%ld", path, static_cast<int>(getpid()),
                              static_cast<long>(time(nullptr)));
-         WARNING(MSG_FILE_MOVINGASIDE_SS, path, sge_dstring_get_string(&aside));
+         WARNING(MSG_FILE_MOVINGASIDE_SSUU, path, sge_dstring_get_string(&aside), stat_buffer.st_uid,
+                 stat_buffer.st_gid);
          if (rename(path, sge_dstring_get_string(&aside)) != 0 && errno != ENOENT) {
             const int rename_errno = errno;
             sge_dstring_sprintf(error, MSG_FILE_RENAMEFAILED_SSS, path, sge_dstring_get_string(&aside),
@@ -507,6 +510,109 @@ int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, cons
    }
 
    DRETURN(OCS_MKDIR_FOR_OWNER_PLANTED);
+}
+
+/**
+ * @brief Does a name follow the pattern ocs_mkdir_for_owner() gives a directory it moved aside?
+ *
+ * @param name the name of a directory entry
+ * @param prefix the name of the directory that was to be created, followed by #OCS_MOVED_ASIDE_INFIX
+ * @return true when @p name is @p prefix followed by `<digits>.<digits>` and nothing else
+ */
+static bool ocs_is_moved_aside_name(const char *name, const std::string &prefix) {
+   if (strncmp(name, prefix.c_str(), prefix.size()) != 0) {
+      return false;
+   }
+   const char *p = name + prefix.size();
+   // <pid>
+   const char *start = p;
+   while (*p >= '0' && *p <= '9') {
+      p++;
+   }
+   if (p == start || *p != '.') {
+      return false;
+   }
+   // <time>
+   start = ++p;
+   while (*p >= '0' && *p <= '9') {
+      p++;
+   }
+   return p != start && *p == '\0';
+}
+
+/**
+ * @brief Find the directories ocs_mkdir_for_owner() moved aside from a path
+ *
+ * The name of a directory moved aside is derived from @p path (`<path>.stale.<pid>.<time>`), so the
+ * caller does not have to remember it: the parent of @p path is searched for entries of exactly that
+ * pattern, which also finds those moved aside by an earlier process, e.g. before a restart of execd.
+ * Only directories are listed; every entry is examined with fstatat(AT_SYMLINK_NOFOLLOW), so a
+ * symbolic link or another non-directory that bears such a name is never listed. The caller removes
+ * the directories with sge_rmdir(), which does not follow a symbolic link either, also not one that
+ * replaces a listed directory in between (CS-3221).
+ *
+ * The name alone does not prove that a directory was moved aside: another directory may carry the
+ * same name, e.g. the live TMPDIR `<job>.<task>.<queue>` of a queue named like `all.q.stale.5.6` next
+ * to that of `all.q`. ocs_mkdir_for_owner() moves a directory aside only when it belongs to a user
+ * other than @p owner, so a directory that belongs to @p owner is never listed.
+ *
+ * @param path the directory that was to be created
+ * @param owner the user the directory at @p path was created for; a directory of this user is not listed
+ * @param[out] paths receives the full paths of the directories moved aside, in no particular order
+ * @param[out] error destination for an error message, may be nullptr
+ * @return 0 on success, also when the parent does not exist, -1 when the parent cannot be read
+ */
+int ocs_moved_aside_paths(const char *path, const uid_t owner, std::vector<std::string> &paths, dstring *error) {
+   DENTER(TOP_LAYER);
+
+   paths.clear();
+   if (path == nullptr) {
+      sge_dstring_sprintf(error, MSG_POINTER_NULLPARAMETER);
+      DRETURN(-1);
+   }
+
+   const std::string full{path};
+   const size_t slash = full.rfind('/');
+   std::string parent = ".";
+   std::string prefix = full;
+   if (slash != std::string::npos) {
+      parent = slash == 0 ? "/" : full.substr(0, slash);
+      prefix = full.substr(slash + 1);
+   }
+   prefix += OCS_MOVED_ASIDE_INFIX;
+
+   const int parent_fd = SGE_OPEN2(parent.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+   if (parent_fd < 0) {
+      const int open_errno = errno;
+      if (open_errno == ENOENT) {
+         DRETURN(0);
+      }
+      sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, parent.c_str(), strerror(open_errno));
+      DRETURN(-1);
+   }
+   DIR *dir = fdopendir(parent_fd);
+   if (dir == nullptr) {
+      const int saved_errno = errno;
+      sge_dstring_sprintf(error, MSG_FILE_OPENDIRFAILED_SS, parent.c_str(), strerror(saved_errno));
+      close(parent_fd);
+      DRETURN(-1);
+   }
+
+   const std::string separator = parent == "/" ? "" : "/";
+   const dirent *entry;
+   while ((entry = readdir(dir)) != nullptr) {
+      if (!ocs_is_moved_aside_name(entry->d_name, prefix)) {
+         continue;
+      }
+      SGE_STRUCT_STAT stat_buffer{};
+      if (SGE_FSTATAT(dirfd(dir), entry->d_name, &stat_buffer, AT_SYMLINK_NOFOLLOW) == 0 &&
+          S_ISDIR(stat_buffer.st_mode) && stat_buffer.st_uid != owner) {
+         paths.push_back(parent + separator + entry->d_name);
+      }
+   }
+   closedir(dir);
+
+   DRETURN(0);
 }
 
 /** @brief The deepest directory level below its top that sge_rmdir() descends into */
