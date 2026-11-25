@@ -34,8 +34,14 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
+
+#include "comm/commlib.h"
+
+#include "uti/sge.h"
 
 #include "sgeobj/sge_answer.h"
+#include "sgeobj/sge_host.h"
 #include "sgeobj/sge_utility.h"
 #include "sgeobj/sge_cull_xml.h"
 
@@ -48,6 +54,11 @@
  * through verify_str_key(), so verify_host_name() must reject names that are
  * unsafe as a single path component: a '/' anywhere or a leading '.'.
  * Before the fix those were accepted.
+ *
+ * Also covers the length limit (CS-3214): a host name is held in char[CL_MAXHOSTNAMELEN]
+ * buffers, so it may have CL_MAXHOSTNAMELEN - 1 characters at most. A too long name once
+ * added an error to the answer list but returned true, and a name of exactly
+ * CL_MAXHOSTNAMELEN characters was accepted although it does not fit.
  *
  * @return number of failed checks
  */
@@ -77,8 +88,76 @@ static int test_verify_host_name() {
          ret++;
       }
    }
-
    lFreeList(&al);
+
+   // CS-3214: the length limit
+   const std::string at_limit(CL_MAXHOSTNAMELEN - 1, 'a');
+   const std::string above_limit(CL_MAXHOSTNAMELEN, 'a');
+   if (!verify_host_name(&al, at_limit.c_str()) || answer_list_has_error(&al)) {
+      printf("verify_host_name() should accept a name of CL_MAXHOSTNAMELEN - 1 characters\n");
+      ret++;
+   }
+   lFreeList(&al);
+   if (verify_host_name(&al, above_limit.c_str())) {
+      printf("verify_host_name() should reject a name of CL_MAXHOSTNAMELEN characters\n");
+      ret++;
+   }
+   if (!answer_list_has_error(&al)) {
+      printf("verify_host_name() should leave an error for a too long name\n");
+      ret++;
+   }
+   lFreeList(&al);
+
+   return ret;
+}
+
+/**
+ * @brief Regression test for CS-3214: sge_resolve_hostname() refuses an over-long name instead of truncating it.
+ *
+ * The first CL_MAXHOSTNAMELEN - 1 characters of an over-long name could be the name of another host, so the
+ * result must stay empty. None of the names checked here reaches the resolver, so no commlib setup is needed.
+ *
+ * @return number of failed checks
+ */
+static int test_resolve_hostname() {
+   int ret = 0;
+   char unique[CL_MAXHOSTNAMELEN];
+
+   // a name of exactly CL_MAXHOSTNAMELEN characters does not fit with its terminator
+   const std::string at_limit(CL_MAXHOSTNAMELEN, 'h');
+   memset(unique, 'x', sizeof(unique));
+   int rc = sge_resolve_hostname(at_limit.c_str(), unique, EH_name);
+   if (rc != CL_RETVAL_HOSTNAME_LENGTH_ERROR || unique[0] != '\0') {
+      printf("sge_resolve_hostname() of CL_MAXHOSTNAMELEN characters: rc %d, should be a length error and empty\n",
+             rc);
+      ret++;
+   }
+
+   // its first CL_MAXHOSTNAMELEN - 1 characters could be the name of another host
+   const std::string over_long(300, 'h');
+   memset(unique, 'x', sizeof(unique));
+   rc = sge_resolve_hostname(over_long.c_str(), unique, NoName);
+   if (rc != CL_RETVAL_HOSTNAME_LENGTH_ERROR || unique[0] != '\0') {
+      printf("sge_resolve_hostname() of 300 characters: rc %d, should be a length error and empty\n", rc);
+      ret++;
+   }
+
+   // the special names are kept as they are, without a resolver
+   memset(unique, 'x', sizeof(unique));
+   rc = sge_resolve_hostname(SGE_GLOBAL_NAME, unique, EH_name);
+   if (rc != CL_RETVAL_OK || strcmp(unique, SGE_GLOBAL_NAME) != 0) {
+      printf("sge_resolve_hostname(" SGE_GLOBAL_NAME ") should keep the name as it is\n");
+      ret++;
+   }
+
+   // a missing name is a parameter error and leaves the result empty
+   memset(unique, 'x', sizeof(unique));
+   rc = sge_resolve_hostname(nullptr, unique, EH_name);
+   if (rc != CL_RETVAL_PARAMS || unique[0] != '\0') {
+      printf("sge_resolve_hostname(nullptr): rc %d, should be a parameter error and empty\n", rc);
+      ret++;
+   }
+
    return ret;
 }
 
@@ -122,6 +201,13 @@ static int test_escape_string() {
    return ret;
 }
 
+/**
+ * @brief Run the sgeobj utility module tests
+ *
+ * @param argc number of command line arguments (unused)
+ * @param argv command line arguments (unused)
+ * @return 0 if all checks passed, otherwise the number of failed checks
+ */
 int main(int argc, char *argv[])
 {
    lList *answer_list = nullptr;
@@ -164,6 +250,7 @@ int main(int argc, char *argv[])
    }
 
    ret += test_verify_host_name();
+   ret += test_resolve_hostname();
    ret += test_escape_string();
 
    if (ret == 0) {

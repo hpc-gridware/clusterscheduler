@@ -310,6 +310,14 @@ ocs::gdi::Packet::broadcast_that_handled()
    DRETURN_VOID;
 }
 
+/**
+ * @brief Pack this packet, send it to qmaster through the commlib and receive the answer
+ *
+ * The path an ordinary client takes. A job submission is run through the client JSV first.
+ *
+ * @param[out] answer_list receives JSV, packing or communication errors
+ * @return true when the packet was sent and answered, false otherwise
+ */
 bool
 ocs::gdi::Packet::execute_external(lList **answer_list)
 {
@@ -433,8 +441,8 @@ ocs::gdi::Packet::execute_external(lList **answer_list)
       int runs = 0;
       int retries;
 
-      strcpy(rcv_host, host);
-      strcpy(rcv_commproc, commproc);
+      sge_strlcpy(rcv_host, host, sizeof(rcv_host));
+      sge_strlcpy(rcv_commproc, commproc, sizeof(rcv_commproc));
 
       // running this loop as long as configured in gdi_retries, doing a break after getting a gdi_request
       do {

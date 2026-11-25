@@ -235,7 +235,8 @@ verify_str_key(lList **alpp, const char *str, size_t str_length, const char *nam
 /**
  * @brief Verify that a hostname is acceptable.
  *
- * Rejects an empty/nullptr name, a name longer than CL_MAXHOSTNAMELEN, and a
+ * Rejects an empty/nullptr name, a name of CL_MAXHOSTNAMELEN characters or more
+ * (it does not fit into a host name buffer with its terminator, CS-3214), and a
  * name that is unsafe as a single filesystem path component — i.e. one that
  * contains '/' or starts with '.' (".", "..", "../x", ".hidden"). The latter
  * matters because a host name becomes a spool-file key (EXECHOST_DIR/<name>),
@@ -248,6 +249,7 @@ verify_str_key(lList **alpp, const char *str, size_t str_length, const char *nam
  */
 bool verify_host_name(lList **answer_list, const char *host_name)
 {
+   DENTER(TOP_LAYER);
    bool ret = true;
 
    if (host_name == nullptr || *host_name == '\0') {
@@ -257,9 +259,12 @@ bool verify_host_name(lList **answer_list, const char *host_name)
    }
 
    if (ret) {
-      if (strlen(host_name) > CL_MAXHOSTNAMELEN) {
+      // a host name is held in char[CL_MAXHOSTNAMELEN] buffers, which need one byte for the terminator,
+      // and the commlib refuses to resolve a name of CL_MAXHOSTNAMELEN characters (CS-3214)
+      if (strlen(host_name) >= CL_MAXHOSTNAMELEN) {
          answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR,
-                                 MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN);
+                                 MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN - 1);
+         ret = false;
       }
    }
 
@@ -273,7 +278,7 @@ bool verify_host_name(lList **answer_list, const char *host_name)
       ret = false;
    }
 
-   return ret;
+   DRETURN(ret);
 }
 
 int reresolve_qualified_hostname() {

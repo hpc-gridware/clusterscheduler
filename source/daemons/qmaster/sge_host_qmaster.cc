@@ -253,14 +253,23 @@ host_list_add_missing_href(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const
    DRETURN(ret);
 }
 
-/* ------------------------------------------------------------
-
-   sge_del_host - deletes a host from the host_list
-
-   if the invoking process is the qmaster the host list is
-   spooled to disk
-
-*/
+/**
+ * @brief Delete a host from an execution, administrative or submit host list
+ *
+ * The host list is spooled to disk. A name that cannot be resolved is looked up as it was given; a name of
+ * `CL_MAXHOSTNAMELEN` characters or more is refused, because no host can have it (CS-3214).
+ *
+ * @param packet the GDI packet of the request
+ * @param task the GDI task of the request
+ * @param hep the host to delete; only its name is used
+ * @param[out] alpp receives the result messages
+ * @param ruser the user who requested the deletion
+ * @param rhost the host the request came from
+ * @param target the host list the host belongs to (`SGE_EH_LIST`, `SGE_AH_LIST` or `SGE_SH_LIST`)
+ * @param master_hgroup_list the host groups, to check that the host is not referenced
+ * @return `STATUS_OK` on success, `STATUS_ESYNTAX` for an over-long name, `STATUS_EEXIST` if the host does not
+ *         exist, otherwise another `STATUS_*` error code
+ */
 int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep, lList **alpp, char *ruser, char *rhost, u_long32 target,
                  const lList *master_hgroup_list) {
    int pos;
@@ -319,12 +328,13 @@ int sge_del_host(ocs::gdi::Packet *packet, ocs::gdi::Task *task, lListElem *hep,
    }
 
    ret = sge_resolve_hostname(host, unique, EH_name);
-   if (ret != CL_RETVAL_OK) {
-      /* 
-       * Due to CR 6319231, IZ 1760 this is allowed 
-       */
-      ;
+   if (ret == CL_RETVAL_HOSTNAME_LENGTH_ERROR && unique[0] == '\0') {
+      // CS-3214: no host has a name this long - never look one up by a shortened name
+      ERROR(MSG_HOSTNAME_TOO_LONG_D, CL_MAXHOSTNAMELEN - 1);
+      answer_list_add(alpp, SGE_EVENT, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+      DRETURN(STATUS_ESYNTAX);
    }
+   // any other error: the name is used as it was given, due to CR 6319231, IZ 1760
 
    /* check if host is in host list */
    if ((ep = host_list_locate(*host_list, unique)) == nullptr) {

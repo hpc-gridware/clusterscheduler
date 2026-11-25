@@ -44,6 +44,7 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge.h"
+#include "uti/sge_string.h"
 
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_host.h"
@@ -62,6 +63,13 @@
 
 #include "sig_handlers.h"
 
+/**
+ * @brief Return a copy of the configuration of a host
+ *
+ * @param aName the host name; a name that cannot be resolved is looked up as it was given
+ * @return a copy of the configuration, which the caller has to free; nullptr if there is none or the name is
+ *         longer than a host name may be
+ */
 static lListElem* sge_get_configuration_for_host(const char* aName)
 {
    char unique_name[CL_MAXHOSTNAMELEN];
@@ -80,7 +88,11 @@ static lListElem* sge_get_configuration_for_host(const char* aName)
    int ret = sge_resolve_hostname(aName, unique_name, EH_name);
    if (CL_RETVAL_OK != ret) {
       DPRINTF("%s: error %s resolving host %s\n", __func__, cl_get_error_text(ret), aName);
-      strcpy(unique_name, aName);
+      if (unique_name[0] == '\0') {
+         // over-long: sge_resolve_hostname() left it empty, no configuration has such a name
+         DRETURN(nullptr);
+      }
+      sge_strlcpy(unique_name, aName, sizeof(unique_name));
    }
 
    lListElem *conf = lCopyElem(lGetElemHost(cluster_config, CONF_name, unique_name));

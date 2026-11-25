@@ -8019,7 +8019,17 @@ static void *cl_com_handle_write_thread(void *t_conf) {
    return (nullptr);
 }
 
-/* MT-NOTE: getuniquehostname() is MT safe */
+/**
+ * @brief Resolve a host name to the canonical name the cluster uses
+ *
+ * @param hostin the name to resolve
+ * @param[out] hostout receives the canonical name; must hold `CL_MAXHOSTNAMELEN` bytes
+ * @param refresh_aliases re-read the alias file first (not implemented)
+ * @return `CL_RETVAL_OK` on success, `CL_RETVAL_HOSTNAME_LENGTH_ERROR` if the resolved name has
+ *         `CL_MAXHOSTNAMELEN` characters or more, else another `CL_RETVAL_*` code
+ *
+ * @note MT-NOTE: getuniquehostname() is MT safe
+ */
 int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
    char *resolved_host = nullptr;
    int ret_val;
@@ -8033,7 +8043,7 @@ int getuniquehostname(const char *hostin, char *hostout, int refresh_aliases) {
       if (strlen(resolved_host) >= CL_MAXHOSTNAMELEN) {
          char tmp_buffer[1024];
          snprintf(tmp_buffer, 1024, MSG_CL_COMMLIB_HOSTNAME_EXEEDS_MAX_HOSTNAME_LENGTH_SU,
-                  resolved_host, static_cast<u_long32>(CL_MAXHOSTNAMELEN));
+                  resolved_host, static_cast<u_long32>(CL_MAXHOSTNAMELEN - 1));
          cl_commlib_push_application_error(CL_LOG_ERROR, CL_RETVAL_HOSTNAME_LENGTH_ERROR, tmp_buffer);
          sge_free(&resolved_host);
          return CL_RETVAL_HOSTNAME_LENGTH_ERROR;
