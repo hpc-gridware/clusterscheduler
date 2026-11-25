@@ -59,10 +59,12 @@
  * parent directory is usually not writable by users. The parent (QU_tmpdir) is often world
  * writable and the name is predictable, so a user may have planted something at the path:
  * ocs_mkdir_for_owner() never follows a symbolic link and changes owner and mode through the open
- * descriptor (CS-3203). A link, a file or another non-directory at the path is removed and the
- * directory created; a directory of another user is left alone and @p planted tells the caller
- * that only this job failed, not the queue. A directory that already belongs to root or to the
- * job owner, for example one left behind by an earlier start of the same task, is used as before.
+ * descriptor (CS-3203). A link, a file or another non-directory at the path is removed, a
+ * directory of another user is renamed aside, and the directory is created. A directory that
+ * already belongs to root or to the job owner, for example one left behind by an earlier start of
+ * the same task, is used as before. Only a failing mkdir() is a problem of the host; when the
+ * path cannot be made the directory for any other reason, @p planted tells the caller that only
+ * this job failed, not the queue.
  *
  * @param qep the queue instance, which configures where temporary directories live
  * @param jobid the job

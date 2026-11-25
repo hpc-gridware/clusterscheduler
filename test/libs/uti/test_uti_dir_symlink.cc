@@ -445,12 +445,52 @@ static void test_mkdir_for_owner(const std::string &base, int &id) {
          ocs_mkdir_for_owner(file.c_str(), 0755, uid, gid, &err) == OCS_MKDIR_FOR_OWNER_OK && get_stat(file, st) &&
          S_ISDIR(st.st_mode));
 
-   // a directory of another user (root's /) stands in for a planted foreign directory
+   // a planted fifo: open() must not block on it, it is replaced
+   const std::string fifo = parent + "/6.1.all.q";
+   CHECK(id++, "setup of a planted fifo", mkfifo(fifo.c_str(), 0644) == 0);
+   sge_dstring_clear(&err);
+   CHECK(id++, "a planted fifo is replaced by the directory",
+         ocs_mkdir_for_owner(fifo.c_str(), 0755, uid, gid, &err) == OCS_MKDIR_FOR_OWNER_OK && get_stat(fifo, st) &&
+         S_ISDIR(st.st_mode));
+
+   // planted again before every attempt: the job fails, the host is fine, nothing is followed
+   const std::string again = parent + "/7.1.all.q";
+   int attempts = 0;
+   sge_dstring_clear(&err);
+   const int again_ret = ocs_mkdir_for_owner(again.c_str(), 0755, uid, gid, &err, [&](const int) {
+      attempts++;
+      make_link(victim_file, again);
+   });
+   CHECK(id++, "a path planted again before every attempt gives up as planted after a few attempts",
+         again_ret == OCS_MKDIR_FOR_OWNER_PLANTED && attempts > 1 && attempts < 10);
+   printf("      %d attempts, error: %s\n", attempts, sge_dstring_get_string(&err));
+   check_untouched("the target of the links keeps owner and mode", victim_file, before_file);
+   unlink(again.c_str());
+
+   // a planted entry that cannot be removed: a job failure, the entry stays
+   const std::string locked_parent = base + "/locked";
+   const std::string locked = locked_parent + "/8.1.all.q";
+   CHECK(id++, "setup of a planted file in a parent the caller cannot write",
+         make_dir(locked_parent) && make_file(locked) && chmod(locked_parent.c_str(), 0555) == 0);
+   sge_dstring_clear(&err);
+   const int locked_ret = ocs_mkdir_for_owner(locked.c_str(), 0755, uid, gid, &err);
+   if (uid != 0) {
+      CHECK(id++, "a planted entry that cannot be removed is no success and stays",
+            locked_ret != OCS_MKDIR_FOR_OWNER_OK && exists(locked) && !is_symlink(locked) && get_stat(locked, st) &&
+            S_ISREG(st.st_mode));
+      printf("      result %d, error: %s\n", locked_ret, sge_dstring_get_string(&err));
+   } else {
+      printf("SKIP  [T%02d] a planted entry that cannot be removed: the test runs as root\n", id++);
+   }
+   chmod(locked_parent.c_str(), 0755);
+
+   // a directory of another user that cannot be moved aside (root's /) stands in for a planted foreign directory
+   // that stays; moving one aside needs a second user and is covered by the testsuite check of CS-3203
    if (uid != 0) {
       struct stat root_before{};
       get_stat("/", root_before);
       sge_dstring_clear(&err);
-      CHECK(id++, "a directory of another user is refused as planted, not as an error of the host",
+      CHECK(id++, "a directory of another user that cannot be moved aside gives planted, not an error of the host",
             ocs_mkdir_for_owner("/", 0755, uid, gid, &err) == OCS_MKDIR_FOR_OWNER_PLANTED);
       printf("      error: %s\n", sge_dstring_get_string(&err));
       CHECK(id++, "that directory keeps owner, group and mode",

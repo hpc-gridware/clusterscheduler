@@ -40,6 +40,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cerrno>
+#include <ctime>
 #include <fcntl.h>
 #include <sys/time.h>
 
@@ -351,24 +352,32 @@ int sge_mkdir2(const char *base_dir, const char *name, int fmode, bool exit_on_e
  * privileged caller, like the job's TMPDIR made by execd as root (CS-3203). The directory is
  * created with mkdir(), opened with O_DIRECTORY | O_NOFOLLOW and handed over with fchown() and
  * fchmod() on the descriptor, so whatever a user planted at the path cannot redirect the change:
- * - a symbolic link, a regular file or any other non-directory is removed with unlink(), which
- *   does not follow a link, with a warning, and the directory is created once more; its target
- *   is not touched. When the path is occupied again, the result is #OCS_MKDIR_FOR_OWNER_PLANTED;
+ * - a symbolic link, a regular file, a fifo or any other non-directory is removed with unlink(),
+ *   which does not follow a link, with a warning, and the directory is created once more;
  * - an existing directory is used when it belongs to the caller (the effective user id) or
  *   already to @p uid, for example the directory left behind by an earlier attempt of the same job;
- * - a directory of any other user is left alone, the result is #OCS_MKDIR_FOR_OWNER_PLANTED.
+ * - a directory of any other user is renamed aside within the same parent
+ *   (`<path>.stale.<pid>.<time>`, rename() does not follow a link either), with a warning, and the
+ *   directory is created once more.
+ *
+ * Only a failing mkdir() is a problem of the host (#OCS_MKDIR_FOR_OWNER_ERROR, e.g. EACCES or
+ * ENOSPC). Everything that goes wrong after mkdir() succeeded or found the path occupied is caused
+ * by what is at the path and gives #OCS_MKDIR_FOR_OWNER_PLANTED, also when the path is occupied
+ * again after every attempt.
  *
  * @param path the directory to create
  * @param fmode the mode of the directory, set with fchmod(), so the umask does not apply
  * @param uid the new owner
  * @param gid the new group
  * @param[out] error destination for an error message, may be nullptr
+ * @param before_attempt called before each attempt with its number, starting at 0, may be nullptr;
+ *                       a seam for module tests that occupy the path again between attempts
  * @return #OCS_MKDIR_FOR_OWNER_OK when @p path is a directory owned by @p uid and @p gid,
- *         #OCS_MKDIR_FOR_OWNER_PLANTED when something at @p path that the caller does not own blocks it,
- *         #OCS_MKDIR_FOR_OWNER_ERROR on any other error; a directory this call created is removed again
- *         on error
+ *         #OCS_MKDIR_FOR_OWNER_PLANTED when what is at @p path keeps it from being one,
+ *         #OCS_MKDIR_FOR_OWNER_ERROR when mkdir() fails for another reason
  */
-int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, const gid_t gid, dstring *error) {
+int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, const gid_t gid, dstring *error,
+                        const std::function<void(int)> &before_attempt) {
    DENTER(TOP_LAYER);
 
    if (path == nullptr) {
@@ -376,69 +385,87 @@ int ocs_mkdir_for_owner(const char *path, const int fmode, const uid_t uid, cons
       DRETURN(OCS_MKDIR_FOR_OWNER_ERROR);
    }
 
-   bool created = false;
-   int fd = -1;
-   for (int attempt = 0; fd < 0; attempt++) {
-      created = mkdir(path, static_cast<mode_t>(fmode)) == 0;
+   // one attempt, a second one after a planted entry was removed or moved aside, a third one when
+   // the entry vanished or was swapped in between
+   constexpr int max_attempts = 3;
+   for (int attempt = 0; attempt < max_attempts; attempt++) {
+      if (before_attempt) {
+         before_attempt(attempt);
+      }
+
+      const bool created = mkdir(path, static_cast<mode_t>(fmode)) == 0;
       if (!created && errno != EEXIST) {
          const int saved_errno = errno;
          sge_dstring_sprintf(error, MSG_FILE_CREATEDIRFAILED_SS, path, strerror(saved_errno));
          DRETURN(OCS_MKDIR_FOR_OWNER_ERROR);
       }
 
-      // O_NOFOLLOW | O_DIRECTORY: a symbolic link or a non-directory at the path is not opened
-      fd = SGE_OPEN2(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
-      if (fd >= 0) {
+      // O_NOFOLLOW | O_DIRECTORY: a symbolic link or a non-directory at the path is not opened,
+      // O_NONBLOCK: a fifo does not block the open
+      const int fd = SGE_OPEN2(path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC);
+      if (fd < 0) {
+         const int open_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_OPENDIRECTORYFAILED_SS, path, strerror(open_errno));
+         if (open_errno == ENOENT) {
+            // removed in between, try again
+            continue;
+         }
+         // ELOOP (a symbolic link), EMLINK (a symbolic link on FreeBSD), ENOTDIR (any other non-directory)
+         if (open_errno != ELOOP && open_errno != EMLINK && open_errno != ENOTDIR) {
+            break;
+         }
+         WARNING(MSG_FILE_REMOVINGPLANTED_S, path);
+         if (unlink(path) != 0 && errno != ENOENT) {
+            const int unlink_errno = errno;
+            sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS, path, strerror(unlink_errno));
+            break;
+         }
+         continue;
+      }
+
+      SGE_STRUCT_STAT stat_buffer{};
+      if (SGE_FSTAT(fd, &stat_buffer) != 0) {
+         const int saved_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path, strerror(saved_errno));
+         close(fd);
          break;
       }
-      const int saved_errno = errno;
-      SGE_STRUCT_STAT stat_buffer{};
-      if (created || SGE_LSTAT(path, &stat_buffer) != 0 || S_ISDIR(stat_buffer.st_mode)) {
-         // not something planted, the directory cannot be opened
-         sge_dstring_sprintf(error, MSG_FILE_OPENDIRECTORYFAILED_SS, path, strerror(saved_errno));
-         if (created) {
-            rmdir(path);
+      if (stat_buffer.st_uid != geteuid() && stat_buffer.st_uid != uid) {
+         // a directory of another user: keep it, but out of the way
+         close(fd);
+         DSTRING_STATIC(aside, SGE_PATH_MAX);
+         sge_dstring_sprintf(&aside, "%s.stale.%d.%ld", path, static_cast<int>(getpid()),
+                             static_cast<long>(time(nullptr)));
+         WARNING(MSG_FILE_MOVINGASIDE_SS, path, sge_dstring_get_string(&aside));
+         if (rename(path, sge_dstring_get_string(&aside)) != 0 && errno != ENOENT) {
+            const int rename_errno = errno;
+            sge_dstring_sprintf(error, MSG_FILE_RENAMEFAILED_SSS, path, sge_dstring_get_string(&aside),
+                                strerror(rename_errno));
+            break;
          }
-         DRETURN(OCS_MKDIR_FOR_OWNER_ERROR);
-      }
-      if (attempt > 0) {
-         // planted once more after it was removed
          sge_dstring_sprintf(error, MSG_FILE_DIRNOTOURS_S, path);
-         DRETURN(OCS_MKDIR_FOR_OWNER_PLANTED);
+         continue;
       }
-      // a symbolic link, a file, a fifo ... in the place of the directory: unlink() does not follow it
-      WARNING(MSG_FILE_REMOVINGPLANTED_S, path);
-      if (unlink(path) != 0) {
-         const int unlink_errno = errno;
-         sge_dstring_sprintf(error, MSG_FILE_UNLINKFAILED_SS, path, strerror(unlink_errno));
-         DRETURN(OCS_MKDIR_FOR_OWNER_PLANTED);
+
+      int ret = OCS_MKDIR_FOR_OWNER_OK;
+      if (fchown(fd, uid, gid) != 0) {
+         const int saved_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_FCHOWNFAILED_SS, path, strerror(saved_errno));
+         ret = OCS_MKDIR_FOR_OWNER_PLANTED;
+      } else if (fchmod(fd, static_cast<mode_t>(fmode)) != 0) {
+         const int saved_errno = errno;
+         sge_dstring_sprintf(error, MSG_FILE_FCHMODFAILED_SS, path, strerror(saved_errno));
+         ret = OCS_MKDIR_FOR_OWNER_PLANTED;
       }
+      close(fd);
+      if (ret != OCS_MKDIR_FOR_OWNER_OK && created) {
+         // rmdir() removes neither a symbolic link nor a directory that is not empty
+         rmdir(path);
+      }
+      DRETURN(ret);
    }
 
-   int ret = OCS_MKDIR_FOR_OWNER_OK;
-   SGE_STRUCT_STAT stat_buffer{};
-   if (SGE_FSTAT(fd, &stat_buffer) != 0) {
-      const int saved_errno = errno;
-      sge_dstring_sprintf(error, MSG_FILE_STATFAILED_SS, path, strerror(saved_errno));
-      ret = OCS_MKDIR_FOR_OWNER_ERROR;
-   } else if (!S_ISDIR(stat_buffer.st_mode) || (stat_buffer.st_uid != geteuid() && stat_buffer.st_uid != uid)) {
-      sge_dstring_sprintf(error, MSG_FILE_DIRNOTOURS_S, path);
-      ret = OCS_MKDIR_FOR_OWNER_PLANTED;
-   } else if (fchown(fd, uid, gid) != 0) {
-      const int saved_errno = errno;
-      sge_dstring_sprintf(error, MSG_FILE_FCHOWNFAILED_SS, path, strerror(saved_errno));
-      ret = OCS_MKDIR_FOR_OWNER_ERROR;
-   } else if (fchmod(fd, static_cast<mode_t>(fmode)) != 0) {
-      const int saved_errno = errno;
-      sge_dstring_sprintf(error, MSG_FILE_FCHMODFAILED_SS, path, strerror(saved_errno));
-      ret = OCS_MKDIR_FOR_OWNER_ERROR;
-   }
-   close(fd);
-
-   if (ret != OCS_MKDIR_FOR_OWNER_OK && created) {
-      rmdir(path);
-   }
-   DRETURN(ret);
+   DRETURN(OCS_MKDIR_FOR_OWNER_PLANTED);
 }
 
 /** @brief The deepest directory level below its top that sge_rmdir() descends into */
