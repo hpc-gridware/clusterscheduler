@@ -2697,7 +2697,7 @@ int fd_std_err             /* fd of stderr. -1 if not set */
       } else {
          poll_size = 1;
       }
-      pty_fds = (struct pollfd*)sge_malloc(sizeof (struct pollfd) * poll_size);
+      pty_fds = ocs::uti::c_alloc<pollfd>(poll_size);
 
       pty_fds[0].fd = fd_pty_master;
       if (fdin != -1) {
