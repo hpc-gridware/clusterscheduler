@@ -976,6 +976,8 @@ void *commlib_to_tty(void *t_conf) {
           received_signal == SIGTERM) {
          /* If we receive one of these signals, we must terminate */
          DPRINTF("commlib_to_tty: shutting down because of signal %d\n", received_signal);
+         // a message received together with the signal is not processed any more, but freed
+         comm_free_message(&recv_mess, &err_msg);
          do_exit = 1;
          continue;
       }
@@ -1428,6 +1430,10 @@ int run_ijs_server(COMM_HANDLE *handle, const char *remote_host, int nostdin, in
    DPRINTF("waiting for end of tty_to_commlib thread\n");
    thread_join(pthread_tty_to_commlib);
    DPRINTF("tty_to_commlib thread terminated\n");
+
+   // remove both threads from the list, thread_cleanup_lib() frees only an empty list
+   thread_delete_joined(thread_lib_handle, &pthread_commlib_to_tty);
+   thread_delete_joined(thread_lib_handle, &pthread_tty_to_commlib);
 cleanup:
    /*
     * Set our terminal back to 'unraw' mode. Should be done automatically

@@ -68,6 +68,7 @@ int thread_shutdown(THREAD_HANDLE *thread);
 int thread_trigger_event(THREAD_HANDLE *thread);
 int thread_wait_for_event(THREAD_HANDLE *thread, int sec, int msec);
 int thread_join(THREAD_HANDLE *thread);
+int thread_delete_joined(THREAD_LIB_HANDLE *thread_lib_handle, THREAD_HANDLE **thread);
 
 /** @brief Enable or disable cancellation for the calling thread
  *

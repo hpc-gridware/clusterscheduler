@@ -30,8 +30,7 @@ add_executable(
       ../../common/sge_options.cc
       ../../common/usage.cc
       ../../common/sge_ijs_comm.cc
-      ../../common/sge_ijs_threads.cc
-      ../../common/ocs_ClientSanitizerOptions.cc)
+      ../../common/sge_ijs_threads.cc)
 target_include_directories(qsh PRIVATE ${SGE_INCLUDES})
 
 target_link_libraries(
