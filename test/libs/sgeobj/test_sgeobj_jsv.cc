@@ -41,6 +41,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <string>
 
 #include <sys/wait.h>
@@ -50,6 +51,8 @@
 #include "sgeobj/tom/ocs_tom_model.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "sgeobj/tom/ocs_tom_JSV.h"
+#include "uti/sge_time.h"
+
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_jsv.h"
@@ -111,18 +114,21 @@ make_stream(const char *text) {
  * @param job the job the PARAM lines modify (JSV_new_job), nullptr for none
  * @param errors set to the number of error answers, if not nullptr
  * @param context the context of the JSV, JSV_CONTEXT_CLIENT or a qmaster thread name for a server JSV
+ * @param old_job the job the STARTED line sends the parameters of (JSV_old_job), nullptr for none
+ * @param sent receives what was sent to the JSV, if not nullptr
  * @return the text of the first error answer, "<none>" if there was none
  */
 static std::string
 communicate(const char *out, const char *err, bool *accepted, ocs::tom::ElementData *job = nullptr,
-            int *errors = nullptr, const char *context = JSV_CONTEXT_CLIENT) {
+            int *errors = nullptr, const char *context = JSV_CONTEXT_CLIENT, ocs::tom::ElementData *old_job = nullptr,
+            std::string *sent = nullptr) {
    auto jsv = ocs::tom::ElementPtr<ocs::tom::JSV>::create();
    jsv->set<JSV_name>("test");
    jsv->set<JSV_context>(context);
    jsv->set<JSV_command>("/no/such/jsv");
    jsv->set<JSV_pid>("-1");
 
-   FILE *fp_in = fopen("/dev/null", "w");
+   FILE *fp_in = sent != nullptr ? tmpfile() : fopen("/dev/null", "w");
    FILE *fp_out = make_stream(out);
    FILE *fp_err = make_stream(err);
    if (fp_in == nullptr || fp_out == nullptr || fp_err == nullptr) {
@@ -133,6 +139,7 @@ communicate(const char *out, const char *err, bool *accepted, ocs::tom::ElementD
    jsv->set<JSV_out>(fp_out);
    jsv->set<JSV_err>(fp_err);
    jsv->set<JSV_new_job>(job);
+   jsv->set<JSV_old_job>(old_job);
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    jsv_do_communication(*jsv, &alp);
@@ -157,6 +164,16 @@ communicate(const char *out, const char *err, bool *accepted, ocs::tom::ElementD
    jsv->set<JSV_out>(nullptr);
    jsv->set<JSV_err>(nullptr);
    jsv->set<JSV_new_job>(nullptr);
+   jsv->set<JSV_old_job>(nullptr);
+   if (sent != nullptr) {
+      sent->clear();
+      fflush(fp_in);
+      rewind(fp_in);
+      char buffer[1024];
+      while (fgets(buffer, sizeof(buffer), fp_in) != nullptr) {
+         *sent += buffer;
+      }
+   }
    fclose(fp_in);
    fclose(fp_out);
    fclose(fp_err);
@@ -381,6 +398,66 @@ test_checkpoint_params() {
 }
 
 /**
+ * @brief The seconds since the epoch of a local date and time
+ * @param year the year
+ * @param month the month, 1 for January
+ * @param day the day of the month
+ * @param hour the hour
+ * @param minute the minute
+ * @param second the second
+ * @return the time
+ */
+static time_t
+local_time(const int year, const int month, const int day, const int hour, const int minute, const int second) {
+   struct tm tm{};
+   tm.tm_year = year - 1900;
+   tm.tm_mon = month - 1;
+   tm.tm_mday = day;
+   tm.tm_hour = hour;
+   tm.tm_min = minute;
+   tm.tm_sec = second;
+   tm.tm_isdst = -1;
+   return mktime(&tm);
+}
+
+/**
+ * @brief The start time and the deadline reach the JSV with the right month and come back unchanged (CS-3137)
+ */
+static void
+test_date_params() {
+   printf("\n--- PARAM a / dl sent to the JSV ---\n");
+   auto old_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   old_job->set<JB_owner>("user");
+   old_job->set<JB_group>("group");
+   const time_t start = local_time(2026, 12, 1, 12, 0, 0);
+   const time_t deadline = local_time(2027, 1, 15, 8, 30, 5);
+   old_job->set<JB_execution_time>(sge_time_t_to_gmt64(start));
+   old_job->set<JB_deadline>(sge_time_t_to_gmt64(deadline));
+
+   bool accepted = false;
+   std::string sent;
+   std::string text = communicate("STARTED\nRESULT STATE ACCEPT\n", "", &accepted, nullptr, nullptr,
+                                  JSV_CONTEXT_CLIENT, old_job.get().raw(), &sent);
+   CHECK(43, "STARTED: the job is accepted without an error", accepted && text == "<none>");
+   const bool a_ok = sent.find("PARAM a 202612011200.00\n") != std::string::npos;
+   const bool dl_ok = sent.find("PARAM dl 202701150830.05\n") != std::string::npos;
+   if (!a_ok || !dl_ok) {
+      printf("      sent:\n%s", sent.c_str());
+   }
+   CHECK(44, "the start time is sent with its month, December as 12", a_ok);
+   CHECK(45, "the deadline is sent with its month, January as 01", dl_ok);
+
+   // a JSV that passes both values back unchanged leaves the job unchanged
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM a 202612011200.00\nPARAM dl 202701150830.05\nRESULT STATE ACCEPT\n", "", &accepted,
+                      job.get().raw());
+   CHECK(46, "the values passed back are accepted", accepted && text == "<none>");
+   CHECK(47, "the start time passed back is the one sent",
+         job->get<JB_execution_time>() == sge_time_t_to_gmt64(start));
+   CHECK(48, "the deadline passed back is the one sent", job->get<JB_deadline>() == sge_time_t_to_gmt64(deadline));
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -395,6 +472,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_line_separation();
    test_incomplete_lines();
    test_checkpoint_params();
+   test_date_params();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;
