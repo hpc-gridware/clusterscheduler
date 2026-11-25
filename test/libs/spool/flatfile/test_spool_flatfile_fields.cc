@@ -24,6 +24,7 @@
  * - The load formula of the scheduler configuration is validated as it is stored, without blanks (CS-3166).
  * - A field the writer cannot render is left out instead of crashing the writer (CS-3167).
  * - A configuration entry admin_user followed only by blanks is refused, not read through a null pointer (CS-3165).
+ * - A configuration entry without value is refused with a message naming it, for every kind of entry (CS-3215).
  * - The JSON reader rejects an unknown word of a field written by name instead of storing 0 (CS-3170), also of a
  *   bit field and of an enumeration.
  */
@@ -33,6 +34,7 @@
 #include <cstring>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <unistd.h>
 
 #include "uti/sge_component.h"
@@ -236,6 +238,92 @@ test_conf_admin_user_without_value() {
 }
 
 /**
+ * @brief Whether an answer list holds an error whose text names a word
+ * @param alp the answer list
+ * @param word the word
+ * @return true if an error message contains the word
+ */
+static bool
+has_error_naming(const ocs::tom::ListPtr<ocs::tom::AN> &alp, const char *word) {
+   if (alp) {
+      for (const auto aep : *alp) {
+         const char *text = aep.get<AN_text>();
+         if (aep.get<AN_quality>() == ANSWER_QUALITY_ERROR && text != nullptr && strstr(text, word) != nullptr) {
+            return true;
+         }
+      }
+   }
+   return false;
+}
+
+/**
+ * @brief Read a cluster configuration from JSON whose only entry has a given text as value
+ * @param name the name of the entry
+ * @param value the value, written into the JSON as it is
+ * @param[out] alp receives the messages
+ * @return true if the configuration was read, false if it was refused
+ */
+static bool
+read_conf_json(const char *name, const char *value, ocs::tom::ListPtr<ocs::tom::AN> &alp) {
+   bool read = false;
+   spooling_field *fields = sge_build_CONF_field_list(true);
+   if (fields != nullptr) {
+      const std::string json = std::string("{\"") + name + "\": \"" + value + "\"}";
+      auto ep = spool_json_read_object(&alp, ocs::tom::CONF::descriptor.e, fields, nullptr, json.c_str());
+      read = static_cast<bool>(ep);
+   }
+   sge_free(&fields);
+   print_answers(alp);
+   return read;
+}
+
+/**
+ * @brief A configuration entry without value is refused the same way for every kind of entry (CS-3215)
+ *
+ * read_CF_value() reads the values of the JSON reader. gid_range with blanks only was accepted with a null
+ * value, an entry that takes the rest of the line (prolog) with blanks only was stored as an empty text, and
+ * the other rejections only logged a warning: the caller saw the read fail without a reason. Every kind of
+ * entry has to be refused with a message naming the entry. (The ASCII reader of qconf -Mconf keeps the values
+ * as text, qmaster refuses an entry without value in check_config() with a message naming it.)
+ */
+static void
+test_conf_entry_without_value() {
+   // one entry of each branch of read_CF_value(): its own, the rest of the line, a single word
+   const char *names[] = {"gid_range", "admin_user", "prolog", "load_report_time"};
+   int id = 36;
+   for (const char *name : names) {
+      ocs::tom::ListPtr<ocs::tom::AN> alp;
+      const bool read = read_conf_json(name, "   ", alp);
+      const std::string label = std::string(name) + " with blanks only is refused naming the entry";
+      char tid[16];
+      snprintf(tid, sizeof(tid), "T%02d", id++);
+      check(tid, label.c_str(), !read && has_error_naming(alp, name));
+   }
+
+   // a second value of a single word entry and a gid_range that is no range or too low are refused with a message
+   ocs::tom::ListPtr<ocs::tom::AN> alp;
+   check("T40", "two values of load_report_time are refused naming the entry",
+         !read_conf_json("load_report_time", "00:00:40 00:00:50", alp) && has_error_naming(alp, "load_report_time"));
+   alp.reset();
+   check("T41", "a gid_range that is no range is refused naming the entry",
+         !read_conf_json("gid_range", "x-y", alp) && has_error_naming(alp, "gid_range"));
+   alp.reset();
+   check("T42", "a gid_range below the allowed minimum is refused with a message",
+         !read_conf_json("gid_range", "50-200", alp) && answer_list_has_error(&alp));
+
+   // values that are fine are still read
+   for (const auto &[name, value] : {std::pair{"gid_range", "20000-20100"}, std::pair{"prolog", "/bin/true arg"},
+                                     std::pair{"load_report_time", "00:00:40"}}) {
+      alp.reset();
+      const std::string label = std::string("a valid ") + name + " is read";
+      char tid[16];
+      snprintf(tid, sizeof(tid), "T%02d", id + 3);
+      id++;
+      check(tid, label.c_str(), read_conf_json(name, value, alp) && !answer_list_has_error(&alp));
+   }
+}
+
+/**
  * @brief The JSON reader rejects an unknown word of a field written by name (CS-3170)
  *
  * A complex entry is written as JSON, its requestable word `FORCED` is replaced by an unknown one. The
@@ -403,6 +491,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_json_bitfield_enum_unknown_word();
    test_json_sublist_bitfield_unknown_word();
    test_conf_admin_user_without_value();
+   test_conf_entry_without_value();
 
    printf("\n%s: %d failure(s)\n", failures == 0 ? "PASSED" : "FAILED", failures);
    DRETURN(failures == 0 ? 0 : 1);

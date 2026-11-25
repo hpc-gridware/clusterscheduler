@@ -934,14 +934,36 @@ static bool write_SC_queue_sort_method(const ocs::tom::ConstElement<ocs::tom::SC
 }
 
 /**
+ * @brief Refuse the value of a configuration entry
+ *
+ * The caller has to see why the read failed (CS-3215): the message goes into the answer list, and only to the
+ * log when there is no answer list.
+ *
+ * @param alp receives the message, may be nullptr
+ * @param message the message
+ * @return false, the result of the field reader
+ */
+static bool ocs_cf_refuse_value(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char *message) {
+   DENTER(TOP_LAYER);
+   if (alp != nullptr) {
+      answer_list_add(alp, message, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR);
+   } else {
+      WARNING(SFNMAX, message);
+   }
+   DRETURN(false);
+}
+
+/**
  * @brief Read the value of a configuration entry, checked per entry name
  *
  * The field reader of CF_value. `gid_range` must be `none` or a range list
  * whose ids are not below #GID_RANGE_NOT_ALLOWED_ID; most other entries take
- * the first white space separated word, some take the rest of the line.
+ * the first white space separated word and only one, some take the rest of the line.
+ * A missing value or one of blanks only is refused for every entry (CS-3215),
+ * like any other value that is refused, with a message naming the entry.
  *
  * @param cf the configuration entry whose CF_name is set already
- * @param buf the text of the value
+ * @param buf the text of the value, may be nullptr when the line has none
  * @param alp receives messages for the caller
  * @return true on success, false if the value is rejected
  */
@@ -950,56 +972,10 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
    DENTER(TOP_LAYER);
 
    const char *name = cf.get<CF_name>();
-   char *value = nullptr;
-   char *buffer = strdup(buf);
-   struct saved_vars_s *context = nullptr;
+   char message[MAX_STRING_SIZE];
 
-   if (!strcmp(name, "gid_range")) {
-      if ((value = sge_strtok_r(buffer, " \t\n", &context))) {
-         if (!strcasecmp(value, NONE_STR)) {
-            cf.set<CF_value>(value);
-         } else {
-            ocs::tom::ListPtr<ocs::tom::RN> rlp;
-
-            range_list_parse_from_string(rlp, alp, value,
-                                         false, false, INF_NOT_ALLOWED);
-            if (!rlp) {
-               WARNING(MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, name, value);
-
-               sge_free_saved_vars(context);
-               sge_free(&buffer);
-               DRETURN(false);
-            } else {
-               for (const ocs::tom::ConstElement<ocs::tom::RN> rep : *rlp) {
-                  const uint32_t min = rep.get<RN_min>();
-                  if (min < GID_RANGE_NOT_ALLOWED_ID) {
-                     WARNING(MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I, GID_RANGE_NOT_ALLOWED_ID);
-
-                     sge_free_saved_vars(context);
-                     sge_free(&buffer);
-                     DRETURN(false);
-                  }
-               }
-               cf.set<CF_value>(value);
-            }
-         }
-      }
-   } else if (!strcmp(name, "admin_user")) {
-      // CS-3165: an empty value gives no token; sge_strtok_r() splits at white space, so a token has no blank
-      value = sge_strtok_r(buffer, " \t\n", &context);
-      if (value != nullptr) {
-         cf.set<CF_value>(value);
-      } else {
-         // the caller sees why the read failed, not only the log (CS-3165)
-         WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
-         answer_list_add_sprintf(alp, STATUS_ESYNTAX, ANSWER_QUALITY_ERROR, MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S,
-                                 name);
-
-         sge_free_saved_vars(context);
-         sge_free(&buffer);
-         DRETURN(false);
-      }
-   } else if (!strcmp(name, "user_lists") ||
+   // the rest of the line entries split at tabs and newlines only, every other one at blanks as well
+   const bool rest_of_line = !strcmp(name, "user_lists") ||
       !strcmp(name, "xuser_lists") ||
       !strcmp(name, "projects") ||
       !strcmp(name, "xprojects") ||
@@ -1021,59 +997,65 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
       !strcmp(name, "qlogin_daemon") ||
       !strcmp(name, "rlogin_daemon") ||
       !strcmp(name, "rsh_daemon") ||
-      !strcmp(name, "additional_jvm_args")) {
-      if (!(value = sge_strtok_r(buffer, "\t\n", &context))) {
-         /* return line if value is empty */
-         WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
+      !strcmp(name, "additional_jvm_args");
 
-         sge_free_saved_vars(context);
-         sge_free(&buffer);
-         DRETURN(false);
-      }
-      /* skip leading delimitors */
-      while (value[0] && isspace((int)value[0]))
+   char *buffer = strdup(buf != nullptr ? buf : "");
+   struct saved_vars_s *context = nullptr;
+   char *value = sge_strtok_r(buffer, rest_of_line ? "\t\n" : " \t\n", &context);
+   if (value != nullptr && rest_of_line) {
+      // skip leading blanks; a value of blanks only is no value
+      while (value[0] && isspace(static_cast<unsigned char>(value[0]))) {
          value++;
-
-      cf.set<CF_value>(value);
-   } else {
-      if (!(value = sge_strtok_r(buffer, " \t\n", &context))) {
-         WARNING(MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
-
-         sge_free_saved_vars(context);
-         sge_free(&buffer);
-         DRETURN(false);
       }
-      if (strcmp(name, "auto_user_oticket") == 0 ||
-              strcmp(name, "auto_user_fshare") == 0 ) {
-         char *end_ptr = nullptr;
-         double dbl_value;
+      if (value[0] == '\0') {
+         value = nullptr;
+      }
+   }
 
-         dbl_value = strtod(value, &end_ptr);
-         if ( dbl_value < 0) {
-            answer_list_add_sprintf(alp, STATUS_EUNKNOWN,
-                                 ANSWER_QUALITY_ERROR,
-				 MSG_MUST_BE_POSITIVE_VALUE_S,
-                                 name);
-            sge_free_saved_vars(context);
-            sge_free(&buffer);
-            DRETURN(false);
+   bool ret = true;
+   if (value == nullptr) {
+      // an empty value gives no token; sge_strtok_r() splits at white space, so a token has no blank (CS-3165)
+      snprintf(message, sizeof(message), MSG_CONFIG_CONF_NOVALUEFORCONFIGATTRIB_S, name);
+      ret = ocs_cf_refuse_value(alp, message);
+   } else if (!strcmp(name, "gid_range") && strcasecmp(value, NONE_STR) != 0) {
+      ocs::tom::ListPtr<ocs::tom::RN> rlp;
+
+      range_list_parse_from_string(rlp, alp, value, false, false, INF_NOT_ALLOWED);
+      if (!rlp) {
+         snprintf(message, sizeof(message), MSG_CONFIG_CONF_INCORRECTVALUEFORCONFIGATTRIB_SS, value, name);
+         ret = ocs_cf_refuse_value(alp, message);
+      } else {
+         for (const ocs::tom::ConstElement<ocs::tom::RN> rep : *rlp) {
+            if (rep.get<RN_min>() < GID_RANGE_NOT_ALLOWED_ID) {
+               snprintf(message, sizeof(message), MSG_CONFIG_CONF_GIDRANGELESSTHANNOTALLOWED_I,
+                        GID_RANGE_NOT_ALLOWED_ID);
+               ret = ocs_cf_refuse_value(alp, message);
+               break;
+            }
          }
       }
-      cf.set<CF_value>(value);
-
-      if (sge_strtok_r(nullptr, " \t\n", &context)) {
-         /* Allow only one value per line */
-         WARNING(MSG_CONFIG_CONF_ONLYSINGLEVALUEFORCONFIGATTRIB_S, name);
-
-         sge_free_saved_vars(context);
-         sge_free(&buffer);
-         DRETURN(false);
+   } else if (strcmp(name, "auto_user_oticket") == 0 || strcmp(name, "auto_user_fshare") == 0) {
+      if (strtod(value, nullptr) < 0) {
+         answer_list_add_sprintf(alp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_MUST_BE_POSITIVE_VALUE_S, name);
+         ret = false;
       }
+   }
+
+   // gid_range and admin_user ignored further words before; every other entry but the rest of the line ones
+   // allows only one value
+   if (ret && !rest_of_line && strcmp(name, "gid_range") != 0 && strcmp(name, "admin_user") != 0 &&
+       sge_strtok_r(nullptr, " \t\n", &context) != nullptr) {
+      snprintf(message, sizeof(message), MSG_CONFIG_CONF_ONLYSINGLEVALUEFORCONFIGATTRIB_S, name);
+      ret = ocs_cf_refuse_value(alp, message);
+   }
+
+   if (ret) {
+      cf.set<CF_value>(value);
    }
 
    sge_free_saved_vars(context);
    sge_free(&buffer);
-   DRETURN(true);
+   DRETURN(ret);
 }
 
 /** @brief Build the field list of a global or local configuration
