@@ -6,9 +6,9 @@ It is an intended behaviour that the automatic installation fails if the \$SGE_R
 
 ## Execution services are not running after automatic installation
 
-Make sure that the passwordless ssh/rsh access to that remote host is configured correctly. The installer will try to start the execution service but on error it will continue with the installation of others. 
+Make sure that the passwordless ssh access to that remote host is configured correctly. The installer will try to start the execution service but on error it will continue with the installation of others.
 
-To solve this you can either fix the ssh/rsh problem and reinstall or start the execution service manually.
+To solve this you can either fix the ssh problem and reinstall or start the execution service manually.
 
 ## Communication issues due to incorrect setup of hostnames
 

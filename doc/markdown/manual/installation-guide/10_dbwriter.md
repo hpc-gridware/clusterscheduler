@@ -60,12 +60,12 @@ TBD
 
 ### Java
 
-DBWriter requires Java 8 to be installed on the system.
+DBWriter requires Java 11 or higher to be installed on the system.
 
 Best install from OS packages, e.g.,
 
-* `openjdk-8-jre` on Debian/Ubuntu
-* `java-1.8.0-openjdk` on CentOS/RHEL
+* `openjdk-17-jre` on Debian/Ubuntu
+* `java-17-openjdk` on Rocky Linux/RHEL
 
 ## Interactive Installation
 
@@ -76,7 +76,7 @@ As root in the `$SGE_ROOT` directory:
 ```bash
 tar xzf <path to gcs-<version>-arco.tar.gz>
 cd dbwriter
-./inst_dbwriter.sh
+./inst_dbwriter
 ```
 
 ### Accept the license agreement
@@ -147,16 +147,16 @@ Checking $SGE_ROOT directory
 
 The Cluster Scheduler root directory is:
 
-   $SGE_ROOT = /scratch/joga/clusters/V91_BRANCH
+   $SGE_ROOT = /opt/gcs
 
 If this directory is not correct (e.g. it may contain an automounter
 prefix) enter the correct path to this directory or hit <RETURN>
-to use default [/scratch/joga/clusters/V91_BRANCH] >> 
+to use default [/opt/gcs] >>
 ```
 Press `RETURN`.
 ```text
 
-Your $SGE_ROOT directory: /scratch/joga/clusters/V91_BRANCH
+Your $SGE_ROOT directory: /opt/gcs
 
 Hit <RETURN> to continue >> 
 ```
@@ -196,14 +196,14 @@ Press `RETURN`.
 Java setup
 ----------
 
-ARCo needs at least java 1.8
+ARCo needs at least java 11
 
 Enter the path to your java installation [] >> 
 ```
-Enter the path to the Java 8 installation.
+Enter the path to the Java installation.
 
 If the environment variable `JAVA_HOME` is set, this java installation will be preselected and you just have to press `RETURN`.
-Otherwise enter the path to the Java 8 installation, e.g. `/usr/lib/jvm/java-1.8.0-openjdk-amd64`
+Otherwise enter the path to the Java installation, e.g. `/usr/lib/jvm/java-17-openjdk-amd64`
 and press `RETURN`.
 
 ### Select the database type
@@ -286,7 +286,7 @@ Database connection test
 ------------------------
 
 Searching for the jdbc driver org.postgresql.Driver 
-in directory /scratch/joga/clusters/V91_BRANCH/dbwriter/lib 
+in directory /opt/gcs/dbwriter/lib
 
 OK, jdbc driver found
 
@@ -296,8 +296,8 @@ Press `RETURN` to test the database connection.
 
 In case of connection issues, the error message from the JDBC library will be printed, e.g.,
 ```text
-Test database connection to 'jdbc:postgresql://ubuntu-22-amd64-1:5432/arco' ...
-SEVERE: Can not get a connection to jdbc:postgresql://ubuntu-22-amd64-1:5432/arco
+Test database connection to 'jdbc:postgresql://pgdb.example.com:5432/arco' ...
+SEVERE: Can not get a connection to jdbc:postgresql://pgdb.example.com:5432/arco
 SEVERE: FATAL: password authentication failed for user "arco_write"
 Failed (3)
 Do you want to repeat database connection setup? (y/n) [y] >> 
@@ -316,7 +316,7 @@ Accept the default value by pressing `RETURN`, or enter a different value and pr
 
 ### Specify the DBWriter spool directory
 ```text
-Enter the path of the dbwriter spool directory [/scratch/joga/clusters/V91_BRANCH/default/spool/dbwriter]>>
+Enter the path of the dbwriter spool directory [/opt/gcs/default/spool/dbwriter]>>
 ```
 Accept the default value by pressing `RETURN`.
 
@@ -326,7 +326,7 @@ DBWriter has a rule engine which allows generating derived values from values in
 as well as rules for the deletion of outdated data.
 DBWriter comes with a default rule file, but you can also specify a file with your own rules.
 ```text
-Enter the file with the derived value rules [/scratch/joga/clusters/V91_BRANCH/dbwriter/database/postgres/dbwriter.xml] >>
+Enter the file with the derived value rules [/opt/gcs/dbwriter/database/postgres/dbwriter.xml] >>
 ```
 Press `RETURN` to use the default rule file.
 
@@ -343,18 +343,18 @@ Press `RETURN` to use the default log level.
 All parameters are now collected
 --------------------------------
 
-        SGE_ROOT=/scratch/joga/clusters/V91_BRANCH
+        SGE_ROOT=/opt/gcs
         SGE_CELL=default
-       JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/ (1.8.0_482)
-          DB_URL=jdbc:postgresql://ubuntu-22-amd64-1:5432/arco
+       JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/ (17.0.17)
+          DB_URL=jdbc:postgresql://pgdb.example.com:5432/arco
          DB_USER=arco
        READ_USER=arco_read
       TABLESPACE=pg_default
 TABLESPACE_INDEX=pg_default
        DB_SCHEMA=public
         INTERVAL=60
-       SPOOL_DIR=/scratch/joga/clusters/V91_BRANCH/default/spool/dbwriter
-    DERIVED_FILE=/scratch/joga/clusters/V91_BRANCH/dbwriter/database/postgres/dbwriter.xml
+       SPOOL_DIR=/opt/gcs/default/spool/dbwriter
+    DERIVED_FILE=/opt/gcs/dbwriter/database/postgres/dbwriter.xml
      DEBUG_LEVEL=INFO
 
 Are these settings correct? (y/n) [y] >> 
@@ -396,9 +396,9 @@ committing changes
 Version 6.2u1 (id=10) successfully installed
 OK
 
-Create start script sgedbwriter in /scratch/joga/clusters/V91_BRANCH/default/common
+Create start script sgedbwriter in /opt/gcs/default/common
 
-Create configuration file for dbwriter in /scratch/joga/clusters/V91_BRANCH/default/common
+Create configuration file for dbwriter in /opt/gcs/default/common
 
 Hit <RETURN> to continue >> 
 ```
@@ -418,8 +418,8 @@ Depending on your operating system, this will add DBWriter to the OSes init syst
 
 On Linux you will see output similar to the following:
 ```text
-Using slice name from /scratch/joga/clusters/V91_BRANCH/default/common/slice_name: ocs8028
-Installed dbwriter systemd unit file to /etc/systemd/system/ocs8028-dbwriter.service
+Using slice name from /opt/gcs/default/common/slice_name: ocs6444
+Installed dbwriter systemd unit file to /etc/systemd/system/ocs6444-dbwriter.service
 ```
 
 If you do not want DBWriter to start automatically at boot time, then enter `n` and press `RETURN`.
@@ -439,24 +439,24 @@ dbwriter is running (pid 4131759)
 
 On a host running systemd, you can check the status of the service, e.g.,:
 ```bash
-systemctl status ocs8028-dbwriter
-● ocs8028-dbwriter.service - Cluster Scheduler dbwriter service
-     Loaded: loaded (/etc/systemd/system/ocs8028-dbwriter.service; enabled; preset: enabled)
+systemctl status ocs6444-dbwriter
+● ocs6444-dbwriter.service - Cluster Scheduler dbwriter service
+     Loaded: loaded (/etc/systemd/system/ocs6444-dbwriter.service; enabled; preset: enabled)
      Active: active (running) since Wed 2026-04-22 13:13:43 CEST; 12min ago
-    Process: 4131697 ExecStart=/scratch/joga/clusters/V91_BRANCH/default/common/sgedbwriter start (code=exited, status=0/SUCCESS)
+    Process: 4131697 ExecStart=/opt/gcs/default/common/sgedbwriter start (code=exited, status=0/SUCCESS)
    Main PID: 4131759 (java)
       Tasks: 52 (limit: 75992)
      Memory: 110.1M (peak: 121.8M)
         CPU: 1.975s
-     CGroup: /ocs8028.slice/ocs8028-dbwriter.service
-             ├─4131757 /bin/sh /scratch/joga/clusters/V91_BRANCH/default/common/sgedbwriter start
-             └─4131759 /usr/lib/jvm/java-8-openjdk-amd64//bin/java -server -classpath /scratch/joga/clusters/V91_BRANCH/dbwriter/lib/angus-activation-2.0.3.jar:/scratch/joga/cluste>
+     CGroup: /ocs6444.slice/ocs6444-dbwriter.service
+             ├─4131757 /bin/sh /opt/gcs/default/common/sgedbwriter start
+             └─4131759 /usr/lib/jvm/java-17-openjdk-amd64//bin/java -server -classpath /opt/gcs/dbwriter/lib/angus-activation-2.0.3.jar:/opt/gcs/dbwriter/lib/>
 
-Apr 22 13:13:42 laptop-joga systemd[1]: Starting ocs8028-dbwriter.service - Cluster Scheduler dbwriter service...
-Apr 22 13:13:42 laptop-joga sgedbwriter[4131697]: Creating dbwriter spool directory /scratch/joga/clusters/V91_BRANCH/default/spool/dbwriter
-Apr 22 13:13:42 laptop-joga sgedbwriter[4131697]: starting dbwriter
-Apr 22 13:13:43 laptop-joga sgedbwriter[4131697]: dbwriter started (pid=4131759)
-Apr 22 13:13:43 laptop-joga systemd[1]: Started ocs8028-dbwriter.service - Cluster Scheduler dbwriter service.
+Apr 22 13:13:42 host1 systemd[1]: Starting ocs6444-dbwriter.service - Cluster Scheduler dbwriter service...
+Apr 22 13:13:42 host1 sgedbwriter[4131697]: Creating dbwriter spool directory /opt/gcs/default/spool/dbwriter
+Apr 22 13:13:42 host1 sgedbwriter[4131697]: starting dbwriter
+Apr 22 13:13:43 host1 sgedbwriter[4131697]: dbwriter started (pid=4131759)
+Apr 22 13:13:43 host1 systemd[1]: Started ocs6444-dbwriter.service - Cluster Scheduler dbwriter service.
 ```
 
 ### Check the DBWriter log file
@@ -466,27 +466,27 @@ It is a text file you can view with `cat` or `tail` or in a text editor.
 
 You should see output like the following from the DBWriter startup:
 ```text
-22/04/2026 13:13:42|laptop-joga|.ReportingDBWriter.initLogging|I|Starting up Gridware Cluster Scheduler dbwriter (Version 9.1.1prealpha) ---------------------------
-22/04/2026 13:13:42|laptop-joga|r.ReportingDBWriter.initialize|I|Connection to db jdbc:postgresql://ubuntu-22-amd64-1:5432/arco
-22/04/2026 13:13:43|laptop-joga|r.ReportingDBWriter.initialize|I|Found database model version 10
-22/04/2026 13:13:43|laptop-joga|tingDBWriter.getDbWriterConfig|I|calculation file /scratch/joga/clusters/V91_BRANCH/dbwriter/database/postgres/dbwriter.xml has changed, reread it
-22/04/2026 13:13:43|laptop-joga|Writer$VacuumAnalyzeThread.run|I|Next vacuum analyze will be executed at 23.04.26 12:11
-22/04/2026 13:13:43|laptop-joga|ngDBWriter$StatisticThread.run|I|Next statistic calculation will be done at 22.04.26 14:13
+22/04/2026 13:13:42|host1|.ReportingDBWriter.initLogging|I|Starting up Gridware Cluster Scheduler dbwriter (Version 9.1.1prealpha) ---------------------------
+22/04/2026 13:13:42|host1|r.ReportingDBWriter.initialize|I|Connection to db jdbc:postgresql://pgdb.example.com:5432/arco
+22/04/2026 13:13:43|host1|r.ReportingDBWriter.initialize|I|Found database model version 10
+22/04/2026 13:13:43|host1|tingDBWriter.getDbWriterConfig|I|calculation file /opt/gcs/dbwriter/database/postgres/dbwriter.xml has changed, reread it
+22/04/2026 13:13:43|host1|Writer$VacuumAnalyzeThread.run|I|Next vacuum analyze will be executed at 23.04.26 12:11
+22/04/2026 13:13:43|host1|ngDBWriter$StatisticThread.run|I|Next statistic calculation will be done at 22.04.26 14:13
 ```
 
 Once reporting is enabled and data is processed, you should see output like the following:
 ```text
-22/04/2026 13:25:43|laptop-joga|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
-22/04/2026 13:25:43|laptop-joga|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
-22/04/2026 13:25:43|laptop-joga|le.FileParser.createStatistics|I|Processed 16 lines in 0,02s (1000 lines/s)
-22/04/2026 13:25:43|laptop-joga|rtingDBWriter.logEventDuration|I|calculating derived values took 0 hours 0 minutes
-22/04/2026 13:25:43|laptop-joga|rtingDBWriter.logEventDuration|I|deleting outdated values took 0 hours 0 minutes
-22/04/2026 13:25:43|laptop-joga|BWriter$DerivedValueThread.run|I|Next regular task (derived values and delete) will be done at 22.04.26 14:11
-22/04/2026 13:26:43|laptop-joga|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
-22/04/2026 13:26:43|laptop-joga|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
-22/04/2026 13:26:43|laptop-joga|le.FileParser.createStatistics|I|Processed 12 lines in 0,01s (923,08 lines/s)
-22/04/2026 13:27:43|laptop-joga|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
-22/04/2026 13:27:43|laptop-joga|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
+22/04/2026 13:25:43|host1|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
+22/04/2026 13:25:43|host1|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
+22/04/2026 13:25:43|host1|le.FileParser.createStatistics|I|Processed 16 lines in 0,02s (1000 lines/s)
+22/04/2026 13:25:43|host1|rtingDBWriter.logEventDuration|I|calculating derived values took 0 hours 0 minutes
+22/04/2026 13:25:43|host1|rtingDBWriter.logEventDuration|I|deleting outdated values took 0 hours 0 minutes
+22/04/2026 13:25:43|host1|BWriter$DerivedValueThread.run|I|Next regular task (derived values and delete) will be done at 22.04.26 14:11
+22/04/2026 13:26:43|host1|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
+22/04/2026 13:26:43|host1|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
+22/04/2026 13:26:43|host1|le.FileParser.createStatistics|I|Processed 12 lines in 0,01s (923,08 lines/s)
+22/04/2026 13:27:43|host1|er.file.FileParser.processFile|I|Renaming reporting  to reporting.processing
+22/04/2026 13:27:43|host1|iter.file.FileParser.parseFile|I|Deleting file reporting.processing
 ...
 ```
 
@@ -580,7 +580,6 @@ For a list of all configuration options, see the section **DBWriter** in the Adm
 ### Enable reporting
 
 Writing of the `reporting` file needs to be enabled in the global configuration.
-This version of the xxQS_NAMExx does not yet support reading the new one line JSON format, therefore writing of the old reporting file format needs to be enabled.
 
 Edit the global configuration and modify the `reporting_params`:
 Set the `reporting=true`, keep the other parameters unchanged:
@@ -711,24 +710,24 @@ ARCo needs at least java 11
 
 Enter the path to your java installation [] >> /usr/lib/jvm/java-11-openjdk-amd64/
 
-Enter your SGE_ROOT [/scratch/joga/clusters/master] >>
+Enter your SGE_ROOT [/opt/gcs] >>
 
 Enter your SGE_CELL [default] >>
 
-Enter the path to the dbwriter configuration file [/scratch/joga/clusters/master/default/common/dbwriter.conf]>>
+Enter the path to the dbwriter configuration file [/opt/gcs/default/common/dbwriter.conf]>>
 
 Database connection test
 ------------------------
 
 Searching for the jdbc driver com.mysql.jdbc.Driver
-in directory /scratch/joga/clusters/master/dbwriter/lib
+in directory /opt/gcs/dbwriter/lib
 
 OK, jdbc driver found
 
 Should the connection to the database be tested? (y/n) [y] >>
 
 
-Test database connection to 'jdbc:mysql://ubuntu-22-amd64-2:3306/arco_8012' ... OK
+Test database connection to 'jdbc:mysql://mysqldb.example.com:3306/arco' ... OK
 
 Shall we only print all sql statements which will be executed during the upgrade? (y/n) [y] >> n
 
