@@ -517,7 +517,7 @@ int reschedule_job(ocs::tom::ElementData *raw_jep, ocs::tom::ElementData *raw_ja
                continue;
 
             } else {
-               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? "none" : queue.get<QU_full_name>());
+               INFO(MSG_RU_NORERUNQUEUE_SSS, mail_type, mail_ids, queue ? queue.get<QU_full_name>() : "none");
                answer_list_add(answer, SGE_EVENT, STATUS_ESEMANTIC, ANSWER_QUALITY_WARNING);
                continue;
             }
