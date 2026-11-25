@@ -756,10 +756,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
    if (curr == &job_elem->procs) { 
       /* new process, add a proc element into jobs proc list */
-      if (!(proc_elem=(proc_elem_t *)sge_malloc(sizeof(proc_elem_t)))) {
-         pt_close_fd(fd);
-         DRETURN(0);
-      }
+      proc_elem = ocs::uti::c_alloc<proc_elem_t>();
       memset(proc_elem, 0, sizeof(proc_elem_t));
       proc_elem->proc.pd_length = sizeof(psProc_t);
       proc_elem->proc.pd_state  = 1; /* active */

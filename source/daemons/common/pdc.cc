@@ -381,6 +381,14 @@ free_job(job_elem_t *job_elem) {
    sge_free(&job_elem);
 }
 
+/**
+ * @brief Collect the processes of the tracked jobs from the operating system
+ *
+ * Runs at most once per job collection interval; earlier calls return at once. Adds new processes to
+ * the process lists of the jobs, updates the usage of the known ones and drops jobs that ended.
+ *
+ * @return 0 on success or when the interval has not passed yet, -1 if the process table cannot be read
+ */
 static int psRetrieveOSJobData() {
    DENTER(TOP_LAYER);
 
@@ -455,11 +463,7 @@ static int psRetrieveOSJobData() {
                      }
                   }
                   if (newprocess) {
-                     proc_elem = (proc_elem_t *)sge_malloc(sizeof(proc_elem_t));
-                     if (proc_elem == nullptr) {
-                        kvm_close(kd);
-                        DRETURN(0);
-                     }
+                     proc_elem = ocs::uti::c_alloc<proc_elem_t>();
 
                      memset(proc_elem, 0, sizeof(proc_elem_t));
                      proc_elem->proc.pd_length = sizeof(psProc_t);
@@ -539,11 +543,7 @@ static int psRetrieveOSJobData() {
                      }
                   }
                   if (newprocess) {
-                     proc_elem = (proc_elem_t *)sge_malloc(sizeof(proc_elem_t));
-                     if (proc_elem == nullptr) {
-                        sge_free(&procs_begin);
-                        DRETURN(0);
-                     }
+                     proc_elem = ocs::uti::c_alloc<proc_elem_t>();
 
                      memset(proc_elem, 0, sizeof(proc_elem_t));
                      proc_elem->proc.pd_length = sizeof(psProc_t);
@@ -810,7 +810,7 @@ int psWatchJob(JobID_t JobID, usage_collection_t usage_collection) {
       if (curr != nullptr) {
          LNK_DATA(curr, job_elem_t, link)->precreated = 0;
       } else {
-         job_elem_t *job_elem = (job_elem_t *)sge_malloc(sizeof(job_elem_t));
+         job_elem_t *job_elem = ocs::uti::c_alloc<job_elem_t>();
          memset(job_elem, 0, sizeof(job_elem_t));
          job_elem->starttime = get_gmt();
          job_elem->job.jd_jid = JobID;
