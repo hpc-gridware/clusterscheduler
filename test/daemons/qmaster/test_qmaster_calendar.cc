@@ -156,6 +156,12 @@ static cal_entry_t calendars[] = {
                       {"1.3.2004-2.3.2004=0:0-0:10=off","NONE",
                        "queue is off in the first ten minutes of 3/1/2004 and 3/2/2004"},
 
+/* CS-3131 */         {"1.3.2004,2.3.2004,3.3.2004,4.3.2004,5.3.2004,6.3.2004,7.3.2004=off", "NONE",
+                       "queue is off from 3/1/2004 till 3/7/2004, one year day range per day"},
+
+                      {"1.3.2004,2.3.2004,3.3.2004,4.3.2004,5.3.2004,6.3.2004,7.3.2004=9:0-18:0=off", "NONE",
+                       "queue is off during the day from 3/1/2004 till 3/7/2004, one year day range per day"},
+
 /* end of definition */{nullptr, nullptr, nullptr}
 };
 
@@ -261,6 +267,21 @@ static date_entry_t tests[] = {
    {27, {0,5,0, 1,2,104, 0,0,0}, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE, {0,0,1, 1,0, 70, 0,0,0}, QI_DO_NOTHING},
 
    {28, {0,0,12, 20,1,104, 0,0,0}, {0,0,0, 1,2,104, 0,0,0}, QI_DO_NOTHING, {0,10,0, 1,2,104, 0,0,0}, QI_DO_CAL_DISABLE},
+
+   /* CS-3131: a year calendar with one year day range per day for a week. The state computation
+    * looks at the next day when a day ends without a state change; the recursion limit of
+    * is_year_entry_active() must not cut such a legal calendar short.
+    */
+   {29, {0,0,12,29,1,104,0,0,0}, {0,0,0,1,2,104,0,0,0}, QI_DO_NOTHING, {0,0,0,8,2,104,0,0,0}, QI_DO_CAL_DISABLE},
+   {29, {0,0,0,1,2,104,0,0,0}, {0,0,0,8,2,104,0,0,0}, QI_DO_CAL_DISABLE, {0,0,1,1,0,70,0,0,0}, QI_DO_NOTHING},
+   {29, {0,0,12,4,2,104,0,0,0}, {0,0,0,8,2,104,0,0,0}, QI_DO_CAL_DISABLE, {0,0,1,1,0,70,0,0,0}, QI_DO_NOTHING},
+   {29, {0,0,0,8,2,104,0,0,0}, {0,0,1,1,0,70,0,0,0}, QI_DO_NOTHING, {0,0,1,1,0,70,0,0,0}, -1},
+
+   {30, {0,0,20,29,1,104,0,0,0}, {0,0,9,1,2,104,0,0,0}, QI_DO_NOTHING, {0,0,18,1,2,104,0,0,0}, QI_DO_CAL_DISABLE},
+   {30, {0,0,20,1,2,104,0,0,0}, {0,0,9,2,2,104,0,0,0}, QI_DO_NOTHING, {0,0,18,2,2,104,0,0,0}, QI_DO_CAL_DISABLE},
+   {30, {0,0,12,4,2,104,0,0,0}, {0,0,18,4,2,104,0,0,0}, QI_DO_CAL_DISABLE, {0,0,9,5,2,104,0,0,0}, QI_DO_NOTHING},
+   {30, {0,0,20,6,2,104,0,0,0}, {0,0,9,7,2,104,0,0,0}, QI_DO_NOTHING, {0,0,18,7,2,104,0,0,0}, QI_DO_CAL_DISABLE},
+   {30, {0,0,20,7,2,104,0,0,0}, {0,0,1,1,0,70,0,0,0}, QI_DO_NOTHING, {0,0,1,1,0,70,0,0,0}, -1},
 
    {-1, {0,0,0, 0,0,104, 0,0,0}, {0,0,0, 0,0,104, 0,0,0}, -1, {0,0,0, 0,0,104, 0,0,0}, -1}
 };
