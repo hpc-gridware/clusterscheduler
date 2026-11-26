@@ -23,8 +23,7 @@ add_executable(
       qevent ocs_qevent.cc
       ../../common/sig_handlers.cc
       ../../common/sge_options.cc
-      ../../common/usage.cc
-      ../../common/ocs_ClientSanitizerOptions.cc)
+      ../../common/usage.cc)
 target_include_directories(qevent PUBLIC ${SGE_INCLUDES})
 target_link_libraries(
       qevent
