@@ -95,9 +95,9 @@ qevent_options *Global_qevent_options;
 
 
 static void qevent_show_usage();
-static void qevent_testsuite_mode(sge_evc_class_t *evc);
-static void qevent_subscribe_mode(sge_evc_class_t *evc);
-static void qevent_monitor_all_mode(sge_evc_class_t *evc);
+static void qevent_testsuite_mode(sge_evc_class_t *&evc);
+static void qevent_subscribe_mode(sge_evc_class_t *&evc);
+static void qevent_monitor_all_mode(sge_evc_class_t *&evc);
 static const char* qevent_get_event_name(int event);
 static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct,
                                    ocs::tom::ConstElement<ocs::tom::ET> event);
@@ -667,7 +667,7 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      sge_mirror_shutdown(evc);
+      sge_mirror_shutdown(&evc);
 
       sge_dstring_free(enabled_options.error_message);
       sge_exit(0);
@@ -695,9 +695,9 @@ static const char* qevent_get_event_name(int event) {
 /**
  * @brief `-testsuite` mode: print job and task events and the event client state
  *
- * @param evc the event client
+ * @param evc the event client; destroyed and nullptr on return
  */
-static void qevent_testsuite_mode(sge_evc_class_t *evc) {
+static void qevent_testsuite_mode(sge_evc_class_t *&evc) {
    DENTER(TOP_LAYER);
 
 #ifndef QEVENT_SHOW_ALL
@@ -757,12 +757,12 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc) {
 #endif
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
    DRETURN_VOID;
 }
 
 /**
- * @brief `-ts` mode: subscribe and unsubscribe in a loop, to exercise the event master
+ * @brief `-sm` mode: subscribe and unsubscribe in a loop, to exercise the event master
  *
  * Not a diagnostic mode. It walks `event_type` through every `SGE_TYPE_*` value,
  * subscribing one more each time round, then unsubscribes them all and starts
@@ -770,13 +770,13 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc) {
  * under load, which is what the testsuite wants to exercise; the events
  * themselves are printed but not otherwise used.
  *
- * @param evc the event client to subscribe through
+ * @param evc the event client to subscribe through; destroyed and nullptr on return
  *
  * @note MT-NOTE: qevent_subscribe_mode() is not MT safe
  *
  * @bug ???
  */
-static void qevent_subscribe_mode(sge_evc_class_t *evc) {
+static void qevent_subscribe_mode(sge_evc_class_t *&evc) {
    DENTER(TOP_LAYER);
 
    int event_type = SGE_TYPE_FIRST;
@@ -786,7 +786,8 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc) {
 
    while(!shut_me_down) {
       sge_mirror_error error = sge_mirror_process_events(evc);
-      if (evc != nullptr) {
+      // a shutdown event deregistered the event client, do not subscribe again
+      if (!shut_me_down) {
          if (event_type < SGE_TYPE_NONE) {
             event_type++;
             printf("Subscribe event_type: %d\n", event_type);
@@ -804,7 +805,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc) {
       }
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
    DRETURN_VOID;
 }
 
@@ -820,9 +821,9 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc) {
  * observable. It is used by the testsuite to watch event types that are
  * otherwise invisible through qevent (e.g. PROJECT_MOD, see CS-2266).
  *
- * @param evc the enrolled event client to subscribe with and run
+ * @param evc the enrolled event client to subscribe with and run; destroyed and nullptr on return
  */
-static void qevent_monitor_all_mode(sge_evc_class_t *evc) {
+static void qevent_monitor_all_mode(sge_evc_class_t *&evc) {
    DENTER(TOP_LAYER);
 
    sge_mirror_initialize(evc, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -842,6 +843,6 @@ static void qevent_monitor_all_mode(sge_evc_class_t *evc) {
       }
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
    DRETURN_VOID;
 }

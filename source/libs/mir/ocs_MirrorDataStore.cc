@@ -100,7 +100,7 @@ ocs::MirrorDataStore::thread_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
    auto *mirror = static_cast<MirrorDataStore *>(arg);
    SGE_LOCK(mirror->lock_type, LOCK_WRITE);
-   sge_mirror_shutdown(mirror->evc);
+   sge_mirror_shutdown(&mirror->evc);
    SGE_UNLOCK(mirror->lock_type, LOCK_WRITE);
    DRETURN_VOID;
 }

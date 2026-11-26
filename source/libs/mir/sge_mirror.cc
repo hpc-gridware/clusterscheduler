@@ -466,40 +466,52 @@ sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_fu
 }
 
 /**
+ * @brief Unsubscribe all events and deregister the event client from qmaster
+ *
+ * Does nothing if the event client is not initialized or already deregistered: a
+ * successful deregistration resets the registration, so a second call does nothing.
+ * The event client itself stays allocated; it is destroyed by sge_mirror_shutdown().
+ *
+ * @param evc the event client to deregister, may be nullptr
+ */
+static void
+ocs_mirror_deregister(sge_evc_class_t *evc) {
+   DENTER(TOP_LAYER);
+
+   if (evc != nullptr && evc->ec_is_initialized(evc)) {
+      sge_mirror_unsubscribe(evc, SGE_TYPE_ALL);
+      evc->ec_deregister(evc);
+   }
+
+   DRETURN_VOID;
+}
+
+/**
  * @brief Shutdown mirroring
  *
- * @param evc the event client to shut down
+ * Shuts down the event mirroring mechanism: while the event client is still
+ * registered, unsubscribes all events (which deletes the contents of the
+ * corresponding object lists) and deregisters from qmaster; then destroys
+ * the event client. After a shutdown event only the destroy is left to do.
  *
- * Shuts down the event mirroring mechanism:
- * Unsubscribes all events, deletes contents of the corresponding
- * object lists and deregisteres from qmaster.
+ * The caller owns the event client: it is destroyed here exactly once and the
+ * caller's pointer is reset to nullptr, so calling this function again (or after
+ * a shutdown event, which only deregisters) is harmless.
  *
- * @return SGE_EM_OK or error code
+ * @param evc the event client to shut down; `*evc` is nullptr afterwards.
+ *            nullptr or a pointer to nullptr does nothing.
+ *
+ * @return SGE_EM_OK
  *
  * @see #sge_mirror_initialize
  */
-sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc) {
+sge_mirror_error sge_mirror_shutdown(sge_evc_class_t **evc) {
    DENTER(TOP_LAYER);
 
-   if (evc && evc->ec_is_initialized(evc)) {
-      sge_mirror_unsubscribe(evc, SGE_TYPE_ALL);
-      evc->ec_deregister(evc);
-#if 0
-    488 (352 direct, 136 indirect) bytes in 1 blocks are definitely lost in loss record 239 of 274
-    at 0x4C360A5 malloc (vg_replace_malloc.c:380)
-    at 0x6CBC97 sge_malloc(unsigned long) (sge_stdlib.cc:72)
-    at 0x59D17F sge_evc_class_create(ev_registration_id, ocs::tom::ListData**, char const*) (sge_event_client.cc:667)
-    at 0x5A5979 ocs::gdi::Client::sge_gdi2_evc_setup(sge_evc_class_str**, ev_registration_id, ocs::tom::ListData**,
-                                                     char const*) (sge_event_client.cc:3066)
-    at 0x47F575 ocs::MirrorDataStore::main(void*) (ocs_MirrorDataStore.cc:253)
-    at 0x4860CB ocs::event_mirror_main(void*) (ocs_thread_mirror.cc:33)
-    at 0x4E4E179 start_thread
-    at 0x60DDDC2 clone
-
-#endif
-      sge_evc_class_destroy(&evc);
+   if (evc != nullptr && *evc != nullptr) {
+      ocs_mirror_deregister(*evc);
+      sge_evc_class_destroy(evc);
    }
-
 
    DRETURN(SGE_EM_OK);
 }
@@ -1079,7 +1091,8 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
  * is generated and a new registration of the event client is
  * prepared.
  *
- * @param evc the event client to fetch events for
+ * @param evc the event client to fetch events for; nullptr (e.g. after
+ *            sge_mirror_shutdown()) returns SGE_EM_NOT_INITIALIZED
  *
  * @return SGE_EM_OK or an error code
  *
@@ -1088,13 +1101,17 @@ sge_mirror_unsubscribe_internal(sge_evc_class_t *evc, sge_object_type type) {
 sge_mirror_error sge_mirror_process_events(sge_evc_class_t *evc) {
    DENTER(TOP_LAYER);
 
+   if (evc == nullptr) {
+      DRETURN(SGE_EM_NOT_INITIALIZED);
+   }
+
    // out-parameter of the event client, which hands the events over raw
    ocs::tom::ListData *event_list_raw = nullptr;
    sge_mirror_error ret = SGE_EM_OK;
    static int test_debug = 0;
 
    /// ec2_get()
-   if (evc && evc->ec_get(evc, &event_list_raw, false)) {
+   if (evc->ec_get(evc, &event_list_raw, false)) {
       // the event client delivers ET events
       const auto event_list = ocs::tom::ListPtr<ocs::tom::ET>::from_typed(event_list_raw);
       if (event_list) {
@@ -1666,6 +1683,10 @@ sge_mirror_process_event(sge_evc_class_t *evc, mirror_description *mirror_base,
 /**
  * @brief The built in handling of a shutdown event: shut the mirror and the process down
  *
+ * Deregisters the event client and sets #shut_me_down, but does not destroy the
+ * event client: the caller of sge_mirror_process_events() still holds and uses it
+ * and destroys it with sge_mirror_shutdown() when its loop ends (CS-3246).
+ *
  * @param evc the event client the event arrived on
  * @param type the object type of the event, unused
  * @param action the action of the event, unused
@@ -1681,7 +1702,7 @@ sge_mirror_process_shutdown(sge_evc_class_t *evc, [[maybe_unused]] const sge_obj
    DENTER(TOP_LAYER);
 
    DPRINTF("shutting down sge mirror\n");
-   sge_mirror_shutdown(evc);
+   ocs_mirror_deregister(evc);
 
    shut_me_down = 1;
    DRETURN(SGE_EMA_OK);

@@ -120,7 +120,7 @@ sge_mirror_error
 sge_mirror_initialize(sge_evc_class_t *evc, event_client_update_func_t update_func, evm_mod_func_t mod_func,
                       evm_add_func_t add_func, evm_remove_func_t remove_func, evm_ack_func_t ack_func, void *arg);
 
-sge_mirror_error sge_mirror_shutdown(sge_evc_class_t *evc);
+sge_mirror_error sge_mirror_shutdown(sge_evc_class_t **evc);
 
 /* Subscription */
 sge_mirror_error sge_mirror_subscribe(sge_evc_class_t *evc, sge_object_type type, sge_mirror_callback callback_before,

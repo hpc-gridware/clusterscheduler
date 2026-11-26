@@ -126,7 +126,7 @@ int main() {
       printf("received " sge_u32 " kbytes in with %d events\n", events_size/1024, events);
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
 
    DRETURN(EXIT_SUCCESS);
 }
