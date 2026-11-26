@@ -54,6 +54,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
+#include <string>
+#include <vector>
 
 /* TODO: (SH) get_path.h is a header-file of execd. We have to do a CLEANUP here. */
 #include "get_path.h"
@@ -704,6 +706,16 @@ static void show_shepherd_version() {
 
 }
 
+/**
+ * @brief Entry point of the shepherd
+ *
+ * Reads the configuration file of the job directory, sets up the processor set, binding and AFS token,
+ * runs prolog, pe_start, job, pe_stop and epilog, and writes the exit status of the job for execd.
+ *
+ * @param argc number of command line arguments
+ * @param argv command line arguments; only `-help` is evaluated
+ * @return the exit code of the shepherd
+ */
 int main(int argc, char **argv) {
    char err_str[2*SGE_PATH_MAX+128];
    char *admin_user;
@@ -908,19 +920,20 @@ int main(int argc, char **argv) {
       char *set_token_cmd = search_conf_val("set_token_cmd");
       char *job_owner = search_conf_val("job_owner");
       char *token_extend_time = search_conf_val("token_extend_time");
-      char *tokenbuf;
 
       shepherd_trace("beginning AFS setup");
       if (!(coshepherd && set_token_cmd && job_owner && token_extend_time)) {
          shepherd_state = SSTATE_AFS_PROBLEM;
          shepherd_error(1, "AFS with incomplete specification requested");
       }
-      if ((tokenbuf = sge_read_token(TOKEN_FILE)) == nullptr) {
+      // sge_read_token() returns malloc() memory
+      ocs::uti::c_ptr<char> tokenbuf{sge_read_token(TOKEN_FILE)};
+      if (tokenbuf == nullptr) {
          shepherd_state = SSTATE_AFS_PROBLEM;
          shepherd_error(1, "can't read AFS token");
       }
 
-      if (sge_afs_extend_token(set_token_cmd, tokenbuf, job_owner,
+      if (sge_afs_extend_token(set_token_cmd, tokenbuf.get(), job_owner,
                            atoi(token_extend_time), err_str, sizeof(err_str))) {
          shepherd_state = SSTATE_AFS_PROBLEM;
          shepherd_error(1, err_str);
@@ -929,8 +942,8 @@ int main(int argc, char **argv) {
       shepherd_trace(err_str);
       shepherd_trace("successfully set AFS token");
 
-      memset(tokenbuf, 0, strlen(tokenbuf));
-      sge_free(&tokenbuf);
+      memset(tokenbuf.get(), 0, strlen(tokenbuf.get()));
+      tokenbuf.reset();
 
 
       if ((coshepherd_pid = start_token_cmd(0, coshepherd, set_token_cmd,
@@ -1470,107 +1483,63 @@ static int start_child(
    return exit_status;
 }
 
-/****** shepherd/get_remote_host_and_port_from_config() ************************
-*  NAME
-*     get_remote_host_and_port_from_config() -- reads the hostname and the port
-*                                               of the builtin ijs server from
-*                                               the job config
-*
-*  SYNOPSIS
-*     static int get_remote_host_and_port_from_config(char **hostname, int
-*     *port, dstring *dstr_error)
-*
-*  FUNCTION
-*     Reads the hostname and the port of the builtin ijs server (in the
-*     qrsh or qlogin client) from the job config.
-*
-*  OUTPUTS
-*     char **hostname  - The name of the remote host (= submit host) of this
-*                        builtin qrsh/qlogin job. The buffer of this string
-*                        gets allocated in this function, it has to be freed
-*                        after use.
-*     int *port        - The port of the builtin ijs server.
-*     dstring *dstr_error - Gets filled with an error message in case of error.
-*                        Doesn't get modified if this function succeeds.
-*
-*  RESULT
-*     int - 0: OK
-*           1: dstr_error points to nullptr
-*           2: "qrsh_control_port" not set in config
-*           3: "qrsh_control_port" value is invalid
-*
-*  NOTES
-*     MT-NOTE: get_remote_host_and_port_from_config() is not MT safe
-*******************************************************************************/
-static int get_remote_host_and_port_from_config(
-        char **hostname,
-        int *port,
-        dstring *dstr_error) {
-   char *address;
-   char *separator;
-
+/**
+ * @brief Read the hostname and the port of the builtin IJS server from the job config
+ *
+ * The builtin IJS server runs in the qrsh or qlogin client; its address is the
+ * config entry `qrsh_control_port` in the form `host:port`.
+ *
+ * @note MT-NOTE: get_remote_host_and_port_from_config() is not MT safe
+ *
+ * @param[out] hostname the name of the remote host (= submit host) of this builtin qrsh/qlogin job;
+ *                      only modified if the function succeeds
+ * @param[out] port the port of the builtin IJS server; only modified if the function succeeds
+ * @param[out] dstr_error gets filled with an error message in case of error, not modified on success
+ * @return 0 on success, 1 if dstr_error is nullptr, 2 if `qrsh_control_port` is not set in the config,
+ *         3 if the value of `qrsh_control_port` is invalid
+ */
+static int get_remote_host_and_port_from_config(std::string &hostname, int *port, dstring *dstr_error) {
    if (dstr_error == nullptr) {
       return 1;
    }
 
-   address = get_conf_val("qrsh_control_port");
+   const char *address = get_conf_val("qrsh_control_port");
    if (address == nullptr) {
       sge_dstring_sprintf(dstr_error, "config does not contain entry for qrsh_control_port");
       return 2;
    }
-   /* address now points to the configuration buffer, but we want to keep it
-    * independently of the configuration buffer, so we copy it.
-    */
-   address = strdup(address);
-   separator = strchr(address, ':');
+
+   const char *separator = strchr(address, ':');
    if (separator == nullptr) {
       sge_dstring_sprintf(dstr_error, "illegal value for qrsh_control_port: "
                         "\"%s\". Should be host:port", address);
-      sge_free(&address);
       return 3;
    }
 
-   *separator = '\0';
-   *hostname = address;
+   // copy the host part, independently of the configuration buffer
+   hostname.assign(address, separator - address);
    *port = atoi(separator + 1);
 
    return 0;
 }
 
-/****** shepherd/wait_my_builtin_ijs_child() ***********************************
-*  NAME
-*     wait_my_builtin_ijs_child() -- waits until the builtin ijs job finishes
-*
-*  SYNOPSIS
-*     static int wait_my_builtin_ijs_child(int pid, const char *childname, int
-*     timeout, ckpt_info_t *p_ckpt_info, ijs_fds_t *p_ijs_fds, struct rusage
-*     *rusage, dstring *dstr_error)
-*
-*  FUNCTION
-*     Waits until the builtin ijs job has finished.
-*     In case of severe errors this function exits the shepherd!
-*
-*  INPUTS
-*     int           pid          - PID of the builtin ijs job
-*     const char    *childname   - What kind of job is it? Can be
-*     int           timeout      - Timeout for prolog/epilog script.
-*     ckpt_info_t   *p_ckpt_info - Checkpointing info
-*     ijs_fds_t     *p_ijs_fds   - The fds that connect us to the job
-*
-*  OUTPUTS
-*     struct rusage *rusage      - Gets filled with the usage of the job
-*     dstring       *dstr_error     - Gets filled with an error message if an
-*                                  error happens
-*
-*  RESULT
-*     int - The exit status of the job.
-*
-*  NOTES
-*     MT-NOTE: wait_my_builtin_ijs_child() is not MT safe
-*
-*  SEE ALSO
-*     shepherd/wait_my_child
-*******************************************************************************/
+/**
+ * @brief Wait until the builtin IJS job finishes
+ *
+ * In case of severe errors this function exits the shepherd!
+ *
+ * @note MT-NOTE: wait_my_builtin_ijs_child() is not MT safe
+ * @see wait_my_child()
+ *
+ * @param pid PID of the builtin IJS job
+ * @param childname what kind of job it is: "job", "pe_start", ...
+ * @param timeout timeout for prolog/epilog script, 0 for the job
+ * @param p_ckpt_info checkpointing info
+ * @param p_ijs_fds the fds that connect us to the job
+ * @param[out] rusage gets filled with the usage of the job
+ * @param[out] dstr_error gets filled with an error message if an error happens
+ * @return the exit status of the job
+ */
 static int wait_my_builtin_ijs_child(
 int           pid,           /* IN: pid of child/job */
 const char    *childname,    /* IN: "job", "pe_start", ...     */
@@ -1581,14 +1550,15 @@ struct rusage *rusage,       /* OUT: accounting information */
 dstring       *dstr_error       /* OUT: error message - if any */
 ) {
    char    *job_owner;
-   char    *remote_host = nullptr;
+   std::string remote_host;
    int     ret;
    int     remote_port  = 0;
    int     exit_status  = -1;
 
    /* read destination host and port from config */
-   ret = get_remote_host_and_port_from_config(&remote_host, &remote_port, dstr_error);
-   if (ret != 0 || remote_host == nullptr || remote_port == 0) {
+   // on success the host name is always set
+   ret = get_remote_host_and_port_from_config(remote_host, &remote_port, dstr_error);
+   if (ret != 0 || remote_port == 0) {
       shepherd_error(1, "startup of qrsh job failed: " SFN, sge_dstring_get_string(dstr_error));
    }
    job_owner = get_conf_val("job_owner");
@@ -1606,8 +1576,7 @@ dstring       *dstr_error       /* OUT: error message - if any */
    }
 
    ret = parent_loop(pid, childname, timeout, p_ckpt_info, p_ijs_fds, job_owner,
-                     remote_host, remote_port, communication_mode, &exit_status, rusage, dstr_error);
-   sge_free(&remote_host);
+                     remote_host.c_str(), remote_port, communication_mode, &exit_status, rusage, dstr_error);
    if (ret != 0) {
       shepherd_error(1, "startup of qrsh job failed: " SFN, sge_dstring_get_string(dstr_error));
    }
@@ -3117,26 +3086,34 @@ static void handle_job_pid(int ckpt_type, int pid, int *ckpt_pid) {
    }
 }
 
-/*-------------------------------------------------------------------------*/
+/**
+ * @brief Fork a child that runs an asynchronous command as the job owner
+ *
+ * Used for the checkpointing commands and the signal methods. The child switches to
+ * the job owner, sets up the job environment and starts the command via
+ * start_command(). Exits the shepherd if the password entry of the job owner
+ * cannot be read.
+ *
+ * @param descr description of the command for the trace file, e.g. "clean"
+ * @param cmd the command line to start
+ * @return the pid of the child in the parent, 0 in the child, -1 if the fork failed
+ */
 static int start_async_command(const char *descr, char *cmd) {
    int pid;
    char err_str[512];
    char *cwd;
-   struct passwd *pw=nullptr;
-   struct passwd pw_struct;
-   char *buffer;
-   int size;
 
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-   pw = sge_getpwnam_r(get_conf_val("job_owner"), &pw_struct, buffer, size);
+   {
+      // the getpwnam is only a verification - the result is not used - the buffer is released before the fork
+      struct passwd pw_struct;
+      std::vector<char> buffer(get_pw_buffer_size());
+      const struct passwd *pw = sge_getpwnam_r(get_conf_val("job_owner"), &pw_struct, buffer.data(), buffer.size());
 
-   if (!pw) {
-      shepherd_error(1, "can't get password entry for user \"%s\"",
-                     get_conf_val("job_owner"));
+      if (!pw) {
+         shepherd_error(1, "can't get password entry for user \"%s\"",
+                        get_conf_val("job_owner"));
+      }
    }
-   /* the getpwnam is only a verification - the result is not used - free it */
-   sge_free(&buffer);
 
 	/* Create "error" and "exit_status" files here */
 	shepherd_error_init();
@@ -3369,6 +3346,17 @@ shepherd_signal_job(pid_t pid, int sig) {
    return delivered;
 }
 
+/**
+ * @brief Notify a PVM tasker that the job has finished
+ *
+ * Reads PVM_TASKER_PID, SIG_INFO_FILE and PVM_TASK_ID from the environment
+ * file of the job. If all three are set, writes the signal info file, hands it
+ * over to the job owner and sends SIGCHLD (and SIGCLD) to the tasker. Exits the
+ * shepherd on errors.
+ *
+ * @param exit_status the exit status of the job, written into the signal info file
+ * @return 0 if the tasker was notified or there is none, 1 on error
+ */
 static int notify_tasker(uint32_t exit_status) {
    const char *const filename = "environment";
    FILE *fp;
@@ -3434,19 +3422,14 @@ static int notify_tasker(uint32_t exit_status) {
    }
 
    if (shepherd_write_sig_info_file(sig_info_file, pvm_task_id, exit_status)) {
-      char *job_owner;
-      struct passwd *pw=nullptr;
       struct passwd pw_struct;
-      char *buffer;
-      int size;
 
       /* sig_info_file has to be removed by tasker
        * and tasker runs in user mode
        */
-      job_owner = get_conf_val("job_owner");
-      size = get_pw_buffer_size();
-      buffer = sge_malloc(size);
-      pw = sge_getpwnam_r(job_owner, &pw_struct, buffer, size);
+      const char *job_owner = get_conf_val("job_owner");
+      std::vector<char> buffer(get_pw_buffer_size());
+      const struct passwd *pw = sge_getpwnam_r(job_owner, &pw_struct, buffer.data(), buffer.size());
       if (pw == nullptr) {
          shepherd_error(1, "can't get password entry for user \"%s\"", job_owner);
       }
@@ -3456,7 +3439,6 @@ static int notify_tasker(uint32_t exit_status) {
                         sig_info_file, job_owner, sge_strerror(errno, &ds));
          /* no sge_dstring_free needed - shepherd_error exited */
       }
-      sge_free(&buffer);
    }
 
    shepherd_trace("signalling tasker with pid #" pid_t_fmt, tasker_pid);
