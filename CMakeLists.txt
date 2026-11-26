@@ -364,9 +364,10 @@ if (WITH_PYTHON)
 
    # We need pybind11 (usually installed via 'pip install pybind11')
    # Find the cmake directory of pybind so that find_package will work.
-   # If the active python doesn't have pybind11, fall back to a system install.
+   # Ask the interpreter found above (Python3_EXECUTABLE), not whatever python3 is
+   # first in PATH. If it has no pybind11, fall back to a system install.
    execute_process(
-         COMMAND python3 -m pybind11 --cmakedir
+         COMMAND "${Python3_EXECUTABLE}" -m pybind11 --cmakedir
          OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
          OUTPUT_STRIP_TRAILING_WHITESPACE
          RESULT_VARIABLE PYBIND11_CMAKE_DIR_RC
@@ -378,12 +379,12 @@ if (WITH_PYTHON)
    if (NOT pybind11_FOUND)
       message(FATAL_ERROR "pybind11 not found")
    else()
-      # python3 -m pybind11 --includes
+      # ${Python3_EXECUTABLE} -m pybind11 --includes
       message(STATUS "pybind11 include dirs: ${pybind11_INCLUDE_DIR}")
    endif ()
 
    # find the python/pybind11 extension suffix (e.g .cpython-310-x86_64-linux-gnu.so)
-   execute_process(COMMAND python3 -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))" OUTPUT_VARIABLE PYBIND11_EXT_SUFFIX)
+   execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))" OUTPUT_VARIABLE PYBIND11_EXT_SUFFIX)
    string(STRIP ${PYBIND11_EXT_SUFFIX} PYBIND11_EXTENSION_SUFFIX)
    message(STATUS "Python3 ext-suffix: ${PYBIND11_EXTENSION_SUFFIX}")
 
