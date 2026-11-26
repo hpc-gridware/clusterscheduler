@@ -156,10 +156,15 @@ sge_scheduler_cleanup_monitor(void *arg) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Deregister and destroy the scheduler's event client when the thread ends
+ *
+ * @param arg the address of the scheduler's event client pointer (`sge_evc_class_t **`); nullptr afterwards
+ */
 static void
 sge_scheduler_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
-   auto *evc = static_cast<sge_evc_class_t *>(arg);
+   auto **evc = static_cast<sge_evc_class_t **>(arg);
    sge_mirror_shutdown(evc);
    DRETURN_VOID;
 }
@@ -451,34 +456,18 @@ sge_scheduler_terminate(lList **answer_list) {
    DRETURN_VOID;
 }
 
-/****** qmaster/threads/sge_scheduler_main() **********************************
-*  NAME
-*     sge_scheduler_main() -- main function of the scheduler thread
-*
-*  SYNOPSIS
-*     void * sge_scheduler_main(void *arg)
-*
-*  FUNCTION
-*     Main function of the scheduler thread,
-*
-*  INPUTS
-*     void *arg - pointer to the thread function (type cl_thread_settings_t*)
-*
-*  RESULT
-*     void * - always nullptr
-*
-*  NOTES
-*     MT-NOTE: sge_scheduler_main() is MT safe
-*
-*     MT-NOTE: this is a thread function. Do NOT use this function
-*     MT-NOTE: in any other way!
-*
-*  SEE ALSO
-*     qmaster/threads/sge_scheduler_initialize()
-*     qmaster/threads/sge_scheduler_cleanup_thread()
-*     qmaster/threads/sge_scheduler_terminate()
-*     qmaster/threads/sge_scheduler_main()
-*******************************************************************************/
+/**
+ * @brief Main function of the scheduler thread
+ *
+ * @param arg pointer to the thread settings (type `cl_thread_settings_t *`)
+ *
+ * @return never returns
+ *
+ * @note MT-NOTE: sge_scheduler_main() is MT safe
+ * @note MT-NOTE: this is a thread function. Do NOT use this function in any other way!
+ *
+ * @see sge_scheduler_initialize(), sge_scheduler_cleanup_thread(), sge_scheduler_terminate()
+ */
 [[noreturn]] void *
 sge_scheduler_main(void *arg) {
    auto *thread_config = (cl_thread_settings_t *) arg;
@@ -936,7 +925,7 @@ sge_scheduler_main(void *arg) {
       do {
          pthread_cleanup_push(sge_scheduler_cleanup_thread, nullptr);
          pthread_cleanup_push(sge_scheduler_cleanup_monitor, static_cast<void *>(&monitor));
-         pthread_cleanup_push(sge_scheduler_cleanup_event_client, static_cast<void *>(evc));
+         pthread_cleanup_push(sge_scheduler_cleanup_event_client, static_cast<void *>(&evc));
          pthread_cleanup_push(sge_scheduler_cleanup_where_what, static_cast<void *>(&where_what));
          cl_thread_func_testcancel(thread_config);
          pthread_cleanup_pop(execute);

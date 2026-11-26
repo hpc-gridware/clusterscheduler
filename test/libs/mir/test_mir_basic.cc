@@ -74,6 +74,11 @@ print_event(sge_evc_class_t *evc, sge_object_type type, sge_event_action action,
    DRETURN(SGE_EMA_OK);
 }
 
+/**
+ * @brief Register as event mirror, print all events for a while and shut the mirror down
+ *
+ * @return EXIT_SUCCESS; exits with 1 if the event client cannot be set up
+ */
 int main()
 {
    DENTER_MAIN(TOP_LAYER, "test_sge_mirror");
@@ -111,7 +116,7 @@ int main()
       printf("received " sge_u32 " kbytes in with %d events\n", events_size/1024, events);
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
 
    DRETURN(EXIT_SUCCESS);
 }

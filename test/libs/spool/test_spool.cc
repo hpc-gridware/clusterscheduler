@@ -614,6 +614,14 @@ spool_event_after([[maybe_unused]] sge_evc_class_t *evc, sge_object_type type, s
    DRETURN(ret);
 }
 
+/**
+ * @brief Mirror the cluster's objects through the event client and spool them into the given spooling context
+ *
+ * @param argc number of command line arguments
+ * @param argv command line arguments: spooling method, shared library and spooling arguments
+ *
+ * @return EXIT_SUCCESS; exits with an error code on failure
+ */
 int main(int argc, char *argv[])
 {
    DENTER_MAIN(TOP_LAYER, "test_sge_spooling");
@@ -688,7 +696,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
 
    spool_shutdown_context(&answer_list, spooling_context);
    answer_list_output(&answer_list);

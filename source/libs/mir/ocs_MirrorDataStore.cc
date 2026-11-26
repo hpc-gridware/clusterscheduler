@@ -74,13 +74,14 @@ ocs::MirrorDataStore::thread_cleanup_monitor(void *arg) {
 }
 
 /**
- * pthread cleanup handler to shut down the event client
- * @param arg Event client pointer
+ * @brief pthread cleanup handler to deregister and destroy the event client
+ *
+ * @param arg the address of the event client pointer (`sge_evc_class_t **`); nullptr afterwards
  */
 void
 ocs::MirrorDataStore::thread_cleanup_event_client(void *arg) {
    DENTER(TOP_LAYER);
-   auto *evc = static_cast<sge_evc_class_t *>(arg);
+   auto **evc = static_cast<sge_evc_class_t **>(arg);
    sge_mirror_shutdown(evc);
    DRETURN_VOID;
 }
@@ -239,7 +240,7 @@ ocs::MirrorDataStore::unlock() {
 }
 
 /**
- * Mirror threads main routine.
+ * @brief Mirror threads main routine.
  *
  * Does the setup of a qmaster thread (with monitor, profiling, ...) but without commlib. Can therefor not
  * communicate with other daemons or clients.
@@ -455,7 +456,7 @@ ocs::MirrorDataStore::main([[maybe_unused]] void *arg) {
          int execute = 0;
          pthread_cleanup_push(thread_cleanup_monitor, static_cast<void *>(&monitor));
          pthread_cleanup_push(thread_cleanup_data_store, nullptr);
-         pthread_cleanup_push(thread_cleanup_event_client, static_cast<void *>(evc));
+         pthread_cleanup_push(thread_cleanup_event_client, static_cast<void *>(&evc));
          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
          pthread_testcancel();
          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);

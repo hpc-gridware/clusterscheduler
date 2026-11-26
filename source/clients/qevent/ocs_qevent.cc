@@ -78,8 +78,8 @@ qevent_options *Global_qevent_options;
 
 
 static void qevent_show_usage();
-static void qevent_testsuite_mode(sge_evc_class_t *evc);
-static void qevent_subscribe_mode(sge_evc_class_t *evc);
+static void qevent_testsuite_mode(sge_evc_class_t *&evc);
+static void qevent_subscribe_mode(sge_evc_class_t *&evc);
 static const char* qevent_get_event_name(int event);
 static void qevent_trigger_scripts(int qevent_event, qevent_options *option_struct, lListElem *event);
 static void qevent_start_trigger_script(int qevent_event, const char* script_file, lListElem *event);
@@ -435,6 +435,14 @@ static void qevent_parse_command_line([[maybe_unused]] int argc, char **argv, qe
    DRETURN_VOID;
 }
 
+/**
+ * @brief Entry point of qevent: parse the options, register as event client and run the selected mode
+ *
+ * @param argc number of command line arguments
+ * @param argv command line arguments
+ *
+ * @return 0 on success, 1 on error (the process ends through sge_exit())
+ */
 int main(int argc, char *argv[])
 {
    DENTER_MAIN(TOP_LAYER, "qevent");
@@ -574,7 +582,7 @@ int main(int argc, char *argv[])
          }
       }
 
-      sge_mirror_shutdown(evc);
+      sge_mirror_shutdown(&evc);
 
       sge_dstring_free(enabled_options.error_message);
       sge_prof_cleanup();
@@ -603,7 +611,12 @@ static const char* qevent_get_event_name(int event) {
 
 
 
-static void qevent_testsuite_mode(sge_evc_class_t *evc)
+/**
+ * @brief `-testsuite` mode: print job and task events and the event client state
+ *
+ * @param evc the event client; destroyed and nullptr on return
+ */
+static void qevent_testsuite_mode(sge_evc_class_t *&evc)
 {
 #ifndef QEVENT_SHOW_ALL
    u_long64 timestamp;
@@ -690,39 +703,23 @@ static void qevent_testsuite_mode(sge_evc_class_t *evc)
 #endif
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
    DRETURN_VOID;
 }
 
-/****** qevent/qevent_subscribe_mode() *****************************************
-*  NAME
-*     qevent_subscribe_mode() -- ???
-*
-*  SYNOPSIS
-*     static void qevent_subscribe_mode(sge_evc_class_t *evc)
-*
-*  FUNCTION
-*     ???
-*
-*  INPUTS
-*     sge_evc_class_t *evc - ???
-*
-*  RESULT
-*     static void -
-*
-*  EXAMPLE
-*     ???
-*
-*  NOTES
-*     MT-NOTE: qevent_subscribe_mode() is not MT safe
-*
-*  BUGS
-*     ???
-*
-*  SEE ALSO
-*     ???/???
-*******************************************************************************/
-static void qevent_subscribe_mode(sge_evc_class_t *evc)
+/**
+ * @brief `-sm` mode: subscribe and unsubscribe in a loop, to exercise the event master
+ *
+ * Not a diagnostic mode. It walks `event_type` through every `SGE_TYPE_*` value,
+ * subscribing one more each time round, then unsubscribes them all and starts
+ * over. The constant subscription changes keep the event master's bookkeeping
+ * under load; the events themselves are printed but not otherwise used.
+ *
+ * @param evc the event client to subscribe through; destroyed and nullptr on return
+ *
+ * @note MT-NOTE: qevent_subscribe_mode() is not MT safe
+ */
+static void qevent_subscribe_mode(sge_evc_class_t *&evc)
 {
    int event_type = SGE_TYPE_ADMINHOST;
 
@@ -734,7 +731,8 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
 
    while(!shut_me_down) {
       sge_mirror_error error = sge_mirror_process_events(evc);
-      if (evc != nullptr) {
+      // a shutdown event deregistered the event client, do not subscribe again
+      if (!shut_me_down) {
          if (event_type < SGE_TYPE_NONE) {
             event_type++;
             printf("Subscribe event_type: %d\n", event_type);
@@ -752,7 +750,7 @@ static void qevent_subscribe_mode(sge_evc_class_t *evc)
       }
    }
 
-   sge_mirror_shutdown(evc);
+   sge_mirror_shutdown(&evc);
    DRETURN_VOID;
 }
 
