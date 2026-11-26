@@ -434,6 +434,7 @@ static void       check_send_new_subscribed_list(const subscription_t *old_subsc
                                                  ocs::tom::Element<ocs::tom::EV> event_client, ev_event event);
 static int        eventclient_subscribed(ocs::tom::ConstElement<ocs::tom::EV> event_client, ev_event event,
                                          const char *session);
+static bool       eventclient_selects_fields(ocs::tom::ConstElement<ocs::tom::EV> event_client, ev_event event);
 static int        purge_event_list(ocs::tom::List<ocs::tom::ET> event_list, uint32_t event_number);
 
 static ocs::tom::ElementPtr<ocs::tom::ET> sge_create_event(uint32_t, uint64_t, ev_event, uint32_t, uint32_t,
@@ -1701,11 +1702,17 @@ sge_event_master_process_send(const ocs::tom::Element<ocs::tom::EVR> request, mo
 
       while (const auto first = event_list.front()) {
          bool added = false;
-         // freed at the end of the iteration, every client gets a copy
+         // taken over by one subscriber, or freed at the end of the iteration when nobody subscribed it
          auto event = event_list.extract(first);
          type = static_cast<ev_event>(event->get<ET_type>());
 
          sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+         // One subscriber takes the original event instead of a copy (CS-3247). It is served last, because the
+         // event is empty afterwards. A subscriber without a field selection is preferred: only for it the
+         // copy would be a full clone of the payload. All other subscribers get a copy as before.
+         ocs::tom::Element<ocs::tom::EV> taker;
+         bool taker_selects_fields = true;
+
          // the client list is owned by the event master; the handle lives only while the mutex is held
          for (const auto event_client : ocs::tom::List<ocs::tom::EV>(Event_Master_Control.clients)) {
             ec_id = event_client.get<EV_id>();
@@ -1714,9 +1721,23 @@ sge_event_master_process_send(const ocs::tom::Element<ocs::tom::EVR> request, mo
 
             if (eventclient_subscribed(event_client, type, session)) {
                added = true;
-               add_list_event_direct(event_client, event, true);
+               const bool selects_fields = eventclient_selects_fields(event_client, type);
+               if (taker && !taker_selects_fields && selects_fields) {
+                  // the current taker is the better one, this client gets a copy
+                  add_list_event_direct(event_client, event, true);
+               } else {
+                  // this client becomes the taker, the previous one (if any) gets its copy now
+                  if (taker) {
+                     add_list_event_direct(taker, event, true);
+                  }
+                  taker = event_client;
+                  taker_selects_fields = selects_fields;
+               }
                MONITOR_EDT_ADDED(monitor);
             }
+         }
+         if (taker) {
+            add_list_event_direct(taker, event, false);
          }
          sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
@@ -2525,6 +2546,24 @@ check_send_new_subscribed_list(const subscription_t *old_subscription,
       (old_subscription[event].subscription == EV_NOT_SUBSCRIBED)) {
       total_update_event(event_client, event, true, ocs::SessionManager::GDI_SESSION_NONE);
    }
+}
+
+/**
+ * @brief Does an event client reduce an event to a field selection?
+ *
+ * Hot path: no DENTER. A client without a subscription array counts as selecting fields, so it is never
+ * preferred as the taker of the original event in sge_event_master_process_send().
+ *
+ * @param event_client event client to check
+ * @param event event to check
+ *
+ * @return true if the client's subscription of @p event has a field selection (what), false if it takes
+ *         the complete objects
+ */
+static bool eventclient_selects_fields(const ocs::tom::ConstElement<ocs::tom::EV> event_client,
+                                       const ev_event event) {
+   const auto *subscription = static_cast<const subscription_t *>(event_client.get<EV_sub_array>());
+   return subscription == nullptr || subscription[event].what != nullptr;
 }
 
 /**
