@@ -462,7 +462,8 @@ static void blockEvents(ocs::tom::Element<ocs::tom::EV> event_client, ev_event e
  * Registered as the destructor of #event_master_control_t::transaction_key.
  * Trivial and called once per thread: no DENTER.
  *
- * @param transaction_store the thread's @ref event_master_transaction_t
+ * @param transaction_store the thread's @ref event_master_transaction_t, made with ocs::uti::create() by
+ *        GET_SPECIFIC
  */
 static void
 sge_event_master_destroy_transaction_store(void *transaction_store) {
@@ -470,7 +471,7 @@ sge_event_master_destroy_transaction_store(void *transaction_store) {
    // the thread local request list (EVR) is freed with the handle
    static_cast<void>(ocs::tom::ListPtr<ocs::tom::EVR>::from_typed(std::exchange(t_store->transaction_requests,
                                                                                  nullptr)));
-   sge_free(&t_store);
+   ocs::uti::destroy(t_store);
 }
 
 /**
@@ -489,13 +490,14 @@ sge_event_master_init_transaction_store(event_master_transaction_t *t_store) {
 }
 
 /**
- * @brief Release a thread's event transaction storage
+ * @brief Release the event master control when the event master thread ends
  *
- * Registered as the destructor of #event_master_control_t::transaction_key, so
- * a thread that ends with an open transaction does not leak its collected
- * requests.
+ * A pthread_cleanup_push() handler of the event master thread: removes the event
+ * clients still registered and frees the data structures of the event master.
+ * The thread's event transaction storage is released by the destructor of
+ * #event_master_control_t::transaction_key instead.
  *
- * @param arg the thread's @ref event_master_transaction_t
+ * @param arg not used, the thread pushes nullptr
  */
 void sge_cleanup_event_master_control(void *arg) {
    DENTER(TOP_LAYER);

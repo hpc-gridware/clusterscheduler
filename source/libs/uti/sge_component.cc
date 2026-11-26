@@ -481,17 +481,21 @@ void component_ts0_destroy() {
 /**
  * @brief Destroy the thread-local component structure.
  *
- * @param[in] tl Pointer to the thread-local component structure.
+ * Registered with `pthread_key_create()`, runs when a thread with data exits.
+ *
+ * @param[in] tl Pointer to the thread-local component structure, made with ocs::uti::create() by GET_SPECIFIC.
  */
 static void component_tl0_destroy(void *tl) {
-   auto _tl = (sge_component_tl0_t *) tl;
+   auto *_tl = static_cast<sge_component_tl0_t *>(tl);
 
    // wrapping structure
-   sge_free(&_tl);
+   ocs::uti::destroy(_tl);
 }
 
 /**
  * @brief Initialize the thread-local component structure.
+ *
+ * The structure comes zeroed from ocs::uti::create() in GET_SPECIFIC, this sets the defaults.
  *
  * @param[in] tl Pointer to the thread-local component structure.
  */
@@ -501,7 +505,6 @@ static void component_tl0_init(sge_component_tl0_t *tl) {
       rmon_disable();
    }
    static bool already_shown = false;
-   memset(tl, 0, sizeof(sge_component_tl0_t));
 
    // some default values
    set_component_id(tl, UNKNOWN_APP);

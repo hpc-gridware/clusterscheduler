@@ -154,35 +154,45 @@ void bdb_destroy(bdb_info *info) {
    ocs::uti::destroy(*info);
 }
 
-/*
-* initialize thread local storage for a connection.
-*  NOTES
-*     MT-NOTE: bdb_init_connection() is MT safe
-*/
+/**
+ * @brief Initialize the thread local storage for a connection
+ *
+ * The connection comes zeroed from ocs::uti::create() in GET_SPECIFIC; this states the initial value.
+ *
+ * @param con the new connection of the calling thread
+ *
+ * @note MT-NOTE: bdb_init_connection() is MT safe
+ */
 static void
 bdb_init_connection(bdb_connection *con) {
    con->txn = nullptr;
 }
 
-/*
-* destroy the thread local storage for a connection
-*  NOTES
-*     MT-NOTE: bdb_destroy_connection() is MT safe
-*/
+/**
+ * @brief Destroy the thread local storage for a connection
+ *
+ * Registered with `pthread_key_create()` in bdb_create(), runs when a thread with a connection exits.
+ * Releases the connection, which was made with ocs::uti::create() by GET_SPECIFIC. A transaction that is
+ * still open is neither committed nor aborted here.
+ *
+ * @param connection the thread's bdb_connection
+ *
+ * @note MT-NOTE: bdb_destroy_connection() is MT safe
+ */
 static void
 bdb_destroy_connection(void *connection) {
    DENTER(TOP_LAYER);
 
-   /* Nothing to do here in principle.
-    * Transactions and database connections shall be closed by calling the
-    * shutdown function.
-    * But we can generate an error, if there is still something open.
+   /* Transactions and database connections are closed by the shutdown function;
+    * here only the thread's connection record is released (it leaked before CS-3105).
     */
-   bdb_connection *con = (bdb_connection *)connection;
+   auto *con = static_cast<bdb_connection *>(connection);
 
    if (con->txn != nullptr) {
       /* error */
    }
+
+   ocs::uti::destroy(con);
 
    DRETURN_VOID;
 }

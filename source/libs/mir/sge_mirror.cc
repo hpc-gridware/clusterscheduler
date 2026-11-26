@@ -268,8 +268,16 @@ static void mir_state_init(mir_state_t *state) {
    state->test_callback_error_seen = mconf_get_test_mirror_callback_error();
 }
 
+/**
+ * @brief Release the mirror state of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the state was made with ocs::uti::create() by GET_SPECIFIC.
+ *
+ * @param state the thread's mir_state_t
+ */
 static void mir_state_destroy(void *state) {
-   sge_free(&state);
+   auto *mir_state = static_cast<mir_state_t *>(state);
+   ocs::uti::destroy(mir_state);
 }
 
 static void mir_mt_init() {

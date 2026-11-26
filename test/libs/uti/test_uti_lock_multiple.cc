@@ -75,8 +75,16 @@ typedef struct {
 
 static void *thread_function(void *anArg);
 
+/**
+ * @brief Release the state of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the state was made with ocs::uti::create() by GET_SPECIFIC.
+ *
+ * @param state the thread's state_t
+ */
 static void state_destroy(void *state) {
-   sge_free(&state);
+   auto *st = static_cast<state_t *>(state);
+   ocs::uti::destroy(st);
 }
 
 static void state_init(state_t *state) {

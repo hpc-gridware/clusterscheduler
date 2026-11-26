@@ -47,6 +47,9 @@
 
 #include <cinttypes>
 
+#include <optional>
+#include <string>
+
 #include "uti/sge_bootstrap_env.h"
 #include "uti/sge_hostname.h"
 #include "uti/sge_rmon_macros.h"
@@ -60,15 +63,15 @@
  * @brief Thread local storage (level 1) holding the environment settings
  *
  * Level 1 because its initialisation depends on level 0 data such as logging.
- * The two string members are owned by the struct and released by
+ * The structure is created with ocs::uti::create() and released with ocs::uti::destroy() by
  * `bootstrap_env_tl1_destroy()`.
  *
  * @todo data can partially be shared between threads. cleanup required.
  */
 typedef struct {
    // environment
-   char *sge_root;            ///< `$SGE_ROOT`; nullptr when the variable is unset
-   char *sge_cell;            ///< `$SGE_CELL`, or `DEFAULT_CELL` ("default") when unset
+   std::optional<std::string> sge_root; ///< `$SGE_ROOT`; empty when the variable is unset
+   std::string sge_cell;      ///< `$SGE_CELL`, or `DEFAULT_CELL` ("default") when unset
    uint32_t sge_qmaster_port; ///< port the qmaster listens on
    uint32_t sge_execd_port;   ///< port the execds listen on
    bool from_services;        ///< true when the qmaster port came from the services database rather than the environment
@@ -87,14 +90,30 @@ bootstrap_env_tl1_init(sge_bootstrap_ts1_t *tl);
 static void
 bootstrap_env_tl1_destroy(void *tl);
 
+/**
+ * @brief Store the installation root in the thread local data
+ *
+ * @param tl the thread local data
+ * @param sge_root the installation root, nullptr when `$SGE_ROOT` is unset
+ */
 static void
 set_sge_root(sge_bootstrap_ts1_t *tl, const char *sge_root) {
-   tl->sge_root = sge_strdup(tl->sge_root, sge_root);
+   if (sge_root != nullptr) {
+      tl->sge_root = sge_root;
+   } else {
+      tl->sge_root.reset();
+   }
 }
 
+/**
+ * @brief Store the cell name in the thread local data
+ *
+ * @param tl the thread local data
+ * @param sge_cell the cell name, not nullptr
+ */
 static void
 set_sge_cell(sge_bootstrap_ts1_t *tl, const char *sge_cell) {
-   tl->sge_cell = sge_strdup(tl->sge_cell, sge_cell);
+   tl->sge_cell = sge_cell;
 }
 
 static void
@@ -112,13 +131,18 @@ set_from_services(sge_bootstrap_ts1_t *tl, bool from_services) {
    tl->from_services = from_services;
 }
 
+/**
+ * @brief Log the environment settings of the thread local data (debug output)
+ *
+ * @param tl the thread local data
+ */
 static void
 bootstrap_env_log_tl1_parameter(sge_bootstrap_ts1_t *tl) {
    DENTER(TOP_LAYER);
 
    DPRINTF("ENVIRONMENT ===\n");
-   DPRINTF("   sge_root                  >%s<\n", tl->sge_root ? tl->sge_root : "NA");
-   DPRINTF("   sge_cell                  >%s<\n", tl->sge_cell ? tl->sge_cell : "NA");
+   DPRINTF("   sge_root                  >%s<\n", tl->sge_root ? tl->sge_root->c_str() : "NA");
+   DPRINTF("   sge_cell                  >%s<\n", tl->sge_cell.c_str());
    DPRINTF("   sge_qmaster_port          >%d<\n", tl->sge_qmaster_port);
    DPRINTF("   sge_execd_port            >%d<\n", tl->sge_execd_port);
    DPRINTF("   from_services             >%s<\n", tl->from_services ? "true" : "false");
@@ -171,11 +195,18 @@ bootstrap_env_init_from_environment(sge_bootstrap_ts1_t *tl) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Initialise the thread local environment settings of the calling thread
+ *
+ * The structure comes value-initialised from ocs::uti::create() in GET_SPECIFIC (`sge_root` empty, numbers
+ * 0, `sge_cell` empty); this reads the environment. The first call in the process logs the settings.
+ *
+ * @param tl the new thread local data
+ */
 static void
 bootstrap_env_tl1_init(sge_bootstrap_ts1_t *tl) {
    DENTER(TOP_LAYER);
    static bool already_shown = false;
-   memset(tl, 0, sizeof(sge_bootstrap_ts1_t));
 
    bootstrap_env_init_from_environment(tl);
 
@@ -186,16 +217,17 @@ bootstrap_env_tl1_init(sge_bootstrap_ts1_t *tl) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Release the thread local environment settings of an exiting thread
+ *
+ * Registered with `pthread_key_create()`. The structure was made with ocs::uti::create() by GET_SPECIFIC.
+ *
+ * @param tl the thread's sge_bootstrap_ts1_t
+ */
 static void
 bootstrap_env_tl1_destroy(void *tl) {
-   auto _tl = (sge_bootstrap_ts1_t *) tl;
-
-   // environment parameters
-   sge_free(&(_tl->sge_root));
-   sge_free(&(_tl->sge_cell));
-
-   // wrapping structure
-   sge_free(&_tl);
+   auto *_tl = static_cast<sge_bootstrap_ts1_t *>(tl);
+   ocs::uti::destroy(_tl);
 }
 
 /**
@@ -207,7 +239,7 @@ bootstrap_env_tl1_destroy(void *tl) {
 const char *
 bootstrap_get_sge_root() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);
-   return tl->sge_root;
+   return tl->sge_root ? tl->sge_root->c_str() : nullptr;
 }
 
 /**
@@ -219,7 +251,7 @@ bootstrap_get_sge_root() {
 const char *
 bootstrap_get_sge_cell() {
    GET_SPECIFIC(sge_bootstrap_ts1_t, tl, bootstrap_env_tl1_init, sge_bootstrap_env_tl1_key);
-   return tl->sge_cell;
+   return tl->sge_cell.c_str();
 }
 
 /**

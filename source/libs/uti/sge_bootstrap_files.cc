@@ -241,11 +241,18 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Initialise the thread local file paths of the calling thread
+ *
+ * The structure comes zeroed from ocs::uti::create() in GET_SPECIFIC, so every path is nullptr until
+ * bootstrap_init_paths() sets it. The first call in the process logs the paths.
+ *
+ * @param tl the new thread local data
+ */
 static void
 bootstrap_files_tl1_init(sge_bootstrap_files_tl1_t *tl) {
    DENTER(TOP_LAYER);
    static bool already_shown = false;
-   memset(tl, 0, sizeof(sge_bootstrap_files_tl1_t));
 
    bootstrap_init_paths(tl);
 
@@ -256,9 +263,17 @@ bootstrap_files_tl1_init(sge_bootstrap_files_tl1_t *tl) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Release the thread local file paths of an exiting thread
+ *
+ * Registered with `pthread_key_create()`. The paths are sge_strdup() memory, the structure was made with
+ * ocs::uti::create() by GET_SPECIFIC.
+ *
+ * @param tl the thread's sge_bootstrap_files_tl1_t
+ */
 static void
 bootstrap_files_tl1_destroy(void *tl) {
-   auto _tl = (sge_bootstrap_files_tl1_t *) tl;
+   auto *_tl = static_cast<sge_bootstrap_files_tl1_t *>(tl);
 
    // files and paths
    sge_free(&(_tl->cell_root));
@@ -270,7 +285,7 @@ bootstrap_files_tl1_destroy(void *tl) {
    sge_free(&(_tl->alias_file));
 
    // wrapping structure
-   sge_free(&_tl);
+   ocs::uti::destroy(_tl);
 }
 
 /**

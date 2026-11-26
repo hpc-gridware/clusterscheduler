@@ -63,11 +63,17 @@ namespace ocs {
    /// thread shared storage. the instance that holds all data stores
    static obj_thread_shared_t obj_thread_shared{};
 
-   /// releases the thread local storage.
+   /**
+    * @brief Release the thread local storage of an exiting thread
+    *
+    * Registered with `pthread_key_create()`; the storage was made with ocs::uti::create() by GET_SPECIFIC.
+    *
+    * @param st the thread's obj_thread_local_t
+    */
    static void
    obj_state_destroy(void *st) {
-      auto *tlocal = (obj_thread_local_t *) st;
-      sge_free(&tlocal);
+      auto *tlocal = static_cast<obj_thread_local_t *>(st);
+      ocs::uti::destroy(tlocal);
    }
 
    /// one time initializer that create the pthread key and the thread shared storage (== all data stores)

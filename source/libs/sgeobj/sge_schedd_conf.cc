@@ -217,8 +217,17 @@ static void sc_state_init(sc_state_t *state) {
    state->log_schedd_info = 0;
 }
 
+/**
+ * @brief Release the scheduling state of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the state was made with ocs::uti::create() by GET_SPECIFIC.
+ * `sme` and `tmp_sme` are not released here.
+ *
+ * @param state the thread's sc_state_t
+ */
 static void sc_state_destroy(void *state) {
-   sge_free(&state);
+   auto *sc_state = static_cast<sc_state_t *>(state);
+   ocs::uti::destroy(sc_state);
 }
 
 static void

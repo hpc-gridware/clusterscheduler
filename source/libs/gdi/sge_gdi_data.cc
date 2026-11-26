@@ -130,22 +130,37 @@ gdi_data_log_ts_parameter() {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Initialise the GDI state of the calling thread
+ *
+ * The state comes zeroed from ocs::uti::create() in GET_SPECIFIC; this creates the error collector and logs
+ * the state.
+ *
+ * @param tl the new thread local state
+ */
 static void
 gdi_data_tl_init(sge_gdi_tl_t *tl) {
    DENTER(TOP_LAYER);
-   memset(tl, 0, sizeof(sge_gdi_tl_t));
    tl->is_setup = false;
    tl->error_handle = sge_error_class_create();
    gdi_data_log_tl_parameter(tl);
    DRETURN_VOID;
 }
 
+/**
+ * @brief Release the GDI state of an exiting thread
+ *
+ * Registered with `pthread_key_create()`. Destroys the error collector and the state, which was made with
+ * ocs::uti::create() by GET_SPECIFIC.
+ *
+ * @param tl the thread's sge_gdi_tl_t
+ */
 static void
 gdi_data_tl_destroy(void *tl) {
-   auto _tl = (sge_gdi_tl_t *) tl;
+   auto *_tl = static_cast<sge_gdi_tl_t *>(tl);
 
    sge_error_class_destroy(&_tl->error_handle);
-   sge_free(&_tl);
+   ocs::uti::destroy(_tl);
 }
 
 static void

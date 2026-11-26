@@ -110,13 +110,26 @@ static dstring fgl_stats_str = DSTRING_INIT;
 #endif
 
 
-static void fgl_state_init(fgl_state_t *state) {
-   memset(state, 0, sizeof(fgl_state_t));
+/**
+ * @brief Initialise the lock request state of the calling thread
+ *
+ * Nothing to do: the state comes zeroed from ocs::uti::create() in GET_SPECIFIC.
+ *
+ * @param state the new thread local state
+ */
+static void fgl_state_init([[maybe_unused]] fgl_state_t *state) {
 }
 
+/**
+ * @brief Release the lock request state of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the state was made with ocs::uti::create() by GET_SPECIFIC.
+ *
+ * @param st the thread's fgl_state_t
+ */
 static void fgl_state_destroy(void *st) {
-   fgl_state_t *state = (fgl_state_t *)st;
-   sge_free(&state);
+   auto *state = static_cast<fgl_state_t *>(st);
+   ocs::uti::destroy(state);
 }
 
 static void fgl_once_init() {
