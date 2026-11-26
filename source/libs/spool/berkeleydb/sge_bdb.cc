@@ -1307,8 +1307,9 @@ bool spool_berkeleydb_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list
                   DBT delete_dbt;
 
                   /* remember key of record to delete */
+                  std::string delete_key{static_cast<const char *>(cursor_dbt.data)};
                   memset(&delete_dbt, 0, sizeof(delete_dbt));
-                  delete_dbt.data = strdup((char *)cursor_dbt.data);
+                  delete_dbt.data = delete_key.data();
                   delete_dbt.size = cursor_dbt.size;
 
                   /* switch cursor to next position */
@@ -1329,13 +1330,11 @@ bool spool_berkeleydb_delete_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list
                                              delete_dbt.data,
                                              delete_ret, db_strerror(delete_ret));
                      ret = false;
-                     sge_free(&(delete_dbt.data));
                      done = true;
                      break;
                   } else {
-                     DEBUG("deleted record with key " SFQ, (char *)delete_dbt.data);
+                     DEBUG("deleted record with key " SFQ, delete_key.c_str());
                   }
-                  sge_free(&(delete_dbt.data));
                }
             }
             PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
@@ -1753,6 +1752,8 @@ spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
                                  MSG_BERKELEY_QUERYERROR_SIS,
                                  key, dbret, db_strerror(dbret));
       } else {
+         // We specified DB_DBT_MALLOC - BDB mallocs the memory for the object found and we have to free it.
+         const ocs::uti::c_ptr<void> data_owner{data_dbt.data};
          sge_pack_buffer pb;
          int pack_ret;
          const ocs::tom::FieldDescr *descr;
@@ -1784,12 +1785,6 @@ spool_berkeleydb_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
             }
          }
 
-         /* We specified DB_DBT_MALLOC - BDB will malloc memory for each
-          * object found and we have to free it.
-          */
-         if (data_dbt.data != nullptr) {
-            sge_free(&(data_dbt.data));
-         }
       }
    }
 
@@ -1851,6 +1846,17 @@ spool_berkeleydb_read_string(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_i
    DRETURN(ret);
 }
 
+/**
+ * @brief Remove the transaction log files that are no longer needed
+ *
+ * Asks BerkeleyDB for the log files that are not involved in active transactions any more
+ * (`DB_ARCH_ABS`) and deletes them.
+ *
+ * @param answer_list used to return error messages
+ * @param info database handle
+ * @return true on success, false if there is no connection, the archive list cannot be
+ *         retrieved or a file cannot be deleted
+ */
 static bool
 spool_berkeleydb_clear_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_info info) {
    DENTER(BDB_LAYER);
@@ -1880,6 +1886,8 @@ spool_berkeleydb_clear_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_inf
       PROF_START_MEASUREMENT(SGE_PROF_SPOOLINGIO);
       dbret = env->log_archive(env, &list, DB_ARCH_ABS);
       PROF_STOP_MEASUREMENT(SGE_PROF_SPOOLINGIO);
+      // BDB allocates the list in one block with malloc(), it is released with one free()
+      const ocs::uti::c_ptr<char *> list_owner{list};
       if (dbret != 0) {
          spool_berkeleydb_handle_bdb_error(answer_list, info, dbret);
          answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, 
@@ -1907,7 +1915,6 @@ spool_berkeleydb_clear_log(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, bdb_inf
             }
          }
 
-         sge_free(&list);
       }
    }
 

@@ -797,14 +797,13 @@ spool_json_write_config_value_list(rapidjson::PrettyWriter<rapidjson::StringBuff
                                    const char *s) {
    writer.StartArray();
    if (s != nullptr && *s != '\0' && sge_strnullcasecmp(s, NONE_STR) != 0) {
-      char *buf = strdup(s);
+      // sge_strtok_r() works on its own copy of the text
       struct saved_vars_s *ctx = nullptr;
-      for (const char *tok = sge_strtok_r(buf, " \t,", &ctx); tok != nullptr;
+      for (const char *tok = sge_strtok_r(s, " \t,", &ctx); tok != nullptr;
            tok = sge_strtok_r(nullptr, " \t,", &ctx)) {
          writer.String(tok);
       }
       sge_free_saved_vars(ctx);
-      free(buf);
    }
    writer.EndArray();
 }
@@ -823,9 +822,9 @@ spool_json_write_config_namevalue_list(rapidjson::PrettyWriter<rapidjson::String
                                        const char *s) {
    writer.StartArray();
    if (s != nullptr && *s != '\0' && sge_strnullcasecmp(s, NONE_STR) != 0) {
-      char *buf = strdup(s);
+      // sge_strtok_r() works on its own copy of the text
       struct saved_vars_s *ctx = nullptr;
-      for (const char *tok = sge_strtok_r(buf, ", ", &ctx); tok != nullptr;
+      for (const char *tok = sge_strtok_r(s, ", ", &ctx); tok != nullptr;
            tok = sge_strtok_r(nullptr, ", ", &ctx)) {
          const char *eq = strchr(tok, '=');
          writer.StartObject();
@@ -842,7 +841,6 @@ spool_json_write_config_namevalue_list(rapidjson::PrettyWriter<rapidjson::String
          writer.EndObject();
       }
       sge_free_saved_vars(ctx);
-      free(buf);
    }
    writer.EndArray();
 }
@@ -870,9 +868,9 @@ spool_json_write_perm_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wri
                            const char *s) {
    writer.StartArray();
    if (s != nullptr && *s != '\0' && sge_strnullcasecmp(s, NONE_STR) != 0) {
-      char *buf = strdup(s);
+      // sge_strtok_r() works on its own copy of the text
       struct saved_vars_s *ctx = nullptr;
-      for (const char *rule = sge_strtok_r(buf, ",", &ctx); rule != nullptr;
+      for (const char *rule = sge_strtok_r(s, ",", &ctx); rule != nullptr;
            rule = sge_strtok_r(nullptr, ",", &ctx)) {
          writer.StartObject();
          const char *p = rule;
@@ -893,7 +891,6 @@ spool_json_write_perm_list(rapidjson::PrettyWriter<rapidjson::StringBuffer> &wri
          writer.EndObject();
       }
       sge_free_saved_vars(ctx);
-      free(buf);
    }
    writer.EndArray();
 }

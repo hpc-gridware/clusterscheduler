@@ -165,8 +165,8 @@ spool_classic_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const
          int i;
          flatfile_info *field_info;
 
-         /* create info which fields to spool once */
-         field_info = ocs::uti::c_alloc<flatfile_info>(SGE_TYPE_ALL);
+         /* create info which fields to spool once, released by spool_classic_default_shutdown_func() */
+         field_info = ocs::uti::create_array<flatfile_info>(SGE_TYPE_ALL);
          for (i = (int)SGE_TYPE_FIRST; i < (int)SGE_TYPE_ALL; i++) {
             switch (i) {
                /* pseudo types without spooling action */
@@ -425,7 +425,8 @@ bool spool_classic_default_startup_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
  *
  * Frees the field lists built by #spool_classic_create_context. Most object
  * types use one of the static arrays and must not be freed; only the ones
- * whose lists were built on the heap are released here.
+ * whose lists were built on the heap are released here. The table itself
+ * (made with ocs::uti::create_array()) is released with ocs::uti::destroy_array().
  *
  * @param answer_list to return error messages
  * @param rule the spooling rule being shut down
@@ -474,7 +475,7 @@ bool spool_classic_default_shutdown_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
             break;
       }
    }
-   sge_free(&field_info);
+   ocs::uti::destroy_array(field_info);
 
    DRETURN(ret);
 }
@@ -878,8 +879,8 @@ spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       case SGE_TYPE_JOBSCRIPT:
          {
             const char *exec_file = nullptr;
-            char *dup=strdup(key);
-            const char *db_key = jobscript_parse_key(dup, &exec_file);
+            std::string dup{key};
+            const char *db_key = jobscript_parse_key(dup.data(), &exec_file);
             if (exec_file != nullptr && !ocs_jobscript_key_is_valid(db_key, exec_file)) {
                // CS-3134: only the file qmaster named itself is read
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -893,7 +894,6 @@ spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                   ep = script.release();
                }
             }
-            sge_free(&dup);
          }
          break;
       case SGE_TYPE_JOB:
@@ -1045,7 +1045,6 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
       case SGE_TYPE_QINSTANCE:
          {
             const auto qinstance = ocs::tom::ConstElement<ocs::tom::QU>(object);
-            sge_free(&directory);
             directory = sge_dstring_sprintf(&tmp, "%s/%s", QINSTANCES_DIR, qinstance.get<QU_qname>());
             filename = qinstance.get<QU_qhostname>();
          }
@@ -1080,13 +1079,13 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
          {
             uint32_t job_id, ja_task_id;
             char *pe_task_id;
-            char *dup = strdup(key);
+            std::string dup{key};
             bool only_job;
             int flags = SPOOL_DEFAULT;
             // the job writer takes the task list out of the job while it writes, so it needs a mutable job
             ocs::tom::Element<ocs::tom::JB> job;
 
-            job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
+            job_parse_key(dup.data(), &job_id, &ja_task_id, &pe_task_id, &only_job);
 
             DPRINTF("spooling job %d.%d %s\n", job_id, ja_task_id,
                     pe_task_id != nullptr ? pe_task_id : "<null>");
@@ -1119,7 +1118,6 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
                ret = false;
             }
 
-            sge_free(&dup);
          }
          break;
       case SGE_TYPE_JOBSCRIPT:
@@ -1181,37 +1179,35 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
     * job are spooled in the corresponding case branch
     */
    if (url != nullptr && directory != nullptr && filename != nullptr) {
-      const char *tmpfilepath = nullptr;
       dstring filepath_buffer = DSTRING_INIT;
 
       /* first write to a temporary file; for jobs it is already initialized */
-      tmpfilepath = sge_dstring_sprintf(&filepath_buffer, "%s/%s/.%s",
-                                        url, directory, filename);
+      const char *tmpfilepath = sge_dstring_sprintf(&filepath_buffer, "%s/%s/.%s",
+                                                    url, directory, filename);
 
-      /* spool */
-      tmpfilepath = spool_flatfile_write_object(answer_list, object, false,
-                                                field_info->fields,
-                                                field_info->instr,
-                                                SP_DEST_SPOOL, SP_FORM_ASCII,
-                                                tmpfilepath, true);
+      /* spool; the file name returned is malloc'd by the flatfile writer */
+      const ocs::uti::c_ptr<const char> spooled_path{spool_flatfile_write_object(answer_list, object, false,
+                                                                                 field_info->fields,
+                                                                                 field_info->instr,
+                                                                                 SP_DEST_SPOOL, SP_FORM_ASCII,
+                                                                                 tmpfilepath, true)};
 
-      if (tmpfilepath == nullptr) {
+      if (spooled_path == nullptr) {
          ret = false;
       } else {
          /* spooling was ok: rename temporary to target file */
          filepath = sge_dstring_sprintf(&filepath_buffer, "%s/%s/%s",
                                         url, directory, filename);
 
-         if (rename(tmpfilepath, filepath) == -1) {
+         if (rename(spooled_path.get(), filepath) == -1) {
             answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                     ANSWER_QUALITY_ERROR,
                                     MSG_ERRORRENAMING_SSS,
-                                    tmpfilepath, filepath, strerror(errno));
+                                    spooled_path.get(), filepath, strerror(errno));
             ret = false;
          }
       }
 
-      sge_free(&tmpfilepath);
       sge_dstring_free(&filepath_buffer);
    }
 
@@ -1297,10 +1293,10 @@ bool spool_classic_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
          {
             uint32_t job_id, ja_task_id;
             char *pe_task_id;
-            char *dup = strdup(key);
+            std::string dup{key};
             bool only_job;
 
-            job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
+            job_parse_key(dup.data(), &job_id, &ja_task_id, &pe_task_id, &only_job);
 
             DPRINTF("spooling job %d.%d %s\n", job_id, ja_task_id,
                     pe_task_id != nullptr ? pe_task_id : "<null>");
@@ -1308,14 +1304,13 @@ bool spool_classic_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
                                       SPOOL_DEFAULT) != 0) {
                ret = false;
             }
-            sge_free(&dup);
          }
          break;
       case SGE_TYPE_JOBSCRIPT:
         {
             const char *exec_file = nullptr;
-            char *dup = strdup(key);
-            const char *db_key = jobscript_parse_key(dup, &exec_file);
+            std::string dup{key};
+            const char *db_key = jobscript_parse_key(dup.data(), &exec_file);
             if (!ocs_jobscript_key_is_valid(db_key, exec_file)) {
                // CS-3134: only the file qmaster named itself is removed
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
@@ -1325,7 +1320,6 @@ bool spool_classic_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_l
             } else {
                ret = (unlink(exec_file) != 0) ? false: true;
             }
-            sge_free(&dup);
          }
          break;
       case SGE_TYPE_SHARETREE:

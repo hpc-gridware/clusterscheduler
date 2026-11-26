@@ -40,6 +40,7 @@
 #include <cstring>
 #include <cerrno>
 #include <pthread.h>
+#include <string>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_log.h"
@@ -62,10 +63,10 @@ struct _bdb_info {
    pthread_mutex_t   mtx;                 ///< Guards this object; taken by #bdb_lock_info
    pthread_key_t     key;                 ///< Thread specific key under which each thread finds its connection
 
-   const char *      path;                ///< The database path
+   std::string       path;                ///< The database path
 
    DB_ENV *          env;                 ///< Global database environment
-   DB **             db;                  ///< Global database handles, one per #bdb_database
+   DB *              db[BDB_ALL_DBS];     ///< Global database handles, one per #bdb_database
 
    uint64_t            next_clear;          ///< When the transaction log is next trimmed, see #BERKELEYDB_CLEAR_INTERVAL
    uint64_t            next_checkpoint;     ///< When the cache is next written to disk, see #BERKELEYDB_CHECKPOINT_INTERVAL
@@ -100,7 +101,9 @@ bdb_destroy_connection(void *connection);
  * Path is
  * - the absolute path to a Database in case of local spooling
  *
- * @param path path to the database
+ * The structure is made with ocs::uti::create() and released with bdb_destroy().
+ *
+ * @param path path to the database, copied; must not be nullptr
  *
  * @return pointer to a newly created and initialized structure
  *
@@ -108,19 +111,17 @@ bdb_destroy_connection(void *connection);
  */
 bdb_info
 bdb_create(const char *path) {
-   int ret, i;
-   bdb_info info = ocs::uti::c_alloc<_bdb_info>();
+   bdb_info info = ocs::uti::create<_bdb_info>();
 
    pthread_mutex_init(&(info->mtx), nullptr);
-   ret = pthread_key_create(&(info->key), bdb_destroy_connection);
+   const int ret = pthread_key_create(&(info->key), bdb_destroy_connection);
    if (ret != 0) {
       fprintf(stderr, "can't initialize key for thread local storage: %s\n", strerror(ret));
    }
    info->path   = path;
    info->env    = nullptr;
 
-   info->db     = (DB **)sge_malloc(BDB_ALL_DBS * sizeof(DB *));
-   for (i = 0; i < BDB_ALL_DBS; i++) {
+   for (int i = 0; i < BDB_ALL_DBS; i++) {
       info->db[i] = nullptr;
    }
 
@@ -135,8 +136,8 @@ bdb_create(const char *path) {
  * @brief Release the state of one spooling rule
  *
  * Releases the per-rule bdb_info allocated in bdb_create: deletes the
- * pthread key, frees the strdup'd path and the DB handle array, destroys
- * the mutex, and frees the struct. Worker threads that still hold a
+ * pthread key, destroys the mutex, and destroys the struct (path and DB
+ * handle array are members). Worker threads that still hold a
  * per-thread bdb_connection must have had their pthread-key destructor
  * fired first; ordinarily that happens at thread exit.
  *
@@ -150,19 +151,7 @@ void bdb_destroy(bdb_info *info) {
    pthread_key_delete((*info)->key);
    pthread_mutex_destroy(&((*info)->mtx));
 
-   if ((*info)->path != nullptr) {
-      /* path was strdup'd by spool_berkeleydb_create_context and handed
-       * to bdb_create; the struct stores it typed as const for its
-       * external getters, so cast const away for the free.
-       */
-      sge_free((void *)&((*info)->path));
-   }
-
-   if ((*info)->db != nullptr) {
-      sge_free(&((*info)->db));
-   }
-
-   sge_free(info);
+   ocs::uti::destroy(*info);
 }
 
 /*
@@ -211,7 +200,7 @@ bdb_destroy_connection(void *connection) {
  */
 const char *
 bdb_get_path(bdb_info info) {
-   return info->path;
+   return info->path.c_str();
 }
 
 /**
@@ -397,16 +386,8 @@ void bdb_set_recover(bdb_info info, bool recover) {
  */
 const char *
 bdb_get_dbname(bdb_info info, dstring *buffer) {
-   const char *ret;
-   const char *path   = bdb_get_path(info);
-
-   if (path == nullptr) {
-      ret = sge_dstring_copy_string(buffer, MSG_BERKELEY_DBNOTINITIALIZED);
-   } else {
-      ret = sge_dstring_copy_string(buffer, path);
-   }
-
-   return ret;
+   // the path is a std::string member now and never nullptr
+   return sge_dstring_copy_string(buffer, bdb_get_path(info));
 }
 
 /** @brief Take the lock guarding a handle

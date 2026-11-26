@@ -57,6 +57,9 @@
 /* system */
 #include <cstdio>
 #include <ostream>
+#include <string>
+#include <optional>
+#include <vector>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -670,7 +673,7 @@ _spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
                            const spool_flatfile_instr *instr, const spooling_field *fields, int fields_out[],
                           int *token, const char *end_token, bool parse_values, const char *list_name);
 
-static spooling_field *get_recursion_field_list (const spool_flatfile_instr *instr);
+static std::vector<spooling_field> get_recursion_field_list(const spool_flatfile_instr *instr);
 
 /* The type dependent parts of the walkers below. Every row carries the
  * spooling record of its field (spool/ocs_spool_field_info.h): a row generated
@@ -1723,8 +1726,10 @@ spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
   
    /* If recursion is enabled, only write out a single id field for each element
     * in the list.  Then recursively write out the entire element. */
+   std::vector<spooling_field> recursion_fields;
    if (recurse) {
-      my_fields = get_recursion_field_list(instr);
+      recursion_fields = get_recursion_field_list(instr);
+      my_fields = recursion_fields.data();
    }
 
    for (const ocs::tom::ConstRawElement ep : list) {
@@ -1781,7 +1786,6 @@ spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
             }
          }
       }
-      sge_free(&my_fields);
    }
    
    DRETURN(ret);
@@ -2048,18 +2052,15 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
                             const spooling_field *fields, int fields_out[], int *token, const char *end_token,
                             bool parse_values) {
    ocs::tom::RawElementPtr object;
-   int *my_fields_out = nullptr;
    ocs::tom::ListPtr<ocs::tom::AN> read_answer_list;
 
    /* BUGFIX: Issuezilla #732
     * If we're not given a fields_out array, create one for internal use. */
-   if (fields_out != nullptr) {
-      my_fields_out = fields_out;
-   }
-   else {
-      my_fields_out = (int *)sge_malloc ((spool_get_number_of_fields (fields) + 1) *
-                                                                  sizeof (int));
-      my_fields_out[0] = NoName;
+   std::vector<int> own_fields_out;
+   int *my_fields_out = fields_out;
+   if (fields_out == nullptr) {
+      own_fields_out.assign(spool_get_number_of_fields(fields) + 1, NoName);
+      my_fields_out = own_fields_out.data();
    }
 
    _spool_flatfile_read_live_object(&read_answer_list, nullptr, &object, descr, root, instr,
@@ -2072,10 +2073,6 @@ _spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const 
    answer_list_append_list(answer_list, &read_answer_list);
    read_answer_list.reset();
 
-   if (fields_out == nullptr) {
-      sge_free(&my_fields_out);
-   }
-   
    return object;
 }
 
@@ -2912,14 +2909,13 @@ FF_DEBUG("after parsing list");
  * spooling record of the field from ocs_spool_field_ops_of(), as every row has it.
  *
  * @param instr the layout, whose #recursion_info::id_field names the id field, a field of the object model
- * @return the id row and the terminating row, to be freed with sge_free()
+ * @return the id row and the terminating row, all other members zero
  */
-static spooling_field *get_recursion_field_list(const spool_flatfile_instr *instr) {
+static std::vector<spooling_field> get_recursion_field_list(const spool_flatfile_instr *instr) {
    DENTER(FLATFILE_LAYER);
 
-   /* Only 2 entries in a recursion field list */
-   auto *fields = ocs::uti::c_alloc<spooling_field>(2);
-   memset(fields, 0, sizeof(spooling_field) * 2);
+   /* Only 2 entries in a recursion field list, value initialised, i.e. zeroed */
+   std::vector<spooling_field> fields(2);
    fields[0].nm = instr->recursion_info.id_field;
    fields[0].ops = ocs_spool_field_ops_of(instr->recursion_info.id_field);
    fields[1].nm = NoName;
@@ -2975,7 +2971,7 @@ int spool_get_unprocessed_field(spooling_field in[], int out[], ocs::tom::ListPt
  * @return the number of entries **including** the terminator, so one more
  *         than the number of real fields
  *
- * @note The single caller allocates `spool_get_number_of_fields(fields) + 1`
+ * @note The single caller sizes its array with `spool_get_number_of_fields(fields) + 1`
  *       integers, which is therefore two more than it needs. Harmless, but it
  *       reads as though the terminator were not counted.
  */
@@ -3003,10 +2999,9 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
    size_t index = 0;
    size_t word = 0;
    const char *tmp_orig = nullptr;
-   char *orig = nullptr;
-   char *strp = nullptr;
    char str_buf[MAX_STRING_SIZE];
-   char *indent_str = nullptr;
+   // the continuation and the indentation of the following lines, none while no line is split
+   std::optional<std::string> indent_str;
    bool first_line = true;
 
    tmp_orig = sge_dstring_get_string(buffer);
@@ -3016,8 +3011,9 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
       return;
    }
    
-   orig = strdup(tmp_orig);
-   strp = orig;
+   // a copy, the buffer is cleared and refilled from it
+   const std::string orig{tmp_orig};
+   const char *strp = orig.c_str();
    
    sge_dstring_clear(buffer);
 
@@ -3026,7 +3022,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
    /* Loop as long as the string is longer than the max length. */
    while (strlen(strp) > MAX_LINE_LENGTH - word) {
       /* Account for newlines */
-      char *newlp = strchr(strp, '\n');
+      const char *newlp = strchr(strp, '\n');
       index = (newlp - strp) / sizeof (char);
       
       if ((newlp != nullptr) && (index <= MAX_LINE_LENGTH - word)) {
@@ -3039,8 +3035,8 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
          /* Reset to the first line */
          first_line = true;
          
-         if (indent_str != nullptr) {
-            sge_free(&indent_str);
+         if (indent_str) {
+            indent_str.reset();
             word = 0;
          }
          
@@ -3049,7 +3045,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
       
       /* Build the indent string by finding the beginning of the second word in
        * the line. */
-      if (indent_str == nullptr) {
+      if (!indent_str) {
          /* Word should always be 0 when we enter this function, but I'll set
           * it again, just to be sure. */
          word = 0;
@@ -3066,12 +3062,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
             word++;
          }
          
-         indent_str = sge_malloc((word + 4) * sizeof (char));
-         indent_str[0] = ' ';
-         indent_str[1] = '\\';
-         indent_str[2] = '\n';
-         memset(indent_str + 3, ' ', word);
-         indent_str[word + 3] = '\0';
+         indent_str = std::string{" \\\n"} + std::string(word, ' ');
       }
       
       /* Remove any leading spaces */
@@ -3114,7 +3105,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
          strncpy(str_buf, strp, index);
          str_buf[index] = '\0';
          sge_dstring_append(buffer, str_buf);
-         sge_dstring_append(buffer, indent_str);
+         sge_dstring_append(buffer, indent_str->c_str());
 
          strp += index + 1;
          
@@ -3124,7 +3115,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
          strncpy(str_buf, strp, index + 1);
          str_buf[index + 1] = '\0';
          sge_dstring_append(buffer, str_buf);
-         sge_dstring_append(buffer, indent_str);
+         sge_dstring_append(buffer, indent_str->c_str());
 
          strp += index + 1;
          
@@ -3175,13 +3166,13 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
 
             /* Release the indent string because each line may have different
              * indentation */
-            sge_free(&indent_str);
+            indent_str.reset();
             continue;
          } else if (isspace (strp[index])) {
             strncpy(str_buf, strp, index);
             str_buf[index] = '\0';
             sge_dstring_append(buffer, str_buf);
-            sge_dstring_append(buffer, indent_str);
+            sge_dstring_append(buffer, indent_str->c_str());
 
             strp += index + 1;
             
@@ -3191,7 +3182,7 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
             strncpy(str_buf, strp, index + 1);
             str_buf[index + 1] = '\0';
             sge_dstring_append(buffer, str_buf);
-            sge_dstring_append(buffer, indent_str);
+            sge_dstring_append(buffer, indent_str->c_str());
 
             strp += index + 1;
 
@@ -3213,12 +3204,4 @@ static void spool_flatfile_add_line_breaks(dstring *buffer) {
    } /* while */
 
    sge_dstring_append(buffer, strp);
-   
-   if (indent_str != nullptr) {
-      sge_free(&indent_str);
-   }
-   
-   sge_free(&orig);
-   
-   return;
 }

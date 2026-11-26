@@ -41,6 +41,7 @@
 #define NO_SGE_COMPILE_DEBUG
 
 #include <cstring>
+#include <string>
 
 #include "uti/sge.h"
 
@@ -404,35 +405,33 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       case SGE_TYPE_EXECHOST: {
          const auto ehost = ocs::tom::Element<ocs::tom::EH>(object);
          int cl_ret;
-         char *old_name = strdup(ehost.get<EH_name>().c_str());
+         const std::string old_name{ehost.get<EH_name>().c_str()};
 
          /* try hostname resolving */
-         if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
+         if (strcmp(old_name.c_str(), SGE_GLOBAL_NAME) != 0) {
             cl_ret = ocs_resolve_host<EH_name>(ehost);
 
             /* if hostname resolving failed: create error */
             if (cl_ret != CL_RETVAL_OK) {
                if (cl_ret != CL_RETVAL_GETHOSTNAME_ERROR) {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
-                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret));
+                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name.c_str(), cl_get_error_text(ret));
                   ret = false;
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_WARNING,
-                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name, cl_get_error_text(ret));
+                                          MSG_SPOOL_CANTRESOLVEHOSTNAME_SS, old_name.c_str(), cl_get_error_text(ret));
                }
             } else {
                /* if hostname resolving changed hostname: spool */
                const char *new_name = ehost.get<EH_name>().c_str();
-               if (strcmp(old_name, new_name) != 0) {
+               if (strcmp(old_name.c_str(), new_name) != 0) {
                   auto write_func = (spooling_write_func)rule.get<SPR_write_func>();
                   auto delete_func = (spooling_delete_func)rule.get<SPR_delete_func>();
                   write_func(answer_list, type, rule, ehost, new_name, object_type);
-                  delete_func(answer_list, type, rule, old_name, object_type);
+                  delete_func(answer_list, type, rule, old_name.c_str(), object_type);
                }
             }
          }
-
-         sge_free(&old_name);
 
          if (ret) {
             /* all spooled load values are static, therefore we tag them here */
@@ -471,10 +470,10 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
       case SGE_TYPE_CONFIG: {
          const auto config = ocs::tom::Element<ocs::tom::CONF>(object);
          int cl_ret;
-         char *old_name = strdup(config.get<CONF_name>());
+         const std::string old_name{config.get<CONF_name>()};
 
          /* try hostname resolving */
-         if (strcmp(old_name, SGE_GLOBAL_NAME) != 0) {
+         if (strcmp(old_name.c_str(), SGE_GLOBAL_NAME) != 0) {
             cl_ret = ocs_resolve_host<CONF_name>(config);
             /* if hostname resolving failed: create error */
             if (cl_ret != CL_RETVAL_OK) {
@@ -482,26 +481,25 @@ bool spool_default_validate_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                           ANSWER_QUALITY_ERROR,
                                           MSG_SPOOL_CANTRESOLVEHOSTNAME_SS,
-                                          old_name, cl_get_error_text(ret));
+                                          old_name.c_str(), cl_get_error_text(ret));
                   ret = false;
                } else {
                   answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN,
                                           ANSWER_QUALITY_WARNING,
                                           MSG_SPOOL_CANTRESOLVEHOSTNAME_SS,
-                                          old_name, cl_get_error_text(ret));
+                                          old_name.c_str(), cl_get_error_text(ret));
                }
             } else {
                /* if hostname resolving changed hostname: spool */
                const char *new_name = config.get<CONF_name>();
-               if (strcmp(old_name, new_name) != 0) {
+               if (strcmp(old_name.c_str(), new_name) != 0) {
                   auto write_func = (spooling_write_func)rule.get<SPR_write_func>();
                   auto delete_func = (spooling_delete_func)rule.get<SPR_delete_func>();
                   write_func(answer_list, type, rule, config, new_name, object_type);
-                  delete_func(answer_list, type, rule, old_name, object_type);
+                  delete_func(answer_list, type, rule, old_name.c_str(), object_type);
                }
             }
          }
-         sge_free(&old_name);
       }
          break;
       case SGE_TYPE_USERSET:

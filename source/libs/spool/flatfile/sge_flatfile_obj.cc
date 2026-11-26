@@ -37,6 +37,7 @@
  */
 
 #include <cstring>
+#include <string>
 #include <strings.h>
 #include <cctype>
 #include <tuple>
@@ -894,19 +895,14 @@ static bool read_SC_load_formula(const ocs::tom::Element<ocs::tom::SC> sc, const
                                  ocs::tom::ListPtr<ocs::tom::AN> *alp) {
    DENTER(TOP_LAYER);
    if (load_formula != nullptr) {
-      int n = strlen(load_formula);
-      char *copy = sge_malloc(n + 1);
-      if (copy != nullptr) {
-         strcpy(copy, load_formula);
-         sge_strip_blanks(copy);
-         // CS-3166: validate the text that is stored
-         if (!validate_load_formula(copy, alp, ocs::tom::ConstList<ocs::tom::CE>(), SGE_ATTR_LOAD_FORMULA)) {
-            sge_free(&copy);
-            DRETURN(false);
-         }
-         sc.set<SC_load_formula>(copy);
-         sge_free(&copy);
+      std::string copy{load_formula};
+      // strips in place, the text ends at the first '\0' then, so only c_str() is used afterwards
+      sge_strip_blanks(copy.data());
+      // CS-3166: validate the text that is stored
+      if (!validate_load_formula(copy.c_str(), alp, ocs::tom::ConstList<ocs::tom::CE>(), SGE_ATTR_LOAD_FORMULA)) {
+         DRETURN(false);
       }
+      sc.set<SC_load_formula>(copy.c_str());
    }
    DRETURN(true);
 }
@@ -999,7 +995,8 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
       !strcmp(name, "rsh_daemon") ||
       !strcmp(name, "additional_jvm_args");
 
-   char *buffer = strdup(buf != nullptr ? buf : "");
+   // sge_strtok_r() works on its own copy of the text
+   const char *buffer = buf != nullptr ? buf : "";
    struct saved_vars_s *context = nullptr;
    char *value = sge_strtok_r(buffer, rest_of_line ? "\t\n" : " \t\n", &context);
    if (value != nullptr && rest_of_line) {
@@ -1054,7 +1051,6 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
    }
 
    sge_free_saved_vars(context);
-   sge_free(&buffer);
    DRETURN(ret);
 }
 

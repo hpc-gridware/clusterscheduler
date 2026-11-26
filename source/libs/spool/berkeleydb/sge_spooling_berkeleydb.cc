@@ -50,6 +50,7 @@
 
 #include <cstring>
 #include <ctime>
+#include <string>
 #include <utility>
 
 #include "uti/sge_rmon_macros.h"
@@ -133,9 +134,6 @@ spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
 
    /* check input parameter */
    if (args != nullptr) {
-      bdb_info info;
-      char *path   = nullptr;
-
       /* create spooling context */
       context = ocs_spool_create_context(answer_list, "berkeleydb spooling");
 
@@ -158,11 +156,9 @@ spool_berkeleydb_create_context(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, co
                                        spool_default_validate_list_func);
 
       /* parse arguments */
-      path = strdup(args);
+      DPRINTF("using database path %s\n", args);
 
-      DPRINTF("using database path %s\n", path);
-
-      info = bdb_create(path);
+      bdb_info info = bdb_create(args);
       rule.set<SPR_clientdata>(info);
       const auto type = spool_context_create_type(answer_list, context.get(), SGE_TYPE_ALL);
       spool_type_add_rule(answer_list, type, rule, true);
@@ -662,8 +658,8 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
          case SGE_TYPE_JOBSCRIPT:
             {
                const char *exec_file;
-               char *dup = strdup(key);
-               char *db_key = jobscript_parse_key(dup, &exec_file);
+               std::string dup{key};
+               char *db_key = jobscript_parse_key(dup.data(), &exec_file);
                char *str;
                str = spool_berkeleydb_read_string(answer_list, info, BDB_JOB_DB,
                                                   db_key);
@@ -675,7 +671,6 @@ spool_berkeleydb_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                } else {
                   ret = false;
                }
-               sge_free(&dup);
             }
             break;
          case SGE_TYPE_JATASK:
@@ -847,10 +842,10 @@ bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
                {
                   uint32_t job_id, ja_task_id;
                   char *pe_task_id;
-                  char *dup = strdup(key);
+                  std::string dup{key};
                   bool only_job;
 
-                  job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
+                  job_parse_key(dup.data(), &job_id, &ja_task_id, &pe_task_id, &only_job);
 
                   // a parallel task is written as it is, without a check, as before; the array task and the job
                   // writers take a sub-list out of the object, which checked its type already before
@@ -867,20 +862,18 @@ bool spool_berkeleydb_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer
                      ret = spool_berkeleydb_write_job(answer_list, info, ocs::tom::ConstElement<ocs::tom::JB>(object),
                                                       job_id, ja_task_id, only_job);
                   }
-                  sge_free(&dup);
                }
                break;
             case SGE_TYPE_JOBSCRIPT:
                {
                   const char *exec_file;
-                  char *dup = strdup(key);
-                  const char *db_key = jobscript_parse_key(dup, &exec_file);
+                  std::string dup{key};
+                  const char *db_key = jobscript_parse_key(dup.data(), &exec_file);
                   const char *script = ocs::tom::ConstElement<ocs::tom::JB>(object).get<JB_script_ptr>();
                   /* switch script */
                   ret = spool_berkeleydb_write_string(answer_list, info,
                                                       BDB_JOB_DB,
                                                       db_key, script);
-                  sge_free(&dup);
                }
                break;
             case SGE_TYPE_CQUEUE:
@@ -990,10 +983,10 @@ bool spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answe
                {
                   uint32_t job_id, ja_task_id;
                   char *pe_task_id;
-                  char *dup = strdup(key);
+                  std::string dup{key};
                   bool only_job;
 
-                  job_parse_key(dup, &job_id, &ja_task_id, &pe_task_id, &only_job);
+                  job_parse_key(dup.data(), &job_id, &ja_task_id, &pe_task_id, &only_job);
 
                   if (pe_task_id != nullptr) {
                      dbkey = sge_dstring_sprintf(&dbkey_dstring, "%10" sge_fuu32 ".%10" sge_fuu32 " %s",
@@ -1011,19 +1004,17 @@ bool spool_berkeleydb_default_delete_func(ocs::tom::ListPtr<ocs::tom::AN> *answe
                      ret = spool_berkeleydb_delete_job(answer_list, info,
                                                        dbkey, false);
                   }
-                  sge_free(&dup);
                }
                break;
             case SGE_TYPE_JOBSCRIPT:
                {
                   const char *exec_file;
-                  char *dup = strdup(key);
-                  const char *db_key = jobscript_parse_key(dup, &exec_file);
+                  std::string dup{key};
+                  const char *db_key = jobscript_parse_key(dup.data(), &exec_file);
                   ret = spool_berkeleydb_delete_object(answer_list, info,
                                                     BDB_JOB_DB,
                                                     db_key,
                                                     false);
-                  sge_free(&dup);
                }
                break;
             default:
