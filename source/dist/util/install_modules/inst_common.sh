@@ -3275,13 +3275,15 @@ RestoreConfig()
          # --single-transaction wraps DROP/CREATE/COPY into one txn so a
          # mid-restore failure rolls back to the pre-restore state instead
          # of leaving the table partially populated.
+         # --no-psqlrc/--pset=pager=off: the dump's SELECT set_config() prints a
+         # result, and on a terminal psql would wait in its pager (CS-3244).
          if [ -n "$PG_PASSFILE" ]; then
-            PGPASSFILE="$PG_PASSFILE" psql --no-password \
+            PGPASSFILE="$PG_PASSFILE" psql --no-password --no-psqlrc --pset=pager=off \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
                --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
          else
-            psql --no-password \
+            psql --no-password --no-psqlrc --pset=pager=off \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
                --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
@@ -3489,13 +3491,15 @@ RestoreConfig()
          # --single-transaction wraps DROP/CREATE/COPY into one txn so a
          # mid-restore failure rolls back to the pre-restore state instead
          # of leaving the table partially populated.
+         # --no-psqlrc/--pset=pager=off: the dump's SELECT set_config() prints a
+         # result, and on a terminal psql would wait in its pager (CS-3244).
          if [ -n "$PG_PASSFILE" ]; then
-            PGPASSFILE="$PG_PASSFILE" psql --no-password \
+            PGPASSFILE="$PG_PASSFILE" psql --no-password --no-psqlrc --pset=pager=off \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
                --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
          else
-            psql --no-password \
+            psql --no-password --no-psqlrc --pset=pager=off \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
                --single-transaction -v ON_ERROR_STOP=1 -f "$_dump"
