@@ -34,7 +34,7 @@ The following table lists the error codes and their meaning:
 |------:|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |   `0` | `STATUS_OK`: Job ran through and exited normally                                                                                                                                                                    |
 |   `1` | `SSTATE_FAILURE_BEFORE_JOB`: `sge_execd`  cannot start the job. The job or queue instances may be set into error state and further information will be available via `qstat -j <job_id>` and/or `qstat -explain E`. |
-|   `2` | `ESSTATE_NO_SHEPHERD`: `sge_shepherd` cannot be executed, see `sge_execd` messages file for details.                                                                                                                |
+|   `2` | `ESSTATE_NO_SHEPHERD`: Not used. |
 |   `3` | `ESSTATE_NO_CONFIG`: `sge_execd` could not write the `sge_shepherd` config file.                                                                                                                                    |
 |    `4` | `ESSTATE_NO_PID`: `sge_shepherd` did not write its `pid` file (poss. as it crashed), see the `sge_shepherd` trace file for details.                                                                                 |
 |    `5` | `SSTATE_READ_CONFIG`: `sge_shepherd` cannot read its `config` file.                                                                                                                                                 |
@@ -49,13 +49,13 @@ The following table lists the error codes and their meaning:
 |   `14` | `SSTATE_BEFORE_EPILOG`: `sge_shepherd` could not start an epilog.                                                                                                                                                   |
 |   `15` | `SSTATE_EPILOG_FAILED`: An epilog was started by `sge_shepherd` but failed.                                                                                                                                         |
 |   `16` | `SSTATE_PROCSET_NOTFREED`: On Solaris: `sge_shepherd` could not release a previously created processor set.                                                                                                         |
-|   `17` | `ESSTATE_DIED_THRU_SIGNAL`: The job died through a signal.                                                                                                                                                          |
+|  `17` | `ESSTATE_DIED_THRU_SIGNAL`: `sge_shepherd` died through a signal. A job which was ended by a signal is reported with code `100`. |
 |   `18` | `ESSTATE_SHEPHERD_EXIT`: `sge_shepherd` exited with exit status > 0.                                                                                                                                                |
 |   `19` | `ESSTATE_NO_EXITSTATUS`: `sge_shepherd` didn't write its `exit_status` file - possibly crashed before exiting regularly.                                                                                            |
 |   `20` | `ESSTATE_UNEXP_ERRORFILE`: The `sge_shepherd` `error` file couldn't be read.                                                                                                                                        |
 |   `21` | `ESSTATE_UNKNOWN_JOB`: `sge_execd` got a message from `sge_qmaster` about a job it doesn't know about.                                                                                                              |
-|   `22` | `ESSTATE_EXECD_LOST_RUNNING`: Job removed manually.                                                                                                                                                                 |
-|   `23` | `ESSTATE_PTF_CANT_GET_PIDS`: PTF can't get information for certain pids.                                                                                                                                            |
+|  `22` | `ESSTATE_EXECD_LOST_RUNNING`: Not used. |
+|  `23` | `ESSTATE_PTF_CANT_GET_PIDS`: Not used. |
 |   `24` | `SSTATE_MIGRATE`: The job was checkpointed for migration.                                                                                                                                                           |
 |   `25` | `SSTATE_AGAIN`: The job shall be re-started.                                                                                                                                                                        |
 |   `26` | `SSTATE_OPEN_OUTPUT`: Error, input, or output file couldn't be opened by `sge_shepherd`.                                                                                                                            |
@@ -64,11 +64,13 @@ The following table lists the error codes and their meaning:
 |   `29` | `SSTATE_AFS_PROBLEM`: AFS setup failed.                                                                                                                                                                             |
 |   `30` | `SSTATE_APPERROR`: The job exited with exit_status 100 (application error)                                                                                                                                          |
 |   `36` | `SSTATE_CHECK_DAEMON_CONFIG`: The daemon for an interactive job could not be found (if `rsh_daemon`, `rlogin_daemon`, `qlogin_daemon` is configured to a daemon path, instead of `builtin`)                         |
-|   `37` | `SSTATE_QMASTER_ENFORCED_LIMIT`: `sge_qmaster` enforced killing the job due to a limit.                                                                                                                             |
+|  `37` | `SSTATE_QMASTER_ENFORCED_LIMIT`: `sge_qmaster` deleted the job because it exceeded its `h_rt` limit while the execution host of the job was unknown, see `ENABLE_ENFORCE_MASTER_LIMIT` in xxqs_name_sxx_conf(5). `qdel -f` writes the same code into the accounting record of a job it removes. |
 |   `38` | `SSTATE_ADD_GRP_SET_ERROR`: `sge_shepherd` cannot attach the additional group id to the `sge_shepherd` child process becoming the job.                                                                              |
 |   `39` | `SSTATE_SYSTEMD_ERROR`: A systemd method failed while the job was being started - `sge_execd` could not move the process which becomes `sge_shepherd` into the shepherds scope, or `sge_shepherd` could not move the process which becomes the job into the job scope. All queues of the host are set into error state, as every job on it is affected. See the `sge_execd` messages file and the `sge_shepherd` trace file for the systemd error.    |
-|  `100` | `SSTATE_FAILURE_AFTER_JOB`: The job ran through, but no `usage` file was written by `sge_shepherd`.                                                                                                                 |
+| `100` | `SSTATE_FAILURE_AFTER_JOB`: The job was started but did not end by itself. Mostly it was ended by a signal: it was deleted with `qdel`, it exceeded a resource limit like `h_rt`, `h_cpu` or `h_vmem`, or the OOM killer ended it. The *deleted_by* attribute of the accounting record tells which, see xxqs_name_sxx_accounting(5). The code is also reported when `sge_execd` could not read the usage of the job. |
 
+
+`qacct -j` shows the code followed by a short description, e.g. `100 : assumedly after job`.
 
 More details about errors reported by `sge_execd` can be found in the `sge_execd` messages file.   
 For errors reported by `sge_shepherd` please check the `sge_shepherd` trace file or the error mail (if requested at job submission) or administrator mail (if configured in the global configuration).

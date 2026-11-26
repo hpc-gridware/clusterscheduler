@@ -54,7 +54,8 @@ Information about who deleted (or terminated) the current run of the job, in the
 When the job was deleted with the `qdel` command it contains the user and the host of the
 `qdel` request. When the job was killed because it exceeded a resource limit (e.g. `h_rt`) it
 contains `execd@<host>` if the limit was enforced by the execution daemon, or `qmaster@<host>`
-if it was enforced by the qmaster. When the memory cgroup OOM killer ended the job on a host
+if it was enforced by the qmaster. The execution daemon records it for every task of a parallel
+job it kills on its host. When the memory cgroup OOM killer ended the job on a host
 which runs its jobs under systemd control, it contains `oom-killer@<host>`, also if the execution
 daemon killed the job for exceeding a limit as well. This needs cgroup v2 and systemd 252 or
 newer, see *h_rss* in xxqs_name_sxx_queue_conf(5). When the qmaster deletes a parallel job because
@@ -85,9 +86,20 @@ For example, if a job dies through signal 9 (SIGKILL) then the exit status becom
 
 ## *failed*
 
-Indicates the problem which occurred in case a job could not be started on the execution host (e.g., because the
-owner of the job did not have a valid account on that machine). If xxQS_NAMExx tries to start a job multiple times,
-this may lead to multiple entries in the accounting file corresponding to the same job ID.
+The error code of the job, or of the task of a parallel job, which the record describes. It is `0` if the job ran
+and ended by itself. The list of codes and their meaning is in xxqs_name_sxx_diagnostics(1). qacct(1) shows the code
+followed by a short description.
+
+Most codes indicate the problem which occurred in case a job could not be started on the execution host (e.g.,
+because the owner of the job did not have a valid account on that machine). If xxQS_NAMExx tries to start a job
+multiple times, this may lead to multiple entries in the accounting file corresponding to the same job ID.
+
+Code `100` means that the job was started, but was ended by a signal, e.g. because it was deleted with `qdel` or
+because it exceeded a resource limit like `h_rt`. *deleted_by* shows who ended it.
+
+A parallel job whose job script ends by itself after one of its tasks was killed, e.g. because the task exceeded
+`h_rt` on its host, has `0` in the record of the job and the exit status of the job script in *exit_status*. Its
+*deleted_by* names who killed the task.
 
 ## *granted_pe*
 
@@ -346,7 +358,7 @@ The entries denote in their order of appearance:
 
 # SEE ALSO
 
-xxqs_name_sxx_intro(1), qacct(1), qalter(1), qsub(1), getrusage(2), xxqs_name_sxx_conf(5), xxqs_name_sxx_queue_conf(5), xxqs_name_sxx_reporting(5).
+xxqs_name_sxx_intro(1), xxqs_name_sxx_diagnostics(1), qacct(1), qalter(1), qsub(1), getrusage(2), xxqs_name_sxx_conf(5), xxqs_name_sxx_queue_conf(5), xxqs_name_sxx_reporting(5).
 
 # COPYRIGHT
 

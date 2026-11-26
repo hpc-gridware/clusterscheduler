@@ -110,25 +110,42 @@ static int exec_job_or_task(ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::Eleme
                             ocs::tom::Element<ocs::tom::PET> petep);
 
 /**
- * @brief Record in the job report that sge_execd killed the job
+ * @brief Record that sge_execd killed a job because it exceeded a resource limit
  *
- * Records in the job report that sge_execd killed the job because it exceeded
- * a resource limit (e.g. h_rt, h_cpu, h_vmem). The string is added to the
- * accounting record as "execd@<hostname>" once the job report reaches
- * sge_qmaster, unless a value set by qdel takes precedence.
+ * sge_execd kills the master task and every pe task of the job on this host when the job exceeds
+ * a resource limit (e.g. h_rt, h_cpu, h_vmem). The job report of each of these tasks gets
+ * "execd@<hostname>" as JR_deleted_by, which is written into the accounting record of the task,
+ * unless a value set by qdel takes precedence.
+ * Whichever report makes sge_qmaster delete the job carries the cause, and sge_qmaster passes it
+ * on to the records of the tasks on the other hosts. pe tasks which already exited were not
+ * killed and keep their report as it is.
  *
- * @param jobid the job
- * @param jataskid the array task
+ * @param jep the job
+ * @param jatep the ja task which was killed
  */
 static void
-job_report_set_deleted_by_execd(const uint32_t jobid, const uint32_t jataskid) {
+job_report_set_deleted_by_execd(const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                                const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
 
-   const auto jr = get_job_report(jobid, jataskid, nullptr);
+   DSTRING_STATIC(dstr, MAX_STRING_SIZE);
+   const char *deleted_by = sge_dstring_sprintf(&dstr, "execd@%s",
+                                                component_get_qualified_hostname());
+   const uint32_t jobid = jep.get<JB_job_number>();
+   const uint32_t jataskid = jatep.get<JAT_task_number>();
+
+   auto jr = get_job_report(jobid, jataskid, nullptr);
    if (jr) {
-      DSTRING_STATIC(dstr, MAX_STRING_SIZE);
-      sge_dstring_sprintf(&dstr, "execd@%s", component_get_qualified_hostname());
-      jr.set<JR_deleted_by>(sge_dstring_get_string(&dstr));
+      jr.set<JR_deleted_by>(deleted_by);
+   }
+
+   for (ocs::tom::ConstElement<ocs::tom::PET> petep : jatep.get<JAT_task_list>()) {
+      if (petep.get<PET_status>() != JEXITING) {
+         jr = get_job_report(jobid, jataskid, petep.get<PET_id>());
+         if (jr) {
+            jr.set<JR_deleted_by>(deleted_by);
+         }
+      }
    }
 
    DRETURN_VOID;
@@ -233,18 +250,21 @@ static void notify_ptf() {
  * @param limit The limit for the resource.
  * @param limit_name The name of the resource limit (e.g., "h_cpu").
  * @param is_hard_limit True if it is a hard limit, false if it is a soft limit.
- * @param queue The queue instance where the job is running.
- * @param jobid The job ID.
- * @param jataskid The job task ID.
+ * @param queue The queue element where the job is running.
+ * @param jep The job.
+ * @param jatep The ja task.
  *
  * @return true if the job was signaled, false otherwise.
  */
 static bool
 force_job_rlimit_apply_limit(const double usage, const double limit, const char *limit_name,
                              const bool is_hard_limit, const ocs::tom::ConstElement<ocs::tom::QU> queue,
-                             const uint32_t jobid, const uint32_t jataskid) {
+                             const ocs::tom::ConstElement<ocs::tom::JB> jep,
+                             const ocs::tom::ConstElement<ocs::tom::JAT> jatep) {
    DENTER(TOP_LAYER);
 
+   const uint32_t jobid = jep.get<JB_job_number>();
+   const uint32_t jataskid = jatep.get<JAT_task_number>();
    bool signaled = false;
 
    if (limit < usage) {
@@ -252,7 +272,7 @@ force_job_rlimit_apply_limit(const double usage, const double limit, const char 
          WARNING(MSG_JOB_EXCEEDHLIM_USSFF, jobid, limit_name,
                  queue.get<QU_full_name>(), usage, limit);
          signal_job(jobid, jataskid, SGE_SIGKILL);
-         job_report_set_deleted_by_execd(jobid, jataskid);
+         job_report_set_deleted_by_execd(jep, jatep);
       } else {
          WARNING(MSG_JOB_EXCEEDSLIM_USSFF, jobid, limit_name,
                  queue.get<QU_full_name>(), usage, limit);
@@ -326,9 +346,9 @@ force_job_rlimit_task(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs:
                                        jep, jatep, petep, qualified_hostname);
    double h_vmem = execd_get_task_limit<QU_h_vmem>("h_vmem", ocs::CEntry::Type::MEM, q,
                                         jep, jatep, petep, qualified_hostname);
-   if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jobid, jataskid) ||
-       force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jobid, jataskid) ||
-       force_job_rlimit_apply_limit(maxvmem_val, h_vmem, "h_vmem", true, q, jobid, jataskid)) {
+   if (force_job_rlimit_apply_limit(cpu_val, h_cpu, "h_cpu", true, q, jep, jatep) ||
+       force_job_rlimit_apply_limit(maxrss_val, h_rss, "h_rss", true, q, jep, jatep) ||
+       force_job_rlimit_apply_limit(maxvmem_val, h_vmem, "h_vmem", true, q, jep, jatep)) {
       DRETURN(true);
    }
 
@@ -341,9 +361,9 @@ force_job_rlimit_task(const ocs::tom::ConstElement<ocs::tom::JB> jep, const ocs:
    double s_vmem = execd_get_task_limit<QU_s_vmem>("s_vmem", ocs::CEntry::Type::MEM, q,
                                         jep, jatep, petep, qualified_hostname);
    bool signaled =
-      force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jobid, jataskid) ||
-      force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jobid, jataskid) ||
-      force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jobid, jataskid);
+      force_job_rlimit_apply_limit(cpu_val, s_cpu, "s_cpu", false, q, jep, jatep) ||
+      force_job_rlimit_apply_limit(rss_val, s_rss, "s_rss", false, q, jep, jatep) ||
+      force_job_rlimit_apply_limit(vmem_val, s_vmem, "s_vmem", false, q, jep, jatep);
 
    DRETURN(signaled);
 }
@@ -658,8 +678,7 @@ int do_ck_to_do(bool is_qmaster_down) {
                               jatep.get<JAT_task_number>(),
                               nullptr);
                   }
-                  job_report_set_deleted_by_execd(jep.get<JB_job_number>(),
-                                                  jatep.get<JAT_task_number>());
+                  job_report_set_deleted_by_execd(jep, jatep);
                   jatep.set<JAT_pending_signal_delivery_time>(now + sge_gmt32_to_gmt64(90));
                }    
                continue;
