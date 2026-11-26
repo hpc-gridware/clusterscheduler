@@ -416,12 +416,9 @@ bool qref_cq_rejected(const char *qref_pattern, const char *cqname,
 
    if ((s=strchr(qref_pattern, '@'))) {
       /* use qref part before '@' as wc_cqueue pattern */
-      int boo;
-      char *wc_cqueue = strdup(qref_pattern);
-      wc_cqueue[ s - qref_pattern ] = '\0';
+      const std::string wc_cqueue{qref_pattern, static_cast<size_t>(s - qref_pattern)};
       /* reject the cluster queue expression support */
-      boo = sge_eval_expression(ocs::CEntry::Type::STR, wc_cqueue, cqname, nullptr);
-      sge_free(&wc_cqueue);
+      const int boo = sge_eval_expression(ocs::CEntry::Type::STR, wc_cqueue.c_str(), cqname, nullptr);
       if (!boo) {
          if (!hostname || !qref_list_host_rejected(&s[1], hostname, hgroup_list)) {
             DRETURN(false);
@@ -823,7 +820,8 @@ ocs_qref_resolved_name(const char *name) {
  * @param lpp QR list
  * @param dest_str input string
  *
- * @return error state
+ * @return 0 on success, 1 when lpp is nullptr, 2 when the string holds no reference, 3 when dest_str is nullptr
+ *         or a reference could not be parsed
  *
  * @note MT-NOTE: ocs_parse_destination_identifier_list() is MT safe
  */
@@ -831,24 +829,22 @@ int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *
    DENTER(TOP_LAYER);
 
    int rule[] = {QR_name, 0};
-   char **str_str = nullptr;
-   int i_ret;
-   char *s;
 
    if (lpp == nullptr) {
       DRETURN(1);
    }
 
-   s = sge_strdup(nullptr, dest_str);
-   if (s == nullptr) {
+   if (dest_str == nullptr) {
       *lpp = nullptr;
       DRETURN(3);
    }
 
-   str_str = string_list(s, ",", nullptr);
+   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
+   // (malloc memory of libs/uti)
+   std::string s{dest_str};
+   const ocs::uti::c_ptr<char *> str_str{string_list(s.data(), ",", nullptr)};
    if (str_str == nullptr || *str_str == nullptr) {
       *lpp = nullptr;
-      sge_free(&s);
       DRETURN(2);
    }
 
@@ -856,8 +852,8 @@ int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *
    // never holds it twice, not even for a moment (CS-3053, N-H-18)
    {
       std::unordered_set<std::string> seen;
-      char **kept = str_str;
-      for (char **token = str_str; *token != nullptr; token++) {
+      char **kept = str_str.get();
+      for (char **token = str_str.get(); *token != nullptr; token++) {
          if (seen.insert(*token).second) {
             *kept++ = *token;
          }
@@ -865,14 +861,10 @@ int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *
       *kept = nullptr;
    }
 
-   i_ret = ocs_parse_string_list(str_str, "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
+   const int i_ret = ocs_parse_string_list(str_str.get(), "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
    if (i_ret) {
-      sge_free(&s);
-      sge_free(&str_str);
       DRETURN(3);
    }
 
-   sge_free(&s);
-   sge_free(&str_str);
    DRETURN(0);
 }

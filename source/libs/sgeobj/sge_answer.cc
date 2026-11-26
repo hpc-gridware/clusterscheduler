@@ -52,13 +52,14 @@
  * }
  *
  * void callee(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
- *    char *s = sge_malloc(256);
+ *    FILE *fp = fopen("/etc/hosts", "r");
  *
- *    if (s == nullptr) {
- *       answer_list_add(answer_list, "no memory",
+ *    if (fp == nullptr) {
+ *       answer_list_add(answer_list, "cannot open file",
  *                       STATUS_ERROR, ANSWER_QUALITY_ERROR);
  *       return;
  *    }
+ *    fclose(fp);
  * }
  * @endcode
  *

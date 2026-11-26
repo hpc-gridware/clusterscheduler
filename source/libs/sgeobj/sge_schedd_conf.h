@@ -39,6 +39,8 @@
  * @see sge_schedd_conf.cc
  */
 
+#include <optional>
+#include <string>
 #include <tuple>
 
 #include "tom/ocs_Types.h"
@@ -152,7 +154,7 @@ uint32_t sconf_get_load_adjustment_decay_time();
 
 ocs::tom::ListPtr<ocs::tom::CE> sconf_get_job_load_adjustments();
 
-char *sconf_get_load_formula();
+std::optional<std::string> sconf_get_load_formula();
 
 uint32_t sconf_get_queue_sort_method();
 

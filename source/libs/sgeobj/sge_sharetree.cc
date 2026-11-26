@@ -43,6 +43,7 @@
  */
 
 #include <cstring>
+#include <string>
 #include <format>
 #include <optional>
 #include <ostream>
@@ -297,8 +298,8 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
    DENTER(TOP_LAYER);
 
    ocs::tom::Element<ocs::tom::STN> ret;
-   char *buf = nullptr;
-   char *bufp;
+   // the next path component; name points into it during the search of the children
+   std::string buf;
 
    if (name == nullptr)
       delim = '.';
@@ -318,13 +319,13 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
 
       /* get next component from path */
 
-      bufp = buf = sge_malloc(strlen(path)+1);
       if (*path == '.' || *path == '/')
          delim = *path++;
+      const char *component = path;
       while (*path && *path != '.' && *path != '/')
-         *bufp++ = *path++;
-      *bufp = 0;
-      name = buf;
+         path++;
+      buf.assign(component, static_cast<size_t>(path - component));
+      name = buf.c_str();
    } else if (delim == '/') {
       DRETURN(nullptr);
    }
@@ -335,9 +336,6 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
 
    if (ret && ancestors && ancestors->nodes && depth > 0)
       ancestors->nodes[depth-1] = ep;
-   if (buf) {
-      sge_free(&buf);
-   }
    DRETURN(ret);
 }
 

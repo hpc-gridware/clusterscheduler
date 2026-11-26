@@ -38,6 +38,8 @@
  * @brief Debiting a scheduled job on the objects it consumes
  */
 #include <cstdio>
+#include <optional>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -300,7 +302,7 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
    const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(host_list, "global"));
    bool do_per_global_host_booking = true;
 
-   const ocs::uti::c_ptr<char> load_formula{sconf_get_load_formula()};
+   const std::optional<std::string> load_formula = sconf_get_load_formula();
 
    /* debit from hosts */
    const char *last_hostname = nullptr;
@@ -330,7 +332,7 @@ static int debit_job_from_hosts(const ocs::tom::ConstElement<ocs::tom::JB> job,
       /* compute new combined load for this host and put it into the host */
       old_sort_value = hep.get<EH_sort_value>();
 
-      new_sort_value = scaled_mixed_load(load_formula.get(), global, hep, centry_list,
+      new_sort_value = scaled_mixed_load(load_formula ? load_formula->c_str() : nullptr, global, hep, centry_list,
                                          ocs::tom::ConstList<ocs::tom::CE>());
 
       if (new_sort_value != old_sort_value) {

@@ -43,6 +43,7 @@
  */
 #include <cstring>
 #include <cstdlib>
+#include <optional>
 #include <string>
 
 #if !defined(DARWIN) && !defined(FREEBSD)
@@ -114,7 +115,7 @@ static int get_load_value(double *dvalp, ocs::tom::ConstElement<ocs::tom::EH> gl
 int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstList<ocs::tom::CE> centry_list) {
    DENTER(TOP_LAYER);
    const auto global = ocs::tom::ConstElement<ocs::tom::EH>::from_typed(host_list_locate(hl, SGE_GLOBAL_NAME));
-   const ocs::uti::c_ptr<char> load_formula{sconf_get_load_formula()};
+   const std::optional<std::string> load_formula = sconf_get_load_formula();
 
    for (const auto hlp : hl) {
       if (hlp == global) {
@@ -122,7 +123,7 @@ int sort_host_list(const ocs::tom::List<ocs::tom::EH> hl, const ocs::tom::ConstL
       }
 
       /* build complexes for that host */
-      double load = scaled_mixed_load(load_formula.get(), global, hlp, centry_list,
+      double load = scaled_mixed_load(load_formula ? load_formula->c_str() : nullptr, global, hlp, centry_list,
                                       ocs::tom::ConstList<ocs::tom::CE>());
       hlp.set<EH_sort_value>(load);
       DPRINTF("%s: %f\n", hlp.get<EH_name>().c_str(), load);

@@ -45,6 +45,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/poll.h>
+#include <vector>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_lock.h"
@@ -470,15 +471,11 @@ bool jsv_url_parse(dstring *jsv_url, ocs::tom::ListPtr<ocs::tom::AN> *answer_lis
             if (p != nullptr) {
                if ((sge_is_file(p) && sge_is_executable(p)) || strcasecmp("none", p) == 0) {
                   if (u != nullptr) {
-                     struct passwd *pw;
                      struct passwd pw_struct;
-                     char *buffer;
-                     int size;
-
-                     size = get_pw_buffer_size();
-                     buffer = sge_malloc(size);
-                     pw = sge_getpwnam_r(u, &pw_struct, buffer, size);
-                     sge_free(&buffer);
+                     const int size = get_pw_buffer_size();
+                     // only the result pointer is checked, the strings in the buffer are not used
+                     std::vector<char> buffer(size);
+                     const struct passwd *pw = sge_getpwnam_r(u, &pw_struct, buffer.data(), size);
                      if (pw == nullptr) {
                         answer_list_add_sprintf(answer_list, STATUS_EEXIST, ANSWER_QUALITY_ERROR,  
                                                  MSG_JSV_USER_EXIST_S, u);
@@ -649,11 +646,12 @@ jsv_is_enabled(const char *context) {
    DENTER(TOP_LAYER);
 
    bool ret = true;
-   const char *jsv_url;
 
-   jsv_url = mconf_get_jsv_url();
-   jsv_list_update("jsv", context, nullptr, jsv_url);
-   sge_free(&jsv_url);
+   {
+      // copy made with strdup() by sge_conf.cc
+      const ocs::uti::c_ptr<char> jsv_url{mconf_get_jsv_url()};
+      jsv_list_update("jsv", context, nullptr, jsv_url.get());
+   }
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    ret = !ocs::tom::List<ocs::tom::JSV>(jsv_list).empty();
    sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
@@ -872,7 +870,8 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
    bool ret = true;
 
    if (context != nullptr) {
-      const char *jsv_url = nullptr;
+      // copy made with strdup() by sge_conf.cc, or nullptr in the client context
+      ocs::uti::c_ptr<char> jsv_url;
       bool holding_mutex = false;
 
       /*
@@ -884,17 +883,16 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
        * will be used which is part of the global configuration.
        */
       if (strcmp(context, JSV_CONTEXT_CLIENT) == 0) {
-         jsv_url = nullptr;
          DPRINTF("JSV client context\n");
       } else {
-         jsv_url = mconf_get_jsv_url();
+         jsv_url.reset(mconf_get_jsv_url());
          DPRINTF("JSV server context\n");
       }
 
       /*
        * update the list of JSV scripts for the current thread
        */
-      jsv_list_update("jsv", context, answer_list, jsv_url);
+      jsv_list_update("jsv", context, answer_list, jsv_url.get());
       DPRINTF("JSV list for current thread updated\n");
 
       sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
@@ -1007,7 +1005,6 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
       if (holding_mutex) {
          sge_mutex_unlock("jsv_list", __func__, __LINE__, &jsv_mutex);
       }
-      sge_free(&jsv_url);
    }
    DRETURN(ret);
 }

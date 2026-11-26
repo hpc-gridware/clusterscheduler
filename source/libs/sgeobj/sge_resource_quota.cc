@@ -44,6 +44,7 @@
 
 
 #include <cstring>
+#include <string>
 #include <fnmatch.h>
 
 #include "uti/ocs_Pattern.h"
@@ -743,29 +744,27 @@ int rqs_debit_consumable(const ocs::tom::Element<ocs::tom::RQS> rqs, const ocs::
    }
 
    /* remove the host name part of the queue instance name */
-   char *qname = cqueue_get_name_from_qinstance(queue_instance);
+   const std::string qname = cqueue_get_name_from_qinstance(queue_instance);
 
    const char *pe_name = nullptr;
    if (pe) {
       pe_name = pe.get<PE_name>();
    }
 
-   const auto rule = rqs_get_matching_rule(rqs, username, groupname, grp_list, project, pe_name, hostname, qname,
-                                           acl_list, hgrp_list, nullptr);
+   const auto rule = rqs_get_matching_rule(rqs, username, groupname, grp_list, project, pe_name, hostname,
+                                           qname.c_str(), acl_list, hgrp_list, nullptr);
 
    if (rule) {
       /* debit usage */
       dstring rue_name = DSTRING_INIT;
 
-      rqs_get_rue_string(&rue_name, rule, username, project, hostname, qname, pe_name);
+      rqs_get_rue_string(&rue_name, rule, username, project, hostname, qname.c_str(), pe_name);
 
       mods = rqs_debit_rule_usage(job, pe, rule, &rue_name, slots, centry_list, rqs.get<RQS_name>(),
                                   is_master_task, do_per_host_booking);
 
       sge_dstring_free(&rue_name);
    }
-
-   sge_free(&qname);
 
    DRETURN(mods);
 }

@@ -48,6 +48,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 #include "uti/sge_arch.h"
 #include "uti/sge_log.h"
@@ -187,16 +188,11 @@ void var_list_set_uint32t(ocs::tom::ListPtr<ocs::tom::VA> &varl, const char *nam
 void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
    DENTER(TOP_LAYER);
 
-   char *sharedlib_path;
-   char *sge_sharedlib_path;
-   size_t sge_sharedlib_path_size;
    const char *sge_root = sge_get_root_dir(0, nullptr, 0, 1);
    const char *sharedlib_path_name = var_get_sharedlib_path_name();
 
    /* this is the SGE sharedlib path */
-   sge_sharedlib_path_size = strlen(sge_root) + strlen("/lib/") + strlen(sge_get_arch()) + 1;
-   sge_sharedlib_path = sge_malloc(sge_sharedlib_path_size);
-   snprintf(sge_sharedlib_path, sge_sharedlib_path_size, "%s/lib/%s", sge_root, sge_get_arch());
+   const std::string sge_sharedlib_path = std::string{sge_root} + "/lib/" + sge_get_arch();
 
    /* if already in environment: extend by SGE sharedlib path, else set */
    const auto sharedlib_elem = varl ? varl->find_first<VA_variable>(sharedlib_path_name)
@@ -207,16 +203,11 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
       if(old_value && strlen(old_value) > 0) {
          DPRINTF("sharedlib path %s already set:\n", sharedlib_path_name);
          
-         sharedlib_path = sge_malloc(strlen(old_value) + 1 + 
-                          strlen(sge_sharedlib_path) + 1);
-         strcpy(sharedlib_path, sge_sharedlib_path);
-         strcat(sharedlib_path, ":");
-         strcat(sharedlib_path, old_value);
-         sharedlib_elem.set<VA_value>(sharedlib_path);
-         sge_free(&sharedlib_path);
+         const std::string sharedlib_path = sge_sharedlib_path + ":" + old_value;
+         sharedlib_elem.set<VA_value>(sharedlib_path.c_str());
       } else {
          DPRINTF("overwriting empty sharedlib path %s\n", sharedlib_path_name);
-         sharedlib_elem.set<VA_value>(sge_sharedlib_path);
+         sharedlib_elem.set<VA_value>(sge_sharedlib_path.c_str());
       }
    } else {
       DPRINTF("creating new sharedlib path %s\n", sharedlib_path_name);
@@ -224,10 +215,9 @@ void var_list_set_sharedlib_path(ocs::tom::ListPtr<ocs::tom::VA> &varl) {
          varl = ocs::tom::ListPtr<ocs::tom::VA>::create("");
       }
       const auto new_elem = varl->emplace_back<VA_variable>(sharedlib_path_name);
-      new_elem.set<VA_value>(sge_sharedlib_path);
+      new_elem.set<VA_value>(sge_sharedlib_path.c_str());
    }
 
-   sge_free(&sge_sharedlib_path);
    DRETURN_VOID;
 }
 
@@ -258,13 +248,12 @@ void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *f
        */
       const char *env_name = elem.get<VA_variable>();
       const char *env_value = elem.get<VA_value>();
-      const char *new_env_value = sge_replace_substring(env_value, "\n", "\\n");
+      const ocs::uti::c_ptr<const char> new_env_value{sge_replace_substring(env_value, "\n", "\\n")};
 
       if (new_env_value == nullptr) {
          fprintf(file, "%s=%s\n", env_name, env_value);
       } else {
-         fprintf(file, "%s=%s\n", env_name, new_env_value);
-         sge_free(&new_env_value);
+         fprintf(file, "%s=%s\n", env_name, new_env_value.get());
       }
    }
    DRETURN_VOID;
@@ -594,28 +583,21 @@ bool var_list_verify(const ocs::tom::ConstList<ocs::tom::VA> lp, ocs::tom::ListP
  * @param[in]     variable_str     source string ("a=1,b=2,...")
  * @param[in]     check_environment if true, a name without "=value" takes its
  *                                 value from the caller's environment
- * @return 0 on success, >0 on error (2 strdup, 3 empty list, 5 malformed token)
+ * @return 0 on success, >0 on error (2 no input string, 3 empty list, 5 malformed token)
  */
 int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char *variable_str,
                                const int check_environment) {
    DENTER(TOP_LAYER);
 
-   char *variable;
-   char *val_str;
-   int var_len;
-   char **str_str;
-   char **pstr;
-   char *va_string;
-
-   va_string = sge_strdup(nullptr, variable_str);
-   if (!va_string) {
+   if (variable_str == nullptr) {
       lpp.reset();
       DRETURN(2);
    }
-   str_str = string_list(va_string, ",", nullptr);
+   // string_list() cuts the copy into tokens and returns an array of pointers into it (malloc memory of libs/uti)
+   std::string va_string{variable_str};
+   const ocs::uti::c_ptr<char *> str_str{string_list(va_string.data(), ",", nullptr)};
    if (!str_str || !*str_str) {
       lpp.reset();
-      sge_free(&va_string);
       DRETURN(3);
    }
 
@@ -623,11 +605,9 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
       lpp = ocs::tom::ListPtr<ocs::tom::VA>::create("variable list");
    }
 
-   for (pstr = str_str; *pstr; pstr++) {
-      struct saved_vars_s *context;
-
-      context = nullptr;
-      variable = sge_strtok_r(*pstr, "=", &context);
+   for (char **pstr = str_str.get(); *pstr; pstr++) {
+      struct saved_vars_s *context = nullptr;
+      const char *variable = sge_strtok_r(*pstr, "=", &context);
       // sge_strtok_r() returns nullptr when the token is all delimiters (e.g.
       // "=="); string_list() does not strip '=', so such a token is reachable
       // from client input. Reject it gracefully instead of asserting / running
@@ -635,16 +615,14 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
       // allocated by the first sge_strtok_r() call and must be freed here.
       if (variable == nullptr) {
          sge_free_saved_vars(context);
-         sge_free(&va_string);
-         sge_free(&str_str);
          DRETURN(5);
       }
-      var_len=strlen(variable);
+      const size_t var_len = strlen(variable);
       auto ep = lpp->find_first<VA_variable>(variable);
       if (!ep) {
          ep = lpp->emplace_back<VA_variable>(variable);
       }
-      val_str=*pstr;
+      const char *val_str = *pstr;
 
       /* 
        * The character at the end of the first token must be either '=' or '\0'.
@@ -663,8 +641,6 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
       }
       sge_free_saved_vars(context);
    }
-   sge_free(&va_string);
-   sge_free(&str_str);
    DRETURN(0);
 }
 

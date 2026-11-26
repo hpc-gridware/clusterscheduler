@@ -50,6 +50,7 @@
 #include <optional>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "tom/ocs_Types.h"
 
@@ -312,10 +313,8 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
    if (!state) {
       int counter = 0;
       const std::size_t max = wcal.size();
-      bool *visited = (bool*) sge_malloc(max * sizeof(bool));
+      std::vector<bool> visited(max, false);
       bool isOverlapping;
-
-      memset(visited, false, max * sizeof(bool));
 
       /* Week calendar */
       /* we can have overlapping ranges, which will not result in state changes. This code tries
@@ -357,8 +356,6 @@ state_at(const time_t now, const ocs::tom::ConstList<ocs::tom::CA> ycal, const o
             counter++;
          }
       } while(isOverlapping);
-
-      sge_free(&visited);
    }
 
    DPRINTF("got state %d from %s calendar. Now: %lld Next event: %lld\n",

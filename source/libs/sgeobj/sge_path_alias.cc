@@ -61,6 +61,7 @@
 #include <cstring>
 #include <pwd.h>
 #include <string>
+#include <vector>
 
 #include "uti/sge_hostname.h"
 #include "uti/sge_log.h"
@@ -311,30 +312,26 @@ int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
     */
    {
       struct passwd pw_struct{};
-      char *buffer = nullptr;
+      // holds the strings pw_struct points to, home_dir among them
+      std::vector<char> buffer;
 
       // A test run may point the per user files at a directory of its own, so that
       // clusters sharing one operating system user do not share one alias file.
       const char *home_dir = sge_get_user_home_override();
 
       if (home_dir == nullptr) {
-         struct passwd *pwd;
-         int size;
-
-         size = get_pw_buffer_size();
-         buffer = sge_malloc(size);
-         pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
+         const int size = get_pw_buffer_size();
+         buffer.resize(size);
+         const struct passwd *pwd = sge_getpwnam_r(user, &pw_struct, buffer.data(), size);
 
          if (!pwd) {
             snprintf(err, sizeof(err), MSG_USER_INVALIDNAMEX_S, user);
             answer_list_add(alpp, err, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
-            sge_free(&buffer);
             DRETURN(-1);
          }
          if (!pwd->pw_dir) {
             snprintf(err, sizeof(err), MSG_USER_NOHOMEDIRFORUSERX_S, user);
             answer_list_add(alpp, err, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-            sge_free(&buffer);
             DRETURN(-1);
          }
          home_dir = pwd->pw_dir;
@@ -342,8 +339,6 @@ int path_alias_list_initialize(ocs::tom::ListPtr<ocs::tom::PA> &path_alias_list,
 
       snprintf(filename[0], sizeof(filename[0]), "%s/%s", cell_root, PATH_ALIAS_COMMON_FILE);
       snprintf(filename[1], sizeof(filename[1]), "%s/%s", home_dir, PATH_ALIAS_HOME_FILE);
-
-      sge_free(&buffer);
    }
 
    /*

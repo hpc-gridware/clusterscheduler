@@ -38,6 +38,8 @@
  * @see sge_mailrec.h
  */
 
+#include <string>
+
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
 #include "uti/sge_rmon_macros.h"
@@ -86,22 +88,23 @@ static bool ocs_mailrec_contains(const ocs::tom::ConstList<ocs::tom::MR> list, c
  * @param[in,out] list MR list the recipients are appended to; created if empty, reset on the errors 2 and 3
  * @param mail_str stringlist of mail recipients
  *
- * @return error state 0 - success >0 - error
+ * @return error state 0 - success >0 - error (2 no input string, 3 no recipient)
  *
  * @note MT-NOTE: mailrec_parse_into() is MT safe
  */
 static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char *mail_str) {
    DENTER(TOP_LAYER);
 
-   char *mail = sge_strdup(nullptr, mail_str);
-   if (!mail) {
+   if (mail_str == nullptr) {
       list.reset();
       DRETURN(2);
    }
-   char **str_str = string_list(mail, ",", nullptr);
+   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
+   // (malloc memory of libs/uti)
+   std::string mail{mail_str};
+   const ocs::uti::c_ptr<char *> str_str{string_list(mail.data(), ",", nullptr)};
    if (!str_str || !*str_str) {
       list.reset();
-      sge_free(&mail);
       DRETURN(3);
    }
 
@@ -109,7 +112,7 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
       list = ocs::tom::ListPtr<ocs::tom::MR>::create("mail_list");
    }
 
-   for (char **pstr = str_str; *pstr; pstr++) {
+   for (char **pstr = str_str.get(); *pstr; pstr++) {
       struct saved_vars_s *context = nullptr;
       const char *user = sge_strtok_r(*pstr, "@", &context);
       const char *host = sge_strtok_r(nullptr, "@", &context);
@@ -129,8 +132,6 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
       sge_free_saved_vars(context);
    }
 
-   sge_free(&mail);
-   sge_free(&str_str);
    DRETURN(0);
 }
 

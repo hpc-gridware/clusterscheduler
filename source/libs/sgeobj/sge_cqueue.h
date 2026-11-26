@@ -40,6 +40,8 @@
  * @see sge_cqueue.cc
  */
 
+#include <string>
+
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
 #include "sgeobj/tom/ocs_tom_CAL.h"
@@ -78,7 +80,7 @@ bool
 cqueue_name_split(const char *name, dstring *cqueue_name, dstring *host_domain,
                   bool *has_hostname, bool *has_domain);
 
-char* cqueue_get_name_from_qinstance(const char *queue_instance);
+std::string cqueue_get_name_from_qinstance(const char *queue_instance);
 
 [[nodiscard]] ocs::tom::ElementPtr<ocs::tom::CQ> cqueue_create(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                                const char *name);

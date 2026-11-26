@@ -270,32 +270,16 @@ int ocs_parse_string_list(char **pstrlist, const char *listname, const ocs::tom:
 }
 
 
-/*
-** NAME
-**   ocs_parse_definition_list
-** PARAMETER
-**   str                 - string to be parsed
-**   lpp                 - list pointer-pointer to be set the list,
-**                         or nullptr if first token is NONE
-**   name                - name for the list
-**   descr               - type of the list
-**   interpretation_rule - fields to be filled, normally 2 entries
-** RETURN
-**
-** EXTERNAL
-**
-** DESCRIPTION
-**   parses list of form var=value,var=value,...
-*/
 /**
  * @brief Parse a `name=value,name=value` string into a list
  *
  * @param str the text to parse; it is modified in place by the tokenizer
- * @param[out] lpp receives the list
+ * @param[out] lpp receives the list, or nullptr if the first token is NONE or UNDEFINED
  * @param name the name the resulting list is created under
  * @param descr the descriptor of the elements to create
- * @param interpretation_rule the attributes the name and the value are stored in
- * @return 0 on success
+ * @param interpretation_rule the attributes the name and the value are stored in, normally 2 entries
+ * @return 0 on success, -1 on a missing argument, -2 when the string holds no token, -3 when a token could not be
+ *         parsed
  */
 int ocs_parse_definition_list(
 char *str,
@@ -306,23 +290,19 @@ int *interpretation_rule
 ) {
    DENTER(BASIS_LAYER);
 
-   char **pstr;
-   int ret;
-
    if (!str || !lpp) {
       DRETURN(-1);
    }
-   pstr = string_list(str, " ,=\t\n\f\r\v", nullptr);
+   // array of pointers into str, malloc memory of libs/uti
+   const ocs::uti::c_ptr<char *> pstr{string_list(str, " ,=\t\n\f\r\v", nullptr)};
    if (!pstr) {
       DRETURN(-2);
    }
-   if (!strcasecmp("NONE", pstr[0]) || !strcasecmp("UNDEFINED", pstr[0])) {
+   if (!strcasecmp("NONE", pstr.get()[0]) || !strcasecmp("UNDEFINED", pstr.get()[0])) {
       *lpp = nullptr;
-      sge_free(&pstr);
       DRETURN(0);
    }
-   ret = ocs_parse_string_list(pstr, name, descr, interpretation_rule, lpp);
-   sge_free(&pstr);
+   const int ret = ocs_parse_string_list(pstr.get(), name, descr, interpretation_rule, lpp);
    if (ret) {
       DRETURN(-3);
    }
@@ -762,49 +742,40 @@ template void parse_list_hardsoft<JRS_hard_queue_list, NoName>(
 std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> ocs_parse_path_list(const char *path_str) {
    DENTER(TOP_LAYER);
 
-   char **str_str = nullptr;
    ocs::tom::ListPtr<ocs::tom::PN> list;
-
-   char *path_string = sge_strdup(nullptr, path_str);
-   bool ret_error = path_string == nullptr;
+   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
+   // (malloc memory of libs/uti)
+   std::string path_string;
+   ocs::uti::c_ptr<char *> str_str;
+   bool ret_error = path_str == nullptr;
    if (!ret_error) {
-      str_str = string_list(path_string, ",", nullptr);
+      path_string = path_str;
+      str_str.reset(string_list(path_string.data(), ",", nullptr));
       ret_error = str_str == nullptr || *str_str == nullptr;
    }
 
    if (!ret_error) {
       list = ocs::tom::ListPtr<ocs::tom::PN>::create("path_list");
-      for (char **pstr = str_str; *pstr; pstr++) {
+      for (char **pstr = str_str.get(); *pstr; pstr++) {
          char *path;
-         char *cell;
+         std::optional<std::string> cell;
 
          /* cell given ? */
          if (*pstr[0] == ':') {  /* :path */
-            cell = nullptr;
             path = *pstr + 1;
          } else if ((path = strstr(*pstr, ":"))) { /* host:path */
-            path[0] = '\0';
-            cell = strdup(*pstr);
-            path[0] = ':';
+            cell.emplace(*pstr, static_cast<size_t>(path - *pstr));
             path += 1;
          } else { /* path */
-            cell = nullptr;
             path = *pstr;
          }
 
          const auto ep = list->push_back(ocs::tom::ElementPtr<ocs::tom::PN>::create());
          ep.set<PN_path>(path);
          if (cell) {
-            ep.set<PN_host>(ocs::tom::Host(cell));
-            sge_free(&cell);
+            ep.set<PN_host>(ocs::tom::Host(cell->c_str()));
          }
       }
-   }
-   if (path_string) {
-      sge_free(&path_string);
-   }
-   if (str_str) {
-      sge_free(&str_str);
    }
    DRETURN(std::make_pair(ret_error ? 1 : 0, std::move(list)));
 }
@@ -826,23 +797,22 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> ocs_parse_jid_hold_list(const ch
 
    int rule[] = {ST_name, 0};
 
-   char *s = sge_strdup(nullptr, str);
-   if (!s) {
+   if (str == nullptr) {
       DRETURN(std::make_pair(3, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
-   char **str_str = string_list(s, ",", nullptr);
+   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
+   // (malloc memory of libs/uti)
+   std::string s{str};
+   const ocs::uti::c_ptr<char *> str_str{string_list(s.data(), ",", nullptr)};
    if (!str_str || !*str_str) {
-      sge_free(&s);
       DRETURN(std::make_pair(2, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
    // ocs_parse_string_list() is generic over the descriptor; it fills the list only on success
    ocs::tom::ListData *parsed = nullptr;
-   const int i_ret = ocs_parse_string_list(str_str, "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
+   const int i_ret = ocs_parse_string_list(str_str.get(), "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
    // the list was created with ST above, so it is taken over unchecked
    auto list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(parsed);
 
-   sge_free(&s);
-   sge_free(&str_str);
    DRETURN(std::make_pair(i_ret != 0 ? 3 : 0, std::move(list)));
 }
 

@@ -45,6 +45,7 @@
  */
 
 #include <cstring>
+#include <string>
 #include <tuple>
 #include <type_traits>
 
@@ -191,30 +192,20 @@ bool cqueue_name_split(const char *name,
 /**
  * @brief Returns the cluster queue part of a queue
  *
- * Returns a character pointer to a newly malloced string containing the cluster
- * queue part of a queue instance name.
- * The memory needs to be free'd by the caller
+ * Returns the cluster queue part of a queue instance name: everything before the first '@', or the whole name
+ * if it holds no '@'.
  *
- * @param queue_instance queue instance or cluster queue
+ * @param queue_instance queue instance or cluster queue, must not be nullptr
  *
  * @return cluster queue name
  *
  * @note MT-NOTE: cqueue_get_name_from_qinstance() is MT safe
  */
-char *cqueue_get_name_from_qinstance(const char *queue_instance) {
-   char *at_sign = nullptr;
-   char *cqueue = nullptr;
-
-   if ((at_sign = strchr((char *)queue_instance, '@'))) {
-      int size = at_sign - queue_instance;
-      cqueue = sge_malloc(sizeof(char) * (size + 1));
-      cqueue = strncpy(cqueue, queue_instance, size);
-      cqueue[size] = '\0';
-   } else {
-      cqueue = strdup(queue_instance);
+std::string cqueue_get_name_from_qinstance(const char *queue_instance) {
+   if (const char *at_sign = strchr(queue_instance, '@'); at_sign != nullptr) {
+      return {queue_instance, static_cast<size_t>(at_sign - queue_instance)};
    }
-
-   return cqueue;
+   return queue_instance;
 }
 
 /**

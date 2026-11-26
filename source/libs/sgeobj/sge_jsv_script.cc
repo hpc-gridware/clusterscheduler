@@ -2460,15 +2460,16 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
    bool ret = false;
 
    if (job != nullptr) {
-      const char *jsv_allowed_mod = mconf_get_jsv_allowed_mod();
-      const char *jsv_url = mconf_get_jsv_url();
+      // copies made with strdup() by sge_conf.cc
+      const ocs::uti::c_ptr<char> jsv_allowed_mod{mconf_get_jsv_allowed_mod()};
+      const ocs::uti::c_ptr<char> jsv_url{mconf_get_jsv_url()};
 
-      if (jsv_url && strcasecmp(jsv_url, "none") != 0) {
+      if (jsv_url && strcasecmp(jsv_url.get(), "none") != 0) {
 
          // Check now if there are allowed modifications.
-         if (jsv_allowed_mod && strcmp(jsv_allowed_mod, "none") != 0) {
+         if (jsv_allowed_mod && strcmp(jsv_allowed_mod.get(), "none") != 0) {
             // Both lists are created up front: an empty list counts as no switch, as no list did before.
-            auto allowed_switches = str_list_parse_from_string(jsv_allowed_mod, ",");
+            auto allowed_switches = str_list_parse_from_string(jsv_allowed_mod.get(), ",");
             if (!allowed_switches) {
                allowed_switches = ocs::tom::ListPtr<ocs::tom::ST>::create("");
             }
@@ -2569,8 +2570,6 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
             ret = true;
          }
       }
-      sge_free(&jsv_allowed_mod);
-      sge_free(&jsv_url);
    }
    DRETURN(ret);
 }

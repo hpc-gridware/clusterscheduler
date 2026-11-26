@@ -1055,9 +1055,9 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
    }
    const auto list = *ret;
 
-   /* tokens are terminated in place, so work on a copy of the caller's string */
-   char *buffer = sge_strdup(nullptr, str);
-   char *pos = buffer;
+   /* tokens are terminated in place, so work on a copy of the caller's string; nullptr parses like "" */
+   std::string buffer{str != nullptr ? str : ""};
+   char *pos = buffer.data();
 
    /* buffer now points to the attr=value pairs */
    while ((cp = request_next_token(&pos)) != nullptr) {
@@ -1069,7 +1069,6 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
 
       if (attr == nullptr || *attr == '\0') {
          ERROR(MSG_SGETEXT_UNKNOWN_RESOURCE_S, "");
-         FREE(buffer);
          DRETURN(ocs::tom::ListPtr<ocs::tom::CE>());
       }
 
@@ -1080,7 +1079,6 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
          value = (char*)TRUE_STR;
       } else if (check_value && (value == nullptr || *value == '\0')) {
          ERROR(MSG_CPLX_VALUEMISSING_S, attr);
-         FREE(buffer);
          DRETURN(ocs::tom::ListPtr<ocs::tom::CE>());
       }
 
@@ -1092,8 +1090,6 @@ centry_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::CE> &&complex_attribut
 
       complex_attribute.set<CE_stringval>(value);
    }
-
-   FREE(buffer);
 
    DRETURN(ret);
 }

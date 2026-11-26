@@ -1428,24 +1428,20 @@ sge_object_type object_name_get_type(const char *name) {
    DENTER(OBJECT_LAYER);
 
    sge_object_type ret = SGE_TYPE_ALL;
-   int i;
-   char *type_name;
-   char *colon;
 
-   type_name = strdup(name);
-   colon = strchr(type_name, ':');
-   if (colon != nullptr) {
-      *colon = '\0';
+   // the type name is the part before an optional ':'
+   std::string type_name{name};
+   if (const size_t colon = type_name.find(':'); colon != std::string::npos) {
+      type_name.resize(colon);
    }
 
-   for (i = (int) SGE_TYPE_FIRST; i < (int) SGE_TYPE_ALL; i++) {
-      if (strcasecmp(object_base[i].type_name, type_name) == 0) {
+   for (int i = (int) SGE_TYPE_FIRST; i < (int) SGE_TYPE_ALL; i++) {
+      if (strcasecmp(object_base[i].type_name, type_name.c_str()) == 0) {
          ret = (sge_object_type) i;
          break;
       }
    }
 
-   sge_free(&type_name);
    DRETURN(ret);
 }
 

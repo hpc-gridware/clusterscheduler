@@ -48,6 +48,7 @@
  */
 
 #include <cstring>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -1497,7 +1498,7 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
          const char *qname = gdil_ep.get<JG_qname>();
          const char* pe = (a->pe)?a->pe.get<PE_name>():nullptr;
          const char *queue_instance = gdil_ep.get<JG_qname>();
-         const ocs::uti::c_ptr<char> queue{cqueue_get_name_from_qinstance(queue_instance)};
+         const std::string queue = cqueue_get_name_from_qinstance(queue_instance);
          bool do_per_host_booking = host_do_per_host_booking(&last_eh_name, eh_name);
 
          // global
@@ -1541,10 +1542,10 @@ int add_job_utilization(const sge_assignment_t *a, const char *type, bool for_jo
             }
 
             const auto rule = rqs_get_matching_rule(rqs, a->user, a->group, a->grp_list, a->project, pe, eh_name,
-                                                    queue.get(), a->acl_list, a->hgrp_list, nullptr);
+                                                    queue.c_str(), a->acl_list, a->hgrp_list, nullptr);
             if (rule != nullptr) {
 
-               rqs_get_rue_string(&rue_name, rule, a->user, a->project, eh_name, queue.get(), pe);
+               rqs_get_rue_string(&rue_name, rule, a->user, a->project, eh_name, queue.c_str(), pe);
 
                rqs_add_job_utilization(a->job, a->pe, a->ja_task_id, type, rule, rue_name,
                                        a->centry_list, slots, rqs.get<RQS_name>(),

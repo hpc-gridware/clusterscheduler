@@ -53,6 +53,7 @@
 #include <cstring>
 #include <pthread.h>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -702,16 +703,18 @@ static ocs::tom::ConstList<ocs::tom::CE> get_job_load_adjustments() {
  *
  * That is the expression the hosts are sorted by.
  *
- * @return this is a copy of the load formula, the caller has to free it
+ * @return a copy of the load formula, std::nullopt if the configuration holds none
  *
  * @note MT-NOTE: is thread save, uses LOCK_SCHED_CONF(read)
  */
-char* sconf_get_load_formula() {
-   char *formula = nullptr;
+std::optional<std::string> sconf_get_load_formula() {
+   std::optional<std::string> formula;
 
    sge_mutex_lock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
 
-   formula = sge_strdup(formula, get_load_formula());
+   if (const char *value = get_load_formula(); value != nullptr) {
+      formula = value;
+   }
 
    sge_mutex_unlock("Sched_Conf_Lock", "", __LINE__, &pos.mutex);
    return formula;

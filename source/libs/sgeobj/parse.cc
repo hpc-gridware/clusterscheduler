@@ -45,6 +45,7 @@
 
 #include <cstring>
 #include <strings.h>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -343,13 +344,13 @@ bool parse_flag(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
 
    auto ep = cmdline.find_first_like<SPA_switch_val>(opt);
    if (ep != nullptr) {
-      char *actual_opt = sge_strdup(nullptr, ep.get<SPA_switch_val>());
+      // copy: the element holding the switch name is erased in the loop
+      const std::string actual_opt{ep.get<SPA_switch_val>()};
       while (ep != nullptr) {
          /* remove _all_ flags of same type */
          cmdline.erase(ep);
-         ep = cmdline.find_first_like<SPA_switch_val>(actual_opt);
+         ep = cmdline.find_first_like<SPA_switch_val>(actual_opt.c_str());
       }
-      sge_free(&actual_opt);
       *pflag = 1;
       DRETURN(true);
    }
