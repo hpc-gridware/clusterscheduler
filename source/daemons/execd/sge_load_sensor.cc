@@ -43,6 +43,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "uti/sge.h"
 #include "uti/sge_arch.h"
@@ -214,35 +215,26 @@ static int sge_ls_start_ls(const char *qualified_hostname, const ocs::tom::Eleme
    FILE *fp_in = nullptr;
    FILE *fp_out = nullptr;
    FILE *fp_err = nullptr;
-   char **envp = nullptr;
    DSTRING_STATIC(dstr_host, CL_MAXHOSTNAMELEN);
    DSTRING_STATIC(dstr_spool, SGE_PATH_MAX);
 
    const char *str_host = sge_dstring_sprintf(&dstr_host, "%s=%s", "HOST", qualified_hostname);
    const char *str_spool = sge_dstring_sprintf(&dstr_spool, "%s=%s/%s", "SGE_JOB_SPOOL_DIR", execd_spool_dir, ACTIVE_DIR);
 
+   // The environment is built in the parent before sge_peopen() forks, the child only reads it.
+   std::vector<char *> envp{const_cast<char *>(str_host), const_cast<char *>(str_spool)};
+
    // If we are starting the qidle load sensor, we need to export XAUTHORITY.
    // @todo Does anything speak against exporting it always?
    //       We do not really want special handling for one specific load sensor.
    if (has_to_use_qidle && !strcmp(this_ls.get<LS_name>(), IDLE_LOADSENSOR_NAME)) {
-      envp = (char **) sge_malloc(sizeof(char *) * 4);
-      envp[0] = (char *)str_host;
-      envp[1] = (char *)str_spool;
-      envp[2] = (char *)"XAUTHORITY=/tmp/.xauthority";
-      envp[3] = nullptr;
-   } else {
-      envp = (char **) sge_malloc(sizeof(char *) * 3);
-      envp[0] = (char *)str_host;
-      envp[1] = (char *)str_spool;
-      envp[2] = nullptr;
+      envp.push_back(const_cast<char *>("XAUTHORITY=/tmp/.xauthority"));
    }
+   envp.push_back(nullptr);
 
    /* we need fds for select() .. */
-   pid = sge_peopen("/bin/sh", 0, this_ls.get<LS_command>(), nullptr, envp, &fp_in, &fp_out, &fp_err, true);
+   pid = sge_peopen("/bin/sh", 0, this_ls.get<LS_command>(), nullptr, envp.data(), &fp_in, &fp_out, &fp_err, true);
 
-   if (envp) {
-      sge_free(&envp);
-   }
    if (pid == -1) {
       // There is no load sensor process and therefore there are no streams. Whatever the
       // previous run of this sensor left in the refs has been closed by sge_ls_stop_ls().

@@ -108,15 +108,18 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
 
    bool found = false;
    uint32_t jobid, signal, jataskid;
-   char *qname = nullptr;
+   char *qname_raw = nullptr;
 
-   if (ocs::tom::try_get_uint32(&(aMsg->buf), &jobid) != 0 ||
-       ocs::tom::try_get_uint32(&(aMsg->buf), &jataskid) != 0 ||
-       ocs::tom::try_get_str(&(aMsg->buf), &qname) != 0 || /* mallocs qname !! */
-       ocs::tom::try_get_uint32(&(aMsg->buf), &signal)) {     /* signal doesn't need to be packed */
-      sge_free(&qname);
+   const bool unpacked = ocs::tom::try_get_uint32(&(aMsg->buf), &jobid) == 0 &&
+                         ocs::tom::try_get_uint32(&(aMsg->buf), &jataskid) == 0 &&
+                         ocs::tom::try_get_str(&(aMsg->buf), &qname_raw) == 0 &&
+                         ocs::tom::try_get_uint32(&(aMsg->buf), &signal) == 0; /* signal doesn't need to be packed */
+   // try_get_str() returns malloc() memory, also when the signal cannot be read
+   const ocs::uti::c_ptr<char> qname_owner{qname_raw};
+   if (!unpacked) {
       DRETURN(1);
    }
+   char *qname = qname_owner.get();
 
    DPRINTF("===>DELIVER_SIGNAL: %s >%s< Job(s) " sge_u32"." sge_u32" \n", sge_sig2str(signal), qname? qname: "<nullptr>", jobid, jataskid);
 
@@ -210,8 +213,6 @@ int do_signal_queue(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, sge_pack_buf
       }
       job_unknown(jobid, jataskid, qname);
    }
-
-   sge_free(&qname);
 
    DRETURN(0);
 }

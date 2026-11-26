@@ -42,6 +42,7 @@
 #include <cstring>
 #include <optional>
 #include <string>
+#include <vector>
 #include <sys/types.h>
 #include <cerrno>
 #include <cfloat>
@@ -1564,7 +1565,8 @@ struct adopted_shepherd_t {
    uint32_t job_id;   ///< the job it supervises -- part of the shepherd's process name
 
 };
-static std::vector<adopted_shepherd_t> adopted_shepherds;
+// allocated once and never destroyed, so that no destructor runs at exit(), also not in a forked child
+static std::vector<adopted_shepherd_t> &adopted_shepherds = *new std::vector<adopted_shepherd_t>;
 
 /**
  * @brief Is this pid still the shepherd of that job?

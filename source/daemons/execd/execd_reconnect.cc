@@ -267,43 +267,42 @@ int do_reconnect_prepare(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    uint32_t job_id     = 0;
    uint32_t ja_task_id = 0;
-   char    *host       = nullptr;   // mallocs via ocs::tom::try_get_str()
+   char    *host_raw   = nullptr;
    uint32_t port       = 0;
-   char    *token      = nullptr;   // mallocs via ocs::tom::try_get_str()
+   char    *token_raw  = nullptr;
    uint32_t owner_uid  = 0;
    uint32_t owner_gid  = 0;
-   char    *cred       = nullptr;   // mallocs via ocs::tom::try_get_str() (CS-2206)
+   char    *cred_raw   = nullptr;   // CS-2206
 
-   if (ocs::tom::try_get_uint32(&(aMsg->buf), &job_id) != 0 ||
-       ocs::tom::try_get_uint32(&(aMsg->buf), &ja_task_id) != 0 ||
-       ocs::tom::try_get_str(&(aMsg->buf), &host) != 0 ||
-       ocs::tom::try_get_uint32(&(aMsg->buf), &port) != 0 ||
-       ocs::tom::try_get_str(&(aMsg->buf), &token) != 0 ||
-       ocs::tom::try_get_uint32(&(aMsg->buf), &owner_uid) != 0 ||
-       ocs::tom::try_get_uint32(&(aMsg->buf), &owner_gid) != 0 ||
-       ocs::tom::try_get_str(&(aMsg->buf), &cred) != 0) {
+   const bool unpacked = ocs::tom::try_get_uint32(&(aMsg->buf), &job_id) == 0 &&
+                         ocs::tom::try_get_uint32(&(aMsg->buf), &ja_task_id) == 0 &&
+                         ocs::tom::try_get_str(&(aMsg->buf), &host_raw) == 0 &&
+                         ocs::tom::try_get_uint32(&(aMsg->buf), &port) == 0 &&
+                         ocs::tom::try_get_str(&(aMsg->buf), &token_raw) == 0 &&
+                         ocs::tom::try_get_uint32(&(aMsg->buf), &owner_uid) == 0 &&
+                         ocs::tom::try_get_uint32(&(aMsg->buf), &owner_gid) == 0 &&
+                         ocs::tom::try_get_str(&(aMsg->buf), &cred_raw) == 0;
+   // try_get_str() returns malloc() memory, also the strings read before a failing field
+   const ocs::uti::c_ptr<char> host{host_raw};
+   const ocs::uti::c_ptr<char> token{token_raw};
+   const ocs::uti::c_ptr<char> cred{cred_raw};
+   if (!unpacked) {
       ERROR("do_reconnect_prepare: failed to unpack message");
-      sge_free(&host);
-      sge_free(&token);
-      sge_free(&cred);
       DRETURN(-1);
    }
 
    // CS-2206: refresh cert.pem with the reconnecting client's certificate
    // BEFORE publishing reconnect.info, so the shepherd's poll loop only ever
    // opens the reconnect connection once the matching cert is in place.
-   int ret = execd_write_reconnect_cert(job_id, ja_task_id, nullptr, cred,
+   int ret = execd_write_reconnect_cert(job_id, ja_task_id, nullptr, cred.get(),
                                         (uid_t)owner_uid, (gid_t)owner_gid);
    if (ret == 0) {
       // Stage 3 / CS-2144 will add a JWAITING_RECONNECT job state at qmaster level — at
       // execd we just write the file and let the shepherd's polling loop pick it up.
       ret = execd_write_reconnect_info(job_id, ja_task_id, nullptr,
-                                       host, (int)port, token,
+                                       host.get(), (int)port, token.get(),
                                        (uid_t)owner_uid, (gid_t)owner_gid);
    }
 
-   sge_free(&host);
-   sge_free(&token);
-   sge_free(&cred);
    DRETURN(ret);
 }

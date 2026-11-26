@@ -359,6 +359,10 @@ void psSetCollectionIntervals(int jobi, int prci, int sysi) {
       ps_config.sys_collection_interval = sysi;
 }
 
+/**
+ * @brief Unlink and destroy every process element of a job
+ * @param job_elem the job whose process list is emptied
+ */
 static void
 free_process_list(job_elem_t *job_elem) {
    lnk_link_t *currp;
@@ -369,16 +373,23 @@ free_process_list(job_elem_t *job_elem) {
 
       LNK_DELETE(currp);
       ptr = LNK_DATA(currp, proc_elem_t, link);
-      sge_free(&ptr);
+      ocs::uti::destroy(ptr);
    }
 }
 
+/**
+ * @brief Destroy a job element together with its process elements
+ *
+ * The job element must already be unlinked from the job list.
+ *
+ * @param job_elem the job element, made by ocs::uti::create() in psWatchJob()
+ */
 static void
 free_job(job_elem_t *job_elem) {
    free_process_list(job_elem);
 
    /* free job element */
-   sge_free(&job_elem);
+   ocs::uti::destroy(job_elem);
 }
 
 /**
@@ -463,9 +474,8 @@ static int psRetrieveOSJobData() {
                      }
                   }
                   if (newprocess) {
-                     proc_elem = ocs::uti::c_alloc<proc_elem_t>();
+                     proc_elem = ocs::uti::create<proc_elem_t>();
 
-                     memset(proc_elem, 0, sizeof(proc_elem_t));
                      proc_elem->proc.pd_length = sizeof(psProc_t);
                      proc_elem->proc.pd_state  = 1; /* active */
                      proc_elem->proc.pd_pstart = procs->ki_start.tv_sec;
@@ -543,9 +553,8 @@ static int psRetrieveOSJobData() {
                      }
                   }
                   if (newprocess) {
-                     proc_elem = ocs::uti::c_alloc<proc_elem_t>();
+                     proc_elem = ocs::uti::create<proc_elem_t>();
 
-                     memset(proc_elem, 0, sizeof(proc_elem_t));
                      proc_elem->proc.pd_length = sizeof(psProc_t);
                      proc_elem->proc.pd_state  = 1; /* active */
                      proc_elem->proc.pd_pstart = procs->kp_proc.p_starttime.tv_sec;
@@ -687,7 +696,7 @@ static int psRetrieveOSJobData() {
               
                /* remove process entry from list */
                LNK_DELETE(currp);
-               sge_free(&proc_elem);
+               ocs::uti::destroy(proc_elem);
             }
          }
          /* estimate high water memory mark */
@@ -810,8 +819,8 @@ int psWatchJob(JobID_t JobID, usage_collection_t usage_collection) {
       if (curr != nullptr) {
          LNK_DATA(curr, job_elem_t, link)->precreated = 0;
       } else {
-         job_elem_t *job_elem = ocs::uti::c_alloc<job_elem_t>();
-         memset(job_elem, 0, sizeof(job_elem_t));
+         // value-initialized, released by free_job()
+         job_elem_t *job_elem = ocs::uti::create<job_elem_t>();
          job_elem->starttime = get_gmt();
          job_elem->job.jd_jid = JobID;
          job_elem->usage_collection = usage_collection;
@@ -853,10 +862,9 @@ int psIgnoreJob(JobID_t JobID) {
  * watch is not reported.
  *
  * @param JobID the job
- * @return a freshly allocated block holding the job followed by its processes,
- *         which the caller owns; nullptr when the job is not being watched
+ * @return a block holding the job followed by its processes; empty when the job is not being watched
  */
-struct psJob_s *psGetOneJob(JobID_t JobID) {
+std::vector<char> psGetOneJob(JobID_t JobID) {
    psJob_t *job;
    lnk_link_t *curr;
    job_elem_t *job_elem = nullptr;
@@ -864,7 +872,8 @@ struct psJob_s *psGetOneJob(JobID_t JobID) {
    struct rjob_s {
       psJob_t job;
       psProc_t proc[1];
-   } *rjob = nullptr;
+   };
+   std::vector<char> ret;
 
    /* retrieve job data */
    psRetrieveOSJobData();
@@ -881,26 +890,25 @@ struct psJob_s *psGetOneJob(JobID_t JobID) {
    }
 
    if (found) {
-      unsigned long rsize;
-
       job = &job_elem->job;
-      rsize = sizeof(psJob_t) + job->jd_proccount * sizeof(psProc_t);
-      if ((rjob = (struct rjob_s *)sge_malloc(rsize))) {
-         memcpy(&rjob->job, job, sizeof(psJob_t));
-         {
-            lnk_link_t *currp;
-            int nprocs = 0;
+      const unsigned long rsize = sizeof(psJob_t) + job->jd_proccount * sizeof(psProc_t);
+      // operator new aligns like malloc(), the block can be read as rjob_s
+      ret.resize(rsize);
+      auto *rjob = reinterpret_cast<struct rjob_s *>(ret.data());
+      memcpy(&rjob->job, job, sizeof(psJob_t));
+      {
+         lnk_link_t *currp;
+         int nprocs = 0;
 
-            for (currp=job_elem->procs.next; currp != &job_elem->procs;
-                     currp=currp->next) {
-               psProc_t *proc = &(LNK_DATA(currp, proc_elem_t, link)->proc);
-               memcpy(&rjob->proc[nprocs++], proc, sizeof(psProc_t));
-            }
+         for (currp=job_elem->procs.next; currp != &job_elem->procs;
+                  currp=currp->next) {
+            psProc_t *proc = &(LNK_DATA(currp, proc_elem_t, link)->proc);
+            memcpy(&rjob->proc[nprocs++], proc, sizeof(psProc_t));
          }
       }
    }
 
-   return (struct psJob_s *)rjob;
+   return ret;
 }
 
 
@@ -908,13 +916,13 @@ struct psJob_s *psGetOneJob(JobID_t JobID) {
  *
  * Re-reads `/proc` first, like psGetOneJob().
  *
- * @return a freshly allocated block holding the job count followed by the
- *         jobs, which the caller owns
+ * @return a block holding the job count (uint64) followed by the jobs, each followed by its processes;
+ *         never empty
  */
-struct psJob_s *psGetAllJobs() {
-   psJob_t *rjob, *jobs;
+std::vector<char> psGetAllJobs() {
+   psJob_t *jobs;
    lnk_link_t *curr;
-   long rsize;
+   size_t rsize;
    uint64 jobcount = 0;
 
    /* retrieve job data */
@@ -931,14 +939,11 @@ struct psJob_s *psGetAllJobs() {
       jobcount++;
    }
 
-   /* allocate space for return data */
-   if ((rjob = (psJob_t *)sge_malloc(rsize)) == nullptr)
-      return rjob;
-  
-   /* allign adress */
+   /* allocate space for return data, operator new aligns like malloc() */
+   std::vector<char> ret(rsize);
 
    /* fill in return data */
-   jobs = rjob;
+   jobs = reinterpret_cast<psJob_t *>(ret.data());
    *(uint64 *)jobs = jobcount;
 
    INCJOBPTR(jobs, sizeof(uint64));
@@ -967,7 +972,7 @@ struct psJob_s *psGetAllJobs() {
 
    }
 
-   return rjob;
+   return ret;
 }
 
 /** @brief Check the collector's internal state
@@ -1223,7 +1228,8 @@ int main(int argc, char **argv) {
       sys = nullptr;
 
       if (!sgeview && system) {
-      ojob = jobs = psGetAllJobs();
+      std::vector<char> all_jobs = psGetAllJobs();
+      ojob = jobs = reinterpret_cast<psJob_t *>(all_jobs.data());
       if (jobs) {
          jobcount = *(uint64 *)jobs;
          INCJOBPTR(jobs, sizeof(uint64));
@@ -1234,9 +1240,10 @@ int main(int argc, char **argv) {
                curr_cpu[i] = jobs->jd_utime_a + jobs->jd_stime_a +
                              jobs->jd_utime_c + jobs->jd_stime_c;
             } else if (use_getonejob) {
-               psJob_t *jp, *ojp;
+               psJob_t *jp;
                psProc_t *pp;
-               if ((ojp = jp = psGetOneJob(jobs->jd_jid))) {
+               std::vector<char> one_job = psGetOneJob(jobs->jd_jid);
+               if ((jp = one_job.empty() ? nullptr : reinterpret_cast<psJob_t *>(one_job.data()))) {
                   if (verbose && !killjob)
                      print_job_data(jp);
                   proccount = jp->jd_proccount;
@@ -1247,7 +1254,6 @@ int main(int argc, char **argv) {
                         print_process_data(pp);
                      INCPROCPTR(pp, pp->pd_length);
                   }
-                  sge_free(&ojp);
                } 
 
             } else if (verbose && !killjob)
@@ -1306,9 +1312,6 @@ int main(int argc, char **argv) {
          fflush(stdout);
       }
 
-      if (ojob) {
-         sge_free(&ojob);
-      }
       if (stat) {
          sge_free(&stat);
       }

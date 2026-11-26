@@ -49,6 +49,8 @@
  * described below.
  */
 
+#include <vector>
+
 #include "sgeobj/sge_conf.h"
 
 #include "err_trace.h"
@@ -291,5 +293,5 @@ int		psIgnoreJob(JobID_t JobID);
  */
 struct psStat_s	*psStatus();
 
-struct psJob_s *psGetOneJob(JobID_t JobID);
-struct psJob_s *psGetAllJobs();
+std::vector<char> psGetOneJob(JobID_t JobID);
+std::vector<char> psGetAllJobs();

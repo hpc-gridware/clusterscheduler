@@ -41,6 +41,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -135,7 +136,8 @@ struct admail_sent_t {
    uint32_t qversion;    ///< the version the queue instance had at that moment
 };
 
-static std::map<admail_key_t, admail_sent_t> admail_sent;
+// allocated once and never destroyed, so that no destructor runs at exit(), also not in a forked child
+static std::map<admail_key_t, admail_sent_t> &admail_sent = *new std::map<admail_key_t, admail_sent_t>;
 
 /** @brief Report a job failure to the administrator, subject to the rate rules
  *
@@ -176,7 +178,6 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
    dstring dstr_sge_mail_body_total = DSTRING_INIT;
    dstring ds;
    char buffer[256];
-   char *shepherd_file_buf = nullptr;
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
@@ -319,7 +320,7 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
       sge_dstring_copy_string(&dstr_sge_mail_body_total, sge_mail_body);
      
       if (max_shepherd_files_size > 0) {
-         shepherd_file_buf = sge_malloc(max_shepherd_files_size + 1);
+         std::vector<char> shepherd_file_buf(max_shepherd_files_size + 1);
          for (i=0; i<num_files; i++) {
             if (shepherd_files[i].exists) {
                FILE *fp;
@@ -327,14 +328,13 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
                if ((fp = fopen(shepherd_files[i].filepath, "r"))) {
                   size_t n;
 
-                  n = fread(shepherd_file_buf, 1, max_shepherd_files_size, fp);
+                  n = fread(shepherd_file_buf.data(), 1, max_shepherd_files_size, fp);
                   FCLOSE(fp);
                   shepherd_file_buf[n] = '\0';
-                  sge_dstring_append(&dstr_sge_mail_body_total, shepherd_file_buf);
+                  sge_dstring_append(&dstr_sge_mail_body_total, shepherd_file_buf.data());
                }
             }
          }
-         sge_free(&shepherd_file_buf);
       }
 
       mail_to_users(progid, *lp_mail, sge_mail_subj, sge_dstring_get_string(&dstr_sge_mail_body_total),
@@ -345,7 +345,6 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
    DRETURN_VOID;
 FCLOSE_ERROR:
    DPRINTF(MSG_FILE_ERRORCLOSEINGXY_SS, shepherd_files[i].filepath, strerror(errno));
-   sge_free(&shepherd_file_buf);
    sge_dstring_free(&dstr_sge_mail_body_total);
 
    DRETURN_VOID;

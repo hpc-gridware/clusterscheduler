@@ -65,6 +65,7 @@ int verydummyprocfs;
 #include <cstdlib>
 #include <cstring>
 #include <csignal>
+#include <vector>
 
 #if defined(SOLARIS)
 #  include <sys/procfs.h>   
@@ -221,7 +222,6 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
    int i;
    int groups=0;
    uint32_t max_groups;
-   gid_t *list;
 #if defined(SOLARIS)
    int fd;
    prcred_t proc_cred;
@@ -247,11 +247,12 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
  * Is this a bug in the kernel or in INSURE?
  */
 #if defined(LINUX)
-   list = (gid_t*) sge_malloc(2*max_groups*sizeof(gid_t));
+   std::vector<gid_t> list(2 * static_cast<size_t>(max_groups));
 #else
-   list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
+   std::vector<gid_t> list(max_groups);
 #endif
-   if (list == nullptr)
+   // sge_malloc() returned nullptr only for a size of 0
+   if (list.empty())
       if (shepherd_trace) {
          shepherd_trace(MSG_SGE_PROCFSKILLADDGRPIDMALLOCFAILED);
       }
@@ -297,7 +298,7 @@ void procfs_kill_addgrpid(gid_t add_grp_id, int sig, tShepherd_trace shepherd_tr
 
       /* get list of supplementary groups */
       groups = proc_cred.pr_ngroups;
-      if (ioctl(fd, PIOCGROUPS, list) == -1) {
+      if (ioctl(fd, PIOCGROUPS, list.data()) == -1) {
          close(fd);
          continue;
       }
@@ -387,7 +388,6 @@ FCLOSE_ERROR:
       }
    }
    pt_close();
-   sge_free(&list);
    DRETURN_VOID;
 }
 
@@ -462,7 +462,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
    int ret;
    uint32_t max_groups;
-   gid_t *list;
    int groups=0;
    int pid_tmp;
 
@@ -478,11 +477,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       DRETURN(1);  
    }   
 
-   list = (gid_t*) sge_malloc(max_groups*sizeof(gid_t));
-   if (list == nullptr) {
-      ERROR(SFNMAX, MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED);
-      DRETURN(1);
-   }
+   // max_groups is not 0 here, so the list is never empty
+   std::vector<gid_t> list(max_groups);
 
    // loop over all processes in /proc
    while ((dent = readdir(cwd))) {
@@ -688,7 +684,7 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
        * get list of supplementary groups 
        */
       groups = proc_cred.pr_ngroups;
-      ret=ioctl(fd, PIOCGROUPS, list);
+      ret=ioctl(fd, PIOCGROUPS, list.data());
       if (ret<0) {
          touch_time_stamp(dent->d_name, time_stamp, job_list);
          pt_close_fd(fd);
@@ -729,8 +725,6 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
       break;
    } /* while */
 
-   sge_free(&list);
-
    if (dent == nullptr) { // visited all files in procfs
 #if defined(LINUX)
       clean_procList();
@@ -756,8 +750,8 @@ int pt_dispatch_proc_to_job(lnk_link_t *job_list, int time_stamp, time_t last_ti
 
    if (curr == &job_elem->procs) { 
       /* new process, add a proc element into jobs proc list */
-      proc_elem = ocs::uti::c_alloc<proc_elem_t>();
-      memset(proc_elem, 0, sizeof(proc_elem_t));
+      // value-initialized, released by ocs::uti::destroy() in pdc.cc
+      proc_elem = ocs::uti::create<proc_elem_t>();
       proc_elem->proc.pd_length = sizeof(psProc_t);
       proc_elem->proc.pd_state  = 1; /* active */
       LNK_ADD(job_elem->procs.prev, &proc_elem->link);

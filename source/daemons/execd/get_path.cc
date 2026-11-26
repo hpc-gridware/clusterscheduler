@@ -38,6 +38,7 @@
 #include <pwd.h>
 #include <cstring>
 #include <cerrno>
+#include <vector>
 
 #include "uti/sge_dstring.h"
 #include "uti/sge_log.h"
@@ -59,33 +60,32 @@
 #include "get_path.h"
 #include "msg_execd.h"
 
+/**
+ * @brief Append the home directory of a user to a path
+ * @param dstr_exp_path the path the home directory is appended to
+ * @param user the user name
+ * @return 1 on success, 0 if the user is unknown or has no home directory (an error is logged)
+ */
 static int
 getHomeDir(dstring *dstr_exp_path, const char *user) {
    DENTER(TOP_LAYER);
 
-   struct passwd *pwd;
    struct passwd pw_struct;
-   char *buffer;
-   int size;
+   // buffer of sge_getpwnam_r(), pwd points into it
+   std::vector<char> buffer(get_pw_buffer_size());
 
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-
-   pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
+   const struct passwd *pwd = sge_getpwnam_r(user, &pw_struct, buffer.data(), buffer.size());
    if (pwd == nullptr) {
       ERROR(MSG_EXECD_INVALIDUSERNAME_S, user);
-      sge_free(&buffer);
       DRETURN(0);
    }
    if (pwd->pw_dir == nullptr) {
       ERROR(MSG_EXECD_NOHOMEDIR_S, user);
-      sge_free(&buffer);
       DRETURN(0);
    }
 
    sge_dstring_append(dstr_exp_path, pwd->pw_dir);
 
-   sge_free(&buffer);
    DRETURN(1);
 }
 

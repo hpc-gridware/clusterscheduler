@@ -49,6 +49,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "uti/ocs_Systemd.h"
 #include "uti/sge_afsutil.h"
@@ -725,7 +726,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    SGE_STRUCT_STAT buf;
    int used_slots, pe_slots = 0, host_slots = 0, nhosts = 0;
    // process-lifetime object, freed and refilled for every master task
-   static ocs::tom::ListPtr<ocs::tom::RN> processor_set;
+   // allocated once and never destroyed, so that no destructor runs at exit(), also in a forked child (CS-3105)
+   static ocs::tom::ListPtr<ocs::tom::RN> &processor_set = *new ocs::tom::ListPtr<ocs::tom::RN>;
    const char *cp;
    char *shell;
    const char *cwd = nullptr;
@@ -797,8 +799,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    bool tls_mode = false;
    sigset_t sigset, sigset_oset;
    struct passwd pw_struct;
-   char *pw_buffer;
-   size_t pw_buffer_size;
 
    int write_osjob_id = 1;
 
@@ -806,8 +806,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
    bool bInputFileStaging, bOutputFileStaging, bErrorFileStaging;
 
-   /* env var reflecting SGE_BINDING if set */
-   char *sge_binding_environment = nullptr;
    /* string reflecting the logical socket,core pairs if "pe" is set */
    dstring core_binding_strategy_string = DSTRING_INIT;
 
@@ -847,12 +845,11 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    master_q = responsible_queue(jep, jatep, petep);
    SGE_ASSERT((master_q));
 
-   pw_buffer_size = get_pw_buffer_size();
-   pw_buffer = sge_malloc(pw_buffer_size);
-   pw = sge_getpwnam_r(jep.get<JB_owner>(), &pw_struct, pw_buffer, pw_buffer_size);
+   // buffer of sge_getpwnam_r(), pw points into it; released below, see "do not access pw->*"
+   std::vector<char> pw_buffer(get_pw_buffer_size());
+   pw = sge_getpwnam_r(jep.get<JB_owner>(), &pw_struct, pw_buffer.data(), pw_buffer.size());
    if (!pw) {
       snprintf(err_str, err_length, MSG_SYSTEM_GETPWNAMFAILED_S, jep.get<JB_owner>());
-      sge_free(&pw_buffer);
       DRETURN(-3); /* error only relevant for this user */
    }
 
@@ -868,7 +865,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       if (!(sge_make_tmpdir(master_q, job_id, ja_task_id,
                             pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX, planted))) {
          snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTMAKETMPDIR);
-         sge_free(&pw_buffer);
          // a path occupied by a user fails only the job (CS-3203), anything else halts the queue as before
          DRETURN(planted ? -3 : -2);
       }
@@ -876,7 +872,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       SGE_STRUCT_STAT statbuf;
       if (!(sge_get_tmpdir(master_q, job_id, ja_task_id, tmpdir, SGE_PATH_MAX))) {
          snprintf(err_str, err_length, SFNMAX, MSG_SYSTEM_CANTGETTMPDIR);
-         sge_free(&pw_buffer);
          DRETURN(-2);
       }
 
@@ -888,7 +883,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          if (!(sge_make_tmpdir(master_q, job_id, ja_task_id,
                                pw->pw_uid, pw->pw_gid, tmpdir, SGE_PATH_MAX, planted))) {
             snprintf(err_str, err_length, MSG_SYSTEM_CANTOPENTMPDIR_S, tmpdir);
-            sge_free(&pw_buffer);
             DRETURN(planted ? -3 : -2);
          }
       }
@@ -939,7 +933,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       fp = fopen(str_hostfilename, "w");
       if (!fp) {
          snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_hostfilename, strerror(errno));
-         sge_free(&pw_buffer);
          DRETURN(-2);
       }
 
@@ -999,7 +992,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    fp = fopen(str_fname, "w");
    if (!fp) {
       snprintf(err_str, err_length, MSG_FILE_NOOPEN_SS, str_fname, strerror(errno));
-      sge_free(&pw_buffer);
       DRETURN(-2);
    }
 
@@ -1068,12 +1060,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    var_list_set_string(environmentList, "LOGNAME", pw->pw_name);
 
    /* do not access pw->* from here on! */
-   sge_free(&pw_buffer);
-
-   if (sge_binding_environment != nullptr) {
-      var_list_set_string(environmentList, "SGE_BINDING", sge_binding_environment);
-      sge_free(&sge_binding_environment);
-   }
+   pw = nullptr;
+   std::vector<char>().swap(pw_buffer);
 
    // SGE_HGR_* is set by execd alone. A job may have brought its own, from qsub -v or from the
    // environment of the master task which a qrsh -inherit -V passes on, and would keep it where
@@ -1302,10 +1290,11 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          binding_to_use.is_empty() ? NONE_STR : binding_to_use.to_product_topology_string().c_str());
    }
    if (binding_cpuset_is_initialized) {
-      char *cpuset_str = NULL;
+      char *cpuset_str = nullptr;
       hwloc_bitmap_asprintf(&cpuset_str, cpuset);
+      // hwloc returns malloc() memory
+      const ocs::uti::c_ptr<char> cpuset_str_owner{cpuset_str};
       var_list_set_string(environmentList, "SGE_BINDING_CPUSET", cpuset_str);
-      sge_free(&cpuset_str);
    }
 #endif
 
@@ -1879,9 +1868,9 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                if (value == nullptr || *value == '\0') {
                   return;
                }
-               char *buf = strdup(value);
+               std::string buf{value};
                struct saved_vars_s *ctx = nullptr;
-               for (char *tok = sge_strtok_r(buf, ";", &ctx); tok != nullptr;
+               for (char *tok = sge_strtok_r(buf.data(), ";", &ctx); tok != nullptr;
                     tok = sge_strtok_r(nullptr, ";", &ctx)) {
                   char *colon = strchr(tok, ':');
                   std::string path;
@@ -1910,7 +1899,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                   }
                }
                sge_free_saved_vars(ctx);
-               free(buf);
             };
 
             // the "devices" characteristic of the RSMAP instances granted on this host - see
@@ -1989,10 +1977,11 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    // Write cpuset if available
    if (binding_cpuset_is_initialized) {
 #if defined (OCS_HWLOC)
-      char *cpuset_string = NULL;
+      char *cpuset_string = nullptr;
       hwloc_bitmap_asprintf(&cpuset_string, cpuset);
+      // hwloc returns malloc() memory
+      const ocs::uti::c_ptr<char> cpuset_string_owner{cpuset_string};
       fprintf(fp, "binding_cpuset=%s\n", cpuset_string);
-      sge_free(&cpuset_string);
       hwloc_bitmap_free(cpuset);
 #else
       fprintf(fp, "binding_cpuset=%s\n", NONE_STR);

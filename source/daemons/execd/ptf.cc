@@ -58,6 +58,7 @@
 #include <cstring>
 #include <cerrno>
 #include <utility>
+#include <vector>
 #include <sys/types.h>
 #include <unistd.h>
 #include <math.h>
@@ -650,7 +651,7 @@ static void ptf_get_usage_from_data_collector() {
 #ifdef USE_DC
    DENTER(TOP_LAYER);
 
-   struct psJob_s *jobs, *ojobs, *tmp_jobs;
+   struct psJob_s *jobs, *tmp_jobs;
    struct psProc_s *procs;
    uint64 jobcount;
    int proccount;
@@ -660,7 +661,9 @@ static void ptf_get_usage_from_data_collector() {
 
    // in case of hybrid mode, we will not use PDC data for systemd provided usage (cpu, rss, maxrss)
 
-   ojobs = jobs = psGetAllJobs();
+   // the job count followed by the jobs and their processes, see psGetAllJobs()
+   std::vector<char> all_jobs = psGetAllJobs();
+   jobs = reinterpret_cast<struct psJob_s *>(all_jobs.data());
    if (jobs) {
       jobcount = *(uint64 *) jobs;
 
@@ -785,7 +788,6 @@ static void ptf_get_usage_from_data_collector() {
             jobs = (struct psJob_s *) procs;
          }
       }
-      sge_free(&ojobs);
 
       for (const auto job : ocs::tom::List<ocs::tom::JL>(ptf_jobs)) {
          double usage_value, old_usage_value;
