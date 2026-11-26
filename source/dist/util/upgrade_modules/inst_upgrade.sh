@@ -358,13 +358,14 @@ SelectNewSpooling()
                    "$PG_HOST" "$PG_PORT" "$PG_DBNAME" "$PG_USER"
          $INFOTEXT -n "(the __schema_version row is preserved so qmaster can validate the schema at next startup)\n"
          _sql="DELETE FROM config WHERE key <> '__schema_version'; DELETE FROM jobs;"
+         # --no-psqlrc/--pset=pager=off: never stop in psql's pager (CS-3244).
          if [ -n "$PG_PASSFILE" ]; then
-            PGPASSFILE="$PG_PASSFILE" psql --no-password \
+            PGPASSFILE="$PG_PASSFILE" psql --no-password --no-psqlrc --pset=pager=off \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
                -v ON_ERROR_STOP=1 -c "$_sql"
          else
-            psql --no-password \
+            psql --no-password --no-psqlrc --pset=pager=off \
                --host="$PG_HOST" --port="$PG_PORT" \
                --dbname="$PG_DBNAME" --username="$PG_USER" \
                -v ON_ERROR_STOP=1 -c "$_sql"
