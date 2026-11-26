@@ -80,7 +80,7 @@ static int event_control_cond_init_ret = ocs::uti::condition_initialize(&Event_C
 
 handler_tbl_t Handler_Tbl = {
         PTHREAD_MUTEX_INITIALIZER,
-        {}
+        *new std::vector<tbl_elem>
 };
 
 /**

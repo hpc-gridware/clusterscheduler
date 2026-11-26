@@ -252,7 +252,9 @@ static sge_task_ref_t *task_ref_get_entry(uint32_t index);
 static scheduler_all_data_t *all_lists; /* thread local */
 static uint32_t sge_scheduling_run = 0; /* thread local */
 
-static std::vector<sge_task_ref_t> task_ref_table; /* thread local */
+// used by the scheduler thread only; allocated once and never destroyed, so that no destructor runs at exit()
+// while the thread may still use it (CS-3105)
+static std::vector<sge_task_ref_t> &task_ref_table = *new std::vector<sge_task_ref_t>;
 static uint32_t task_ref_job_pos = 0;   /* thread local */
 static double Master_min_tix = 0.0;     /* thread local */
 static double Master_max_tix = 0.0;     /* thread local */

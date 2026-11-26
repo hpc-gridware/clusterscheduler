@@ -154,7 +154,7 @@ struct tbl_elem {
 /** @brief The registered handlers, one per event type */
 typedef struct {
    pthread_mutex_t mutex; ///< used for mutual exclusion
-   std::vector<tbl_elem> list;  ///< event handler list
+   std::vector<tbl_elem> &list; ///< event handler list, allocated once and never destroyed (no destructor at exit())
 } handler_tbl_t;
 
 extern handler_tbl_t Handler_Tbl;      ///< The registered handlers
