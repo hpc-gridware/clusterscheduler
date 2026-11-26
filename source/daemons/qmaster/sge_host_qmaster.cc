@@ -1833,7 +1833,9 @@ sge_automatic_host_cleanup_handler(te_event_t anEvent, monitoring_t *monitor) {
       const ocs::tom::Element<ocs::tom::EH> hep = next;
       next = hep.next();
 
-      const char *hostname = hep.get<EH_name>();
+      // a copy: sge_del_host() frees hep, and the name is still needed afterwards
+      const std::string hostname_str = hep.get<EH_name>().c_str();
+      const char *hostname = hostname_str.c_str();
 
       // a host which an administrator added carries no time and is never removed
       if (hep.get<EH_auto_added_time>() == 0) {
