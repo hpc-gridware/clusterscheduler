@@ -1244,11 +1244,11 @@ static int do_qrsh_reconnect(const char *job_id_str,
    DENTER(TOP_LAYER);
 
    // Build port_range_list from cluster config (same as the normal startup path).
-   ocs::uti::c_ptr<char> port_range_str{mconf_get_port_range()};
+   std::optional<std::string> port_range_str = mconf_get_port_range();
    ocs::tom::ListPtr<ocs::tom::AN> alp_pr;
    ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
-   if (port_range_str != nullptr && strcmp(port_range_str.get(), NONE_STR) != 0) {
-      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str.get(), false, true, INF_NOT_ALLOWED);
+   if (port_range_str && strcmp(port_range_str->c_str(), NONE_STR) != 0) {
+      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str->c_str(), false, true, INF_NOT_ALLOWED);
       alp_pr.reset();
    }
    port_range_str.reset();
@@ -1790,13 +1790,13 @@ int main(int argc, const char **argv) {
    */
 
    // fetch optional port_range; nullptr/NONE_STR means OS-assigned port in both modes
-   ocs::uti::c_ptr<char> port_range_str{mconf_get_port_range()};
+   std::optional<std::string> port_range_str = mconf_get_port_range();
    // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
    char ijs_escape_char = mconf_get_ijs_escape_char();
    ocs::tom::ListPtr<ocs::tom::AN> alp_pr;
    ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
-   if (port_range_str != nullptr && strcmp(port_range_str.get(), NONE_STR) != 0) {
-      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str.get(), false, true, INF_NOT_ALLOWED);
+   if (port_range_str && strcmp(port_range_str->c_str(), NONE_STR) != 0) {
+      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str->c_str(), false, true, INF_NOT_ALLOWED);
       alp_pr.reset();
    }
    port_range_str.reset();

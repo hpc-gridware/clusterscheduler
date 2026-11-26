@@ -40,6 +40,7 @@
 #include <cctype>
 #include <cerrno>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -74,7 +75,7 @@ static ocs::tom::ElementPtr<ocs::tom::LS>
 sge_ls_create_ls(const char *qualified_hostname, const char *name, const char *scriptfile);
 static int sge_ls_start_ls(const char *qualified_hostname, ocs::tom::Element<ocs::tom::LS> this_ls);
 static void sge_ls_stop_ls(ocs::tom::Element<ocs::tom::LS> this_ls, int send_no_quit_command);
-static int sge_ls_start(const char* qualified_hostname, const char *binary_path, char *scriptfile);
+static int sge_ls_start(const char* qualified_hostname, const char *binary_path, const char *scriptfiles);
 static bool sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
                                     std::string &expanded);
 
@@ -611,7 +612,7 @@ sge_ls_expand_variables(const char *qualified_hostname, const char *scriptfile,
  *
  * @return LS_OK, LS_NOT_STARTED if the list of scriptfiles is too long
  */
-static int sge_ls_start(const char *qualified_hostname, const char *binary_path, char *scriptfiles) {
+static int sge_ls_start(const char *qualified_hostname, const char *binary_path, const char *scriptfiles) {
    DENTER(TOP_LAYER);
 
    char scriptfiles_buffer[MAX_STRING_SIZE];
@@ -793,10 +794,8 @@ int sge_ls_stop_if_pid(const pid_t pid) {
  */
 int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom::ListPtr<ocs::tom::LR> &lpp) {
    DENTER(TOP_LAYER);
-   char* load_sensor = nullptr;
-
-   load_sensor = mconf_get_load_sensor();
-   sge_ls_start(qualified_hostname, binary_path, load_sensor);
+   const std::optional<std::string> load_sensor = mconf_get_load_sensor();
+   sge_ls_start(qualified_hostname, binary_path, ocs_conf_c_str(load_sensor));
 
    for (const auto ls_elem : ocs::tom::List<ocs::tom::LS>(ls_list)) {
       bool restart = false;
@@ -850,8 +849,6 @@ int sge_ls_get(const char *qualified_hostname, const char *binary_path, ocs::tom
                                  ep.get<LR_host>());
       }
    }
-
-   sge_free(&load_sensor);
 
    DRETURN(0);
 }

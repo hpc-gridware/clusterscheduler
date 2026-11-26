@@ -55,6 +55,7 @@
 #include <cstring>
 #include <cmath>
 #include <cstdlib>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -157,78 +158,76 @@
 /* This list is *ONLY* used by the execd and should be moved eventually */
 ocs::tom::ListData *Execd_Config_List = nullptr;
 
-/// The cluster configuration, as one C struct rather than an element
+/// The cluster configuration, as one struct rather than an element
+///
+/// A string setting has no value until a configuration that names it has been applied
+/// (the getters hand that on as an empty std::optional, as the former nullptr).
 struct confel {
-   char        *execd_spool_dir;     ///< sge_spool directory base path
-   char        *mailer;              ///< path to e-mail delivery agent
-   char        *xterm;               ///< xterm path for interactive jobs
-   char        *load_sensor;         ///< path to a load sensor executable
-   char        *prolog;              ///< start before jobscript may be none
-   char        *epilog;              ///< start after jobscript may be none
-   char        *shell_start_mode;    ///< script_from_stdin/posix_compliant/unix_behavior
-   char        *login_shells;        ///< list of shells to call as login shell
-   uint32_t    min_uid;              ///< lower bound on UIDs that can qsub
-   uint32_t    min_gid;              ///< lower bound on GIDs that can qsub
-   uint32_t    load_report_time;     ///< how often to send in load
-   uint32_t    max_unheard;          ///< how long before sge_execd considered dead
-   uint32_t    loglevel;             ///< qmaster event logging level
-   char        *enforce_project;     ///< SGEEE attribute: "true" or "false"
-   char        *enforce_user;        ///< SGEEE attribute: "true" or "false"
-   char        *administrator_mail;  ///< list of mail addresses
-   char        *mail_tag;            ///< mail tag
-   ocs::tom::ListData       *user_lists;          ///< allowed user lists
-   ocs::tom::ListData       *xuser_lists;         ///< forbidden users lists
-   ocs::tom::ListData       *projects;            ///< allowed project list
-   ocs::tom::ListData       *xprojects;           ///< forbiddent project list
-   char        *set_token_cmd;       ///< command that acquires an AFS token, from `set_token_cmd`
-   char        *pag_cmd;             ///< command that puts the job into its own PAG, from `pag_cmd`
-   uint32_t    token_extend_time;    ///< how long an AFS token is extended for, in seconds
-   char        *shepherd_cmd;        ///< replacement for the built in shepherd, from `shepherd_cmd`
-   char        *qmaster_params;      ///< free form `KEY=VALUE` list of qmaster tuning parameters
-   char        *execd_params;        ///< free form `KEY=VALUE` list of execd tuning parameters
-   char        *reporting_params;    ///< free form `KEY=VALUE` list of reporting parameters
-   char        *gid_range;           ///< Range of additional group ids
-   char        *port_range;          ///< Range of ports for qrsh client to bind to
-   char        *qlogin_daemon;       ///< eg /usr/sbin/in.telnetd
-   char        *qlogin_command;      ///< eg telnet $HOST $PORT
-   char        *rsh_daemon;          ///< eg /usr/sbin/in.rshd
-   char        *rsh_command;         ///< eg rsh -p $PORT $HOST command
-   char        *jsv_url;             ///< jsv url
-   char        *jsv_allowed_mod;     ///< allowed modifications for end users if JSV is enabled
-   char        *gdi_request_limits;  ///< request limits for GDI commands
-   char        *rlogin_daemon;       ///< eg /usr/sbin/in.rlogind
-   char        *rlogin_command;      ///< eg rlogin -p $PORT $HOST
-   uint32_t    reschedule_unknown;   ///< timout value used for auto. resch.
-   uint32_t    max_aj_instances;     ///< max. number of ja instances of a job
-   uint32_t    max_aj_tasks;         ///< max. size of an array job
-   uint32_t    max_u_jobs;           ///< max. number of jobs per user
-   uint32_t    max_jobs;             ///< max. number of jobs in the system
-   uint32_t    max_advance_reservations; ///< max. number of advance reservations in the system
-   uint32_t    auto_user_fshare;     ///< SGEEE automatic user fshare
-   uint32_t    auto_user_oticket;    ///< SGEEE automatic user oticket
-   char        *auto_user_default_project; ///< SGEEE automatic user default project
-   uint32_t    auto_user_delete_time; ///< SGEEE automatic user delete time
-   char        *delegated_file_staging; ///< drmaa attribute: "true" or "false"
-   char        *libjvm_path;         ///< libjvm_path for jvm_thread
-   char        *additional_jvm_args; ///< additional_jvm_args for jvm_thread
-   char        *binding_params;      ///< string containing al binding specific parameters
-   char        *jsv_params;          ///< string containing jsv specific parameters
-   char        *topology_file;       ///< None or path to a hwloc topology file
-   uint32_t    finished_jobs_keep_time; ///< CS-1908: seconds a finished ja_task is retained; 0 = time dimension off
-   uint32_t    finished_jobs_max;    ///< CS-1908: global count ceiling on retained finished ja_tasks; 0 = count dimension off
+   std::optional<std::string> execd_spool_dir; ///< sge_spool directory base path
+   std::optional<std::string> mailer; ///< path to e-mail delivery agent
+   std::optional<std::string> xterm; ///< xterm path for interactive jobs
+   std::optional<std::string> load_sensor; ///< path to a load sensor executable
+   std::optional<std::string> prolog; ///< start before jobscript may be none
+   std::optional<std::string> epilog; ///< start after jobscript may be none
+   std::optional<std::string> shell_start_mode; ///< script_from_stdin/posix_compliant/unix_behavior
+   std::optional<std::string> login_shells; ///< list of shells to call as login shell
+   uint32_t    min_uid{};              ///< lower bound on UIDs that can qsub
+   uint32_t    min_gid{};              ///< lower bound on GIDs that can qsub
+   uint32_t    load_report_time{};     ///< how often to send in load
+   uint32_t    max_unheard{};          ///< how long before sge_execd considered dead
+   uint32_t    loglevel{};             ///< qmaster event logging level
+   std::optional<std::string> enforce_project; ///< SGEEE attribute: "true" or "false"
+   std::optional<std::string> enforce_user; ///< SGEEE attribute: "true" or "false"
+   std::optional<std::string> administrator_mail; ///< list of mail addresses
+   std::optional<std::string> mail_tag; ///< mail tag
+   ocs::tom::ListData       *user_lists{};          ///< allowed user lists
+   ocs::tom::ListData       *xuser_lists{};         ///< forbidden users lists
+   ocs::tom::ListData       *projects{};            ///< allowed project list
+   ocs::tom::ListData       *xprojects{};           ///< forbiddent project list
+   std::optional<std::string> set_token_cmd; ///< command that acquires an AFS token, from `set_token_cmd`
+   std::optional<std::string> pag_cmd; ///< command that puts the job into its own PAG, from `pag_cmd`
+   uint32_t    token_extend_time{};    ///< how long an AFS token is extended for, in seconds
+   std::optional<std::string> shepherd_cmd; ///< replacement for the built in shepherd, from `shepherd_cmd`
+   std::optional<std::string> qmaster_params; ///< free form `KEY=VALUE` list of qmaster tuning parameters
+   std::optional<std::string> execd_params; ///< free form `KEY=VALUE` list of execd tuning parameters
+   std::optional<std::string> reporting_params; ///< free form `KEY=VALUE` list of reporting parameters
+   std::optional<std::string> gid_range; ///< Range of additional group ids
+   std::optional<std::string> port_range; ///< Range of ports for qrsh client to bind to
+   std::optional<std::string> qlogin_daemon; ///< eg /usr/sbin/in.telnetd
+   std::optional<std::string> qlogin_command; ///< eg telnet $HOST $PORT
+   std::optional<std::string> rsh_daemon; ///< eg /usr/sbin/in.rshd
+   std::optional<std::string> rsh_command; ///< eg rsh -p $PORT $HOST command
+   std::optional<std::string> jsv_url; ///< jsv url
+   std::optional<std::string> jsv_allowed_mod; ///< allowed modifications for end users if JSV is enabled
+   std::optional<std::string> gdi_request_limits; ///< request limits for GDI commands
+   std::optional<std::string> rlogin_daemon; ///< eg /usr/sbin/in.rlogind
+   std::optional<std::string> rlogin_command; ///< eg rlogin -p $PORT $HOST
+   uint32_t    reschedule_unknown{};   ///< timout value used for auto. resch.
+   uint32_t    max_aj_instances{};     ///< max. number of ja instances of a job
+   uint32_t    max_aj_tasks{};         ///< max. size of an array job
+   uint32_t    max_u_jobs{};           ///< max. number of jobs per user
+   uint32_t    max_jobs{};             ///< max. number of jobs in the system
+   uint32_t    max_advance_reservations{}; ///< max. number of advance reservations in the system
+   uint32_t    auto_user_fshare{};     ///< SGEEE automatic user fshare
+   uint32_t    auto_user_oticket{};    ///< SGEEE automatic user oticket
+   std::optional<std::string> auto_user_default_project; ///< SGEEE automatic user default project
+   uint32_t    auto_user_delete_time{}; ///< SGEEE automatic user delete time
+   std::optional<std::string> delegated_file_staging; ///< drmaa attribute: "true" or "false"
+   std::optional<std::string> libjvm_path; ///< libjvm_path for jvm_thread
+   std::optional<std::string> additional_jvm_args; ///< additional_jvm_args for jvm_thread
+   std::optional<std::string> binding_params; ///< string containing al binding specific parameters
+   std::optional<std::string> jsv_params; ///< string containing jsv specific parameters
+   std::optional<std::string> topology_file; ///< None or path to a hwloc topology file
+   uint32_t    finished_jobs_keep_time{}; ///< CS-1908: seconds a finished ja_task is retained; 0 = time dimension off
+   /// CS-1908: global count ceiling on retained finished ja_tasks; 0 = count dimension off
+   uint32_t    finished_jobs_max{};
 };
 
 /// The cluster configuration; see #confel
 typedef struct confel sge_conf_type;
 
-static sge_conf_type Master_Config = {
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0,
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, nullptr,
-   nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-   nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, 0, 0,
-   0, 0, nullptr, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-   0, 0   /* CS-1908: finished_jobs_keep_time, finished_jobs_max */
-};
+// allocated once and never destroyed on purpose: no destructor may run at exit() or in a forked child (CS-3105)
+static sge_conf_type &Master_Config = *new sge_conf_type;
 static bool is_new_config = false;
 
 /// Default for `DISABLE_SECONDARY_DS_READER`: reader threads use the snapshot store
@@ -492,13 +491,15 @@ static qmaster_params_t qmaster_conf;
  * notify_kill and notify_susp:
  *       !nullptr -> Name of the signale (later used in sys_string2signal)
  *
- * These two own their memory and are deliberately not members of
- * execd_params_t: a value-initialised struct would overwrite the pointer
- * instead of freeing it. They stay meaningful only while the matching
- * notify_*_type is 0, and that type does revert with the struct.
+ * These two are deliberately not members of execd_params_t: the struct is
+ * reset with `execd_conf = {}`, and a configuration without NOTIFY_KILL or
+ * NOTIFY_SUSP has always kept the last name. They stay meaningful only while
+ * the matching notify_*_type is 0, and that type does revert with the struct.
+ * Both are allocated once and never destroyed on purpose, so that no destructor
+ * runs at exit() or in a forked child (CS-3105).
  */
-static char* notify_susp = nullptr;
-static char* notify_kill = nullptr;
+static std::optional<std::string> &notify_susp = *new std::optional<std::string>;
+static std::optional<std::string> &notify_kill = *new std::optional<std::string>;
 
 /// Everything #merge_configuration parses out of `execd_params`
 ///
@@ -878,29 +879,35 @@ conf_sort_entries(const ocs::tom::Element<ocs::tom::CONF> conf) {
 }
 
 /**
- * @brief Seeks for a config attribute "name", frees old value (if string) from *cpp and writes new value into *cpp.
+ * @brief Seeks for a config attribute "name" and writes its value into *cpp or *val.
  *
  * @details
- * This function searches for a configuration attribute by its name, frees the old value if it is a string,
- * and writes the new value into the provided pointer.
+ * This function searches for a configuration attribute by its name. A string attribute replaces
+ * the old value in *cpp (an attribute without a value leaves no value), a numeric one is parsed into *val.
+ * Nothing changes when the attribute is not in the list.
  *
  * @param lp_cfg The configuration list.
  * @param name The name of the configuration attribute.
- * @param cpp Pointer to the old value to be replaced.
- * @param val Pointer to the new value to be set.
+ * @param cpp The string setting to be replaced, or nullptr for a numeric attribute.
+ * @param val The numeric setting to be set, used when cpp is nullptr.
  * @param type The type of the value.
  */
 static void
-chg_conf_val(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, char **cpp, uint32_t *val,
-             const ocs::CEntry::Type type) {
+chg_conf_val(const ocs::tom::ConstList<ocs::tom::CF> lp_cfg, const char *name, std::optional<std::string> *cpp,
+             uint32_t *val, const ocs::CEntry::Type type) {
    DENTER(BASIS_LAYER);
 
    if (const auto ep = lp_cfg.find_first<CF_name>(name)) {
       const char *s = ep.get<CF_value>();
-      if (cpp)
-         *cpp = sge_strdup(*cpp, s);
-      else
+      if (cpp != nullptr) {
+         if (s != nullptr) {
+            cpp->emplace(s);
+         } else {
+            cpp->reset();
+         }
+      } else {
          parse_ulong_val(nullptr, val, type, s, nullptr, 0);
+      }
    }
 
    DRETURN_VOID;
@@ -1101,11 +1108,12 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
    {
       struct saved_vars_s *conf_context = nullptr;
       const char *s;
-      char* qmaster_params = mconf_get_qmaster_params();
-      char* execd_params = mconf_get_execd_params();
-      char* reporting_params = mconf_get_reporting_params();
-      char* binding_params = mconf_get_binding_params();
-      char* jsv_params = mconf_get_jsv_params();
+      const std::optional<std::string> qmaster_params = mconf_get_qmaster_params();
+      const std::optional<std::string> execd_params = mconf_get_execd_params();
+      const std::optional<std::string> reporting_params = mconf_get_reporting_params();
+      const std::optional<std::string> binding_params = mconf_get_binding_params();
+      // only read by the parser below that is not built yet (#if 0)
+      [[maybe_unused]] const std::optional<std::string> jsv_params = mconf_get_jsv_params();
       uint32_t load_report_time = mconf_get_load_report_time();
 #ifdef LINUX
       bool mtrace_before = qmaster_conf.enable_mtrace;
@@ -1117,7 +1125,8 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       // always equal and removing ENABLE_MTRACE would never reach muntrace().
       qmaster_conf = {};
 
-      for (s=sge_strtok_r(qmaster_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+      for (s = sge_strtok_r(ocs_conf_c_str(qmaster_params), PARAMS_DELIMITER, &conf_context); s;
+           s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "FORBID_RESCHEDULE", &qmaster_conf.forbid_reschedule)) {
             continue;
          }
@@ -1408,7 +1417,8 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       // every default comes from execd_params_t, so a removed token reverts
       execd_conf = {};
 
-      for (s=sge_strtok_r(execd_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+      for (s = sge_strtok_r(ocs_conf_c_str(execd_params), PARAMS_DELIMITER, &conf_context); s;
+           s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "USE_QIDLE", &execd_conf.use_qidle)) {
             continue;
          }
@@ -1501,10 +1511,7 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
                execd_conf.notify_kill_type = 2;
             } else if (!strncasecmp(s, "NOTIFY_KILL=", sizeof("NOTIFY_KILL=")-1)){
                execd_conf.notify_kill_type = 0;
-               if (notify_kill) {
-                  sge_free(&notify_kill);
-               }
-               notify_kill = sge_strdup(nullptr, &(s[sizeof("NOTIFY_KILL")]));
+               notify_kill.emplace(&(s[sizeof("NOTIFY_KILL")]));
             }
             continue;
          }
@@ -1515,10 +1522,7 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
                execd_conf.notify_susp_type = 2;
             } else if (!strncasecmp(s, "NOTIFY_SUSP=", sizeof("NOTIFY_SUSP=")-1)){
                execd_conf.notify_susp_type = 0;
-               if (notify_susp) {
-                  sge_free(&notify_susp);
-               }
-               notify_susp = sge_strdup(nullptr, &(s[sizeof("NOTIFY_SUSP")]));
+               notify_susp.emplace(&(s[sizeof("NOTIFY_SUSP")]));
             }
             continue;
          }
@@ -1611,7 +1615,8 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       // every default comes from reporting_params_t, so a removed token reverts
       reporting_conf = {};
 
-      for (s=sge_strtok_r(reporting_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+      for (s = sge_strtok_r(ocs_conf_c_str(reporting_params), PARAMS_DELIMITER, &conf_context); s;
+           s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "accounting", &reporting_conf.do_accounting)) {
             continue;
          }
@@ -1691,7 +1696,8 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       // every default comes from binding_params_t, so a removed token reverts
       binding_conf = {};
 
-      for (s=sge_strtok_r(binding_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+      for (s = sge_strtok_r(ocs_conf_c_str(binding_params), PARAMS_DELIMITER, &conf_context); s;
+           s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          if (parse_bool_param(s, "enabled", &binding_conf.is_binding_enabled)) {
             continue;
          }
@@ -1751,19 +1757,14 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       // @todo: CS-1701: Add possibility to define a threshold for JSV's
       /* parse JSV parameters */
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
-      for (s=sge_strtok_r(jsv_params, PARAMS_DELIMITER, &conf_context); s; s=sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
+      for (s = sge_strtok_r(jsv_params ? jsv_params->c_str() : nullptr, PARAMS_DELIMITER, &conf_context); s;
+           s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
          ;
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
       conf_context=nullptr;
 #endif
-
-      sge_free(&qmaster_params);
-      sge_free(&execd_params);
-      sge_free(&reporting_params);
-      sge_free(&binding_params);
-      sge_free(&jsv_params);
    }
 
    if (!global) {
@@ -1772,6 +1773,16 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
    }
 
    DRETURN(std::make_pair(0, std::move(merged)));
+}
+
+/**
+ * @brief The C string of a string setting for a log message, NONE_STR when it is not set
+ *
+ * @param value the setting
+ * @return the setting's C string, valid as long as the setting is unchanged, or NONE_STR
+ */
+static const char *ocs_conf_str_or_none(const std::optional<std::string> &value) {
+   return value ? value->c_str() : NONE_STR;
 }
 
 /**
@@ -1791,40 +1802,40 @@ void sge_show_conf() {
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
    INFO(MSG_CONF_USING_US, Master_Config.loglevel, "loglevel");
-   INFO(MSG_CONF_USING_SS, Master_Config.execd_spool_dir != nullptr ? Master_Config.execd_spool_dir : NONE_STR, "execd_spool_dir");
-   INFO(MSG_CONF_USING_SS, Master_Config.mailer != nullptr ? Master_Config.mailer : NONE_STR, "mailer");
-   INFO(MSG_CONF_USING_SS, Master_Config.xterm != nullptr ? Master_Config.xterm : NONE_STR, "xterm");
-   INFO(MSG_CONF_USING_SS, Master_Config.load_sensor != nullptr ? Master_Config.load_sensor : NONE_STR, "load_sensor");
-   INFO(MSG_CONF_USING_SS, Master_Config.prolog != nullptr ? Master_Config.prolog : NONE_STR, "prolog");
-   INFO(MSG_CONF_USING_SS, Master_Config.epilog != nullptr ? Master_Config.epilog : NONE_STR, "epilog");
-   INFO(MSG_CONF_USING_SS, Master_Config.shell_start_mode != nullptr ? Master_Config.shell_start_mode : NONE_STR, "shell_start_mode");
-   INFO(MSG_CONF_USING_SS, Master_Config.login_shells != nullptr ? Master_Config.login_shells : NONE_STR, "login_shells");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.execd_spool_dir), "execd_spool_dir");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.mailer), "mailer");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.xterm), "xterm");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.load_sensor), "load_sensor");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.prolog), "prolog");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.epilog), "epilog");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.shell_start_mode), "shell_start_mode");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.login_shells), "login_shells");
    INFO(MSG_CONF_USING_US, Master_Config.min_gid, "min_gid");
    INFO(MSG_CONF_USING_US, Master_Config.min_uid, "min_uid");
-   INFO(MSG_CONF_USING_SS, Master_Config.gid_range != nullptr ? Master_Config.gid_range : NONE_STR, "gid_range");
-   INFO(MSG_CONF_USING_SS, Master_Config.port_range != nullptr ? Master_Config.port_range : NONE_STR, "port_range");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.gid_range), "gid_range");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.port_range), "port_range");
    INFO(MSG_CONF_USING_US, Master_Config.load_report_time, "load_report_time");
-   INFO(MSG_CONF_USING_SS, Master_Config.enforce_project != nullptr ? Master_Config.enforce_project : NONE_STR, "enforce_project");
-   INFO(MSG_CONF_USING_SS, Master_Config.enforce_user != nullptr ? Master_Config.enforce_user : NONE_STR, "enforce_user");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.enforce_project), "enforce_project");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.enforce_user), "enforce_user");
    INFO(MSG_CONF_USING_US, Master_Config.max_unheard, "max_unheard");
-   INFO(MSG_CONF_USING_SS, Master_Config.administrator_mail != nullptr ? Master_Config.administrator_mail : NONE_STR, "administrator_mail");
-   INFO(MSG_CONF_USING_SS, Master_Config.mail_tag != nullptr ? Master_Config.mail_tag : NONE_STR, "mail_tag");
-   INFO(MSG_CONF_USING_SS, Master_Config.set_token_cmd != nullptr ? Master_Config.set_token_cmd : NONE_STR, "set_token_cmd");
-   INFO(MSG_CONF_USING_SS, Master_Config.pag_cmd != nullptr ? Master_Config.pag_cmd : NONE_STR, "pag_cmd");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.administrator_mail), "administrator_mail");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.mail_tag), "mail_tag");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.set_token_cmd), "set_token_cmd");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.pag_cmd), "pag_cmd");
    INFO(MSG_CONF_USING_US, Master_Config.token_extend_time, "token_extend_time");
-   INFO(MSG_CONF_USING_SS, Master_Config.shepherd_cmd != nullptr ? Master_Config.shepherd_cmd : NONE_STR, "shepherd_cmd");
-   INFO(MSG_CONF_USING_SS, Master_Config.reporting_params != nullptr ? Master_Config.reporting_params : NONE_STR, "reporting_params");
-   INFO(MSG_CONF_USING_SS, Master_Config.binding_params != nullptr ? Master_Config.binding_params : NONE_STR, "binding_params");
-   INFO(MSG_CONF_USING_SS, Master_Config.jsv_params != nullptr ? Master_Config.jsv_params : NONE_STR, "jsv_params");
-   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_daemon != nullptr ? Master_Config.qlogin_daemon : NONE_STR, "qlogin_daemon");
-   INFO(MSG_CONF_USING_SS, Master_Config.qlogin_command != nullptr ? Master_Config.qlogin_command : NONE_STR, "qlogin_command");
-   INFO(MSG_CONF_USING_SS, Master_Config.rsh_daemon != nullptr ? Master_Config.rsh_daemon : NONE_STR, "rsh_daemon");
-   INFO(MSG_CONF_USING_SS, Master_Config.rsh_command != nullptr ? Master_Config.rsh_command : NONE_STR, "rsh_command");
-   INFO(MSG_CONF_USING_SS, Master_Config.jsv_url != nullptr ? Master_Config.jsv_url : NONE_STR, "jsv_url");
-   INFO(MSG_CONF_USING_SS, Master_Config.jsv_allowed_mod != nullptr ? Master_Config.jsv_allowed_mod : NONE_STR, "jsv_allowed_mod");
-   INFO(MSG_CONF_USING_SS, Master_Config.gdi_request_limits != nullptr ? Master_Config.gdi_request_limits : NONE_STR, "gdi_request_limits");
-   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_daemon != nullptr ? Master_Config.rlogin_daemon : NONE_STR, "rlogin_daemon");
-   INFO(MSG_CONF_USING_SS, Master_Config.rlogin_command != nullptr ? Master_Config.rlogin_command : NONE_STR, "rlogin_command");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.shepherd_cmd), "shepherd_cmd");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.reporting_params), "reporting_params");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.binding_params), "binding_params");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.jsv_params), "jsv_params");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.qlogin_daemon), "qlogin_daemon");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.qlogin_command), "qlogin_command");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.rsh_daemon), "rsh_daemon");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.rsh_command), "rsh_command");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.jsv_url), "jsv_url");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.jsv_allowed_mod), "jsv_allowed_mod");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.gdi_request_limits), "gdi_request_limits");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.rlogin_daemon), "rlogin_daemon");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.rlogin_command), "rlogin_command");
    INFO(MSG_CONF_USING_US, Master_Config.reschedule_unknown, "reschedule_unknown");
    INFO(MSG_CONF_USING_US, Master_Config.max_aj_instances, "max_aj_instances");
    INFO(MSG_CONF_USING_US, Master_Config.max_aj_tasks, "max_aj_tasks");
@@ -1833,14 +1844,14 @@ void sge_show_conf() {
    INFO(MSG_CONF_USING_US, Master_Config.max_advance_reservations, "max_advance_reservations");
    INFO(MSG_CONF_USING_US, Master_Config.auto_user_oticket, "auto_user_oticket");
    INFO(MSG_CONF_USING_US, Master_Config.auto_user_fshare, "auto_user_fshare");
-   INFO(MSG_CONF_USING_SS, Master_Config.auto_user_default_project != nullptr ? Master_Config.auto_user_default_project : NONE_STR, "auto_user_default_project");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.auto_user_default_project), "auto_user_default_project");
    INFO(MSG_CONF_USING_US, Master_Config.auto_user_delete_time, "auto_user_delete_time");
-   INFO(MSG_CONF_USING_SS, Master_Config.delegated_file_staging != nullptr ? Master_Config.delegated_file_staging : NONE_STR, "delegated_file_staging");
-   INFO(MSG_CONF_USING_SS, Master_Config.libjvm_path != nullptr ? Master_Config.libjvm_path : NONE_STR, "libjvm_path");
-   INFO(MSG_CONF_USING_SS, Master_Config.additional_jvm_args != nullptr ? Master_Config.additional_jvm_args : NONE_STR, "additional_jvm_args");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.delegated_file_staging), "delegated_file_staging");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.libjvm_path), "libjvm_path");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.additional_jvm_args), "additional_jvm_args");
 
-   INFO(MSG_CONF_USING_SS, Master_Config.qmaster_params != nullptr ? Master_Config.qmaster_params : NONE_STR, "qmaster_params");
-   INFO(MSG_CONF_USING_SS, Master_Config.execd_params != nullptr ? Master_Config.execd_params : NONE_STR, "execd_params");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.qmaster_params), "qmaster_params");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.execd_params), "execd_params");
 
    userset_list_append_to_dstring(ocs::tom::ConstList<ocs::tom::US>(Master_Config.user_lists), &dstr);
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "user_lists");
@@ -1858,7 +1869,7 @@ void sge_show_conf() {
    INFO(MSG_CONF_USING_SS, sge_dstring_get_string(&dstr), "xprojects");
    sge_dstring_clear(&dstr);
 
-   INFO(MSG_CONF_USING_SS, Master_Config.topology_file != nullptr ? Master_Config.topology_file : NONE_STR, "topology_file");
+   INFO(MSG_CONF_USING_SS, ocs_conf_str_or_none(Master_Config.topology_file), "topology_file");
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
 
@@ -1871,7 +1882,7 @@ void sge_show_conf() {
 }
 
 /**
- * @brief Free the whole master configuration
+ * @brief Free the whole master configuration and reset every setting to "not set"
  *
  * @note
  * MT-NOTE: clean_conf() is not MT safe, caller needs LOCK_MASTER_CONF as write lock.
@@ -1879,48 +1890,13 @@ void sge_show_conf() {
 static void clean_conf() {
    DENTER(BASIS_LAYER);
 
-   sge_free(&Master_Config.execd_spool_dir);
-   sge_free(&Master_Config.mailer);
-   sge_free(&Master_Config.xterm);
-   sge_free(&Master_Config.load_sensor);
-   sge_free(&Master_Config.prolog);
-   sge_free(&Master_Config.epilog);
-   sge_free(&Master_Config.shell_start_mode);
-   sge_free(&Master_Config.login_shells);
-   sge_free(&Master_Config.enforce_project);
-   sge_free(&Master_Config.enforce_user);
-   sge_free(&Master_Config.administrator_mail);
-   sge_free(&Master_Config.mail_tag);
    ocs::tom::free_raw_list(Master_Config.user_lists);
    ocs::tom::free_raw_list(Master_Config.xuser_lists);
    ocs::tom::free_raw_list(Master_Config.projects);
    ocs::tom::free_raw_list(Master_Config.xprojects);
-   sge_free(&Master_Config.set_token_cmd);
-   sge_free(&Master_Config.pag_cmd);
-   sge_free(&Master_Config.shepherd_cmd);
-   sge_free(&Master_Config.qmaster_params);
-   sge_free(&Master_Config.execd_params);
-   sge_free(&Master_Config.reporting_params);
-   sge_free(&Master_Config.binding_params);
-   sge_free(&Master_Config.jsv_params);
-   sge_free(&Master_Config.gid_range);
-   sge_free(&Master_Config.port_range);
-   sge_free(&Master_Config.qlogin_daemon);
-   sge_free(&Master_Config.qlogin_command);
-   sge_free(&Master_Config.rsh_daemon);
-   sge_free(&Master_Config.rsh_command);
-   sge_free(&Master_Config.jsv_url);
-   sge_free(&Master_Config.jsv_allowed_mod);
-   sge_free(&Master_Config.gdi_request_limits);
-   sge_free(&Master_Config.rlogin_daemon);
-   sge_free(&Master_Config.rlogin_command);
-   sge_free(&Master_Config.auto_user_default_project);
-   sge_free(&Master_Config.delegated_file_staging);
-   sge_free(&Master_Config.libjvm_path);
-   sge_free(&Master_Config.additional_jvm_args);
-   sge_free(&Master_Config.topology_file);
 
-   memset(&Master_Config, 0, sizeof(sge_conf_type));
+   // the strings release their memory with the assignment, the raw lists were freed above
+   Master_Config = {};
 
    DRETURN_VOID;
 }
@@ -1967,26 +1943,35 @@ void conf_update_thread_profiling(const char *thread_name) {
 }
 
 /**
+ * @brief Remove trailing blanks and tabs from a configuration value
+ *
+ * The std::string counterpart of sge_strip_trailing_blanks().
+ *
+ * @param[in,out] str the value to strip; no value is left as it is
+ */
+static void ocs_strip_trailing_blanks(std::optional<std::string> &str) {
+   if (str) {
+      const auto pos = str->find_last_not_of(" \t");
+      str->erase(pos == std::string::npos ? 0 : pos + 1);
+   }
+}
+
+/**
  * @brief The `execd_spool_dir` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_execd_spool_dir() {
+std::optional<std::string> mconf_get_execd_spool_dir() {
    DENTER(BASIS_LAYER);
-
-   char* execd_spool_dir = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   execd_spool_dir = sge_strdup(execd_spool_dir, Master_Config.execd_spool_dir);
+   std::optional<std::string> ret = Master_Config.execd_spool_dir;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(execd_spool_dir);
+   DRETURN(ret);
 }
 
 /**
@@ -1995,21 +1980,16 @@ char* mconf_get_execd_spool_dir() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_mailer() {
+std::optional<std::string> mconf_get_mailer() {
    DENTER(BASIS_LAYER);
-
-   char* mailer = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   mailer = sge_strdup(mailer, Master_Config.mailer);
+   std::optional<std::string> ret = Master_Config.mailer;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(mailer);
+   DRETURN(ret);
 }
 
 /**
@@ -2018,22 +1998,16 @@ char* mconf_get_mailer() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_xterm() {
+std::optional<std::string> mconf_get_xterm() {
    DENTER(BASIS_LAYER);
-
-   char* xterm = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   xterm = sge_strdup(xterm, Master_Config.xterm);
+   std::optional<std::string> ret = Master_Config.xterm;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(xterm);
-
+   DRETURN(ret);
 }
 
 /**
@@ -2042,21 +2016,16 @@ char* mconf_get_xterm() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_load_sensor() {
+std::optional<std::string> mconf_get_load_sensor() {
    DENTER(BASIS_LAYER);
-
-   char* load_sensor = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   load_sensor = sge_strdup(load_sensor, Master_Config.load_sensor);
+   std::optional<std::string> ret = Master_Config.load_sensor;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(load_sensor);
+   DRETURN(ret);
 }
 
 /**
@@ -2065,21 +2034,16 @@ char* mconf_get_load_sensor() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_prolog() {
+std::optional<std::string> mconf_get_prolog() {
    DENTER(BASIS_LAYER);
-
-   char* prolog = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   prolog = sge_strdup(prolog, Master_Config.prolog);
+   std::optional<std::string> ret = Master_Config.prolog;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(prolog);
+   DRETURN(ret);
 }
 
 /**
@@ -2088,21 +2052,16 @@ char* mconf_get_prolog() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_epilog() {
+std::optional<std::string> mconf_get_epilog() {
    DENTER(BASIS_LAYER);
-
-   char* epilog = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   epilog = sge_strdup(epilog, Master_Config.epilog);
+   std::optional<std::string> ret = Master_Config.epilog;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(epilog);
+   DRETURN(ret);
 }
 
 /**
@@ -2111,21 +2070,16 @@ char* mconf_get_epilog() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_shell_start_mode() {
+std::optional<std::string> mconf_get_shell_start_mode() {
    DENTER(BASIS_LAYER);
-
-   char* shell_start_mode = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   shell_start_mode = sge_strdup(shell_start_mode, Master_Config.shell_start_mode);
+   std::optional<std::string> ret = Master_Config.shell_start_mode;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(shell_start_mode);
+   DRETURN(ret);
 }
 
 /**
@@ -2134,21 +2088,16 @@ char* mconf_get_shell_start_mode() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_login_shells() {
+std::optional<std::string> mconf_get_login_shells() {
    DENTER(BASIS_LAYER);
-
-   char* login_shells = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   login_shells = sge_strdup(login_shells, Master_Config.login_shells);
+   std::optional<std::string> ret = Master_Config.login_shells;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(login_shells);
+   DRETURN(ret);
 }
 
 /**
@@ -2262,21 +2211,16 @@ uint32_t mconf_get_loglevel() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_enforce_project() {
+std::optional<std::string> mconf_get_enforce_project() {
    DENTER(BASIS_LAYER);
-
-   char* enforce_project = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   enforce_project = sge_strdup(enforce_project, Master_Config.enforce_project);
+   std::optional<std::string> ret = Master_Config.enforce_project;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(enforce_project);
+   DRETURN(ret);
 }
 
 /**
@@ -2285,21 +2229,16 @@ char* mconf_get_enforce_project() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_enforce_user() {
+std::optional<std::string> mconf_get_enforce_user() {
    DENTER(BASIS_LAYER);
-
-   char* enforce_user = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   enforce_user = sge_strdup(enforce_user, Master_Config.enforce_user);
+   std::optional<std::string> ret = Master_Config.enforce_user;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(enforce_user);
+   DRETURN(ret);
 }
 
 
@@ -2309,21 +2248,16 @@ char* mconf_get_enforce_user() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_administrator_mail() {
+std::optional<std::string> mconf_get_administrator_mail() {
    DENTER(BASIS_LAYER);
-
-   char* administrator_mail = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   administrator_mail = sge_strdup(administrator_mail, Master_Config.administrator_mail);
+   std::optional<std::string> ret = Master_Config.administrator_mail;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(administrator_mail);
+   DRETURN(ret);
 }
 
 /**
@@ -2332,21 +2266,16 @@ char* mconf_get_administrator_mail() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_mail_tag() {
+std::optional<std::string> mconf_get_mail_tag() {
    DENTER(BASIS_LAYER);
-
-   char* mail_tag = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   mail_tag = sge_strdup(mail_tag, Master_Config.mail_tag);
+   std::optional<std::string> ret = Master_Config.mail_tag;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(mail_tag);
+   DRETURN(ret);
 }
 
 /**
@@ -2431,21 +2360,16 @@ ocs::tom::ListPtr<ocs::tom::PR> mconf_get_xprojects() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_set_token_cmd() {
+std::optional<std::string> mconf_get_set_token_cmd() {
    DENTER(BASIS_LAYER);
-
-   char* set_token_cmd = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   set_token_cmd = sge_strdup(set_token_cmd, Master_Config.set_token_cmd);
+   std::optional<std::string> ret = Master_Config.set_token_cmd;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(set_token_cmd);
+   DRETURN(ret);
 }
 
 /**
@@ -2454,21 +2378,16 @@ char* mconf_get_set_token_cmd() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_pag_cmd() {
+std::optional<std::string> mconf_get_pag_cmd() {
    DENTER(BASIS_LAYER);
-
-   char* pag_cmd = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   pag_cmd = sge_strdup(pag_cmd, Master_Config.pag_cmd);
+   std::optional<std::string> ret = Master_Config.pag_cmd;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(pag_cmd);
+   DRETURN(ret);
 }
 
 /**
@@ -2498,21 +2417,16 @@ uint32_t mconf_get_token_extend_time() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_shepherd_cmd() {
+std::optional<std::string> mconf_get_shepherd_cmd() {
    DENTER(BASIS_LAYER);
-
-   char* shepherd_cmd = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   shepherd_cmd = sge_strdup(shepherd_cmd, Master_Config.shepherd_cmd);
+   std::optional<std::string> ret = Master_Config.shepherd_cmd;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(shepherd_cmd);
+   DRETURN(ret);
 }
 
 /**
@@ -2521,21 +2435,16 @@ char* mconf_get_shepherd_cmd() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_qmaster_params() {
+std::optional<std::string> mconf_get_qmaster_params() {
    DENTER(BASIS_LAYER);
-
-   char* qmaster_params = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   qmaster_params = sge_strdup(qmaster_params, Master_Config.qmaster_params);
+   std::optional<std::string> ret = Master_Config.qmaster_params;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(qmaster_params);
+   DRETURN(ret);
 }
 
 /**
@@ -2544,21 +2453,16 @@ char* mconf_get_qmaster_params() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_execd_params() {
+std::optional<std::string> mconf_get_execd_params() {
    DENTER(BASIS_LAYER);
-
-   char* execd_params = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   execd_params = sge_strdup(execd_params, Master_Config.execd_params);
+   std::optional<std::string> ret = Master_Config.execd_params;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(execd_params);
+   DRETURN(ret);
 }
 
 /**
@@ -2567,21 +2471,16 @@ char* mconf_get_execd_params() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_reporting_params() {
+std::optional<std::string> mconf_get_reporting_params() {
    DENTER(BASIS_LAYER);
-
-   char* reporting_params = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   reporting_params = sge_strdup(reporting_params, Master_Config.reporting_params);
+   std::optional<std::string> ret = Master_Config.reporting_params;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(reporting_params);
+   DRETURN(ret);
 }
 
 /**
@@ -2590,18 +2489,16 @@ char* mconf_get_reporting_params() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_binding_params() {
+std::optional<std::string> mconf_get_binding_params() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   char *binding_params = sge_strdup(nullptr, Master_Config.binding_params);
+   std::optional<std::string> ret = Master_Config.binding_params;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(binding_params);
+   DRETURN(ret);
 }
 
 /**
@@ -2610,18 +2507,16 @@ char* mconf_get_binding_params() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_jsv_params() {
+std::optional<std::string> mconf_get_jsv_params() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   char *jsv_params = sge_strdup(nullptr, Master_Config.jsv_params);
+   std::optional<std::string> ret = Master_Config.jsv_params;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(jsv_params);
+   DRETURN(ret);
 }
 
 /**
@@ -2630,21 +2525,16 @@ char* mconf_get_jsv_params() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_gid_range() {
+std::optional<std::string> mconf_get_gid_range() {
    DENTER(BASIS_LAYER);
-
-   char* gid_range = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   gid_range = sge_strdup(gid_range, Master_Config.gid_range);
+   std::optional<std::string> ret = Master_Config.gid_range;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(gid_range);
+   DRETURN(ret);
 }
 
 /**
@@ -2653,21 +2543,16 @@ char* mconf_get_gid_range() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_port_range() {
+std::optional<std::string> mconf_get_port_range() {
    DENTER(BASIS_LAYER);
-
-   char* port_range = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   port_range = sge_strdup(port_range, Master_Config.port_range);
+   std::optional<std::string> ret = Master_Config.port_range;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(port_range);
+   DRETURN(ret);
 }
 
 /**
@@ -2676,21 +2561,16 @@ char* mconf_get_port_range() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_qlogin_daemon() {
+std::optional<std::string> mconf_get_qlogin_daemon() {
    DENTER(BASIS_LAYER);
-
-   char* qlogin_daemon = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   qlogin_daemon = sge_strdup(qlogin_daemon, Master_Config.qlogin_daemon);
+   std::optional<std::string> ret = Master_Config.qlogin_daemon;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(qlogin_daemon);
+   DRETURN(ret);
 }
 
 /**
@@ -2699,21 +2579,16 @@ char* mconf_get_qlogin_daemon() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_qlogin_command() {
+std::optional<std::string> mconf_get_qlogin_command() {
    DENTER(BASIS_LAYER);
-
-   char* qlogin_command = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   qlogin_command = sge_strdup(qlogin_command, Master_Config.qlogin_command);
+   std::optional<std::string> ret = Master_Config.qlogin_command;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(qlogin_command);
+   DRETURN(ret);
 }
 
 /**
@@ -2722,21 +2597,16 @@ char* mconf_get_qlogin_command() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_rsh_daemon() {
+std::optional<std::string> mconf_get_rsh_daemon() {
    DENTER(BASIS_LAYER);
-
-   char* rsh_daemon = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   rsh_daemon = sge_strdup(rsh_daemon, Master_Config.rsh_daemon);
+   std::optional<std::string> ret = Master_Config.rsh_daemon;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(rsh_daemon);
+   DRETURN(ret);
 }
 
 /**
@@ -2784,21 +2654,16 @@ bool mconf_is_new_config() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_rsh_command() {
+std::optional<std::string> mconf_get_rsh_command() {
    DENTER(BASIS_LAYER);
-
-   char* rsh_command = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   rsh_command = sge_strdup(rsh_command, Master_Config.rsh_command);
+   std::optional<std::string> ret = Master_Config.rsh_command;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(rsh_command);
+   DRETURN(ret);
 }
 
 /**
@@ -2806,23 +2671,19 @@ char* mconf_get_rsh_command() {
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
+ * Trailing blanks and tabs are removed from the copy.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_jsv_url() {
+std::optional<std::string> mconf_get_jsv_url() {
    DENTER(BASIS_LAYER);
-
-   char* jsv_url = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   jsv_url = sge_strdup(jsv_url, Master_Config.jsv_url);
-   sge_strip_trailing_blanks(jsv_url);
+   std::optional<std::string> ret = Master_Config.jsv_url;
+   ocs_strip_trailing_blanks(ret);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(jsv_url);
+   DRETURN(ret);
 }
 
 /**
@@ -2830,23 +2691,19 @@ char* mconf_get_jsv_url() {
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
+ * Trailing blanks and tabs are removed from the copy.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_jsv_allowed_mod() {
+std::optional<std::string> mconf_get_jsv_allowed_mod() {
    DENTER(BASIS_LAYER);
-
-   char* jsv_allowed_mod = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   jsv_allowed_mod = sge_strdup(jsv_allowed_mod, Master_Config.jsv_allowed_mod);
-   sge_strip_trailing_blanks(jsv_allowed_mod);
+   std::optional<std::string> ret = Master_Config.jsv_allowed_mod;
+   ocs_strip_trailing_blanks(ret);
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(jsv_allowed_mod);
+   DRETURN(ret);
 }
 
 /**
@@ -2854,18 +2711,19 @@ char* mconf_get_jsv_allowed_mod() {
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
+ * Trailing blanks and tabs are removed from the copy.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_gdi_request_limits() {
+std::optional<std::string> mconf_get_gdi_request_limits() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   char* gdi_request_limits = sge_strdup(nullptr, Master_Config.gdi_request_limits);
+
+   std::optional<std::string> ret = Master_Config.gdi_request_limits;
+
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   sge_strip_trailing_blanks(gdi_request_limits);
-   DRETURN(gdi_request_limits);
+   ocs_strip_trailing_blanks(ret);
+   DRETURN(ret);
 }
 
 /**
@@ -2874,21 +2732,16 @@ char* mconf_get_gdi_request_limits() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_rlogin_daemon() {
+std::optional<std::string> mconf_get_rlogin_daemon() {
    DENTER(BASIS_LAYER);
-
-   char* rlogin_daemon = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   rlogin_daemon = sge_strdup(rlogin_daemon, Master_Config.rlogin_daemon);
+   std::optional<std::string> ret = Master_Config.rlogin_daemon;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(rlogin_daemon);
+   DRETURN(ret);
 }
 
 /**
@@ -2897,21 +2750,16 @@ char* mconf_get_rlogin_daemon() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_rlogin_command() {
+std::optional<std::string> mconf_get_rlogin_command() {
    DENTER(BASIS_LAYER);
-
-   char* rlogin_command = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   rlogin_command = sge_strdup(rlogin_command, Master_Config.rlogin_command);
+   std::optional<std::string> ret = Master_Config.rlogin_command;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(rlogin_command);
+   DRETURN(ret);
 }
 
 /**
@@ -3130,21 +2978,16 @@ uint32_t mconf_get_auto_user_oticket() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_auto_user_default_project() {
+std::optional<std::string> mconf_get_auto_user_default_project() {
    DENTER(BASIS_LAYER);
-
-   char* auto_user_default_project = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   auto_user_default_project = sge_strdup(auto_user_default_project, Master_Config.auto_user_default_project);
+   std::optional<std::string> ret = Master_Config.auto_user_default_project;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(auto_user_default_project);
+   DRETURN(ret);
 }
 
 /**
@@ -3174,21 +3017,16 @@ uint32_t mconf_get_auto_user_delete_time() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_delegated_file_staging() {
+std::optional<std::string> mconf_get_delegated_file_staging() {
    DENTER(BASIS_LAYER);
-
-   char* delegated_file_staging = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   delegated_file_staging = sge_strdup(delegated_file_staging, Master_Config.delegated_file_staging);
+   std::optional<std::string> ret = Master_Config.delegated_file_staging;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN(delegated_file_staging);
+   DRETURN(ret);
 }
 
 
@@ -3668,18 +3506,13 @@ int mconf_get_notify_susp_type() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_notify_susp() {
+std::optional<std::string> mconf_get_notify_susp() {
    DENTER(BASIS_LAYER);
-
-   char* ret = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = sge_strdup(ret, notify_susp);
+   std::optional<std::string> ret = notify_susp;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -3712,18 +3545,13 @@ int mconf_get_notify_kill_type() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @return the configured value
+ * @return a copy of the configured value, no value when it is not set
  */
-char* mconf_get_notify_kill() {
+std::optional<std::string> mconf_get_notify_kill() {
    DENTER(BASIS_LAYER);
-
-   char* ret = nullptr;
-
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   ret = sge_strdup(ret, notify_kill);
+   std::optional<std::string> ret = notify_kill;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
@@ -4870,163 +4698,147 @@ int mconf_get_max_job_deletion_time() {
 }
 
 /**
- * @brief Read the `h_descriptors` setting of the master configuration
+ * @brief The `h_descriptors` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_h_descriptors(char **pret) {
+std::string mconf_get_h_descriptors() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.h_descriptors);
+   std::string ret = execd_conf.h_descriptors;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `s_descriptors` setting of the master configuration
+ * @brief The `s_descriptors` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_s_descriptors(char **pret) {
+std::string mconf_get_s_descriptors() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.s_descriptors);
+   std::string ret = execd_conf.s_descriptors;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `h_maxproc` setting of the master configuration
+ * @brief The `h_maxproc` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_h_maxproc(char **pret) {
+std::string mconf_get_h_maxproc() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.h_maxproc);
+   std::string ret = execd_conf.h_maxproc;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `s_maxproc` setting of the master configuration
+ * @brief The `s_maxproc` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_s_maxproc(char **pret) {
+std::string mconf_get_s_maxproc() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.s_maxproc);
+   std::string ret = execd_conf.s_maxproc;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `h_memorylocked` setting of the master configuration
+ * @brief The `h_memorylocked` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_h_memorylocked(char **pret) {
+std::string mconf_get_h_memorylocked() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.h_memorylocked);
+   std::string ret = execd_conf.h_memorylocked;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `s_memorylocked` setting of the master configuration
+ * @brief The `s_memorylocked` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_s_memorylocked(char **pret) {
+std::string mconf_get_s_memorylocked() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.s_memorylocked);
+   std::string ret = execd_conf.s_memorylocked;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `h_locks` setting of the master configuration
+ * @brief The `h_locks` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_h_locks(char **pret) {
+std::string mconf_get_h_locks() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.h_locks);
+   std::string ret = execd_conf.h_locks;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
- * @brief Read the `s_locks` setting of the master configuration
+ * @brief The `s_locks` setting of the master configuration
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @note The returned string is freshly allocated; the caller frees it.
- *
- * @param[out] pret receives the value
+ * @return a copy of the configured value, "UNDEFINED" when it is not set
  */
-void mconf_get_s_locks(char **pret) {
+std::string mconf_get_s_locks() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   *pret = strdup(execd_conf.s_locks);
+   std::string ret = execd_conf.s_locks;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
-   DRETURN_VOID;
+   DRETURN(ret);
 }
 
 /**
@@ -5265,12 +5077,12 @@ std::string mconf_get_binding_filter() {
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return the configured value, an empty string when it is not set
  */
 std::string mconf_get_topology_file() {
    DENTER(BASIS_LAYER);
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
-   std::string ret = Master_Config.topology_file;
+   std::string ret = Master_Config.topology_file.value_or(std::string{});
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(ret);
 }

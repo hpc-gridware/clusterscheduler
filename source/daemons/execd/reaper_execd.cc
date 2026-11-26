@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <sys/types.h>
 #include <cerrno>
@@ -882,9 +883,9 @@ static int clean_up_job(const ocs::tom::Element<ocs::tom::JR> jr, int failed, co
                                         && JOB_TYPE_IS_NO_SHELL(job.get<JB_type>())))) {
             job_caused_failure = 1;
          } else if ((failed == SSTATE_NO_SHELL) && (master_queue != nullptr)) {
-            char* shell_start_mode = mconf_get_shell_start_mode();
-            const char *mode = job_get_shell_start_mode(master_queue, shell_start_mode);
-            sge_free(&shell_start_mode);
+            // mode may point into shell_start_mode, which therefore has to live until mode is compared
+            const std::optional<std::string> shell_start_mode = mconf_get_shell_start_mode();
+            const char *mode = job_get_shell_start_mode(master_queue, ocs_conf_c_str(shell_start_mode));
 
             if (strcmp(mode, "unix_behavior") == 0) {
                job_caused_failure = 1;

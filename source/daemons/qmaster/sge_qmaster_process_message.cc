@@ -557,7 +557,7 @@ do_gdi_packet(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *moni
       //
       // parse_from_config() runs inside it although it does not touch the data
       // store. What it costs while the lock is held is one LOCK_MASTER_CONF read
-      // plus a strdup (mconf_get_gdi_request_limits()), and a re-parse of the
+      // plus a copy (mconf_get_gdi_request_limits()), and a re-parse of the
       // limit string only when the configuration actually changed. Pulling it out
       // would buy a second acquisition of the store lock, or make it run for
       // managers too.

@@ -38,6 +38,7 @@
 #include <cstring>
 #include <cerrno>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -179,12 +180,11 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
 
    sge_dstring_init(&ds, buffer, sizeof(buffer));
 
-   char* administrator_mail = mconf_get_administrator_mail();
-   if (administrator_mail == nullptr) {
+   const std::optional<std::string> administrator_mail = mconf_get_administrator_mail();
+   if (!administrator_mail) {
       DRETURN_VOID;
    }
-   if (!strcasecmp(administrator_mail, "none")) {
-      sge_free(&administrator_mail);
+   if (!strcasecmp(administrator_mail->c_str(), "none")) {
       DRETURN_VOID;
    }
 
@@ -219,7 +219,6 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
 
       if ((admail_bits & BIT_ADM_NEVER) != 0) {
          DPRINTF("NEVER SENDING ADMIN MAIL for state %d\n", failed);
-         sge_free(&administrator_mail);
          DRETURN_VOID;
       }
       if ((admail_bits & (BIT_ADM_NEW_CONF | BIT_ADM_QCHANGE)) != 0) {
@@ -227,7 +226,6 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          if (it != admail_sent.end() && it->second.qversion == qversion) {
             DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d in queue " SFN
                     ": nothing changed since the last one\n", failed, q);
-            sge_free(&administrator_mail);
             DRETURN_VOID;
          }
       }
@@ -236,7 +234,6 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
          if (it != admail_sent.end() && now - it->second.when < sge_gmt32_to_gmt64(3600)) {
             DPRINTF("NOT SENDING ADMIN MAIL AGAIN for state %d in queue " SFN
                     ": less than an hour since the last one\n", failed, q);
-            sge_free(&administrator_mail);
             DRETURN_VOID;
          }
       }
@@ -246,11 +243,10 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
       }
 
       // the recipients (MR); freed on every way out of this block, also on a failed parse
-      auto [parse_ret, lp_mail] = mailrec_parse(administrator_mail);
+      auto [parse_ret, lp_mail] = mailrec_parse(administrator_mail->c_str());
       ret = parse_ret;
       if (ret) {
-         ERROR(MSG_MAIL_PARSE_S, (administrator_mail ? administrator_mail : MSG_NULL));
-         sge_free(&administrator_mail);
+         ERROR(MSG_MAIL_PARSE_S, administrator_mail->c_str());
          DRETURN_VOID;
       }
 
@@ -281,12 +277,11 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
       }
 
       // the mail tag and the space separating it from the subject; NONE (any case) and an empty tag mean no prefix
-      char *mail_tag_str = mconf_get_mail_tag();
+      const std::optional<std::string> mail_tag_conf = mconf_get_mail_tag();
       std::string mail_tag;
-      if (mail_tag_str != nullptr && mail_tag_str[0] != '\0' && strcasecmp(mail_tag_str, NONE_STR) != 0) {
-         mail_tag = std::string(mail_tag_str) + " ";
+      if (mail_tag_conf && !mail_tag_conf->empty() && strcasecmp(mail_tag_conf->c_str(), NONE_STR) != 0) {
+         mail_tag = *mail_tag_conf + " ";
       }
-      sge_free(&mail_tag_str);
 
       if (is_array) {
          snprintf(sge_mail_subj, sizeof(sge_mail_subj), MSG_MAIL_SUBJECT_SSUU, mail_tag.c_str(),
@@ -347,11 +342,9 @@ void job_related_adminmail(const uint32_t progid, const ocs::tom::ConstElement<o
 
       sge_dstring_free(&dstr_sge_mail_body_total);
    }
-   sge_free(&administrator_mail);
    DRETURN_VOID;
 FCLOSE_ERROR:
    DPRINTF(MSG_FILE_ERRORCLOSEINGXY_SS, shepherd_files[i].filepath, strerror(errno));
-   sge_free(&administrator_mail);
    sge_free(&shepherd_file_buf);
    sge_dstring_free(&dstr_sge_mail_body_total);
 

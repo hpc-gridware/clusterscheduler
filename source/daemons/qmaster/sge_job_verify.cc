@@ -39,6 +39,7 @@
  */
 
 #include <cerrno>
+#include <optional>
 #include <string>
 
 #include "sge.h"
@@ -923,9 +924,9 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
 
    /* if enforce_user flag is "auto", add or update the user */
    {
-      const ocs::uti::c_ptr<char> enforce_user{mconf_get_enforce_user()};
+      const std::optional<std::string> enforce_user = mconf_get_enforce_user();
 
-      if (enforce_user && !strcasecmp(enforce_user.get(), "auto")) {
+      if (enforce_user && !strcasecmp(enforce_user->c_str(), "auto")) {
          int status = sge_add_auto_user(packet, task, packet->user, alpp, monitor);
 
          if (status != STATUS_OK) {
@@ -934,7 +935,7 @@ sge_job_verify_adjust(const ocs::tom::Element<ocs::tom::JB> jep, ocs::tom::ListP
       }
 
       /* ensure user exists if enforce_user flag is set */
-      if (enforce_user && !strcasecmp(enforce_user.get(), "true") &&
+      if (enforce_user && !strcasecmp(enforce_user->c_str(), "true") &&
           !master_user_list.find_first<UU_name>(packet->user)) {
          ERROR(MSG_JOB_USRUNKNOWN_S, packet->user);
          answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);

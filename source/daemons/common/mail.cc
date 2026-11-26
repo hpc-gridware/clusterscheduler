@@ -41,6 +41,8 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <cstdlib>
+#include <optional>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_os.h"
@@ -87,11 +89,10 @@ void mail_to_users(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR
                const char *buf, const char *mail_type) {
    DENTER(TOP_LAYER);
 
-   char *mailer;
-   int mailer_has_subj_line;
-
-   mailer = mconf_get_mailer();
-   mailer_has_subj_line = 1;
+   // the mailer is read before sge_send_mail() forks, the child uses the parent's copy
+   const std::optional<std::string> mailer_conf = mconf_get_mailer();
+   const char *mailer = ocs_conf_c_str(mailer_conf);
+   const int mailer_has_subj_line = 1;
 
    if (!buf) {
       buf = subj;
@@ -103,7 +104,6 @@ void mail_to_users(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR
          const char *host = ep.get<MR_host>();
          if (!user && !host) {
             ERROR(SFNMAX, MSG_MAIL_EMPTYUSERHOST);
-            sge_free(&mailer);
             DRETURN_VOID;
          } else if (!host) {
             INFO(MSG_MAIL_MAILUSER_SSSS, mail_type, user, mailer, subj ? subj : MSG_MAIL_NOSUBJ);
@@ -112,9 +112,8 @@ void mail_to_users(const uint32_t progid, const ocs::tom::ConstList<ocs::tom::MR
          }
          sge_send_mail(progid, mailer, mailer_has_subj_line, user, host, subj, buf);
       }
-   } 
+   }
 
-   sge_free(&mailer);
    DRETURN_VOID;
 }
 

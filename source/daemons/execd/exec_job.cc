@@ -47,6 +47,7 @@
 #include <csignal>
 
 #include <map>
+#include <optional>
 #include <string>
 
 #include "uti/ocs_Systemd.h"
@@ -815,12 +816,14 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    uint32_t ja_task_id;
    const char *pe_task_id = nullptr;
 
-   char *shell_start_mode = nullptr;
-   char *pag_cmd = nullptr;
-   char *notify_kill = nullptr;
-   char *notify_susp = nullptr;
-   char *shepherd_cmd = nullptr;
-   char *set_token_cmd = nullptr;
+   // copies of configuration values, read in sge_execd before the fork; declared up here because the
+   // FCLOSE() gotos below must not cross an initialization
+   std::optional<std::string> shell_start_mode;
+   std::optional<std::string> pag_cmd;
+   std::optional<std::string> notify_kill;
+   std::optional<std::string> notify_susp;
+   std::optional<std::string> shepherd_cmd;
+   std::optional<std::string> set_token_cmd;
 
    sge_dstring_init(&cwd_out, cwd_out_buffer, sizeof(cwd_out_buffer));
    sge_dstring_init(&active_dir, active_dir_buffer, sizeof(active_dir_buffer));
@@ -1334,9 +1337,9 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       // it will be read by qrsh -inherit in the job script
       pe = jatep.get<JAT_pe_object>();
       if (pe != nullptr && pe.get<PE_control_slaves>()) {
-         const char *mconf_string = mconf_get_rsh_command();
-         if (mconf_string != nullptr && sge_strnullcasecmp(mconf_string, "none") != 0) {
-            var_list_set_string(environmentList, "SGE_RSH_COMMAND", mconf_string);
+         const std::optional<std::string> rsh_command = mconf_get_rsh_command();
+         if (rsh_command && sge_strnullcasecmp(rsh_command->c_str(), "none") != 0) {
+            var_list_set_string(environmentList, "SGE_RSH_COMMAND", rsh_command->c_str());
          } else {
             char default_buffer[SGE_PATH_MAX];
             dstring default_dstring;
@@ -1346,21 +1349,16 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
             sge_dstring_sprintf(&default_dstring, "%s/utilbin/%s/rsh", sge_root, arch);
             var_list_set_string(environmentList, "SGE_RSH_COMMAND", sge_dstring_get_string(&default_dstring));
          }
-         sge_free(&mconf_string);
 
          /* transport the notify kill and susp signals to qrsh -inherit */
          if (mconf_get_notify_kill_type() == 0) {
-            mconf_string = mconf_get_notify_kill();
-            if (mconf_string != nullptr) {
-               var_list_set_string(environmentList, "SGE_NOTIFY_KILL_SIGNAL", mconf_string);
-               sge_free(&mconf_string);
+            if (const std::optional<std::string> notify_signal = mconf_get_notify_kill(); notify_signal) {
+               var_list_set_string(environmentList, "SGE_NOTIFY_KILL_SIGNAL", notify_signal->c_str());
             }
          }
          if (mconf_get_notify_susp_type() == 0) {
-            mconf_string = mconf_get_notify_susp();
-            if (mconf_string != nullptr) {
-               var_list_set_string(environmentList, "SGE_NOTIFY_SUSP_SIGNAL", mconf_string);
-               sge_free(&mconf_string);
+            if (const std::optional<std::string> notify_signal = mconf_get_notify_susp(); notify_signal) {
+               var_list_set_string(environmentList, "SGE_NOTIFY_SUSP_SIGNAL", notify_signal->c_str());
             }
          }
       }
@@ -1489,11 +1487,12 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       ocs::tom::ListPtr<ocs::tom::RN> rlp;
       ocs::tom::ListPtr<ocs::tom::AN> alp;
       gid_t temp_id;
-      char *gid_range = mconf_get_gid_range();
-      DPRINTF("gid_range = %s\n", gid_range);
-      range_list_parse_from_string(rlp, &alp, gid_range,
-                                   0, 0, INF_NOT_ALLOWED);
-      sge_free(&gid_range);
+      {
+         const std::optional<std::string> gid_range = mconf_get_gid_range();
+         DPRINTF("gid_range = %s\n", ocs_conf_c_str(gid_range));
+         range_list_parse_from_string(rlp, &alp, ocs_conf_c_str(gid_range),
+                                      0, 0, INF_NOT_ALLOWED);
+      }
       if (!rlp) {
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOPARSEGIDRANGE);
          environmentList.reset();
@@ -1705,39 +1704,21 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    }
 
    {
-      char *s;
+      fprintf(fp, "s_descriptors=%s\n", mconf_get_s_descriptors().c_str());
 
-      mconf_get_s_descriptors(&s);
-      fprintf(fp, "s_descriptors=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "h_descriptors=%s\n", mconf_get_h_descriptors().c_str());
 
-      mconf_get_h_descriptors(&s);
-      fprintf(fp, "h_descriptors=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "s_maxproc=%s\n", mconf_get_s_maxproc().c_str());
 
-      mconf_get_s_maxproc(&s);
-      fprintf(fp, "s_maxproc=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "h_maxproc=%s\n", mconf_get_h_maxproc().c_str());
 
-      mconf_get_h_maxproc(&s);
-      fprintf(fp, "h_maxproc=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "s_memorylocked=%s\n", mconf_get_s_memorylocked().c_str());
 
-      mconf_get_s_memorylocked(&s);
-      fprintf(fp, "s_memorylocked=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "h_memorylocked=%s\n", mconf_get_h_memorylocked().c_str());
 
-      mconf_get_h_memorylocked(&s);
-      fprintf(fp, "h_memorylocked=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "s_locks=%s\n", mconf_get_s_locks().c_str());
 
-      mconf_get_s_locks(&s);
-      fprintf(fp, "s_locks=%s\n", s);
-      sge_free(&s);
-
-      mconf_get_h_locks(&s);
-      fprintf(fp, "h_locks=%s\n", s);
-      sge_free(&s);
+      fprintf(fp, "h_locks=%s\n", mconf_get_h_locks().c_str());
    }
 
    fprintf(fp, "priority=%s\n", master_q.get<QU_priority>());
@@ -1765,17 +1746,15 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
    /* do not start prolog/epilog in case of pe tasks */
    if (petep == nullptr) {
-      char *prolog = mconf_get_prolog();
-      char *epilog = mconf_get_epilog();
+      const std::optional<std::string> prolog = mconf_get_prolog();
+      const std::optional<std::string> epilog = mconf_get_epilog();
 
       fprintf(fp, "prolog=%s\n",
               ((cp = master_q.get<QU_prolog>()) && strcasecmp(cp, "none")) ?
-              cp : prolog);
+              cp : ocs_conf_c_str(prolog));
       fprintf(fp, "epilog=%s\n",
               ((cp = master_q.get<QU_epilog>()) && strcasecmp(cp, "none")) ?
-              cp : epilog);
-      sge_free(&prolog);
-      sge_free(&epilog);
+              cp : ocs_conf_c_str(epilog));
    } else {
       fprintf(fp, "prolog=%s\n", "none");
       fprintf(fp, "epilog=%s\n", "none");
@@ -1828,8 +1807,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
    shell_start_mode = mconf_get_shell_start_mode();
    fprintf(fp, "shell_start_mode=%s\n",
-           job_get_shell_start_mode(master_q, shell_start_mode));
-   sge_free(&shell_start_mode);
+           job_get_shell_start_mode(master_q, ocs_conf_c_str(shell_start_mode)));
+   shell_start_mode.reset();
 
    /* we need the basename for loginshell test */
    shell = strrchr(shell_path, '/');
@@ -2059,15 +2038,15 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       if (!(JOB_TYPE_IS_QLOGIN(jb_now) ||
             JOB_TYPE_IS_QRSH(jb_now) ||
             JOB_TYPE_IS_QRLOGIN(jb_now))) {
-         char *xterm = mconf_get_xterm();
+         const std::optional<std::string> xterm = mconf_get_xterm();
          DPRINTF("interactive job\n");
          /*
          ** get xterm configuration value
          */
 
          if (xterm) {
-            fprintf(fp, "exec_file=%s\n", xterm);
-            DPRINTF("exec_file=%s\n", xterm);
+            fprintf(fp, "exec_file=%s\n", xterm->c_str());
+            DPRINTF("exec_file=%s\n", xterm->c_str());
          } else {
             snprintf(err_str, err_length, SFNMAX, MSG_EXECD_NOXTERM);
             FCLOSE(fp);
@@ -2078,7 +2057,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
             ** this causes a general failure
             */
          }
-         sge_free(&xterm);
       }
    }
 
@@ -2154,32 +2132,32 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
    /* if "pag_cmd" is not set, do not use AFS setup for this host */
    pag_cmd = mconf_get_pag_cmd();
    if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
-       strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
+       !pag_cmd->empty() && strcasecmp(pag_cmd->c_str(), "none")) {
       fprintf(fp, "use_afs=1\n");
 
       shepherd_name = SGE_COSHEPHERD;
       snprintf(coshepherd_path, sizeof(coshepherd_path), "%s/%s/%s", binary_path, sge_get_arch(), shepherd_name);
       fprintf(fp, "coshepherd=%s\n", coshepherd_path);
       set_token_cmd = mconf_get_set_token_cmd();
-      fprintf(fp, "set_token_cmd=%s\n", set_token_cmd ? set_token_cmd : "none");
-      sge_free(&set_token_cmd);
+      fprintf(fp, "set_token_cmd=%s\n", set_token_cmd ? set_token_cmd->c_str() : "none");
+      set_token_cmd.reset();
       fprintf(fp, "token_extend_time=%d\n", (int) mconf_get_token_extend_time());
    } else {
       fprintf(fp, "use_afs=0\n");
    }
-   sge_free(&pag_cmd);
+   pag_cmd.reset();
 
    fprintf(fp, "admin_user=%s\n", admin_user);
 
    /* notify method */
    fprintf(fp, "notify_kill_type=%d\n", mconf_get_notify_kill_type());
    notify_kill = mconf_get_notify_kill();
-   fprintf(fp, "notify_kill=%s\n", notify_kill ? notify_kill : "default");
-   sge_free(&notify_kill);
+   fprintf(fp, "notify_kill=%s\n", notify_kill ? notify_kill->c_str() : "default");
+   notify_kill.reset();
    fprintf(fp, "notify_susp_type=%d\n", mconf_get_notify_susp_type());
    notify_susp = mconf_get_notify_susp();
-   fprintf(fp, "notify_susp=%s\n", notify_susp ? notify_susp : "default");
-   sge_free(&notify_susp);
+   fprintf(fp, "notify_susp=%s\n", notify_susp ? notify_susp->c_str() : "default");
+   notify_susp.reset();
    if (mconf_get_use_qsub_gid()) {
       fprintf(fp, "qsub_gid=" sge_u32 "\n", jep.get<JB_gid>());
    } else {
@@ -2223,14 +2201,14 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          snprintf(daemon, sizeof(daemon), "%s/utilbin/%s/", sge_root, arch);
 
          if(JOB_TYPE_IS_QLOGIN(jb_now)) {
-            char* qlogin_daemon = mconf_get_qlogin_daemon();
-            fprintf(fp, "qlogin_daemon=%s\n", qlogin_daemon);
-            sge_free(&qlogin_daemon);
+            const std::optional<std::string> qlogin_daemon = mconf_get_qlogin_daemon();
+            fprintf(fp, "qlogin_daemon=%s\n", ocs_conf_c_str(qlogin_daemon));
          } else {
             // @todo CS-1262 we do no longer deliver a rshd or rlogind
             //       no longer need the write_osjob_id config value, remove it from here and from shepherd
             if (JOB_TYPE_IS_QRSH(jb_now)) {
-               char *rsh_daemon = mconf_get_rsh_daemon();
+               const std::optional<std::string> rsh_daemon_conf = mconf_get_rsh_daemon();
+               const char *rsh_daemon = ocs_conf_c_str(rsh_daemon_conf);
                strcat(daemon, "rshd");
                if (strcasecmp(rsh_daemon, "none") == 0) {
                   strcat(daemon, " -l");
@@ -2242,7 +2220,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                      write_osjob_id = 0; /* will be done by our rshd */
                   }
                }
-               sge_free(&rsh_daemon);
 
                fprintf(fp, "qrsh_tmpdir=%s\n", tmpdir);
 
@@ -2253,7 +2230,8 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                }
             } else {
                if (JOB_TYPE_IS_QRLOGIN(jb_now)) {
-                  char *rlogin_daemon = mconf_get_rlogin_daemon();
+                  const std::optional<std::string> rlogin_daemon_conf = mconf_get_rlogin_daemon();
+                  const char *rlogin_daemon = ocs_conf_c_str(rlogin_daemon_conf);
                   strcat(daemon, "rlogind");
                   if (strcasecmp(rlogin_daemon, "none") == 0) {
                      strcat(daemon, " -l");
@@ -2265,7 +2243,6 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
                         write_osjob_id = 0; /* will be done by our rlogind */
                      }
                   }
-                  sge_free(&rlogin_daemon);
                }
             }
          }
@@ -2354,18 +2331,16 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
 
    pag_cmd = mconf_get_pag_cmd();
    shepherd_cmd = mconf_get_shepherd_cmd();
-   if (shepherd_cmd && strlen(shepherd_cmd) &&
-       strcasecmp(shepherd_cmd, "none")) {
-      if (SGE_STAT(shepherd_cmd, &buf)) {
-         snprintf(err_str, err_length, MSG_EXECD_NOSHEPHERDWRAP_SS, shepherd_cmd, strerror(errno));
-         sge_free(&pag_cmd);
-         sge_free(&shepherd_cmd);
+   if (shepherd_cmd && !shepherd_cmd->empty() &&
+       strcasecmp(shepherd_cmd->c_str(), "none")) {
+      if (SGE_STAT(shepherd_cmd->c_str(), &buf)) {
+         snprintf(err_str, err_length, MSG_EXECD_NOSHEPHERDWRAP_SS, shepherd_cmd->c_str(), strerror(errno));
          DRETURN(-2);
       }
-      exec_path = shepherd_cmd;
+      exec_path = *shepherd_cmd;
    }
    else if (ocs::Bootstrap::has_security_mode(ocs::Bootstrap::BS_SEC_MODE_AFS) && pag_cmd &&
-              strlen(pag_cmd) && strcasecmp(pag_cmd, "none")) {
+              !pag_cmd->empty() && strcasecmp(pag_cmd->c_str(), "none")) {
       int fd, len;
       const char *cp;
 
@@ -2374,52 +2349,42 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
          snprintf(coshepherd_path, sizeof(coshepherd_path), "%s/%s", binary_path, shepherd_name);
          if (SGE_STAT(coshepherd_path, &buf)) {
             snprintf(err_str, err_length, MSG_EXECD_NOCOSHEPHERD_SSS, arch, coshepherd_path, strerror(errno));
-            sge_free(&pag_cmd);
-            sge_free(&shepherd_cmd);
             DRETURN(-2);
          }
       }
       set_token_cmd = mconf_get_set_token_cmd();
       if (!set_token_cmd ||
-          !strlen(set_token_cmd) || !mconf_get_token_extend_time()) {
+          set_token_cmd->empty() || !mconf_get_token_extend_time()) {
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_AFSCONFINCOMPLETE);
-         sge_free(&pag_cmd);
-         sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
-      sge_free(&set_token_cmd);
+      set_token_cmd.reset();
 
       /* JG: TODO (254) use function sge_get_active_job.... */
       str_fname = sge_dstring_sprintf(&dstr_fname, "%s/%s", active_dir_buffer, TOKEN_FILE);
       if ((fd = SGE_OPEN3(str_fname, O_RDWR | O_CREAT | O_TRUNC, 0600)) == -1) {
          snprintf(err_str, err_length, MSG_EXECD_NOCREATETOKENFILE_S, strerror(errno));
-         sge_free(&pag_cmd);
-         sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
 
       cp = jep.get<JB_tgt>();
       if (!cp || !(len = strlen(cp))) {
          snprintf(err_str, err_length, SFNMAX, MSG_EXECD_TOKENZERO);
-         sge_free(&pag_cmd);
-         sge_free(&shepherd_cmd);
          DRETURN(-3); /* problem of this user */
       }
       if (write(fd, cp, len) != len) {
          snprintf(err_str, err_length, MSG_EXECD_NOWRITETOKEN_S, strerror(errno));
-         sge_free(&pag_cmd);
-         sge_free(&shepherd_cmd);
          DRETURN(-2);
       }
       close(fd);
 
       // the shepherd is started by the PAG command
       exec_pag = true;
-      exec_path = pag_cmd;
+      exec_path = *pag_cmd;
       exec_pag_cmdline = std::string("exec ") + shepherd_path + (exec_bg ? " -bg" : "");
    }
-   sge_free(&pag_cmd);
-   sge_free(&shepherd_cmd);
+   pag_cmd.reset();
+   shepherd_cmd.reset();
 
    /* send mail to users if requested */
    if (petep == nullptr) {
@@ -2631,23 +2596,27 @@ FCLOSE_ERROR:
    return -1;
 }
 
-/*****************************************************
- check whether a shell should be called as login shell
- *****************************************************/
+/**
+ * @brief Check whether a shell is to be called as login shell
+ *
+ * Looks the shell up in the `login_shells` setting of the configuration, a list separated by commas,
+ * blanks or tabs. Called in sge_execd before the fork.
+ *
+ * @param shell the base name of the shell
+ * @return 1 if a name in `login_shells` starts with shell, 0 otherwise or when `login_shells` is not set
+ */
 static int ck_login_sh(char *shell) {
    DENTER(TOP_LAYER);
 
-   char *cp;
-   char *login_shells;
    int ret;
 
-   login_shells = mconf_get_login_shells();
+   const std::optional<std::string> login_shells = mconf_get_login_shells();
 
-   if (login_shells == nullptr) {
+   if (!login_shells) {
       DRETURN(0);
    }
 
-   cp = login_shells;
+   const char *cp = login_shells->c_str();
 
    while (*cp) {
 
@@ -2659,7 +2628,6 @@ static int ck_login_sh(char *shell) {
       ret = strncmp(cp, shell, strlen(shell));
       DPRINTF("strncmp(\"%s\", \"%s\", %d) = %d\n", cp, shell, strlen(shell), ret);
       if (!ret) {
-         sge_free(&login_shells);
          DRETURN(1);
       }
 
@@ -2668,8 +2636,6 @@ static int ck_login_sh(char *shell) {
          cp++;
       }
    }
-
-   sge_free(&login_shells);
 
    DRETURN(0);
 }

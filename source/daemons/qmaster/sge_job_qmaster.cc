@@ -41,6 +41,7 @@
 #include <cstring>
 #include <cerrno>
 #include <cctype>
+#include <optional>
 #include <string>
 
 #include "uti/ocs_Pattern.h"
@@ -4355,9 +4356,9 @@ job_verify_project(const ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Lis
       }
 
       if (ret == STATUS_OK) {
-         const ocs::uti::c_ptr<char> enforce_project{mconf_get_enforce_project()};
+         const std::optional<std::string> enforce_project = mconf_get_enforce_project();
 
-         if (enforce_project != nullptr && strcasecmp(enforce_project.get(), "true") == 0) {
+         if (enforce_project && strcasecmp(enforce_project->c_str(), "true") == 0) {
             ERROR(SFNMAX, MSG_SGETEXT_NO_PROJECT);
             answer_list_add(alpp, SGE_EVENT, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
             ret = STATUS_EUNKNOWN;

@@ -49,6 +49,7 @@
 #include <vector>
 #include <utility>
 #include <tuple>
+#include <optional>
 #include <string>
 
 #include "uti/sge_dstring.h"
@@ -2460,16 +2461,15 @@ jsv_is_modify_rejected(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::
    bool ret = false;
 
    if (job != nullptr) {
-      // copies made with strdup() by sge_conf.cc
-      const ocs::uti::c_ptr<char> jsv_allowed_mod{mconf_get_jsv_allowed_mod()};
-      const ocs::uti::c_ptr<char> jsv_url{mconf_get_jsv_url()};
+      const std::optional<std::string> jsv_allowed_mod = mconf_get_jsv_allowed_mod();
+      const std::optional<std::string> jsv_url = mconf_get_jsv_url();
 
-      if (jsv_url && strcasecmp(jsv_url.get(), "none") != 0) {
+      if (jsv_url && strcasecmp(jsv_url->c_str(), "none") != 0) {
 
          // Check now if there are allowed modifications.
-         if (jsv_allowed_mod && strcmp(jsv_allowed_mod.get(), "none") != 0) {
+         if (jsv_allowed_mod && strcmp(jsv_allowed_mod->c_str(), "none") != 0) {
             // Both lists are created up front: an empty list counts as no switch, as no list did before.
-            auto allowed_switches = str_list_parse_from_string(jsv_allowed_mod.get(), ",");
+            auto allowed_switches = str_list_parse_from_string(jsv_allowed_mod->c_str(), ",");
             if (!allowed_switches) {
                allowed_switches = ocs::tom::ListPtr<ocs::tom::ST>::create("");
             }

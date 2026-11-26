@@ -41,6 +41,7 @@
  * @see sge_conf.cc
  */
 
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -120,51 +121,72 @@ void conf_sort_entries(ocs::tom::Element<ocs::tom::CONF> conf);
 void sge_show_conf();
 void conf_update_thread_profiling(const char *thread_name);
 
-char* mconf_get_execd_spool_dir();
-char* mconf_get_mailer();
-char* mconf_get_xterm();
-char* mconf_get_load_sensor();
-char* mconf_get_prolog();
-char* mconf_get_epilog();
-char* mconf_get_shell_start_mode();
-char* mconf_get_login_shells();
+/**
+ * @brief The C string of a string setting returned by a mconf_get_*() getter
+ *
+ * For the C interfaces the settings are handed to: a setting that is not set becomes nullptr, as the
+ * getters returned it before they returned std::optional.
+ *
+ * @param value the setting; it must outlive the use of the returned pointer
+ * @return the setting's C string, or nullptr when it is not set
+ */
+inline const char *ocs_conf_c_str(const std::optional<std::string> &value) {
+   return value ? value->c_str() : nullptr;
+}
+
+/**
+ * @brief Not for a temporary: the pointer would dangle as soon as the getter's result is gone
+ *
+ * @param value a temporary setting
+ * @return nothing, the overload is deleted
+ */
+const char *ocs_conf_c_str(const std::optional<std::string> &&value) = delete;
+
+std::optional<std::string> mconf_get_execd_spool_dir();
+std::optional<std::string> mconf_get_mailer();
+std::optional<std::string> mconf_get_xterm();
+std::optional<std::string> mconf_get_load_sensor();
+std::optional<std::string> mconf_get_prolog();
+std::optional<std::string> mconf_get_epilog();
+std::optional<std::string> mconf_get_shell_start_mode();
+std::optional<std::string> mconf_get_login_shells();
 uint32_t mconf_get_min_uid();
 uint32_t mconf_get_min_gid();
 uint32_t mconf_get_load_report_time();
 uint32_t mconf_get_max_unheard();
 uint32_t mconf_get_loglevel();
-char* mconf_get_enforce_project();
-char* mconf_get_enforce_user();
-char* mconf_get_administrator_mail();
-char* mconf_get_mail_tag();
+std::optional<std::string> mconf_get_enforce_project();
+std::optional<std::string> mconf_get_enforce_user();
+std::optional<std::string> mconf_get_administrator_mail();
+std::optional<std::string> mconf_get_mail_tag();
 ocs::tom::ListPtr<ocs::tom::US> mconf_get_user_lists();
 ocs::tom::ListPtr<ocs::tom::US> mconf_get_xuser_lists();
 ocs::tom::ListPtr<ocs::tom::PR> mconf_get_projects();
 ocs::tom::ListPtr<ocs::tom::PR> mconf_get_xprojects();
-char* mconf_get_set_token_cmd();
-char* mconf_get_pag_cmd();
+std::optional<std::string> mconf_get_set_token_cmd();
+std::optional<std::string> mconf_get_pag_cmd();
 uint32_t mconf_get_token_extend_time();
-char* mconf_get_shepherd_cmd();
-char* mconf_get_qmaster_params();
-char* mconf_get_execd_params();
-char* mconf_get_reporting_params();
-char* mconf_get_binding_params();
-char* mconf_get_jsv_params();
-char* mconf_get_gid_range();
-char* mconf_get_port_range();
+std::optional<std::string> mconf_get_shepherd_cmd();
+std::optional<std::string> mconf_get_qmaster_params();
+std::optional<std::string> mconf_get_execd_params();
+std::optional<std::string> mconf_get_reporting_params();
+std::optional<std::string> mconf_get_binding_params();
+std::optional<std::string> mconf_get_jsv_params();
+std::optional<std::string> mconf_get_gid_range();
+std::optional<std::string> mconf_get_port_range();
 char mconf_get_ijs_escape_char();
 int  mconf_get_ijs_keepalive_interval();
 int  mconf_get_ijs_keepalive_count();
 int  mconf_get_ijs_reconnect_timeout();
-char* mconf_get_qlogin_daemon();
-char* mconf_get_qlogin_command();
-char* mconf_get_rsh_daemon();
-char* mconf_get_rsh_command();
-char* mconf_get_jsv_url();
-char* mconf_get_jsv_allowed_mod();
-char* mconf_get_gdi_request_limits();
-char* mconf_get_rlogin_daemon();
-char* mconf_get_rlogin_command();
+std::optional<std::string> mconf_get_qlogin_daemon();
+std::optional<std::string> mconf_get_qlogin_command();
+std::optional<std::string> mconf_get_rsh_daemon();
+std::optional<std::string> mconf_get_rsh_command();
+std::optional<std::string> mconf_get_jsv_url();
+std::optional<std::string> mconf_get_jsv_allowed_mod();
+std::optional<std::string> mconf_get_gdi_request_limits();
+std::optional<std::string> mconf_get_rlogin_daemon();
+std::optional<std::string> mconf_get_rlogin_command();
 uint32_t mconf_get_reschedule_unknown();
 uint32_t mconf_get_max_aj_instances();
 uint32_t mconf_get_max_aj_tasks();
@@ -173,9 +195,9 @@ uint32_t mconf_get_max_jobs();
 uint32_t mconf_get_max_advance_reservations();
 uint32_t mconf_get_auto_user_fshare();
 uint32_t mconf_get_auto_user_oticket();
-char* mconf_get_auto_user_default_project();
+std::optional<std::string> mconf_get_auto_user_default_project();
 uint32_t mconf_get_auto_user_delete_time();
-char* mconf_get_delegated_file_staging();
+std::optional<std::string> mconf_get_delegated_file_staging();
 void mconf_set_new_config(bool new_config);
 bool mconf_is_new_config();
 bool mconf_get_old_reschedule_behavior();
@@ -199,9 +221,9 @@ long mconf_get_ptf_max_priority();
 long mconf_get_ptf_min_priority();
 bool mconf_get_use_qsub_gid();
 int mconf_get_notify_susp_type();
-char* mconf_get_notify_susp();
+std::optional<std::string> mconf_get_notify_susp();
 int mconf_get_notify_kill_type();
-char* mconf_get_notify_kill();
+std::optional<std::string> mconf_get_notify_kill();
 bool mconf_get_disable_reschedule();
 bool mconf_get_disable_secondary_ds();
 bool mconf_get_disable_secondary_ds_reader();
@@ -257,14 +279,14 @@ bool mconf_get_enable_addgrp_kill();
 uint64_t mconf_get_pdc_interval();
 bool mconf_get_enable_reschedule_kill();
 bool mconf_get_enable_reschedule_slave();
-void mconf_get_h_descriptors(char **pret);
-void mconf_get_s_descriptors(char **pret);
-void mconf_get_h_maxproc(char **pret);
-void mconf_get_s_maxproc(char **pret);
-void mconf_get_h_memorylocked(char **pret);
-void mconf_get_s_memorylocked(char **pret);
-void mconf_get_h_locks(char **pret);
-void mconf_get_s_locks(char **pret);
+std::string mconf_get_h_descriptors();
+std::string mconf_get_s_descriptors();
+std::string mconf_get_h_maxproc();
+std::string mconf_get_s_maxproc();
+std::string mconf_get_h_memorylocked();
+std::string mconf_get_s_memorylocked();
+std::string mconf_get_h_locks();
+std::string mconf_get_s_locks();
 int mconf_get_jsv_timeout();
 int mconf_get_jsv_threshold();
 bool mconf_get_ignore_ngroups_max_limit();

@@ -37,6 +37,8 @@
  */
 
 #include <cstring>
+#include <optional>
+#include <string>
 
 #include "uti/sge_log.h"
 #include "uti/sge_rmon_macros.h"
@@ -86,7 +88,7 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    ocs::tom::try_get_uint32(&(aMsg->buf), &dummy);
 
-   const char *old_spool = mconf_get_execd_spool_dir();
+   const std::optional<std::string> old_spool = mconf_get_execd_spool_dir();
    keep_active_t old_keep_active = mconf_get_keep_active();
 
    ocs::tom::ListPtr<ocs::tom::CONF> conf_list;
@@ -109,8 +111,8 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
    ocs::execd::execd_check_systemd_features();
 #endif
 
-   const char *spool_dir = mconf_get_execd_spool_dir();
-   if (strcmp(old_spool, spool_dir)) {
+   const std::optional<std::string> spool_dir = mconf_get_execd_spool_dir();
+   if (old_spool != spool_dir) {
       WARNING(MSG_WARN_CHANGENOTEFFECTEDUNTILRESTARTOFEXECHOSTS, "execd_spool_dir");
    }
 
@@ -131,9 +133,6 @@ int do_get_new_conf(ocs::gdi::ClientServerBase::struct_msg_t *aMsg) {
 
    sge_ls_qidle(use_qidle);
    DPRINTF("use_qidle: %d\n", use_qidle);
-
-   sge_free(&old_spool);
-   sge_free(&spool_dir);
 
    DRETURN(ret);
 }

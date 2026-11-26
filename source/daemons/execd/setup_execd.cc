@@ -36,6 +36,8 @@
  * @brief Bringing the daemon up, and adopting the jobs already running here
  */
 #include <cstring>
+#include <optional>
+#include <string>
 
 #include "uti/ocs_OpenSSL.h"
 #include "uti/ocs_Topo.h"
@@ -106,7 +108,6 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
    DENTER(TOP_LAYER);
 
    int allowed_get_conf_errors = 5;
-   char* spool_dir = nullptr;
    const char *unqualified_hostname = component_get_unqualified_hostname();
 
    ocs::tom::ListPtr<ocs::tom::CONF> conf_list;
@@ -135,7 +136,8 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
    /* get aliased hostname */
    /* TODO: is this call needed ? */
    reresolve_qualified_hostname();
-   spool_dir = mconf_get_execd_spool_dir();
+   const std::optional<std::string> spool_dir_conf = mconf_get_execd_spool_dir();
+   const char *spool_dir = ocs_conf_c_str(spool_dir_conf);
 
    DPRINTF("chdir(\"/\")----------------------------\n");
    sge_chdir_exit("/",1);
@@ -177,7 +179,6 @@ void sge_setup_sge_execd_after_register(const char *tmp_err_file_name) {
    }
 #endif
 
-   sge_free(&spool_dir);
    DRETURN_VOID;
 }
 

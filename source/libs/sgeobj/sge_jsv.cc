@@ -45,6 +45,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/poll.h>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include "uti/sge_dstring.h"
@@ -648,9 +650,8 @@ jsv_is_enabled(const char *context) {
    bool ret = true;
 
    {
-      // copy made with strdup() by sge_conf.cc
-      const ocs::uti::c_ptr<char> jsv_url{mconf_get_jsv_url()};
-      jsv_list_update("jsv", context, nullptr, jsv_url.get());
+      const std::optional<std::string> jsv_url = mconf_get_jsv_url();
+      jsv_list_update("jsv", context, nullptr, ocs_conf_c_str(jsv_url));
    }
    sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);
    ret = !ocs::tom::List<ocs::tom::JSV>(jsv_list).empty();
@@ -870,8 +871,8 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
    bool ret = true;
 
    if (context != nullptr) {
-      // copy made with strdup() by sge_conf.cc, or nullptr in the client context
-      ocs::uti::c_ptr<char> jsv_url;
+      // the configured jsv_url in the server context, no value in the client context
+      std::optional<std::string> jsv_url;
       bool holding_mutex = false;
 
       /*
@@ -885,14 +886,14 @@ bool jsv_do_verify(const char *context, ocs::tom::ElementPtr<ocs::tom::JB> &job,
       if (strcmp(context, JSV_CONTEXT_CLIENT) == 0) {
          DPRINTF("JSV client context\n");
       } else {
-         jsv_url.reset(mconf_get_jsv_url());
+         jsv_url = mconf_get_jsv_url();
          DPRINTF("JSV server context\n");
       }
 
       /*
        * update the list of JSV scripts for the current thread
        */
-      jsv_list_update("jsv", context, answer_list, jsv_url.get());
+      jsv_list_update("jsv", context, answer_list, ocs_conf_c_str(jsv_url));
       DPRINTF("JSV list for current thread updated\n");
 
       sge_mutex_lock("jsv_list", __func__, __LINE__, &jsv_mutex);

@@ -39,6 +39,7 @@
 #include <cerrno>
 #include <cstring>
 #include <cstdlib>
+#include <optional>
 #include <string>
 #include <vector>
 #include <unistd.h>
@@ -526,8 +527,9 @@ sge_mod_configuration(const ocs::tom::Element<ocs::tom::CONF> aConf, ocs::tom::L
       sge_show_conf();
 
       /* updating the commlib parameter list and gdi_timeout with new or changed parameters */
-      const ocs::uti::c_ptr<char> qmaster_params{mconf_get_qmaster_params()};
-      cl_com_update_parameter_list(qmaster_params.get());
+      std::optional<std::string> qmaster_params = mconf_get_qmaster_params();
+      // commlib takes a char *, so hand it the writable buffer of the copy
+      cl_com_update_parameter_list(qmaster_params ? qmaster_params->data() : nullptr);
 
       // propagate possible changes in the reporting_params to reporting writers
       ocs::ReportingFileWriter::update_config_all();

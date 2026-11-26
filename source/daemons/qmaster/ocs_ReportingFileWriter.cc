@@ -24,6 +24,8 @@
 
 #include <cstdio>
 #include <filesystem>
+#include <optional>
+#include <string>
 #include <unistd.h>
 
 #include "uti/sge_dstring.h"
@@ -180,8 +182,7 @@ namespace ocs {
     */
    void ReportingFileWriter::update_config_all() {
       bool config_changed = false;
-      const ocs::uti::c_ptr<const char> rp_str{mconf_get_reporting_params()};
-      std::string current_reporting_params = rp_str ? rp_str.get() : "";
+      const std::string current_reporting_params = mconf_get_reporting_params().value_or(std::string{});
 
       // check if the config has changed and update it
       sge_mutex_lock(config_mutex_name.c_str(), __func__, __LINE__, &config_mutex);

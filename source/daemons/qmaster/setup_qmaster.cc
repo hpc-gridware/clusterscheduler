@@ -45,6 +45,7 @@
 
 #include <sys/resource.h>
 
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -609,11 +610,12 @@ communication_setup() {
    sge_update_heard_from_timeout();
 
    /* fetching qmaster_params and begin to parse */
-   const ocs::uti::c_ptr<char> qmaster_params{mconf_get_qmaster_params()};
+   std::optional<std::string> qmaster_params = mconf_get_qmaster_params();
 
    /* updating the commlib parameterlist with new or changed parameters */
-   cl_com_update_parameter_list(qmaster_params.get());
-   DPRINTF("received qmaster_params are: %s\n", qmaster_params.get());
+   // commlib takes a char *, so hand it the writable buffer of the copy
+   cl_com_update_parameter_list(qmaster_params ? qmaster_params->data() : nullptr);
+   DPRINTF("received qmaster_params are: %s\n", ocs_conf_c_str(qmaster_params));
 
    /* now enable qmaster communication */
    cl_commlib_set_global_param(CL_COMMLIB_DELAYED_LISTEN, false);

@@ -44,6 +44,8 @@
 #include <cstdio>
 #include <cctype>
 #include <cstring>
+#include <optional>
+#include <string>
 #include <unistd.h>
 #include <type_traits>
 
@@ -755,11 +757,11 @@ sge_add_auto_user(ocs::gdi::Packet *packet, ocs::gdi::Task *task, const char *us
    uep_uu->set<UU_oticket>(mconf_get_auto_user_oticket());
    uep_uu->set<UU_fshare>(mconf_get_auto_user_fshare());
 
-   const ocs::uti::c_ptr<char> auto_user_default_project{mconf_get_auto_user_default_project()};
-   if (auto_user_default_project == nullptr || strcasecmp(auto_user_default_project.get(), "none") == 0) {
+   const std::optional<std::string> auto_user_default_project = mconf_get_auto_user_default_project();
+   if (!auto_user_default_project || strcasecmp(auto_user_default_project->c_str(), "none") == 0) {
       uep_uu->set<UU_default_project>(nullptr);
    } else {
-      uep_uu->set<UU_default_project>(auto_user_default_project.get());
+      uep_uu->set<UU_default_project>(auto_user_default_project->c_str());
    }
 
    /* add the auto user via GDI request */
