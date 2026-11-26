@@ -2281,7 +2281,9 @@ read_json(const rapidjson::Value &json, const char *name, const char *default_va
    return default_value;
 }
 
-static rapidjson::Document document;
+// one parsed record: the strings sge_read_rusage_json() puts into the record point into it, so it lives
+// until the next record is read; allocated once and never destroyed, so that no destructor runs at exit() (CS-3105)
+static rapidjson::Document &document = *new rapidjson::Document;
 
 /**
  * @brief Parse one record of the JSON accounting file and apply the filters
