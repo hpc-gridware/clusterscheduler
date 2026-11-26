@@ -37,6 +37,8 @@
  */
 
 #include <cinttypes>
+#include <string>
+
 #include "uti/sge_error_class.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_string.h"
@@ -65,7 +67,8 @@ typedef struct {
 typedef struct {
    pthread_mutex_t mutex;            ///< intended to guard this struct; currently never locked
 
-   char *master_host;                ///< host qmaster was last known to run on
+   /// host qmaster was last known to run on, nullptr while unknown; made with ocs::uti::create()
+   std::string *master_host;
    uint64_t timestamp_qmaster_file;  ///< mtime of `act_qmaster` when it was last read
    // True when the qmaster client certificate could not be loaded during
    // prepare_enroll() (typically because act_qmaster pointed to a host whose
@@ -87,11 +90,20 @@ static sge_gdi_ts_t ts;
 /**
  * @brief Record the host qmaster is running on
  *
- * @param master_host the host name, which is copied
+ * A pointer returned by gdi_data_get_master_host() before this call must not be used afterwards.
+ *
+ * @param master_host the host name, which is copied; nullptr forgets the host
  */
 void
 gdi_set_master_host(const char *master_host) {
-   ts.master_host = sge_strdup(ts.master_host, master_host);
+   if (master_host == nullptr) {
+      ocs::uti::destroy(ts.master_host);
+   } else if (ts.master_host == nullptr) {
+      ts.master_host = ocs::uti::create<std::string>(master_host);
+   } else {
+      // assign() copes with master_host pointing into *ts.master_host
+      ts.master_host->assign(master_host);
+   }
 }
 
 static void
@@ -105,11 +117,14 @@ gdi_data_log_tl_parameter(sge_gdi_tl_t *tl) {
    DRETURN_VOID;
 }
 
+/**
+ * @brief Log the shared GDI state at debug level
+ */
 static void
 gdi_data_log_ts_parameter() {
    DENTER(TOP_LAYER);
    DPRINTF("GDI SHARED ===\n");
-   DPRINTF("   master_host               >%s<\n", ts.master_host ? ts.master_host : "NA");
+   DPRINTF("   master_host               >%s<\n", ts.master_host != nullptr ? ts.master_host->c_str() : "NA");
    DPRINTF("   timestamp_qmaster_file    >" sge_u64 "<\n", ts.timestamp_qmaster_file);
    DPRINTF("   tls_client_cert_pending   >%s<\n", ts.tls_client_cert_pending ? "true" : "false");
    DRETURN_VOID;
@@ -150,7 +165,7 @@ gdi_data_ts_destroy() {
    pthread_mutex_destroy(&ts.mutex);
 
    /* @todo CS-591 don't we have to free all the other attributes as well?
-    * char *master_host;
+    * std::string *master_host;
     * uint64_t timestamp_qmaster_file;
     */
    DRETURN_VOID;
@@ -202,7 +217,7 @@ gdi_data_mt_done() {
  */
 const char *
 gdi_data_get_master_host() {
-   return ts.master_host;
+   return ts.master_host != nullptr ? ts.master_host->c_str() : nullptr;
 }
 
 /**

@@ -61,27 +61,43 @@ sge_tq_queue_t *GlobalRequestQueue = nullptr;
 sge_tq_queue_t *ReaderRequestQueue = nullptr;
 sge_tq_queue_t *ReaderWaitingRequestQueue = nullptr;
 
+/**
+ * @brief Fetch a value from the commlib parameter list
+ *
+ * @param name name of the parameter
+ * @return the value, or an empty pointer when the parameter is not set; malloc() memory made by commlib
+ */
+static ocs::uti::c_ptr<char> ocs_get_cl_parameter(const char *name) {
+   char *value = nullptr;
+   cl_com_get_parameter_list_value(name, &value);
+   return ocs::uti::c_ptr<char>{value};
+}
+
+/**
+ * @brief Is the commlib parameter `cl_ping` set to true?
+ *
+ * @return true when `cl_ping=true` is configured
+ */
 static bool get_cl_ping_value() {
-   char* cl_ping = nullptr;
    bool do_ping = false;
 
-   cl_com_get_parameter_list_value("cl_ping", &cl_ping);
-   if (cl_ping != nullptr) {
-      if (strcasecmp(cl_ping, "true") == 0) {
+   if (const ocs::uti::c_ptr<char> cl_ping = ocs_get_cl_parameter("cl_ping"); cl_ping != nullptr) {
+      if (strcasecmp(cl_ping.get(), "true") == 0) {
          do_ping = true;
       }
-      sge_free(&cl_ping);
    }
    return do_ping;
 }
 
+/**
+ * @brief The number of GDI retries configured with the commlib parameter `gdi_retries`
+ *
+ * @return the number of retries, 0 when the parameter is not set
+ */
 static int get_gdi_retries_value() {
-   char* gdi_retries = nullptr;
    int retries = 0;
-   cl_com_get_parameter_list_value("gdi_retries", &gdi_retries);
-   if (gdi_retries != nullptr) {
-      retries = atoi(gdi_retries);
-      sge_free(&gdi_retries);
+   if (const ocs::uti::c_ptr<char> gdi_retries = ocs_get_cl_parameter("gdi_retries"); gdi_retries != nullptr) {
+      retries = atoi(gdi_retries.get());
    }
    return retries;
 }
@@ -416,11 +432,9 @@ bool ocs::gdi::Packet::execute_external(ocs::tom::ListPtr<ocs::tom::AN> *answer_
          // If GDI parameter (like gdi_timeout) changed then we will update the handle within this loop
          cl_com_handle_t *handle = cl_com_get_handle(component_get_component_name(), 0);
          if (handle != nullptr) {
-            char *gdi_timeout_str = nullptr;
-            cl_com_get_parameter_list_value("gdi_timeout", &gdi_timeout_str);
-            if (gdi_timeout_str != nullptr) {
-               int gdi_timeout = atoi(gdi_timeout_str);
-               sge_free(&gdi_timeout_str);
+            if (const ocs::uti::c_ptr<char> gdi_timeout_str = ocs_get_cl_parameter("gdi_timeout");
+                gdi_timeout_str != nullptr) {
+               const int gdi_timeout = atoi(gdi_timeout_str.get());
                cl_com_set_synchron_receive_timeout(handle, gdi_timeout);
             }
          }

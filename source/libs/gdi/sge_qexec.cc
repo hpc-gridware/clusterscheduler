@@ -355,7 +355,7 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 
    ocs::tom::Element<ocs::tom::RT> rt_rcv;
    uint32_t exit_status = 0;
-   sge_tid_t tid = nullptr;
+   sge_tid_t tid_raw = nullptr;
 
    host[0] = '\0';
    from_id = 1;
@@ -385,24 +385,25 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
 
    switch (tag) {
       case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
-         ocs::tom::try_get_str(&pb, &tid);
+         ocs::tom::try_get_str(&pb, &tid_raw);
          ocs::tom::try_get_uint32(&pb, &exit_status);
          break;
       case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
-         ocs::tom::try_get_str(&pb, &tid);
+         ocs::tom::try_get_str(&pb, &tid_raw);
          break;
       default:
          break;
    }
+   // try_get_str() returns malloc() memory
+   const ocs::uti::c_ptr<char> tid{tid_raw};
 
    ocs::tom::clear_buffer(&pb);
 
    switch (tag) {
       case ocs::gdi::ClientServerBase::TAG_TASK_EXIT:
          /* change state in exited task */
-         if (!(rt_rcv = remote_tasks().find_first<RT_tid>(tid))) {
-            snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUND_S, tid);
-            sge_free(&tid);
+         if (!(rt_rcv = remote_tasks().find_first<RT_tid>(tid.get()))) {
+            snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUND_S, tid.get());
             DRETURN(-1);
          }
 
@@ -413,17 +414,16 @@ static int rcv_from_execd(int options, ocs::gdi::ClientServerBase::ClientServerB
       case ocs::gdi::ClientServerBase::TAG_JOB_EXECUTION:
          /* search task without taskid */
          if (!(rt_rcv = remote_tasks().find_first<RT_tid>("none"))) {
-            snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid);
+            snprintf(lasterror, sizeof(lasterror), MSG_GDI_TASKNOTFOUNDNOIDGIVEN_S, tid.get());
             DRETURN(-1);
          }
-         rt_rcv.set<RT_tid>(tid);
+         rt_rcv.set<RT_tid>(tid.get());
          break;
 
       default:
          break;
    }
 
-   sge_free(&tid);
    DRETURN(0);
 }
 

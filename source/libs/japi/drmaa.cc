@@ -58,7 +58,10 @@
 #include <unistd.h>
 #include <cctype>
 #include <cerrno>
+#include <optional>
+#include <string>
 #include <tuple>
+#include <vector>
 #include <pthread.h>
 
 #include <pthread.h>
@@ -142,7 +145,7 @@ static int drmaa_path2wd_opt(ocs::tom::ConstList<ocs::tom::VA> attrs, ocs::tom::
                              int is_bulk, dstring *diag);
 static int drmaa_path2sge_path(ocs::tom::ConstList<ocs::tom::VA> attrs, int is_bulk,
                                const char *attribute_key, int do_wd,
-                               const char **new_path, dstring *diag);
+                               std::optional<std::string> &new_path, dstring *diag);
 static void prune_arg_list(ocs::tom::List<ocs::tom::SPA> args);
 static void opt_list_append_default_drmaa_opts(ocs::tom::ListPtr<ocs::tom::SPA> &opts);
 static ocs::tom::ListPtr<ocs::tom::SPA> merge_drmaa_options(ocs::tom::ListPtr<ocs::tom::SPA> &&opts_default,
@@ -155,18 +158,20 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
                                                 ocs::tom::ConstList<ocs::tom::VA> attrs,
                                                 ocs::tom::ConstList<ocs::tom::NSV> vattrs, int is_bulk,
                                                 dstring *diag);
-static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag);
-static char *drmaa_get_home_directory(const char *username, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
-static char *drmaa_expand_wd_path(const char *username, const char *path, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static std::optional<std::string> drmaa_time2sge_time(const char *drmaa_time, dstring *diag);
+static std::optional<std::string> drmaa_get_home_directory(const char *username,
+                                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static std::optional<std::string> drmaa_expand_wd_path(const char *username, const char *path,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static int drmaa_set_bulk_range(ocs::tom::ListPtr<ocs::tom::SPA> &opts, int start, int end, int step,
                                 ocs::tom::ListPtr<ocs::tom::AN> *alp);
 static drmaa_attr_names_t *drmaa_fill_supported_nonvector_attributes(dstring *diag);
 static drmaa_attr_names_t *drmaa_fill_supported_vector_attributes(dstring *diag);
-static int drmaa_parse_contact_string(const char *contact, char **session);
+static int drmaa_parse_contact_string(const char *contact, std::optional<std::string> &session);
 
 /** @brief Printf like callback used to report the usage of a job category */
 typedef void (*print_func_t)(const char *fmt, ...);
-static char** sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static std::vector<char *> sge_get_qtask_args(const char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /**
  * The non-vector job template attributes this implementation supports. Every
@@ -244,8 +249,7 @@ static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t
    ocs::tom::ListPtr<ocs::tom::CF> clp_user;
    const char *task_name;
    struct passwd pw_struct{};
-   char *pw_buffer;
-   size_t pw_buffer_size;
+   std::vector<char> pw_buffer;
    const char* user_name = component_get_username();
    const char* cell_root = bootstrap_get_cell_root();
 
@@ -278,10 +282,8 @@ static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t
       cep = nxt;
    }
 
-   pw_buffer_size = get_pw_buffer_size();
-   pw_buffer = sge_malloc(pw_buffer_size);
-   SGE_ASSERT(pw_buffer != nullptr);
-   pwd = sge_getpwnam_r(user_name, &pw_struct, pw_buffer, pw_buffer_size);
+   pw_buffer.resize(get_pw_buffer_size());
+   pwd = sge_getpwnam_r(user_name, &pw_struct, pw_buffer.data(), pw_buffer.size());
 
    /* user settings */
    if (pwd == nullptr) {
@@ -326,17 +328,13 @@ static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t
 
    /* merge contents of user list into cluster list */
    for (auto cep = clp_user->front(); cep;) {
-      char *ro_task_name;
       const auto next = cep.next();
       task_name = cep.get<CF_name>();
 
       /* build task name with leading '!' for search operation */
-      ro_task_name = sge_malloc(strlen(task_name) + 2);
-      SGE_ASSERT(ro_task_name != nullptr);
-      ro_task_name[0] = '!';
-      strcpy(&ro_task_name[1], task_name);
+      const std::string ro_task_name = std::string("!") + task_name;
 
-      if (clp_cluster->find_first<CF_name>(ro_task_name)) {
+      if (clp_cluster->find_first<CF_name>(ro_task_name.c_str())) {
          /* do not override cluster global task entry */
          clp_user->erase(cep);
       } else if (const auto cep_dest = clp_cluster->find_first<CF_name>(task_name)) {
@@ -353,7 +351,6 @@ static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t
          clp_cluster->push_back(std::move(user_entry));
       }
 
-      sge_free(&ro_task_name);
       cep = next;
    }
    clp_user.reset();
@@ -369,23 +366,19 @@ static int init_qtask_config(ocs::tom::ListPtr<ocs::tom::AN> *alpp, print_func_t
       for (const auto cep : tasks) {
          task_name = cep.get<CF_name>();
          if (task_name[0] == '!') {
-            char *t = sge_malloc(strlen(task_name));
-            SGE_ASSERT(t != nullptr);
-            strcpy(t, &task_name[1]);
-            cep.set<CF_name>(t);
-            sge_free(&t);
+            // copy first: task_name points into the attribute that is replaced
+            const std::string t{&task_name[1]};
+            cep.set<CF_name>(t.c_str());
          }
       }
    }
 
-   sge_free(&pw_buffer);
    DRETURN(0);
 
 FCLOSE_ERROR:
 Error:
    clp_cluster.reset();
    clp_user.reset();
-   sge_free(&pw_buffer);
    DRETURN(-1);
 }
 
@@ -400,14 +393,15 @@ Error:
  * @param taskname The name of the entry for which to look in the qtask files
  * @param answer_list For returning error information
  *
- * @return terminated array of args for the given qtask entry
+ * @return nullptr terminated array of args for the given qtask entry, empty when there is no such entry or
+ *         on an error; the args are malloc() memory made by sge_parse_args(), the caller frees them
  *
  * @note MT-NOTE: sge_get_qtask_args() is MT safe with respect to itself, but it is
  *       not thread safe to use this function in conjuction with the
  *       init_qtask_config() function or accessing the
  *       task_config global variable.
  */
-static char **sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+static std::vector<char *> sge_get_qtask_args(const char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
    int num_args = 0;
@@ -429,7 +423,7 @@ static char **sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN>
        * like xprintf to pass in.  This was really meant for use with qtsch. */
       if (init_qtask_config(answer_list, (print_func_t)printf) != 0) {
          sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
-         DRETURN(nullptr);
+         DRETURN(std::vector<char *>());
       }
    }
 
@@ -438,7 +432,7 @@ static char **sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN>
    // task_config is a process-lifetime global held raw, read through a checked handle
    const auto task = ocs::tom::ConstList<ocs::tom::CF>(task_config).find_first<CF_name>(taskname);
    if (task == nullptr) {
-      DRETURN(nullptr);
+      DRETURN(std::vector<char *>());
    }
 
    const char *value = task.get<CF_value>();
@@ -446,10 +440,8 @@ static char **sge_get_qtask_args(char *taskname, ocs::tom::ListPtr<ocs::tom::AN>
       num_args = sge_quick_count_num_args(value);
    }
 
-   char **args = (char **)sge_malloc(sizeof(char *) * (num_args + 1));
-   SGE_ASSERT(args != nullptr);
-   memset(args, 0, sizeof(char *) * (num_args + 1));
-   sge_parse_args (value, args);
+   std::vector<char *> args(num_args + 1, nullptr);
+   sge_parse_args (value, args.data());
 
    DRETURN(args);
 }
@@ -490,7 +482,7 @@ int drmaa_init(const char *contact, char *error_diagnosis,
    dstring diag;
    dstring *diagp = nullptr;
    dstring session_key_out = DSTRING_INIT;
-   char *session_key_in = nullptr;
+   std::optional<std::string> session_key_in;
 
    if (error_diagnosis != nullptr) {
       sge_dstring_init(&diag, error_diagnosis, error_diag_len+1);
@@ -500,7 +492,7 @@ int drmaa_init(const char *contact, char *error_diagnosis,
    /* Disable profiling for DRMAA clients. */
    sge_prof_set_enabled(false);
 
-   ret = drmaa_parse_contact_string(contact, &session_key_in);
+   ret = drmaa_parse_contact_string(contact, session_key_in);
 
    if (ret != DRMAA_ERRNO_SUCCESS) {
       if (diagp != nullptr) {
@@ -510,10 +502,8 @@ int drmaa_init(const char *contact, char *error_diagnosis,
       DRETURN(ret);
    }
 
-   ret = japi_init(contact, session_key_in, &session_key_out, DRMAA, true, nullptr,
-                   diagp);
-
-   sge_free(&session_key_in);
+   ret = japi_init(contact, session_key_in ? session_key_in->c_str() : nullptr, &session_key_out, DRMAA, true,
+                   nullptr, diagp);
 
    if (ret != DRMAA_ERRNO_SUCCESS) {
       /* diag was set in japi_init() */
@@ -530,12 +520,12 @@ int drmaa_init(const char *contact, char *error_diagnosis,
  * it, looking for specific flags.  The current set of supported flags is:
  *
  * @param contact The contact string to be parsed
- * @param session The buffer into which the session string will be written
- * @param int DRMAA error code
+ * @param[out] session receives the value of the last `session` flag; left as it is when there is none
+ * @return DRMAA error code
  *
  * @note MT-NOTES: drmaa_parse_contact_string() is MT safe
  */
-static int drmaa_parse_contact_string(const char *contact, char **session) {
+static int drmaa_parse_contact_string(const char *contact, std::optional<std::string> &session) {
    DENTER(TOP_LAYER);
 
    const char *full_str = contact;
@@ -559,7 +549,7 @@ static int drmaa_parse_contact_string(const char *contact, char **session) {
              drmaa_errno = DRMAA_ERRNO_INVALID_ARGUMENT;
          }
          else if(strcasecmp(token, "session") == 0) {
-            *session = strdup(str);
+            session = str;
          }
 #if 0 /* For future use... */
          else if (strcasecmp(token, "sge_root") == 0) {
@@ -2043,21 +2033,20 @@ static int drmaa_path2wd_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, ocs:
                              const int is_bulk, dstring *diag) {
    DENTER(TOP_LAYER);
 
-   const char *new_path = nullptr;
+   std::optional<std::string> new_path;
    int drmaa_errno;
 
    if ((drmaa_errno = drmaa_path2sge_path(attrs, is_bulk,
-                                           DRMAA_WD, 0, &new_path,
+                                           DRMAA_WD, 0, new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
-      if (new_path != nullptr) {
+      if (new_path) {
          const auto wd_attr = attrs.find_first<VA_variable>(DRMAA_WD);
          const char *value = wd_attr.get<VA_value>();
 
-         DPRINTF("-wd = \"%s\"\n", new_path);
+         DPRINTF("-wd = \"%s\"\n", new_path->c_str());
 
          const auto ep_opt = sge_add_arg(args, wd_OPT, MT_STRING, "-wd", value);
-         ep_opt.set<SPA_argval_lStringT>(new_path);
-         sge_free(&new_path);
+         ep_opt.set<SPA_argval_lStringT>(new_path->c_str());
       }
       else {
          drmaa_errno = DRMAA_ERRNO_SUCCESS;
@@ -2096,34 +2085,32 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
                                const int opt, dstring *diag, const bool bFileStaging) {
    DENTER(TOP_LAYER);
 
-   const char *new_path = nullptr;
+   std::optional<std::string> new_path;
    int drmaa_errno;
    auto path_list = ocs::tom::ListPtr<ocs::tom::PN>::create("path_list");
    const char *unqualified_hostname = component_get_unqualified_hostname();
 
    if ((drmaa_errno = drmaa_path2sge_path(attrs, is_bulk,
-                                           attribute_key, 1, &new_path,
+                                           attribute_key, 1, new_path,
                                            diag)) == DRMAA_ERRNO_SUCCESS) {
       if (new_path) {
          const auto path_attr = attrs.find_first<VA_variable>(attribute_key);
          const char *value = path_attr.get<VA_value>();
-         char *cell = nullptr;
-         char *path = nullptr;
+         std::optional<std::string> cell;
+         const char *path = nullptr;
 
          /* We must accept an empty path. This must be set to the default
           * path later.
           * A empty path means that the drmaa attribute is not set, so it
           * obviously doesn't  have to start with a colon.
           */
-         if( strlen( new_path )==0 ) {
-            path = (char*)"";
-         } else if (new_path[0] == ':') {  /* :path */
-            path = (char *)new_path + 1;
-         } else if ((path = strstr((char *)new_path, ":"))){ /* host:path */
-            path[0] = '\0';
-            cell = strdup(new_path);
-            path[0] = ':';
-            path += 1;
+         if (const size_t colon = new_path->find(':'); new_path->empty()) {
+            path = "";
+         } else if (colon == 0) {  /* :path */
+            path = new_path->c_str() + 1;
+         } else if (colon != std::string::npos) { /* host:path */
+            cell = new_path->substr(0, colon);
+            path = new_path->c_str() + colon + 1;
          } else { /* path */
             /* DRMAA-Spec says: The path MUST begin with a colon! */
             sge_dstring_sprintf(diag, MSG_DRMAA_PATH_NEEDS_COLON_S, attribute_key);
@@ -2140,10 +2127,9 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
             drmaa_errno = DRMAA_ERRNO_INVALID_ARGUMENT;
          }
 
-         if( cell ) {
-            DPRINTF( "PN_file_host = \"%s\"\n", cell );
-            ep.set<PN_file_host>(ocs::tom::Host(cell));
-            sge_free(&cell);
+         if (cell) {
+            DPRINTF("PN_file_host = \"%s\"\n", cell->c_str());
+            ep.set<PN_file_host>(ocs::tom::Host(cell->c_str()));
          } else {
             /* No host was given, so we use this host we are running on.*/
             ep.set<PN_file_host>(ocs::tom::Host(unqualified_hostname));
@@ -2157,8 +2143,6 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
          const auto ep_opt = sge_add_arg(args, opt, MT_LIST, sw, value);
          DPRINTF("Setting List\n");
          ep_opt.set<SPA_argval_lListT>(std::move(path_list));
-         DPRINTF("Freeing Path\n");
-         sge_free(&new_path);
       } else {
          drmaa_errno = DRMAA_ERRNO_SUCCESS;
       }
@@ -2182,7 +2166,7 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
  * @param is_bulk 1 for bulk jobs 0 otherwise
  * @param attribute_key The DRMAA job template keyword for this path
  * @param do_wd whether the WD placeholder should be used
- * @param new_path The modified path
+ * @param[out] new_path The modified path; left as it is when the attribute is not set or on an error
  * @param diag diagnosis inforation
  *
  * @return DRMAA error codes
@@ -2191,7 +2175,7 @@ static int drmaa_path2path_opt(const ocs::tom::ConstList<ocs::tom::VA> attrs, oc
  */
 static int drmaa_path2sge_path(const ocs::tom::ConstList<ocs::tom::VA> attrs, const int is_bulk,
                                const char *attribute_key, const int do_wd,
-                               const char **new_path, dstring *diag) {
+                               std::optional<std::string> &new_path, dstring *diag) {
    DENTER(TOP_LAYER);
 
    if (const auto ep = attrs.find_first<VA_variable>(attribute_key)) {
@@ -2258,7 +2242,7 @@ static int drmaa_path2sge_path(const ocs::tom::ConstList<ocs::tom::VA> attrs, co
 
       /* rest of the path */
       sge_dstring_append(&ds, value);
-      *new_path = strdup(sge_dstring_get_string(&ds));
+      new_path = sge_dstring_get_string(&ds);
       sge_dstring_free(&ds);
    }
 
@@ -2354,8 +2338,6 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
     * append the native spec switches to the list if they exist
     */
    if ((ep = drmaa_jt->strings->find_first<VA_variable>(DRMAA_NATIVE_SPECIFICATION))) {
-      int num_args;
-      char **args;
       const char *value = ep.get<VA_value>();
 
       /* fix for IZ 2325: skip leading whitespace */
@@ -2363,16 +2345,21 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
          value++;
       }
 
-      num_args = sge_quick_count_num_args(value);
-      args = (char **)sge_malloc(sizeof(char *) * (num_args + 1));
-      memset(args, 0, sizeof(char *) * (num_args + 1));
+      const int num_args = sge_quick_count_num_args(value);
+      // nullptr terminated; the args are malloc() memory made by sge_parse_args()
+      std::vector<char *> args(num_args + 1, nullptr);
 
       DPRINTF("processing %s, count %d = \"%s\"\n", DRMAA_NATIVE_SPECIFICATION, num_args, value);
 
       if (num_args != 0) {
-         sge_parse_args(value, args);
+         sge_parse_args(value, args.data());
          opt_list_append_opts_from_qsub_cmdline(prog_number, opts_native, &alp,
-                                                (const char **)args, environ);
+                                                const_cast<const char **>(args.data()), environ);
+
+         // the parsed options are copies: free the args on every path, the array goes with the block
+         for (char *&arg : args) {
+            sge_free(&arg);
+         }
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
@@ -2380,15 +2367,6 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
             DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
          }
       }
-
-     /* Free the args. */
-     while (num_args >= 0) {
-         sge_free(&(args[num_args]));
-         num_args--;
-      }
-
-      /* Free the args array. */
-      sge_free(&args);
    }
 
    alp.reset();
@@ -2423,14 +2401,13 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
          opt_list_is_X_true(*opts_default, "-b"))))) {
       DPRINTF("Skipping options from script due to -b option\n");
    } else {
-      const char *path = nullptr;
+      std::optional<std::string> path;
 
       if (opt_list_has_X(*opts_drmaa, "-wd")) {
          const auto wd_opt = opts_drmaa->find_first<SPA_switch_val>("-wd");
-         path = wd_opt.get<SPA_argval_lStringT>();
-         path = drmaa_expand_wd_path(username, path, &alp);
+         path = drmaa_expand_wd_path(username, wd_opt.get<SPA_argval_lStringT>(), &alp);
 
-         if (path == nullptr) {
+         if (!path) {
             answer_list_to_dstring(alp, diag);
             alp.reset();
             DRETURN(Result(DRMAA_ERRNO_DENIED_BY_DRM, nullptr));
@@ -2445,11 +2422,10 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
          alp.reset();
       }
 
-      if (path != nullptr) {
-         DPRINTF("Using \"%s\" for the working directory.\n", path);
-         opt_list_append_opts_from_script_path(prog_number, opts_scriptfile, path, &alp,
+      if (path) {
+         DPRINTF("Using \"%s\" for the working directory.\n", path->c_str());
+         opt_list_append_opts_from_script_path(prog_number, opts_scriptfile, path->c_str(), &alp,
                                                 *opts_drmaa, environ);
-         sge_free(&path);
       } else {
          DPRINTF("Using current directory for the working directory.\n");
          opt_list_append_opts_from_script(prog_number, opts_scriptfile, &alp, *opts_drmaa,
@@ -2476,10 +2452,8 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
        opt_list_has_X(*opts_native, "-cat") ||
        opt_list_has_X(*opts_defaults, "-cat") ||
        opt_list_has_X(*opts_default, "-cat")) {
-      /* No need to free job_cat since it points to a string in an element
-       * in jt->strings. */
-      char *job_cat = nullptr;
-      const char **args = nullptr;
+      // copy of the category: the option it comes from is erased
+      std::string job_cat;
       ocs::tom::Element<ocs::tom::SPA> cat_opt;
 
       DPRINTF("Processing job category\n");
@@ -2489,19 +2463,19 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
        * -cat will be added as a normal switch to qsub et al, at which point
        * this long series of ifs becomes necessary. */
       if ((cat_opt = opts_drmaa->find_first<SPA_switch_val>("-cat")) != nullptr) {
-         job_cat = strdup(cat_opt.get<SPA_argval_lStringT>());
+         job_cat = cat_opt.get<SPA_argval_lStringT>();
          opts_drmaa->erase(cat_opt);
       } else if ((cat_opt = opts_scriptfile->find_first<SPA_switch_val>("-cat")) != nullptr) {
-         job_cat = strdup(cat_opt.get<SPA_argval_lStringT>());
+         job_cat = cat_opt.get<SPA_argval_lStringT>();
          opts_scriptfile->erase(cat_opt);
       } else if ((cat_opt = opts_native->find_first<SPA_switch_val>("-cat")) != nullptr) {
-         job_cat = strdup(cat_opt.get<SPA_argval_lStringT>());
+         job_cat = cat_opt.get<SPA_argval_lStringT>();
          opts_native->erase(cat_opt);
       } else if ((cat_opt = opts_defaults->find_first<SPA_switch_val>("-cat")) != nullptr) {
-         job_cat = strdup(cat_opt.get<SPA_argval_lStringT>());
+         job_cat = cat_opt.get<SPA_argval_lStringT>();
          opts_defaults->erase(cat_opt);
       } else if ((cat_opt = opts_default->find_first<SPA_switch_val>("-cat")) != nullptr) {
-         job_cat = strdup(cat_opt.get<SPA_argval_lStringT>());
+         job_cat = cat_opt.get<SPA_argval_lStringT>();
          opts_default->erase(cat_opt);
       } else {
          /* This theoretically can't happen. */
@@ -2512,7 +2486,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       /* We need to document a standard practice for naming job categories, so
        * they don't conflict with command names.  I think something like
        * <cat_name>.cat would work fine. */
-      args = (const char **)sge_get_qtask_args(job_cat, &alp);
+      std::vector<char *> args = sge_get_qtask_args(job_cat.c_str(), &alp);
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
@@ -2521,14 +2495,13 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       }
       alp.reset();
 
-      sge_free(&job_cat);
-
-      if (args != nullptr) {
+      if (!args.empty()) {
          opt_list_append_opts_from_qsub_cmdline(prog_number, opts_job_cat, &alp,
-                                                args, environ);
-         /* free the args string array */
-         char **argsf = (char **)args;
-         sge_strafree(&argsf);
+                                                const_cast<const char **>(args.data()), environ);
+         /* free the args strings, the array is released at the end of the block */
+         for (char *&arg : args) {
+            sge_free(&arg);
+         }
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
@@ -2842,21 +2815,21 @@ static int opt_list_append_opts_from_drmaa_attr(ocs::tom::ListPtr<ocs::tom::SPA>
    /* job start time -- -a */
    if ((ep=attrs.find_first<VA_variable>(DRMAA_START_TIME))) {
       uint32_t timeval;
-      const char *value = (const char*)drmaa_time2sge_time(ep.get<VA_value>(), diag);
+      const std::optional<std::string> value = drmaa_time2sge_time(ep.get<VA_value>(), diag);
 
-      if (value == nullptr) {
+      if (!value) {
          /* diag is set by drmma_time2sge_time */
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
 
-      DPRINTF("processing %s = \"%s\"\n", DRMAA_START_TIME, value);
+      DPRINTF("processing %s = \"%s\"\n", DRMAA_START_TIME, value->c_str());
 
-      if (!ulong_parse_date_time_from_string(&timeval, nullptr, value)) {
+      if (!ulong_parse_date_time_from_string(&timeval, nullptr, value->c_str())) {
          sge_dstring_copy_string(diag, MSG_DRMAA_INVALID_TIME_STRING);
          DRETURN(DRMAA_ERRNO_DENIED_BY_DRM);
       }
 
-      ep_opt = sge_add_arg(args, a_OPT, MT_UINT32, "-a", value);
+      ep_opt = sge_add_arg(args, a_OPT, MT_UINT32, "-a", value->c_str());
       ep_opt.set<SPA_argval_lUlong64T>(sge_gmt32_to_gmt64(timeval));
    }
 
@@ -3164,11 +3137,11 @@ o   -V                                     export all environment variables
  * @param drmaa_time the DRMAA time string
  * @param diag errors
  *
- * @return The time as a string
+ * @return The time as a string, std::nullopt on a parse error (diag holds the reason)
  *
  * @note MT-NOTE: drmaa_time2sge_time() is MT safe
  */
-static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
+static std::optional<std::string> drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
    DENTER(TOP_LAYER);
 
    /* SGE time format is [[CC]]YY]MMDDhhmm.[ss] */
@@ -3176,7 +3149,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
    int year, month, day, hour, minute, second, tz_hours, tz_minutes;
    int century_set = 0, year_set = 0, month_set = 0, day_set = 0;
    int tz_diff_hours, tz_diff_minutes;
-   char *p1, *p2, *start;
+   const char *p1, *p2;
    char tz_sign[2], tmp[128], sge_time[68]; /* We will always build a string 15 + 1 long (yet printf used below does *not* truncate numbers! */
    time_t now;
    struct tm gmnow;
@@ -3197,8 +3170,8 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
    tz_sign[0] = '\0';
    tz_hours = -1;
    tz_minutes = -1;
-   start = strdup(drmaa_time);
-   p1 = start;
+   const std::string start{drmaa_time};
+   p1 = start.c_str();
    p2 = strchr(p1, '/');
 
    /* Look for year */
@@ -3224,7 +3197,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
       else {
          /* Whatever comes before the slash can only be 2 or 4 characters */
          sge_dstring_copy_string(diag, MSG_DRMAA_TIME_PARSE_ERROR);
-         DRETURN(nullptr);
+         DRETURN(std::nullopt);
       }
    }
    else {
@@ -3287,7 +3260,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
    if (sscanf(p1, "%2d:%2d", &hour, &minute) != 2) {
       /* Hour and minute as hh:mm is required in DRMAA date strings. */
       sge_dstring_copy_string(diag, MSG_DRMAA_TIME_PARSE_ERROR);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    /* Rather than trying to figure out how much whitespace the sscanf skipped
@@ -3328,7 +3301,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
        (month_set && (month > 12)) ||
        (hour > 23) || (minute > 59) || (second > 59)) {
       sge_dstring_append(diag, MSG_DRMAA_TIME_PARSE_ERROR);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
    /* If the day was gotten from gmtime(), check if the resulting date is in the
     * past.  If it is, increment the day and ripple the change through the
@@ -3439,7 +3412,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
       else {
          /* The sign must always be present and be a + or - */
          sge_dstring_copy_string(diag, MSG_DRMAA_TIME_PARSE_ERROR);
-         DRETURN(nullptr);
+         DRETURN(std::nullopt);
       }
    }
    /* If no timezone info was given, just use whatever hour and minute were in
@@ -3449,9 +3422,7 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
     * terminating character for us. */
    snprintf(sge_time, sizeof(sge_time), "%.4d%.2d%.2d%.2d%.2d.%.2d", year, month, day, hour, minute, second);
 
-   sge_free(&start);
-
-   DRETURN(strdup(sge_time));
+   DRETURN(std::string(sge_time));
 }
 
 /**
@@ -3468,15 +3439,15 @@ static char *drmaa_time2sge_time(const char *drmaa_time, dstring *diag) {
  * @param path the DRMAA_WD string
  * @param answer_list errors
  *
- * @return The expanded path as a string
+ * @return The expanded path, std::nullopt on an error (answer_list holds the reason)
  *
  * @note MT-NOTE: drmaa_expand_wd_path() is MT safe except on FreeBSD
  */
-static char *drmaa_expand_wd_path(const char *username, const char *path,
-                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+static std::optional<std::string> drmaa_expand_wd_path(const char *username, const char *path,
+                                                       ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   char *file = nullptr;
+   std::string file;
    char str[MAX_STRING_SIZE];
 
    DPRINTF("Expanding \"%s\"\n", path);
@@ -3486,7 +3457,7 @@ static char *drmaa_expand_wd_path(const char *username, const char *path,
          snprintf(str, sizeof(str), SFNMAX, MSG_DRMAA_INC_NOT_ALLOWED);
          answer_list_add(answer_list, str, STATUS_ENOSUCHUSER,
                          ANSWER_QUALITY_ERROR);
-         DRETURN(nullptr);
+         DRETURN(std::nullopt);
    }
 
    /* If the home directory placeholder is found at the beginning of the
@@ -3494,27 +3465,19 @@ static char *drmaa_expand_wd_path(const char *username, const char *path,
     * machine in hopes that it's the same home directory as on the exec
     * host. */
    if (!strncmp(path, "$HOME", 5)) {
-      int length = 0;
-      char *homedir = drmaa_get_home_directory(username, answer_list);
+      const std::optional<std::string> homedir = drmaa_get_home_directory(username, answer_list);
 
-      if (homedir == nullptr) {
-         DRETURN(nullptr);
+      if (!homedir) {
+         DRETURN(std::nullopt);
       }
 
-      length = strlen(path) - 5 + strlen(homedir) + 1;
-
-      file = sge_malloc(sizeof(char) * length);
-      strcpy(file, homedir);
-      file = strcat(file, path + 5);
-
-      sge_free(&homedir);
+      file = *homedir + (path + 5);
    }
    else {
-      file = sge_malloc(sizeof(char) * (strlen(path) + 1));
-      file = strcpy(file, path);
+      file = path;
    }
 
-   DPRINTF("Expanded to \"%s\"\n", file);
+   DPRINTF("Expanded to \"%s\"\n", file.c_str());
    DRETURN(file);
 }
 
@@ -3523,40 +3486,35 @@ static char *drmaa_expand_wd_path(const char *username, const char *path,
  *
  * Returns the user's home directory as determined from nsswitch.conf.
  *
+ * @param username the user's name
  * @param answer_list errors
  *
- * @return the home directory path as a string
+ * @return the home directory path, std::nullopt on an error (answer_list holds the reason)
  *
  * @note MT-NOTE: drmaa_get_home_directory() is MT safe except on FreeBSD
  */
-static char *drmaa_get_home_directory(const char *username, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+static std::optional<std::string> drmaa_get_home_directory(const char *username,
+                                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
-   struct passwd *pwd = nullptr;
    char str[MAX_STRING_SIZE];
    struct passwd pw_struct;
-   char *buffer;
-   int size;
-
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-   pwd = sge_getpwnam_r(username, &pw_struct, buffer, size);
+   std::vector<char> buffer(get_pw_buffer_size());
+   const struct passwd *pwd = sge_getpwnam_r(username, &pw_struct, buffer.data(), buffer.size());
 
    if (!pwd) {
       snprintf(str, sizeof(str), MSG_USER_INVALIDNAMEX_S, username);
       answer_list_add(answer_list, str, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR);
-      sge_free(&buffer);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    if (!pwd->pw_dir) {
       snprintf(str, sizeof(str), MSG_USER_NOHOMEDIRFORUSERX_S, username);
       answer_list_add(answer_list, str, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
-   sge_free(&buffer);
-   DRETURN(strdup(pwd->pw_dir));
+   DRETURN(std::string(pwd->pw_dir));
 }
 
 /**

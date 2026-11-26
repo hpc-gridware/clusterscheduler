@@ -99,7 +99,6 @@ int set_sec_cred(const char *sge_root, const char *mastername, const ocs::tom::E
 
    pid_t command_pid;
    FILE *fp_in, *fp_out, *fp_err;
-   char *str;
    int ret = 0;
    char binary[1024];
 
@@ -119,12 +118,12 @@ int set_sec_cred(const char *sge_root, const char *mastername, const ocs::tom::E
          DRETURN(-1);
       }
 
-      str = sge_bin2string(fp_out, 0);
-      
+      // sge_bin2string() returns malloc() memory
+      const ocs::uti::c_ptr<char> str{sge_bin2string(fp_out, 0)};
+
       ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
-      
-      job.set<JB_tgt>(str);
-      sge_free(&str);
+
+      job.set<JB_tgt>(str.get());
    }
       
    DRETURN(ret);

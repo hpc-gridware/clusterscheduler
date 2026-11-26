@@ -77,7 +77,9 @@
 #include <pthread.h>
 #include <pwd.h>
 #include <memory>
+#include <string>
 #include <tuple>
+#include <vector>
 
 #include "uti/ocs_cond.h"
 #include "uti/sge_bootstrap_env.h"
@@ -327,9 +329,39 @@ static pthread_cond_t japi_threads_in_session_cv = PTHREAD_COND_INITIALIZER;
  * events of its own jobs. Guarded by `japi_session_mutex` and assumed not to
  * change while a session is active.
  */
-char *japi_session_key = nullptr;
+const char *japi_session_key = nullptr;
 /** Session key used when the application did not ask for a persistent session */
 static const char *JAPI_SINGLE_SESSION_KEY = "JAPI_SSK";
+/**
+ * @brief Owned copy of the session key of a session with job wait, made with ocs::uti::create()
+ *
+ * #japi_session_key points into it while such a session is open; nullptr otherwise. Guarded like
+ * #japi_session_key.
+ */
+static std::string *japi_session_key_copy = nullptr;
+
+/**
+ * @brief Make #japi_session_key an owned copy of a key, or forget the key
+ *
+ * Releases the previous copy; a pointer to the previous key must not be used afterwards. The caller holds
+ * `japi_session_mutex` or is the only thread of the session.
+ *
+ * @param key the key to copy; nullptr releases the copy and sets #japi_session_key to nullptr
+ */
+static void ocs_japi_set_session_key(const char *key) {
+   if (key == nullptr) {
+      ocs::uti::destroy(japi_session_key_copy);
+      japi_session_key = nullptr;
+      return;
+   }
+   if (japi_session_key_copy == nullptr) {
+      japi_session_key_copy = ocs::uti::create<std::string>(key);
+   } else {
+      // assign() copes with key pointing into the old copy
+      japi_session_key_copy->assign(key);
+   }
+   japi_session_key = japi_session_key_copy->c_str();
+}
 /** Component name this library registers with, see japi_init() */
 static volatile ProgName prog_number = JAPI;
 /** The thread that called japi_init(); only it may call japi_exit() */
@@ -565,7 +597,7 @@ int japi_init(const char *contact, const char *session_key_in,
    } else {
       /* This doesn't need to be protected by a lock because by definition we
        * only get here if there are no other threads. */
-      japi_session_key = (char *)JAPI_SINGLE_SESSION_KEY;
+      japi_session_key = JAPI_SINGLE_SESSION_KEY;
       ret = DRMAA_ERRNO_SUCCESS;
    }
 
@@ -683,14 +715,9 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
    }
 
    JAPI_LOCK_SESSION();
-   if (japi_session_key == JAPI_SINGLE_SESSION_KEY) {
-      /* japi_init() was called with enable_wait set to false */
-      japi_session_key = strdup(sge_dstring_get_string(session_key_out));
-   }
-   else {
-      /* japi_init() was called with enable_wait set to true */
-      japi_session_key = sge_strdup(japi_session_key, sge_dstring_get_string(session_key_out));
-   }
+   /* japi_init() was called with enable_wait set to false (the key is JAPI_SINGLE_SESSION_KEY)
+    * or set to true: either way the session key becomes an owned copy */
+   ocs_japi_set_session_key(sge_dstring_get_string(session_key_out));
    JAPI_UNLOCK_SESSION();
 
    sge_dstring_free(session_key_out);
@@ -747,7 +774,7 @@ int japi_enable_job_wait(const char *username, const char *unqualified_hostname,
       }
 
       /* We know that japi_session_key is a copy of a string at this point. */
-      sge_free(&japi_session_key);
+      ocs_japi_set_session_key(nullptr);
 
       /* return error context from event client thread if there is such */
       JAPI_LOCK_EC_ALP(japi_ec_alp_struct);
@@ -981,12 +1008,8 @@ int japi_exit(int flag, dstring *diag) {
     * closed by japi_exit() causing all kinds of headaches.
     * The same goes for the communications socket. */
    JAPI_LOCK_SESSION();
-   if (japi_session_key != JAPI_SINGLE_SESSION_KEY) {
-      sge_free(&japi_session_key);
-   }
-   else {
-      japi_session_key = nullptr;
-   }
+   // releases the copy of a session with job wait; JAPI_SINGLE_SESSION_KEY is not owned and has no copy
+   ocs_japi_set_session_key(nullptr);
 
    japi_session = JAPI_SESSION_INACTIVE;
    JAPI_UNLOCK_SESSION();
@@ -2008,6 +2031,8 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
    int wait_result;
    const char **sync_job_ids = nullptr;
    ocs::tom::ListPtr<ocs::tom::ST> sync_list;
+   // nullptr terminated, points to the ST_name elements of sync_list
+   std::vector<const char *> sync_job_id_array;
 
    if (timeout < DRMAA_TIMEOUT_WAIT_FOREVER) {
       sge_dstring_sprintf (diag, MSG_JAPI_NEGATIVE_TIMEOUT);
@@ -2068,7 +2093,6 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
     * running jobs in the master job list. */
    if (sync_all) {
       uint32_t id = 0;
-      int count = 0;
       sync_list = ocs::tom::ListPtr<ocs::tom::ST>::create("Synchronize Job List");
 
       for (const auto ep : ocs::tom::ConstList<ocs::tom::JJ>(Master_japi_job_list)) {
@@ -2110,15 +2134,12 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
       }
 
       /* We have to add one to the size of the array for the nullptr terminator. */
-      sync_job_ids = (const char**)sge_malloc (sizeof (char *) * (sync_list->size() + 1));
-      SGE_ASSERT(sync_job_ids != nullptr);
-
+      sync_job_id_array.reserve(sync_list->size() + 1);
       for (const auto ep : *sync_list) {
-         sync_job_ids[count] = ep.get<ST_name>();
-         count++;
+         sync_job_id_array.push_back(ep.get<ST_name>());
       }
-
-      sync_job_ids[count] = nullptr;
+      sync_job_id_array.push_back(nullptr);
+      sync_job_ids = sync_job_id_array.data();
    }
    /* Otherwise just use the id list we were passed. */
    else {
@@ -2137,14 +2158,10 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
          japi_dec_threads(__func__);
          japi_standard_error(DRMAA_ERRNO_EXIT_TIMEOUT, diag);
 
-         /* If we created a new job list, we have to free it. */
+         /* If we created a new job list, we have to free it. sync_job_id_array points into it and is
+          * released on return. */
          if (sync_all) {
-            /* The sync_job_ids is an array of pointers to the ST_name elements
-             * of the sync_list.  That means that if we free the sync_list, we
-             * don't have to free the individual elements of the
-             * sync_job_ids. */
             sync_list.reset();
-            sge_free(&sync_job_ids);
          }
 
          DRETURN(DRMAA_ERRNO_EXIT_TIMEOUT);
@@ -2172,13 +2189,10 @@ int japi_synchronize(const char *job_ids[], signed long timeout, bool dispose, d
 
    japi_dec_threads(__func__);
 
-   /* If we created a new job list, we have to free it. */
+   /* If we created a new job list, we have to free it. sync_job_id_array points into it and is released on
+    * return. */
    if (sync_all) {
-      /* The sync_job_ids is an array of pointers to the ST_name elements of the
-       * sync_list.  That means that if we free the sync_list, we don't have to
-       * free the individual elements of the sync_job_ids. */
       sync_list.reset();
-      sge_free(&sync_job_ids);
    }
 
    DRETURN(drmaa_errno);

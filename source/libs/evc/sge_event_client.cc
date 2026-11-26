@@ -488,7 +488,8 @@ sge_evc_class_t *
 sge_evc_class_create(ev_registration_id reg_id, ocs::tom::ListPtr<ocs::tom::AN> *alpp, const char *name) {
    DENTER(EVC_LAYER);
 
-   auto *ret = ocs::uti::c_alloc<sge_evc_class_t>();
+   // value-initialised: every method pointer and the handle start as nullptr
+   auto *ret = ocs::uti::create<sge_evc_class_t>();
 
    /*
    ** get type of connection internal/external
@@ -587,7 +588,7 @@ void sge_evc_class_destroy(sge_evc_class_t **pst) {
    }
 
    sge_evc_destroy((sge_evc_t **)&((*pst)->sge_evc_handle));
-   sge_free(pst);
+   ocs::uti::destroy(*pst);
    DRETURN_VOID;
 }
 
