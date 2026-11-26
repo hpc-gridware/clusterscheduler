@@ -37,6 +37,9 @@
  */
 #include <pwd.h>
 #include <cstring>
+#include <optional>
+#include <string>
+#include <vector>
 #include <unistd.h>
 
 #include "uti/sge_io.h"
@@ -60,9 +63,10 @@
 #include "parse_qsub.h"
 #include "sge_options.h"
 
-static char *get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static std::optional<std::string> get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 static void append_opts_from_default_files(uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
-                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp, char **def_files);
+                                           ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp,
+                                           const std::vector<std::string> &def_files);
 
 /**
  * @brief Parse default files
@@ -97,21 +101,22 @@ void opt_list_append_opts_from_default_files(const uint32_t prog_number, const c
    /* the sge root defaults file */
    dstring req_file = DSTRING_INIT;
    get_root_file_path(&req_file, cell_root, SGE_COMMON_DEF_REQ_FILE);
-   char *def_files[3 + 1];
-   def_files[0] = strdup(sge_dstring_get_string(&req_file));
+   std::vector<std::string> def_files;
+   def_files.reserve(3);
+   def_files.emplace_back(sge_dstring_get_string(&req_file));
 
    /*
     * the defaults file in the user's home directory
     */
    get_user_home_file_path(&req_file, SGE_HOME_DEF_REQ_FILE, user, answer_list);
-   def_files[1] = strdup(sge_dstring_get_string(&req_file));
+   def_files.emplace_back(sge_dstring_get_string(&req_file));
 
    /*
-    * the defaults file in the current working directory
+    * the defaults file in the current working directory, if it can be determined
     */
-   def_files[2] = get_cwd_defaults_file_path(answer_list);
-
-   def_files[3] = nullptr;
+   if (std::optional<std::string> cwd_file = get_cwd_defaults_file_path(answer_list)) {
+      def_files.push_back(std::move(*cwd_file));
+   }
 
    /*
     * now read all the defaults files, unaware of where they came from
@@ -169,42 +174,36 @@ bool get_user_home_file_path(dstring *absolut_filename, const char *filename, co
  * This function returns the path of the defaults file in the current working
  * directory
  *
- * @param answer_list receives warnings; none of these stops the parse:
- *                    `STATUS_ENOSUCHUSER` (no passwd entry for the user),
- *                    `STATUS_EDISK` (home or current directory unreadable, or
- *                    the file could not be opened), `STATUS_EEXIST` and
- *                    `STATUS_EUNKNOWN` (from #parse_script_file, which may
- *                    return others as well)
+ * @param answer_list receives `STATUS_EDISK` when the current working directory cannot be read
+ * @return the path of the defaults file in the current working directory, no value if the
+ *         current working directory cannot be determined
  */
-static char *get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+static std::optional<std::string> get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    char cwd[SGE_PATH_MAX + 1];
    if (!getcwd(cwd, sizeof(cwd))) {
       char str[MAX_STRING_SIZE];
       snprintf(str, sizeof(str), SFNMAX, MSG_FILE_CANTREADCURRENTWORKINGDIR);
       answer_list_add(answer_list, str, STATUS_EDISK, ANSWER_QUALITY_ERROR);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
-   char *file = sge_malloc(strlen(cwd) + strlen(SGE_HOME_DEF_REQ_FILE) + 2);
-
-   strcpy(file, cwd);
-   if (*file && (file[strlen(file) - 1] != '/')) {
-      strcat(file, "/");
+   std::string file{cwd};
+   if (!file.empty() && file.back() != '/') {
+      file += '/';
    }
-   strcat(file, SGE_HOME_DEF_REQ_FILE);
-   DRETURN(file);
+   file += SGE_HOME_DEF_REQ_FILE;
+   DRETURN(std::optional<std::string>{std::move(file)});
 }
 
 /**
  * @brief Parse default files
  *
- * This function reads the defaults files pointed to by def_files[] if they
- * exist and parses them into an options list.
+ * This function reads the defaults files named in def_files if they
+ * exist and parses them into an options list. A file that names the same file as an
+ * earlier entry is read only once.
  *
  * @param prog_number the client reading the defaults, which decides which files are read
- * @param cell_root the cell directory, where the cluster-wide file lives
- * @param user the user whose home directory holds the second file
  * @param cmdline the option list (`SPA`) to append to; created if it is
  *                an empty handle and the files hold any options
  * @param answer_list receives warnings; none of these stops the parse:
@@ -218,22 +217,23 @@ static char *get_cwd_defaults_file_path(ocs::tom::ListPtr<ocs::tom::AN> *answer_
  */
 static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom::ListPtr<ocs::tom::SPA> &cmdline,
                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list, char **envp,
-                                           char **def_files) {
+                                           const std::vector<std::string> &def_files) {
    DENTER(TOP_LAYER);
-   char **pstr;
    SGE_STRUCT_STAT buf{};
    int do_exit = 0;
 
-   for (pstr = def_files; *pstr; pstr++) {
-      if (SGE_STAT(*pstr, &buf) < 0) {
-         DPRINTF("-- defaults file %s does not exist\n", *pstr);
+   for (size_t i = 0; i < def_files.size(); i++) {
+      const char *pstr = def_files[i].c_str();
+      if (SGE_STAT(pstr, &buf) < 0) {
+         DPRINTF("-- defaults file %s does not exist\n", pstr);
          continue;
       }
 
       int already_read = 0;
-      for (char **ppstr = def_files; *ppstr != *pstr; ppstr++) {
-         if (!sge_filecmp(*ppstr, *pstr)) {
-            DPRINTF("-- skipping %s as defaults file - already read as %s\n", *pstr, *ppstr);
+      for (size_t j = 0; j < i; j++) {
+         const char *ppstr = def_files[j].c_str();
+         if (!sge_filecmp(ppstr, pstr)) {
+            DPRINTF("-- skipping %s as defaults file - already read as %s\n", pstr, ppstr);
             already_read = 1;
             break;
          }
@@ -241,9 +241,9 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
       if (already_read) {
          continue;
       }
-      DPRINTF("-- defaults file: %s\n", *pstr);
+      DPRINTF("-- defaults file: %s\n", pstr);
 
-      auto alp = parse_script_file(prog_number, *pstr, "", cmdline, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
+      auto alp = parse_script_file(prog_number, pstr, "", cmdline, envp, FLG_HIGHER_PRIOR | FLG_USE_NO_PSEUDOS);
 
       for (const auto aep : *alp) {
          uint32_t status;
@@ -270,15 +270,8 @@ static void append_opts_from_default_files(const uint32_t prog_number, ocs::tom:
       alp.reset();
 
       if (do_exit) {
-         for (pstr = def_files; *pstr; pstr++) {
-            sge_free(pstr);
-         }
          DRETURN_VOID;
       }
-   }
-
-   for (pstr = def_files; *pstr; pstr++) {
-      sge_free(pstr);
    }
 
    DRETURN_VOID;
@@ -390,7 +383,7 @@ void opt_list_append_opts_from_script(const uint32_t prog_number, ocs::tom::List
  * @param opts_scriptfile embedded command line options (`SPA`); created if it is an empty handle
  * @param path the root path for the script file
  * @param answer_list AN list
- * @param opts_cmdline Argumente
+ * @param opts_cmdline command line options (`SPA`) the embedded options are checked against
  * @param envp Environment
  */
 void opt_list_append_opts_from_script_path(const uint32_t prog_number,
@@ -398,7 +391,7 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
                                            ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                            const ocs::tom::ConstList<ocs::tom::SPA> opts_cmdline, char **envp) {
    DENTER(TOP_LAYER);
-   char *scriptpath = nullptr;
+   std::optional<std::string> scriptpath;
 
    if (const auto script_option = opts_cmdline.find_first<SPA_switch_val>(STR_PSEUDO_SCRIPT)) {
       const char *scriptfile = script_option.get<SPA_argval_lStringT>();
@@ -406,15 +399,12 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
       /* If the scriptfile path isn't absolute (which includes starting with
          $HOME), make it absolute relative to the given path.
          If the script or path is nullptr, let parse_script_file() catch it. */
-      if ((scriptfile != nullptr) && (path != nullptr) && (scriptfile[0] != '/') && (strncmp(scriptfile, "$HOME/", 6) != 0) &&
-          (strcmp(scriptfile, "$HOME") != 0)) {
-         /* Malloc space for the path, the filename, the \0, and perhaps a / */
-         const size_t size = strlen(path) + strlen(scriptfile) + 2;
-         scriptpath = sge_malloc(sizeof(char) * size);
+      if ((scriptfile != nullptr) && (path != nullptr) && (scriptfile[0] != '/') &&
+          (strncmp(scriptfile, "$HOME/", 6) != 0) && (strcmp(scriptfile, "$HOME") != 0)) {
          const char *sep = (path[strlen(path) - 1] != '/') ? "/" : "";
-         snprintf(scriptpath, size, "%s%s%s", path, sep, scriptfile);
+         scriptpath = std::string{path} + sep + scriptfile;
       } else if (scriptfile) {
-         scriptpath = strdup(scriptfile);
+         scriptpath = scriptfile;
       }
    }
 
@@ -429,9 +419,9 @@ void opt_list_append_opts_from_script_path(const uint32_t prog_number,
       answer_list->reset();
    }
 
-   *answer_list = parse_script_file(prog_number, scriptpath, prefix, opts_scriptfile, envp, FLG_DONT_ADD_SCRIPT);
+   *answer_list = parse_script_file(prog_number, scriptpath ? scriptpath->c_str() : nullptr, prefix, opts_scriptfile,
+                                    envp, FLG_DONT_ADD_SCRIPT);
 
-   sge_free(&scriptpath);
    DRETURN_VOID;
 }
 
@@ -639,20 +629,17 @@ bool get_user_home(dstring *home_dir, const char *user, ocs::tom::ListPtr<ocs::t
 
    passwd pw_struct{};
    const int size = get_pw_buffer_size();
-   char *buffer = sge_malloc(size);
-   const passwd *pwd = sge_getpwnam_r(user, &pw_struct, buffer, size);
+   std::vector<char> buffer(size);
+   const passwd *pwd = sge_getpwnam_r(user, &pw_struct, buffer.data(), size);
    if (pwd == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_ENOSUCHUSER, ANSWER_QUALITY_ERROR, MSG_USER_INVALIDNAMEX_S, user);
-      sge_free(&buffer);
       DRETURN(false);
    }
    if (pwd->pw_dir == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EDISK, ANSWER_QUALITY_ERROR, MSG_USER_NOHOMEDIRFORUSERX_S, user);
-      sge_free(&buffer);
       DRETURN(false);
    }
 
    sge_dstring_copy_string(home_dir, pwd->pw_dir);
-   sge_free(&buffer);
    DRETURN(true);
 }

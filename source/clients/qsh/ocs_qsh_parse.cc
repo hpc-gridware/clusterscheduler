@@ -613,12 +613,12 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_qsh_parameter(const uint32_t prog_numb
 
    while ((ep = cmdline.find_first<SPA_switch_val>("-wd"))) {
       const char *path = ep.get<SPA_argval_lStringT>();
-      bool is_cwd = false;
+      // the rerooted current working directory; reroot_path() returns strdup'd memory
+      ocs::uti::c_ptr<char> rerooted_cwd;
 
       if (path == nullptr) {
          char tmp_str[SGE_PATH_MAX + 1];
 
-         is_cwd = true;
          if (!getcwd(tmp_str, sizeof(tmp_str))) {
             /* If getcwd() fails... */
             answer_list_add(&answer, MSG_ANSWER_GETCWDFAILED,
@@ -626,7 +626,8 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_qsh_parameter(const uint32_t prog_numb
             DRETURN(answer);
          }
          
-         path = reroot_path(job, tmp_str, &answer);
+         rerooted_cwd.reset(reroot_path(job, tmp_str, &answer));
+         path = rerooted_cwd.get();
 
          if (path == nullptr) {
             DRETURN(answer);
@@ -637,10 +638,6 @@ ocs::tom::ListPtr<ocs::tom::AN> ocs_parse_qsh_parameter(const uint32_t prog_numb
       cmdline.erase(ep);
       
       job.set<JB_path_aliases>(path_alias->clone("PathAliases"));
-
-      if (is_cwd) {
-         sge_free(&path);
-      }
    }
 
    path_alias.reset();

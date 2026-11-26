@@ -179,13 +179,13 @@ qconf_delete_obj(std::ostream &os, const QConfObj o, const char *path, ocs::tom:
    /* the write field list, which a diagnostic attribute has no business in: the file is
     * read to learn the names of the objects to delete */
    spooling_field *fields = d.build_fields(qconf_opt_format, false, &owned);
+   // an owned field list is c_alloc'd and released with one free(), a static one is not ours
+   ocs::uti::c_ptr<spooling_field[]> fields_owner{owned ? fields : nullptr};
    std::vector<std::string> names;
    std::vector<std::string> sources;
    qconf_file_ctx ctx = {&os, o, fields, d.parse_values, &names, &sources, 0, 0, alpp};
    qconf_for_each_file(path, qconf_collect_name, &ctx, alpp);
-   if (owned) {
-      sge_free(&fields);
-   }
+   fields_owner.reset();
    return qconf_delete_collected(os, o, path, names, sources, ctx.n_fail, alpp);
 }
 

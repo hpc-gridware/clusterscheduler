@@ -45,6 +45,8 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <optional>
+#include <string>
 
 #include "rapidjson/document.h"
 #include "rapidjson/internal/dtoa.h"
@@ -131,8 +133,8 @@ typedef struct {
  * option that was never given, unless the flag is kept separately.
  */
 typedef struct {
-   char *group;                ///< `-g`: only this group, or the grouping key when empty
-   char *host;                 ///< `-h`: only this execution host, or the grouping key when empty
+   std::optional<std::string> group; ///< `-g`: only this group, or the grouping key when empty
+   std::optional<std::string> host;  ///< `-h`: only this execution host, or the grouping key when empty
    const char *owner;          ///< `-o`: only this user, or the grouping key when empty
    const char *job_name;       ///< `-j`: only jobs with this name
    const char *project;        ///< `-P`: only this project, or the grouping key when empty
@@ -275,12 +277,12 @@ int main(int argc, char **argv) {
                if (sscanf(argv[++ii], sge_u32, &gid) == 1) {
                   if (sge_gid2group((gid_t)gid, buffer,
                                    MAX_STRING_SIZE, MAX_NIS_RETRIES) != 0) {
-                     options.group = sge_strdup(options.group, argv[ii]);
+                     options.group = argv[ii];
                   } else {
-                     options.group = sge_strdup(options.group, buffer);
+                     options.group = buffer;
                   }
                } else {
-                  options.group = sge_strdup(options.group, argv[ii]);
+                  options.group = argv[ii];
                }
             }
          } else {
@@ -320,9 +322,9 @@ int main(int argc, char **argv) {
                     * maybe the hostname is no longer active but the usage information
                     * is already available
                     */
-                  options.host = sge_strdup(options.host, argv[ii]);
+                  options.host = argv[ii];
                } else {
-                  options.host = sge_strdup(options.host, unique);
+                  options.host = unique;
                }
             }
          } else {
@@ -936,11 +938,11 @@ int main(int argc, char **argv) {
    /*
    ** assorted output of statistics
    */
-   if (options.host != nullptr) {
-      column_sizes.host = strlen(options.host) + 1;
+   if (options.host) {
+      column_sizes.host = options.host->size() + 1;
    }
-   if (options.group != nullptr) {
-      column_sizes.group = strlen(options.group) + 1;
+   if (options.group) {
+      column_sizes.group = options.group->size() + 1;
    }
    if (options.owner != nullptr) {
       column_sizes.owner = strlen(options.owner) + 1;
@@ -961,7 +963,7 @@ int main(int argc, char **argv) {
       int dashcnt = 0;
       char title_array[500];
 
-      if (options.host != nullptr || options.hostflag) {
+      if (options.host || options.hostflag) {
          print_full(column_sizes.host , MSG_HISTORY_HOST);
          dashcnt += column_sizes.host ;
       }
@@ -969,7 +971,7 @@ int main(int argc, char **argv) {
          print_full(column_sizes.queue ,MSG_HISTORY_QUEUE );
          dashcnt += column_sizes.queue ;
       }
-      if (options.group != nullptr || options.groupflag) {
+      if (options.group || options.groupflag) {
          print_full(column_sizes.group , MSG_HISTORY_GROUP);
          dashcnt += column_sizes.group ;
       }
@@ -1020,8 +1022,8 @@ int main(int argc, char **argv) {
       while (totals.ru_wallclock) {
          const char *cp;
 
-         if (options.host != nullptr) {
-            print_full(column_sizes.host,  options.host);
+         if (options.host) {
+            print_full(column_sizes.host,  options.host->c_str());
          } else if (options.hostflag) {
             if (ep == nullptr) {
                break;
@@ -1040,8 +1042,8 @@ int main(int argc, char **argv) {
             }
             print_full(column_sizes.queue, ((cp = ep.get<QAJ_queue>()) ? cp : ""));
          }
-         if (options.group != nullptr) {
-            print_full(column_sizes.group, options.group);
+         if (options.group) {
+            print_full(column_sizes.group, options.group->c_str());
          } else if (options.groupflag) {
             if (ep == nullptr) {
                break;
@@ -1134,8 +1136,8 @@ int main(int argc, char **argv) {
    /*
    ** problem: other clients evaluate some status here
    */
-   sge_free(&(options.group));
-   sge_free(&(options.host));
+   options.group.reset();
+   options.host.reset();
    options.queue_name_list.reset();
    free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
    sge_exit(0);
@@ -1147,8 +1149,8 @@ QACCT_EXIT_BUT_NO_ERROR:
    dusage.other_usage.reset();
    sorted_list.reset();
    sort_order = ocs::tom::SortOrder<ocs::tom::QAJ>();
-   sge_free(&(options.group));
-   sge_free(&(options.host));
+   options.group.reset();
+   options.host.reset();
    options.queue_name_list.reset();
    free_qacct_lists(centry_list, queue_list, exechost_list, hgrp_list);
    sge_exit(ret);
@@ -1840,7 +1842,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DRETURN(-1);
    }
    d->hostname = pc;
-   if (options->host != nullptr && sge_hostcmp(options->host, d->hostname)) {
+   if (options->host && sge_hostcmp(options->host->c_str(), d->hostname)) {
       DRETURN(-2);
    }
 
@@ -1858,7 +1860,7 @@ sge_read_rusage_classic(char *line, sge_rusage_type *d, sge_qacct_options *optio
       DRETURN(-1);
    }
    d->group = pc;
-   if (options->group != nullptr && sge_strnullcmp(options->group, d->group)) {
+   if (options->group && sge_strnullcmp(options->group->c_str(), d->group)) {
       DRETURN(-2);
    }
 
@@ -2338,7 +2340,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
       }
 
       d->group = (char *) read_json(document, "group", nullptr);
-      if (options->group != nullptr && sge_strnullcmp(options->group, d->group)) {
+      if (options->group && sge_strnullcmp(options->group->c_str(), d->group)) {
          DRETURN(-2);
       }
 
@@ -2349,7 +2351,7 @@ sge_read_rusage_json(const char *line, sge_rusage_type *d, sge_qacct_options *op
 
       d->qname = (char *) read_json(document, "qname", nullptr);
       d->hostname = (char *) read_json(document, "hostname", nullptr);
-      if (options->host != nullptr && sge_hostcmp(options->host, d->hostname) != 0) {
+      if (options->host && sge_hostcmp(options->host->c_str(), d->hostname) != 0) {
          DRETURN(-2);
       }
       if (options->queue_name_list != nullptr) {

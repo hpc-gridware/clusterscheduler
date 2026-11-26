@@ -27,8 +27,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <span>
 #include <string>
+#include <vector>
 #include <unistd.h>
 
 #include "uti/sge_dstring.h"
@@ -74,18 +76,17 @@ struct qconf_attr_entry {
  * @param value the attribute value
  * @param delimiter what separates name and value
  * @param error_message receives the reason when the file could not be written
- * @return the name of the file, allocated with sge_malloc() and owned by the
- *         caller, or nullptr on error
+ * @return the name of the file, or no value on error
  */
-static const char *
+static std::optional<std::string>
 write_attr_tmp_file(const char *name, const char *value, const char *delimiter, dstring *error_message) {
    DENTER(TOP_LAYER);
 
-   char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
+   std::vector<char> filename_buf(SGE_PATH_MAX);
+   char *filename = filename_buf.data();
    int fd = -1;
    if (sge_tmpnam(filename, &fd, error_message) == nullptr) {
-      sge_free(&filename);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    errno = 0;
@@ -94,8 +95,7 @@ write_attr_tmp_file(const char *name, const char *value, const char *delimiter, 
 
    if (fp == nullptr) {
       sge_dstring_sprintf(error_message, MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(my_errno));
-      sge_free(&filename);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    fprintf(fp, "%s", name);
@@ -104,10 +104,9 @@ write_attr_tmp_file(const char *name, const char *value, const char *delimiter, 
 
    FCLOSE(fp);
 
-   DRETURN((const char *)filename);
+   DRETURN(std::optional<std::string>{filename});
 FCLOSE_ERROR:
-   sge_free(&filename);
-   DRETURN(nullptr);
+   DRETURN(std::nullopt);
 }
 
 /**
@@ -239,17 +238,16 @@ qconf_modify_attribute(ocs::tom::ListPtr<ocs::tom::AN> *alpp, const qconf_op &op
          sge_dstring_append_char(&delim, info_entry->instr->name_value_delimiter);
       }
       dstring write_attr_tmp_file_error = DSTRING_INIT;
-      const char *filename = write_attr_tmp_file(name, value, sge_dstring_get_string(&delim),
-                                                 &write_attr_tmp_file_error);
-      if (filename == nullptr && sge_dstring_get_string(&write_attr_tmp_file_error) != nullptr) {
+      const std::optional<std::string> filename = write_attr_tmp_file(name, value, sge_dstring_get_string(&delim),
+                                                                      &write_attr_tmp_file_error);
+      if (!filename && sge_dstring_get_string(&write_attr_tmp_file_error) != nullptr) {
          answer_list_add_sprintf(alpp, STATUS_EDISK, ANSWER_QUALITY_ERROR, "%s",
                                  sge_dstring_get_string(&write_attr_tmp_file_error));
-      } else if (filename != nullptr) {
+      } else if (filename) {
          ep = ocs::tom::RawElementPtr(spool_flatfile_read_object(alpp, info_entry->object_descr, nullptr,
                                                                  info_entry->fields, fields, true, info_entry->instr,
-                                                                 SP_FORM_ASCII, nullptr, filename));
-         unlink(filename);
-         sge_free(&filename);
+                                                                 SP_FORM_ASCII, nullptr, filename->c_str()));
+         unlink(filename->c_str());
       }
       sge_dstring_free(&write_attr_tmp_file_error);
 
@@ -389,7 +387,8 @@ qconf_run_attr(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
       {ocs::gdi::Target::RQS_LIST,  SGE_OBJ_RQS,      ocs::tom::RQS::descriptor.e,  SGE_ATTR_RQS_NAME,  RQS_name,
        RQS_fields,  &qconf_rqs_sfi, rqs_xattr_pre_gdi},
    };
-   spooling_field *eh_fields = info_entry[1].fields;
+   // the exec host's field list is c_alloc'd by sge_build_EH_field_list() and released with one free()
+   ocs::uti::c_ptr<spooling_field[]> eh_fields{info_entry[1].fields};
 
    /* a capital letter reads the attributes from a file; the letter after the
     * dash is what is done with them */
@@ -421,13 +420,12 @@ qconf_run_attr(const qconf_op &op, ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    }
    if (entry == nullptr) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_QCONF_MODIFICATIONOFOBJECTNOTSUPPORTED_S, op.args[0].c_str());
-      sge_free(&eh_fields);
       DRETURN(QConfOpResult::FAILED);
    }
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    const int ret = qconf_modify_attribute(&alp, op, from_file, sub_command, entry);
-   sge_free(&eh_fields);
+   eh_fields.reset();
 
    /* these switches report a success on stdout, so the list is printed here,
     * with the informations on stdout (CS-2971) */

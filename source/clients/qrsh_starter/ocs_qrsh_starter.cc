@@ -49,6 +49,9 @@
 #include <sys/wait.h>
 
 #include <cinttypes>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "uti/ocs_TerminationManager.h"
 #include "uti/config_file.h"
@@ -194,32 +197,33 @@ qrsh_trace (const char *format, ...) {
  * directory.
  * Special handling for variable QRSH_COMMAND: is the command to be executed
  * by qrsh_starter. The value of this variable will be returned as command,
- * or nullptr, if an error occurs.
+ * or no value, if an error occurs.
  * Special handling for variable QRSH_WRAPPER: this is a wrapper to be called
  * instead of a shell to execute the command.
  * If this variable is contained in the environment, it will be returned in
- * the parameter wrapper. Memory will be allocated to hold the variable, it
- * is in the responsibility of the caller to free this memory.
+ * the parameter wrapper. Otherwise a configured starter_method (other than
+ * "none") is returned there.
  * Special handling for variable DISPLAY: if it is already set, do not
  * overwrite it. Usually  it is not set, but if ssh is used as transport
  * mechanism for qrsh, the ssh -X option can be used to enable
  * X11 forwarding.
  *
  * @param jobdir the jobs spool directory
- * @param wrapper buffer to take the path and name of a wrapper script
+ * @param wrapper receives the path and name of a wrapper script, no value if there is none
  *
- * @return command, if all actions could be performed nullptr,    if an error occurred; possible errors are: - the environment file cannot be opened - a PWD entry is found, but changing to the named directory fails - necessary memory cannot be allocated - the variable QRSH_COMMAND is not found ***************************************************************************
+ * @return the command, if all actions could be performed; no value if an error occurred.
+ *         Possible errors are: the environment file cannot be opened or closed, an
+ *         environment variable cannot be set, the variable QRSH_COMMAND is not found.
  */
-static char *setEnvironment(const char *jobdir, char **wrapper) {
+static std::optional<std::string> setEnvironment(const char *jobdir, std::optional<std::string> &wrapper) {
    char envFileName[SGE_PATH_MAX];
    FILE *envFile = nullptr;
-   char *line = nullptr;
-   char *command   = nullptr;
+   std::optional<std::string> command;
    SGE_STRUCT_STAT statbuf;
    int size;
    bool set_display = true;
 
-   *wrapper = nullptr;
+   wrapper.reset();
 
    /* don't set DISPLAY, if it is already set (e.g. by ssh) */
    if (getenv("DISPLAY") != nullptr) {
@@ -233,21 +237,17 @@ static char *setEnvironment(const char *jobdir, char **wrapper) {
     */
    if (SGE_STAT(envFileName, &statbuf) != 0) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTOPENFILE_SS, envFileName, strerror(errno));
-      return nullptr;
+      return std::nullopt;
    }
 
    size = statbuf.st_size;
-   line = sge_malloc(size + 1);
-   if (line == nullptr) {
-      qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
-      return nullptr;
-   }
+   std::vector<char> line_buf(size + 1);
+   char *line = line_buf.data();
 
    /* open sge environment file */
    if ((envFile = fopen(envFileName, "r")) == nullptr) {
       qrsh_error(MSG_QRSH_STARTER_CANNOTOPENFILE_SS, envFileName, strerror(errno));
-      sge_free(&line);
-      return nullptr;
+      return std::nullopt;
    }
 
    /* set all environment variables, change to directory named by PWD */
@@ -264,44 +264,25 @@ static char *setEnvironment(const char *jobdir, char **wrapper) {
       }
 
       if (strncmp(line, "QRSH_COMMAND=", 13) == 0) {
-         if ((command = sge_malloc(strlen(line) - 13 + 1)) == nullptr) {
-            qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
-            sge_free(&line);
-            FCLOSE(envFile);
-            return nullptr;
-         }
-         strcpy(command, line + 13);
+         command = line + 13;
       } else if (strncmp(line, "QRSH_WRAPPER=", 13) == 0) {
          if (*(line + 13) == 0) {
             fprintf(stderr, "%s\n", MSG_QRSH_STARTER_EMPTY_WRAPPER);
          } else {
-            if ((*wrapper = sge_malloc(strlen(line) - 13 + 1)) == nullptr) {
-               qrsh_error(MSG_QRSH_STARTER_MALLOCFAILED_S, strerror(errno));
-               sge_free(&line);
-               FCLOSE(envFile);
-               return nullptr;
-            }
-            strcpy(*wrapper, line + 13);
+            wrapper = line + 13;
          }
       } else {
-         const char *new_line = sge_replace_substring(line, "\\n", "\n");
-         int put_ret;
+         // sge_replace_substring() returns sge_malloc'd memory, or nullptr when there is nothing to replace
+         const ocs::uti::c_ptr<const char> new_line{sge_replace_substring(line, "\\n", "\n")};
          /* set variable */
-         if (new_line != nullptr) {
-            put_ret = sge_putenv(new_line);
-            sge_free(&new_line);
-         } else {
-            put_ret = sge_putenv(line);
-         }
+         const int put_ret = sge_putenv(new_line != nullptr ? new_line.get() : line);
          if (put_ret == 0) {
-            sge_free(&line);
             FCLOSE(envFile);
-            return nullptr;
+            return std::nullopt;
          }
       }
    }
 
-   sge_free(&line);
    FCLOSE(envFile);
 
    /*
@@ -309,11 +290,11 @@ static char *setEnvironment(const char *jobdir, char **wrapper) {
     * and not overridden by QRSH_WRAPPER
     */
 
-   if (*wrapper == nullptr) {
-      char *starter_method = get_conf_val("starter_method");
+   if (!wrapper) {
+      const char *starter_method = get_conf_val("starter_method");
       if (starter_method != nullptr && strcasecmp(starter_method, "none") != 0) {
          char buffer[128];
-         *wrapper = starter_method;
+         wrapper = starter_method;
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_SHELL_PATH", ""); sge_putenv(buffer);
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_SHELL_START_MODE", "unix_behavior"); sge_putenv(buffer);
          snprintf(buffer, 128, "%s=%s", "SGE_STARTER_USE_LOGIN_SHELL", "false"); sge_putenv(buffer);
@@ -323,7 +304,7 @@ static char *setEnvironment(const char *jobdir, char **wrapper) {
    return command;
 FCLOSE_ERROR:
    qrsh_error(MSG_FILE_ERRORCLOSEINGXY_SS, envFileName, strerror(errno));
-   return nullptr;
+   return std::nullopt;
 }
 
 /**
@@ -856,56 +837,35 @@ static int writeExitCode(int myExitCode, int programExitCode) {
    return EXIT_SUCCESS;
 }
 
-/****** Interactive/qrsh/--qrsh_starter ***************************************
-*
-*  NAME
-*     qrsh_starter -- start a command special correct environment
-*
-*  SYNOPSIS
-*     qrsh_starter <environment file> <noshell>
-*     int main(int argc, char **argv[])
-*
-*  FUNCTION
-*     qrsh_starter is used to start a command, optionally with additional
-*     arguments, in a special environment.
-*     The environment is read from the given <environment file>.
-*     The command to be executed is read from the environment variable
-*     QRSH_COMMAND and executed either standalone, passed to a wrapper
-*     script (environment  variable QRSH_WRAPPER) or (default) in a users login
-*     shell (<shell> -c <command>).
-*     On exit of the command, or if an error occurs, an exit code is written
-*     to the file $TMPDIR/qrsh_exit_code.
-*
-*     qrsh_starter is called from qrsh to start the remote processes in
-*     the correct environment.
-*
-*  INPUTS
-*     environment file - file with environment information, each line
-*                        contains a tuple <name>=<value>
-*     noshell          - if this parameter is passed, the command will be
-*                        executed standalone
-*
-*  RESULT
-*     EXIT_SUCCESS, if all actions could be performed,
-*     EXIT_FAILURE, if an error occurred
-*
-*  EXAMPLE
-*     setenv QRSH_COMMAND "echo test"
-*     env > ~/myenvironment
-*     rsh <hostname> qrsh_starter ~/myenvironment
-*
-*  SEE ALSO
-*     Interactive/qsh/--Interactive
-*
-****************************************************************************
-*/
+/**
+ * @brief qrsh_starter - start a command in a special environment
+ *
+ * Usage: `qrsh_starter <job spooldir> [noshell]`
+ *
+ * qrsh_starter is used to start a command, optionally with additional
+ * arguments, in a special environment.
+ * The environment is read from the environment file in the given job spool directory.
+ * The command to be executed is read from the environment variable
+ * QRSH_COMMAND and executed either standalone, passed to a wrapper
+ * script (environment  variable QRSH_WRAPPER) or (default) in a users login
+ * shell (`shell -c command`).
+ * On exit of the command, or if an error occurs, an exit code is written
+ * to the file $TMPDIR/qrsh_exit_code.
+ *
+ * qrsh_starter is called from qrsh to start the remote processes in
+ * the correct environment.
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments: the job spool directory and optionally "noshell",
+ *             which executes the command standalone
+ * @return EXIT_SUCCESS, if all actions could be performed, EXIT_FAILURE, if an error occurred
+ */
 int main(int argc, char *argv[]) {
    ocs::TerminationManager::install_signal_handler();
    ocs::TerminationManager::install_terminate_handler();
 
    int   exitCode = 0;
-   char *command  = nullptr;
-   char *wrapper = nullptr;
+   std::optional<std::string> wrapper;
    int  noshell  = 0;
 
    /* check for correct usage */
@@ -947,8 +907,8 @@ int main(int argc, char *argv[]) {
 #endif
 
    /* setup environment */
-   command = setEnvironment(argv[1], &wrapper);
-   if(command == nullptr) {
+   std::optional<std::string> command = setEnvironment(argv[1], wrapper);
+   if(!command) {
       writeExitCode(EXIT_FAILURE, 0);
       exit(EXIT_FAILURE);
    }
@@ -959,9 +919,8 @@ int main(int argc, char *argv[]) {
    }
 
    /* start job */
-   exitCode = startJob(command, wrapper, noshell);
-   sge_free(&command);
-   sge_free(&wrapper);
+   // split_command() in the child of startJob() writes into the command, hence the non-const data()
+   exitCode = startJob(command->data(), wrapper ? wrapper->data() : nullptr, noshell);
 
    /* write exit code and exit */
    return writeExitCode(EXIT_SUCCESS, exitCode);

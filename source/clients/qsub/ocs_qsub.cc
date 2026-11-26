@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <cerrno>
 #include <sstream>
+#include <string>
 #include <tuple>
 
 #include "uti/ocs_TerminationManager.h"
@@ -90,7 +91,7 @@ static bool terminating = false;
 /// sent by main() to make the signal handler thread end without terminating qsub (CS-988)
 static constexpr int OCS_QSUB_SIG_THREAD_STOP = SIGUSR2;
 
-static char *get_bulk_jobid_string(long job_id, int start, int end, int step);
+static std::string get_bulk_jobid_string(long job_id, int start, int end, int step);
 static void qsub_setup_sig_handlers();
 static void qsub_terminate();
 static void *sig_thread(void *dummy);
@@ -125,7 +126,7 @@ int main(int argc, const char **argv) {
    uint32_t num_tasks;
    uint32_t count;
    int stat;
-   char *jobid_string = nullptr;
+   std::string jobid_string;
    bool has_terse = false;
    drmaa_attr_values_t *jobids = nullptr;
    pthread_t sig_thread_id{};
@@ -358,8 +359,8 @@ int main(int argc, const char **argv) {
          goto Error;
       }
 
-      jobid_string = strdup(sge_dstring_get_string(&jobid));
-      DPRINTF("job id is: %s\n", jobid_string);
+      jobid_string = sge_dstring_get_string(&jobid);
+      DPRINTF("job id is: %s\n", jobid_string.c_str());
 
       sge_dstring_free(&jobid);
    }
@@ -382,11 +383,11 @@ int main(int argc, const char **argv) {
 
       /* print the tersed output */
       if (has_terse) {
-         printf("%s", jobid_string);
+         printf("%s", jobid_string.c_str());
       } else if (output != nullptr) {
         printf("%s", output);
       } else {
-        printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string, job->get<JB_job_name>());
+        printf(MSG_QSUB_YOURJOBHASBEENSUBMITTED_SS, jobid_string.c_str(), job->get<JB_job_name>());
       }
       printf("\n");
    } else {
@@ -408,7 +409,7 @@ int main(int argc, const char **argv) {
          if ((tmp_ret == DRMAA_ERRNO_SUCCESS) && (event == JAPI_JOB_START)) {
             fprintf(stderr, "\n");
             fprintf(stderr, MSG_QSUB_YOURIMMEDIATEJOBXHASBEENSUCCESSFULLYSCHEDULED_S,
-                  jobid_string);
+                  jobid_string.c_str());
             fprintf(stderr, "\n");
          }
          /* A job finish event here means that the job was rejected. */
@@ -490,7 +491,6 @@ int main(int argc, const char **argv) {
    }
 
 Error:
-   sge_free(&jobid_string);
    alp.reset();
    opts_all.reset();
    job.reset();
@@ -534,7 +534,6 @@ Error:
  * @brief Turn the job id and parameters into a string
  *
  * Creates a string from the job id, start task, end task, and task step.
- * The return job id string must be freed by the caller.
  *
  * @param job_id The job's id number
  * @param start The number of the first task in the job
@@ -545,16 +544,11 @@ Error:
  *
  * @note MT-NOTES: get_bulk_jobid_string() is MT safe
  */
-static char *get_bulk_jobid_string(long job_id, int start, int end, int step) {
-   size_t jobid_str_size = sizeof(char) * 1024;
-   char *jobid_str = sge_malloc(jobid_str_size);
-   char *ret_str = nullptr;
+static std::string get_bulk_jobid_string(const long job_id, const int start, const int end, const int step) {
+   char jobid_str[1024];
 
-   snprintf(jobid_str, jobid_str_size, "%ld.%d-%d:%d", job_id, start, end, step);
-   ret_str = strdup(jobid_str);
-   sge_free(&jobid_str);
-
-   return ret_str;
+   snprintf(jobid_str, sizeof(jobid_str), "%ld.%d-%d:%d", job_id, start, end, step);
+   return jobid_str;
 }
 
 /**

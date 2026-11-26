@@ -65,9 +65,19 @@ void usage() {
    exit(1);
 }
 
+/**
+ * @brief gethostbyname - resolve a host name and print its name, aliases and addresses
+ *
+ * Without an option the host name, the aliases and the addresses are printed.
+ * `-name` prints only the host name, `-aname` only the name after host aliasing,
+ * `-all` everything including the name after host aliasing.
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments: an optional option and the name to resolve
+ * @return 0 on success; on an error the process exits with 1
+ */
 int main(int argc, char *argv[]) {
    struct hostent *he = nullptr;
-   char* resolved_name = nullptr;
    int retval = CL_RETVAL_OK;
    char **tp,**tp2;
    int name_only = 0;
@@ -117,26 +127,24 @@ int main(int argc, char *argv[]) {
   }
 
   if (sge_aliasing ) {
-     const char *alias_path = sge_get_alias_path();
-     cl_com_set_alias_file(alias_path);
-     sge_free(&alias_path);
+     // sge_get_alias_path() returns sge_malloc'd memory
+     const ocs::uti::c_ptr<const char> alias_path{sge_get_alias_path()};
+     cl_com_set_alias_file(alias_path.get());
   }
 
-  retval = cl_com_cached_gethostbyname(unresolved_name, &resolved_name, nullptr, &he, &system_error);
+  char *resolved_name_raw = nullptr;
+  retval = cl_com_cached_gethostbyname(unresolved_name, &resolved_name_raw, nullptr, &he, &system_error);
+  // the resolved name is strdup'd by commlib
+  ocs::uti::c_ptr<char> resolved_name{resolved_name_raw};
 
   if (retval != CL_RETVAL_OK) {
-     char* err_text = cl_com_get_h_error_string(system_error);
-     if (err_text == nullptr) {
-        err_text = strdup(strerror(system_error));
-        if (err_text == nullptr) {
-           err_text = strdup("unexpected error");
-        }
-     }
+     // cl_com_get_h_error_string() returns strdup'd memory or nullptr
+     const ocs::uti::c_ptr<char> h_err_text{cl_com_get_h_error_string(system_error)};
+     const char *err_text = h_err_text != nullptr ? h_err_text.get() : strerror(system_error);
      if (unresolved_name == nullptr) {
         unresolved_name = "nullptr";
      }
      fprintf(stderr,"error resolving host " SFQ ": %s (%s)\n",unresolved_name,cl_get_error_text(retval),err_text );
-     sge_free(&err_text); 
      cl_com_cleanup_commlib();
      exit(1);
   }
@@ -144,7 +152,7 @@ int main(int argc, char *argv[]) {
   if (name_only) {
      if (sge_aliasing) {
         if (resolved_name != nullptr) {
-           printf("%s\n",resolved_name);
+           printf("%s\n",resolved_name.get());
         } else {
            printf("%s\n","unexpected error");
         }
@@ -161,7 +169,7 @@ int main(int argc, char *argv[]) {
         printf("\n");
         
         if (resolved_name != nullptr && all_option) {
-           printf("SGE name: %s\n",resolved_name);
+           printf("SGE name: %s\n",resolved_name.get());
         }
 
         printf("%s", MSG_SYSTEM_ALIASES);
@@ -178,7 +186,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr,"%s\n","could not get hostent struct");
      }
   }
-  sge_free(&resolved_name);
+  resolved_name.reset();
   sge_free_hostent(&he);
 
   retval = cl_com_cleanup_commlib();

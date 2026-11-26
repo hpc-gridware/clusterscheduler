@@ -86,9 +86,19 @@ static void gethostbyaddr_communication_error(const cl_application_error_list_el
 }
 
 
+/**
+ * @brief gethostbyaddr - resolve an IPv4 address and print the host name, aliases and addresses
+ *
+ * Without an option the host name, the aliases and the addresses are printed.
+ * `-name` prints only the host name, `-aname` only the name after host aliasing,
+ * `-all` everything including the name after host aliasing.
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments: an optional option and the address in dotted notation
+ * @return 0 on success; on an error the process exits with 1
+ */
 int main(int argc, char *argv[]) {
    struct hostent *he = nullptr;
-   char *resolved_name = nullptr;
    int retval = CL_RETVAL_OK;
    char *ip_string = nullptr;
    char **tp = nullptr;
@@ -141,7 +151,9 @@ int main(int argc, char *argv[]) {
    }
 
    if (sge_aliasing) {
-      cl_com_set_alias_file(sge_get_alias_path());
+      // sge_get_alias_path() returns sge_malloc'd memory, commlib keeps a copy of its own
+      const ocs::uti::c_ptr<const char> alias_path{sge_get_alias_path()};
+      cl_com_set_alias_file(alias_path.get());
    }
 
    retval = cl_com_set_error_func(gethostbyaddr_communication_error);
@@ -152,23 +164,19 @@ int main(int argc, char *argv[]) {
 
    addr.s_addr = inet_addr(ip_string);
 
-   retval = cl_com_cached_gethostbyaddr(&addr, &resolved_name, &he, &system_error);
+   char *resolved_name_raw = nullptr;
+   retval = cl_com_cached_gethostbyaddr(&addr, &resolved_name_raw, &he, &system_error);
+   // the resolved name is strdup'd by commlib
+   ocs::uti::c_ptr<char> resolved_name{resolved_name_raw};
    if (retval != CL_RETVAL_OK) {
       cl_com_cleanup_commlib();
       if (error_reported == 0) {
-         char *err_text = cl_com_get_h_error_string(system_error);
-
-         if (err_text == nullptr) {
-            err_text = strdup(strerror(system_error));
-            if (err_text == nullptr) {
-               err_text = strdup("unexpected error");
-            }
-         }
+         // cl_com_get_h_error_string() returns strdup'd memory or nullptr
+         const ocs::uti::c_ptr<char> h_err_text{cl_com_get_h_error_string(system_error)};
+         const char *err_text = h_err_text != nullptr ? h_err_text.get() : strerror(system_error);
          fprintf(stderr, "error resolving ip " SFQ ": %s (%s)\n",
                  ip_string != nullptr ? ip_string : "nullptr",
                  cl_get_error_text(retval), err_text);
-
-         sge_free(&err_text);
       }
       exit(1);
    }
@@ -180,7 +188,7 @@ int main(int argc, char *argv[]) {
    if (name_only) {
       if (sge_aliasing) {
          if (resolved_name != nullptr) {
-            printf("%s\n", resolved_name);
+            printf("%s\n", resolved_name.get());
          } else {
             fprintf(stderr, "%s\n", "unexpected error");
             exit(1);
@@ -200,8 +208,8 @@ int main(int argc, char *argv[]) {
       }
 
       if (resolved_name != nullptr && all_option) {
-         printf("SGE name: %s\n", resolved_name);
-         sge_free(&resolved_name);
+         printf("SGE name: %s\n", resolved_name.get());
+         resolved_name.reset();
       }
 
       if (he != nullptr) {
@@ -219,9 +227,7 @@ int main(int argc, char *argv[]) {
       }
    }
    sge_free_hostent(&he);
-   if (resolved_name != nullptr) {
-      sge_free(&resolved_name);
-   }
+   resolved_name.reset();
    retval = cl_com_cleanup_commlib();
    if (retval != CL_RETVAL_OK) {
       fprintf(stderr, "%s\n", cl_get_error_text(retval));

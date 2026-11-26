@@ -46,7 +46,9 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <optional>
 #include <sstream>
+#include <string>
 #include <sge_io.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -147,7 +149,7 @@ static int start_client_program(const char *client_name,
                                 int noshell,
                                 int sock);
 static int get_client_server_context(int msgsock, char **port, char **job_dir, char **utilbin_dir, const char **host);
-static const char *get_client_name(int is_rsh, int is_rlogin, int inherit_job);
+static std::optional<std::string> get_client_name(int is_rsh, int is_rlogin, int inherit_job);
 static void set_job_info(ocs::tom::Element<ocs::tom::JB> job, const char *name, int is_qlogin, int is_rsh,
                          int is_rlogin);
 static void remove_unknown_opts(ocs::tom::List<ocs::tom::SPA> lp, uint32_t jb_now, int tightly_integrated, bool error,
@@ -857,18 +859,15 @@ static int get_client_server_context(int msgsock, char **port, char **job_dir, c
  * @param is_rlogin are we treating a qrsh call without commands (-> rlogin)
  * @param inherit_job we have inherited an existing environment
  *
- * @return path and name of client program nullptr, if an error occures
+ * @return path and name of client program, no value if an error occurs
  *
- * @note It is in the responsibility of the caller to free the client name!
- *
- *       MT-NOTE
- *       get_client_name is thread safe
+ * @note MT-NOTE: get_client_name() is thread safe
  */
-static const char *
-get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
+static std::optional<std::string>
+get_client_name(const int is_rsh, const int is_rlogin, const int inherit_job) {
    DENTER(TOP_LAYER);
 
-   /* this is what we return */
+   /* the client name as found in the environment or the configuration */
    const char *client_name  = nullptr;
 
    /* session type and config entry name */
@@ -897,7 +896,7 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
          if (strcasecmp(client_name, "builtin") == 0) {
             g_new_interactive_job_support = true;
          }
-         DRETURN(strdup(client_name));
+         DRETURN(std::optional<std::string>{client_name});
       }
    }
 
@@ -924,18 +923,19 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
    }
    if (failed) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    /* search for config entry */
    ocs::tom::ConstElement<ocs::tom::CF> qlogin_cmd_elem = conf_list->find_first<CF_name>(config_name);
    if (qlogin_cmd_elem == nullptr) {
       ERROR(SFNMAX, MSG_CONFIG_CANTGETCONFIGURATIONFROMQMASTER);
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    /* use config entry, if found */
    client_name = qlogin_cmd_elem.get<CF_value>();
+   std::string result;
 
    /*
     * If no command is configured, or none is configured as command,
@@ -951,23 +951,23 @@ get_client_name(int is_rsh, int is_rlogin, int inherit_job) {
          sge_dstring_sprintf(&default_dstring, "%s/utilbin/%s/%s",
                              sge_root, sge_get_arch(),
                              session_type);
-         client_name = strdup(sge_dstring_get_string(&default_dstring));
+         result = sge_dstring_get_string(&default_dstring);
       } else {
          /* try to find telnet in PATH */
-         client_name = strdup(session_type);
+         result = session_type;
       }
-      VERBOSE_LOG((stderr, MSG_QSH_RSH_NO_CONFIG_USING_DEFAULT_SS, session_type, client_name));
+      VERBOSE_LOG((stderr, MSG_QSH_RSH_NO_CONFIG_USING_DEFAULT_SS, session_type, result.c_str()));
       VERBOSE_LOG((stderr, "\n"))
    } else {
-      client_name = strdup(client_name);
-      DPRINTF("Got  %s_client name from global/local config: %s\n", session_type, client_name);
+      result = client_name;
+      DPRINTF("Got  %s_client name from global/local config: %s\n", session_type, result.c_str());
    }
 
-   if (strcasecmp(client_name, "builtin") == 0) {
+   if (strcasecmp(result.c_str(), "builtin") == 0) {
       g_new_interactive_job_support = true;
    }
 
-   DRETURN(client_name);
+   DRETURN(std::optional<std::string>{std::move(result)});
 }
 
 /**
@@ -1110,7 +1110,8 @@ static void set_builtin_ijs_signals_and_handlers() {
  * @param qualified_hostname The qualified hostname of this host. Returned by sge_gethostbyname().
  * @param com_handle the commlib server handle; its port is the one the shepherd connects to
  * @param job The job object where the connection data gets written to.
- * @param opts_qrsh The command line of this command. We need the name of the binary from the command line, the shepherd must know which kind of interactive job this is.
+ * @param opts_qrsh The command line of this command. We need the name of the binary from the command line,
+ *                  the shepherd must know which kind of interactive job this is.
  *
  * @note MT-NOTE: write_builtin_ijs_connection_data_to_job_object() is not MT safe
  */
@@ -1149,10 +1150,10 @@ static void write_builtin_ijs_connection_data_to_job_object(
    // In case of TLS encryption, send the credentials to the shepherd
 #if defined(OCS_WITH_OPENSSL)
    if (com_handle->ssl_server_context != nullptr) {
-      const char *cred = com_handle->ssl_server_context->get_cert();
+      // get_cert() returns sge_malloc'd memory
+      const ocs::uti::c_ptr<const char> cred{com_handle->ssl_server_context->get_cert()};
       if (cred != nullptr) {
-         job.set<JB_cred>(cred);
-         sge_free(&cred);
+         job.set<JB_cred>(cred.get());
       }
    }
 #endif
@@ -1243,14 +1244,14 @@ static int do_qrsh_reconnect(const char *job_id_str,
    DENTER(TOP_LAYER);
 
    // Build port_range_list from cluster config (same as the normal startup path).
-   char *port_range_str = mconf_get_port_range();
+   ocs::uti::c_ptr<char> port_range_str{mconf_get_port_range()};
    ocs::tom::ListPtr<ocs::tom::AN> alp_pr;
    ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
-   if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
-      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+   if (port_range_str != nullptr && strcmp(port_range_str.get(), NONE_STR) != 0) {
+      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str.get(), false, true, INF_NOT_ALLOWED);
       alp_pr.reset();
    }
-   sge_free(&port_range_str);
+   port_range_str.reset();
 
    set_builtin_ijs_signals_and_handlers();
 
@@ -1284,14 +1285,15 @@ static int do_qrsh_reconnect(const char *job_id_str,
    // QI_DO_RECONNECT) as a single ST_name element; absent in non-TLS mode.
 #if defined(OCS_WITH_OPENSSL)
    if (comm_handle->ssl_server_context != nullptr) {
-      const char *cred = comm_handle->ssl_server_context->get_cert();
+      // get_cert() returns sge_malloc'd memory
+      ocs::uti::c_ptr<const char> cred{comm_handle->ssl_server_context->get_cert()};
       if (cred != nullptr) {
          auto cred_list = ocs::tom::ListPtr<ocs::tom::ST>::create("reconnect cred");
          auto cred_ep = ocs::tom::ElementPtr<ocs::tom::ST>::create();
-         cred_ep->set<ST_name>(cred);
+         cred_ep->set<ST_name>(cred.get());
          cred_list->push_back(std::move(cred_ep));
          idep.set<ID_user_list>(std::move(cred_list));
-         sge_free(&cred);
+         cred.reset();
       }
    }
 #endif
@@ -1388,7 +1390,9 @@ int main(int argc, const char **argv) {
    ocs::Ternary suspend_remote_option = ocs::Ternary::Unset;
    bool forward_x11 = false;
    const char *host = nullptr;
+   std::string inherit_host; // owns the host of qrsh -inherit, which host points to until it is replaced
    char name[MAX_JOB_NAME + 1];
+   std::optional<std::string> client_name_owner; // owns what client_name points to
    const char *client_name = nullptr;
    char *port = nullptr;
    char *job_dir = nullptr;
@@ -1594,7 +1598,8 @@ int main(int argc, const char **argv) {
 
       if ((ep = opts_cmdline->find_first<SPA_switch_val>("script"))) {
          if (existing_job) {
-            host = strdup(ep.get<SPA_argval_lStringT>());
+            inherit_host = ep.get<SPA_argval_lStringT>();
+            host = inherit_host.c_str();
             opts_cmdline->erase(ep);
             ep = opts_cmdline->find_first<SPA_switch_val>("jobarg");
          }
@@ -1700,9 +1705,11 @@ int main(int argc, const char **argv) {
 
    if (is_qlogin) {
       /* get configuration from qmaster */
-      if ((client_name = get_client_name(is_rsh, is_rlogin, inherit_job)) == nullptr) {
+      client_name_owner = get_client_name(is_rsh, is_rlogin, inherit_job);
+      if (!client_name_owner) {
          sge_exit(1);
       }
+      client_name = client_name_owner->c_str();
    }
 
    // Validate -X after get_client_name() has resolved g_new_interactive_job_support.
@@ -1783,16 +1790,16 @@ int main(int argc, const char **argv) {
    */
 
    // fetch optional port_range; nullptr/NONE_STR means OS-assigned port in both modes
-   char *port_range_str = mconf_get_port_range();
+   ocs::uti::c_ptr<char> port_range_str{mconf_get_port_range()};
    // fetch IJS escape character (default '~', '\0' = disabled via ijs_escape_char=none)
    char ijs_escape_char = mconf_get_ijs_escape_char();
    ocs::tom::ListPtr<ocs::tom::AN> alp_pr;
    ocs::tom::ListPtr<ocs::tom::RN> port_range_list;
-   if (port_range_str != nullptr && strcmp(port_range_str, NONE_STR) != 0) {
-      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str, false, true, INF_NOT_ALLOWED);
+   if (port_range_str != nullptr && strcmp(port_range_str.get(), NONE_STR) != 0) {
+      range_list_parse_from_string(port_range_list, &alp_pr, port_range_str.get(), false, true, INF_NOT_ALLOWED);
       alp_pr.reset();
    }
-   sge_free(&port_range_str);
+   port_range_str.reset();
 
    if (!g_new_interactive_job_support) {
       /*
@@ -1886,7 +1893,8 @@ int main(int argc, const char **argv) {
       if (tid == nullptr) {
          const char *qexec_lasterror = qexec_last_err();
 
-         ERROR(MSG_QSH_EXECUTINGTASKOFJOBFAILED_IS, existing_job, qexec_lasterror != nullptr ? qexec_lasterror : "unknown");
+         ERROR(MSG_QSH_EXECUTINGTASKOFJOBFAILED_IS, existing_job,
+               qexec_lasterror != nullptr ? qexec_lasterror : "unknown");
          sge_exit(EXIT_FAILURE);
       }
 
@@ -1900,7 +1908,8 @@ int main(int argc, const char **argv) {
             sge_exit(EXIT_FAILURE);
          }
 
-         sge_free(&host);
+         host = nullptr;
+         inherit_host.clear();
          /* get host and port of rshd, job_dir and utilbin_dir over connection */
          if (!get_client_server_context(msgsock, &port, &job_dir, &utilbin_dir, &host)) {
             sge_exit(EXIT_FAILURE);
@@ -2194,7 +2203,8 @@ int main(int argc, const char **argv) {
                   /* run_ijs_server() loops until the client has disconnected */
                   sge_dstring_sprintf(&err_msg, "<null>");
                   ret = run_ijs_server(comm_handle, host, nostdin, noshell, is_rsh, is_qlogin,
-                                       pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11, ijs_escape_char);
+                                       pty_option, suspend_remote_option, &exit_status, &err_msg, forward_x11,
+                                       ijs_escape_char);
                   if (ret != 0) {
                      ERROR(MSG_QSH_ERRORRUNNINGIJSSERVER_S, sge_dstring_get_string(&err_msg));
                   }
@@ -2342,7 +2352,8 @@ int main(int argc, const char **argv) {
       sge_dstring_free(&id_dstring);
    }
 
-   sge_free(&client_name);
+   client_name = nullptr;
+   client_name_owner.reset();
    sge_exit(exit_status);
    DRETURN(exit_status);
 }

@@ -309,17 +309,13 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
                 ocs::tom::ListPtr<ocs::tom::AN> *alpp) {
    DENTER(TOP_LAYER);
 
-   char *filename = sge_malloc(sizeof(char) * SGE_PATH_MAX);
-   if (filename == nullptr) {
-      qconf_answer(alpp, ANSWER_QUALITY_ERROR, SFNMAX, MSG_MEMORY_MALLOCFAILED);
-      DRETURN(QConfEditStatus::WRITE_FAILED);
-   }
+   std::vector<char> filename_buf(SGE_PATH_MAX);
+   char *filename = filename_buf.data();
    int fd = -1;
    dstring error_message = DSTRING_INIT;
    if (sge_tmpnam(filename, &fd, &error_message) == nullptr) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, SFNMAX, sge_dstring_get_string(&error_message));
       sge_dstring_free(&error_message);
-      sge_free(&filename);
       DRETURN(QConfEditStatus::WRITE_FAILED);
    }
    sge_dstring_free(&error_message);
@@ -333,7 +329,6 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
       close(fd);
       unlink(filename);
-      sge_free(&filename);
       DRETURN(QConfEditStatus::WRITE_FAILED);
    }
    errno = 0;
@@ -342,7 +337,6 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
    if (!written) {
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORWRITING_SS, filename, strerror(errno));
       unlink(filename);
-      sge_free(&filename);
       DRETURN(QConfEditStatus::WRITE_FAILED);
    }
 
@@ -352,7 +346,6 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
    const int status = sge_edit(filename, uid, gid);
    if (status < 0 || (status > 0 && !unchanged_is_ok)) {
       unlink(filename);
-      sge_free(&filename);
       DRETURN((status < 0) ? QConfEditStatus::EDIT_FAILED : QConfEditStatus::UNCHANGED);
    }
 
@@ -361,7 +354,6 @@ qconf_edit_text(std::string &text, const uid_t uid, const gid_t gid, const bool 
       qconf_answer(alpp, ANSWER_QUALITY_ERROR, MSG_ERROROPENINGFILEFORREADING_SS, filename, strerror(errno));
    }
    unlink(filename);
-   sge_free(&filename);
 
    DRETURN(read_ok ? QConfEditStatus::OK : QConfEditStatus::READ_FAILED);
 }

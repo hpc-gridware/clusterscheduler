@@ -40,6 +40,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "uti/ocs_TerminationManager.h"
@@ -1030,25 +1031,19 @@ static ocs::tom::ListPtr<ocs::tom::AN> qalter_parse_job_parameter(const uint32_t
          }
       }   
       else{
-         char *name = nullptr;
          const char *job_name = job.get<JB_job_name>();
-         int size = strlen(jid.get<ID_str>());
-         if (job_name) {
-            size += strlen(job_name); 
-         }   
-         size += 3;
-          
-         name = sge_malloc(size);
          /* format: <delimiter>old_name<delimiter>new_name */
-         snprintf(name, size, "%s%s%s%s", JOB_NAME_DEL, jid.get<ID_str>(), JOB_NAME_DEL, job_name?job_name:"");
+         std::string name{JOB_NAME_DEL};
+         name += jid.get<ID_str>();
+         name += JOB_NAME_DEL;
+         name += job_name != nullptr ? job_name : "";
          // the requests carry reduced jobs, created as lAddElemStr() created them
          if (!requestlist) {
             requestlist = ocs::tom::ListPtr<ocs::tom::JB>::create_like("", *request_like);
          }
          auto new_rep = ocs::tom::ElementPtr<ocs::tom::JB>::create_like(*request_like);
-         new_rep->set<JB_job_name>(name);
+         new_rep->set<JB_job_name>(name.c_str());
          rep = requestlist->push_back(std::move(new_rep));
-         sge_free(&name);
       }   
 
       if (!rep) {   

@@ -39,6 +39,7 @@
 #include <pwd.h>
 #include <cstdarg>
 #include <cstdlib>
+#include <vector>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_rmon_macros.h"
@@ -256,24 +257,19 @@ bool sge_parse_qrsub(const ocs::tom::List<ocs::tom::SPA> pcmdline, ocs::tom::Lis
       }
 
       if (!ocs::is_hgroup_name(name)) {
-         struct passwd *pw;
          struct passwd pw_struct;
-         char *buffer;
-         int size;
          stringT group;
 
-         size = get_pw_buffer_size();
-         buffer = sge_malloc(size);
-         pw = sge_getpwnam_r(name, &pw_struct, buffer, size);
+         const int size = get_pw_buffer_size();
+         std::vector<char> buffer(size);
+         const struct passwd *pw = sge_getpwnam_r(name, &pw_struct, buffer.data(), size);
          
          if (pw == nullptr) {
            answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_USER_XISNOKNOWNUSER_S, name);
-           sge_free(&buffer);
            DRETURN(false);
          }
          sge_gid2group(pw->pw_gid, group, MAX_STRING_SIZE, MAX_NIS_RETRIES);
          acl.set<ARA_group>(group);
-         sge_free(&buffer);
       }
 
       if (is_xacl) {

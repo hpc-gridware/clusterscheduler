@@ -718,7 +718,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      uint32_t jobid    = 0;
                      uint32_t job_signal   = 0;
                      uint32_t jataskid = 0;
-                     char *qname       = nullptr;
+                     ocs::uti::c_ptr<char> qname; // the unpacked string is strdup'd
    
                      if (ocs::tom::try_get_uint32(&buf, &jobid) == PACK_SUCCESS) {
                         printf("jobid (JB_job_number):    " sge_u32 "\n", jobid);
@@ -726,9 +726,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      if (ocs::tom::try_get_uint32(&buf, &jataskid) == PACK_SUCCESS) {
                         printf("jataskid (JAT_task_number): " sge_u32 "\n", jataskid);
                      }
-                     if (ocs::tom::try_get_str(&buf, &qname) == PACK_SUCCESS) {
+                     char *qname_raw = nullptr;
+                     const int qname_ret = ocs::tom::try_get_str(&buf, &qname_raw);
+                     qname.reset(qname_raw);
+                     if (qname_ret == PACK_SUCCESS) {
                         if (qname != nullptr) {
-                           printf("qname(QU_full_name):    \"%s\"\n", qname);
+                           printf("qname(QU_full_name):    \"%s\"\n", qname.get());
                         } else {
                            printf("qping: qname(QU_full_name) is nullptr !!!!\n");
                         }
@@ -738,9 +741,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         printf("signal:   " sge_u32 " (%s)\n", job_signal, sge_sig2str(job_signal));
                      }
    
-                     if (qname) {
-                        sge_free(&qname);
-                     }
+                     qname.reset();
                      ocs::tom::clear_buffer(&buf);
                   }
                }
@@ -759,7 +760,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      uint32_t jobid    = 0;
                      uint32_t queue_signal   = 0;
                      uint32_t jataskid = 0;
-                     char *qname       = nullptr;
+                     ocs::uti::c_ptr<char> qname; // the unpacked string is strdup'd
    
                      if (ocs::tom::try_get_uint32(&buf, &jobid) == PACK_SUCCESS) {
                         printf("jobid (0 - unused):    " sge_u32 "\n", jobid);
@@ -767,9 +768,12 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                      if (ocs::tom::try_get_uint32(&buf, &jataskid) == PACK_SUCCESS) {
                         printf("jataskid (0 - unused): " sge_u32 "\n", jataskid);
                      }
-                     if (ocs::tom::try_get_str(&buf, &qname) == PACK_SUCCESS) {
+                     char *qname_raw = nullptr;
+                     const int qname_ret = ocs::tom::try_get_str(&buf, &qname_raw);
+                     qname.reset(qname_raw);
+                     if (qname_ret == PACK_SUCCESS) {
                         if (qname != nullptr) {
-                           printf("qname(QU_full_name):    \"%s\"\n", qname);
+                           printf("qname(QU_full_name):    \"%s\"\n", qname.get());
                         } else {
                            printf("qping: qname(QU_full_name) is nullptr !!!!\n");
                         }
@@ -778,9 +782,7 @@ static void qping_print_line(const char* buffer, int nonewline, int dump_tag, co
                         printf("signal:   " sge_u32 " (%s)\n", queue_signal, sge_sig2str(queue_signal));
                      }
    
-                     if (qname) {
-                        sge_free(&qname);
-                     }
+                     qname.reset();
                      ocs::tom::clear_buffer(&buf);
                   }
                }
@@ -959,9 +961,17 @@ static void usage(int ret) {
 }
 
 
+/**
+ * @brief qping - contact a communication endpoint and print its status, or dump its message traffic
+ *
+ * @param argc number of command line arguments
+ * @param argv the command line arguments: options, host, port, component name and component id
+ * @return 1 when the status of the endpoint could not be fetched, 0 otherwise; some errors exit with 1
+ */
 int main(int argc, char *argv[]) {
    char* comp_host          = nullptr;
-   char* resolved_comp_host = nullptr;
+   char* resolved_comp_host = nullptr;           // the resolved host name, owned by resolved_comp_host_owner
+   ocs::uti::c_ptr<char> resolved_comp_host_owner; // the resolved host name is strdup'd by commlib
    char* comp_name          = nullptr;
    cl_com_handle_t* handle  = nullptr;
    cl_framework_t   communication_framework = CL_CT_TCP;
@@ -1184,13 +1194,13 @@ int main(int argc, char *argv[]) {
 
    /* set alias file */
    if (!option_noalias) {
-      const char *alias_path = sge_get_alias_path();
+      // sge_get_alias_path() returns sge_malloc'd memory
+      const ocs::uti::c_ptr<const char> alias_path{sge_get_alias_path()};
       if (alias_path != nullptr) {
-         retval = cl_com_set_alias_file(alias_path);
+         retval = cl_com_set_alias_file(alias_path.get());
          if (retval != CL_RETVAL_OK) {
             fprintf(stderr,"%s\n",cl_get_error_text(retval));
          }
-         sge_free(&alias_path);
       }
    }
 
@@ -1210,6 +1220,7 @@ int main(int argc, char *argv[]) {
    }
 
    retval = cl_com_cached_gethostbyname(comp_host, &resolved_comp_host,nullptr, nullptr, nullptr);
+   resolved_comp_host_owner.reset(resolved_comp_host);
    if (retval != CL_RETVAL_OK) {
       fprintf(stderr, "could not resolve hostname %s\n", comp_host);
       cl_com_cleanup_commlib();
@@ -1455,7 +1466,7 @@ int main(int argc, char *argv[]) {
    retval = cl_commlib_shutdown_handle(handle,false);
    if (retval != CL_RETVAL_OK) {
       fprintf(stderr,"%s\n",cl_get_error_text(retval));
-      sge_free(&resolved_comp_host);
+      resolved_comp_host_owner.reset();
       resolved_comp_host = nullptr;
       cl_com_cleanup_commlib();
       exit(1);
@@ -1464,11 +1475,11 @@ int main(int argc, char *argv[]) {
    retval = cl_com_cleanup_commlib();
    if (retval != CL_RETVAL_OK) {
       fprintf(stderr,"%s\n",cl_get_error_text(retval));
-      sge_free(&resolved_comp_host);
+      resolved_comp_host_owner.reset();
       resolved_comp_host = nullptr;
       exit(1);
    }
-   sge_free(&resolved_comp_host);
+   resolved_comp_host_owner.reset();
    resolved_comp_host = nullptr;
    
    return exit_value;
