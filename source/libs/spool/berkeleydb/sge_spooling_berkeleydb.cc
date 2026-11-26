@@ -70,8 +70,6 @@
 #include "sgeobj/sge_ja_task.h"
 #include "sgeobj/sge_pe_task.h"
 #include "sgeobj/sge_qinstance.h"
-#include "sgeobj/sge_suser.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
@@ -83,7 +81,6 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_QU.h"
 #include "sgeobj/tom/ocs_tom_STU.h"
-#include "sgeobj/tom/ocs_tom_SU.h"
 
 #include "spool/sge_spooling_utilities.h"
 #include "spool/msg_spoollib.h"
@@ -437,7 +434,6 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
    const ocs::tom::FieldDescr *descr;
    const char *table_name;
    bdb_info info;
-   const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
 
    info = (bdb_info)rule.get<SPR_clientdata>();
    descr = object_type_get_descr(object_type);
@@ -561,10 +557,6 @@ bool spool_berkeleydb_default_list_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_
                            }
                         }
                      }
-                     job_list_register_new_job(
-                        ocs::DataStore::master_list<SGE_TYPE_JOB>(),
-                        mconf_get_max_jobs(), 1);
-                     suser_register_new_job(job, mconf_get_max_u_jobs(), 1, master_suser_list);
                      if (!ret) {
                         break;
                      }

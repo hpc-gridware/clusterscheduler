@@ -92,6 +92,7 @@
 #include "sgeobj/sge_userset.h"
 #include "sgeobj/sge_centry.h"
 #include "sgeobj/sge_conf.h"
+#include "sgeobj/sge_suser.h"
 #include "sgeobj/sge_schedd_conf.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_object_type.h"
@@ -762,7 +763,8 @@ qmaster_lock_and_shutdown(int anExitValue) {
  * @brief Read the spool into the master lists and bring them into a consistent state
  *
  * Reads every spooled object type, checks the lists for duplicate keys in unique attributes (N-H-18) and the
- * role references, and builds the derived data such as the categories.
+ * role references, and builds the derived data such as the categories and the per-user job counters for
+ * max_u_jobs.
  *
  * @return 0 on success, -1 if the qmaster cannot start with the spool as it is
  */
@@ -1218,6 +1220,7 @@ setup_qmaster() {
       dstring host_domain = DSTRING_INIT;
 
       const auto master_centry_list = ocs::DataStore::master_list<SGE_TYPE_CENTRY>();
+      const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
       for (const auto jep : ocs::DataStore::master_list_rw<SGE_TYPE_JOB>()) {
 
          DPRINTF("JOB " sge_u32 " PRIORITY" sge_u32 "\n", jep.get<JB_job_number>(),
@@ -1225,6 +1228,10 @@ setup_qmaster() {
 
          // normalize the priority and store the normalized value
          job_normalize_priority(jep, jep.get<JB_priority>());
+
+         // count the job for its owner's max_u_jobs; the spooling backends only read the jobs, every
+         // backend relies on this registration (CS-3174)
+         suser_register_new_job(jep, mconf_get_max_u_jobs(), 1, master_suser_list);
 
          /* doing this operation we need the complete job list read in */
          job_suc_pre(jep);
@@ -1658,6 +1665,7 @@ debit_all_jobs_from_qs() {
    const auto master_userset_list = ocs::DataStore::master_list<SGE_TYPE_USERSET>();
    const auto master_hgroup_list = ocs::DataStore::master_list<SGE_TYPE_HGROUP>();
    const auto master_exechost_list = ocs::DataStore::master_list<SGE_TYPE_EXECHOST>();
+   const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
 
    auto next_jep = master_job_list.front();
    while (const auto jep = next_jep) {
@@ -1671,6 +1679,8 @@ debit_all_jobs_from_qs() {
          ar = master_ar_list.find_first<AR_id>(ar_id);
          if (ar == nullptr) {
             ERROR(MSG_CONFIG_CANTFINDARXREFERENCEDINJOBY_UU, ar_id, jep.get<JB_job_number>());
+            // the job was counted for its owner's max_u_jobs in setup_qmaster() (CS-3174)
+            suser_unregister_job(jep, master_suser_list);
             master_job_list.erase(jep);
             continue;
          } else {

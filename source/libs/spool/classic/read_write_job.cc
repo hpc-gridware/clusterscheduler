@@ -52,8 +52,6 @@
 #include "tom/ocs_Types.h"
 
 #include "sgeobj/sge_job.h"
-#include "sgeobj/sge_suser.h"
-#include "sgeobj/sge_conf.h"
 #include "sgeobj/sge_object.h"
 #include "sgeobj/ocs_DataStore.h"
 #include "tom/ocs_Element.h"
@@ -956,17 +954,8 @@ int job_list_read_from_disk(ocs::tom::ListData **job_list, const char *list_name
             }
 
             job->set<JB_jid_successor_list>(nullptr);
-            const auto added_job = job.get();
+            // the job counters are set by qmaster after reading all jobs (CS-3174)
             job_list_add_job(job_list, list_name, ocs::tom::Element<ocs::tom::JB>::from_typed(job.release()), 0);
-
-            bool in_execd = (flags & SPOOL_WITHIN_EXECD) > 0;
-            if (!in_execd) {
-               job_list_register_new_job(
-                  ocs::DataStore::master_list<SGE_TYPE_JOB>(),
-                  mconf_get_max_jobs(), 1);
-               const auto master_suser_list = ocs::DataStore::master_list_rw<SGE_TYPE_SUSER>();
-               suser_register_new_job(added_job, mconf_get_max_u_jobs(), 1, master_suser_list);
-            }
          }
       }
    } 
