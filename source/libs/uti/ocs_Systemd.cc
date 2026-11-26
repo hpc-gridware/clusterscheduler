@@ -644,7 +644,7 @@ namespace ocs::uti {
     * This constructor initializes the Systemd object and sets the bus pointer to nullptr.
     */
    Systemd::Systemd()
-      : bus(nullptr), bus_fd(-1), bus_fd_inode(0), error_class(ErrorClass::none) {
+      : bus(nullptr), bus_fd(-1), bus_fd_inode(0), error_class(ErrorClass::none), quiet(false) {
    }
 
    /*!
@@ -680,8 +680,10 @@ namespace ocs::uti {
          case EBADF:
          case ENOTSOCK:
             error_class = ErrorClass::transport;
-            ERROR(MSG_SYSTEMD_CONNECTION_LOST_SISI, sge_dstring_get_string(error_dstr), r,
-                  strerror(-r), bus != nullptr ? sd_bus_is_open_func(bus) : -1);
+            if (!quiet) {
+               ERROR(MSG_SYSTEMD_CONNECTION_LOST_SISI, sge_dstring_get_string(error_dstr), r,
+                     strerror(-r), bus != nullptr ? sd_bus_is_open_func(bus) : -1);
+            }
             break;
          case ETIMEDOUT:
             // The bus is there, the socket is open, but nothing answered within the timeout
@@ -780,7 +782,9 @@ namespace ocs::uti {
             // the process when that fails. Leak the connection object instead: a small leak in a
             // rare case is better than a dead daemon. The error message tells us that we have a
             // bug somewhere else - whoever closed the file descriptor did not own it.
-            ERROR(MSG_SYSTEMD_BUS_FD_CLOSED_IS, bus_fd, bus_fd_target().c_str());
+            if (!quiet) {
+               ERROR(MSG_SYSTEMD_BUS_FD_CLOSED_IS, bus_fd, bus_fd_target().c_str());
+            }
          } else if (sd_bus_is_open_func(bus) > 0) {
             sd_bus_flush_close_unref_func(bus);
          } else {

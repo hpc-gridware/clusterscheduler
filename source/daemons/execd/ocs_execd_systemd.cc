@@ -29,6 +29,7 @@
 #include <string>
 #include <system_error>
 #include <vector>
+#include <unistd.h>
 
 #include "tom/ocs_Types.h"
 
@@ -49,9 +50,9 @@
 #include "sgeobj/tom/ocs_tom_PET.h"
 #include "sgeobj/tom/ocs_tom_UA.h"
 
+#include "uti/msg_utilib.h"
 #include "uti/ocs_Systemd.h"
 #include "uti/sge_log.h"
-#include "uti/sge_profiling.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_time.h"
 
@@ -76,7 +77,7 @@ namespace ocs::execd {
     *
     * @return the timeout in microseconds
     */
-   static uint64_t
+   uint64_t
    systemd_call_timeout() {
       return sge_gmt32_to_gmt64(mconf_get_systemd_timeout());
    }
@@ -213,40 +214,49 @@ namespace ocs::execd {
     *
     * It connects to Systemd and attempts to move the shepherd process to the appropriate scope.
     *
-    * @return true on success, false on failure
+    * It is called in the child of sge_execd between fork() and the exec of sge_shepherd. A lock
+    * which another thread of sge_execd held at the time of the fork stays locked in the child for
+    * ever (CS-3198), so this function takes none: the timeout is read before the fork, the
+    * effective user is switched with seteuid() and setegid() instead of sge_switch2*(), and
+    * nothing is logged, neither here nor by the Systemd object.
+    *
+    * @param call_timeout how long one systemd call may take in microseconds, read before the fork
+    *        with systemd_call_timeout()
+    * @param error_dstr receives the reason if the shepherd could not be moved
+    * @return true on success or if sge_execd is not running as a service, false on failure
     */
    bool
-   execd_move_shepherd_to_scope() {
+   execd_move_shepherd_to_scope(uint64_t call_timeout, dstring *error_dstr) {
+      DENTER(TOP_LAYER);
       bool ret = true;
 
       if (ocs::uti::Systemd::is_running_as_service()) {
-         PROF_START_MEASUREMENT(SGE_PROF_CUSTOM2);
-         DSTRING_STATIC(err_dstr, MAX_STRING_SIZE);
          ocs::uti::Systemd systemd;
+         systemd.set_quiet(true);
+
          // connect as root, we want to have write access
-         sge_switch2start_user();
-         bool connected = systemd.connect(&err_dstr, systemd_call_timeout());
-         sge_switch2admin_user();
-         if (connected) {
-            pid_t pid = getpid();
-            bool success = systemd.move_shepherd_to_scope(pid, &err_dstr);
-            if (!success) {
-               WARNING(MSG_EXECD_SYSTEMD_MOVE_SHEPHERD_TO_SCOPE_S, sge_dstring_get_string(&err_dstr));
-               ret = false;
-            }
+         uid_t euid = geteuid();
+         gid_t egid = getegid();
+         bool connected = false;
+         if (seteuid(getuid()) == 0 && setegid(getgid()) == 0) {
+            connected = systemd.connect(error_dstr, call_timeout);
          } else {
-            // connect failed
-            WARNING(SFNMAX, sge_dstring_get_string(&err_dstr));
-            ret = false;
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEM_SETEUIDFAILED_u, getuid());
          }
-         PROF_STOP_MEASUREMENT(SGE_PROF_CUSTOM2);
-         if (prof_is_active(SGE_PROF_CUSTOM2)) {
-            double prof_systemd = prof_get_measurement_wallclock(SGE_PROF_CUSTOM2, true, nullptr);
-            PROFILING("PROF: moving shepherd to systemd scope took %.6f seconds", prof_systemd);
+         if (setegid(egid) != 0 || seteuid(euid) != 0) {
+            // the shepherd must not be started with the effective ids of root
+            sge_dstring_sprintf(error_dstr, MSG_SYSTEM_SETEUIDFAILED_u, euid);
+            connected = false;
+         }
+
+         if (connected) {
+            ret = systemd.move_shepherd_to_scope(getpid(), error_dstr);
+         } else {
+            ret = false;
          }
       }
 
-      return ret;
+      DRETURN(ret);
    }
 
    /*!

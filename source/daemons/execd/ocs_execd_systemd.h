@@ -23,9 +23,12 @@
  * @brief Talking to systemd: running as a service, and scoping the shepherds
  */
 
+#include <cstdint>
+
 #include "sgeobj/tom/ocs_tom_JAT.h"
 #include "sgeobj/tom/ocs_tom_JB.h"
 #include "tom/ocs_Element.h"
+#include "uti/sge_dstring.h"
 
 namespace ocs::execd {
 
@@ -46,8 +49,11 @@ namespace ocs::execd {
    void
    execd_check_systemd_features();
 
+   uint64_t
+   systemd_call_timeout();
+
    bool
-   execd_move_shepherd_to_scope();
+   execd_move_shepherd_to_scope(uint64_t call_timeout, dstring *error_dstr);
 
    void
    execd_store_tight_pe_slice(ocs::tom::ConstElement<ocs::tom::JB> job, ocs::tom::Element<ocs::tom::JAT> ja_task,
