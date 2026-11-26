@@ -180,23 +180,17 @@ void simulate_project_update(const char *host) {
  * @param data see the description above
   * @return the thread's result; the tests ignore it
  */
-void *thread1(void *data) {
+void *thread1(void * /* data */) {
    DENTER(TOP_LAYER);
-
-   thread_arg_t *thread = (thread_arg_t *)data;
-   dstring thread_name = DSTRING_INIT;
-
-   sge_dstring_sprintf(&thread_name, "thread%d", thread->id);
-   //sge_dstring_free(&thread_name);
 
    ocs::tom::install_model(ocs::tom::gcs_model());
 
    while (true) {
       pthread_mutex_lock(&request_mtx);
-      if (request > REQUESTS) {
+      if (request >= REQUESTS) {
          pthread_mutex_unlock(&request_mtx);
          DRETURN(nullptr);
-      } 
+      }
       long request_id = requests[request];
       request++;
       pthread_mutex_unlock(&request_mtx);
@@ -364,6 +358,7 @@ int main(int argc, char *argv[]) {
    dstring stats_str = DSTRING_INIT;
    fgl_dump_stats(&stats_str);
    fprintf(stderr, "%s", sge_dstring_get_string(&stats_str));
+   sge_dstring_free(&stats_str);
 
    DRETURN(ret ? EXIT_SUCCESS : EXIT_FAILURE);
 }
