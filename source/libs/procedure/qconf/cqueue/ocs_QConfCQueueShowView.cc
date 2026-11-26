@@ -139,7 +139,8 @@ insert_custom_complex_values_writer(spooling_field *fields) {
    DRETURN_VOID;
 }
 
-/** @brief Write a list of queue instances
+/**
+ * @brief Write a list of queue instances
  *
  * JSON gets one array for the whole list, so that a query matching several hosts
  * stays a single document; plain output writes one block per instance, separated
@@ -159,7 +160,8 @@ ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, ocs::tom::ListP
 
    /* sge_build_QU_field_list() allocates, so this array is ours to modify -
       unlike the shared tables the providers hand out, see qconf_copy_fields() */
-   spooling_field *fields = sge_build_QU_field_list(true, false);
+   const ocs::uti::c_ptr<spooling_field[]> owned_fields{sge_build_QU_field_list(true, false)};
+   spooling_field *const fields = owned_fields.get();
    /* Bugfix Issuezilla #1198: keep slots out of the complex values list */
    insert_custom_complex_values_writer(fields);
 
@@ -178,19 +180,19 @@ ocs::QConfCQueueShowView::write_qinstance_list(std::ostream &os, ocs::tom::ListP
             os << "\n";
          }
          is_first = false;
-         const char *fn = spool_flatfile_write_object(answer_list, qi, false, fields,
-                                                      &qconf_sfi, SP_DEST_STREAM,
-                                                      format, nullptr, false, "qinstance",
-                                                      &os, line_breaks_);
-         sge_free(&fn);
+         // the name of the stream written, from strdup() in libs/spool
+         const ocs::uti::c_ptr<const char> fn{spool_flatfile_write_object(answer_list, qi, false, fields,
+                                                                          &qconf_sfi, SP_DEST_STREAM,
+                                                                          format, nullptr, false, "qinstance",
+                                                                          &os, line_breaks_)};
       }
    }
-   sge_free(&fields);
 
    DRETURN(!answer_list_has_error(answer_list));
 }
 
-/** @brief Write one cluster queue configuration
+/**
+ * @brief Write one cluster queue configuration
  *
  * @param os          the stream to write to
  * @param answer_list used to return error messages
@@ -204,10 +206,11 @@ ocs::QConfCQueueShowView::write_cqueue(std::ostream &os, ocs::tom::ListPtr<ocs::
 
    const spool_flatfile_format format =
       (output_format_ == ProcedureParameter::OutputFormat::JSON) ? SP_FORM_JSON : SP_FORM_ASCII;
-   const char *outname = spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
-                                                     &qconf_sfi, SP_DEST_STREAM, format,
-                                                     nullptr, false, nullptr, &os, line_breaks_);
-   sge_free(&outname);
+   // the name of the stream written, from strdup() in libs/spool
+   const ocs::uti::c_ptr<const char> outname{spool_flatfile_write_object(answer_list, cqueue, false, CQ_fields,
+                                                                         &qconf_sfi, SP_DEST_STREAM, format,
+                                                                         nullptr, false, nullptr, &os,
+                                                                         line_breaks_)};
 
    DRETURN(!answer_list_has_error(answer_list));
 }

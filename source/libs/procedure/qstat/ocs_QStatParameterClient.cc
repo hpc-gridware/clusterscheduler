@@ -261,7 +261,8 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_cmdline(ocs::tom::ListPt
    DRETURN(ret);
 }
 
-/** @brief Second stage of the option parsing: turn the switches into the parameters
+/**
+ * @brief Second stage of the option parsing: turn the switches into the parameters
  *
  * Takes the options out of the switch list, sets the display flags and puts
  * the queue, resource, user and job arguments into the member lists.
@@ -292,16 +293,17 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
       }
 
       while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          output_mode_ = OutputMode::JOB_INFO;
          if (argstr) {
             // a later -j replaces the job list of an earlier one
             jid_list_.reset();
             jid_list_ = str_list_parse_from_string(argstr, ",");
-            sge_free(&argstr);
          }
       }
 
       if (parse_string(ppcmdline, "-ectx", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (argstr == nullptr) {
             continue;
          }
@@ -313,13 +315,12 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(&alp, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
          }
-         sge_free(&argstr);
          continue;
       }
 
       if (parse_string(ppcmdline, "-fmt", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (argstr == nullptr) {
             continue;
          }
@@ -333,9 +334,7 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(&alp, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
          }
-         sge_free(&argstr);
          continue;
       }
 
@@ -363,28 +362,28 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
       }
 
       while (parse_string(ppcmdline, "-s", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (argstr != nullptr) {
             state_filter_ = true;
             state_filter_value_ = argstr;
-            sge_free(&argstr);
          }
       }
 
       while (parse_string(ppcmdline, "-explain", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          uint32_t filter = QI_AMBIGUOUS | QI_ALARM | QI_SUSPEND_ALARM | QI_ERROR;
          explain_bits_ = qinstance_state_from_string(argstr, &alp, filter);
          show_ |= QSTAT_DISPLAY_FULL;
          need_queues_ = true;
-         sge_free(&argstr);
       }
 
       while (parse_string(ppcmdline, "-F", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          show_ |= QSTAT_DISPLAY_QRESOURCES|QSTAT_DISPLAY_FULL;
          need_queues_ = true;
          if (argstr) {
             // frees the list it is handed and gives nullptr when the text cannot be parsed
             q_resource_list_ = centry_list_parse_from_string(std::move(q_resource_list_), argstr, false);
-            sge_free(&argstr);
          }
       }
 
@@ -429,17 +428,17 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
       }
 
       while (parse_string(ppcmdline, "-qs", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          uint32_t filter = 0xFFFFFFFF;
          queue_state_ = qinstance_state_from_string(argstr, &alp, filter);
          need_queues_ = true;
-         sge_free(&argstr);
       }
 
       while (parse_string(ppcmdline, "-l", &alp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          // frees the list it is handed and gives nullptr when the text cannot be parsed
          resource_list_ = centry_list_parse_from_string(std::move(resource_list_), argstr, false);
          need_queues_ = true;
-         sge_free(&argstr);
       }
 
       // the parser appends to the lists
@@ -497,7 +496,8 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
    DRETURN(alp);
 }
 
-/** @brief First stage of the option parsing: collect the switches of a default file
+/**
+ * @brief First stage of the option parsing: collect the switches of a default file
  * @param switch_list receives the switches, created with the first one
  * @param answer_list receives error messages
  * @param file the file; a missing or unreadable one is no error
@@ -509,16 +509,16 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_file(ocs::tom::ListPtr<o
                                                              const char *file) {
    DENTER(TOP_LAYER);
    int file_as_string_length;
-   char *file_as_string = sge_file2string(file, &file_as_string_length);
+   // the file content, malloc()ed by sge_file2string()
+   const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
    if (file_as_string == nullptr) {
       // file does not exist or is not readable — both are acceptable
       DRETURN(true);
    }
 
-   char **token = stra_from_str(file_as_string, " \n\t");
+   char **token = stra_from_str(file_as_string.get(), " \n\t");
    const int ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, token);
    sge_strafree(&token);
-   sge_free(&file_as_string);
    DRETURN(ret);
 }
 

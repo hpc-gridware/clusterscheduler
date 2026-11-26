@@ -55,7 +55,8 @@ qconf_view_fields(const qconf_object_desc &desc, const bool round_trip) {
    return desc.build_fields;
 }
 
-/** @brief Write several objects of one type (CS-2819)
+/**
+ * @brief Write several objects of one type (CS-2819)
  *
  * Two shapes, and which one a type takes is in its descriptor rather than in the
  * switch: `-srqs` hands the whole list to the writer in one go, because
@@ -79,13 +80,15 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const ocs::tom::ConstRawL
    const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_ || for_export_);
    bool owned = false;
    spooling_field *fields = provider(format, more_info_, &owned);
+   // a built list comes from c_alloc() in libs/spool, a shared table is not ours to free
+   const ocs::uti::c_ptr<spooling_field[]> owned_fields{owned ? fields : nullptr};
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    if (desc.read.write_as_list) {
-      const char *filename = spool_flatfile_write_list(&alp, list, fields, desc.sfi,
-                                                       SP_DEST_STREAM, format, nullptr, false,
-                                                       &os, line_breaks_);
-      sge_free(&filename);
+      // the name of the stream written, from strdup() in libs/spool
+      const ocs::uti::c_ptr<const char> filename{spool_flatfile_write_list(&alp, list, fields, desc.sfi,
+                                                                           SP_DEST_STREAM, format, nullptr,
+                                                                           false, &os, line_breaks_)};
    } else {
       bool is_first = true;
       for (const auto ep : list) {
@@ -93,14 +96,10 @@ ocs::QConfViewBase::show_object_list(std::ostream &os, const ocs::tom::ConstRawL
             os << "\n";
          }
          is_first = false;
-         const char *filename = spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi,
-                                                            SP_DEST_STREAM, format, nullptr, false,
-                                                            desc.json_type_name, &os, line_breaks_);
-         sge_free(&filename);
+         const ocs::uti::c_ptr<const char> filename{
+            spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi, SP_DEST_STREAM, format,
+                                        nullptr, false, desc.json_type_name, &os, line_breaks_)};
       }
-   }
-   if (owned) {
-      sge_free(&fields);
    }
    alp.reset();
 
@@ -152,15 +151,14 @@ ocs::QConfViewBase::show_object(std::ostream &os, const ocs::tom::ConstRawElemen
    const qconf_build_fields_fn provider = qconf_view_fields(desc, for_edit_ || for_export_);
    bool owned = false;
    spooling_field *fields = provider(format, more_info_, &owned);
+   // a built list comes from c_alloc() in libs/spool, a shared table is not ours to free
+   const ocs::uti::c_ptr<spooling_field[]> owned_fields{owned ? fields : nullptr};
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
-   const char *filename = spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi,
-                                                      SP_DEST_STREAM, format, nullptr, false,
-                                                      desc.json_type_name, &os, line_breaks_);
-   sge_free(&filename);
-   if (owned) {
-      sge_free(&fields);
-   }
+   // the name of the stream written, from strdup() in libs/spool
+   const ocs::uti::c_ptr<const char> filename{
+      spool_flatfile_write_object(&alp, ep, desc.is_root, fields, desc.sfi, SP_DEST_STREAM, format, nullptr,
+                                  false, desc.json_type_name, &os, line_breaks_)};
    alp.reset();
 
    DRETURN_VOID;

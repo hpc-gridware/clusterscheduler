@@ -427,15 +427,15 @@ void ocs::QStatJobViewPlain::report_effective_submit_cmd_line(std::ostream &os,
    DENTER(TOP_LAYER);
    if (job.has<JB_submission_command_line>()) {
       if (const char *str = job.get<JB_submission_command_line>(); str != nullptr) {
-         char *copied_str = strdup(str);
+         // strtok_r() writes into the text, so it works on a copy
+         std::string copied_str{str};
          char *saveptr = nullptr;
-         if (const char *command = strtok_r(copied_str, " ", &saveptr); command != nullptr) {
+         if (const char *command = strtok_r(copied_str.data(), " ", &saveptr); command != nullptr) {
             dstring dstr_cmd = DSTRING_INIT;
             os << std::format("{:<{}} {}", ocs::ascii_width("effective_submit_cmd_line:"), left_width,
                               job_get_effective_command_line(job, &dstr_cmd, command)) << "\n";
             sge_dstring_free(&dstr_cmd);
          }
-         sge_free(&copied_str);
       }
    }
    DRETURN_VOID;

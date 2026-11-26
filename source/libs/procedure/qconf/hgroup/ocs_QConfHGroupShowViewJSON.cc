@@ -34,7 +34,8 @@
 #include "ocs_QConfHGroupShowViewJSON.h"
 #include "sgeobj/sge_answer.h"
 
-/** @brief Write one host group as JSON, with its member classes split out
+/**
+ * @brief Write one host group as JSON, with its member classes split out
  *
  * The derived lists are computed from the member list at render time, which is
  * why this cannot go through spool_flatfile_write_object(): that one renders the
@@ -82,6 +83,8 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const ocs::tom::Cons
       (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
    bool owned = false;
    spooling_field *fields = provider(SP_FORM_JSON, more_info_, &owned);
+   // a built list comes from c_alloc() in libs/spool, a shared table is not ours to free
+   const ocs::uti::c_ptr<spooling_field[]> owned_fields{owned ? fields : nullptr};
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    dstring document = DSTRING_INIT;
@@ -92,9 +95,6 @@ ocs::QConfHGroupShowViewJSON::show_object(std::ostream &os, const ocs::tom::Cons
       }
    }
    sge_dstring_free(&document);
-   if (owned) {
-      sge_free(&fields);
-   }
    alp.reset();
 
    DRETURN_VOID;

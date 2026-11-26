@@ -23,6 +23,7 @@
  */
 
 #include <sstream>
+#include <string>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
@@ -331,9 +332,10 @@ void ocs::QStatJobViewJSON::report_effective_submit_cmd_line(std::ostream &os,
       DRETURN_VOID;
    }
 
-   char *copied_str = strdup(str);
+   // strtok_r() writes into the text, so it works on a copy
+   std::string copied_str{str};
    char *saveptr = nullptr;
-   if (const char *command = strtok_r(copied_str, " ", &saveptr); command != nullptr) {
+   if (const char *command = strtok_r(copied_str.data(), " ", &saveptr); command != nullptr) {
       if (first_attribute) {
          os << "\n";
          first_attribute = false;
@@ -345,7 +347,6 @@ void ocs::QStatJobViewJSON::report_effective_submit_cmd_line(std::ostream &os,
          job_get_effective_command_line(job, &dstr_cmd, command));
       sge_dstring_free(&dstr_cmd);
    }
-   sge_free(&copied_str);
    DRETURN_VOID;
 }
 

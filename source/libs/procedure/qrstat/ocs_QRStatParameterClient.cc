@@ -46,7 +46,8 @@
 extern char **environ;
 
 
-/** @brief Append the switches of a qrstat defaults file to the switch list
+/**
+ * @brief Append the switches of a qrstat defaults file to the switch list
  *
  * A file that does not exist adds nothing and is no error.
  *
@@ -66,12 +67,13 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, ocs::to
       DPRINTF("file " SFQ " does not exist\n", file);
    } else {
       int file_as_string_length;
-      char *file_as_string = sge_file2string(file, &file_as_string_length);
+      // the file content, malloc()ed by sge_file2string()
+      const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
       if (file_as_string != nullptr) {
-         auto token = const_cast<const char **>(stra_from_str(file_as_string, " \n\t"));
-         *alpp = ocs_parse_cmdline(QRSTAT, token, environ, cmdline, FLG_USE_PSEUDOS);
-         sge_free(&file_as_string);
-         sge_free(&token);
+         // stra_from_str() strdup()s every token; the parser copies what it keeps
+         char **token = stra_from_str(file_as_string.get(), " \n\t");
+         *alpp = ocs_parse_cmdline(QRSTAT, const_cast<const char **>(token), environ, cmdline, FLG_USE_PSEUDOS);
+         sge_strafree(&token);
       } else {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
                                  file);
@@ -81,7 +83,8 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, ocs::to
    DRETURN(ret);
 }
 
-/** @brief Interpret the parsed switches
+/**
+ * @brief Interpret the parsed switches
  * @param answer_list receives error messages
  * @param cmdline the switches; the ones handled are removed from it
  * @return true when the switches are usable
@@ -114,6 +117,7 @@ ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *an
       }
 
       if (parse_string_arg(cmdline, "-ectx", answer_list, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string_arg() made with sge_strdup()
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -122,14 +126,13 @@ ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *an
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(answer_list, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
             ret = false;
          }
-         sge_free(&argstr);
          continue;
       }
 
       if (parse_string_arg(cmdline, "-fmt", answer_list, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string_arg() made with sge_strdup()
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {
@@ -140,10 +143,8 @@ ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *an
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(answer_list, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
             ret = false;
          }
-         sge_free(&argstr);
          continue;
       }
 

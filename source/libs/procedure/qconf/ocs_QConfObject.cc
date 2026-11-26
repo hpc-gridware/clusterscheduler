@@ -871,12 +871,13 @@ qconf_object_label(const qconf_object_desc &desc, const char *name) {
    return (desc.json_type_name != nullptr) ? desc.json_type_name : "";
 }
 
-/** @brief A private copy of a field list, see the header (CS-2817)
+/**
+ * @brief A private copy of a field list, see the header (CS-2817)
  *
- * @param fields the list to copy
- * @return the copy, or nullptr when @p fields is nullptr
+ * @param fields the list to copy, may be nullptr
+ * @return the copy, owned by the caller; empty when @p fields is nullptr
  */
-spooling_field *
+ocs::uti::c_ptr<spooling_field[]>
 qconf_copy_fields(const spooling_field *fields) {
    if (fields == nullptr) {
       return nullptr;
@@ -887,8 +888,8 @@ qconf_copy_fields(const spooling_field *fields) {
       n++;
    }
 
-   auto *copy = ocs::uti::c_alloc<spooling_field>(n + 1);
-   memcpy(copy, fields, sizeof(spooling_field) * (n + 1));
+   ocs::uti::c_ptr<spooling_field[]> copy{ocs::uti::c_alloc<spooling_field>(n + 1)};
+   memcpy(copy.get(), fields, sizeof(spooling_field) * (n + 1));
    return copy;
 }
 

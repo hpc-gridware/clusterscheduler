@@ -171,7 +171,8 @@ ocs::QQuotaParameterClient::parse_cmdline_and_env(char *argv[], ocs::tom::ListPt
    DRETURN(true);
 }
 
-/** @brief Collect the switches of a default file
+/**
+ * @brief Collect the switches of a default file
  * @param file the file; a missing one is no error
  * @param switch_list receives the switches, created with the first one
  * @param answer_list receives error messages
@@ -188,19 +189,22 @@ ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, ocs::tom::
    }
 
    int file_as_string_length;
-   const char *file_as_string = sge_file2string(file, &file_as_string_length);
+   // the file content, malloc()ed by sge_file2string()
+   const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
    if (file_as_string == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
                               file);
       DRETURN(false);
    }
 
-   char **token = stra_from_str(file_as_string, " \n\t");
+   char **token = stra_from_str(file_as_string.get(), " \n\t");
    const bool ret = parse_cmdline_and_env(token, switch_list, answer_list);
+   sge_strafree(&token);
    DRETURN(ret);
 }
 
-/** @brief Interpret the parsed switches
+/**
+ * @brief Interpret the parsed switches
  * @param switch_list the switches; the ones handled are removed from it
  * @param answer_list receives error messages
  * @return true when the switches are usable
@@ -235,8 +239,8 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
       }
 
       if (parse_string(switch_list, "-l", answer_list, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          resource_match_list_ = centry_list_parse_from_string(std::move(resource_match_list_), argstr, false);
-         sge_free(&argstr);
          continue;
       }
       if (parse_multi_stringlist_into(switch_list, "-u", answer_list, user_name_list)) {
@@ -253,6 +257,7 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
       }
 
       if (parse_string(switch_list, "-ectx", answer_list, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -261,13 +266,12 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(answer_list, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
             ret = false;
          }
-         sge_free(&argstr);
          continue;
       }
       if (parse_string(switch_list, "-fmt", answer_list, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {
@@ -278,10 +282,8 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(answer_list, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
             ret = false;
          }
-         sge_free(&argstr);
          continue;
       }
       if (parse_flag(switch_list, "-xml", answer_list, &helpflag)) {

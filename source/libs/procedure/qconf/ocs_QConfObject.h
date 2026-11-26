@@ -79,6 +79,7 @@
 #include "sgeobj/sge_answer.h"
 
 #include "uti/sge_rmon_macros.h"
+#include "uti/sge_stdlib.h"
 
 /** @brief Builds the field list one call renders or parses with
  *
@@ -788,7 +789,8 @@ ocs_qconf_parse_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, spooling_fi
    DRETURN(ep);
 }
 
-/** @brief A private copy of a field list, for a renderer that mutates widths
+/**
+ * @brief A private copy of a field list, for a renderer that mutates widths
  *
  * `spool_flatfile_align_list()` computes the column widths of a table and writes
  * them back into the `spooling_field` array it is given. Most providers hand out
@@ -800,10 +802,13 @@ ocs_qconf_parse_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, spooling_fi
  * The copy is shallow: `align_list` only writes `width` of the top level, and
  * everything else in the struct is a pointer to static data.
  *
- * @param fields the list to copy, terminated by `nm == NoName`
- * @return the copy, which the caller frees with sge_free()
+ * The rows are trivial, so the copy stays C memory from c_alloc(); the owner
+ * releases it with `free()` on every path.
+ *
+ * @param fields the list to copy, terminated by `nm == NoName`, may be nullptr
+ * @return the copy, owned by the caller; empty when @p fields is nullptr
  */
-spooling_field *qconf_copy_fields(const spooling_field *fields);
+ocs::uti::c_ptr<spooling_field[]> qconf_copy_fields(const spooling_field *fields);
 
 /**
  * @brief Fill one complex-value sublist with its object type and numeric value (CS-2313a)

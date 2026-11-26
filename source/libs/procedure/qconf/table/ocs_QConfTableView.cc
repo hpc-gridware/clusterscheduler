@@ -31,7 +31,8 @@
 #include "ocs_QConfTableView.h"
 #include "sgeobj/sge_answer.h"
 
-/** @brief Write every complex entry as an aligned table
+/**
+ * @brief Write every complex entry as an aligned table
  *
  * A view is handed no answer list, so the one the two spool calls want is local
  * and dropped, exactly as QConfViewBase::show_object() does it. Anything that can
@@ -40,6 +41,7 @@
  * @param os   the stream to write to
  * @param list the complex entries
  * @param desc the CE row, for the field list and the instruction
+ * @return none
  */
 void
 ocs::QConfTableView::show_table(std::ostream &os, const ocs::tom::ListData *list,
@@ -57,12 +59,12 @@ ocs::QConfTableView::show_table(std::ostream &os, const ocs::tom::ListData *list
       (desc.read.fields != nullptr) ? desc.read.fields : desc.build_fields;
    bool owned = false;
    spooling_field *shared = provider(format, more_info_, &owned);
+   // a built list comes from c_alloc() in libs/spool, a shared table is not ours to free
+   const ocs::uti::c_ptr<spooling_field[]> owned_shared{owned ? shared : nullptr};
 
    /* align_list() writes the widths back, so it must not see the shared table */
-   spooling_field *fields = qconf_copy_fields(shared);
-   if (owned) {
-      sge_free(&shared);
-   }
+   const ocs::uti::c_ptr<spooling_field[]> copy = qconf_copy_fields(shared);
+   spooling_field *const fields = copy.get();
 
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    /* aligned unconditionally, as the hand written code did - the widths are
@@ -81,12 +83,11 @@ ocs::QConfTableView::show_table(std::ostream &os, const ocs::tom::ListData *list
       os << ((text != nullptr) ? text : "");
       sge_dstring_free(&out);
    } else {
-      const char *filename = spool_flatfile_write_list(&alp, list, fields, desc.read.list_sfi,
-                                                       SP_DEST_STREAM, format, nullptr, false,
-                                                       &os, line_breaks_);
-      sge_free(&filename);
+      // the name of the stream written, from strdup() in libs/spool
+      const ocs::uti::c_ptr<const char> filename{spool_flatfile_write_list(&alp, list, fields, desc.read.list_sfi,
+                                                                           SP_DEST_STREAM, format, nullptr,
+                                                                           false, &os, line_breaks_)};
    }
-   sge_free(&fields);
    alp.reset();
 
    DRETURN_VOID;

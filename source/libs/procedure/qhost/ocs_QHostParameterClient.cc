@@ -104,7 +104,8 @@ ocs::QHostParameterClient::show_usage(FILE *fp) {
 }
 
 
-/** @brief Collect the switches of a default file
+/**
+ * @brief Collect the switches of a default file
  * @param cmdline receives the switches, created with the first one
  * @param answer_list receives error messages
  * @param file the file; a missing one is no error
@@ -122,7 +123,8 @@ ocs::QHostParameterClient::parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::S
 
    // read file content into a string
    int file_as_string_length;
-   char *file_as_string = sge_file2string(file, &file_as_string_length);
+   // the file content, malloc()ed by sge_file2string()
+   const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
    if (file_as_string == nullptr) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
                               file);
@@ -130,10 +132,9 @@ ocs::QHostParameterClient::parse_cmdline_from_file(ocs::tom::ListPtr<ocs::tom::S
    }
 
    // split string into tokens and parse them
-   char **token = stra_from_str(file_as_string, " \n\t");
+   char **token = stra_from_str(file_as_string.get(), " \n\t");
    const bool ret = parse_cmdline_and_env(token, environ, cmdline, answer_list);
    sge_strafree(&token);
-   sge_free(&file_as_string);
    DRETURN(ret);
 }
 
@@ -202,7 +203,8 @@ ocs::QHostParameterClient::parse_cmdline_and_env(char **argv, [[maybe_unused]] c
    DRETURN(true);
 }
 
-/** @brief Interpret the parsed switches
+/**
+ * @brief Interpret the parsed switches
  * @param ppcmdline the switches; the ones handled are removed from it
  * @param alpp receives error messages
  * @return 1 when the switches are usable, 2 after `-help`, 0 on an error
@@ -260,8 +262,8 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
          continue;
       }
       while (parse_string(ppcmdline, "-l", alpp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          resource_match_list_ = centry_list_parse_from_string(std::move(resource_match_list_), argstr, false);
-         sge_free(&argstr);
          continue;
       }
 
@@ -271,6 +273,7 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
       }
 
       if (parse_string(ppcmdline, "-ectx", alpp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -279,14 +282,13 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(alpp, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
             goto error;
          }
-         sge_free(&argstr);
          continue;
       }
 
       if (parse_string(ppcmdline, "-fmt", alpp, &argstr)) {
+         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {
@@ -297,10 +299,8 @@ ocs::QHostParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA>
             char buf[BUFSIZ];
             snprintf(buf, sizeof(buf), MSG_PARSE_INVALIDOPTIONARGUMENTX_S, argstr);
             answer_list_add(alpp, buf, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR);
-            sge_free(&argstr);
             goto error;
          }
-         sge_free(&argstr);
          continue;
       }
 
