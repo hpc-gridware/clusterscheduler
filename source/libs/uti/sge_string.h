@@ -76,8 +76,6 @@ const char *sge_jobname(const char *name);
 
 char *sge_delim_str(char *str, char **delim_pos, const char *delim);
 
-char *sge_dirname(const char *name, int delim);
-
 char *sge_strdup(char *old, const char *src);
 
 size_t sge_strlen(const char *str);
@@ -109,10 +107,6 @@ void sge_strtolower(char *buffer, int max_len);
 
 int sge_strisint(const char *str);
 
-char **sge_stradup(char **cpp, int n);
-
-void sge_strafree(char ***cpp);
-
 char **sge_stramemncpy(const char *cp, char **cpp, int n);
 
 void sge_strlcat(char *dst, const char *src, size_t dstsize);
@@ -121,19 +115,13 @@ size_t sge_strlcpy(char *dst, const char *src, size_t dstsize);
 
 char **sge_stracasecmp(const char *cp, char **cpp);
 
-char **stra_from_str(const char *, const char *delim);
-
 void stra_printf(char *stra[]);
 
 void sge_compress_slashes(char *str);
 
 void sge_strip_quotes(char **pstr);
 
-char **string_list(char *str, const char *delis, char **pstr);
-
 bool sge_str_is_number(const char *string);
-
-const char *sge_replace_substring(const char *input, const char *search, const char *replace);
 
 const char *sge_str_move_left(char *start, char *substr);
 
@@ -145,3 +133,20 @@ int sge_is_valid_filename(const char *fname);
 
 /// case insensitive string compare, following the `strcmp` convention
 #define SGE_STRCASECMP(a, b) strcasecmp(a, b)
+
+#ifdef __cplusplus
+// C++ only: the JNI code of libs/jdrmaa includes this header from C
+#include <optional>
+#include <string>
+#include <vector>
+
+std::optional<std::string> sge_dirname(const char *name, int delim);
+
+std::vector<std::string> stra_from_str(const char *source_str, const char *delim);
+
+std::vector<char *> ocs_argv_from_strings(std::vector<std::string> &strings);
+
+std::vector<char *> string_list(char *str, const char *delis);
+
+std::optional<std::string> sge_replace_substring(const char *input, const char *search, const char *replace);
+#endif

@@ -37,6 +37,8 @@
  */
 
 #include <cctype>
+#include <string>
+#include <vector>
 
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_sl.h"
@@ -44,104 +46,85 @@
 #include "uti/sge_stdlib.h"
 #include "uti/sge_log.h"
 
-/* This method counts the number of arguments in the string using a quick and
- * dirty algorithm.  The algorithm may incorrectly report the number of arguments
- * to be too large because it does not parse quotations correctly. 
- * MT-NOTE: sge_quick_count_num_args() is MT safe
- */
 /** @brief Count the arguments a string would split into
  *
- * Counts without building the vector, so a caller can size its array before
- * calling #sge_parse_args.
+ * Counts without building the vector. The count is an estimate and may differ
+ * from what #sge_parse_args returns (quotes are not parsed); its callers only
+ * trace it and test it for zero.
  *
  * @param args the argument string
  * @return the number of arguments @p args contains
+ *
+ * @note MT-NOTE: sge_quick_count_num_args() is MT safe
  */
 int sge_quick_count_num_args(const char *args) {
    DENTER(TOP_LAYER);
    int num_args = 0;
-   char *resreq = sge_malloc(strlen(args) + 1);
-   char *s;
    struct saved_vars_s *context = nullptr;
 
-   SGE_ASSERT(resreq != nullptr);
-
-   /* This function may return a larger number than required since it does not
-    * parse quotes.  This is ok, however, since it's current usage is for
-    * mallocing arrays, and a little too big is fine.
-    */
-   strcpy(resreq, args);
-   for (s = sge_strtok_r(resreq, " \t", &context); s != nullptr; s = sge_strtok_r(nullptr, " \t", &context)) {
+   // sge_strtok_r() tokenises its own copy of args
+   for (const char *s = sge_strtok_r(args, " \t", &context); s != nullptr;
+        s = sge_strtok_r(nullptr, " \t", &context)) {
       num_args++;
    }
-   sge_free(&resreq);
    sge_free_saved_vars(context);
 
    DRETURN(num_args);
 }
 
 
-/* This method should probably be moved out of this file into somewhere more
- * common so that other routines can use it. */
-/** @brief Split a command line string into an argument vector
+/**
+ * @brief Split a command line string into an argument vector
  *
  * Splits at whitespace, honouring single and double quotes so a quoted section
- * stays one argument.
+ * stays one argument; the quotes are removed. Leading whitespace yields an empty
+ * first argument, an empty @p args one empty argument.
  *
- * @param args the argument string to split
- * @param[out] pargs receives the arguments, nullptr terminated. The caller
- *             supplies an array of at least #sge_quick_count_num_args entries
- *             plus one, and owns the strings written into it
- * @return the number of arguments written
+ * @param args the argument string to split, nullptr gives no argument
+ * @return the arguments
  */
-int sge_parse_args(
-        const char *args, /* The argument string to parse by whitespace and quotes */
-        char **pargs /* The array to contain the parsed arguments */
-) {
+std::vector<std::string> sge_parse_args(const char *args) {
    DENTER(TOP_LAYER);
 
-   const char *s;
-   char *d;
-   char quote;
-   char *start;
-   char *resreq;
-   int finished, count = 0;
+   std::vector<std::string> pargs;
+   if (args == nullptr) {
+      DRETURN(pargs);
+   }
 
-   resreq = sge_malloc(strlen(args) + 1);
-   d = resreq;
-   s = args;
-   start = resreq;
-   finished = 0;
+   const char *s = args;
+   std::string current;
+   bool finished = false;
 
    while (!finished) {
       if (*s == '"' || *s == '\'') {      /* copy quoted arguments */
-         quote = *s++;                   /* without quotes */
-         while (*s && *s != quote)
-            *d++ = *s++;
-         if (*s == quote)
+         const char quote = *s++;          /* without quotes */
+         while (*s && *s != quote) {
+            current += *s++;
+         }
+         if (*s == quote) {
             s++;
+         }
       }
 
-      if (*s == '\0') finished = 1;          /* line end ? */
+      if (*s == '\0') {
+         finished = true;                 /* line end ? */
+      }
 
       if (finished || isspace(*s)) {      /* found delimiter or line end */
-         *d++ = 0;                       /* terminate token */
-         pargs[count++] = strdup(start);   /* assign argument */
+         pargs.push_back(std::move(current));   /* assign argument */
+         current.clear();
          if (!finished) {
             while (isspace(*(++s)));      /* skip any number whitespace */
          }
          if (*s == '\0') {
-            finished = 1;
-         } else {
-            start = d;                      /* assign start of next token */
+            finished = true;
          }
       } else {
-         *d++ = *s++;                    /* copy one character */
+         current += *s++;                 /* copy one character */
       }
    }
-   sge_free(&resreq);
 
-   DRETURN(count);
+   DRETURN(pargs);
 }
 
 /* command will be modifed in this function!

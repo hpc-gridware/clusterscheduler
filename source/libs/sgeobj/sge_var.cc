@@ -49,6 +49,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "uti/sge_arch.h"
 #include "uti/sge_log.h"
@@ -248,12 +249,12 @@ void var_list_dump_to_file(const ocs::tom::ConstList<ocs::tom::VA> varl, FILE *f
        */
       const char *env_name = elem.get<VA_variable>();
       const char *env_value = elem.get<VA_value>();
-      const ocs::uti::c_ptr<const char> new_env_value{sge_replace_substring(env_value, "\n", "\\n")};
+      const auto new_env_value = sge_replace_substring(env_value, "\n", "\\n");
 
-      if (new_env_value == nullptr) {
+      if (!new_env_value) {
          fprintf(file, "%s=%s\n", env_name, env_value);
       } else {
-         fprintf(file, "%s=%s\n", env_name, new_env_value.get());
+         fprintf(file, "%s=%s\n", env_name, new_env_value->c_str());
       }
    }
    DRETURN_VOID;
@@ -593,10 +594,10 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
       lpp.reset();
       DRETURN(2);
    }
-   // string_list() cuts the copy into tokens and returns an array of pointers into it (malloc memory of libs/uti)
+   // string_list() cuts the copy into tokens and returns a nullptr terminated array of pointers into it
    std::string va_string{variable_str};
-   const ocs::uti::c_ptr<char *> str_str{string_list(va_string.data(), ",", nullptr)};
-   if (!str_str || !*str_str) {
+   std::vector<char *> str_str = string_list(va_string.data(), ",");
+   if (str_str.empty()) {
       lpp.reset();
       DRETURN(3);
    }
@@ -605,7 +606,7 @@ int var_list_parse_from_string(ocs::tom::ListPtr<ocs::tom::VA> &lpp, const char 
       lpp = ocs::tom::ListPtr<ocs::tom::VA>::create("variable list");
    }
 
-   for (char **pstr = str_str.get(); *pstr; pstr++) {
+   for (char **pstr = str_str.data(); *pstr; pstr++) {
       struct saved_vars_s *context = nullptr;
       const char *variable = sge_strtok_r(*pstr, "=", &context);
       // sge_strtok_r() returns nullptr when the token is all delimiters (e.g.

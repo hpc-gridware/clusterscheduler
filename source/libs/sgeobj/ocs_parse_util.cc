@@ -50,6 +50,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "tom/ocs_Types.h"
 
@@ -293,16 +294,16 @@ int *interpretation_rule
    if (!str || !lpp) {
       DRETURN(-1);
    }
-   // array of pointers into str, malloc memory of libs/uti
-   const ocs::uti::c_ptr<char *> pstr{string_list(str, " ,=\t\n\f\r\v", nullptr)};
-   if (!pstr) {
+   // nullptr terminated array of pointers into str
+   std::vector<char *> pstr = string_list(str, " ,=\t\n\f\r\v");
+   if (pstr.empty()) {
       DRETURN(-2);
    }
-   if (!strcasecmp("NONE", pstr.get()[0]) || !strcasecmp("UNDEFINED", pstr.get()[0])) {
+   if (!strcasecmp("NONE", pstr[0]) || !strcasecmp("UNDEFINED", pstr[0])) {
       *lpp = nullptr;
       DRETURN(0);
    }
-   const int ret = ocs_parse_string_list(pstr.get(), name, descr, interpretation_rule, lpp);
+   const int ret = ocs_parse_string_list(pstr.data(), name, descr, interpretation_rule, lpp);
    if (ret) {
       DRETURN(-3);
    }
@@ -743,20 +744,19 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::PN>> ocs_parse_path_list(const char *
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::PN> list;
-   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
-   // (malloc memory of libs/uti)
+   // the copy is cut into tokens by string_list(), which returns a nullptr terminated array of pointers into it
    std::string path_string;
-   ocs::uti::c_ptr<char *> str_str;
+   std::vector<char *> str_str;
    bool ret_error = path_str == nullptr;
    if (!ret_error) {
       path_string = path_str;
-      str_str.reset(string_list(path_string.data(), ",", nullptr));
-      ret_error = str_str == nullptr || *str_str == nullptr;
+      str_str = string_list(path_string.data(), ",");
+      ret_error = str_str.empty();
    }
 
    if (!ret_error) {
       list = ocs::tom::ListPtr<ocs::tom::PN>::create("path_list");
-      for (char **pstr = str_str.get(); *pstr; pstr++) {
+      for (char **pstr = str_str.data(); *pstr; pstr++) {
          char *path;
          std::optional<std::string> cell;
 
@@ -800,16 +800,15 @@ std::pair<int, ocs::tom::ListPtr<ocs::tom::ST>> ocs_parse_jid_hold_list(const ch
    if (str == nullptr) {
       DRETURN(std::make_pair(3, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
-   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
-   // (malloc memory of libs/uti)
+   // the copy is cut into tokens by string_list(), which returns a nullptr terminated array of pointers into it
    std::string s{str};
-   const ocs::uti::c_ptr<char *> str_str{string_list(s.data(), ",", nullptr)};
-   if (!str_str || !*str_str) {
+   std::vector<char *> str_str = string_list(s.data(), ",");
+   if (str_str.empty()) {
       DRETURN(std::make_pair(2, ocs::tom::ListPtr<ocs::tom::ST>()));
    }
    // ocs_parse_string_list() is generic over the descriptor; it fills the list only on success
    ocs::tom::ListData *parsed = nullptr;
-   const int i_ret = ocs_parse_string_list(str_str.get(), "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
+   const int i_ret = ocs_parse_string_list(str_str.data(), "jid_hold list", ocs::tom::ST::descriptor.e, rule, &parsed);
    // the list was created with ST above, so it is taken over unchecked
    auto list = ocs::tom::ListPtr<ocs::tom::ST>::from_typed(parsed);
 

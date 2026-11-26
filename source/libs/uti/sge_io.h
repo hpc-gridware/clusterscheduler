@@ -49,6 +49,7 @@
  *    SGE_MODE_COPY   - copy the file
  */
 #include <cstdio>
+#include <optional>
 #include <string>
 
 typedef enum {
@@ -65,13 +66,13 @@ int sge_filecmp(const char *file0, const char *file1);
 
 int sge_copy_append(const char *dst, const char *src, sge_mode_t mode);
 
-char *sge_bin2string(FILE *fp, int size);
+std::optional<std::string> sge_bin2string(FILE *fp, int size);
 
 int sge_string2bin(FILE *fp, const char *buf);
 
-char *sge_file2string(const char *fname, int *len);
+std::optional<std::string> sge_file2string(const char *fname);
 
-char *sge_stream2string(FILE *fp, int *len);
+std::string sge_stream2string(FILE *fp);
 
 int sge_string2file(const char *str, int len, const char *fname, mode_t mode);
 

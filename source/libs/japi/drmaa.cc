@@ -171,7 +171,8 @@ static int drmaa_parse_contact_string(const char *contact, std::optional<std::st
 
 /** @brief Printf like callback used to report the usage of a job category */
 typedef void (*print_func_t)(const char *fmt, ...);
-static std::vector<char *> sge_get_qtask_args(const char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
+static std::vector<std::string> sge_get_qtask_args(const char *taskname,
+                                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 /**
  * The non-vector job template attributes this implementation supports. Every
@@ -389,22 +390,20 @@ Error:
  * given qtask entry.  Calling this function will initialize the qtask
  * framework, if it has not already been initialized.
  *
- * @param ctx the communication context (sge_gdi_ctx_class_t *)
  * @param taskname The name of the entry for which to look in the qtask files
  * @param answer_list For returning error information
  *
- * @return nullptr terminated array of args for the given qtask entry, empty when there is no such entry or
- *         on an error; the args are malloc() memory made by sge_parse_args(), the caller frees them
+ * @return the args of the given qtask entry, empty when there is no such entry, when it has no value or
+ *         on an error
  *
  * @note MT-NOTE: sge_get_qtask_args() is MT safe with respect to itself, but it is
  *       not thread safe to use this function in conjuction with the
  *       init_qtask_config() function or accessing the
  *       task_config global variable.
  */
-static std::vector<char *> sge_get_qtask_args(const char *taskname, ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
+static std::vector<std::string> sge_get_qtask_args(const char *taskname,
+                                                  ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
-
-   int num_args = 0;
 
    if (mode_verbose) {
       fprintf(stderr, "sge_get_qtask_args(taskname = %s)\n", taskname);
@@ -423,7 +422,7 @@ static std::vector<char *> sge_get_qtask_args(const char *taskname, ocs::tom::Li
        * like xprintf to pass in.  This was really meant for use with qtsch. */
       if (init_qtask_config(answer_list, (print_func_t)printf) != 0) {
          sge_mutex_unlock("qtask_mutex", __func__, __LINE__, &qtask_mutex);
-         DRETURN(std::vector<char *>());
+         DRETURN(std::vector<std::string>());
       }
    }
 
@@ -432,18 +431,10 @@ static std::vector<char *> sge_get_qtask_args(const char *taskname, ocs::tom::Li
    // task_config is a process-lifetime global held raw, read through a checked handle
    const auto task = ocs::tom::ConstList<ocs::tom::CF>(task_config).find_first<CF_name>(taskname);
    if (task == nullptr) {
-      DRETURN(std::vector<char *>());
+      DRETURN(std::vector<std::string>());
    }
 
-   const char *value = task.get<CF_value>();
-   if (value != nullptr) {
-      num_args = sge_quick_count_num_args(value);
-   }
-
-   std::vector<char *> args(num_args + 1, nullptr);
-   sge_parse_args (value, args.data());
-
-   DRETURN(args);
+   DRETURN(sge_parse_args(task.get<CF_value>()));
 }
 
 /**
@@ -2346,20 +2337,14 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       }
 
       const int num_args = sge_quick_count_num_args(value);
-      // nullptr terminated; the args are malloc() memory made by sge_parse_args()
-      std::vector<char *> args(num_args + 1, nullptr);
 
       DPRINTF("processing %s, count %d = \"%s\"\n", DRMAA_NATIVE_SPECIFICATION, num_args, value);
 
       if (num_args != 0) {
-         sge_parse_args(value, args.data());
+         std::vector<std::string> args = sge_parse_args(value);
+         std::vector<char *> argv = ocs_argv_from_strings(args);
          opt_list_append_opts_from_qsub_cmdline(prog_number, opts_native, &alp,
-                                                const_cast<const char **>(args.data()), environ);
-
-         // the parsed options are copies: free the args on every path, the array goes with the block
-         for (char *&arg : args) {
-            sge_free(&arg);
-         }
+                                                const_cast<const char **>(argv.data()), environ);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);
@@ -2486,7 +2471,7 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       /* We need to document a standard practice for naming job categories, so
        * they don't conflict with command names.  I think something like
        * <cat_name>.cat would work fine. */
-      std::vector<char *> args = sge_get_qtask_args(job_cat.c_str(), &alp);
+      std::vector<std::string> args = sge_get_qtask_args(job_cat.c_str(), &alp);
 
       if (answer_list_has_error(&alp)) {
          answer_list_to_dstring(alp, diag);
@@ -2496,12 +2481,9 @@ drmaa_job2sge_job(const drmaa_job_template_t *drmaa_jt, const int is_bulk, const
       alp.reset();
 
       if (!args.empty()) {
+         std::vector<char *> argv = ocs_argv_from_strings(args);
          opt_list_append_opts_from_qsub_cmdline(prog_number, opts_job_cat, &alp,
-                                                const_cast<const char **>(args.data()), environ);
-         /* free the args strings, the array is released at the end of the block */
-         for (char *&arg : args) {
-            sge_free(&arg);
-         }
+                                                const_cast<const char **>(argv.data()), environ);
 
          if (answer_list_has_error(&alp)) {
             answer_list_to_dstring(alp, diag);

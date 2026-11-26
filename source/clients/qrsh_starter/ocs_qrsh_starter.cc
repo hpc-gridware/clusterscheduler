@@ -272,10 +272,10 @@ static std::optional<std::string> setEnvironment(const char *jobdir, std::option
             wrapper = line + 13;
          }
       } else {
-         // sge_replace_substring() returns sge_malloc'd memory, or nullptr when there is nothing to replace
-         const ocs::uti::c_ptr<const char> new_line{sge_replace_substring(line, "\\n", "\n")};
+         // sge_replace_substring() returns std::nullopt when there is nothing to replace
+         const auto new_line = sge_replace_substring(line, "\\n", "\n");
          /* set variable */
-         const int put_ret = sge_putenv(new_line != nullptr ? new_line.get() : line);
+         const int put_ret = sge_putenv(new_line ? new_line->c_str() : line);
          if (put_ret == 0) {
             FCLOSE(envFile);
             return std::nullopt;

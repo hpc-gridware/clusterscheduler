@@ -421,16 +421,16 @@ static void component_ts0_destroy_user(component_user_type_t user_type) {
 static void
 component_ts0_init_hosts() {
    // setup short and long hostnames
-   char *s = nullptr;
    char tmp_str[CL_MAXHOSTNAMELEN + 1];
    struct hostent *hent = nullptr;
    /* Fetch hostnames */
    SGE_ASSERT((gethostname(tmp_str, CL_MAXHOSTNAMELEN) == 0));
    SGE_ASSERT(((hent = sge_gethostbyname(tmp_str, nullptr)) != nullptr));
    set_qualified_hostname(hent->h_name);
-   s = sge_dirname(hent->h_name, '.');
-   set_unqualified_hostname(s);
-   sge_free(&s);
+   // no result (empty name or one starting with '.') leaves the unqualified name unchanged
+   if (const auto s = sge_dirname(hent->h_name, '.')) {
+      set_unqualified_hostname(s->c_str());
+   }
    /* Bad resolving in some networks leads to short qualified host names */
    if (strcmp(component_ts0_data.qualified_hostname, component_ts0_data.unqualified_hostname) == 0) {
       char tmp_addr[8];
@@ -439,9 +439,9 @@ component_ts0_init_hosts() {
       SGE_ASSERT(((hent2 = sge_gethostbyaddr((const struct in_addr *) tmp_addr, nullptr)) != nullptr));
 
       set_qualified_hostname(hent2->h_name);
-      s = sge_dirname(hent2->h_name, '.');
-      set_unqualified_hostname(s);
-      sge_free(&s);
+      if (const auto s = sge_dirname(hent2->h_name, '.')) {
+         set_unqualified_hostname(s->c_str());
+      }
       sge_free_hostent(&hent2);
    }
    sge_free_hostent(&hent);

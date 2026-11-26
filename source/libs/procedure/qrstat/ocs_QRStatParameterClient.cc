@@ -22,6 +22,9 @@
  * @brief Client side parameters of `qrstat`: parsed from argv and the environment
  */
 
+#include <string>
+#include <vector>
+
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_io.h"
@@ -66,14 +69,11 @@ ocs::QRStatParameterClient::sge_parse_from_file_qrstat(const char *file, ocs::to
    if (!sge_is_file(file)) {
       DPRINTF("file " SFQ " does not exist\n", file);
    } else {
-      int file_as_string_length;
-      // the file content, malloc()ed by sge_file2string()
-      const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
-      if (file_as_string != nullptr) {
-         // stra_from_str() strdup()s every token; the parser copies what it keeps
-         char **token = stra_from_str(file_as_string.get(), " \n\t");
-         *alpp = ocs_parse_cmdline(QRSTAT, const_cast<const char **>(token), environ, cmdline, FLG_USE_PSEUDOS);
-         sge_strafree(&token);
+      if (const auto file_as_string = sge_file2string(file)) {
+         // the parser copies what it keeps of the tokens
+         std::vector<std::string> token = stra_from_str(file_as_string->c_str(), " \n\t");
+         std::vector<char *> argv = ocs_argv_from_strings(token);
+         *alpp = ocs_parse_cmdline(QRSTAT, const_cast<const char **>(argv.data()), environ, cmdline, FLG_USE_PSEUDOS);
       } else {
          answer_list_add_sprintf(alpp, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
                                  file);

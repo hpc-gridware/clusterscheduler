@@ -40,6 +40,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include <string>
+#include <vector>
 
 #include "uti/config_file.h"
 #include "uti/sge_dstring.h"
@@ -1988,16 +1990,14 @@ DTRACE;
 
          if (prog_number == QRSUB) {
             int rule[] = {ARA_name, 0};
-            char **dest = nullptr;
-            char *tmp;
             // ocs_parse_string_list() works on any descriptor and has no typed form
             ocs::tom::ListData *user_list = nullptr;
 
-            tmp = sge_strdup(nullptr, *sp);
-            dest = string_list(tmp, ",", nullptr);
-            ocs_parse_string_list(dest, "user_list", ocs::tom::ARA::descriptor.e, rule, &user_list);
-            sge_free(&tmp);
-            sge_free(&dest);
+            // the tokens point into the copy; no token gives nullptr, which ocs_parse_string_list() rejects
+            std::string tmp{*sp};
+            std::vector<char *> dest = string_list(tmp.data(), ",");
+            ocs_parse_string_list(dest.empty() ? nullptr : dest.data(), "user_list", ocs::tom::ARA::descriptor.e, rule,
+                                  &user_list);
             ep_opt = sge_add_arg(pcmdline, u_OPT, MT_LIST, *(sp - 1), *sp);
             ep_opt.set<SPA_argval_lListT>(user_list);
          } else {

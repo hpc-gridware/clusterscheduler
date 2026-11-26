@@ -39,6 +39,7 @@
  */
 
 #include <string>
+#include <vector>
 
 #include "uti/sge_bitfield.h"
 #include "uti/sge_dstring.h"
@@ -99,11 +100,10 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
       list.reset();
       DRETURN(2);
    }
-   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
-   // (malloc memory of libs/uti)
+   // the copy is cut into tokens by string_list(), which returns a nullptr terminated array of pointers into it
    std::string mail{mail_str};
-   const ocs::uti::c_ptr<char *> str_str{string_list(mail.data(), ",", nullptr)};
-   if (!str_str || !*str_str) {
+   std::vector<char *> str_str = string_list(mail.data(), ",");
+   if (str_str.empty()) {
       list.reset();
       DRETURN(3);
    }
@@ -112,7 +112,7 @@ static int mailrec_parse_into(ocs::tom::ListPtr<ocs::tom::MR> &list, const char 
       list = ocs::tom::ListPtr<ocs::tom::MR>::create("mail_list");
    }
 
-   for (char **pstr = str_str.get(); *pstr; pstr++) {
+   for (char **pstr = str_str.data(); *pstr; pstr++) {
       struct saved_vars_s *context = nullptr;
       const char *user = sge_strtok_r(*pstr, "@", &context);
       const char *host = sge_strtok_r(nullptr, "@", &context);

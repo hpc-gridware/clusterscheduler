@@ -42,7 +42,9 @@
 #include <pthread.h>
 #include <fnmatch.h>
 #include <cerrno>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "uti/msg_utilib.h"
@@ -142,47 +144,36 @@ const char *sge_jobname(const char *name) {
 /**
  * @brief Return first part of string up to deliminator
  *
- * The function will return a malloced string containing the first
- * part of 'name' up to, but not including deliminator. nullptr will
+ * The function will return a string containing the first
+ * part of 'name' up to, but not including deliminator. std::nullopt will
  * be returned if 'name' is nullptr or a zero length string or if
  * 'delim' is the first character in 'name'
  *
  * @param name string
  * @param delim deliminator
  *
- * @return malloced string
+ * @return the part before the first @p delim, all of @p name when it holds none; std::nullopt as described
  *
  * @note This routine is called "dirname" in opposite to "basename"
  *       but is mostly used to strip off the domainname of a FQDN
  *       MT-NOTE: sge_dirname() is MT safe
  */
-char *sge_dirname(const char *name, int delim) {
+std::optional<std::string> sge_dirname(const char *name, const int delim) {
    DENTER(BASIS_LAYER);
 
-   char *cp, *cp2;
-
    if (!name) {
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
    if (name[0] == '\0' || name[0] == delim) {
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
-   cp = strchr((char *)name, delim);
-
+   const char *cp = strchr(name, delim);
    if (!cp) {                   /* no occurence of delim */
-      cp2 = strdup(name);
-      DRETURN(cp2);
-   } else {
-      if ((cp2 = sge_malloc((cp - name) + 1)) == nullptr) {
-         DRETURN(nullptr);
-      } else {
-         strncpy(cp2, name, cp - name);
-         cp2[cp - name] = '\0';
-         DRETURN(cp2);
-      }
+      DRETURN(std::string{name});
    }
+   DRETURN(std::string(name, cp - name));
 }
 
 /**
@@ -773,87 +764,6 @@ void sge_strtolower(char *buffer, int max_len) {
 }
 
 /**
- * @brief Duplicate array of strings
- *
- * Copy list of character pointers including the strings these
- * pointers refer to. If 'n' is 0 strings are '\0'-delimited, if
- * 'n' is not 0 we use n as length of the strings.
- *
- * @param cpp pointer to array of strings
- * @param n '\0' terminated?
- *
- * @return copy of 'cpp'
- *
- * @note MT-NOTE: sge_stradup() is MT safe
- */
-char **sge_stradup(char **cpp, int n) {
-   int count = 0, len;
-   char **cpp1, **cpp2, **cpp3;
-
-   /* first count entries */
-   cpp2 = cpp;
-   while (*cpp2) {
-      cpp2++;
-      count++;
-   }
-
-   /* alloc space */
-   cpp1 = (char **) sge_malloc((count + 1) * sizeof(char **));
-   if (!cpp1)
-      return nullptr;
-
-   /* copy  */
-   cpp2 = cpp;
-   cpp3 = cpp1;
-   while (*cpp2) {
-      /* alloc space */
-      if (n)
-         len = n;
-      else
-         len = strlen(*cpp2) + 1;
-
-      *cpp3 = (char *) sge_malloc(len);
-      if (!(*cpp3)) {
-         while ((--cpp3) >= cpp1) {
-            sge_free(cpp3);
-         }
-         sge_free(&cpp1);
-         return nullptr;
-      }
-
-      /* copy string */
-      memcpy(*cpp3, *cpp2, len);
-      cpp3++;
-      cpp2++;
-   }
-
-   *cpp3 = nullptr;
-
-   return cpp1;
-}
-
-/**
- * @brief Free list of character pointers
- *
- * Free list of character pointers
- *
- * @param cpp Pointer to array of string pointers
- *
- * @note MT-NOTE: sge_strafree() is MT safe
- */
-void sge_strafree(char ***cpp) {
-   if (cpp != nullptr && *cpp != nullptr) {
-      char **cpp1 = *cpp;
-
-      while (*cpp1 != nullptr) {
-         sge_free(cpp1);
-         cpp1++;
-      }
-      sge_free(cpp);
-   }
-}
-
-/**
  * @brief Find string in string array
  *
  * Compare string with string field and return the pointer to
@@ -925,23 +835,20 @@ stra_printf(char *stra[]) {
  * @param source_str File content of qstat profile as plain string.
  * @param delim Sequence of characters used to identify tokens and parameters.
  *
- * @return String array containing tokens found based on 'delim'.
+ * @return the tokens found based on 'delim', empty when there is none or when an argument is nullptr.
+ *         Only the line structure and blanks/tabs split; 'delim' must not be nullptr but is otherwise unused.
  *
- * @note It is the caller's responsibilty to free dynamic memory allocated in this
- *       routine.
- *       MT-NOTE: stra_from_str() is MT safe.
+ * @note MT-NOTE: stra_from_str() is MT safe.
  */
-char **
+std::vector<std::string>
 stra_from_str(const char *source_str, const char *delim) {
-   char **ret = nullptr;
+   std::vector<std::string> ret;
 
    if (source_str != nullptr && delim != nullptr) {
       struct saved_vars_s *context1;
       struct saved_vars_s *context2;
       const char *token_1 = nullptr;
       const char *token_2 = nullptr;
-      int number_of_tokens = 0;
-      int index = 0;
 
       /*
        * Support of comment lines and multiple options per line
@@ -953,13 +860,7 @@ stra_from_str(const char *source_str, const char *delim) {
        * level parsing which scans for options and parameters
        * per line. Delimiters are ' ', '\n' and '\t'.
        *
-       * We basically need to do this twice: first to determine
-       * the number of valid tokens and then to populate the
-       * string array.
-       *
-       */
-      /*
-       * Count tokens.
+       * No valid options/parameters give an empty vector.
        */
       context1 = nullptr;
       token_1 = sge_strtok_r(source_str, "\n", &context1);
@@ -968,49 +869,39 @@ stra_from_str(const char *source_str, const char *delim) {
             context2 = nullptr;
             token_2 = sge_strtok_r(token_1, " \t", &context2);
             while (token_2 != nullptr) {
+               ret.emplace_back(token_2);
                token_2 = sge_strtok_r(nullptr, " \t", &context2);
-               number_of_tokens++;
             }
             sge_free_saved_vars(context2);
          }
          token_1 = sge_strtok_r(nullptr, "\n", &context1);
       }
       sge_free_saved_vars(context1);
-
-      /*
-       * Note that we need to proceed from here even if we got
-       * no valid options/parameters. This is because caller
-       * expects a zero entry string array with stopper as minimum.
-       */
-
-      /* malloc array memory */
-      ret = (char **) sge_malloc(sizeof(char *) * (number_of_tokens + 1));
-
-      if (ret != nullptr) {
-         /*
-          * Allocate and populate string array.
-          */
-         index = 0;
-         context1 = nullptr;
-         token_1 = sge_strtok_r(source_str, "\n", &context1);
-         while (token_1 != nullptr) {
-            if (token_1[0] != '#') {
-               context2 = nullptr;
-               token_2 = sge_strtok_r(token_1, " \t", &context2);
-               while (token_2 != nullptr) {
-                  ret[index] = strdup(token_2);
-                  token_2 = sge_strtok_r(nullptr, " \t", &context2);
-                  index++;
-               }
-               sge_free_saved_vars(context2);
-            }
-            token_1 = sge_strtok_r(nullptr, "\n", &context1);
-         }
-         sge_free_saved_vars(context1);
-         ret[index] = nullptr; /* Stopper */
-      }
    }
    return ret;
+}
+
+/**
+ * @brief Make an argv style array of the strings of a vector
+ *
+ * The entries point into the strings of @p strings, which have to outlive the result and must not
+ * be changed in size while it is in use.
+ *
+ * @param strings the strings the entries point to
+ * @return one pointer per string followed by a terminating nullptr; data() can be passed where a
+ *         nullptr terminated `char **` is expected
+ *
+ * @note MT-NOTE: ocs_argv_from_strings() is MT safe
+ */
+std::vector<char *>
+ocs_argv_from_strings(std::vector<std::string> &strings) {
+   std::vector<char *> argv;
+   argv.reserve(strings.size() + 1);
+   for (std::string &str : strings) {
+      argv.push_back(str.data());
+   }
+   argv.push_back(nullptr);
+   return argv;
 }
 
 /**
@@ -1090,32 +981,6 @@ size_t sge_strlen(const char *str) {
    return ret;
 }
 
-/*
-** problem: modifies input string,
-** this is the most frequently used mode
-** but allocating extra memory (as it was in
-** sge_string2list) should also be possible
-** problem: default delimiters should be possible
-*/
-/*
-** NAME
-**   string_list
-** PARAMETER
-**   str       -    string to be parsed
-**   delis     -    string containing delimiters
-**   pstr      -    nullptr or string array to return
-** RETURN
-**   nullptr      -    error
-**   char **   -    pointer to an array of strings containing
-**                  the string list
-** EXTERNAL
-**
-** DESCRIPTION
-**
-** NOTES
-**     MT-NOTE: string_list() is MT safe
-**
-*/
 /** @brief Split a string into a nullptr terminated array of tokens
  *
  * Splits @p str at any of the delimiters in @p delis. Quoted sections are kept
@@ -1126,21 +991,23 @@ size_t sge_strlen(const char *str) {
  *
  * @param str string to split, modified in place
  * @param delis characters to split at
- * @param pstr caller supplied array to fill, or nullptr to have one allocated
- * @return the token array, nullptr terminated. When it was allocated the caller
- *         frees it, but not the entries, which point into @p str
+ * @return the tokens followed by a terminating nullptr, so data() can be passed where a nullptr
+ *         terminated `char **` is expected; an empty vector (no terminator) when @p str is nullptr,
+ *         empty or holds only delimiters
+ *
+ * @note MT-NOTE: string_list() is MT safe
  */
-char **string_list(char *str, const char *delis, char **pstr) {
+std::vector<char *> string_list(char *str, const char *delis) {
    DENTER(BASIS_LAYER);
 
-   unsigned int i = 0, j = 0;
+   unsigned int i = 0;
    bool is_space = false;
    int found_first_quote = 0;
-   char **head = nullptr;
+   std::vector<char *> head;
    bool done;
 
    if (str == nullptr) {
-      DRETURN(nullptr);
+      DRETURN(head);
    }
 
    /* skip heading delimiters */
@@ -1150,19 +1017,7 @@ char **string_list(char *str, const char *delis, char **pstr) {
 
    /* at str end: str either was an empty string or only contained delimiters */
    if (str[0] == '\0') {
-      DRETURN(nullptr);
-   }
-
-   /*
-    * not more items than length of string is possible
-    */
-   if (pstr == nullptr) {
-      head = (char **) sge_malloc((sizeof(void *)) * (strlen(str) + 1));
-      if (head == nullptr) {
-         DRETURN(nullptr);
-      }
-   } else {
-      head = pstr;
+      DRETURN(head);
    }
 
    done = false;
@@ -1176,8 +1031,7 @@ char **string_list(char *str, const char *delis, char **pstr) {
          break;
       }
 
-      head[j] = &str[i];
-      j++;
+      head.push_back(&str[i]);
       /*
       ** parse one string
       */
@@ -1212,7 +1066,7 @@ char **string_list(char *str, const char *delis, char **pstr) {
       i++;
    }
 
-   head[j] = nullptr;
+   head.push_back(nullptr);
 
    DRETURN(head);
 }
@@ -1260,81 +1114,44 @@ bool sge_str_is_number(const char *string) {
 /**
  * @brief Replaces all occurences of old with new
  *
- * Replaces all occurences of old with new.
- * If old is part of the given string input, a new string is returned
- * where the replacement is done.
+ * Replaces all occurences of @p search with @p replace, from left to right and
+ * without overlap. If @p search is part of the given string @p input, a new string
+ * is returned where the replacement is done.
  *
  * @param input the input string
  * @param search the string to replace
  * @param replace the replacement string
  *
- * @return nullptr, if the input string didn't contain the pattern, else a newly allocated string containing the input string with replacements.
+ * @return std::nullopt if an argument is nullptr, @p search is empty or @p input does not
+ *         contain @p search, else @p input with the replacements
  *
- * @note MT-NOTE: sge_str_is_number() is MT safe
- *       It is the responsibility of the caller to free the returned string!
+ * @note MT-NOTE: sge_replace_substring() is MT safe
  */
-const char *sge_replace_substring(const char *input, const char *search, const char *replace) {
-   int to_replace = 0;
-   int change, new_len;
-   char *new_string = nullptr;
-   char *return_string = nullptr;
-   char *source = nullptr;
-   char *source_string = nullptr;
-   char *tail = nullptr;
-   char *current_tail = nullptr;
-
+std::optional<std::string> sge_replace_substring(const char *input, const char *search, const char *replace) {
    /*
     * Basic sanity checks first.
     */
-   if (input == nullptr || search == nullptr || replace == nullptr) {
-      return nullptr;
+   if (input == nullptr || search == nullptr || replace == nullptr || search[0] == '\0') {
+      return std::nullopt;
    }
-   /*
-    * Determine number for of substrings to replace. We are
-    * careful NOT to overrun source string.
-    */
-   source = source_string = (char *) input;
-   tail = source_string + strlen(source_string) - 1;
-   while (source <= tail) {
-      current_tail = source + strlen(search) - 1;
-      if (current_tail > tail) {
-         break;
-      }
-      if (memcmp(search, source, strlen(search)) == 0) {
-         to_replace++;
-      }
-      source++;
+
+   const std::string_view source{input};
+   const std::string_view pattern{search};
+   size_t pos = source.find(pattern);
+   if (pos == std::string_view::npos) {
+      return std::nullopt;
    }
-   if (to_replace == 0) {
-      return nullptr;
+
+   std::string result;
+   size_t start = 0;
+   while (pos != std::string_view::npos) {
+      result.append(source.substr(start, pos - start));
+      result.append(replace);
+      start = pos + pattern.size();
+      pos = source.find(pattern, start);
    }
-   /*
-    * Calculate size of new string based on number of substrings to replace.
-    */
-   change = to_replace * (strlen(replace) - strlen(search));
-   new_len = strlen(source_string) + change + 1;
-   /*
-    * Allocate new string and re-shuffle original string.
-    */
-   return_string = new_string = sge_malloc(new_len);
-   if (new_string == nullptr) {
-      return nullptr;
-   }
-   memset(new_string, 0x0, new_len);
-   source = source_string;
-   while (source <= tail) {
-      current_tail = source + strlen(search) - 1;
-      if (current_tail <= tail && memcmp(search, source, strlen(search)) == 0) {
-         memcpy(new_string, replace, strlen(replace));
-         new_string += strlen(replace);
-         source += strlen(search);
-      } else {
-         *new_string = *source;
-         source++;
-         new_string++;
-      }
-   }
-   return return_string;
+   result.append(source.substr(start));
+   return result;
 }
 
 /** @brief Move a substring to the front of its buffer

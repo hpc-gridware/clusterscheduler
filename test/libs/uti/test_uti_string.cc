@@ -24,8 +24,14 @@
 
 #include <cstdio>
 #include <cstring>
+#include <optional>
 #include <string>
+#include <vector>
+#include <cstdlib>
+#include <unistd.h>
 
+#include "sge_io.h"
+#include "sge_parse_args.h"
 #include "sge_string.h"
 
 // ---------------------------------------------------------------------------
@@ -399,37 +405,50 @@ static void test_str_is_number() {
    CHECK(49, "alpha string is not a number", sge_str_is_number("abc") == false);
 }
 
-// ---------------------------------------------------------------------------
-// sge_replace_substring  [T50–T53]
-//
-// sge_replace_substring(src, from, to) returns a newly heap-allocated string
-// with all occurrences of 'from' replaced by 'to'.  Returns nullptr when 'from'
-// does not appear in src (the caller must free() the returned pointer).
-// ---------------------------------------------------------------------------
-
+/**
+ * @brief Tests for sge_replace_substring()  [T50–T53, T84–T86]
+ *
+ * sge_replace_substring(src, from, to) returns a string with all occurrences
+ * of 'from' replaced by 'to', from left to right and without overlap. It
+ * returns std::nullopt when an argument is nullptr, 'from' is empty or does
+ * not appear in src.
+ */
 static void test_replace_substring() {
    printf("\n--- sge_replace_substring ---\n");
 
-   // T50: 'from' appears — result is non-null (caller must free)
+   // T50: 'from' appears — result is set
    {
-      const char *r = sge_replace_substring("hello world", "world", "there");
-      CHECK(50, "match → non-null result", r != nullptr);
+      const auto r = sge_replace_substring("hello world", "world", "there");
+      CHECK(50, "match → result set", r.has_value());
 
       // T51: replaced content is correct
-      CHECK(51, "replacement content correct", r != nullptr && strcmp(r, "hello there") == 0);
-      free(const_cast<char *>(r));
+      CHECK(51, "replacement content correct", r && *r == "hello there");
    }
 
-   // T52: 'from' does not appear — returns nullptr (not the original string)
+   // T52: 'from' does not appear — returns std::nullopt (not the original string)
    {
-      const char *r = sge_replace_substring("hello", "xyz", "abc");
-      CHECK(52, "no match → nullptr", r == nullptr);
+      const auto r = sge_replace_substring("hello", "xyz", "abc");
+      CHECK(52, "no match → nullopt", !r);
    }
 
-   // T53: nullptr src — returns nullptr without crashing
+   // T53: nullptr src — returns std::nullopt without crashing
    {
-      const char *r = sge_replace_substring(nullptr, "x", "y");
-      CHECK(53, "nullptr src → nullptr", r == nullptr);
+      const auto r = sge_replace_substring(nullptr, "x", "y");
+      CHECK(53, "nullptr src → nullopt", !r);
+   }
+
+   // T84: empty search string — returns std::nullopt (formerly an endless loop)
+   {
+      const auto r = sge_replace_substring("abc", "", "x");
+      CHECK(84, "empty search → nullopt", !r);
+   }
+
+   // T85/T86: overlapping occurrences are replaced left to right without overlap; the
+   // shorter replacement formerly overran the buffer sized by the overlapping count
+   {
+      const auto r = sge_replace_substring("aaa", "aa", "");
+      CHECK(85, "overlap match → result set", r.has_value());
+      CHECK(86, "overlap replaced left to right", r && *r == "a");
    }
 }
 
@@ -545,44 +564,41 @@ static void test_strip_slash_at_eol() {
    }
 }
 
-// ---------------------------------------------------------------------------
-// sge_dirname  [T63–T66]
-//
-// sge_dirname(name, delim) returns a heap-allocated string containing
-// everything before the first occurrence of delim:
-//   - nullptr input → nullptr
-//   - string starting with delim → nullptr
-//   - no delim in string → heap copy of entire string
-//   - delim present → heap copy of prefix (caller must free)
-// ---------------------------------------------------------------------------
-
+/**
+ * @brief Tests for sge_dirname()  [T63–T66]
+ *
+ * sge_dirname(name, delim) returns a string containing everything before the
+ * first occurrence of delim:
+ *   - nullptr input → std::nullopt
+ *   - string starting with delim → std::nullopt
+ *   - no delim in string → copy of entire string
+ *   - delim present → copy of prefix
+ */
 static void test_dirname() {
    printf("\n--- sge_dirname ---\n");
 
    // T63: normal path — prefix before first '/' is returned
    {
-      char *d = sge_dirname("src/libs/uti", '/');
-      CHECK(63, "prefix before first '/' is 'src'", d != nullptr && strcmp(d, "src") == 0);
-      free(d);
+      const auto d = sge_dirname("src/libs/uti", '/');
+      CHECK(63, "prefix before first '/' is 'src'", d && *d == "src");
    }
 
    // T64: no delimiter present — copy of entire string returned
    {
-      char *d = sge_dirname("nodot", '.');
-      CHECK(64, "no delimiter → copy of whole string", d != nullptr && strcmp(d, "nodot") == 0);
-      free(d);
+      const auto d = sge_dirname("nodot", '.');
+      CHECK(64, "no delimiter → copy of whole string", d && *d == "nodot");
    }
 
    // T65: string starts with delimiter — returns nullptr
    {
-      char *d = sge_dirname("/absolute/path", '/');
-      CHECK(65, "starts with '/' → nullptr", d == nullptr);
+      const auto d = sge_dirname("/absolute/path", '/');
+      CHECK(65, "starts with '/' → nullopt", !d);
    }
 
    // T66: nullptr input — returns nullptr without crashing
    {
-      char *d = sge_dirname(nullptr, '/');
-      CHECK(66, "nullptr → nullptr", d == nullptr);
+      const auto d = sge_dirname(nullptr, '/');
+      CHECK(66, "nullptr → nullopt", !d);
    }
 }
 
@@ -673,6 +689,114 @@ static void test_jobname() {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * @brief Tests for string_list()  [T87–T92]
+ *
+ * string_list() cuts its argument in place and returns the tokens followed by a
+ * terminating nullptr, or an empty vector when there is no token.
+ */
+static void test_string_list() {
+   printf("\n--- string_list ---\n");
+
+   // T87: blanks only — no token, empty vector
+   {
+      char buf[] = "  \t ";
+      const std::vector<char *> v = string_list(buf, " \t");
+      CHECK(87, "blanks only → empty vector", v.empty());
+   }
+
+   // T88–T91: two tokens and the terminating nullptr
+   {
+      char buf[] = ",a,,b,";
+      const std::vector<char *> v = string_list(buf, ",");
+      CHECK(88, "two tokens + terminator", v.size() == 3);
+      CHECK(89, "first token 'a'", v.size() == 3 && strcmp(v[0], "a") == 0);
+      CHECK(90, "second token 'b'", v.size() == 3 && strcmp(v[1], "b") == 0);
+      CHECK(91, "terminated by nullptr", v.size() == 3 && v[2] == nullptr);
+   }
+
+   // T92: nullptr — empty vector
+   {
+      CHECK(92, "nullptr → empty vector", string_list(nullptr, ",").empty());
+   }
+}
+
+/**
+ * @brief Tests for sge_parse_args()  [T93–T95]
+ *
+ * sge_parse_args() splits at whitespace (including '\n'), keeps a quoted
+ * section together and drops the quotes; leading whitespace yields an empty
+ * first argument.
+ */
+static void test_parse_args() {
+   printf("\n--- sge_parse_args ---\n");
+
+   // T93/T94: leading blank, single and double quotes, newline as separator
+   {
+      const std::vector<std::string> v = sge_parse_args(" a 'b c'\n\"d\"");
+      CHECK(93, "four arguments", v.size() == 4);
+      CHECK(94, "arguments '', 'a', 'b c', 'd'",
+            v.size() == 4 && v[0].empty() && v[1] == "a" && v[2] == "b c" && v[3] == "d");
+   }
+
+   // T95: nullptr — no argument
+   {
+      CHECK(95, "nullptr → empty vector", sge_parse_args(nullptr).empty());
+   }
+}
+
+/**
+ * @brief Tests for stra_from_str()  [T96–T97]
+ *
+ * stra_from_str() splits a qstat profile into its words and skips lines that
+ * start with '#'.
+ */
+static void test_stra_from_str() {
+   printf("\n--- stra_from_str ---\n");
+
+   // T96: comment lines only — empty vector
+   {
+      CHECK(96, "comments only → empty vector", stra_from_str("# one\n#two\n", " \n\t").empty());
+   }
+
+   // T97: words of two lines, the comment line between them skipped
+   {
+      const std::vector<std::string> v = stra_from_str("-u a\n# -f\n\t-r\n", " \n\t");
+      CHECK(97, "words '-u', 'a', '-r'", v.size() == 3 && v[0] == "-u" && v[1] == "a" && v[2] == "-r");
+   }
+}
+
+/**
+ * @brief Tests for sge_file2string()  [T98–T100]
+ *
+ * An empty file gives an empty string, a missing file std::nullopt. The file is
+ * a temporary one in /tmp, removed again by the test.
+ */
+static void test_file2string() {
+   printf("\n--- sge_file2string ---\n");
+
+   char path[] = "/tmp/test_uti_string_XXXXXX";
+   const int fd = mkstemp(path);
+   CHECK(98, "temporary file created", fd != -1);
+   if (fd == -1) {
+      return;
+   }
+   close(fd);
+
+   // T99: empty file — empty string, not std::nullopt
+   {
+      const auto content = sge_file2string(path);
+      CHECK(99, "empty file → \"\"", content && content->empty());
+   }
+
+   unlink(path);
+
+   // T100: missing file — std::nullopt
+   {
+      CHECK(100, "missing file → nullopt", !sge_file2string(path));
+   }
+}
+
 int main(int /*argc*/, char * /*argv*/[]) {
    test_strlcpy();
    test_strlcat();
@@ -696,6 +820,10 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_str_reverse();
    test_strtok();
    test_jobname();
+   test_string_list();
+   test_parse_args();
+   test_stra_from_str();
+   test_file2string();
 
    printf("\n%s — %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

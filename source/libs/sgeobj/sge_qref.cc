@@ -45,6 +45,7 @@
 #include <cstring>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "uti/ocs_Pattern.h"
 #include "uti/sge_hostname.h"
@@ -839,11 +840,10 @@ int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *
       DRETURN(3);
    }
 
-   // the copy is cut into tokens by string_list(), which returns an array of pointers into it
-   // (malloc memory of libs/uti)
+   // the copy is cut into tokens by string_list(), which returns a nullptr terminated array of pointers into it
    std::string s{dest_str};
-   const ocs::uti::c_ptr<char *> str_str{string_list(s.data(), ",", nullptr)};
-   if (str_str == nullptr || *str_str == nullptr) {
+   std::vector<char *> str_str = string_list(s.data(), ",");
+   if (str_str.empty()) {
       *lpp = nullptr;
       DRETURN(2);
    }
@@ -852,8 +852,8 @@ int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *
    // never holds it twice, not even for a moment (CS-3053, N-H-18)
    {
       std::unordered_set<std::string> seen;
-      char **kept = str_str.get();
-      for (char **token = str_str.get(); *token != nullptr; token++) {
+      char **kept = str_str.data();
+      for (char **token = str_str.data(); *token != nullptr; token++) {
          if (seen.insert(*token).second) {
             *kept++ = *token;
          }
@@ -861,7 +861,7 @@ int ocs_parse_destination_identifier_list(ocs::tom::ListData **lpp, const char *
       *kept = nullptr;
    }
 
-   const int i_ret = ocs_parse_string_list(str_str.get(), "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
+   const int i_ret = ocs_parse_string_list(str_str.data(), "destin_ident_list", ocs::tom::QR::descriptor.e, rule, lpp);
    if (i_ret) {
       DRETURN(3);
    }

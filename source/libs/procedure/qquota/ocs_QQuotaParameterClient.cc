@@ -22,6 +22,9 @@
  * @brief Client side parameters of `qquota`: parsed from argv and the environment
  */
 
+#include <string>
+#include <vector>
+
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_bootstrap_files.h"
 #include "uti/sge_string.h"
@@ -188,18 +191,16 @@ ocs::QQuotaParameterClient::parse_cmdline_from_file(const char *file, ocs::tom::
       DRETURN(true);
    }
 
-   int file_as_string_length;
-   // the file content, malloc()ed by sge_file2string()
-   const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
-   if (file_as_string == nullptr) {
+   const auto file_as_string = sge_file2string(file);
+   if (!file_as_string) {
       answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR, MSG_ANSWER_ERRORREADINGFROMFILEX_S,
                               file);
       DRETURN(false);
    }
 
-   char **token = stra_from_str(file_as_string.get(), " \n\t");
-   const bool ret = parse_cmdline_and_env(token, switch_list, answer_list);
-   sge_strafree(&token);
+   std::vector<std::string> token = stra_from_str(file_as_string->c_str(), " \n\t");
+   std::vector<char *> argv = ocs_argv_from_strings(token);
+   const bool ret = parse_cmdline_and_env(argv.data(), switch_list, answer_list);
    DRETURN(ret);
 }
 

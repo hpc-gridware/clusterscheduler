@@ -42,7 +42,9 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cctype>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "uti/sge_io.h"
 #include "uti/sge_log.h"
@@ -272,100 +274,55 @@ int sge_copy_append(const char *src, const char *dst, sge_mode_t mode) {
  * @brief Put binary stream into a string
  *
  * Read a binary steam from given file descriptor 'fp' and
- * write it into (dynamically) malloced buffer as "ASCII" format.
+ * write it into a string in "ASCII" format.
  *
  * "ASCII" format means:
- *       '\0' is written as '\\' '\0'
+ *       '\0' is written as '\\' '0'
  *       '\\' is written as '\\' '\\'
- *       End of buffer is written as '\0'
  *
  * @param fp file descriptor
- * @param size size of the buffer used within this function
+ * @param size expected size of the result, only used to reserve memory; 0 or less when unknown
  *
- * @return malloced buffer
+ * @return the converted stream, std::nullopt when @p fp has no file descriptor or a read fails
  *
  * @note MT-NOTE: sge_bin2string() is MT safe
  *
  * @see #sge_string2bin
  */
-char *sge_bin2string(FILE *fp, int size) {
-   int i, fd;
-   char inbuf[BUFFER], outbuf[2 * BUFFER];
-   char *inp, *outp;
-   char *dstbuf;
-   int len,             /* length of current tmp buffer */
-   dstbuflen,       /* total length of destination buffer */
-   chunksize,       /* chunks for realloc */
-   lastpos,         /* last position in destination buffer */
-   error;
+std::optional<std::string> sge_bin2string(FILE *fp, int size) {
+   const int fd = fileno(fp);
+   if (fd == -1) {
+      return std::nullopt;
+   }
 
-   if ((fd = fileno(fp)) == -1)
-      return nullptr;
-
-   chunksize = 20480;
-
-   if (size <= 0)       /* no idea about buffer, malloc in chunks */
+   constexpr int chunksize = 20480;
+   if (size <= 0) {       /* no idea about the size, reserve in chunks */
       size = chunksize;
+   }
 
-   dstbuf = sge_malloc(size + 1);
-   SGE_ASSERT(dstbuf != nullptr);
-   dstbuflen = size;
-   lastpos = 0;
+   std::string dstbuf;
+   dstbuf.reserve(size);
 
-   error = false;
-
-   while (!error) {
-      i = read(fd, inbuf, BUFFER);
+   char inbuf[BUFFER];
+   while (true) {
+      const ssize_t i = read(fd, inbuf, BUFFER);
       if (i > 0) {
-         inp = inbuf;
-         outp = outbuf;
-         while (inp < &inbuf[i]) {
+         for (const char *inp = inbuf; inp < &inbuf[i]; inp++) {
             if (*inp == '\\') {
-               *outp++ = '\\';
-               *outp++ = '\\';
+               dstbuf += "\\\\";
             } else if (*inp == '\0') {
-               *outp++ = '\\';
-               *outp++ = '0';
-            } else
-               *outp++ = *inp;
-            inp++;
-         }
-
-
-         len = outp - outbuf;
-
-         if (lastpos + len > dstbuflen) {
-            if ((dstbuf = (char *)sge_realloc(dstbuf, lastpos + len + chunksize, 0)) == nullptr) {
-               error = true;
-               break;
+               dstbuf += "\\0";
+            } else {
+               dstbuf += *inp;
             }
-            dstbuflen = lastpos + len + chunksize;
-
          }
-
-         memcpy(&dstbuf[lastpos], outbuf, len);
-         lastpos += len;
-
       } else if (i == 0) {
          break;
-      } else {
-         if (errno != EINTR) {
-            error = true;
-            break;
-         }
+      } else if (errno != EINTR) {
+         return std::nullopt;
       }
    }
-
-   if (error) {
-      sge_free(&dstbuf);
-      return nullptr;
-   } else {
-      if ((dstbuf = (char *)sge_realloc(dstbuf, lastpos + 1, 0)) == nullptr) {
-         return nullptr;
-      }
-      dstbuf[lastpos] = '\0';
-      return dstbuf;
-   }
+   return dstbuf;
 }
 
 /**
@@ -415,55 +372,38 @@ int sge_string2bin(FILE *fp, const char *buf) {
 /**
  * @brief Load file into string
  *
- * Load file into string. Returns a pointer to a string buffer containing
- * the file contents and the size of the buffer (= number of bytes read)
- * in the variable len.
- * If the file cannot be read (doesn't exist, permissions etc.), nullptr is
- * returned as buffer and len is set to 0.
+ * Load file into string. Returns the file contents; its size() is the
+ * number of bytes read. The content may hold NUL bytes, a caller that uses
+ * c_str() sees the content up to the first one.
+ * If the file cannot be read (doesn't exist, permissions etc.), std::nullopt
+ * is returned. An empty file gives an empty string.
  *
  * @param fname filename
- * @param len number of bytes read
  *
- * @return malloced string buffer
+ * @return the file content, or std::nullopt on an error
  *
  * @note MT-NOTE: sge_file2string() is MT safe
  *
  * @see #sge_string2file, #sge_stream2string
  */
-char *sge_file2string(const char *fname, int *len) {
+std::optional<std::string> sge_file2string(const char *fname) {
    DENTER(TOM_LAYER);
 
-   FILE *fp;
-   SGE_STRUCT_STAT statbuf;
-   int size, i;
-   char *str;
-
-   /* initialize len - in case of errors we want to return 0 
-    * JG: TODO: it would be better to return -1. Check if calling
-    * functions would handle this situation.
-    */
-   if (len != nullptr) {
-      *len = 0;
-   }
-
    /* try file access, read file info */
+   SGE_STRUCT_STAT statbuf;
    if (SGE_STAT(fname, &statbuf)) {
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
-   size = statbuf.st_size;
+   const size_t size = statbuf.st_size;
 
-   if ((fp = fopen(fname, "r")) == nullptr) {
+   FILE *fp = fopen(fname, "r");
+   if (fp == nullptr) {
       ERROR(MSG_FILE_FOPENFAILED_SS, fname, strerror(errno));
-      DRETURN(nullptr);
+      DRETURN(std::nullopt);
    }
 
-   if ((str = sge_malloc(size + 1)) == nullptr) {
-      FCLOSE(fp);
-      DRETURN(nullptr);
-   }
-
-   str[0] = '\0';
+   std::string str(size, '\0');
 
    /*
    ** With fread(..., size, 1, ...),
@@ -476,70 +416,47 @@ char *sge_file2string(const char *fname, int *len) {
    ** size <size> were read.
    */
    if (size > 0) {
-      i = fread(str, size, 1, fp);
-      if (i != 1) {
+      if (fread(str.data(), size, 1, fp) != 1) {
          ERROR(MSG_FILE_FREADFAILED_SS, fname, strerror(errno));
-         sge_free(&str);
          FCLOSE(fp);
-         DRETURN(nullptr);
-      }
-      str[size] = '\0';    /* delimit this string */
-      if (len != nullptr) {
-         *len = size;
+         DRETURN(std::nullopt);
       }
    }
 
    FCLOSE(fp);
 
    DRETURN(str);
-   FCLOSE_ERROR:
-DRETURN(nullptr);
+FCLOSE_ERROR:
+   DRETURN(std::nullopt);
 }
 
 /**
  * @brief Read string from stream
  *
- * Read string from stream
+ * Read the stream up to its end into a string; its size() is the number of
+ * bytes read.
  *
  * @param fp file descriptor
- * @param len number of bytes read
  *
- * @return pointer to malloced string buffer
+ * @return the content read, empty when the stream holds nothing
  *
  * @note MT-NOTE: sge_stream2string() is MT safe
  *
  * @see #sge_file2string, #sge_string2file
  */
-char *sge_stream2string(FILE *fp, int *len) {
+std::string sge_stream2string(FILE *fp) {
    DENTER(TOP_LAYER);
 
-   char *str;
-   int filled = 0;
-   int malloced_len, i;
-
-   if (!(str = sge_malloc(FILE_CHUNK))) {
-      DRETURN(nullptr);
-   }
-   malloced_len = FILE_CHUNK;
-
-   /* malloced_len-filled-1 cause we reserve space for \0 termination */
-   while ((i = fread(&str[filled], 1, malloced_len - filled - 1, fp)) > 0) {
-      filled += i;
-      if (malloced_len == filled + 1) {
-         str = (char *)sge_realloc(str, malloced_len + FILE_CHUNK, 0);
-         if (str == nullptr) {
-            DRETURN(nullptr);
-         }
-         malloced_len += FILE_CHUNK;
-      }
-
+   std::string str;
+   std::vector<char> chunk(FILE_CHUNK);
+   size_t i;
+   while ((i = fread(chunk.data(), 1, chunk.size(), fp)) > 0) {
+      str.append(chunk.data(), i);
       if (feof(fp)) {
          DPRINTF("got EOF\n");
          break;
       }
    }
-   str[filled] = '\0';  /* nullptr termination */
-   *len = filled;
 
    DRETURN(str);
 }

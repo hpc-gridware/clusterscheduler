@@ -936,7 +936,6 @@ int sge_set_environment(bool scrub_loader_vars) {
    FILE *fp;
    char buf[10000], *name, *value, err_str[10000];
    int line=0;
-   const char *new_value = nullptr;
 
    setup_environment();
 
@@ -968,12 +967,12 @@ int sge_set_environment(bool scrub_loader_vars) {
          continue;
       }
 
-      new_value = sge_replace_substring(value, "\\n", "\n");
-      if (new_value == nullptr) {
+      // shepherd child, single-threaded: the allocation is the same as with the former malloc() result
+      const auto new_value = sge_replace_substring(value, "\\n", "\n");
+      if (!new_value) {
          sge_set_env_value(name, value);
       } else {
-         sge_set_env_value(name, new_value);
-         sge_free(&new_value);
+         sge_set_env_value(name, new_value->c_str());
       }
    }
 

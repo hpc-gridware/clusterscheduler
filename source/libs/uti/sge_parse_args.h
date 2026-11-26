@@ -36,11 +36,14 @@
 /** @file
  * @brief Split a command line string into an argument vector
  */
+#include <string>
+#include <vector>
+
 #include "sge_sl.h"
 
 int sge_quick_count_num_args(const char *args);
 
-int sge_parse_args(const char *args, char **pargs);
+std::vector<std::string> sge_parse_args(const char *args);
 
 int parse_quoted_command_line(char *command, sge_sl_list_t *sl_args);
 

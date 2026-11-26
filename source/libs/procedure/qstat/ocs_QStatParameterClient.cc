@@ -22,6 +22,9 @@
  * @brief Client side parameters of `qstat`: parsed from argv and the environment
  */
 
+#include <string>
+#include <vector>
+
 #include "uti/sge_io.h"
 #include "uti/sge_rmon_monitoring_level.h"
 #include "uti/sge_rmon_macros.h"
@@ -507,17 +510,15 @@ ocs::QStatParameterClient::switch_list_qstat_parse_from_file(ocs::tom::ListPtr<o
                                                              ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                                                              const char *file) {
    DENTER(TOP_LAYER);
-   int file_as_string_length;
-   // the file content, malloc()ed by sge_file2string()
-   const ocs::uti::c_ptr<char> file_as_string{sge_file2string(file, &file_as_string_length)};
-   if (file_as_string == nullptr) {
+   const auto file_as_string = sge_file2string(file);
+   if (!file_as_string) {
       // file does not exist or is not readable — both are acceptable
       DRETURN(true);
    }
 
-   char **token = stra_from_str(file_as_string.get(), " \n\t");
-   const int ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, token);
-   sge_strafree(&token);
+   std::vector<std::string> token = stra_from_str(file_as_string->c_str(), " \n\t");
+   std::vector<char *> argv = ocs_argv_from_strings(token);
+   const int ret = switch_list_qstat_parse_from_cmdline(switch_list, answer_list, argv.data());
    DRETURN(ret);
 }
 

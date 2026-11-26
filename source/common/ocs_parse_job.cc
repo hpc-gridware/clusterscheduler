@@ -41,6 +41,9 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cerrno>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "uti/sge_io.h"
 #include "uti/sge_language.h"
@@ -897,9 +900,8 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
 
    unsigned int dpl; /* directive_prefix length */
    FILE *fp;
-   char *filestrptr = nullptr;
-   int script_len = 0;
-   char **str_table = nullptr;
+   // the script; stays unset when the embedded options are ignored
+   std::optional<std::string> script;
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    ocs::tom::ListPtr<ocs::tom::AN> answer;
    int i;
@@ -926,9 +928,9 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
          FCLOSE(fp);
 
          /* read the script file in one sweep */
-         filestrptr = sge_file2string(script_file, &script_len);
+         script = sge_file2string(script_file);
 
-         if (filestrptr == nullptr) {
+         if (!script) {
             snprintf(error_string, sizeof(error_string),
                      MSG_ANSWER_ERRORREADINGFROMFILEX_S, script_file);
             answer_list_add(&answer, error_string,
@@ -937,16 +939,10 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
          }
       } else {
          /* no script file but input from stdin */
-         filestrptr = sge_stream2string(stdin, &script_len);
-         if (filestrptr == nullptr) {
-            answer_list_add(&answer, MSG_ANSWER_ERRORREADINGFROMSTDIN, 
-                            STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            DRETURN(answer);
-         }
-         else if (filestrptr[0] == '\0') {
+         script = sge_stream2string(stdin);
+         if ((*script)[0] == '\0') {
             answer_list_add(&answer, MSG_ANSWER_NOINPUT, 
                             STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR);
-            sge_free(&filestrptr);
             DRETURN(answer);
          }
       }
@@ -962,17 +958,17 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
       if (directive_prefix != nullptr) {
          char *parameters = nullptr;
          char *free_me = nullptr;
-         char *s = nullptr;
+         const char *s = nullptr;
          int nt_index = -1;
          
          /* now look for job parameters in script file */
-         s = filestrptr;
+         s = script->c_str();
 
          nt_index = strlen (s);
 
          while (*s != '\0') {
             int length = 0;
-            char *newline = nullptr;
+            const char *newline = nullptr;
             int nl_index = -1;
 
             newline = strchr (s, '\n');
@@ -1080,14 +1076,18 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
                ** here the list comes in 
                */
 
-               /* so str_table has to be freed afterwards */
-               str_table = string_list(parameters, " \t\n", nullptr);
-               
+               // nullptr terminated pointers into parameters; a line of blanks only (possible without a
+               // directive prefix) has no token and gives an empty argument vector
+               std::vector<char *> str_table = string_list(parameters, " \t\n");
+               if (str_table.empty()) {
+                  str_table.push_back(nullptr);
+               }
+
                for (i=0; str_table[i]; i++) {
                   DPRINTF("str_table[%d] = '%s'\n", i, str_table[i]);
                }
 
-               sge_strip_quotes(str_table);
+               sge_strip_quotes(str_table.data());
 
                for (i=0; str_table[i]; i++) {
                   DPRINTF("str_table[%d] = '%s'\n", i, str_table[i]);
@@ -1096,7 +1096,8 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
                /*
                ** problem: error handling missing here and above
                */
-               alp = ocs_parse_cmdline(prog_number, (const char **)str_table, envp, lp_new_opts, 0);
+               alp = ocs_parse_cmdline(prog_number, const_cast<const char **>(str_table.data()), envp, lp_new_opts,
+                                       0);
 
                for (const auto aep : *alp) {
                   answer_quality_t quality;
@@ -1116,13 +1117,11 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
                                   quality);
                }
 
-               sge_free(&str_table);
                alp.reset();
                sge_free(&free_me);
                parameters = nullptr;
                
                if (do_exit) {
-                  sge_free(&filestrptr);
                   DRETURN(answer);
                }
 
@@ -1155,14 +1154,13 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
          }
       }
       ep_opt = sge_add_arg(lp_new_opts, 0, MT_UINT32, STR_PSEUDO_SCRIPTLEN, nullptr);
-      ep_opt.set<SPA_argval_lUlongT>(script_len);
+      ep_opt.set<SPA_argval_lUlongT>(script ? static_cast<uint32_t>(script->size()) : 0);
 
       ep_opt = sge_add_arg(lp_new_opts, 0, MT_STRING, STR_PSEUDO_SCRIPTPTR, nullptr);
-      ep_opt.set<SPA_argval_lStringT>(filestrptr);
+      ep_opt.set<SPA_argval_lStringT>(script ? script->c_str() : nullptr);
    }
 
    if (!lp_new_opts) {
-      sge_free(&filestrptr);
       DRETURN(answer);
    }
 
@@ -1176,8 +1174,6 @@ ocs::tom::ListPtr<ocs::tom::AN> parse_script_file(const uint32_t prog_number, co
          lpp_options->splice(std::move(lp_new_opts));
       }
    }
-
-   sge_free(&filestrptr);
 
    DRETURN(answer);
 FCLOSE_ERROR:

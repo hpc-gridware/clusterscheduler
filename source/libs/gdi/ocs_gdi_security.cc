@@ -118,12 +118,11 @@ int set_sec_cred(const char *sge_root, const char *mastername, const ocs::tom::E
          DRETURN(-1);
       }
 
-      // sge_bin2string() returns malloc() memory
-      const ocs::uti::c_ptr<char> str{sge_bin2string(fp_out, 0)};
+      const auto str = sge_bin2string(fp_out, 0);
 
       ret = sge_peclose(command_pid, fp_in, fp_out, fp_err, nullptr);
 
-      job.set<JB_tgt>(str.get());
+      job.set<JB_tgt>(str ? str->c_str() : nullptr);
    }
       
    DRETURN(ret);

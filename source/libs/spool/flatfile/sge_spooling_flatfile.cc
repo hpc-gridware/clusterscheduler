@@ -886,11 +886,9 @@ spool_classic_default_read_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_list,
                answer_list_add_sprintf(answer_list, STATUS_EUNKNOWN, ANSWER_QUALITY_ERROR,
                                        MSG_JOB_INVALIDEXECFILE_SS, exec_file, db_key != nullptr ? db_key : "");
             } else if (exec_file != nullptr) {
-               int len;
-               char *str = sge_file2string(exec_file, &len);
-               if (str != nullptr) {
+               if (const auto str = sge_file2string(exec_file)) {
                   auto script = ocs::tom::ElementPtr<ocs::tom::STU>::create();
-                  str = script->exchange<STU_name>(str);
+                  script->set<STU_name>(str->c_str());
                   ep = script.release();
                }
             }
