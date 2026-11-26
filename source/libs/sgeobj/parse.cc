@@ -482,21 +482,21 @@ bool parse_multi_jobtaskslist(const ocs::tom::List<ocs::tom::SPA> cmdline, const
  * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
  * @param[out] ppal not used
- * @param[out] str receives a freshly allocated copy of the argument, or nullptr if there is none
- * @return 1 when the switch was present
+ * @return whether the switch was present, and its first argument (no value when there is none)
  */
-int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
-                 [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal, char **str) {
+ocs::ParsedString parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                               [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal) {
    DENTER(TOP_LAYER);
 
+   ocs::ParsedString ret;
    const auto ep = cmdline.find_first<SPA_switch_val>(opt);
    if (ep != nullptr) {
       const auto args = ep.get_as<SPA_argval_lListT, ocs::tom::ST>();
       const auto ep2 = args.front();
       if (ep2 != nullptr) {
-         *str = sge_strdup(nullptr, ep2.get<ST_name>());
-      } else {
-         *str = nullptr;
+         if (const char *name = ep2.get<ST_name>(); name != nullptr) {
+            ret.value.emplace(name);
+         }
       }
 
       if (args.size() > 1) {
@@ -505,9 +505,9 @@ int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
          cmdline.erase(ep);
       }
 
-      DRETURN(true);
+      ret.found = true;
    }
-   DRETURN(false);
+   DRETURN(ret);
 }
 
 
@@ -517,19 +517,20 @@ int parse_string(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
  * @param cmdline the parsed option list to consume from
  * @param opt the switch to look for
  * @param[out] ppal not used
- * @param[out] value receives a freshly allocated copy of the argument
- * @return 1 when the switch was present
+ * @return whether the switch was present, and its argument (no value when there is none)
  */
-int parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
-                     [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal, char **value) {
+ocs::ParsedString parse_string_arg(const ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                                   [[maybe_unused]] ocs::tom::ListPtr<ocs::tom::AN> *ppal) {
    DENTER(TOP_LAYER);
-   bool ret = false;
 
+   ocs::ParsedString ret;
    if (const auto ep = cmdline.find_first<SPA_switch_val>(opt); ep != nullptr) {
-      *value = sge_strdup(nullptr, ep.get<SPA_argval_lStringT>());
+      if (const char *arg = ep.get<SPA_argval_lStringT>(); arg != nullptr) {
+         ret.value.emplace(arg);
+      }
 
       cmdline.erase(ep);
-      ret = true;
+      ret.found = true;
    }
    DRETURN(ret);
 }

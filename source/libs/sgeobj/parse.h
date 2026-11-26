@@ -40,6 +40,7 @@
  */
 
 #include <optional>
+#include <string>
 
 #include "tom/ocs_Element.h"
 #include "tom/ocs_List.h"
@@ -97,11 +98,42 @@ bool parse_multi_stringlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *o
 bool parse_flag(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
                 uint32_t *pflag);
 
-int parse_string(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
-                 char **str);
+namespace ocs {
+   /**
+    * @brief The result of parse_string() and parse_string_arg(): was the switch given, and with which argument
+    *
+    * Converts to `true` when the switch was on the command line, so that
+    * `while (const auto arg = parse_string(...))` consumes one occurrence per pass.
+    */
+   struct ParsedString {
+      bool found{false};                ///< the switch was on the command line
+      std::optional<std::string> value; ///< its argument; no value when the switch came without one
 
-int parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal,
-                     char **value);
+      /**
+       * @brief Whether the switch was on the command line
+       *
+       * @return true when the switch was found
+       */
+      explicit operator bool() const noexcept {
+         return found;
+      }
+
+      /**
+       * @brief The argument as a C string, for the C style parsers it is handed to
+       *
+       * @return the argument, nullptr when the switch came without one; valid as long as this object lives
+       */
+      [[nodiscard]] const char *c_str() const noexcept {
+         return value ? value->c_str() : nullptr;
+      }
+   };
+}
+
+ocs::ParsedString parse_string(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                               ocs::tom::ListPtr<ocs::tom::AN> *ppal);
+
+ocs::ParsedString parse_string_arg(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt,
+                                   ocs::tom::ListPtr<ocs::tom::AN> *ppal);
 
 std::optional<ocs::tom::ListPtr<ocs::tom::ULNG>>
 parse_u_longlist(ocs::tom::List<ocs::tom::SPA> cmdline, const char *opt, ocs::tom::ListPtr<ocs::tom::AN> *ppal);

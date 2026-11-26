@@ -214,7 +214,6 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
                                               ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
    uint32_t helpflag = 0;
-   char *argstr = nullptr;
    bool ret = true;
 
 
@@ -238,8 +237,8 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
          continue;
       }
 
-      if (parse_string(switch_list, "-l", answer_list, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      if (const auto arg = parse_string(switch_list, "-l", answer_list)) {
+         const char *argstr = arg.c_str();
          resource_match_list_ = centry_list_parse_from_string(std::move(resource_match_list_), argstr, false);
          continue;
       }
@@ -256,8 +255,8 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
          continue;
       }
 
-      if (parse_string(switch_list, "-ectx", answer_list, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      if (const auto arg = parse_string(switch_list, "-ectx", answer_list)) {
+         const char *argstr = arg.c_str();
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -270,8 +269,8 @@ ocs::QQuotaParameterClient::parse_switch_list(const ocs::tom::List<ocs::tom::SPA
          }
          continue;
       }
-      if (parse_string(switch_list, "-fmt", answer_list, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      if (const auto arg = parse_string(switch_list, "-fmt", answer_list)) {
+         const char *argstr = arg.c_str();
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {

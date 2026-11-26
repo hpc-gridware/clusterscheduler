@@ -277,7 +277,6 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
    ocs::tom::ListPtr<ocs::tom::AN> alp;
    uint32_t helpflag;
    int usageshowed = 0;
-   char *argstr;
    uint32_t full = 0;
 
 
@@ -292,8 +291,8 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
          break;
       }
 
-      while (parse_string(ppcmdline, "-j", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      while (const auto arg = parse_string(ppcmdline, "-j", &alp)) {
+         const char *argstr = arg.c_str();
          output_mode_ = OutputMode::JOB_INFO;
          if (argstr) {
             // a later -j replaces the job list of an earlier one
@@ -302,8 +301,8 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
          }
       }
 
-      if (parse_string(ppcmdline, "-ectx", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      if (const auto arg = parse_string(ppcmdline, "-ectx", &alp)) {
+         const char *argstr = arg.c_str();
          if (argstr == nullptr) {
             continue;
          }
@@ -319,8 +318,8 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
          continue;
       }
 
-      if (parse_string(ppcmdline, "-fmt", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      if (const auto arg = parse_string(ppcmdline, "-fmt", &alp)) {
+         const char *argstr = arg.c_str();
          if (argstr == nullptr) {
             continue;
          }
@@ -361,24 +360,24 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
          need_queues_ = true;
       }
 
-      while (parse_string(ppcmdline, "-s", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      while (const auto arg = parse_string(ppcmdline, "-s", &alp)) {
+         const char *argstr = arg.c_str();
          if (argstr != nullptr) {
             state_filter_ = true;
             state_filter_value_ = argstr;
          }
       }
 
-      while (parse_string(ppcmdline, "-explain", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      while (const auto arg = parse_string(ppcmdline, "-explain", &alp)) {
+         const char *argstr = arg.c_str();
          uint32_t filter = QI_AMBIGUOUS | QI_ALARM | QI_SUSPEND_ALARM | QI_ERROR;
          explain_bits_ = qinstance_state_from_string(argstr, &alp, filter);
          show_ |= QSTAT_DISPLAY_FULL;
          need_queues_ = true;
       }
 
-      while (parse_string(ppcmdline, "-F", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      while (const auto arg = parse_string(ppcmdline, "-F", &alp)) {
+         const char *argstr = arg.c_str();
          show_ |= QSTAT_DISPLAY_QRESOURCES|QSTAT_DISPLAY_FULL;
          need_queues_ = true;
          if (argstr) {
@@ -427,15 +426,15 @@ ocs::QStatParameterClient::sge_parse_qstat(const ocs::tom::List<ocs::tom::SPA> p
          }
       }
 
-      while (parse_string(ppcmdline, "-qs", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      while (const auto arg = parse_string(ppcmdline, "-qs", &alp)) {
+         const char *argstr = arg.c_str();
          uint32_t filter = 0xFFFFFFFF;
          queue_state_ = qinstance_state_from_string(argstr, &alp, filter);
          need_queues_ = true;
       }
 
-      while (parse_string(ppcmdline, "-l", &alp, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string() made with sge_strdup()
+      while (const auto arg = parse_string(ppcmdline, "-l", &alp)) {
+         const char *argstr = arg.c_str();
          // frees the list it is handed and gives nullptr when the text cannot be parsed
          resource_list_ = centry_list_parse_from_string(std::move(resource_list_), argstr, false);
          need_queues_ = true;

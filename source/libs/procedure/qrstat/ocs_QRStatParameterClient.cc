@@ -99,7 +99,6 @@ ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *an
    is_summary_ = true;
    while (!cmdline.empty()) {
       uint32_t value;
-      char *argstr = nullptr;
 
       /* -help */
       if (opt_list_has_X(cmdline, "-help")) {
@@ -116,8 +115,8 @@ ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *an
          is_explain_ = (value > 0) ? true : false;
       }
 
-      if (parse_string_arg(cmdline, "-ectx", answer_list, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string_arg() made with sge_strdup()
+      if (const auto arg = parse_string_arg(cmdline, "-ectx", answer_list)) {
+         const char *argstr = arg.c_str();
          if (strcmp(argstr, "client") == 0) {
             exec_context_ = ExecContext::CLIENT;
          } else if (strcmp(argstr, "server") == 0) {
@@ -131,8 +130,8 @@ ocs::QRStatParameterClient::sge_parse_qrstat(ocs::tom::ListPtr<ocs::tom::AN> *an
          continue;
       }
 
-      if (parse_string_arg(cmdline, "-fmt", answer_list, &argstr)) {
-         const ocs::uti::c_ptr<char> arg_owner{argstr}; // the copy parse_string_arg() made with sge_strdup()
+      if (const auto arg = parse_string_arg(cmdline, "-fmt", answer_list)) {
+         const char *argstr = arg.c_str();
          if (strcmp(argstr, "plain") == 0) {
             output_format_ = OutputFormat::PLAIN;
          } else if (strcmp(argstr, "json") == 0) {
