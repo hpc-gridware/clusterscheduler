@@ -64,13 +64,11 @@
 
 /** @brief Parser state of #sge_strtok_r, the reentrant strtok variant
  *
- * Created by the first #sge_strtok_r call and released with
- * #sge_free_saved_vars.
+ * Opaque: it owns the writable copy the tokens point into and is defined in sge_string.cc. It is created
+ * by the first #sge_strtok_r call and released with #sge_free_saved_vars - never with free() or delete.
+ * The header stays includable from C (the JNI code of libs/jdrmaa).
  */
-struct saved_vars_s {
-   char *static_cp;    ///< position reached in the string being tokenised
-   char *static_str;   ///< the writable copy the tokens point into
-};
+struct saved_vars_s;
 
 const char *sge_basename(const char *name, int delim);
 

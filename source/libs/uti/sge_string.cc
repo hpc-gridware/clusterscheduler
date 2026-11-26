@@ -42,6 +42,8 @@
 #include <pthread.h>
 #include <fnmatch.h>
 #include <cerrno>
+#include <string>
+#include <vector>
 
 #include "uti/msg_utilib.h"
 #include "uti/sge_log.h"
@@ -52,6 +54,16 @@
 /// true when character @p c is one of the delimiters in @p delimitor
 #define IS_DELIMITOR(c, delimitor) \
    (delimitor?(strchr(delimitor, c)?1:0):isspace(c))
+
+/** @brief Parser state of sge_strtok_r(), declared opaque in sge_string.h
+ *
+ * Made with ocs::uti::create() by sge_strtok_r() and released with ocs::uti::destroy() by
+ * sge_free_saved_vars().
+ */
+struct saved_vars_s {
+   std::string static_str;      ///< the writable copy the tokens point into; never resized after creation
+   char *static_cp{nullptr};    ///< position reached in static_str, nullptr before the first token
+};
 
 /**
  * @brief Get basename for path
@@ -181,6 +193,8 @@ char *sge_dirname(const char *name, int delim) {
  * get the next token. The input is copied into an internal static buffer with
  * memmove(), so it is safe to pass a pointer that aliases that buffer (as
  * sge_jobname() does when re-tokenizing a previous result — CS-347 / CS-2362).
+ * The buffer only grows and is never released; the returned tokens are writable and stay valid until
+ * the next call with a non-nullptr @p str.
  * MT-NOTE: not MT safe, use sge_strtok_r() instead.
  *
  * @param[in] str       string to tokenize, or nullptr to continue the previous
@@ -195,30 +209,27 @@ char *sge_strtok(const char *str, const char *delimitor) {
    char *cp;
    char *saved_cp;
    static char *static_cp = nullptr;
-   static char *static_str = nullptr;
-   static unsigned int alloc_len = 0;
-   unsigned int n;
+   // The buffer the tokens point into. It only grows. It is allocated once and never destroyed on purpose:
+   // a static object with a destructor would be destroyed at exit(), also in forked children, while another
+   // thread may still use it (CS-3105).
+   static std::vector<char> &static_str = *new std::vector<char>;
    bool done;
 
    if (str) {
-      n = strlen(str);
-      if (static_str) {
-         if (n > alloc_len) {
-            /* need more memory */
-            sge_free(&static_str);
-            static_str = sge_malloc(n + 1);
-            alloc_len = n;
-         }
+      const size_t n = strlen(str);
+      if (n + 1 > static_str.size()) {
+         // need more memory: copy before the old buffer goes, str may point into it
+         std::vector<char> grown(str, str + n + 1);
+         static_str.swap(grown);
       } else {
-         static_str = sge_malloc(n + 1);
-         alloc_len = n;
+         // memmove, not strcpy: str may alias static_str (e.g. sge_jobname()
+         // re-tokenizes a previous result), and strcpy with overlapping src/dst is
+         // undefined behaviour (CS-347, CS-2362, CWE-628). n == strlen(str).
+         memmove(static_str.data(), str, n + 1);
       }
-      SGE_ASSERT(static_str != nullptr);
-      // memmove, not strcpy: str may alias static_str (e.g. sge_jobname()
-      // re-tokenizes a previous result), and strcpy with overlapping src/dst is
-      // undefined behaviour (CS-347, CS-2362, CWE-628). n == strlen(str).
-      memmove(static_str, str, n + 1);
-      saved_cp = static_str;
+      saved_cp = static_str.data();
+      // a string of delimiters only returns before static_cp is set: never leave it in a released buffer
+      static_cp = saved_cp;
    } else {
       saved_cp = static_cp;
    }
@@ -332,16 +343,20 @@ size_t sge_strlcpy(char *dst, const char *src, size_t dstsize) {
  * @brief Reentrant version of strtok()
  *
  * Reentrant version of sge_strtok. When 'str' is not nullptr,
- * '*context'has to be nullptr. If 'str' is nullptr, '*context'
+ * '*context' has to be nullptr. If 'str' is nullptr, '*context'
  * must not be nullptr. The caller is responsible for freeing
  * '*context' with sge_free_saved_vars().
  * If no delimitor is given isspace() is used.
  *
- * @param str str which should be tokenized
- * @param delimitor delimitor string
- * @param context context
+ * The first call copies 'str' into a parser state made with ocs::uti::create(). The returned tokens are
+ * writable and point into that copy; they stay valid until sge_free_saved_vars() releases the state.
  *
- * @return first/next token
+ * @param str str which should be tokenized, nullptr to get the next token
+ * @param delimitor delimitor string, nullptr selects isspace()
+ * @param context parser state: set by the first call, read and advanced by the following ones
+ *
+ * @return first/next token, nullptr when the string is exhausted or on a call with both 'str' and
+ *         '*context' nullptr
  *
  * @note MT-NOTE: sge_strtok_r() is MT safe
  *
@@ -358,16 +373,12 @@ char *sge_strtok_r(const char *str, const char *delimitor,
 
    if (str != nullptr) {
       if (*context != nullptr) {
+         // the old state is overwritten, not released: the caller may still use its tokens
          ERROR(SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL);
       }
-      *context = ocs::uti::c_alloc<saved_vars_s>();
-      memset(*context, 0, sizeof(struct saved_vars_s));
+      *context = ocs::uti::create<saved_vars_s>(str);
       saved = *context;
-
-      saved->static_str = sge_malloc(strlen(str) + 1);
-
-      strcpy(saved->static_str, str);
-      saved_cp = saved->static_str;
+      saved_cp = saved->static_str.data();
    } else {
       if (*context == nullptr) {
          ERROR(SFNMAX, MSG_POINTER_INVALIDSTRTOKCALL1);
@@ -422,7 +433,9 @@ char *sge_strtok_r(const char *str, const char *delimitor,
 /**
  * @brief Free 'context' of sge_strtok_r()
  *
- * Free 'context' of sge_strtok_r()
+ * Releases the parser state and the copy of the string it owns; every token returned for it becomes
+ * invalid. The state was made with ocs::uti::create(), so it must never be released with free().
+ * Suitable as the deleter of a `std::unique_ptr`.
  *
  * @param context parser state returned by #sge_strtok_r; nullptr is allowed
  *
@@ -431,12 +444,7 @@ char *sge_strtok_r(const char *str, const char *delimitor,
  * @see #sge_strtok_r
  */
 void sge_free_saved_vars(struct saved_vars_s *context) {
-   if (context) {
-      if (context->static_str) {
-         sge_free(&(context->static_str));
-      }
-      sge_free(&context);
-   }
+   ocs::uti::destroy(context);
 }
 
 /**
