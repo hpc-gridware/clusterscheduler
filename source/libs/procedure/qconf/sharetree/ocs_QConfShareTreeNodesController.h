@@ -29,10 +29,10 @@
 namespace ocs {
    /** @brief `qconf -sstnode` and `-rsstnode`: hand the asked-for paths to the view
     *
-    * The two switches share this controller because they render the same thing.
-    * They are documented to differ - only `-rsstnode` should descend into the
-    * child nodes - and they do not; that is CS-2852, and this migration keeps
-    * the behaviour it found rather than deciding it.
+    * The two switches share this controller because they render the same
+    * thing, one path per node. They differ in depth as documented: only
+    * `-rsstnode` descends into the child nodes, `-sstnode` writes the named
+    * nodes alone (CS-572).
     *
     * @ingroup libprocedure
     */
@@ -44,13 +44,15 @@ namespace ocs {
       explicit QConfShareTreeNodesController(std::ostream &out) : out_(out) {}
 
       /** @brief Write one path per node for every path that was asked for
-       * @param parameter the invocation; unused, the paths were taken apart by the model
+       * @param parameter the invocation; its switch decides whether the child nodes are
+       *                  written, the paths were taken apart by the model
        * @param model     the snapshot, holding the share tree and the paths
        * @param view      the rendering
+       * @return none
        */
-      void process_request([[maybe_unused]] QConfParameter &parameter, QConfModelBase &model,
-                           QConfShareTreeView &view) {
-         view.show_paths(out_, model.get_sharetree_root(), model.get_sharetree_paths());
+      void process_request(QConfParameter &parameter, QConfModelBase &model, QConfShareTreeView &view) {
+         const bool recursive = (parameter.get_operation().token == "-rsstnode");
+         view.show_paths(out_, model.get_sharetree_root(), model.get_sharetree_paths(), recursive);
       }
    };
 }

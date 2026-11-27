@@ -161,14 +161,17 @@ int show_sharetree(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::STN>
 }
 
 /**
- * @brief Print a share tree as one path per node
+ * @brief Print a share tree node as its full path, optionally with every node below it
  *
- * Writes the full path of every node, which is the form `qconf` accepts back.
+ * Writes `path=shares` for the node, which is the form `qconf` accepts back.
+ * `qconf -sstnode` prints only the node itself, `qconf -rsstnode` also every
+ * node of the subtree below it, each with its own full path (CS-572).
  *
- * @param os   the stream to write to
- * @param root the node to start at (STN), may be an empty handle
- * @param path the path prefix the printed paths start with
- * @return 0 on success, 1 when `root` is nullptr or `path` names no node
+ * @param os        the stream to write to
+ * @param root      the root of the share tree (STN), may be an empty handle
+ * @param path      the path of the node; "/" and "Root" (any case) name the root
+ * @param recursive also print every node of the subtree below the node
+ * @return 0 on success, 1 when `root` is empty or `path` names no node
  *
  * @note It writes **no** diagnostic of its own. Until CS-2820 it printed "Unable
  *       to locate <path> in sharetree" to stderr, which works in a client and
@@ -177,50 +180,43 @@ int show_sharetree(std::ostream &os, const ocs::tom::ConstElement<ocs::tom::STN>
  *       hit. The return value is the whole signal now, and the caller turns it
  *       into a message where it has an answer list to put one in.
  */
-int show_sharetree_path(std::ostream &os, const ocs::tom::Element<ocs::tom::STN> root, const char *path) {
+int show_sharetree_path(std::ostream &os, const ocs::tom::Element<ocs::tom::STN> root, const char *path,
+                        const bool recursive) {
    DENTER(TOP_LAYER);
-   ocs::tom::Element<ocs::tom::STN> node;
-   ancestors_t ancestors;
-   int i;
-   dstring sb = DSTRING_INIT;
 
-   if (!root) {
+   if (!root || path == nullptr) {
       DRETURN(1);
    }
- 
-   memset(&ancestors, 0, sizeof(ancestors));
-   if ( !strcmp(path, "/") || !strcasecmp(path, "Root") ) {
-      node = root;
-   } else {
-      node = search_named_node_path(root, path, &ancestors);
-   }
- 
-   if (node) {
-      for(i=0; i<ancestors.depth; i++)
-         os << "/" << stn_cstr(ancestors.nodes[i].get<STN_name>());
-      if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-         os << std::format("/={}\n", node.get<STN_shares>());
-      else
-         os << std::format("={}\n", node.get<STN_shares>());
-      free_ancestors(&ancestors);
-      for (const auto cep : node.get<STN_children>()) {
 
-         if (!strcmp(path, "/") || !strcasecmp(path, "Root") )
-            sge_dstring_sprintf(&sb, "/%s", cep.get<STN_name>());
-         else
-            sge_dstring_sprintf(&sb, "%s/%s", path,
-                                 cep.get<STN_name>());
-         show_sharetree_path(os, root, sge_dstring_get_string(&sb));
+   const bool is_root = (strcmp(path, "/") == 0) || (strcasecmp(path, "Root") == 0);
+   ancestors_t ancestors{};
+   const auto node = is_root ? root : search_named_node_path(root, path, &ancestors);
+   if (!node) {
+      free_ancestors(&ancestors);
+      DRETURN(1);
+   }
+
+   for (int i = 0; i < ancestors.depth; i++) {
+      os << "/" << stn_cstr(ancestors.nodes[i].get<STN_name>());
+   }
+   free_ancestors(&ancestors);
+   if (is_root) {
+      os << std::format("/={}\n", node.get<STN_shares>());
+   } else {
+      os << std::format("={}\n", node.get<STN_shares>());
+   }
+
+   if (recursive) {
+      for (const auto cep : node.get<STN_children>()) {
+         const char *child_name = stn_cstr(cep.get<STN_name>());
+         const std::string child_path = is_root ? std::format("/{}", child_name)
+                                                : std::format("{}/{}", path, child_name);
+         show_sharetree_path(os, root, child_path.c_str(), true);
       }
    }
-   else {
-      sge_dstring_free(&sb);
-      DRETURN(1);
-   }
- 
-   sge_dstring_free(&sb);
+
    DRETURN(0);
-}                                                                               
+}
 
 /**
  * @brief Generate a template for a share tree node, valid as a share tree on its own

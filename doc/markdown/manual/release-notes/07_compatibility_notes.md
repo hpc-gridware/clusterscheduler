@@ -565,5 +565,18 @@ The text after the prefix is unchanged. Warnings and informational messages, for
 **If you relied on it**, decide on the exit status rather than on the text of a message; a script that has to
 match an error message should not anchor the match at the start of the line.
 
+## *qconf -sstnode* Shows Only the Named Nodes
+
+`qconf -sstnode` is documented to show the named share tree nodes, and `qconf -rsstnode` to show them together
+with every node below them. Both printed the whole subtree. `qconf -sstnode` now prints the named nodes only:
+
+    $ qconf -sstnode /
+    /=1
+    $ qconf -rsstnode /
+    /=1
+    /default=1
+
+**If you relied on it**, use `qconf -rsstnode` where the nodes below the named one are needed.
+
 [//]: # (Each file has to end with two empty lines)
 

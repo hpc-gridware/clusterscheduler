@@ -71,15 +71,17 @@ namespace ocs {
        * this runs in qmaster - the renderer's own stderr line would never reach
        * the user (CS-2820).
        *
-       * @param os    the stream to write to
-       * @param root  the root node
-       * @param paths the paths that were asked for, in the order given
+       * @param os        the stream to write to
+       * @param root      the root node
+       * @param paths     the paths that were asked for, in the order given
+       * @param recursive also write every node below each path - `-rsstnode`; `-sstnode`
+       *                  writes the named nodes only (CS-572)
        * @return none
        */
       void show_paths(std::ostream &os, const ocs::tom::Element<ocs::tom::STN> root,
-                      const std::vector<std::string> &paths) {
+                      const std::vector<std::string> &paths, const bool recursive) {
          for (const auto &path : paths) {
-            show_sharetree_path(os, root, path.c_str());
+            show_sharetree_path(os, root, path.c_str(), recursive);
          }
       }
    };
