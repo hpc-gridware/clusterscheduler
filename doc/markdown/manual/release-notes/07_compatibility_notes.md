@@ -330,6 +330,23 @@ version: it rejects every entry it does not know.
 Upgraded clusters are not affected, see the
 [Upgrade Notes](06_upgrade_notes.md#the-default-queue-can-follow-the-execution-host-list).
 
+## Unknown Entries in an Autoinstall Configuration File No Longer Abort the Installation
+
+An entry of the autoinstall or autobackup configuration file that the installer does not know no longer aborts
+the automatic installation, uninstallation or backup. The installer prints a warning that the entry is unknown and
+not used by the installer, writes it to the installation log, and carries on. This lets a configuration file
+written for another release, or for another Grid Engine product, be used without removing entries for features
+this version does not have, such as `WIN_ADMIN_PASSWORD`, `PG_SPOOLING_ARGS` or `SGE_JMX_PORT`. The entries of the
+removed CSP mode (`CSP_*`) and `COPY_COMMAND` are reported as belonging to a removed feature.
+
+The configuration file is read as shell code, so an unknown entry still sets a shell variable of that name in the
+installer; the installer just does not use it.
+
+Entries the installer knows are still checked, and an invalid value still aborts the installation. A misspelled
+entry name, however, is now only warned about: the entry it was meant to set is then missing, and the installer
+either reports it as not set or, for an optional entry, uses its default. Check the warnings of an automatic
+installation, or the installation log, for misspelled entries.
+
 ## Cluster Queue Names Are Limited to 252 Characters
 
 The name of a cluster queue may now be at most **252** characters long. A longer name is rejected when the

@@ -836,6 +836,11 @@ The auto installation is also able to install services on remote hosts if passwo
    A configuration file without this entry, e.g. one derived from the template of an older version, is treated
    like `true`.
 
+   An entry the installer does not know, e.g. one from a configuration file written for another product, does
+   not stop the installation: a warning names it as unknown and not used by the installer. The file is read as shell
+   code, so the entry still sets a shell variable. Entries the installer knows are checked, and an invalid value
+   stops the installation.
+
 3. On the master machine start the master installation
 
    ```

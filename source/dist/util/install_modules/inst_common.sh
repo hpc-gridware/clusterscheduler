@@ -769,14 +769,17 @@ CheckConfigFile()
 
    if [ "$BACKUP" = "true" ]; then
       for e in $CONFIG_ENTRIES; do
-         echo $KNOWN_CONFIG_FILE_ENTRIES_BACKUP | grep $e 2> /dev/null > /dev/null
-         if [ $? != 0 ]; then
-            $INFOTEXT -e "Your configuration entry >%s< is not allowed or not in the list of known\nentries!" $e
-            $INFOTEXT -e "Please check your autobackup config file!\n >%s<" $FILE
-            $INFOTEXT -log "Your configuration entry >%s< is not allowed or not in the list of known\nentries!" $e
-            $INFOTEXT -log "Please check your autobackup config file!\n >%s<" $FILE
-            exit 2
-         fi
+         case " $KNOWN_CONFIG_FILE_ENTRIES_BACKUP " in
+            *" $e "*)
+               continue
+               ;;
+         esac
+         # An unknown entry is not used by the backup. Warn and carry on, so that
+         # a config file written for another release or product still works.
+         $INFOTEXT -e "Warning: Your configuration entry >%s< is unknown and not used by the installer." $e
+         $INFOTEXT -e "Please check your autobackup config file!\n >%s<" $FILE
+         $INFOTEXT -log "Warning: Your configuration entry >%s< is unknown and not used by the installer." $e
+         $INFOTEXT -log "Please check your autobackup config file!\n >%s<" $FILE
       done
       if [ -z "$SGE_ROOT" ]; then
          $INFOTEXT -e "Your >SGE_ROOT< entry is not set!"
@@ -854,23 +857,28 @@ CheckConfigFile()
 
    if [ "$QMASTER" = "install" -o "$EXECD" = "install" -o "$QMASTER" = "uninstall" -o "$EXECD" = "uninstall" ]; then
       for e in $CONFIG_ENTRIES; do
-         echo $KNOWN_CONFIG_FILE_ENTRIES_INSTALL | grep $e 2> /dev/null > /dev/null
-         if [ $? != 0 ]; then
-            echo $OBSOLETE_CONFIG_FILE_ENTRIES | grep $e 2> /dev/null > /dev/null
-            if [ $? = 0 ]; then
+         case " $KNOWN_CONFIG_FILE_ENTRIES_INSTALL " in
+            *" $e "*)
+               continue
+               ;;
+         esac
+         case " $OBSOLETE_CONFIG_FILE_ENTRIES " in
+            *" $e "*)
                # An entry of a feature that no longer exists. The installation
                # does not need it, so say so and carry on instead of aborting a
                # config file that is otherwise still valid.
                $INFOTEXT "Your configuration entry >%s< belongs to a feature that has been\nremoved and is ignored." $e
                $INFOTEXT -log "Your configuration entry >%s< belongs to a feature that has been\nremoved and is ignored." $e
                continue
-            fi
-            $INFOTEXT -e "Your configuration entry >%s< is not allowed or not in the list of known\nentries!" $e
-            $INFOTEXT -e "Please check your autoinstall config file!\n >%s<" $FILE
-            $INFOTEXT -log "Your configuration entry >%s< is not allowed or not in the list of known\nentries!" $e
-            $INFOTEXT -log "Please check your autoinstall config file!\n >%s<" $FILE
-            exit 2
-         fi
+               ;;
+         esac
+         # An unknown entry, e.g. from a template of another release or product.
+         # GetConfigFromFile() has sourced the file, so the variable is set, but the
+         # installer does not use it. Warn and carry on instead of aborting.
+         $INFOTEXT -e "Warning: Your configuration entry >%s< is unknown and not used by the installer." $e
+         $INFOTEXT -e "Please check your autoinstall config file!\n >%s<" $FILE
+         $INFOTEXT -log "Warning: Your configuration entry >%s< is unknown and not used by the installer." $e
+         $INFOTEXT -log "Please check your autoinstall config file!\n >%s<" $FILE
       done
       if [ -z "$SGE_ROOT" ]; then
          $INFOTEXT -e "Your >SGE_ROOT< entry is not set!"
