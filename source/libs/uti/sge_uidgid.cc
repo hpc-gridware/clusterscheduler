@@ -193,12 +193,9 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
    if (!strcasecmp(user, "none")) {
       set_admin_user("root", getuid(), getgid());
    } else {
-      int size = get_pw_buffer_size();
-      char *buffer = sge_malloc(size);
-      SGE_ASSERT(buffer != nullptr);
-
+      std::vector<char> buffer(get_pw_buffer_size());
       struct passwd pw_struct{};
-      struct passwd *admin = sge_getpwnam_r(user, &pw_struct, buffer, size);
+      struct passwd *admin = sge_getpwnam_r(user, &pw_struct, buffer.data(), buffer.size());
       if (admin) {
          set_admin_user(user, admin->pw_uid, admin->pw_gid);
       } else {
@@ -206,7 +203,6 @@ sge_set_admin_username(const char *user, char *err_str, size_t err_str_size) {
             snprintf(err_str, err_str_size, MSG_SYSTEM_ADMINUSERNOTEXIST_S, user);
          ret = -1;
       }
-      sge_free(&buffer);
    }
    DRETURN(ret);
 } /* sge_set_admin_username() */
@@ -373,21 +369,15 @@ sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries) {
 
    struct passwd *pw;
    struct passwd pwentry{};
-   char *buffer;
-   int size;
-
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-   SGE_ASSERT(buffer != nullptr);
+   std::vector<char> buffer(get_pw_buffer_size());
 
    do {
       DPRINTF("name: %s retries: %d\n", user, retries);
 
       if (!retries--) {
-         sge_free(&buffer);
          DRETURN(1);
       }
-      if (getpwnam_r(user, &pwentry, buffer, size, &pw) != 0) {
+      if (getpwnam_r(user, &pwentry, buffer.data(), buffer.size(), &pw) != 0) {
          pw = nullptr;
       }
    } while (pw == nullptr);
@@ -399,7 +389,6 @@ sge_user2uid(const char *user, uid_t *puid, gid_t *pgid, int retries) {
       *pgid = pw->pw_gid;
    }
 
-   sge_free(&buffer);
    DRETURN(0);
 } /* sge_user2uid() */
 
@@ -424,23 +413,17 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 
    struct group *gr;
    struct group gr_entry {};
-   char *buffer;
-   int size;
-
-   size = get_group_buffer_size();
-   buffer = sge_malloc(size);
-   SGE_ASSERT(buffer != nullptr);
+   std::vector<char> buffer(get_group_buffer_size());
 
    do {
       if (!retries--) {
-         sge_free(&buffer);
          DRETURN(1);
       }
-      if (getgrnam_r(gname, &gr_entry, buffer, size, &gr) != 0) {
-         if (errno == ERANGE) {
+      // getgrnam_r() returns the error number, it does not have to set errno
+      if (const int rc = getgrnam_r(gname, &gr_entry, buffer.data(), buffer.size(), &gr); rc != 0) {
+         if (rc == ERANGE) {
             retries++;
-            size += 1024 * 32;
-            buffer = (char *) sge_realloc(buffer, size, 1);
+            buffer.resize(buffer.size() + 1024 * 32);
          }
          gr = nullptr;
       }
@@ -450,7 +433,6 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
       *gidp = gr->gr_gid;
    }
 
-   sge_free(&buffer);
    DRETURN(0);
 } /* sge_group2gid() */
 
@@ -475,25 +457,17 @@ sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
 
    struct passwd *pw;
    struct passwd pw_entry {};
-   int size;
-   char *buffer;
-
-   size = get_pw_buffer_size();
-   buffer = sge_malloc(size);
-   SGE_ASSERT(buffer != nullptr);
+   std::vector<char> buffer(get_pw_buffer_size());
 
    /* max retries that are made resolving user name */
-   while (getpwuid_r(uid, &pw_entry, buffer, size, &pw) != 0 || !pw) {
+   while (getpwuid_r(uid, &pw_entry, buffer.data(), buffer.size(), &pw) != 0 || !pw) {
       if (!retries--) {
          ERROR(MSG_SYSTEM_GETPWUIDFAILED_uS, uid, strerror(errno));
-         sge_free(&buffer);
          DRETURN(1);
       }
       sleep(1);
    }
    sge_strlcpy(dst, pw->pw_name, sz);
-
-   sge_free(&buffer);
 
    DRETURN(0);
 } /* sge_uid2user() */
@@ -513,22 +487,16 @@ int
 sge_gid2group(gid_t gid, char *dst, const size_t sz, const int retries) {
    DENTER(UIDGID_LAYER);
 
-   // allocate buffer for group entry
-   auto size = static_cast<size_t>(get_group_buffer_size());
-   char *buf = sge_malloc(size);
-   SGE_ASSERT(buf != nullptr);
-
    // try to find group entry. if not found after retries return error.
+   std::vector<char> buf(get_group_buffer_size());
    struct group gr_entry {};
-   struct group *gr = sge_getgrgid_r(gid, &gr_entry, &buf, &size, retries);
+   struct group *gr = sge_getgrgid_r(gid, &gr_entry, buf, retries);
    if (gr == nullptr) {
-      sge_free(&buf);
       DRETURN(1);
    }
 
    // copy group name to destination buffer
    sge_strlcpy(dst, gr->gr_name, sz);
-   sge_free(&buf);
    DRETURN(0);
 }
 
@@ -537,38 +505,30 @@ sge_gid2group(gid_t gid, char *dst, const size_t sz, const int retries) {
  * @param gid the group id to resolve
  * @param[in,out] last_gid gid resolved by the previous call; used as a cache so
  *                repeated lookups of the same group cost nothing
- * @param[in,out] group_name_p receives the group name; the previous value is
- *                reused when @p gid equals @p last_gid, otherwise it is freed
- *                and replaced. The caller owns the result
+ * @param[in,out] group_name receives the group name; the previous value is
+ *                reused when it is set and @p gid equals @p last_gid, otherwise
+ *                it is replaced. std::nullopt means that nothing is cached yet
  * @param retries number of retries when NIS or LDAP is slow to answer
  * @return 0 on success, 1 when the group could not be resolved
  *
  * @note MT-NOTE: sge_gid2group() is MT safe
  */
 int
-sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
+sge_gid2group(const gid_t gid, gid_t *last_gid, std::optional<std::string> &group_name, int retries) {
    DENTER(TOP_LAYER);
 
-   struct group *gr;
-   struct group gr_entry {};
-
-   if (!group_name_p || !last_gid) {
+   if (!last_gid) {
       DRETURN(1);
    }
 
-   if (!(*group_name_p) || *last_gid != gid) {
-      char *buf = nullptr;
-      int size = 0;
-
-      size = get_group_buffer_size();
-      buf = sge_malloc(size);
-      SGE_ASSERT(buf != nullptr);
+   if (!group_name || *last_gid != gid) {
+      std::vector<char> buf(get_group_buffer_size());
+      struct group *gr;
+      struct group gr_entry {};
 
       /* max retries that are made resolving group name */
-      while (getgrgid_r(gid, &gr_entry, buf, size, &gr) != 0) {
+      while (getgrgid_r(gid, &gr_entry, buf.data(), buf.size(), &gr) != 0) {
          if (!retries--) {
-            sge_free(&buf);
-
             DRETURN(1);
          }
 
@@ -579,15 +539,16 @@ sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries) {
        * We need to handle the case when the OS is unable to resolve the GID to
        * a name. [DT] */
       if (gr == nullptr) {
-         sge_free(&buf);
          DRETURN(1);
       }
 
       /* cache group name */
-      *group_name_p = sge_strdup(*group_name_p, gr->gr_name);
+      if (gr->gr_name != nullptr) {
+         group_name = gr->gr_name;
+      } else {
+         group_name.reset();
+      }
       *last_gid = gid;
-
-      sge_free(&buf);
    }
    DRETURN(0);
 } /* _sge_gid2group() */
@@ -831,7 +792,7 @@ _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t m
 
 /** @brief Switch the process to a user, its group and an additional group
  *
- * Resolves @p user, sets the group id, the supplementary group @p add_grp_id
+ * Resolves @p user, sets the group id, the supplementary group @p add_grp
  * and finally the user id, so the process gives up its privileges in the order
  * that cannot be undone.
  *
@@ -846,20 +807,19 @@ _sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user, gid_t m
  *                     user's own
  * @param qsub_gid group id to use when @p use_qsub_gid is set
  * @param skip_silently do not log when the supplementary group is already set
- * @return 0 on success, a negative value on error, with @p err_str describing it
+ * @return 0 on success; -1 if we are not root and cannot switch, 1 if switching the user or adding
+ *         @p add_grp failed, 4 if switching the user failed (likely a wrong password); @p err_str
+ *         describes the error
  *
  * @note MT-NOTE: sge_set_uid_gid_addgrp() is not MT safe
  */
 int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
                            int min_gid, int min_uid, int add_grp, char *err_str, size_t err_str_size,
                            int use_qsub_gid, gid_t qsub_gid, bool skip_silently) {
-   int size = get_pw_buffer_size();
-   char *buffer = sge_malloc(size);
-   SGE_ASSERT(buffer != nullptr);
-   int ret = _sge_set_uid_gid_addgrp(user, intermediate_user, min_gid, min_uid, add_grp, err_str, err_str_size, use_qsub_gid,
-                                     qsub_gid, buffer, size, skip_silently);
-   sge_free(&buffer);
-   return ret;
+   std::vector<char> buffer(get_pw_buffer_size());
+   return _sge_set_uid_gid_addgrp(user, intermediate_user, min_gid, min_uid, add_grp, err_str, err_str_size,
+                                  use_qsub_gid, qsub_gid, buffer.data(), static_cast<int>(buffer.size()),
+                                  skip_silently);
 }
 
 
@@ -881,11 +841,7 @@ int sge_set_uid_gid_addgrp(const char *user, const char *intermediate_user,
  * @note MT-NOTE: sge_add_group() is MT safe
  */
 int
-sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_silently) {
-   uint32_t max_groups;
-   gid_t *list;
-   int groups;
-
+sge_add_group(const gid_t add_grp_id, char *err_str, const size_t err_str_size, const bool skip_silently) {
    if (err_str != nullptr) {
       err_str[0] = 0;
    }
@@ -894,10 +850,11 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
       return 0;
    }
 
-   max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
+   const uint32_t max_groups = sge_sysconf(SGE_SYSCONF_NGROUPS_MAX);
    if (max_groups <= 0) {
       if (err_str != nullptr) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), MSG_SYSTEM_INVALID_NGROUPS_MAX);
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(),
+                  MSG_SYSTEM_INVALID_NGROUPS_MAX);
       }
       return -1;
    }
@@ -907,51 +864,40 @@ sge_add_group(gid_t add_grp_id, char *err_str, size_t err_str_size, bool skip_si
  * Is this a bug in the kernel or in INSURE?
  */
 #if defined(LINUX)
-   list = (gid_t *) sge_malloc(2 * max_groups * sizeof(gid_t));
+   std::vector<gid_t> list(2 * static_cast<size_t>(max_groups));
 #else
-   list = (gid_t *) sge_malloc(max_groups * sizeof(gid_t));
+   std::vector<gid_t> list(max_groups);
 #endif
-   if (list == nullptr) {
-      if (err_str != nullptr) {
-         int error = errno;
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), strerror(error));
-      }
-      return -1;
-   }
 
-   groups = getgroups(max_groups, list);
+   int groups = getgroups(static_cast<int>(max_groups), list.data());
    if (groups == -1) {
       if (err_str != nullptr) {
          int error = errno;
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), strerror(error));
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(),
+                  strerror(error));
       }
-      sge_free(&list);
       return -1;
    }
 
    if (groups < (int) max_groups) {
       list[groups] = add_grp_id;
       groups++;
-      groups = setgroups(groups, list);
+      groups = setgroups(groups, list.data());
       if (groups == -1) {
          if (err_str != nullptr) {
             int error = errno;
-            snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), strerror(error));
+            snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(),
+                     strerror(error));
          }
-         sge_free(&list);
          return -1;
       }
    } else if (!skip_silently) {
       if (err_str != nullptr) {
-         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(), MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
+         snprintf(err_str, err_str_size, MSG_SYSTEM_ADDGROUPIDFORSGEFAILED_uuS, getuid(), geteuid(),
+                  MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS);
       }
-      sge_free(&list);
       return -1;
-   } else {
-      sge_free(&list);
-      return 0;
    }
-   sge_free(&list);
    return 0;
 }
 
@@ -1000,43 +946,30 @@ sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize
  *
  *  @param gid group ID
  *  @param pg points to structure which will be updated upon success
- *  @param buffer points to memory referenced by 'pg'
- *  @param buffer_size size of @p buffer in bytes, grown when too small
+ *  @param buffer memory referenced by 'pg'; sized with get_group_buffer_size() when empty and grown
+ *                when too small, so it must outlive the use of @p pg
  *  @param retries number of retries to connect to NIS/LDAP
  *  @return Pointer to entry matching group information upon success, nullptr otherwise.
  */
 struct group *
-sge_getgrgid_r(gid_t gid, struct group *pg, char **buffer, size_t *buffer_size, int retries) {
+sge_getgrgid_r(const gid_t gid, struct group *pg, std::vector<char> &buffer, int retries) {
    DENTER(UIDGID_LAYER);
 
-   // validate pointer parameter
-   if (buffer == nullptr || buffer_size == nullptr) {
-      DRETURN(nullptr);
-   }
-
-   // ensure that buffers are allocated
-   if (*buffer == nullptr || *buffer_size == 0) {
-      *buffer_size = get_group_buffer_size();
-      *buffer = static_cast<char *>(sge_malloc(*buffer_size));
-      SGE_ASSERT(*buffer != nullptr);
+   // ensure that the buffer is allocated
+   if (buffer.empty()) {
+      buffer.resize(get_group_buffer_size());
    }
 
    struct group *res = nullptr;
    while (retries-- && !res) {
-      if (getgrgid_r(gid, pg, *buffer, *buffer_size, &res) != 0) {
-
+      // getgrgid_r() returns the error number, it does not have to set errno
+      if (const int rc = getgrgid_r(gid, pg, buffer.data(), buffer.size(), &res); rc != 0) {
          // check if buffer was too small
-         if (errno == ERANGE) {
+         if (rc == ERANGE) {
             retries++;
-            *buffer_size += 1024;
-            *buffer = static_cast<char *>(sge_realloc(*buffer, *buffer_size, 1));
-            if (*buffer == nullptr) {
-               res = nullptr;
-               break;
-            }
-         } else {
-            res = nullptr;
+            buffer.resize(buffer.size() + 1024);
          }
+         res = nullptr;
       }
    }
 
@@ -1204,41 +1137,30 @@ ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_s
    }
 
    // get maximum amount of supplementary group IDs
+   // 0 would let getgroups() only count the groups without filling the empty buffer
    int max_groups = static_cast<int>(sge_sysconf(SGE_SYSCONF_NGROUPS_MAX));
-   if (max_groups == -1) {
+   if (max_groups <= 0) {
       snprintf(err_str, err_str_len, "sge_sysconf(SGE_SYSCONF_NGROUPS_MAX) failed.");
       DRETURN(false);
    }
 
-   // allocate buffer for group IDs
-   auto *grp_id_list = reinterpret_cast<gid_t *>(sge_malloc(max_groups * sizeof(gid_t)));
-   if (grp_id_list == nullptr) {
-      snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group IDs");
-      DRETURN(false);
-   }
-
    // fetch group IDs
-   int grp_ids = getgroups(max_groups, grp_id_list);
+   std::vector<gid_t> grp_id_list(max_groups);
+   int grp_ids = getgroups(max_groups, grp_id_list.data());
    if (grp_ids == -1) {
       snprintf(err_str, err_str_len, "getgroups() failed.");
-      sge_free(&grp_id_list);
       DRETURN(false);
    }
    if (grp_ids == 0) {
       // success case: user has no supplementary groups
       *amount = 0;
       *grp_array = nullptr;
-      sge_free(&grp_id_list);
       DRETURN(true);
    }
 
    // fetch group names and store them with corresponding IDs in the array to be returned
+   // the array is C memory: it is handed on to the component data and the packbuffers, released with sge_free()
    auto array = ocs::uti::c_alloc<ocs_grp_elem_t>(grp_ids);
-   if (array == nullptr) {
-       snprintf(err_str, err_str_len, "Unable to allocate buffer that should hold group information");
-       sge_free(&grp_id_list);
-       DRETURN(false);
-   }
    for (int i = 0; i < grp_ids; i++) {
       // try to get the name
       array[i].id = grp_id_list[i];
@@ -1249,7 +1171,6 @@ ocs_get_groups(int *amount, ocs_grp_elem_t **grp_array, char *err_str, int err_s
           snprintf(array[i].name, MAX_STRING_SIZE, gid_t_fmt, grp_id_list[i]);
       }
    }
-   sge_free(&grp_id_list);
    *amount = grp_ids;
    *grp_array = array;
    DRETURN(true);
@@ -1280,35 +1201,29 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
    }
 
    // get maximum amount of supplementary group IDs
+   // 0 would let getgroups() only count the groups without filling the empty buffer
    int max_groups = static_cast<int>(sge_sysconf(SGE_SYSCONF_NGROUPS_MAX));
-   if (max_groups == -1) {
+   if (max_groups <= 0) {
       sge_dstring_sprintf(error_dstr, "sge_sysconf(SGE_SYSCONF_NGROUPS_MAX) failed.");
       DRETURN(false);
    }
 
    DPRINTF("max_groups=%d\n", max_groups);
 
-   // allocate buffer for group IDs
-   auto *grp_id_list = reinterpret_cast<gid_t *>(sge_malloc(max_groups * sizeof(gid_t)));
-   if (grp_id_list == nullptr) {
-      sge_dstring_sprintf(error_dstr, "Unable to allocate buffer that should hold group IDs");
-      DRETURN(false);
-   }
-
    // fetch group IDs
    // the number of groups is returned in the last argument: getgrouplist() returns it on Linux
    // only, on BSD and macOS it returns 0 on success
+   std::vector<gid_t> grp_id_list(max_groups);
    int num_group_ids = max_groups;
 #ifdef DARWIN
    static_assert(sizeof(gid_t) == sizeof(int), "Size of gid_t does not match that of type int!");
-   int lret = getgrouplist(user, static_cast<int>(gid), reinterpret_cast<int *>(grp_id_list),
+   int lret = getgrouplist(user, static_cast<int>(gid), reinterpret_cast<int *>(grp_id_list.data()),
                            &num_group_ids);
 #else
-   int lret = getgrouplist(user, gid, grp_id_list, &num_group_ids);
+   int lret = getgrouplist(user, gid, grp_id_list.data(), &num_group_ids);
 #endif
    if (lret == -1) {
       sge_dstring_sprintf(error_dstr, "getgrouplist() failed.");
-      sge_free(&grp_id_list);
       DRETURN(false);
    }
 
@@ -1318,17 +1233,12 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
       // success case: user has no supplementary groups (this case probably does not exist)
       *amount = 0;
       *grp_array = nullptr;
-      sge_free(&grp_id_list);
       DRETURN(true);
    }
 
    // fetch group names and store them with corresponding IDs in the array to be returned
+   // the array is C memory: it is handed on to the packbuffers, released with sge_free()
    auto array = ocs::uti::c_alloc<ocs_grp_elem_t>(num_group_ids);
-   if (array == nullptr) {
-       sge_dstring_sprintf(error_dstr, "Unable to allocate buffer that should hold group information");
-       sge_free(&grp_id_list);
-       DRETURN(false);
-   }
    for (int i = 0; i < num_group_ids; i++) {
       // try to get the name
       array[i].id = grp_id_list[i];
@@ -1339,7 +1249,6 @@ ocs_get_groups(const char *user, gid_t gid, int *amount, ocs_grp_elem_t **grp_ar
           snprintf(array[i].name, MAX_STRING_SIZE, gid_t_fmt, grp_id_list[i]);
       }
    }
-   sge_free(&grp_id_list);
    *amount = num_group_ids;
    *grp_array = array;
    DRETURN(ret);

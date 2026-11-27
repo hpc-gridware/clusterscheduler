@@ -39,6 +39,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
+#include <string>
+#include <vector>
 #include <unistd.h>
 #include <pwd.h>
 
@@ -206,24 +209,20 @@ int main(int argc, char *argv[]) {
    // T11/T12: second overload (allocating, cached) — result must match the first overload
    {
       gid_t last_gid = (gid_t)-1;
-      char *group_name2 = nullptr;
+      std::optional<std::string> group_name2;
       CHECK(id, "sge_gid2group (allocating overload) returns 0",
-            sge_gid2group(gid, &last_gid, &group_name2, MAX_NIS_RETRIES) == 0); id++;
+            sge_gid2group(gid, &last_gid, group_name2, MAX_NIS_RETRIES) == 0); id++;
       CHECK(id, "sge_gid2group (allocating overload) yields same name as first overload",
-            group_name2 != nullptr && strcmp(group_name2, groupname) == 0); id++;
-      sge_free(&group_name2);
+            group_name2 && *group_name2 == groupname); id++;
    }
 
    printf("\n--- sge_getpwnam_r ---\n");
    // T13: passwd lookup by username must succeed for the current user
    {
-      int bufsize = get_pw_buffer_size();
-      char *buf = static_cast<char *>(sge_malloc(bufsize));
-      SGE_ASSERT(buf != nullptr);
+      std::vector<char> buf(get_pw_buffer_size());
       struct passwd pw{};
-      struct passwd *res = sge_getpwnam_r(username, &pw, buf, bufsize);
+      struct passwd *res = sge_getpwnam_r(username, &pw, buf.data(), buf.size());
       CHECK(id, "sge_getpwnam_r returns non-null for current user", res != nullptr); id++;
-      sge_free(&buf);
    }
 
    printf("\n--- sge_is_user_superuser / sge_is_start_user_superuser ---\n");
@@ -297,6 +296,31 @@ int main(int argc, char *argv[]) {
             idstr != nullptr && strstr(idstr, "NONE") != nullptr); id++;
    }
    sge_free(&grp_array1);
+
+   printf("\n--- buffer ownership ---\n");
+   // T25: the cached overload of sge_gid2group keeps a name that is set for the same gid
+   {
+      gid_t last_gid = gid;
+      std::optional<std::string> cached{"cached-marker"};
+      CHECK(id, "sge_gid2group (allocating overload) reuses the cached name",
+            sge_gid2group(gid, &last_gid, cached, MAX_NIS_RETRIES) == 0 && cached == "cached-marker"); id++;
+   }
+   // T26: sge_getgrgid_r sizes an empty buffer itself
+   {
+      std::vector<char> buf;
+      struct group gr{};
+      struct group *res = sge_getgrgid_r(gid, &gr, buf, MAX_NIS_RETRIES);
+      CHECK(id, "sge_getgrgid_r with an empty buffer resolves the current gid",
+            res != nullptr && !buf.empty() && strcmp(res->gr_name, groupname) == 0); id++;
+   }
+   // T27: sge_getgrgid_r grows a buffer that is too small (ERANGE comes as return value, not in errno)
+   {
+      std::vector<char> buf(1);
+      struct group gr{};
+      struct group *res = sge_getgrgid_r(gid, &gr, buf, 1);
+      CHECK(id, "sge_getgrgid_r grows a one byte buffer and resolves the current gid",
+            res != nullptr && buf.size() > 1 && strcmp(res->gr_name, groupname) == 0); id++;
+   }
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);

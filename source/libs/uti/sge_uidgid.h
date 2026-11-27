@@ -38,6 +38,9 @@
  */
 
 #include <cstdio>
+#include <optional>
+#include <string>
+#include <vector>
 #include <sys/types.h>
 #include <grp.h>
 #include <pwd.h>
@@ -92,7 +95,7 @@ int
 sge_gid2group(gid_t gid, char *dst, size_t sz, int retries);
 
 int
-sge_gid2group(gid_t gid, gid_t *last_gid, char **group_name_p, int retries);
+sge_gid2group(gid_t gid, gid_t *last_gid, std::optional<std::string> &group_name, int retries);
 
 int
 sge_add_group(gid_t newgid, char *err_str, size_t err_str_size, bool skip_silently);
@@ -105,7 +108,7 @@ struct passwd *
 sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize);
 
 struct group *
-sge_getgrgid_r(gid_t gid, struct group *pg, char **buffer, size_t *buffer_size, int retries);
+sge_getgrgid_r(gid_t gid, struct group *pg, std::vector<char> &buffer, int retries);
 
 bool
 sge_is_user_superuser(const char *name);

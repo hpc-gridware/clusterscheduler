@@ -189,7 +189,6 @@
 #define MSG_SMF_DISABLE_FAILED_SSUU             _MESSAGE(59152, _("could not temporary disable instance " SFQ " : " SFQ "   [euid=" sge_u32 ", uid=" sge_u32 "]"))
 #define MSG_SMF_FORK_FAILED_SS                  _MESSAGE(59153, _(SFQ " failed: " SFQ))
 #define MSG_POINTER_INVALIDSTRTOKCALL1          _MESSAGE(59154, _("Invalid sge_strtok_r call, last is nullptr"))
-#define MSG_UTI_MEMPWNAM                        _MESSAGE(59155, _("Not enough memory for sge_getpwnam_r"))
 
 #define MSG_TMPNAM_GOT_NULL_PARAMETER           _MESSAGE(59160, _("got nullptr parameter for file buffer"))
 #define MSG_TMPNAM_CANNOT_GET_TMP_PATH          _MESSAGE(59161, _("can't get temporary directory path"))

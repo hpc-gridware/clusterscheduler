@@ -55,6 +55,7 @@
 #include "uti/sge_stdlib.h"
 
 #include <cinttypes>
+#include <vector>
 
 #include "msg_common.h"
 
@@ -381,7 +382,11 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
 #if defined(SOLARIS)
    char err_str[256];
 #endif
+   // pw points into pw_struct and pw_buffer; both live until the function returns, so the child after
+   // fork() still finds the user's entry in its copy of the memory
    struct passwd *pw = nullptr;
+   struct passwd pw_struct {};
+   std::vector<char> pw_buffer;
    uid_t myuid;
    uid_t tuid;
    gid_t tgid = (gid_t) -1;
@@ -430,26 +435,14 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
     * a deadlock of the child because getpwnam() is not async-thread safe.
     */
    if (user) {
-      struct passwd pw_struct {};
-      int size = get_pw_buffer_size();
-      char *buffer = sge_malloc(size);
+      pw_buffer.resize(get_pw_buffer_size());
 
       /*
        * get information about the target user
        */
-      if (buffer != nullptr) {
-         pw = sge_getpwnam_r(user, &pw_struct, buffer, size);
-         if (pw == nullptr) {
-            ERROR(MSG_SYSTEM_NOUSERFOUND_SS, user, strerror(errno));
-            sge_free(&buffer);
-            if (sge_has_admin_user()) {
-               sge_switch2admin_user();
-            }
-            DRETURN(-1);
-         }
-      } else {
-         ERROR(SFNMAX, MSG_UTI_MEMPWNAM);
-         sge_free(&buffer);
+      pw = sge_getpwnam_r(user, &pw_struct, pw_buffer.data(), pw_buffer.size());
+      if (pw == nullptr) {
+         ERROR(MSG_SYSTEM_NOUSERFOUND_SS, user, strerror(errno));
          if (sge_has_admin_user()) {
             sge_switch2admin_user();
          }
@@ -467,7 +460,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          if (myuid != SGE_SUPERUSER_UID) {
             DPRINTF("only root is allowed to switch to a different user\n");
             ERROR(SFNMAX, MSG_SYSTEM_NOROOTRIGHTSTOSWITCHUSER);
-            sge_free(&buffer);
             DRETURN(-2);
          }
 
@@ -476,7 +468,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          res = initgroups(pw->pw_name, pw->pw_gid);
          if (res) {
             ERROR(MSG_SYSTEM_INITGROUPSFORUSERFAILED_ISS, res, user, strerror(errno));
-            sge_free(&buffer);
             sge_exit(1);
          }
 
@@ -489,8 +480,6 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
          tgid = pw->pw_gid;
          DPRINTF("target uid = %d\n", (int) tuid);
       }
-
-      sge_free(&buffer);
    }
 
    DPRINTF("Now process will fork\n");
@@ -559,8 +548,7 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
           * parent) only sets the supplementary groups, so without this setgid()
           * the child would keep the parent's (root) gid (CS-2333). Must
           * precede setuid() while we are still privileged.
-          * Use the captured tgid, not pw->pw_gid: pw points into pw_struct/buffer
-          * which are already out of scope / freed by this point (CS-2333). */
+          * Use the captured tgid (CS-2333). */
          if (setgid(tgid)) {
             sge_exit(1);
          }
