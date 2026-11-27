@@ -44,6 +44,8 @@
  * CS-3218: the checkpoint interval was sent to the JSV as a time but parsed back as a date.
  *
  * CS-3220: a CMDARG index without an upper bound made the receiver create billions of arguments.
+ *
+ * CS-2194: -suspend_remote is a job attribute that is sent to the JSV and can be changed by it.
  */
 
 #include <cstdio>
@@ -65,6 +67,7 @@
 #include "sgeobj/sge_answer.h"
 #include "sgeobj/sge_ckpt.h"
 #include "sgeobj/sge_jsv.h"
+#include "sgeobj/sge_job.h"
 #include "sgeobj/sge_jsv_script.h"
 #include "sgeobj/msg_sgeobjlib.h"
 #include "tom/ocs_Element.h"
@@ -671,6 +674,58 @@ test_number_params() {
 }
 
 /**
+ * @brief -suspend_remote is sent to the JSV when it was specified and can be changed by it (CS-2194)
+ */
+static void
+test_suspend_remote() {
+   printf("\n--- PARAM suspend_remote ---\n");
+   auto old_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   old_job->set<JB_owner>("user");
+   old_job->set<JB_group>("group");
+
+   bool accepted = false;
+   std::string sent;
+   communicate("STARTED\nRESULT STATE ACCEPT\n", "", &accepted, nullptr, nullptr, JSV_CONTEXT_CLIENT,
+               old_job.get().raw(), &sent);
+   CHECK(64, "a job without -suspend_remote sends no PARAM suspend_remote",
+         sent.find("PARAM suspend_remote") == std::string::npos);
+
+   ocs_job_set_suspend_remote(*old_job, ocs::Ternary::Yes);
+   communicate("STARTED\nRESULT STATE ACCEPT\n", "", &accepted, nullptr, nullptr, JSV_CONTEXT_CLIENT,
+               old_job.get().raw(), &sent);
+   const bool sent_ok = sent.find("PARAM suspend_remote y\n") != std::string::npos;
+   if (!sent_ok) {
+      printf("      sent:\n%s", sent.c_str());
+   }
+   CHECK(65, "-suspend_remote yes is sent as PARAM suspend_remote y", sent_ok);
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   job->set<JB_type>(JOB_TYPE_QRSH);
+   std::string text = communicate("PARAM suspend_remote n\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(66, "PARAM suspend_remote n sets no",
+         accepted && text == "<none>" && ocs_job_get_suspend_remote(*job) == ocs::Ternary::No);
+
+   text = communicate("PARAM suspend_remote y\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(67, "PARAM suspend_remote y sets yes",
+         accepted && text == "<none>" && ocs_job_get_suspend_remote(*job) == ocs::Ternary::Yes);
+
+   text = communicate("PARAM suspend_remote\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   CHECK(68, "deleting the parameter makes it not specified",
+         accepted && text == "<none>" && ocs_job_get_suspend_remote(*job) == ocs::Ternary::Unset);
+
+   ocs_job_set_suspend_remote(*job, ocs::Ternary::Yes);
+   text = communicate("PARAM suspend_remote maybe\nRESULT STATE ACCEPT\n", "", &accepted, job.get().raw());
+   printf("      answer: \"%s\"\n", text.c_str());
+   CHECK(69, "PARAM suspend_remote maybe is an error and leaves the value unchanged",
+         text != "<none>" && ocs_job_get_suspend_remote(*job) == ocs::Ternary::Yes);
+
+   auto batch_job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   text = communicate("PARAM suspend_remote y\nRESULT STATE ACCEPT\n", "", &accepted, batch_job.get().raw());
+   CHECK(70, "a batch job accepts PARAM suspend_remote y but does not store it",
+         accepted && text == "<none>" && ocs_job_get_suspend_remote(*batch_job) == ocs::Ternary::Unset);
+}
+
+/**
  * @brief Entry point
  * @return 0 when every check passed, 1 otherwise
  */
@@ -690,6 +745,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_date_params();
    test_checkpoint_interval();
    test_number_params();
+   test_suspend_remote();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

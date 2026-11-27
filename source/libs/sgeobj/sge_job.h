@@ -44,6 +44,7 @@
 #include <utility>
 
 #include "uti/sge_htable.h"
+#include "uti/ocs_Ternary.h"
 #include "uti/sge_dstring.h"
 
 #include "tom/ocs_Element.h"
@@ -652,3 +653,7 @@ bool
 job_parse_when_string(const char *input, qalter_when_t &when);
 
 bool job_is_when_now(ocs::tom::ConstElement<ocs::tom::JB> job);
+
+ocs::Ternary ocs_job_get_suspend_remote(ocs::tom::ConstElement<ocs::tom::JB> job);
+
+void ocs_job_set_suspend_remote(ocs::tom::Element<ocs::tom::JB> job, ocs::Ternary suspend_remote);

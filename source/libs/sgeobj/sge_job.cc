@@ -4364,6 +4364,9 @@ job_get_effective_command_line(const ocs::tom::ConstElement<ocs::tom::JB> job, d
    if (pty < 2) { // 2 means: do not specify it but use the default for the client
       job_add_opt_to_comand_line(dstr, "-pty", pty == 0 ? "no" : "yes");
    }
+   if (const ocs::Ternary suspend_remote = ocs_job_get_suspend_remote(job); suspend_remote != ocs::Ternary::Unset) {
+      job_add_opt_to_comand_line(dstr, "-suspend_remote", suspend_remote == ocs::Ternary::Yes ? "yes" : "no");
+   }
 
    // -sync <options_flags>
    // -sync n which is the default will be silently ignored
@@ -4697,3 +4700,38 @@ job_is_when_now(const ocs::tom::ConstElement<ocs::tom::JB> job) {
    return ret;
 }
 
+/**
+ * @brief Return the `-suspend_remote` setting of an interactive job (CS-2194)
+ *
+ * JB_suspend_remote stores 0 when the option was not specified, so that every job
+ * created without it, by any client, means "not specified". 1 is yes, 2 is no.
+ *
+ * @param job the job
+ * @return Ternary::Yes or Ternary::No when the option was specified, else Ternary::Unset
+ */
+ocs::Ternary ocs_job_get_suspend_remote(const ocs::tom::ConstElement<ocs::tom::JB> job) {
+   switch (job.get<JB_suspend_remote>()) {
+      case 1:
+         return ocs::Ternary::Yes;
+      case 2:
+         return ocs::Ternary::No;
+      default:
+         return ocs::Ternary::Unset;
+   }
+}
+
+/**
+ * @brief Store the `-suspend_remote` setting of an interactive job (CS-2194)
+ *
+ * @param job the job
+ * @param suspend_remote Ternary::Yes or Ternary::No, or Ternary::Unset when the option is not specified
+ */
+void ocs_job_set_suspend_remote(const ocs::tom::Element<ocs::tom::JB> job, const ocs::Ternary suspend_remote) {
+   uint32_t value = 0;
+   if (suspend_remote == ocs::Ternary::Yes) {
+      value = 1;
+   } else if (suspend_remote == ocs::Ternary::No) {
+      value = 2;
+   }
+   job.set<JB_suspend_remote>(value);
+}

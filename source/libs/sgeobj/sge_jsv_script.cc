@@ -1096,6 +1096,25 @@ jsv_handle_param_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::L
          }
       }
 
+      // -suspend_remote y|n; deleting the parameter means the option is not specified (CS-2194).
+      // It applies to qrsh and qlogin only, for other jobs a valid value is accepted but not stored.
+      if (ret && strcmp("suspend_remote", param) == 0) {
+         const uint32_t jb_type = new_job.get<JB_type>();
+         const bool interactive = JOB_TYPE_IS_QRSH(jb_type) || JOB_TYPE_IS_QLOGIN(jb_type) ||
+                                  JOB_TYPE_IS_QRLOGIN(jb_type);
+         if (value == nullptr) {
+            ocs_job_set_suspend_remote(new_job, ocs::Ternary::Unset);
+         } else if (strcmp(value, "y") == 0 || strcmp(value, "n") == 0) {
+            if (interactive) {
+               ocs_job_set_suspend_remote(new_job, value[0] == 'y' ? ocs::Ternary::Yes : ocs::Ternary::No);
+            }
+         } else {
+            answer_list_add_sprintf(&local_answer_list, STATUS_DENIED, ANSWER_QUALITY_ERROR, MSG_JSV_PARSE_VAL_SS,
+                                    param, value);
+            ret = false;
+         }
+      }
+
       /*
        * if we are in test mode the we have to check the expected result.
        * in test mode we will reject jobs if we did not get the expected
@@ -1799,6 +1818,13 @@ jsv_handle_started_command(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom:
    }
 
    /* -pty y|n (not available in JSV) */
+
+   // -suspend_remote y|n (optional; only available if specified for qrsh or qlogin, CS-2194)
+   if (const ocs::Ternary suspend_remote = ocs_job_get_suspend_remote(old_job); suspend_remote != ocs::Ternary::Unset) {
+      sge_dstring_clear(&buffer);
+      sge_dstring_sprintf(&buffer, "%s suspend_remote %c", prefix, suspend_remote == ocs::Ternary::Yes ? 'y' : 'n');
+      jsv_send_command(jsv, answer_list, sge_dstring_get_string(&buffer));
+   }
 
    // -q wc_queue_list (optional; see man page sge_types(1) for wc_queue_list specification)
    //

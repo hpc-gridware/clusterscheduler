@@ -214,6 +214,39 @@ test_exec_file_is_valid() {
 }
 
 /**
+ * @brief -suspend_remote is a job attribute (CS-2194)
+ *
+ * A job nobody set it on means "not specified", whatever client created it; yes and no survive the round
+ * trip, and the effective submit command line names the option only when it was specified.
+ */
+static void
+test_suspend_remote() {
+   printf("\n--- -suspend_remote job attribute ---\n");
+
+   auto job = ocs::tom::ElementPtr<ocs::tom::JB>::create();
+   CHECK(23, "a new job has -suspend_remote not specified",
+         ocs_job_get_suspend_remote(*job) == ocs::Ternary::Unset);
+
+   DSTRING_STATIC(dstr, 1024);
+   CHECK(24, "the command line of a job without the option does not name it",
+         strstr(job_get_effective_command_line(*job, &dstr, "qrsh"), "-suspend_remote") == nullptr);
+
+   ocs_job_set_suspend_remote(*job, ocs::Ternary::Yes);
+   const bool yes = ocs_job_get_suspend_remote(*job) == ocs::Ternary::Yes;
+   CHECK(25, "yes is stored and shown as -suspend_remote yes",
+         yes && strstr(job_get_effective_command_line(*job, &dstr, "qrsh"), " -suspend_remote yes") != nullptr);
+
+   ocs_job_set_suspend_remote(*job, ocs::Ternary::No);
+   const bool no = ocs_job_get_suspend_remote(*job) == ocs::Ternary::No;
+   CHECK(26, "no is stored and shown as -suspend_remote no",
+         no && strstr(job_get_effective_command_line(*job, &dstr, "qrsh"), " -suspend_remote no") != nullptr);
+
+   ocs_job_set_suspend_remote(*job, ocs::Ternary::Unset);
+   CHECK(27, "unset is stored as 0, the value of a job that never had the option",
+         ocs_job_get_suspend_remote(*job) == ocs::Ternary::Unset && job->get<JB_suspend_remote>() == 0);
+}
+
+/**
  * @brief Entry point
  * @param argc unused
  * @param argv unused
@@ -226,6 +259,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    test_mailrec_unparse();
    test_parse_jobtasks();
    test_exec_file_is_valid();
+   test_suspend_remote();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    return s_fail == 0 ? 0 : 1;

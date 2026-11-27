@@ -570,6 +570,14 @@ enum JB_Field {
     */
    JB_pty,
    /**
+    * @brief Suspend Remote
+    *
+    * Interactive job: Ctrl+Z in the client also suspends the whole remote job via the shepherd
+    * (qrsh/qlogin -suspend_remote). 0=not specified, which means no, 1=yes, 2=no.
+    * Read and written through ocs_job_get_suspend_remote() and ocs_job_set_suspend_remote().
+    */
+   JB_suspend_remote,
+   /**
     * @brief Array Task Concurrency
     *
     * The number of concurrent array tasks executing at any given time.
@@ -751,6 +759,7 @@ namespace ocs::tom {
          {JB_wtcontr, "JB_wtcontr", FieldType::Double, Flag::None},
          {JB_ar, "JB_ar", FieldType::Uint32, Flag::Spool},
          {JB_pty, "JB_pty", FieldType::Uint32, Flag::Spool},
+         {JB_suspend_remote, "JB_suspend_remote", FieldType::Uint32, Flag::Spool},
          {JB_ja_task_concurrency, "JB_ja_task_concurrency", FieldType::Uint32, Flag::Spool},
          {JB_binding, "JB_binding", FieldType::Object, Flag::Spool},
          {JB_submission_command_line, "JB_submission_command_line", FieldType::String, Flag::Spool},

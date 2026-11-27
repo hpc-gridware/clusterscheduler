@@ -971,6 +971,19 @@
          ]
       },
       {
+         "name": "suspend_remote",
+         "summary": "Suspend Remote",
+         "description": [
+            "Interactive job: Ctrl+Z in the client also suspends the whole remote job via the shepherd",
+            "(qrsh/qlogin -suspend_remote). 0=not specified, which means no, 1=yes, 2=no.",
+            "Read and written through ocs_job_get_suspend_remote() and ocs_job_set_suspend_remote()."
+         ],
+         "type": "Uint32",
+         "flags": [
+            "SPOOL"
+         ]
+      },
+      {
          "name": "ja_task_concurrency",
          "summary": "Array Task Concurrency",
          "description": [

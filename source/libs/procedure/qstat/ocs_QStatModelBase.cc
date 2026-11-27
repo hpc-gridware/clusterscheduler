@@ -574,7 +574,7 @@ ocs::tom::What<ocs::tom::JB> ocs::QStatModelBase::get_job_view_what() {
                          JB_jid_request_list, JB_ja_ad_request_list, JB_verify_suitable_queues,
                          JB_soft_wallclock_gmt, JB_hard_wallclock_gmt, JB_override_tickets, JB_version,
                          JB_ja_structure, JB_ja_n_h_ids, JB_ja_u_h_ids, JB_ja_s_h_ids, JB_ja_o_h_ids, JB_ja_a_h_ids,
-                         JB_type, JB_binding, JB_ja_task_concurrency, JB_pty,
+                         JB_type, JB_binding, JB_ja_task_concurrency, JB_pty, JB_suspend_remote,
                          JB_grp_list, JB_sync_options, JB_category_id, JB_path_aliases, JB_ja_ad_predecessor_list,
                          JB_ja_ad_request_list, JB_ja_ad_successor_list>()
       .with<JB_ja_tasks>(ocs::tom::what<JAT_state, JAT_status, JAT_hold, JAT_task_number, JAT_scaled_usage_list,
