@@ -100,6 +100,7 @@ static THREAD_HANDLE g_thread_main;
 static int           g_raised_event        = 0;
 static int           g_job_pid             = 0;
 static int           g_ijs_reconnect_timeout = 0;   ///< grace period seconds before SIGKILL on unexpected disconnect; 0 = disabled
+static bool          g_suspend_remote_allowed = true; ///< CS-2194: false if the job's -suspend_remote is not yes
 static cl_framework_t g_ijs_framework      = CL_CT_TCP;   ///< commlib framework copied from parent_loop, needed for reconnect attempts
 static char          *g_job_owner          = nullptr;     ///< job owner copied from parent_loop, needed for commlib auth on reconnect
 
@@ -1577,6 +1578,12 @@ static void *commlib_to_pty(void *t_conf) {
                break;
 
             case SUSPEND_CTRL_MSG:
+               // CS-2194: the job attribute -suspend_remote decides, not the client
+               if (!g_suspend_remote_allowed) {
+                  shepherd_trace("commlib_to_pty: ignoring suspend message, "
+                      "the job does not allow -suspend_remote");
+                  break;
+               }
                shepherd_trace("commlib_to_pty: received suspend message, "
                    "suspend the process");
                shepherd_signal_job(g_job_pid, SIGSTOP);
@@ -1815,6 +1822,13 @@ int parent_loop(int job_pid, const char *childname, int timeout, ckpt_info_t *p_
    {
       const char *v = get_conf_val("ijs_reconnect_timeout");
       g_ijs_reconnect_timeout = (v != nullptr) ? atoi(v) : 0;
+   }
+
+   // CS-2194: execd writes suspend_remote=0|1 for the master task of an interactive job; a task of
+   // qrsh -inherit has no entry and keeps obeying the client.
+   {
+      const char *v = search_conf_val("suspend_remote");
+      g_suspend_remote_allowed = v == nullptr || atoi(v) != 0;
    }
 
    // Initialize X11 forwarding state; setup happens lazily when X11_AUTH_MSG arrives.

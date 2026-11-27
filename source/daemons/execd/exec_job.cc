@@ -2173,6 +2173,14 @@ int sge_exec_job(const ocs::tom::Element<ocs::tom::JB> jep, const ocs::tom::Elem
       }
       fprintf(fp, "pty=%d\n", pty_option);
 
+      // CS-2194: -suspend_remote is a job attribute, the shepherd obeys a SUSPEND_CTRL_MSG only if
+      // the job allows it. A task of qrsh -inherit in a job without the option gets no entry, there
+      // the option of the qrsh -inherit client decides as before.
+      if (const ocs::Ternary suspend_remote = ocs_job_get_suspend_remote(jep);
+          petep == nullptr || suspend_remote != ocs::Ternary::Unset) {
+         fprintf(fp, "suspend_remote=%d\n", suspend_remote == ocs::Ternary::Yes ? 1 : 0);
+      }
+
       if (JOB_TYPE_IS_QLOGIN(jb_now) || JOB_TYPE_IS_QRSH(jb_now)
           || JOB_TYPE_IS_QRLOGIN(jb_now)) {
          ocs::tom::ConstElement<ocs::tom::VA> elem;

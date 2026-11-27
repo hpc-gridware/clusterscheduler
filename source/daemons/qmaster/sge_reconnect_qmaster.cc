@@ -134,6 +134,10 @@ static int generate_reconnect_token(char *buf, size_t buf_size) {
  *                            certificate (PEM), or nullptr in non-TLS mode.  Relayed
  *                            to execd so it can refresh cert.pem before the shepherd
  *                            opens the reconnect connection.
+ * @param requested_suspend_remote CS-2194: the -suspend_remote option of the reconnecting
+ *                            client, Ternary::Unset if it gave none.  A value that differs
+ *                            from the job's is rejected: the job attribute decides.
+ * @param out_suspend_remote  CS-2194: receives the job's -suspend_remote value, may be nullptr.
  * @param answer_list         Standard error list; populated on validation/lookup failure.
  * @return 0 on success; -1 on any validation, lookup, or send failure (answer_list filled).
  */
@@ -142,8 +146,10 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *client_host,
                                      int client_port,
                                      const char *client_cred,
+                                     ocs::Ternary requested_suspend_remote,
                                      char *out_token, size_t out_token_size,
                                      char *out_exec_host, size_t out_exec_host_size,
+                                     ocs::Ternary *out_suspend_remote,
                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list) {
    DENTER(TOP_LAYER);
 
@@ -175,6 +181,23 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
       answer_list_add_sprintf(answer_list, STATUS_ENOTOWNER, ANSWER_QUALITY_ERROR,
                               MSG_JOB_NOMODJOBPERMS_SU, requester_user, job_id);
       DRETURN(-1);
+   }
+
+   // CS-2194: -suspend_remote is a job attribute; a reconnect may repeat it but not change it.
+   // A job without the option behaves like -suspend_remote no.
+   const ocs::Ternary job_suspend_remote = ocs_job_get_suspend_remote(jep);
+   const bool job_suspends = job_suspend_remote == ocs::Ternary::Yes;
+   if (requested_suspend_remote != ocs::Ternary::Unset &&
+       (requested_suspend_remote == ocs::Ternary::Yes) != job_suspends) {
+      answer_list_add_sprintf(answer_list, STATUS_ESEMANTIC, ANSWER_QUALITY_ERROR,
+                              "-suspend_remote %s conflicts with -suspend_remote %s%s of job " sge_u32
+                              ", the value of the job cannot be changed by a reconnect",
+                              job_suspends ? "no" : "yes", job_suspends ? "yes" : "no",
+                              job_suspend_remote == ocs::Ternary::Unset ? " (the default)" : "", job_id);
+      DRETURN(-1);
+   }
+   if (out_suspend_remote != nullptr) {
+      *out_suspend_remote = job_suspend_remote;
    }
 
    // Find the running ja_task and its exec host.  Reconnect only applies to a job

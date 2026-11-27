@@ -28,6 +28,7 @@
 #include <cstdint>
 
 #include "tom/ocs_Types.h"
+#include "uti/ocs_Ternary.h"
 #include "sgeobj/sge_answer.h"
 
 int qmaster_handle_reconnect_request(uint32_t job_id,
@@ -35,8 +36,10 @@ int qmaster_handle_reconnect_request(uint32_t job_id,
                                      const char *client_host,
                                      int client_port,
                                      const char *client_cred,
+                                     ocs::Ternary requested_suspend_remote,
                                      char *out_token, size_t out_token_size,
                                      char *out_exec_host, size_t out_exec_host_size,
+                                     ocs::Ternary *out_suspend_remote,
                                      ocs::tom::ListPtr<ocs::tom::AN> *answer_list);
 
 int sge_qmaster_send_reconnect_prepare(uint32_t job_id, uint32_t ja_task_id,

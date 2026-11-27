@@ -181,9 +181,11 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
       found = false;
 
       // CS-2144: IJS session-reconnect path bypasses the qmod queue/job dispatch.
-      // The client encodes the request in ID_str as "<job_id>:<client_host>:<client_port>".
-      // On success an answer of STATUS_OK is added with text "RECONNECT_OK <token> <exec_host>",
-      // which the qrsh -reconnect client parses to obtain the rendezvous parameters.
+      // The client encodes the request in ID_str as "<job_id>:<client_host>:<client_port>[:<suspend_remote>]",
+      // suspend_remote being the numeric ocs::Ternary of its -suspend_remote option (CS-2194).
+      // On success an answer of STATUS_OK is added with text "RECONNECT_OK <token> <exec_host> <suspend_remote>",
+      // which the qrsh -reconnect client parses to obtain the rendezvous parameters and the job's
+      // -suspend_remote value.
       if ((id_action & ~JOB_DO_ACTION) == QI_DO_RECONNECT) {
          const char *spec = dep.get<ID_str>();
          char spec_copy[1024];
@@ -192,11 +194,16 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
          char *job_id_str = spec_copy;
          char *host_str = strchr(job_id_str, ':');
          char *port_str = nullptr;
+         char *suspend_remote_str = nullptr;
          if (host_str != nullptr) {
             *host_str++ = '\0';
             port_str = strchr(host_str, ':');
             if (port_str != nullptr) {
                *port_str++ = '\0';
+               suspend_remote_str = strchr(port_str, ':');
+               if (suspend_remote_str != nullptr) {
+                  *suspend_remote_str++ = '\0';
+               }
             }
          }
 
@@ -209,6 +216,15 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
 
          uint32_t reconnect_job_id = (uint32_t)strtoul(job_id_str, nullptr, 10);
          int reconnect_port = (int)strtol(port_str, nullptr, 10);
+         ocs::Ternary requested_suspend_remote = ocs::Ternary::Unset;
+         if (suspend_remote_str != nullptr) {
+            // anything but the numeric Ternary::Yes or Ternary::No means "not given"
+            if (strcmp(suspend_remote_str, "1") == 0) {
+               requested_suspend_remote = ocs::Ternary::Yes;
+            } else if (strcmp(suspend_remote_str, "0") == 0) {
+               requested_suspend_remote = ocs::Ternary::No;
+            }
+         }
 
          // CS-2206: the reconnecting client's TLS cert (PEM) rides in
          // ID_user_list as a single ST_name element (nullptr in non-TLS mode).
@@ -220,14 +236,15 @@ sge_gdi_qmod(ocs::gdi::Packet *packet, ocs::gdi::Task *task, monitoring_t *monit
 
          char token[128] = {0};
          char exec_host[CL_MAXHOSTNAMELEN] = {0};
+         ocs::Ternary job_suspend_remote = ocs::Ternary::Unset;
          if (qmaster_handle_reconnect_request(reconnect_job_id, packet->user,
                                               host_str, reconnect_port,
-                                              reconnect_cred,
+                                              reconnect_cred, requested_suspend_remote,
                                               token, sizeof(token),
                                               exec_host, sizeof(exec_host),
-                                              &alp) == 0) {
+                                              &job_suspend_remote, &alp) == 0) {
             answer_list_add_sprintf(&alp, STATUS_OK, ANSWER_QUALITY_INFO,
-                                    "RECONNECT_OK %s %s", token, exec_host);
+                                    "RECONNECT_OK %s %s %d", token, exec_host, static_cast<int>(job_suspend_remote));
          }
          // qmaster_handle_reconnect_request already populated alp on failure.
          continue;

@@ -1221,10 +1221,12 @@ void block_notification_signals() {
  *   1. Build port_range_list from mconf.
  *   2. Install builtin-IJS signal handlers (terminal raw-mode etc).
  *   3. Start the IJS commlib server (passive listen socket on a port from port_range).
- *   4. Send a GDI TRIGGER request with QI_DO_RECONNECT carrying <job_id>:<host>:<port>
- *      to qmaster, which validates ownership, brokers a token, and relays to the
- *      execd of the running job.
- *   5. Parse the qmaster response — expect a single STATUS_OK answer "RECONNECT_OK <token> <exec_host>".
+ *   4. Send a GDI TRIGGER request with QI_DO_RECONNECT carrying
+ *      <job_id>:<host>:<port>:<suspend_remote> to qmaster, which validates ownership and
+ *      the -suspend_remote option, brokers a token, and relays to the execd of the running job.
+ *   5. Parse the qmaster response — expect a single STATUS_OK answer
+ *      "RECONNECT_OK <token> <exec_host> <suspend_remote>". The job's -suspend_remote value
+ *      decides how Ctrl+Z behaves in the resumed session (CS-2194).
  *   6. Tell sge_client_ijs to expect the token on the inbound handshake.
  *   7. Enter run_ijs_server which waits for the shepherd to connect back, exchanges
  *      RECONNECT_REQUEST_MSG / RECONNECT_ACCEPT_MSG, and resumes the PTY bridge.
@@ -1235,12 +1237,15 @@ void block_notification_signals() {
  * @param communication_framework the commlib framework (TCP or TLS) for the IJS server
  * @param qualified_hostname the name of this host
  * @param username the user running qrsh
+ * @param suspend_remote the -suspend_remote option of the command line, Ternary::Unset if not given;
+ *                       qmaster rejects the reconnect if it differs from the job's value
  * @return the exit status of the remote session, or non-zero when the reconnect failed
  */
 static int do_qrsh_reconnect(const char *job_id_str,
                              cl_framework_t communication_framework,
                              const char *qualified_hostname,
-                             const char *username) {
+                             const char *username,
+                             const ocs::Ternary suspend_remote) {
    DENTER(TOP_LAYER);
 
    // Build port_range_list from cluster config (same as the normal startup path).
@@ -1267,9 +1272,11 @@ static int do_qrsh_reconnect(const char *job_id_str,
    int my_port = comm_handle->service_port;
    port_range_list.reset();
 
-   // GDI TRIGGER request encoding: <job_id>:<my_host>:<my_port> in ID_str.
+   // GDI TRIGGER request encoding: <job_id>:<my_host>:<my_port>:<suspend_remote> in ID_str,
+   // suspend_remote being the numeric ocs::Ternary of the command line option (CS-2194).
    char spec[1024];
-   snprintf(spec, sizeof(spec), "%s:%s:%d", job_id_str, qualified_hostname, my_port);
+   snprintf(spec, sizeof(spec), "%s:%s:%d:%d", job_id_str, qualified_hostname, my_port,
+            static_cast<int>(suspend_remote));
 
    auto refs = ocs::tom::ListPtr<ocs::tom::ID>::create("reconnect ref");
    const auto idep = refs->emplace_back<ID_str>(spec);
@@ -1302,15 +1309,18 @@ static int do_qrsh_reconnect(const char *job_id_str,
    auto alp = ocs::gdi::Client::sge_gdi(ocs::gdi::Target::JB_LIST, ocs::gdi::Command::TRIGGER,
                                         ocs::gdi::SubCommand::NONE, refs);
 
-   // Look for the one STATUS_OK answer carrying "RECONNECT_OK <token> <exec_host>".
+   // Look for the one STATUS_OK answer carrying "RECONNECT_OK <token> <exec_host> <suspend_remote>".
    char token[128] = {0};
    char exec_host[256] = {0};
+   int job_suspend_remote = static_cast<int>(ocs::Ternary::Unset);
    bool ok = false;
    for (const auto aep : *alp) {
       const char *text = aep.get<AN_text>();
       uint32_t status = aep.get<AN_status>();
       if (status == STATUS_OK && text != nullptr && strncmp(text, "RECONNECT_OK ", 13) == 0) {
-         if (sscanf(text + 13, "%127s %255s", token, exec_host) == 2) {
+         if (sscanf(text + 13, "%127s %255s %d", token, exec_host, &job_suspend_remote) == 3 &&
+             job_suspend_remote >= static_cast<int>(ocs::Ternary::No) &&
+             job_suspend_remote <= static_cast<int>(ocs::Ternary::Unset)) {
             ok = true;
          }
       } else if (status != STATUS_OK && text != nullptr) {
@@ -1336,9 +1346,10 @@ static int do_qrsh_reconnect(const char *job_id_str,
    sge_dstring_sprintf(&err_msg, "<null>");
    // is_qlogin=1, is_rsh=0 → behaves like qlogin (PTY mode) for terminal setup; the
    // shepherd already chose pty/no-pty for the original session and we just resume it.
+   // the job's -suspend_remote value wins over the client's default (CS-2194)
    rc = run_ijs_server(comm_handle, exec_host, /*nostdin=*/0, /*noshell=*/0,
                        /*is_rsh=*/0, /*is_qlogin=*/1,
-                       ocs::Ternary::Unset, ocs::Ternary::Unset,
+                       ocs::Ternary::Unset, static_cast<ocs::Ternary>(job_suspend_remote),
                        &exit_status, &err_msg, /*forward_x11=*/false,
                        mconf_get_ijs_escape_char());
    if (rc != 0) {
@@ -1460,8 +1471,27 @@ int main(int argc, const char **argv) {
    if (is_qlogin) {
       for (int i = 1; i < argc - 1; ++i) {
          if (strcmp(argv[i], "-reconnect") == 0) {
+            // -suspend_remote is a job attribute (CS-2194): qmaster rejects a value that differs from the job's
+            ocs::Ternary reconnect_suspend_remote = ocs::Ternary::Unset;
+            if (strcmp(argv[argc - 1], "-suspend_remote") == 0) {
+               ERROR("qrsh -reconnect: -suspend_remote needs a value, yes or no");
+               sge_exit(1);
+            }
+            for (int j = 1; j < argc - 1; ++j) {
+               if (strcmp(argv[j], "-suspend_remote") == 0) {
+                  const char *value = argv[j + 1];
+                  if (strcasecmp(value, "y") == 0 || strcasecmp(value, "yes") == 0) {
+                     reconnect_suspend_remote = ocs::Ternary::Yes;
+                  } else if (strcasecmp(value, "n") == 0 || strcasecmp(value, "no") == 0) {
+                     reconnect_suspend_remote = ocs::Ternary::No;
+                  } else {
+                     ERROR("qrsh -reconnect: invalid value \"%s\" of -suspend_remote, expected yes or no", value);
+                     sge_exit(1);
+                  }
+               }
+            }
             int rc = do_qrsh_reconnect(argv[i + 1], communication_framework,
-                                       qualified_hostname, username);
+                                       qualified_hostname, username, reconnect_suspend_remote);
             sge_exit(rc);
          }
       }
@@ -1542,10 +1572,11 @@ int main(int argc, const char **argv) {
       forward_x11 = true;
    }
 
-   /* parse -suspend_remote <yes|no> */
+   /* parse -suspend_remote <yes|no>, a job attribute since CS-2194 so that a JSV can see and change it */
    if (opt_list_has_X(*opts_cmdline, "-suspend_remote")) {
       suspend_remote_option = static_cast<ocs::Ternary>(opt_list_is_X_true(*opts_cmdline, "-suspend_remote"));
    }
+   ocs_job_set_suspend_remote(*job, suspend_remote_option);
    /* remove the suspend_remote option from commandline before proceeding */
    while ((ep = opts_cmdline->find_first<SPA_switch_val>("-suspend_remote"))) {
       opts_cmdline->erase(ep);
@@ -2012,6 +2043,8 @@ int main(int argc, const char **argv) {
       /* the new version of the job from qmaster */
       if (const auto new_job = lp_jobs->front()) {
         job_id = new_job.get<JB_job_number>();
+        // a server JSV may have changed -suspend_remote, the job's value decides (CS-2194)
+        suspend_remote_option = ocs_job_get_suspend_remote(new_job);
       } else {
         job_id = 0;
       }
