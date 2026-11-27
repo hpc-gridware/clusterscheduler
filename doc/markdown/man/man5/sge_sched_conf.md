@@ -210,6 +210,8 @@ The user can obtain the collected information with the command qstat -j.
 ## params
 
 This is foreseen for passing additional parameters to the xxQS_NAMExx scheduler. 
+The entries of *params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2` and `A=1, B=2`
+are the same. A tab between two entries is stored as a blank.
 
 Changing *params* will take immediate effect. The default for *params* is none.
 

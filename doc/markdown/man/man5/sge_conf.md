@@ -568,7 +568,12 @@ exec "$SHEPHERD" "$@"
 
 ## qmaster_params
 
-A list of additional parameters can be passed to the xxQS_NAMExx qmaster. The following values are recognized:
+A list of additional parameters can be passed to the xxQS_NAMExx qmaster.
+The entries of *qmaster_params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2`
+and `A=1, B=2` are the same. Do not separate them by tabs: a tab between two entries ends the value, and the
+entries after it are dropped without an error. A tab before the first or after the last entry does no harm.
+
+The following values are recognized:
 
 ***ALLOW_ANY_SUBMITHOSTS***
 
@@ -1140,7 +1145,12 @@ This value is a global configuration parameter only. It cannot be overwritten by
 
 ## execd_params
 
-This is used for passing additional parameters to the xxQS_NAMExx execution daemon. The following values are recognized:
+This is used for passing additional parameters to the xxQS_NAMExx execution daemon.
+The entries of *execd_params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2`
+and `A=1, B=2` are the same. Do not separate them by tabs: a tab between two entries ends the value, and the
+entries after it are dropped without an error. A tab before the first or after the last entry does no harm.
+
+The following values are recognized:
 
 ***ACCT_RESERVED_USAGE*** 
 
@@ -1410,7 +1420,12 @@ This setting is available in Gridware Cluster Scheduler only.
 ## reporting_params
 
 Used to define the behavior of reporting modules in the xxQS_NAMExx qmaster. Changes to the *reporting_params* 
-takes immediate effect. The following values are recognized:
+takes immediate effect.
+The entries of *reporting_params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2`
+and `A=1, B=2` are the same. Do not separate them by tabs: a tab between two entries ends the value, and the
+entries after it are dropped without an error. A tab before the first or after the last entry does no harm.
+
+The following values are recognized:
 
 ***accounting***
 
@@ -1573,7 +1588,11 @@ See xxqs_name_sxx_reporting(5) for the *online_usage* record schema.
 
 ## binding_params
 
-Used to define default binding behavior of jobs in the xxQS_NAMExx qmaster. Changes to the *binding_params* takes immediate effect. The following values are recognized:
+Used to define default binding behavior of jobs in the xxQS_NAMExx qmaster. Changes to the *binding_params* takes immediate effect.
+The entries of *binding_params* are separated by commas, e.g. `default_unit=C,on_any_host=true`. Different from
+*qmaster_params* or *execd_params* they must not contain blanks: a value with a blank is rejected.
+
+The following values are recognized:
 
 ***default_unit*** 
 
