@@ -27,6 +27,8 @@
  */
 
 #include <bitset>
+#include <optional>
+#include <string>
 
 #define PATH_SEPARATOR "/"                    ///< directory separator, as a string
 #define COMMON_DIR "common"                   ///< cell subdirectory holding the configuration files below
@@ -84,14 +86,16 @@ namespace ocs {
 
    private:
       // bootstrap file
-      static char *admin_user;
-      static char *default_domain;
+      // the strings are made on first use and never destroyed: the getters hand out pointers into them, which
+      // callers keep until exit and which must not dangle in exit handlers or forked children
+      static std::optional<std::string> *admin_user;
+      static std::optional<std::string> *default_domain;
       static bool has_default_domain_set;
-      static char *spooling_method;
-      static char *spooling_lib;
-      static char *spooling_params;
-      static char *binary_path;
-      static char *qmaster_spool_dir;
+      static std::optional<std::string> *spooling_method;
+      static std::optional<std::string> *spooling_lib;
+      static std::optional<std::string> *spooling_params;
+      static std::optional<std::string> *binary_path;
+      static std::optional<std::string> *qmaster_spool_dir;
 
       // one bit per bs_sec_mode_t; get_security_modes() renders it for logging
       // @todo we should get rid of this string and only keep the bitset, but for now we keep it for better logging
@@ -106,7 +110,7 @@ namespace ocs {
       static bool ignore_fqdn;
 
       // communication_params
-      static char *address_from_hostname;
+      static std::optional<std::string> *address_from_hostname;
       static bool trust_client_hostname;
 
       static const char*

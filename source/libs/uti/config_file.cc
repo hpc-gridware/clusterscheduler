@@ -48,6 +48,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cctype>
+#include <optional>
+#include <string>
 
 #include "uti/config_file.h"
 #include "uti/sge_parse_num_par.h"
@@ -82,13 +84,24 @@ void set_error(const char *err_str) {
  * @brief One entry of the configuration file, as a singly linked list node
  *
  * The list is built by #add_config_entry, which prepends, so entries are held
- * in reverse file order. Both strings are owned by the entry.
+ * in reverse file order. Made with ocs::uti::create(), released with ocs::uti::destroy().
  */
 typedef struct config_entry {
-   char *name;                ///< the entry's name, never nullptr
-   char *value;               ///< the entry's value; nullptr when the line had no value
-   struct config_entry *next; ///< next entry, or nullptr at the end of the list
+   std::string name;                   ///< the entry's name
+   std::optional<std::string> value;   ///< the entry's value; std::nullopt when the line had no value
+   struct config_entry *next{nullptr}; ///< next entry, or nullptr at the end of the list
 } config_entry;
+
+/**
+ * @brief The value of an entry as the modifiable C string the getters return
+ *
+ * @param entry the entry
+ * @return the value, or nullptr when the entry has none; owned by the entry
+ */
+static char *
+entry_value(config_entry *entry) {
+   return entry->value ? entry->value->data() : nullptr;
+}
 
 /*
  * MT-NOTE: libs/uti/config_file.c is not MT safe due to access to global 
@@ -261,24 +274,13 @@ int read_config(const char *fname) {
  *
  * @param name the entry name
  * @param value the entry value, or nullptr for a name without a value
- * @return 0 on success, 1 if memory could not be allocated
+ * @return 0; out of memory terminates the process
  */
 int add_config_entry(const char *name, const char *value) {
-   config_entry *new_entry = ocs::uti::c_alloc<config_entry>();
-
-   if ((new_entry->name = strdup(name)) == nullptr) {
-      sge_free(&new_entry);
-      return 1;
-   }
-
+   auto *new_entry = ocs::uti::create<config_entry>();
+   new_entry->name = name;
    if (value != nullptr) {
-      if ((new_entry->value = strdup(value)) == nullptr) {
-         sge_free(&(new_entry->name));
-         sge_free(&(new_entry));
-         return 1;
-      }
-   } else {
-      new_entry->value = nullptr;
+      new_entry->value = value;
    }
 
    new_entry->next = config_list;
@@ -296,7 +298,7 @@ int add_config_entry(const char *name, const char *value) {
  */
 static config_entry *find_conf_entry(const char *name, config_entry *ptr) {
    while (ptr) {
-      if (!strcmp(ptr->name, name))
+      if (ptr->name == name)
          return ptr;
 
       ptr = ptr->next;
@@ -317,7 +319,7 @@ static config_entry *find_conf_entry(const char *name, config_entry *ptr) {
 char *get_conf_val(const char *name) {
    config_entry *ptr = find_conf_entry(name, config_list);
    if (ptr) {
-      return ptr->value;
+      return entry_value(ptr);
    }
 
    char err_str[MAX_STRING_SIZE];
@@ -346,9 +348,8 @@ void set_conf_val(const char *name, const char *value) {
    pConfigEntry = find_conf_entry(name, config_list);
    if (pConfigEntry != nullptr) {
       /* avoid overwriting by itself */
-      if (pConfigEntry->value != value) {
-         sge_free(&(pConfigEntry->value));
-         pConfigEntry->value = strdup(value);
+      if (entry_value(pConfigEntry) != value) {
+         pConfigEntry->value = value;
       }
    } else {
       add_config_entry(name, value);
@@ -363,11 +364,9 @@ void set_conf_val(const char *name, const char *value) {
  *         list, do not free
  */
 char *search_conf_val(const char *name) {
-   config_entry *ptr = config_list;
-
-   ptr = find_conf_entry(name, config_list);
+   config_entry *ptr = find_conf_entry(name, config_list);
    if (ptr != nullptr) {
-      return ptr->value;
+      return entry_value(ptr);
    } else {
       return nullptr;
    }
@@ -395,17 +394,9 @@ char *search_nonone_conf_val(const char *name) {
  * @brief Release every entry of the global configuration list
  */
 void delete_config() {
-   config_entry *next;
-
    while (config_list) {
-      next = config_list->next;
-      if (config_list->name) {
-         sge_free(&(config_list->name));
-      }
-      if (config_list->value) {
-         sge_free(&(config_list->value));
-      }
-      sge_free(&config_list);
+      config_entry *next = config_list->next;
+      ocs::uti::destroy(config_list);
       config_list = next;
    }
 }

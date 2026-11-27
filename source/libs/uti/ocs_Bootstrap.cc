@@ -45,6 +45,7 @@
 #include "uti/sge_parse_num_par.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_spool.h"
+#include "uti/sge_stdlib.h"
 #include "uti/sge_string.h"
 #include "uti/sge_uidgid.h"
 #include "uti/sge_unistd.h"
@@ -55,14 +56,14 @@
 static std::once_flag bootstrap_once;
 static std::atomic<bool> bootstrap_initialized{false};
 
-char *ocs::Bootstrap::admin_user = nullptr;
-char *ocs::Bootstrap::default_domain = nullptr;
+std::optional<std::string> *ocs::Bootstrap::admin_user = nullptr;
+std::optional<std::string> *ocs::Bootstrap::default_domain = nullptr;
 bool ocs::Bootstrap::has_default_domain_set = false;
-char *ocs::Bootstrap::spooling_method = nullptr;
-char *ocs::Bootstrap::spooling_lib = nullptr;
-char *ocs::Bootstrap::spooling_params = nullptr;
-char *ocs::Bootstrap::binary_path = nullptr;
-char *ocs::Bootstrap::qmaster_spool_dir = nullptr;
+std::optional<std::string> *ocs::Bootstrap::spooling_method = nullptr;
+std::optional<std::string> *ocs::Bootstrap::spooling_lib = nullptr;
+std::optional<std::string> *ocs::Bootstrap::spooling_params = nullptr;
+std::optional<std::string> *ocs::Bootstrap::binary_path = nullptr;
+std::optional<std::string> *ocs::Bootstrap::qmaster_spool_dir = nullptr;
 std::bitset<ocs::Bootstrap::BS_SEC_MODE_NUM_ENTRIES> ocs::Bootstrap::security_modes = std::bitset<BS_SEC_MODE_NUM_ENTRIES>(false);
 int ocs::Bootstrap::certificate_lifetime = 365 * 24 * 60 * 60;
 int ocs::Bootstrap::certificate_start_offset = -10;
@@ -72,8 +73,37 @@ int ocs::Bootstrap::reader_thread_count = 0;
 bool ocs::Bootstrap::reader_thread_count_auto = false;
 int ocs::Bootstrap::scheduler_thread_count = 0;
 bool ocs::Bootstrap::ignore_fqdn = false;
-char *ocs::Bootstrap::address_from_hostname = nullptr;
+std::optional<std::string> *ocs::Bootstrap::address_from_hostname = nullptr;
 bool ocs::Bootstrap::trust_client_hostname = false;
+
+/**
+ * @brief Set one of the string entries, creating its never destroyed storage on first use
+ *
+ * @param store the entry's storage, made with ocs::uti::create() when it is still nullptr
+ * @param value the new value, nullptr for not set
+ */
+static void
+set_string_entry(std::optional<std::string> *&store, const char *value) {
+   if (store == nullptr) {
+      store = ocs::uti::create<std::optional<std::string>>();
+   }
+   if (value != nullptr) {
+      *store = value;
+   } else {
+      store->reset();
+   }
+}
+
+/**
+ * @brief The value of one of the string entries as a C string
+ *
+ * @param store the entry's storage, nullptr when it was never set
+ * @return the value, or nullptr if it is not set
+ */
+static const char *
+get_string_entry(const std::optional<std::string> *store) {
+   return store != nullptr && store->has_value() ? (*store)->c_str() : nullptr;
+}
 
 const char*
 ocs::Bootstrap::get_name_for_sec_mode(bs_sec_mode_t mode) noexcept {
@@ -86,9 +116,13 @@ ocs::Bootstrap::get_name_for_sec_mode(bs_sec_mode_t mode) noexcept {
    return "unknown";
 }
 
+/** @brief Set the `admin_user` entry
+ *
+ * @param new_admin_user the value, which is copied; nullptr for not set
+ */
 void
 ocs::Bootstrap::set_admin_user(const char *new_admin_user) {
-   admin_user = sge_strdup(admin_user, new_admin_user);
+   set_string_entry(admin_user, new_admin_user);
 }
 
 /** @brief Set the domain appended to a dot-free host name
@@ -105,8 +139,9 @@ ocs::Bootstrap::set_admin_user(const char *new_admin_user) {
  */
 void
 ocs::Bootstrap::set_default_domain(const char *new_default_domain_new) {
-   default_domain = sge_strdup(default_domain, new_default_domain_new);
-   has_default_domain_set = default_domain != nullptr && SGE_STRCASECMP(default_domain, NONE_STR) != 0;
+   set_string_entry(default_domain, new_default_domain_new);
+   const char *domain = get_string_entry(default_domain);
+   has_default_domain_set = domain != nullptr && SGE_STRCASECMP(domain, NONE_STR) != 0;
 }
 
 /** @brief Set whether host names are compared without their domain part
@@ -121,29 +156,49 @@ ocs::Bootstrap::set_ignore_fqdn(const bool new_ignore_fqdn) {
    ignore_fqdn = new_ignore_fqdn;
 }
 
+/** @brief Set the `spooling_method` entry
+ *
+ * @param new_spooling_method the value, which is copied; nullptr for not set
+ */
 void
 ocs::Bootstrap::set_spooling_method(const char *new_spooling_method) {
-   spooling_method = sge_strdup(spooling_method, new_spooling_method);
+   set_string_entry(spooling_method, new_spooling_method);
 }
 
+/** @brief Set the `spooling_params` entry
+ *
+ * @param new_spooling_params the value, which is copied; nullptr for not set
+ */
 void
 ocs::Bootstrap::set_spooling_params(const char *new_spooling_params) {
-   spooling_params = sge_strdup(spooling_params, new_spooling_params);
+   set_string_entry(spooling_params, new_spooling_params);
 }
 
+/** @brief Set the `spooling_lib` entry
+ *
+ * @param new_spooling_lib the value, which is copied; nullptr for not set
+ */
 void
 ocs::Bootstrap::set_spooling_lib(const char *new_spooling_lib) {
-   spooling_lib = sge_strdup(spooling_lib, new_spooling_lib);
+   set_string_entry(spooling_lib, new_spooling_lib);
 }
 
+/** @brief Set the `binary_path` entry
+ *
+ * @param new_binary_path the value, which is copied; nullptr for not set
+ */
 void
 ocs::Bootstrap::set_binary_path(const char *new_binary_path) {
-   binary_path = sge_strdup(binary_path, new_binary_path);
+   set_string_entry(binary_path, new_binary_path);
 }
 
+/** @brief Set the `qmaster_spool_dir` entry
+ *
+ * @param new_qmaster_spool_dir the value, which is copied; nullptr for not set
+ */
 void
 ocs::Bootstrap::set_qmaster_spool_dir(const char *new_qmaster_spool_dir) {
-   qmaster_spool_dir = sge_strdup(qmaster_spool_dir, new_qmaster_spool_dir);
+   set_string_entry(qmaster_spool_dir, new_qmaster_spool_dir);
 }
 
 void
@@ -248,7 +303,7 @@ param_matches(const char *param, const std::string_view key, const char **value)
 }
 
 /**
- * Reads the comma separated communication_params of the bootstrap file.
+ * @brief Read the comma separated communication_params of the bootstrap file
  *
  * Both parameters relax a check the communication library performs on incoming
  * connections, so both default to off and only take effect where an administrator
@@ -257,6 +312,8 @@ param_matches(const char *param, const std::string_view key, const char **value)
  * An unknown parameter is reported rather than passed over quietly. A setting that
  * is accepted without complaint but has no effect is hard to tell apart from one
  * that works, and costs whoever wrote it a long detour.
+ *
+ * @param new_communication_params the entry, nullptr or `"none"` for nothing configured
  */
 void
 ocs::Bootstrap::set_communication_params(const char *new_communication_params) {
@@ -277,7 +334,7 @@ ocs::Bootstrap::set_communication_params(const char *new_communication_params) {
 
       if (param_matches(param, "address_from_hostname=", &str_value)) {
          if (sge_hostname_format_valid(str_value)) {
-            address_from_hostname = sge_strdup(address_from_hostname, str_value);
+            set_string_entry(address_from_hostname, str_value);
          } else {
             WARNING(MSG_UTI_INVALIDADDRESSFORMAT_S, str_value);
          }
@@ -365,19 +422,20 @@ ocs::Bootstrap::get_security_modes() {
    DRETURN(result);
 }
 
+/** @brief Log every entry of the bootstrap file at debug level */
 void
 ocs::Bootstrap::log_all_parameter() {
    DENTER(TOP_LAYER);
 
    DPRINTF("BOOTSTRAP FILE ===\n");
-   DPRINTF("   admin_user                >%s<\n", admin_user);
-   DPRINTF("   default_domain            >%s<\n", default_domain);
+   DPRINTF("   admin_user                >%s<\n", get_string_entry(admin_user));
+   DPRINTF("   default_domain            >%s<\n", get_string_entry(default_domain));
    DPRINTF("   ignore_fqdn               >%s<\n", ignore_fqdn ? "true" : "false");
-   DPRINTF("   spooling_method           >%s<\n", spooling_method);
-   DPRINTF("   spooling_lib              >%s<\n", spooling_lib);
-   DPRINTF("   spooling_params           >%s<\n", spooling_params);
-   DPRINTF("   binary_path               >%s<\n", binary_path);
-   DPRINTF("   qmaster_spool_dir         >%s<\n", qmaster_spool_dir);
+   DPRINTF("   spooling_method           >%s<\n", get_string_entry(spooling_method));
+   DPRINTF("   spooling_lib              >%s<\n", get_string_entry(spooling_lib));
+   DPRINTF("   spooling_params           >%s<\n", get_string_entry(spooling_params));
+   DPRINTF("   binary_path               >%s<\n", get_string_entry(binary_path));
+   DPRINTF("   qmaster_spool_dir         >%s<\n", get_string_entry(qmaster_spool_dir));
    DPRINTF("   security_modes            >%s<\n", get_security_modes().c_str());
    DPRINTF("   certificate_lifetime      >%d<\n", certificate_lifetime);
    DPRINTF("   certificate_start_offset  >%d<\n", certificate_start_offset);
@@ -385,7 +443,7 @@ ocs::Bootstrap::log_all_parameter() {
    DPRINTF("   worker_threads            >%d<\n", worker_thread_count);
    DPRINTF("   reader_threads            >%d<%s\n", reader_thread_count, reader_thread_count_auto ? " (auto)" : "");
    DPRINTF("   scheduler_threads         >%d<\n", scheduler_thread_count);
-   DPRINTF("   address_from_hostname     >%s<\n", address_from_hostname);
+   DPRINTF("   address_from_hostname     >%s<\n", get_string_entry(address_from_hostname));
    DPRINTF("   trust_client_hostname     >%s<\n", trust_client_hostname ? "true" : "false");
 
    DRETURN_VOID;
@@ -501,7 +559,7 @@ ocs::Bootstrap::ensure_initialized() {
 const char *
 ocs::Bootstrap::get_admin_user() {
    ensure_initialized();
-   return admin_user;
+   return get_string_entry(admin_user);
 }
 
 /**
@@ -514,7 +572,7 @@ ocs::Bootstrap::get_admin_user() {
 const char *
 ocs::Bootstrap::get_default_domain() {
    ensure_initialized();
-   return default_domain;
+   return get_string_entry(default_domain);
 }
 
 /**
@@ -546,7 +604,7 @@ ocs::Bootstrap::get_ignore_fqdn() {
 const char *
 ocs::Bootstrap::get_spooling_method() {
    ensure_initialized();
-   return spooling_method;
+   return get_string_entry(spooling_method);
 }
 
 /**
@@ -557,7 +615,7 @@ ocs::Bootstrap::get_spooling_method() {
 const char *
 ocs::Bootstrap::get_spooling_lib() {
    ensure_initialized();
-   return spooling_lib;
+   return get_string_entry(spooling_lib);
 }
 
 /**
@@ -568,7 +626,7 @@ ocs::Bootstrap::get_spooling_lib() {
 const char *
 ocs::Bootstrap::get_spooling_params() {
    ensure_initialized();
-   return spooling_params;
+   return get_string_entry(spooling_params);
 }
 
 /**
@@ -579,7 +637,7 @@ ocs::Bootstrap::get_spooling_params() {
 const char *
 ocs::Bootstrap::get_binary_path() {
    ensure_initialized();
-   return binary_path;
+   return get_string_entry(binary_path);
 }
 
 /**
@@ -590,7 +648,7 @@ ocs::Bootstrap::get_binary_path() {
 const char *
 ocs::Bootstrap::get_qmaster_spool_dir() {
    ensure_initialized();
-   return qmaster_spool_dir;
+   return get_string_entry(qmaster_spool_dir);
 }
 
 /**
@@ -732,7 +790,7 @@ ocs::Bootstrap::get_scheduler_thread_count() {
 const char *
 ocs::Bootstrap::get_address_from_hostname() {
    ensure_initialized();
-   return address_from_hostname;
+   return get_string_entry(address_from_hostname);
 }
 
 /**

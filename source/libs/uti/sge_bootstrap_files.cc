@@ -47,6 +47,8 @@
  */
 
 #include <cstring>
+#include <optional>
+#include <string>
 
 #include <pthread.h>
 
@@ -73,21 +75,21 @@
  * @brief Thread local storage (level 1) holding the cell's file paths
  *
  * Level 1 because its initialisation depends on level 0 data such as logging.
- * Every member is owned by the struct and released by
- * `bootstrap_files_tl1_destroy()`; all of them are nullptr when
+ * Every member is owned by the struct, which `bootstrap_files_tl1_destroy()`
+ * destroys; all of them are std::nullopt (the getters return nullptr) when
  * `bootstrap_init_paths()` failed.
  *
  * @todo data can partially be shared between threads. cleanup required.
  */
 typedef struct {
    // files and paths
-   char *cell_root;          ///< `$SGE_ROOT/$SGE_CELL`
-   char *bootstrap_file;     ///< `<cell_root>/common/`#BOOTSTRAP_FILE
-   char *act_qmaster_file;   ///< `<cell_root>/common/act_qmaster`, naming the active qmaster host
-   char *acct_file;          ///< `<cell_root>/common/`#ACCT_FILE
-   char *reporting_file;     ///< `<cell_root>/common/`#REPORTING_FILE
-   char *shadow_masters_file;///< `<cell_root>/common/`#SHADOW_MASTERS_FILE
-   char *alias_file;         ///< `<cell_root>/common/host_aliases`, the host alias file
+   std::optional<std::string> cell_root;           ///< `$SGE_ROOT/$SGE_CELL`
+   std::optional<std::string> bootstrap_file;      ///< `<cell_root>/common/`#BOOTSTRAP_FILE
+   std::optional<std::string> act_qmaster_file;    ///< `<cell_root>/common/act_qmaster`, naming the active qmaster host
+   std::optional<std::string> acct_file;           ///< `<cell_root>/common/`#ACCT_FILE
+   std::optional<std::string> reporting_file;      ///< `<cell_root>/common/`#REPORTING_FILE
+   std::optional<std::string> shadow_masters_file; ///< `<cell_root>/common/`#SHADOW_MASTERS_FILE
+   std::optional<std::string> alias_file;          ///< `<cell_root>/common/host_aliases`, the host alias file
 } sge_bootstrap_files_tl1_t;
 
 static pthread_once_t bootstrap_files_once = PTHREAD_ONCE_INIT;
@@ -103,53 +105,34 @@ bootstrap_files_tl1_init(sge_bootstrap_files_tl1_t *tl);
 static void
 bootstrap_files_tl1_destroy(void *tl);
 
-static void
-set_cell_root(sge_bootstrap_files_tl1_t *tl, const char *cell_root) {
-   tl->cell_root = sge_strdup(tl->cell_root, cell_root);
+/**
+ * @brief The value of an optional path as a C string
+ *
+ * @param path the path
+ * @return the path, or nullptr if it is not set
+ */
+static const char *
+opt_c_str(const std::optional<std::string> &path) {
+   return path ? path->c_str() : nullptr;
 }
 
-static void
-set_bootstrap_file(sge_bootstrap_files_tl1_t *tl, const char *bootstrap_file) {
-   tl->bootstrap_file = sge_strdup(tl->bootstrap_file, bootstrap_file);
-}
-
-static void
-set_act_qmaster_file(sge_bootstrap_files_tl1_t *tl, const char *act_qmaster_file) {
-   tl->act_qmaster_file = sge_strdup(tl->act_qmaster_file, act_qmaster_file);
-}
-
-static void
-set_acct_file(sge_bootstrap_files_tl1_t *tl, const char *acct_file) {
-   tl->acct_file = sge_strdup(tl->acct_file, acct_file);
-}
-
-static void
-set_reporting_file(sge_bootstrap_files_tl1_t *tl, const char *reporting_file) {
-   tl->reporting_file = sge_strdup(tl->reporting_file, reporting_file);
-}
-
-static void
-set_shadow_masters_file(sge_bootstrap_files_tl1_t *tl, const char *shadow_masters_file) {
-   tl->shadow_masters_file = sge_strdup(tl->shadow_masters_file, shadow_masters_file);
-}
-
-static void
-set_alias_file(sge_bootstrap_files_tl1_t *tl, const char *alias_file) {
-   tl->alias_file = sge_strdup(tl->alias_file, alias_file);
-}
-
+/**
+ * @brief Log the file paths of the thread local data at debug level
+ *
+ * @param tl the thread local data
+ */
 static void
 bootstrap_files_log_tl1_parameter(sge_bootstrap_files_tl1_t *tl) {
    DENTER(TOP_LAYER);
 
    DPRINTF("FILES AND PATHS ===\n");
-   DPRINTF("   cell_root                 >%s<\n", tl->cell_root);
-   DPRINTF("   bootstrap_file            >%s<\n", tl->bootstrap_file);
-   DPRINTF("   act_qmaster_file          >%s<\n", tl->act_qmaster_file);
-   DPRINTF("   acct_file                 >%s<\n", tl->acct_file);
-   DPRINTF("   reporting_file            >%s<\n", tl->reporting_file);
-   DPRINTF("   shadow_masters_file       >%s<\n", tl->shadow_masters_file);
-   DPRINTF("   alias_file                >%s<\n", tl->alias_file);
+   DPRINTF("   cell_root                 >%s<\n", opt_c_str(tl->cell_root));
+   DPRINTF("   bootstrap_file            >%s<\n", opt_c_str(tl->bootstrap_file));
+   DPRINTF("   act_qmaster_file          >%s<\n", opt_c_str(tl->act_qmaster_file));
+   DPRINTF("   acct_file                 >%s<\n", opt_c_str(tl->acct_file));
+   DPRINTF("   reporting_file            >%s<\n", opt_c_str(tl->reporting_file));
+   DPRINTF("   shadow_masters_file       >%s<\n", opt_c_str(tl->shadow_masters_file));
+   DPRINTF("   alias_file                >%s<\n", opt_c_str(tl->alias_file));
 
    DRETURN_VOID;
 }
@@ -181,6 +164,14 @@ bootstrap_files_thread_local_once_init() {
    pthread_key_create(&sge_bootstrap_files_tl1_key, bootstrap_files_tl1_destroy);
 }
 
+/**
+ * @brief Set the file paths of the cell from `$SGE_ROOT` and `$SGE_CELL`
+ *
+ * Logs a `CRITICAL` message and leaves the remaining paths unset if `$SGE_ROOT`, the cell directory or its
+ * `common` directory is missing.
+ *
+ * @param tl the thread local data to fill
+ */
 static void
 bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    DENTER(TOP_LAYER);
@@ -210,8 +201,8 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
       DRETURN_VOID;
    }
 
-   set_cell_root(tl, sge_dstring_get_string(&bw));
-   const char *cell_root = tl->cell_root;
+   tl->cell_root = sge_dstring_get_string(&bw);
+   const char *cell_root = tl->cell_root->c_str();
 
    /* common dir */
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR);
@@ -221,22 +212,22 @@ bootstrap_init_paths(sge_bootstrap_files_tl1_t *tl) {
    }
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, BOOTSTRAP_FILE);
-   set_bootstrap_file(tl, sge_dstring_get_string(&bw));
+   tl->bootstrap_file = sge_dstring_get_string(&bw);
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ACT_QMASTER_FILE);
-   set_act_qmaster_file(tl, sge_dstring_get_string(&bw));
+   tl->act_qmaster_file = sge_dstring_get_string(&bw);
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ACCT_FILE);
-   set_acct_file(tl, sge_dstring_get_string(&bw));
+   tl->acct_file = sge_dstring_get_string(&bw);
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, REPORTING_FILE);
-   set_reporting_file(tl, sge_dstring_get_string(&bw));
+   tl->reporting_file = sge_dstring_get_string(&bw);
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, SHADOW_MASTERS_FILE);
-   set_shadow_masters_file(tl, sge_dstring_get_string(&bw));
+   tl->shadow_masters_file = sge_dstring_get_string(&bw);
 
    sge_dstring_sprintf(&bw, "%s" PATH_SEPARATOR "%s" PATH_SEPARATOR "%s", cell_root, COMMON_DIR, ALIAS_FILE);
-   set_alias_file(tl, sge_dstring_get_string(&bw));
+   tl->alias_file = sge_dstring_get_string(&bw);
 
    DRETURN_VOID;
 }
@@ -266,8 +257,8 @@ bootstrap_files_tl1_init(sge_bootstrap_files_tl1_t *tl) {
 /**
  * @brief Release the thread local file paths of an exiting thread
  *
- * Registered with `pthread_key_create()`. The paths are sge_strdup() memory, the structure was made with
- * ocs::uti::create() by GET_SPECIFIC.
+ * Registered with `pthread_key_create()`. The structure was made with ocs::uti::create() by GET_SPECIFIC
+ * and owns its paths.
  *
  * @param tl the thread's sge_bootstrap_files_tl1_t
  */
@@ -275,16 +266,6 @@ static void
 bootstrap_files_tl1_destroy(void *tl) {
    auto *_tl = static_cast<sge_bootstrap_files_tl1_t *>(tl);
 
-   // files and paths
-   sge_free(&(_tl->cell_root));
-   sge_free(&(_tl->bootstrap_file));
-   sge_free(&(_tl->act_qmaster_file));
-   sge_free(&(_tl->acct_file));
-   sge_free(&(_tl->reporting_file));
-   sge_free(&(_tl->shadow_masters_file));
-   sge_free(&(_tl->alias_file));
-
-   // wrapping structure
    ocs::uti::destroy(_tl);
 }
 
@@ -297,7 +278,7 @@ bootstrap_files_tl1_destroy(void *tl) {
 const char *
 bootstrap_get_cell_root() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->cell_root;
+   return opt_c_str(tl->cell_root);
 }
 
 /**
@@ -309,7 +290,7 @@ bootstrap_get_cell_root() {
 const char *
 bootstrap_get_bootstrap_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->bootstrap_file;
+   return opt_c_str(tl->bootstrap_file);
 }
 
 /**
@@ -321,7 +302,7 @@ bootstrap_get_bootstrap_file() {
 const char *
 bootstrap_get_act_qmaster_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->act_qmaster_file;
+   return opt_c_str(tl->act_qmaster_file);
 }
 
 /**
@@ -333,7 +314,7 @@ bootstrap_get_act_qmaster_file() {
 const char *
 bootstrap_get_acct_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->acct_file;
+   return opt_c_str(tl->acct_file);
 }
 
 /**
@@ -345,7 +326,7 @@ bootstrap_get_acct_file() {
 const char *
 bootstrap_get_reporting_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->reporting_file;
+   return opt_c_str(tl->reporting_file);
 }
 
 /**
@@ -357,7 +338,7 @@ bootstrap_get_reporting_file() {
 const char *
 bootstrap_get_shadow_masters_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->shadow_masters_file;
+   return opt_c_str(tl->shadow_masters_file);
 }
 
 /**
@@ -372,5 +353,5 @@ bootstrap_get_shadow_masters_file() {
 const char *
 bootstrap_get_alias_file() {
    GET_SPECIFIC(sge_bootstrap_files_tl1_t, tl, bootstrap_files_tl1_init, sge_bootstrap_files_tl1_key);
-   return tl->alias_file;
+   return opt_c_str(tl->alias_file);
 }

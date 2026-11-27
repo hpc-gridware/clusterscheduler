@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -83,12 +84,13 @@ typedef struct {
    textdomain_func_type textdomain_func;
 } language_functions_struct;
 
+/** @brief One cached message of the message id hash table; never released, the table lives as long as the process */
 typedef struct {
-   int id;                    /* message identification number */
-   int category;              /* message category:             0 = common */
-   uint32_t counter;          /* number of calls */
-   const char *message;       /* message string */
-   const char *local_message;  /* local translated message */
+   int id{0};                 ///< message identification number
+   int category{0};           ///< message category: 0 = common
+   uint32_t counter{0};       ///< number of calls
+   std::string message;       ///< message string
+   std::string local_message; ///< local translated message, with the id prefix where applicable
 } sge_error_message_t;
 
 static pthread_once_t message_id_once = PTHREAD_ONCE_INIT;
@@ -118,23 +120,25 @@ static int sge_get_message_id_output_implementation();
  * sge_init_language_func() must be called first to install the
  * correct function pointers for gettext() setlocale() etc. etc.
  *
- * @param package package name like "clusterscheduler" of binary package *.mo file. (if package is nullptr sge_init_language tries to get the package name from the invironment variable "GRIDPACKAGE").
- * @param localeDir path to the localisazion directory (if localeDir is nullptr sge_init_language tries to get the localization directory path from the invironment variable "GRIDLOCALEDIR").
+ * @param package package name like "clusterscheduler" of binary package *.mo file; if nullptr,
+ *                sge_init_language tries to get the package name from the environment variable "GRIDPACKAGE"
+ * @param localeDir path to the localization directory; if nullptr, sge_init_language tries to get the
+ *                  localization directory path from the environment variable "GRIDLOCALEDIR"
  *
- * @return true for seccess, false on error.
+ * @return true for success, false on error.
  *
  * @note MT-NOTE: sge_init_languagefunc() is guarded by language_mutex
  *
- * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__, #sge_get_message_id_output, #sge_set_message_id_output
+ * @see #sge_init_language, #sge_init_language_func, #sge_gettext, #sge_gettext_, #sge_gettext__,
+ *      #sge_get_message_id_output, #sge_set_message_id_output
  */
 int sge_init_languagefunc(char *package, char *localeDir) {
    DENTER_(TOP_LAYER);
 
-   char *packName = nullptr;
-   char *locDir = nullptr;
-   char *language = nullptr;
-   char *language_var = nullptr;
-   char *pathName = nullptr;
+   std::string packName;
+   std::string locDir;
+   std::string language;
+   std::string pathName;
    char *sge_enable_msg_id_string = nullptr;
    int success = false;
    int back;
@@ -147,38 +151,38 @@ int sge_init_languagefunc(char *package, char *localeDir) {
 
    while (stop <= 2) {
 
-      /* free memory for evt. second run */
-      sge_free(&packName);
-      sge_free(&locDir);
-      sge_free(&language);
-      sge_free(&language_var);
-      sge_free(&pathName);
+      /* reset for evt. second run */
+      bool have_pack_name = false;
+      bool have_loc_dir = false;
+      language.clear();
 
       /* try to get the package name */
       if (package != nullptr) {
-         packName = strdup(package);
+         packName = package;
+         have_pack_name = true;
       } else if (getenv(PACKAGE) != nullptr) {
-         packName = strdup(getenv(PACKAGE));
+         packName = getenv(PACKAGE);
+         have_pack_name = true;
          DPRINTF_("try to get language package name from environment " SFQ "\n", PACKAGE);
       } else {
          DPRINTF_("could not get environment variable " SFQ "\n", PACKAGE);
       }
 
       /* no package name given, using default one */
-      if (packName == nullptr) {
-         packName = sge_malloc(sizeof(char) * (strlen(SGE_DEFAULT_PACKAGE) + strlen(sge_get_arch()) + 2));
-         SGE_ASSERT(packName != nullptr);
-         sprintf(packName, "%s/%s", sge_get_arch(), SGE_DEFAULT_PACKAGE);
+      if (!have_pack_name) {
+         packName = std::string(sge_get_arch()) + "/" + SGE_DEFAULT_PACKAGE;
       }
 
       /* try to get the localization directory */
       if (localeDir != nullptr) {
-         locDir = strdup(localeDir);
+         locDir = localeDir;
+         have_loc_dir = true;
       } else if (getenv(LOCALEDIR) != nullptr) {
          if (stop != 0) {
             DPRINTF_("ignoring environment " SFQ "\n", LOCALEDIR );
          } else {
-            locDir = strdup(getenv(LOCALEDIR)); /* only the first time */
+            locDir = getenv(LOCALEDIR); /* only the first time */
+            have_loc_dir = true;
             stop++;
             DPRINTF_("try to get language package directory path from environment " SFQ "\n", LOCALEDIR);
          }
@@ -187,37 +191,23 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       }
 
       /* no directory given, using default one */
-      if (locDir == nullptr) {
+      if (!have_loc_dir) {
          const char *sge_root = sge_get_root_dir(0, nullptr, 0, 0);
-         char *root = nullptr;
-
-         if (sge_root != nullptr) {
-            root = strdup(sge_root);
-         }
-
-         if (root == nullptr) {
-            locDir = strdup("/usr/lib/locale");
+         if (sge_root == nullptr) {
+            locDir = "/usr/lib/locale";
          } else {
-            locDir = sge_malloc(sizeof(char) * (strlen(root) + strlen(SGE_DEFAULT_LOCALEDIR) + 100));
-            SGE_ASSERT(locDir != nullptr);
-            sprintf(locDir, "%s/%s", root, SGE_DEFAULT_LOCALEDIR);
+            locDir = std::string(sge_root) + "/" + SGE_DEFAULT_LOCALEDIR;
          }
-         sge_free(&root);
       }
 
       /* try to get a language stylename (only for output of package path) */
-
-      if (getenv("LANGUAGE") != nullptr) {
-         language_var = strdup(getenv("LANGUAGE"));
-      } else {
-         if (getenv("LANG") != nullptr) {
-            language_var = strdup(getenv("LANG"));
-         }
+      const char *language_var = getenv("LANGUAGE");
+      if (language_var == nullptr) {
+         language_var = getenv("LANG");
       }
-
       if (language_var == nullptr) {
          DPRINTF_("environment LANGUAGE or LANG is not set; no language selected - using defaults\n");
-         language_var = strdup("C");
+         language_var = "C";
       }
 
       /* get correct language value */
@@ -229,35 +219,27 @@ int sge_init_languagefunc(char *package, char *localeDir) {
             DPRINTF_("setlocale() returns \"%s\"\n", help1);
             slash_pos = strstr(help1, "_");
             if (slash_pos != nullptr) {
-               char *tmp_lang = nullptr;
                DPRINTF_("cutting of language string after \"_\":\n");
-               tmp_lang = strdup(help1);
-               slash_pos = strstr(tmp_lang, "_");
-               *slash_pos = 0;  /* cut off "_" */
-               language = strdup(tmp_lang);
-
-               sge_free(&tmp_lang);
+               language.assign(help1, slash_pos - help1);  /* cut off "_" */
             } else {
-               language = strdup(help1);
+               language = help1;
             }
          } else {
             DPRINTF_("setlocale() returns nullptr");
-            language = strdup(language_var);
+            language = language_var;
          }
       }
 
-      /* packName, locDir and language strings are now surely not nullptr,
-         so we can now try to setup the choosen language package (*.mo - file) */
-      pathName = sge_malloc(sizeof(char) * (strlen(locDir) + strlen(language) + strlen(packName) + 100));
-      SGE_ASSERT(pathName != nullptr);
-      sprintf(pathName, "%s/%s/LC_MESSAGES/%s.mo", locDir, language, packName);
-      DPRINTF_("locale directory: >%s<\n", locDir);
-      DPRINTF_("package file:     >%s.mo<\n", packName);
-      DPRINTF_("language (LANG):  >%s<\n", language);
-      DPRINTF_("loading message file: %s\n", pathName);
+      /* try to setup the choosen language package (*.mo - file); without a setlocale function the language
+         stays empty (that called strlen(nullptr) before) */
+      pathName = locDir + "/" + language + "/LC_MESSAGES/" + packName + ".mo";
+      DPRINTF_("locale directory: >%s<\n", locDir.c_str());
+      DPRINTF_("package file:     >%s.mo<\n", packName.c_str());
+      DPRINTF_("language (LANG):  >%s<\n", language.c_str());
+      DPRINTF_("loading message file: %s\n", pathName.c_str());
 
       /* is the package file allright */
-      back = open(pathName, O_RDONLY);
+      back = open(pathName.c_str(), O_RDONLY);
       if (back >= 0) {
          DPRINTF_("found message file - ok\n");
          success = true;
@@ -288,13 +270,13 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       } else {
          DPRINTF_("setlocale() returns nullptr\n");
       }
-      help1 = sge_language_functions.bindtextdomain_func(packName, locDir);
+      help1 = sge_language_functions.bindtextdomain_func(packName.c_str(), locDir.c_str());
       if (help1 != nullptr) {
          DPRINTF_("bindtextdomain() returns \"%s\"\n", help1);
       } else {
          DPRINTF_("bindtextdomain() returns nullptr\n");
       }
-      help1 = sge_language_functions.textdomain_func(packName);
+      help1 = sge_language_functions.textdomain_func(packName.c_str());
       if (help1 != nullptr) {
          DPRINTF_("textdomain() returns \"%s\"\n", help1);
       } else {
@@ -304,12 +286,6 @@ int sge_init_languagefunc(char *package, char *localeDir) {
       DPRINTF_("sge_init_language() called without valid sge_language_functions pointer!\n");
       success = false;
    }
-
-   sge_free(&packName);
-   sge_free(&locDir);
-   sge_free(&language);
-   sge_free(&language_var);
-   sge_free(&pathName);
 
    if (success) {
       sge_enable_msg_id = 1;
@@ -557,52 +533,35 @@ const char *sge_gettext_(int msg_id, const char *msg_str) {
                                                     hash_compare_long);
       }
       if (sge_htable_lookup(sge_message_hash_table, &key, (const void **) &message_p.p) == False) {
-         /* add element */
-         sge_error_message_t *new_mp = nullptr;
-         char *org_message = nullptr;
-         char *trans_message = nullptr;
-         const char *gettext_return_string = nullptr;
+         /* add element; the entry stays in the table as long as the process lives */
+         const char *gettext_return_string = sge_gettext__((char *) msg_str);
 
-
-         gettext_return_string = sge_gettext__((char *) msg_str);
-
-         org_message = sge_malloc(strlen(msg_str) + 1);
-         SGE_ASSERT(org_message != nullptr);
-         /* Size for the worst-case prefix "[-2147483648] " (14 bytes), not just
-            the largest positive id "[99999] " (8): the msg_id <= 99999 guard
-            below also matches negative ids, which would otherwise overflow the
-            buffer (CS-2361, CWE-787). */
-         const size_t trans_size = strlen(gettext_return_string) + 1 + 16;
-         trans_message = sge_malloc(trans_size);
-         SGE_ASSERT(trans_message != nullptr);
-         new_mp = ocs::uti::c_alloc<sge_error_message_t>();
+         auto *new_mp = ocs::uti::create<sge_error_message_t>();
          DPRINTF_("add new hash table entry for message id: %d\n", msg_id);
          new_mp->id = msg_id;
          new_mp->category = 0;
          new_mp->counter = 1;
-         strcpy(org_message, msg_str);
-         new_mp->message = org_message;
+         new_mp->message = msg_str;
          if (msg_id <= 99999) {
-            snprintf(trans_message, trans_size, "[%d] %s", msg_id, gettext_return_string);
+            new_mp->local_message = "[" + std::to_string(msg_id) + "] " + gettext_return_string;
          } else {
-            snprintf(trans_message, trans_size, "%s", gettext_return_string);
+            new_mp->local_message = gettext_return_string;
          }
-         new_mp->local_message = trans_message;
 
          sge_htable_store(sge_message_hash_table, &key, new_mp);
-         DRETURN_(new_mp->local_message);
+         DRETURN_(new_mp->local_message.c_str());
       } else {
          /* check element */
          DPRINTF_("using old hash entry for message id: %d\n", msg_id);
-         if (strcmp(msg_str, message_p.l->message) != 0) {
+         if (message_p.l->message != msg_str) {
             DPRINTF_("duplicate message id error: returning gettext() message");
             DPRINTF_("msg in : \"%s\"\n", msg_str);
-            DPRINTF_("msg out: \"%s\"\n", message_p.l->message);
+            DPRINTF_("msg out: \"%s\"\n", message_p.l->message.c_str());
             DRETURN_(sge_gettext__((char *) msg_str));
          } else {
             message_p.l->counter = (message_p.l->counter) + 1;
             DPRINTF_("message count: " sge_u32 "\n", message_p.l->counter);
-            DRETURN_(message_p.l->local_message);
+            DRETURN_(message_p.l->local_message.c_str());
          }
       }
    }
@@ -645,19 +604,28 @@ const char *sge_gettext__(const char *x) {
    DRETURN_(z);
 }
 
+/**
+ * @brief Release the message id flag of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the flag was made with ocs::uti::create().
+ *
+ * @param theState the thread's int flag
+ */
 static void message_id_destroy(void *theState) {
-   sge_free(&theState);
+   auto *flag = static_cast<int *>(theState);
+   ocs::uti::destroy(flag);
 }
 
+/**
+ * @brief Create the thread specific key of the message id flag and the flag of the calling thread
+ *
+ * Runs once per process through `pthread_once()`. Aborts if the flag cannot be stored.
+ */
 static void message_id_once_init() {
-   int *buf;
-   int res;
    pthread_key_create(&message_id_key, &message_id_destroy);
 
-   buf = (int *) sge_malloc(sizeof(int));
-   *buf = 0;
-
-   res = pthread_setspecific(message_id_key, (const void *) buf);
+   int *buf = ocs::uti::create<int>();
+   int res = pthread_setspecific(message_id_key, (const void *) buf);
 
    if (0 != res) {
       fprintf(stderr, "pthread_set_specific(%s) failed: %s\n", "log_buffer_getspecific", strerror(res));
