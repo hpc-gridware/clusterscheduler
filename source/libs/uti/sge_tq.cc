@@ -118,7 +118,7 @@ sge_tq_task_create(sge_tq_task_t **task, sge_tq_type_t type, void *data) {
    DENTER(TQ_LAYER);
 
    if (task != nullptr && type != SGE_TQ_UNKNOWN && data != nullptr) {
-      sge_tq_task_t *new_task = ocs::uti::c_alloc<sge_tq_task_t>();
+      auto *new_task = ocs::uti::create<sge_tq_task_t>();
       new_task->type = type;
       new_task->data = data;
 
@@ -144,8 +144,8 @@ sge_tq_task_destroy(sge_tq_task_t **task) {
 
    bool ret = true;
 
-   if (task != nullptr && *task != nullptr) {
-      sge_free(task);
+   if (task != nullptr) {
+      ocs::uti::destroy(*task);
    }
    DRETURN(ret);
 }
@@ -168,7 +168,7 @@ sge_tq_create(sge_tq_queue_t **queue) {
    DENTER(TQ_LAYER);
 
    if (queue != nullptr) {
-      sge_tq_queue_t *new_queue = ocs::uti::c_alloc<sge_tq_queue_t>();
+      auto *new_queue = ocs::uti::create<sge_tq_queue_t>();
       sge_sl_create(&new_queue->list);
       ocs::uti::condition_initialize(&new_queue->cond);
       new_queue->waiting = 0;
@@ -184,8 +184,8 @@ sge_tq_create(sge_tq_queue_t **queue) {
  * This function destroys a queue.
  * If data stored in the task queue has been dynamically allocated,
  * a destroy func shall be given, which destroy the data and then calls
- * sge_tq_destroy_task() to destroy the task data structure itself.
- * If nullptr is given as destroy func (default), then sge_tq_destroy_task()
+ * sge_tq_task_destroy() to destroy the task data structure itself.
+ * If nullptr is given as destroy func (default), then sge_tq_task_destroy()
  * is called as destroy func.
  *
  * @param queue task queue
@@ -205,7 +205,7 @@ sge_tq_destroy(sge_tq_queue_t **queue, sge_sl_destroy_f destroy_func) {
    if (queue != nullptr && *queue != nullptr) {
       pthread_cond_destroy(&(*queue)->cond);
       sge_sl_destroy(&(*queue)->list, destroy_func);
-      sge_free(queue);
+      ocs::uti::destroy(*queue);
    }
    DRETURN_VOID;
 }

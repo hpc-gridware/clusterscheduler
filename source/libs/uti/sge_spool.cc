@@ -42,6 +42,7 @@
 #include <cctype>
 #include <cerrno>
 #include <fcntl.h>
+#include <vector>
 
 #include "uti/msg_utilib.h"
 #include "uti/sge_log.h"
@@ -446,7 +447,6 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
    FILE *fp;
    char buf[4096], *cp;
    int i;
-   bool *is_found = nullptr;
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == nullptr) {
@@ -457,9 +457,7 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
       }
       DRETURN(n);
    }
-   is_found = reinterpret_cast<bool *>(sge_malloc(sizeof(bool) * n));
-   SGE_ASSERT(is_found != nullptr);
-   memset(is_found, false, n * sizeof(bool));
+   std::vector<bool> is_found(n, false);
 
    while (fgets(buf, sizeof(buf), fp)) {
       char *pos = nullptr;
@@ -542,7 +540,6 @@ int sge_get_confval_array(const char *fname, int n, int nmissing, bootstrap_entr
       }
    }
 
-   sge_free(&is_found);
    FCLOSE(fp);
    DRETURN(nmissing);
    FCLOSE_ERROR:
@@ -689,7 +686,6 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
    FILE *fp;
    char buf[SGE_PATH_MAX], *cp;
    int i;
-   bool *is_found = nullptr;
 
    if (!(fp = fopen(fname, "r"))) {
       if (error_dstring == nullptr) {
@@ -700,9 +696,7 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
       }
       DRETURN(n);
    }
-   is_found = (bool *) sge_malloc(sizeof(bool) * n);
-   SGE_ASSERT(is_found != nullptr);
-   memset(is_found, false, n * sizeof(bool));
+   std::vector<bool> is_found(n, false);
 
    while (fgets(buf, sizeof(buf), fp)) {
       char *pos = nullptr;
@@ -754,7 +748,6 @@ int sge_get_management_entry(const char *fname, int n, int nmissing, bootstrap_e
       }
    }
 
-   sge_free(&is_found);
    FCLOSE(fp);
    DRETURN(nmissing);
    FCLOSE_ERROR:

@@ -67,10 +67,17 @@ typedef struct _sge_err_object_t sge_err_object_t;
 static pthread_once_t sge_err_once = PTHREAD_ONCE_INIT;
 static pthread_key_t sge_err_key;
 
-/* destructor function that will be called when a thread ends */
+/**
+ * @brief Destroy the error slot of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the slot was made with ocs::uti::create() in sge_err_get_object().
+ *
+ * @param state the thread's sge_err_object_t
+ */
 static void
 sge_err_destroy(void *state) {
-   sge_free(&state);
+   auto *object = static_cast<sge_err_object_t *>(state);
+   ocs::uti::destroy(object);
 }
 
 /* init function that initializes the key that holds the pointer
@@ -87,7 +94,14 @@ sge_err_object_init(sge_err_object_t *object) {
    object->message[0] = '\0';
 }
 
-/* function that returns thread local storrage for this module */
+/**
+ * @brief Get the error slot of the calling thread, creating it on first use
+ *
+ * Aborts the process if the slot cannot be stored in thread-local storage.
+ *
+ * @param[out] object receives the thread's error slot
+ * @return true
+ */
 static bool
 sge_err_get_object(sge_err_object_t **object) {
    DENTER(ERR_LAYER);
@@ -96,7 +110,7 @@ sge_err_get_object(sge_err_object_t **object) {
 
    *object = (sge_err_object_t *)pthread_getspecific(sge_err_key);
    if (*object == nullptr) {
-      sge_err_object_t *new_object = ocs::uti::c_alloc<sge_err_object_t>();
+      auto *new_object = ocs::uti::create<sge_err_object_t>();
       int pthread_ret = pthread_setspecific(sge_err_key, (void *) new_object);
 
       if (pthread_ret == 0) {
