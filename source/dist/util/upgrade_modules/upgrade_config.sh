@@ -97,6 +97,192 @@ LogIt()
    esac
 }
 
+## @brief The jsv_threshold value of qmaster_params as the milliseconds the qmaster used
+#
+# Up to 9.1 the qmaster read jsv_threshold with its general number parser, which also took
+# a time h:m:s (seconds summed up), a unit suffix k, K, m, M, g, G, an octal or hexadecimal
+# number, true (1), false (0) and INFINITY. A value it could not read was 0, a plain number
+# above 2147483647 was cut down to it, and a negative number as well as any other result
+# beyond 2147483647 turned into a negative threshold, which the qmaster replaced by the
+# default 5000. Since 9.2 the threshold
+# of jsv_params is a plain decimal number of milliseconds (CS-1701), so the value that took
+# effect is written as such. A notation this function does not know is reported and written
+# as 0, which is what the parser made of a value it could not read.
+#
+# @param $1 the value after "jsv_threshold=", may be empty
+# @return 0; prints the milliseconds
+JsvThresholdToMilliseconds() {
+   jtm_value="$1"
+   jtm_ms=""
+
+   case "$jtm_value" in
+      '')
+         jtm_ms=0
+         ;;
+      [Tt][Rr][Uu][Ee])
+         jtm_ms=1
+         ;;
+      [Ff][Aa][Ll][Ss][Ee])
+         jtm_ms=0
+         ;;
+      [Ii][Nn][Ff][Ii][Nn][Ii][Tt][Yy])
+         jtm_ms=5000
+         ;;
+      -*)
+         # strtod() read the negative number, the conversion to unsigned wrapped it around,
+         # and the qmaster saw a negative threshold, which it replaced by 5000
+         jtm_abs="${jtm_value#-}"
+         case "$jtm_abs" in
+            *[!0-9.kKmMgG]*|*[kKmMgG]*[0-9.kKmMgG]*|.|'') ;;
+            *)
+               # without a unit the fraction was cut off first, so -0.5 was 0
+               case "$jtm_abs" in
+                  *[kKmMgG]) jtm_int="$jtm_abs" ;;
+                  *) jtm_int="${jtm_abs%%.*}" ;;
+               esac
+               case "$jtm_int" in
+                  *[1-9]*)
+                     LogIt "I" "jsv_threshold=$jtm_value was negative, the qmaster used the default 5000"
+                     jtm_ms=5000
+                     ;;
+                  *) jtm_ms=0 ;;
+               esac
+               ;;
+         esac
+         ;;
+      *:*:*)
+         jtm_h="${jtm_value%%:*}"
+         jtm_rest="${jtm_value#*:}"
+         jtm_m="${jtm_rest%%:*}"
+         jtm_s="${jtm_rest#*:}"
+         case "$jtm_h$jtm_m$jtm_s" in
+            ''|*[!0-9]*) ;;
+            *)
+               [ -z "$jtm_h" ] && jtm_h=0
+               [ -z "$jtm_m" ] && jtm_m=0
+               [ -z "$jtm_s" ] && jtm_s=0
+               jtm_ms=$(( (jtm_h * 3600) + (jtm_m * 60) + jtm_s ))
+               ;;
+         esac
+         ;;
+      0[xX]*|0)
+         case "${jtm_value#0[xX]}" in
+            ''|*[!0-9a-fA-F]*) [ "$jtm_value" = 0 ] && jtm_ms=0 ;;
+            *) jtm_ms=$(printf '%d' "$jtm_value") ;;
+         esac
+         ;;
+      0*)
+         case "$jtm_value" in
+            *[!0-7]*) ;;
+            *) jtm_ms=$(printf '%d' "$jtm_value") ;;
+         esac
+         ;;
+      *[!0-9kKmMgG]*|*[kKmMgG]*[0-9kKmMgG]*)
+         ;;
+      *)
+         jtm_digits="${jtm_value%[kKmMgG]}"
+         case "$jtm_value" in
+            *k) jtm_mult=1000 ;;
+            *K) jtm_mult=1024 ;;
+            *m) jtm_mult=1000000 ;;
+            *M) jtm_mult=1048576 ;;
+            *g) jtm_mult=1000000000 ;;
+            *G) jtm_mult=1073741824 ;;
+            *) jtm_mult=1 ;;
+         esac
+         # a plain number above 2147483647 was cut down to it, with a unit it overflowed
+         if [ ${#jtm_digits} -gt 10 ]; then
+            jtm_ms=2147483647
+         else
+            jtm_ms=$(( jtm_digits * jtm_mult ))
+            [ "$jtm_mult" -eq 1 ] && [ "$jtm_ms" -gt 2147483647 ] && jtm_ms=2147483647
+         fi
+         ;;
+   esac
+
+   if [ -z "$jtm_ms" ]; then
+      LogIt "W" "jsv_threshold=$jtm_value cannot be converted to milliseconds, writing threshold=0"
+      jtm_ms=0
+   elif [ "$jtm_ms" -gt 2147483647 ]; then
+      jtm_ms=5000
+   fi
+   echo "$jtm_ms"
+   return 0
+}
+
+## @brief Move the JSV settings of qmaster_params into jsv_params (CS-2568)
+#
+# Up to 9.1 the JSV timeout and threshold were the tokens jsv_timeout and jsv_threshold of
+# qmaster_params. Since 9.2 they are the keys timeout and threshold of jsv_params, and the
+# tokens have no effect in qmaster_params any more. This takes their values over, or the
+# built-in defaults when a token is not there, writes them explicitly into jsv_params and
+# removes both tokens from qmaster_params. The token names are matched without regard to
+# case, like the qmaster did. jsv_threshold is converted to the plain number of
+# milliseconds that took effect, see JsvThresholdToMilliseconds(); without a value it meant
+# 0, "log every job". jsv_timeout is read by the same parser as before and is taken over
+# as written; without a value it was refused in favour of the default and becomes 10.
+# The remaining tokens are joined with a comma, and qmaster_params becomes NONE when none
+# remain. A former jsv_params value is replaced: it had no effect before 9.2.
+#
+# @param $1 the global configuration file
+# @return 0
+MoveJsvSettingsToJsvParams() {
+   mjs_file="${1:?Missing global configuration file}"
+
+   mjs_timeout=10
+   mjs_threshold=5000
+   mjs_qmaster_params=$(GetAttrValue "${mjs_file}" 'qmaster_params')
+   mjs_new_qmaster_params=""
+   mjs_removed=false
+
+   # split at the PARAMS_DELIMITER of the product, without pathname expansion of the tokens
+   mjs_saved_ifs=$IFS
+   IFS=', '
+   set -f
+   for mjs_token in $mjs_qmaster_params; do
+      [ -z "$mjs_token" ] && continue
+      mjs_name=$(echo "${mjs_token%%=*}" | tr '[:upper:]' '[:lower:]')
+      mjs_value=""
+      case "$mjs_token" in
+         *=*) mjs_value="${mjs_token#*=}" ;;
+      esac
+      case "$mjs_name" in
+         jsv_timeout)
+            [ -n "$mjs_value" ] && mjs_timeout="$mjs_value"
+            mjs_removed=true
+            ;;
+         jsv_threshold)
+            mjs_threshold=$(JsvThresholdToMilliseconds "$mjs_value")
+            mjs_removed=true
+            ;;
+         *)
+            if [ -z "$mjs_new_qmaster_params" ]; then
+               mjs_new_qmaster_params="$mjs_token"
+            else
+               mjs_new_qmaster_params="$mjs_new_qmaster_params,$mjs_token"
+            fi
+            ;;
+      esac
+   done
+   set +f
+   IFS=$mjs_saved_ifs
+
+   if [ "$mjs_removed" = true ]; then
+      [ -z "$mjs_new_qmaster_params" ] && mjs_new_qmaster_params="NONE"
+      ReplaceOrAddLine "${mjs_file}" '^qmaster_params.*' "qmaster_params $mjs_new_qmaster_params"
+      LogIt "I" "Removed jsv_timeout and jsv_threshold from qmaster_params: $mjs_new_qmaster_params"
+   fi
+
+   mjs_old_jsv_params=$(GetAttrValue "${mjs_file}" 'jsv_params')
+   if [ -n "$mjs_old_jsv_params" ] && [ "$mjs_old_jsv_params" != "NONE" ] && [ "$mjs_old_jsv_params" != "none" ]; then
+      LogIt "W" "Replacing jsv_params $mjs_old_jsv_params, which had no effect before 9.2"
+   fi
+   ReplaceOrAddLine "${mjs_file}" '^jsv_params.*' "jsv_params timeout=$mjs_timeout,threshold=$mjs_threshold"
+   LogIt "I" "Set jsv_params timeout=$mjs_timeout,threshold=$mjs_threshold"
+
+   return 0
+}
+
 ###################################################################################################
 # Version comparison functions
 ###################################################################################################
@@ -579,6 +765,9 @@ UpOrDowngradeTo902000() {
             ReplaceOrAddLine "${file}" 'finished_jobs_max.*' "finished_jobs_max ${old_finished_jobs}"
             ReplaceOrAddLine "${file}" 'finished_jobs_keep_time.*' "finished_jobs_keep_time 0"
             LogIt "I" "Mapped finished_jobs=${old_finished_jobs} to finished_jobs_max; added finished_jobs_keep_time=0 (retention off by default)"
+
+            # CS-2568: jsv_timeout and jsv_threshold moved from qmaster_params to jsv_params
+            MoveJsvSettingsToJsvParams "${file}"
 
             # Port range attribute added in 9.1.2 but might still be missing if customer did not add it manually
             port_range=$(GetAttrValue "${file}" "port_range")

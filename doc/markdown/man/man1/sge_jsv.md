@@ -64,17 +64,17 @@ as long as the master is running, the underlying JSV configuration is not change
 
 The timeout is a modifiable value that will measure the response time of either the client or server JSV. In the 
 event that the response time of the JSV is longer than timeout value specified, this will result in the JSV being 
-re-started. The server JSV timeout value is specified through the qmaster parameter jsv_timeout. The client JSV 
-timeout value is set through the environment variable *SGE_JSV_TIMEOUT*. The default value is 10 seconds, and this 
-value must be greater than 0. If the timeout has been reach, the JSV will only try to re-start once, if the timeout is
-reached again an error will occur.
+re-started. The server JSV timeout value is specified through the *timeout* entry of the *jsv_params* in
+xxqs_name_sxx_conf(5). The client JSV timeout value is set through the environment variable *SGE_JSV_TIMEOUT*. The
+default value is 10 seconds, and this value must be greater than 0. If the timeout has been reach, the JSV will only
+try to re-start once, if the timeout is reached again an error will occur.
 
 # THRESHOLD
 
-The threshold value is defined as a qmaster parameter jsv_threshold. This value measures the time for a server job 
-verification. If this time exceeds the defined threshold then additional logging will appear in the master message 
-file at the INFO level. This value is specified in milliseconds and has a default value of 5000. If a value of 0 is 
-defined then this means all jobs will be logged in the message file.
+The threshold value is defined as the *threshold* entry of the *jsv_params* in xxqs_name_sxx_conf(5). This value
+measures the time for a server job verification. If this time exceeds the defined threshold then additional logging
+will appear in the master message file at the INFO level. This value is specified in milliseconds and has a default
+value of 5000. If a value of 0 is defined then this means all jobs will be logged in the message file.
 
 # PROTOCOL
 

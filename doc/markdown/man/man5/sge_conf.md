@@ -993,20 +993,6 @@ value. Currently, the default value is 10 minutes with the default scheduler con
 and 1200 seconds. Value is limited only in case of default value. The default value depends on the current scheduler
 configuration. The *SCHEDULER_TIMEOUT* value is specified in seconds.
 
-***jsv_timeout***
-
-This parameter measures the response time of the server JSV. In the event that the response time of the JSV is 
-longer than the timeout value specified, this will cause the JSV to be re-started. The default value for the timeout 
-is 10 seconds and if modified, must be greater than 0. If the timeout has been reach, the JSV will only try to 
-re-start once, if the timeout is reached again an error will occur.
-
-***jsv_threshold***
-
-The threshold of a JSV is measured as the time it takes to perform a server job verification. If this value is 
-greater than the user defined value, it will cause logging to appear in the qmaster messages file at the INFO level. 
-By setting this value to 0, all jobs will be logged in the qmaster messages file. This value is specified in 
-milliseconds and has a default value of 5000.
-
 ***OLD_RESCHEDULE_BEHAVIOR***
 
 Beginning with version 8.0.0 of Univa Grid Engine the scheduling behavior changed for jobs that are rescheduled by 
@@ -1716,6 +1702,42 @@ specified the switches `-w` and `-t` are allowed for qalter.
 Please note that for certain switches or switch combinations there are exceptions where the name that has to be 
 specified here does not correspond to the name of the switch as documented in qsub(1). Exceptions are also mentioned
 in the qsub(1) documentation.
+
+## jsv_params
+
+Parameters of the server JSV that is defined with *jsv_url*. The global configuration entry for this value cannot be
+overwritten by execution host local configurations. Changes to *jsv_params* take effect for the next job
+verification, without a restart of the xxqs_name_sxx_qmaster(8).
+The entries of *jsv_params* are separated by commas, by blanks, or by both, as those of *qmaster_params*,
+e.g. `timeout=10,threshold=5000`. The names are not case sensitive. The value *NONE* sets no entry. An entry that
+is not set, or that is removed again, has its default value.
+
+A new installation sets `timeout=10,threshold=5000`, the default values.
+
+The following values are recognized:
+
+***timeout***
+
+This parameter measures the response time of the server JSV. In the event that the response time of the JSV is 
+longer than the timeout value specified, this will cause the JSV to be re-started. The value is specified in seconds,
+the default is 10. If modified, it must be greater than 0; an invalid value is reported in the qmaster messages file
+and the default is used instead. If the timeout has been reached, the JSV will only try to re-start once, if the
+timeout is reached again an error will occur.
+
+The timeout of a client JSV is not set here but with the environment variable *SGE_JSV_TIMEOUT*, see
+xxqs_name_sxx_jsv(1).
+
+***threshold***
+
+The threshold of a JSV is measured as the time it takes to perform a server job verification. If this value is 
+greater than the user defined value, it will cause logging to appear in the qmaster messages file at the INFO level. 
+By setting this value to 0, all jobs will be logged in the qmaster messages file. The value is an integer number of
+milliseconds, written as plain decimal digits, and has a default value of 5000. Any other value, e.g. a negative
+number or a time such as `0:0:5`, is reported in the qmaster messages file and the default is used instead.
+
+Up to version 9.1, *timeout* and *threshold* were set with the entries *jsv_timeout* and *jsv_threshold* of
+*qmaster_params*. There they have no effect any more: the xxqs_name_sxx_qmaster(8) writes a warning to its messages
+file whenever it reads a configuration that still contains one of them.
 
 ## gid_range
 

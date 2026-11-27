@@ -2198,16 +2198,18 @@ bool jsv_do_communication(const ocs::tom::Element<ocs::tom::JSV> jsv, ocs::tom::
    if (ret) {
       uint64_t start_time = sge_get_gmt64();
       bool do_retry = true;
-      uint64_t jsv_timeout = sge_gmt32_to_gmt64(10);
-      
-      if (strcmp(jsv.get<JSV_context>(), JSV_CONTEXT_CLIENT) == 0 && getenv("SGE_JSV_TIMEOUT") != nullptr) {
-         if (atoi(getenv("SGE_JSV_TIMEOUT")) > 0) {
-            jsv_timeout = sge_gmt32_to_gmt64(atoi(getenv("SGE_JSV_TIMEOUT")));
+      // CS-1700: a client JSV takes its timeout from SGE_JSV_TIMEOUT, else the default; the
+      // jsv_params of the global configuration belong to the server JSV only
+      uint64_t jsv_timeout;
+      if (strcmp(jsv.get<JSV_context>(), JSV_CONTEXT_CLIENT) == 0) {
+         jsv_timeout = sge_gmt32_to_gmt64(JSV_TIMEOUT_DEFAULT);
+         if (const char *env_timeout = getenv("SGE_JSV_TIMEOUT"); env_timeout != nullptr && atoi(env_timeout) > 0) {
+            jsv_timeout = sge_gmt32_to_gmt64(atoi(env_timeout));
             DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from environment variable\n", jsv_timeout);
-         }         
+         }
       } else {
          jsv_timeout = sge_gmt32_to_gmt64(mconf_get_jsv_timeout());
-         DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from qmaster parameter\n", jsv_timeout);
+         DPRINTF("JSV_TIMEOUT value of " sge_u64 " µs being used from jsv_params\n", jsv_timeout);
       }
 
       jsv.set<JSV_done>(false);

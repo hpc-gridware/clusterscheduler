@@ -595,5 +595,35 @@ with every node below them. Both printed the whole subtree. `qconf -sstnode` now
 
 **If you relied on it**, use `qconf -rsstnode` where the nodes below the named one are needed.
 
+## JSV Timeout and Threshold Moved to *jsv_params*
+
+The timeout and the threshold of the server JSV were set with the entries *jsv_timeout* and *jsv_threshold* of
+*qmaster_params* in the global configuration. They are now the entries *timeout* and *threshold* of the global
+attribute *jsv_params*, with unchanged meaning, units and defaults (10 seconds and 5000 milliseconds). The
+threshold is now an integer number of milliseconds only; notations such as `0:0:5` that the old entry also
+accepted are reported as invalid and replaced by the default:
+
+    jsv_params                   timeout=10,threshold=5000
+
+*jsv_timeout* and *jsv_threshold* in *qmaster_params* have no effect any more. sge_qmaster writes a warning to
+its messages file whenever it reads a configuration that still contains one of them: at startup, after every change
+of the global configuration and after every change of the local configuration of the master host, e.g.
+
+    "jsv_timeout=30" in "qmaster_params" has no effect any more - set "timeout" in "jsv_params" instead
+
+A new installation writes the defaults into *jsv_params*. The upgrade procedure takes the values of *jsv_timeout*
+and *jsv_threshold* over from *qmaster_params* into *jsv_params*, writes the defaults for the ones that were not
+set, and removes both entries from *qmaster_params*. A *jsv_threshold* given in another notation is converted to
+the number of milliseconds that took effect.
+
+**If you relied on it**, set the values in *jsv_params*, e.g. `qconf -mconf` and
+`jsv_params timeout=30,threshold=0`, and remove *jsv_timeout* and *jsv_threshold* from *qmaster_params*. Clusters
+upgraded with the upgrade procedure need nothing.
+
+*jsv_params* applies to the server JSV only. A client JSV, given with `-jsv` to a submit client, takes its timeout
+from the environment variable *SGE_JSV_TIMEOUT* and otherwise always waits 10 seconds. Up to 9.1, *qrsh* and
+*qlogin* read the cluster configuration, and without *SGE_JSV_TIMEOUT* their client JSV used the *jsv_timeout* of
+*qmaster_params*. **If you relied on it**, set *SGE_JSV_TIMEOUT* in the environment of these clients.
+
 [//]: # (Each file has to end with two empty lines)
 

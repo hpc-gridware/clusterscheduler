@@ -898,7 +898,7 @@ PrintConf()
    $ECHO "gdi_request_limits     NONE"
    $ECHO "jsv_url                NONE"
    $ECHO "jsv_allowed_mod        ac,h,i,e,o,j,M,N,p,w"
-   $ECHO "jsv_params             NONE"
+   $ECHO "jsv_params             timeout=10,threshold=5000"
    $ECHO "gid_range              $CFG_GID_RANGE"
    $ECHO "qlogin_daemon          $QLOGIN_DAEMON"
    $ECHO "qlogin_command         $QLOGIN_COMMAND"

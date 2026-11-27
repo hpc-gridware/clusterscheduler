@@ -51,12 +51,14 @@
  *
  * @see sge_conf.h
  */
+#include <charconv>
 #include <cstdio>
 #include <cstring>
 #include <cmath>
 #include <cstdlib>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifdef LINUX
@@ -306,6 +308,20 @@ struct binding_params_t {
 };
 static binding_params_t binding_conf;
 
+/// Everything #merge_configuration parses out of `jsv_params`
+///
+/// Like #binding_params_t, the defaults are written here only and restored with
+/// `jsv_conf = {}` before the string is parsed, so a removed key reverts (CS-2568).
+/// Before 9.2 both settings were the tokens `jsv_timeout` and `jsv_threshold` of
+/// `qmaster_params`, where they have no effect any more.
+struct jsv_params_t {
+   /// `timeout` -- seconds a JSV script may take to answer (CS-1700)
+   int timeout = JSV_TIMEOUT_DEFAULT;
+   /// `threshold` -- JSV runtime above which a job is logged, in ms; 0 logs every job (CS-1701)
+   int threshold = JSV_THRESHOLD_DEFAULT;
+};
+static jsv_params_t jsv_conf;
+
 /* generally simulate all execd's */
 
 /* allow the simulation of jobs (job spooling and execution on execd side is disabled) */
@@ -471,10 +487,6 @@ struct qmaster_params_t {
    bool enable_submit_ld_preload = false;
    /// `max_job_deletion_time` -- seconds one job deletion request may take
    int max_job_deletion_time = 3;
-   /// `jsv_timeout` -- seconds a JSV script may take to answer
-   int jsv_timeout = 10;
-   /// `jsv_threshold` -- runtime above which a JSV script is logged, in ms
-   int jsv_threshold = 5000;
    /// `GPERF_NAME` -- name of the gperftools profile
    std::string gperf_name = GPERF_NAME_DEFAULT;
    /// `GPERF_THREADS` -- which threads gperftools profiles
@@ -698,7 +710,7 @@ static tConfEntry conf_entries[] = {
  { "gdi_request_limits",         0, NONE_STR,                  1, nullptr},
  { "jsv_url",                    0, NONE_STR,                  1, nullptr},
  { "jsv_allowed_mod",            0, NONE_STR,                  1, nullptr},
- { "jsv_params",                 0, NONE_STR,                  1, nullptr},
+ { "jsv_params",                 0, JSV_PARAMS_DEFAULT,        1, nullptr},
  { "gid_range",                  1, NONE_STR,                  1, nullptr},
  { "qlogin_daemon",              1, NONE_STR,                  1, nullptr},
  { "qlogin_command",             1, NONE_STR,                  1, nullptr},
@@ -1048,6 +1060,55 @@ getConfEntry(const char *name, tConfEntry conf[]) {
 }
 
 /**
+ * @brief Whether a `qmaster_params` token is one of the JSV settings that moved to `jsv_params`
+ *
+ * Up to 9.1 the tokens `jsv_timeout` and `jsv_threshold` of `qmaster_params` set the JSV
+ * timeout and threshold. Since 9.2 they are the keys `timeout` and `threshold` of `jsv_params`
+ * (CS-2568). The name is matched without regard to case, with or without a value, as
+ * parse_int_param() did when the tokens still had an effect.
+ *
+ * @param token one `name[=value]` entry of `qmaster_params`
+ * @return the key in `jsv_params` that replaces the token, or nullptr if the token is none of them
+ */
+static const char *ocs_conf_moved_jsv_param(const char *token) {
+   static constexpr std::pair<const char *, const char *> moved[] = {
+      {"jsv_timeout", "timeout"},
+      {"jsv_threshold", "threshold"},
+   };
+   for (const auto &[old_name, new_key] : moved) {
+      const size_t len = strlen(old_name);
+      if (strncasecmp(token, old_name, len) == 0 && (token[len] == '=' || token[len] == '\0')) {
+         return new_key;
+      }
+   }
+   return nullptr;
+}
+
+/**
+ * @brief Parse a number of milliseconds, a plain decimal integer
+ *
+ * Unlike parse_int_param(), it accepts nothing but digits: no sign, no time format such as
+ * `0:0:5`, no unit and no hexadecimal or octal notation, and no value above INT_MAX.
+ *
+ * @param text the value as written in the configuration
+ * @param[out] value receives the number, left unchanged when the text is invalid
+ * @return true when the text was a valid number of milliseconds
+ */
+static bool ocs_conf_parse_milliseconds(const std::string &text, int &value) {
+   if (text.empty() || text.front() < '0' || text.front() > '9') {
+      return false;
+   }
+   int parsed = 0;
+   const char *const end = text.data() + text.size();
+   const auto [ptr, ec] = std::from_chars(text.data(), end, parsed);
+   if (ec != std::errc{} || ptr != end) {
+      return false;
+   }
+   value = parsed;
+   return true;
+}
+
+/**
  * @brief merge global and local configuration
  *
  * @details
@@ -1112,8 +1173,7 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       const std::optional<std::string> execd_params = mconf_get_execd_params();
       const std::optional<std::string> reporting_params = mconf_get_reporting_params();
       const std::optional<std::string> binding_params = mconf_get_binding_params();
-      // only read by the parser below that is not built yet (#if 0)
-      [[maybe_unused]] const std::optional<std::string> jsv_params = mconf_get_jsv_params();
+      const std::optional<std::string> jsv_params = mconf_get_jsv_params();
       uint32_t load_report_time = mconf_get_load_report_time();
 #ifdef LINUX
       bool mtrace_before = qmaster_conf.enable_mtrace;
@@ -1327,22 +1387,12 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
             continue;
          }
 
-         if (parse_int_param(s, "jsv_threshold", &qmaster_conf.jsv_threshold, ocs::CEntry::Type::TIME)) {
-            if (qmaster_conf.jsv_threshold < 0) {
-               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
-                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "jsv_threshold",
-                                       5000);
-               qmaster_conf.jsv_threshold = 5000;
-            }
-            continue;
-         }
-         if (parse_int_param(s, "jsv_timeout", &qmaster_conf.jsv_timeout, ocs::CEntry::Type::TIME)) {
-            if (qmaster_conf.jsv_timeout <= 0) {
-               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
-                                       MSG_CONF_INVALIDPARAM_SSI, "qmaster_params", "jsv_timeout",
-                                       10);
-               qmaster_conf.jsv_timeout = 10;
-            }
+         // CS-2568: jsv_threshold and jsv_timeout moved to jsv_params in 9.2. Here they have no
+         // effect any more, which is reported whenever the configuration is applied, so a cluster
+         // that still carries them does not lose its setting without a word.
+         if (const char *jsv_key = ocs_conf_moved_jsv_param(s); jsv_key != nullptr) {
+            answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                    MSG_CONF_PARAM_MOVED_SSSS, s, "qmaster_params", jsv_key, "jsv_params");
             continue;
          }
          // CS-2764: ENABLE_SUBMIT_LIB_PATH and ENABLE_SUBMIT_LD_PRELOAD have no effect any
@@ -1751,20 +1801,36 @@ merge_configuration(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const uint32_t
       sge_free_saved_vars(conf_context);
       conf_context=nullptr;
 
-#if 0
-      // @todo: implement parsing of jsv parameters
-      // @todo: CS-1700: Add possibility to define a timeout for JSVs
-      // @todo: CS-1701: Add possibility to define a threshold for JSV's
       /* parse JSV parameters */
       SGE_LOCK(LOCK_MASTER_CONF, LOCK_WRITE);
-      for (s = sge_strtok_r(jsv_params ? jsv_params->c_str() : nullptr, PARAMS_DELIMITER, &conf_context); s;
+
+      // every default comes from jsv_params_t, so a removed key reverts (CS-2568)
+      jsv_conf = {};
+
+      for (s = sge_strtok_r(ocs_conf_c_str(jsv_params), PARAMS_DELIMITER, &conf_context); s;
            s = sge_strtok_r(nullptr, PARAMS_DELIMITER, &conf_context)) {
-         ;
+         // CS-1700: seconds a JSV script may take to answer
+         if (parse_int_param(s, "timeout", &jsv_conf.timeout, ocs::CEntry::Type::TIME)) {
+            if (jsv_conf.timeout <= 0) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "jsv_params", "timeout", JSV_TIMEOUT_DEFAULT);
+               jsv_conf.timeout = JSV_TIMEOUT_DEFAULT;
+            }
+            continue;
+         }
+         // CS-1701: JSV runtime in milliseconds above which a job is logged, 0 logs every job
+         if (std::string threshold; parse_string_param(s, "threshold", threshold)) {
+            if (!ocs_conf_parse_milliseconds(threshold, jsv_conf.threshold)) {
+               answer_list_add_sprintf(answer_list, STATUS_ESYNTAX, ANSWER_QUALITY_WARNING,
+                                       MSG_CONF_INVALIDPARAM_SSI, "jsv_params", "threshold", JSV_THRESHOLD_DEFAULT);
+               jsv_conf.threshold = JSV_THRESHOLD_DEFAULT;
+            }
+            continue;
+         }
       }
       SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_WRITE);
       sge_free_saved_vars(conf_context);
       conf_context=nullptr;
-#endif
    }
 
    if (!global) {
@@ -4842,12 +4908,13 @@ std::string mconf_get_s_locks() {
 }
 
 /**
- * @brief The `jsv_threshold` setting of the master configuration
+ * @brief The `threshold` of the `jsv_params` of the master configuration (CS-1701)
  *
+ * A job whose server JSV verification takes longer than this is logged; 0 logs every job.
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return the threshold in milliseconds, #JSV_THRESHOLD_DEFAULT unless configured
  */
 int mconf_get_jsv_threshold() {
    DENTER(BASIS_LAYER);
@@ -4856,19 +4923,19 @@ int mconf_get_jsv_threshold() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   threshold = qmaster_conf.jsv_threshold;
+   threshold = jsv_conf.threshold;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(threshold);
 }
 
 /**
- * @brief The `jsv_timeout` setting of the master configuration
+ * @brief The `timeout` of the `jsv_params` of the master configuration (CS-1700)
  *
  * Takes the master configuration read lock, so the value is a consistent
  * snapshot even while a new configuration is being applied.
  *
- * @return the configured value
+ * @return the seconds a JSV script may take to answer, #JSV_TIMEOUT_DEFAULT unless configured
  */
 int mconf_get_jsv_timeout() {
    DENTER(BASIS_LAYER);
@@ -4877,7 +4944,7 @@ int mconf_get_jsv_timeout() {
 
    SGE_LOCK(LOCK_MASTER_CONF, LOCK_READ);
 
-   timeout = qmaster_conf.jsv_timeout;
+   timeout = jsv_conf.timeout;
 
    SGE_UNLOCK(LOCK_MASTER_CONF, LOCK_READ);
    DRETURN(timeout);

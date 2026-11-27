@@ -984,6 +984,7 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
       !strcmp(name, "qmaster_params") ||
       !strcmp(name, "execd_params") ||
       !strcmp(name, "reporting_params") ||
+      !strcmp(name, "jsv_params") ||
       !strcmp(name, "qlogin_command") ||
       !strcmp(name, "rlogin_command") ||
       !strcmp(name, "rsh_command") ||

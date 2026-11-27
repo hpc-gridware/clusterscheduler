@@ -77,8 +77,18 @@
 #define MEMORY_MAX_FACTOR_DEFAULT 1.0
 /// `binding_params` as it reads before an administrator changes it
 #define BINDING_PARAMS_DEFAULT    "enabled=true,implicit=false,mode=default,default_unit=C,on_any_host=true,filter=NONE"
-/// `jsv_params` as it reads before an administrator changes it
-#define JSV_PARAMS_DEFAULT        NONE_STR
+/// `timeout` of the `jsv_params`: seconds a JSV script may take to answer
+#define JSV_TIMEOUT_DEFAULT       10
+/// `threshold` of the `jsv_params`: JSV runtime in milliseconds above which a job is logged
+#define JSV_THRESHOLD_DEFAULT     5000
+/// Turn the value of a macro into a string literal
+#define OCS_CONF_STRINGIFY(x)     OCS_CONF_STRINGIFY_(x)
+/// Helper of #OCS_CONF_STRINGIFY, which needs a second level to expand its argument first
+#define OCS_CONF_STRINGIFY_(x)    #x
+/// `jsv_params` as it reads before an administrator changes it: #JSV_TIMEOUT_DEFAULT and
+/// #JSV_THRESHOLD_DEFAULT, the values that also apply when a key or the whole attribute is missing
+#define JSV_PARAMS_DEFAULT        "timeout=" OCS_CONF_STRINGIFY(JSV_TIMEOUT_DEFAULT) \
+                                  ",threshold=" OCS_CONF_STRINGIFY(JSV_THRESHOLD_DEFAULT)
 /// Job attributes a JSV may modify unless `jsv_allowed_mod` says otherwise
 #define JSV_ALLOWED_MOD_DEFAULT   "ac,h,i,e,o,j,M,N,p,w"
 

@@ -444,4 +444,7 @@
 // CS-3219: a task concurrency that is not a whole number or out of range
 #define MSG_ULNG_INVALID_TASK_CONCURRENCY_S    _MESSAGE(64605, _("invalid task concurrency number " SFQ ". Must be an integer from 0 to 2147483647."))
 
+// CS-2568: jsv_timeout and jsv_threshold of qmaster_params moved to jsv_params and have no effect there
+#define MSG_CONF_PARAM_MOVED_SSSS              _MESSAGE(64606, _(SFQ " in " SFQ " has no effect any more - set " SFQ " in " SFQ " instead"))
+
 // clang-format on
