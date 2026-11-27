@@ -75,9 +75,6 @@
 /** @def SGE_READDIR
  * @brief read the next directory entry
  */
-/** @def SGE_READDIR_R
- * @brief read the next directory entry, reentrant variant
- */
 /** @def SGE_TELLDIR
  * @brief current position within a directory stream
  */
@@ -135,13 +132,11 @@
 
 #if defined(SOLARIS) || defined(LINUX)
 #  define SGE_READDIR(directory) readdir64(directory)
-#  define SGE_READDIR_R(directory, entry, result) readdir64_r(directory, entry, result)
 #  define SGE_TELLDIR(directory) telldir64(directory)
 #  define SGE_SEEKDIR(directory, offset) seekdir64(directory, offset)
 #  define SGE_STRUCT_DIRENT struct dirent64
 #else
 #  define SGE_READDIR(directory) readdir(directory)
-#  define SGE_READDIR_R(directory, entry, result) readdir_r(directory, entry, result)
 #  define SGE_TELLDIR(directory) telldir(directory)
 #  define SGE_SEEKDIR(directory, offset) seekdir(directory, offset)
 #  define SGE_STRUCT_DIRENT struct dirent

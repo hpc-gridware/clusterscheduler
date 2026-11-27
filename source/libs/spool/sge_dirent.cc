@@ -75,8 +75,7 @@ ocs::tom::ListPtr<ocs::tom::ST> ocs_get_dirents(const char *path) {
    DENTER(TOP_LAYER);
 
    ocs::tom::ListPtr<ocs::tom::ST> entries;
-   SGE_STRUCT_DIRENT *dent;
-   char dirent[SGE_PATH_MAX*2];
+   const SGE_STRUCT_DIRENT *dent;
 
    DIR *cwd = opendir(path);
 
@@ -85,7 +84,8 @@ ocs::tom::ListPtr<ocs::tom::ST> ocs_get_dirents(const char *path) {
       DRETURN(entries);
    }
 
-   while (SGE_READDIR_R(cwd, (SGE_STRUCT_DIRENT *)dirent, &dent)==0 && dent!=nullptr) {
+   // readdir() on a stream of its own is thread safe; readdir_r() is deprecated (CS-199)
+   while ((dent = SGE_READDIR(cwd)) != nullptr) {
       if (!dent->d_name[0])
          continue;             
       if (strcmp(dent->d_name, "..") == 0 || strcmp(dent->d_name, ".") == 0)

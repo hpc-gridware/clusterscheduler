@@ -84,9 +84,6 @@ set(LIBRARY_INCLUDES "./" ${SGE_INCLUDES})
 
 #set_source_files_properties(ocs_TerminationManager.cc PROPERTIES COMPILE_FLAGS -Wno-infinite-recursion)
 
-# CS-199 makes use of readdir_r/readdir64_r which is deprecated for Linux only
-set_source_files_properties(sge_unistd.cc PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
-
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${LIBRARY_INCLUDES})
 
