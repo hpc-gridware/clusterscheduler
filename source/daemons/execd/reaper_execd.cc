@@ -976,7 +976,7 @@ write_failed_info(const uint32_t job_id, const uint32_t ja_task_id, const char *
    sge_dstring_sprintf(&dstr_failed, sge_u32 ":" SFN2 "\n",
                        jr.get<JR_failed>(), jr.get<JR_err_str>());
    sge_string2file(sge_dstring_get_string(&dstr_failed), sge_dstring_strlen(&dstr_failed),
-                sge_dstring_get_string(&dstr_filename));
+                   sge_dstring_get_string(&dstr_filename), 0600);
 
    DRETURN_VOID;
 }

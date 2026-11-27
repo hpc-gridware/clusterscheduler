@@ -55,11 +55,12 @@
 
 /// What an event master request asks for
 typedef enum {
-   EVR_ADD_EVC = 0, ///< register a new event client
-   EVR_MOD_EVC,     ///< change an existing event client's subscription
-   EVR_DEL_EVC,     ///< deregister an event client
-   EVR_ADD_EVENT,   ///< add an event to be delivered
-   EVR_ACK_EVENT    ///< acknowledge events the client has processed
+   EVR_ADD_EVC = 0,         ///< register a new event client
+   EVR_MOD_EVC,             ///< change an existing event client's subscription
+   EVR_DEL_EVC,             ///< deregister an event client
+   EVR_ADD_EVENT,           ///< add an event to be delivered
+   EVR_ACK_EVENT,           ///< acknowledge events the client has processed
+   EVR_ACK_EVENT_OF_USER    ///< like EVR_ACK_EVENT, but only processed for the owner (EVR_uid)
 } evm_request_t;
 
 /**

@@ -72,5 +72,6 @@
 #define MSG_SET_MAXDYNEVENTCLIENT_U       _MESSAGE(66018, _("max dynamic event clients is set to " sge_u32))
 #define MSG_EVE_INCOMPLETEEVENTCLIENT     _MESSAGE(66020, _("wrong event client version"))
 #define MSG_COM_ACKTIMEOUT4EV_SUSIS         _MESSAGE(66021, _("removing event client " SFN " with id " sge_u32 " (" SFN ":%d) on host " SFQ " after acknowledge timeout from event client list"))
+#define MSG_EVE_NOTOWNER_SUU                _MESSAGE(66022, _("rejected %s of event client " sge_u32 " by user " uid_t_fmt ": the event client belongs to another user"))
 
 // clang-format on

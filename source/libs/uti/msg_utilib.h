@@ -105,7 +105,7 @@
 #define MSG_SYSTEM_USER_HAS_TOO_MANY_GIDS       _MESSAGE(49071, _("the user already has too many group ids"))
 #define MSG_SYSTEM_RESOLVEUSER                  _MESSAGE(49118, _("can't resolve user"))
 #define MSG_SYSTEM_RESOLVEGROUP                 _MESSAGE(49119, _("can't resolve group"))
-// 49120 is used by 9.1 (MSG_FILE_SETMODEFAILED_SOS) and stays free here to keep the ids of both lines apart
+#define MSG_FILE_SETMODEFAILED_SOS              _MESSAGE(49120, _("can't set the mode of file " SFQ " to %o: " SFN))
 #define MSG_FILE_DIRNOTOURS_S                   _MESSAGE(49121, _("refusing " PFNMAX ": not a directory of the daemon or the new owner"))
 #define MSG_FILE_FCHOWNFAILED_SS                _MESSAGE(49122, _("can't change the owner of directory " PFNMAX ": " SFN))
 #define MSG_FILE_FCHMODFAILED_SS                _MESSAGE(49123, _("can't change the mode of directory " PFNMAX ": " SFN))

@@ -73,6 +73,6 @@ char *sge_file2string(const char *fname, int *len);
 
 char *sge_stream2string(FILE *fp, int *len);
 
-int sge_string2file(const char *str, int len, const char *fname); 
+int sge_string2file(const char *str, int len, const char *fname, mode_t mode);
 
 bool ocs_read_line(FILE *fp, std::string &line);

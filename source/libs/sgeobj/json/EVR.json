@@ -11,7 +11,7 @@
          "name": "operation",
          "summary": "Operation",
          "description": [
-            "Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`."
+            "Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC`, `EVR_ADD_EVENT`, `EVR_ACK_EVENT` or `EVR_ACK_EVENT_OF_USER`. See `sge_event.h`."
          ],
          "type": "Uint32",
          "flags": []
@@ -72,6 +72,15 @@
          "type": "List",
          "subClassName": "ET",
          "subFieldPrefix": "ET",
+         "flags": []
+      },
+      {
+         "name": "uid",
+         "summary": "User Id",
+         "description": [
+            "The user id of the sender of the request. Requests that act on an existing event client, e.g. `EVR_ACK_EVENT_OF_USER`, are only processed if the event client was registered by this user."
+         ],
+         "type": "Uint32",
          "flags": []
       }
    ]

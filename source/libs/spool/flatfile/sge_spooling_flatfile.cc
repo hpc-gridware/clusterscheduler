@@ -1132,9 +1132,10 @@ bool spool_classic_default_write_func(ocs::tom::ListPtr<ocs::tom::AN> *answer_li
                                        job_id.c_str());
                ret = false;
             } else {
+               // job scripts may contain confidential data, only sge_qmaster reads them
                ret = sge_string2file(script_job.get<JB_script_ptr>(),
                                      script_job.get<JB_script_size>(),
-                                     exec_file) ? false : true;
+                                     exec_file, 0600) ? false : true;
             }
          }
          break;

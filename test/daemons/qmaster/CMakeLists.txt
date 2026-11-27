@@ -174,6 +174,12 @@ target_link_libraries(
         ${SGE_LIBS} ${GPERFTOOLS_PROFILER})
 add_test(NAME test_qmaster_calendar COMMAND test_qmaster_calendar)
 
+# test client of the testsuite check bugs/jira_cs/3135, needs a running cluster, no ctest
+add_executable(test_qmaster_foreign_requests test_qmaster_foreign_requests.cc)
+target_include_directories(test_qmaster_foreign_requests PRIVATE "./")
+target_link_libraries(test_qmaster_foreign_requests PRIVATE evc gdi sgeobj tom comm commlists uti
+        ${SGE_LIBS})
+
 if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_hgroup_reserved DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_hgroup_cache DESTINATION testbin/${SGE_ARCH})
@@ -181,6 +187,7 @@ if (INSTALL_SGE_TEST)
    install(TARGETS test_qmaster_job_exec_file DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_request_structure DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_timed_event DESTINATION testbin/${SGE_ARCH})
+   install(TARGETS test_qmaster_foreign_requests DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_rusage DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_utility DESTINATION testbin/${SGE_ARCH})
    install(TARGETS test_qmaster_calendar DESTINATION testbin/${SGE_ARCH})

@@ -41,7 +41,7 @@ enum EVR_Field {
    /**
     * @brief Operation
     *
-    * Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC` or `EVR_ADD_EVENT`. See `sge_event.h`.
+    * Which request this is: `EVR_ADD_EVC`, `EVR_MOD_EVC`, `EVR_DEL_EVC`, `EVR_ADD_EVENT`, `EVR_ACK_EVENT` or `EVR_ACK_EVENT_OF_USER`. See `sge_event.h`.
     */
    EVR_operation = EVR_LOWERBOUND,
    /**
@@ -80,6 +80,12 @@ enum EVR_Field {
     * The events to deliver (`ET`), for `EVR_ADD_EVENT`.
     */
    EVR_event_list,
+   /**
+    * @brief User Id
+    *
+    * The user id of the sender of the request. Requests that act on an existing event client, e.g. `EVR_ACK_EVENT_OF_USER`, are only processed if the event client was registered by this user.
+    */
+   EVR_uid,
 };
 
 namespace ocs::tom {
@@ -103,6 +109,7 @@ namespace ocs::tom {
          {EVR_session, "EVR_session", FieldType::String, Flag::None},
          {EVR_event_client, "EVR_event_client", FieldType::Object, Flag::None},
          {EVR_event_list, "EVR_event_list", FieldType::List, Flag::None},
+         {EVR_uid, "EVR_uid", FieldType::Uint32, Flag::None},
       };
 
       /** @brief The descriptor of the list library, derived from the field table */

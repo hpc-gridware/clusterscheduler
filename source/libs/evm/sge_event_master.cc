@@ -926,11 +926,44 @@ sge_event_master_process_mod_event_client(const ocs::tom::Element<ocs::tom::EVR>
 } /* sge_event_master_process_mod_event_client() */
 
 /**
- * @brief Remove event client
+ * @brief Set an event client to terminated, it is removed later by the event master thread
  *
- * Remove event client. Fetch event client from event client list.
- * Only sets status to "terminated",
- * it will be removed later on in ......................
+ * @param event_client_id id of the event client
+ * @param check_owner if true, only an event client registered by uid is removed
+ * @param uid user id of the requestor, used if check_owner is true
+ * @return true if the event client was set to terminated, false otherwise
+ */
+static bool
+terminate_event_client(uint32_t event_client_id, bool check_owner, uid_t uid) {
+   DENTER(TOP_LAYER);
+   bool ret = false;
+
+   sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+
+   DPRINTF("terminate_event_client id = %d\n", (int) event_client_id);
+
+   const auto client = get_event_client(event_client_id);
+   if (!client) {
+      sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "remove");
+   } else if (check_owner && client.get<EV_uid>() != static_cast<uint32_t>(uid)) {
+      sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+      ERROR(MSG_EVE_NOTOWNER_SUU, "exit", event_client_id, uid);
+   } else {
+      client.set<EV_state>(EV_terminated);
+      sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+      ret = true;
+   }
+
+   DRETURN(ret);
+}
+
+/**
+ * @brief Remove an event client
+ *
+ * Only sets the state of the event client to terminated, the event master thread removes it
+ * later. Used for the event clients inside sge_qmaster; the exit message of an event client is
+ * handled by sge_remove_event_client_of_user().
  *
  * @param event_client_id event client id
  *
@@ -939,23 +972,28 @@ sge_event_master_process_mod_event_client(const ocs::tom::Element<ocs::tom::EVR>
 void
 sge_remove_event_client(uint32_t event_client_id) {
    DENTER(TOP_LAYER);
-
-   sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-
-   DPRINTF("sge_remove_event_client id = %d\n", (int) event_client_id);
-
-   const auto client = get_event_client(event_client_id);
-
-   if (!client) {
-      sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
-      ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "remove");
-      DRETURN_VOID;
-   }
-   client.set<EV_state>(EV_terminated);
-
-   sge_mutex_unlock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
+   terminate_event_client(event_client_id, false, 0);
    DRETURN_VOID;
 } /* sge_remove_event_client() */
+
+/**
+ * @brief Remove an event client on request of a user
+ *
+ * Like sge_remove_event_client(), but for the exit message an event client sends to sge_qmaster:
+ * the event client is only removed if it was registered by the sender of the message (CS-3135).
+ * Managers remove the event clients of other users with sge_shutdown_event_client().
+ *
+ * @param event_client_id id of the event client
+ * @param uid user id of the sender of the exit message
+ * @return true if the event client was set to terminated, false if it does not exist or
+ *         belongs to another user
+ */
+bool
+sge_remove_event_client_of_user(uint32_t event_client_id, uid_t uid) {
+   DENTER(TOP_LAYER);
+   bool ret = terminate_event_client(event_client_id, true, uid);
+   DRETURN(ret);
+}
 
 
 /**
@@ -1777,6 +1815,34 @@ sge_event_master_process_send(const ocs::tom::Element<ocs::tom::EVR> request, mo
 }
 
 /**
+ * @brief Store an acknowledgement of events for the event master thread
+ *
+ * @param operation EVR_ACK_EVENT, or EVR_ACK_EVENT_OF_USER to have the owner checked
+ * @param event_client_id event client sending the acknowledgement
+ * @param event_number serial number of the last event to acknowledge
+ * @param uid user id of the sender, checked for EVR_ACK_EVENT_OF_USER
+ */
+static void
+store_ack_request(uint32_t operation, uint32_t event_client_id, uint32_t event_number, uid_t uid) {
+   DENTER(TOP_LAYER);
+
+   auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
+   evr->set<EVR_operation>(operation);
+   evr->set<EVR_timestamp>(sge_get_gmt64());
+   evr->set<EVR_event_client_id>(event_client_id);
+   evr->set<EVR_event_number>(event_number);
+   evr->set<EVR_uid>(static_cast<uint32_t>(uid));
+
+   sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
+   // the request list is owned by the event master; the handle lives only while the mutex is held
+   ocs::tom::List<ocs::tom::EVR>(Event_Master_Control.requests).push_back(std::move(evr));
+   sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
+
+   sge_event_master_flush_requests();
+   DRETURN_VOID;
+}
+
+/**
  * @brief Acknowledge event delivery
  *
  * After the server sent events to an event client, it has to acknowledge
@@ -1786,29 +1852,43 @@ sge_event_master_process_send(const ocs::tom::Element<ocs::tom::EVR> request, mo
  * If the handling of a busy state of the event client is enabled and set to
  * EV_BUSY_UNTIL_ACK, the event client will be set to "not busy".
  *
+ * Used for the event clients inside sge_qmaster. An acknowledgement which arrived over the
+ * network is passed to sge_handle_event_ack_of_user().
+ *
  * @param event_client_id event client sending acknowledge
  * @param event_number serial number of the last event to acknowledge
  *
- * @return true on success, false on error
+ * @return true, the request is stored for the event master thread
  *
  * @note MT-NOTE: sge_handle_event_ack() is MT safe.
  */
 bool
 sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number) {
    DENTER(TOP_LAYER);
+   store_ack_request(EVR_ACK_EVENT, event_client_id, event_number, 0);
+   DRETURN(true);
+}
 
-   auto evr = ocs::tom::ElementPtr<ocs::tom::EVR>::create();
-   evr->set<EVR_operation>(EVR_ACK_EVENT);
-   evr->set<EVR_timestamp>(sge_get_gmt64());
-   evr->set<EVR_event_client_id>(event_client_id);
-   evr->set<EVR_event_number>(event_number);
-
-   sge_mutex_lock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-   // the request list is owned by the event master; the handle lives only while the mutex is held
-   ocs::tom::List<ocs::tom::EVR>(Event_Master_Control.requests).push_back(std::move(evr));
-   sge_mutex_unlock("event_master_request_mutex", __func__, __LINE__, &Event_Master_Control.request_mutex);
-
-   sge_event_master_flush_requests();
+/**
+ * @brief Acknowledge events on behalf of the user who sent the acknowledgement
+ *
+ * Like sge_handle_event_ack(), but for an acknowledgement which arrived over the network: the
+ * event master thread processes it only if the event client was registered by the sender
+ * (CS-3135). Otherwise any user could acknowledge, and thereby drop, the events of the event
+ * clients of other users.
+ *
+ * @param event_client_id event client sending the acknowledgement
+ * @param event_number serial number of the last event to acknowledge
+ * @param uid user id of the sender of the acknowledgement
+ * @return true, the request is stored for the event master thread
+ *
+ * @note MT-NOTE: sge_handle_event_ack_of_user() is MT safe.
+ */
+bool
+sge_handle_event_ack_of_user(const uint32_t event_client_id, const uint32_t event_number,
+                             const uid_t uid) {
+   DENTER(TOP_LAYER);
+   store_ack_request(EVR_ACK_EVENT_OF_USER, event_client_id, event_number, uid);
    DRETURN(true);
 }
 
@@ -1816,15 +1896,16 @@ sge_handle_event_ack(const uint32_t event_client_id, const uint32_t event_number
  * @brief Apply an acknowledgement request: purge the acknowledged events of the client
  *
  * @param request the event master request (EVR) holding client id and event number
+ * @param check_owner if true, the request is only applied if the event client was
+ *                    registered by the sender of the request (EVR_uid)
  * @param monitor the monitoring of the calling thread
  */
 static void
-sge_event_master_process_ack(const ocs::tom::ConstElement<ocs::tom::EVR> request, monitoring_t *monitor) {
+sge_event_master_process_ack(const ocs::tom::ConstElement<ocs::tom::EVR> request,
+                             const bool check_owner, monitoring_t *monitor) {
    DENTER(TOP_LAYER);
 
-   uint32_t event_client_id;
-
-   event_client_id = request.get<EVR_event_client_id>();
+   const uint32_t event_client_id = request.get<EVR_event_client_id>();
 
    sge_mutex_lock("event_master_mutex", __func__, __LINE__, &Event_Master_Control.mutex);
 
@@ -1832,6 +1913,9 @@ sge_event_master_process_ack(const ocs::tom::ConstElement<ocs::tom::EVR> request
 
    if (!client) {
       ERROR(MSG_EVE_UNKNOWNEVCLIENT_US, event_client_id, "process acknowledgements");
+   } else if (check_owner && client.get<EV_uid>() != request.get<EVR_uid>()) {
+      ERROR(MSG_EVE_NOTOWNER_SUU, "acknowledgement", event_client_id,
+            static_cast<uid_t>(request.get<EVR_uid>()));
    } else {
       uint32_t event_number = request.get<EVR_event_number>();
       uint64_t timestamp = request.get<EVR_timestamp>();
@@ -3538,7 +3622,10 @@ void sge_event_master_process_requests(monitoring_t *monitor) {
                sge_event_master_process_send(request, monitor);
                break;
             case EVR_ACK_EVENT:
-               sge_event_master_process_ack(request, monitor);
+               sge_event_master_process_ack(request, false, monitor);
+               break;
+            case EVR_ACK_EVENT_OF_USER:
+               sge_event_master_process_ack(request, true, monitor);
                break;
          }
 

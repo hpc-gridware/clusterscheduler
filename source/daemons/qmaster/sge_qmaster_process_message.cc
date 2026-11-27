@@ -178,10 +178,12 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
             // messages needs to come from execd running as same admin user or root
             if (message->buf.uid != component_get_uid() && message->buf.uid != 0) {
                ERROR(MSG_MESSAGE_FROM_DAEMON_WRONG_UID_SSUU, message->snd_host, message->snd_name, message->buf.uid, component_get_uid());
+               DRETURN_VOID;
             }
          }
       } else if (ack_tag == ACK_EVENT_DELIVERY) {
-         // TODO: here we should check if the event belongs to the user who sent the request
+         // the event master thread checks that the event client belongs to the sender,
+         // see sge_handle_event_ack_of_user()
          ;
       } else {
          // unknown tag
@@ -195,7 +197,7 @@ do_c_ack_request(ocs::gdi::ClientServerBase::struct_msg_t *message, monitoring_t
          // sge_handle_event_ack stores them into the event master message queue
          uint32_t ack_ulong = ack->get<ACK_id>();
          const uint32_t ack_ulong2 = ack->get<ACK_id2>();
-         sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
+         sge_handle_event_ack_of_user(ack_ulong2, (ev_event) ack_ulong, message->buf.uid);
       } else {
          // sge_c_ack() will be called by the worker thread to execute the ACK request stored here
          auto ack_list = ocs::tom::ListPtr<ocs::tom::ACK>::create_like("ACK list", ack.get());
@@ -742,15 +744,15 @@ do_report_request(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *
 } /* do_report_request */
 
 /**
- * @brief Handle event client exit message
+ * @brief Handle the exit message of an event client
  *
- * Handle event client exit message. Extract event client id from pack
- * buffer. Remove event client.
+ * Extracts the event client id from the message and removes the event client, if it was
+ * registered by the sender of the message.
  *
- * @param aMsg the message: the sender and the buffer holding the event client id
- * @param monitor for monitoring qmaster threads
+ * MT-NOTE: do_event_client_exit() is NOT MT safe.
  *
- * @note MT-NOTE: do_event_client_exit() is NOT MT safe.
+ * @param aMsg the message, its pack buffer holds the event client id
+ * @param monitor the monitoring object
  */
 static void
 do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_t *monitor) {
@@ -776,7 +778,8 @@ do_event_client_exit(ocs::gdi::ClientServerBase::struct_msg_t *aMsg, monitoring_
 
    DPRINTF("%s: remove client " sge_u32 " - host %s - sender %s\n", __func__, client_id, aMsg->snd_host, aMsg->snd_name);
 
-   sge_remove_event_client(client_id);
+   // only the user who registered the event client may remove it (CS-3135)
+   sge_remove_event_client_of_user(client_id, aMsg->buf.uid);
 
    DRETURN_VOID;
 }
@@ -815,7 +818,7 @@ sge_c_ack(const ocs::gdi::Packet *packet, const ocs::gdi::Task *task, monitoring
 
    case ACK_EVENT_DELIVERY:
       // @TODO: is the global lock also here required?
-      sge_handle_event_ack(ack_ulong2, (ev_event) ack_ulong);
+      sge_handle_event_ack_of_user(ack_ulong2, (ev_event) ack_ulong, packet->uid);
       break;
    default:
       // not possible. has been filtered by listener thread already

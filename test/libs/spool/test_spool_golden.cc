@@ -2056,7 +2056,7 @@ void run_classic() {
    }
    std::filesystem::create_directories(EXEC_DIR);
    if (sge_string2file(job->get<JB_script_ptr>(), static_cast<int>(job->get<JB_script_size>()),
-                       job->get<JB_exec_file>()) != 0) {
+                       job->get<JB_exec_file>(), 0600) != 0) {
       fail("classic", "the job script cannot be written");
    }
    const auto before = snapshot(".");
