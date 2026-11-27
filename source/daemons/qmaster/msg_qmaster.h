@@ -649,7 +649,6 @@
 #define MSG_QMASTER_FD_SETSIZE_COMPILE_MESSAGE2    _MESSAGE(33915, _("recompile the source code with a higher FD_SETSIZE setting."))
 #define MSG_QMASTER_FD_SOFT_LIMIT_SETTINGS_U       _MESSAGE(33917, _("qmaster soft descriptor limit is set to " sge_u32))
 #define MSG_QMASTER_FD_HARD_LIMIT_SETTINGS_U       _MESSAGE(33918, _("qmaster hard descriptor limit is set to " sge_u32))
-#define MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU _MESSAGE(33919, _("read job database with " sge_u32 " entries in " sge_u32 " seconds"))
 #define MSG_QMASTER_INVALIDJOBSUBMISSION_SSS       _MESSAGE(33920, _("invalid job object in job submission from user " SFQ ", commproc " SFQ " on host " SFQ))
 #define MSG_QMASTER_INVALIDEVENTCLIENT_SSS         _MESSAGE(33921, _("invalid event client request from user " SFQ ", commproc " SFQ " on host " SFQ))
 
@@ -788,5 +787,8 @@
 
 // CS-3149: a job that refers to a category which does not exist
 #define MSG_CATEGORY_JOBWITHOUTCATEGORY_UU         _MESSAGE(34023, _("job " sge_u32 " refers to category " sge_u32 " which does not exist, it is not detached from it"))
+
+// CS-999: the number of objects read from the spool at qmaster startup
+#define MSG_QMASTER_UNSPOOLED_OBJECTS_FS           _MESSAGE(34024, _("unspooled objects in %.3f s: " SFNMAX))
 
 // clang-format on

@@ -762,6 +762,60 @@ qmaster_lock_and_shutdown(int anExitValue) {
 } /* qmaster_lock_and_shutdown() */
 
 /**
+ * @brief Log how many objects of each type the qmaster read from the spool at startup (CS-999)
+ *
+ * Writes one line in the style of the scheduler profiling, e.g.
+ * `unspooled objects in 0.012 s: 6 H, 5 Q, 5 QI, 0 J, 52 C, ...`. It is logged with level INFO even if the
+ * configured log level is lower, as the former line about the job database was.
+ *
+ * @param duration time in microseconds the qmaster needed to read the objects
+ */
+static void
+ocs_qmaster_log_unspooled_objects(const uint64_t duration) {
+   DENTER(TOP_LAYER);
+
+   using ocs::DataStore;
+   std::size_t qinstances = 0;
+   for (const auto cqueue : DataStore::master_list<SGE_TYPE_CQUEUE>()) {
+      qinstances += cqueue.get<CQ_qinstances>().size();
+   }
+
+   const std::pair<std::size_t, const char *> counts[] = {
+      {DataStore::master_list<SGE_TYPE_EXECHOST>().size(), "H"},
+      {DataStore::master_list<SGE_TYPE_HGROUP>().size(), "HGRP"},
+      {DataStore::master_list<SGE_TYPE_CQUEUE>().size(), "Q"},
+      {qinstances, "QI"},
+      {DataStore::master_list<SGE_TYPE_JOB>().size(), "J"},
+      {DataStore::master_list<SGE_TYPE_AR>().size(), "AR"},
+      {DataStore::master_list<SGE_TYPE_CENTRY>().size(), "C"},
+      {DataStore::master_list<SGE_TYPE_USERSET>().size(), "ACL"},
+      {DataStore::master_list<SGE_TYPE_PE>().size(), "PE"},
+      {DataStore::master_list<SGE_TYPE_CKPT>().size(), "CKPT"},
+      {DataStore::master_list<SGE_TYPE_CALENDAR>().size(), "CAL"},
+      {DataStore::master_list<SGE_TYPE_RQS>().size(), "RQS"},
+      {DataStore::master_list<SGE_TYPE_USER>().size(), "U"},
+      {DataStore::master_list<SGE_TYPE_PROJECT>().size(), "PRJ"},
+      {DataStore::master_list<SGE_TYPE_SHARETREE>().size(), "ST"},
+      {DataStore::master_list<SGE_TYPE_RL>().size(), "RL"},
+      {DataStore::master_list<SGE_TYPE_CONFIG>().size(), "CONF"},
+   };
+   std::string text;
+   for (const auto &[count, abbreviation] : counts) {
+      if (!text.empty()) {
+         text += ", ";
+      }
+      text += std::to_string(count) + " " + abbreviation;
+   }
+
+   const uint32_t saved_logginglevel = log_state_get_log_level();
+   log_state_set_log_level(LOG_INFO);
+   INFO(MSG_QMASTER_UNSPOOLED_OBJECTS_FS, sge_gmt64_to_gmt32_double(duration), text.c_str());
+   log_state_set_log_level(saved_logginglevel);
+
+   DRETURN_VOID;
+}
+
+/**
  * @brief Read the spool into the master lists and bring them into a consistent state
  *
  * Reads every spooled object type, checks the lists for duplicate keys in unique attributes (N-H-18) and the
@@ -776,7 +830,6 @@ setup_qmaster() {
    static bool first = true;
    ocs::tom::ConstElement<ocs::tom::SPC> spooling_context;
    ocs::tom::ListPtr<ocs::tom::AN> answer_list;
-   time_t time_start, time_end;
    monitoring_t monitor;
 
    if (first) {
@@ -804,6 +857,8 @@ setup_qmaster() {
       spooling_context = ocs::tom::ConstElement<ocs::tom::SPC>::from_typed(spool_get_default_context());
    }
 
+   // measure the time needed to read all spooled objects, see ocs_qmaster_log_unspooled_objects()
+   const uint64_t unspool_start = sge_get_gmt64();
    if (sge_read_configuration(spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_CONFIG),
                               &answer_list) != 0) {
       DRETURN(-1);
@@ -1201,21 +1256,8 @@ setup_qmaster() {
    }
 
    DPRINTF("job_list-----------------------------------\n");
-   /* measure time needed to read job database */
-   time_start = time(nullptr);
    spool_read_list(&answer_list, spooling_context, ocs::DataStore::master_list_slot(SGE_TYPE_JOB), SGE_TYPE_JOB);
-   time_end = time(nullptr);
    answer_list_output(&answer_list);
-
-
-   {
-      uint32_t saved_logginglevel = log_state_get_log_level();
-      log_state_set_log_level(LOG_INFO);
-      const auto master_job_list = ocs::DataStore::master_list<SGE_TYPE_JOB>();
-      INFO(MSG_QMASTER_READ_JDB_WITH_X_ENTR_IN_Y_SECS_UU, static_cast<uint32_t>(master_job_list.size()),
-           static_cast<uint32_t>(time_end - time_start));
-      log_state_set_log_level(saved_logginglevel);
-   }
 
    {
       dstring cqueue_name = DSTRING_INIT;
@@ -1329,6 +1371,9 @@ setup_qmaster() {
                       nullptr, found);
       alp.reset();
    }
+
+   // the share tree is the last object type read from the spool
+   ocs_qmaster_log_unspooled_objects(sge_get_gmt64() - unspool_start);
 
    DPRINTF("post init of prj/uset and create of categories--------------------\n");
    const auto master_job_list = ocs::DataStore::master_list_rw<SGE_TYPE_JOB>();
