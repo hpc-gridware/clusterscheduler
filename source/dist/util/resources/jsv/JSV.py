@@ -21,29 +21,39 @@ limitations under the License.
 import os
 import sys
 import time
-from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Set
 
 
-@dataclass
 class JSV:
-    # ---- config ----
-    logging_enabled: bool = True
-    logfile: str = field(default_factory=lambda: f"/tmp/jsv_{os.getpid()}.log")
+    # A plain class instead of a dataclass, so that the library runs on python 3.6,
+    # the system python3 of some supported platforms (dataclasses need 3.7).
+    def __init__(self,
+                 logging_enabled: bool = True,
+                 logfile: Optional[str] = None,
+                 state: str = "initialized",
+                 quit_flag: bool = False,
+                 params: Optional[Dict[str, str]] = None,
+                 envs: Optional[Dict[str, str]] = None,
+                 all_envs: Optional[Set[str]] = None,
+                 on_start: Optional[Callable[[], None]] = None,
+                 on_verify: Optional[Callable[[], None]] = None) -> None:
+        # ---- config ----
+        self.logging_enabled = logging_enabled
+        self.logfile = logfile if logfile is not None else f"/tmp/jsv_{os.getpid()}.log"
 
-    # ---- protocol state ----
-    state: str = "initialized"  # initialized | started | verifying
-    quit_flag: bool = False
+        # ---- protocol state ----
+        self.state = state  # initialized | started | verifying
+        self.quit_flag = quit_flag
 
-    # ---- storage ----
-    params: Dict[str, str] = field(default_factory=dict)
-    envs: Dict[str, str] = field(default_factory=dict)
-    all_envs: Set[str] = field(default_factory=set)
+        # ---- storage ----
+        self.params = params if params is not None else {}
+        self.envs = envs if envs is not None else {}
+        self.all_envs = all_envs if all_envs is not None else set()
 
-    # ---- callbacks ----
-    # Users can override these by assignment: jsv.on_start = ..., jsv.on_verify = ...
-    on_start: Optional[Callable[[], None]] = None
-    on_verify: Optional[Callable[[], None]] = None
+        # ---- callbacks ----
+        # Users can override these by assignment: jsv.on_start = ..., jsv.on_verify = ...
+        self.on_start = on_start
+        self.on_verify = on_verify
 
     # ---------------------------
     # Low-level I/O + logging
@@ -144,7 +154,7 @@ class JSV:
 
     @staticmethod
     def _format_subparams(d: Dict[str, str]) -> str:
-        # Keep insertion order (Python 3.7+) to avoid surprising reordering.
+        # Keep insertion order (dicts keep it in CPython 3.6, guaranteed from 3.7).
         parts: List[str] = []
         for k, v in d.items():
             parts.append(f"{k}={v}" if v else k)
