@@ -570,8 +570,7 @@ exec "$SHEPHERD" "$@"
 
 A list of additional parameters can be passed to the xxQS_NAMExx qmaster.
 The entries of *qmaster_params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2`
-and `A=1, B=2` are the same. Do not separate them by tabs: a tab between two entries ends the value, and the
-entries after it are dropped without an error. A tab before the first or after the last entry does no harm.
+and `A=1, B=2` are the same. A tab between two entries is stored as a blank.
 
 The following values are recognized:
 
@@ -1133,8 +1132,7 @@ This value is a global configuration parameter only. It cannot be overwritten by
 
 This is used for passing additional parameters to the xxQS_NAMExx execution daemon.
 The entries of *execd_params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2`
-and `A=1, B=2` are the same. Do not separate them by tabs: a tab between two entries ends the value, and the
-entries after it are dropped without an error. A tab before the first or after the last entry does no harm.
+and `A=1, B=2` are the same. A tab between two entries is stored as a blank.
 
 The following values are recognized:
 
@@ -1408,8 +1406,7 @@ This setting is available in Gridware Cluster Scheduler only.
 Used to define the behavior of reporting modules in the xxQS_NAMExx qmaster. Changes to the *reporting_params* 
 takes immediate effect.
 The entries of *reporting_params* are separated by commas, by blanks, or by both, e.g. `A=1,B=2`, `A=1 B=2`
-and `A=1, B=2` are the same. Do not separate them by tabs: a tab between two entries ends the value, and the
-entries after it are dropped without an error. A tab before the first or after the last entry does no harm.
+and `A=1, B=2` are the same. A tab between two entries is stored as a blank.
 
 The following values are recognized:
 
@@ -1576,7 +1573,7 @@ See xxqs_name_sxx_reporting(5) for the *online_usage* record schema.
 
 Used to define default binding behavior of jobs in the xxQS_NAMExx qmaster. Changes to the *binding_params* takes immediate effect.
 The entries of *binding_params* are separated by commas, e.g. `default_unit=C,on_any_host=true`. Different from
-*qmaster_params* or *execd_params* they must not contain blanks: a value with a blank is rejected.
+*qmaster_params* or *execd_params* they must not contain blanks: a value with a blank or a tab is rejected.
 
 The following values are recognized:
 

@@ -36,6 +36,7 @@
  * @brief The attribute list to spool, per object type
  */
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <strings.h>
@@ -954,7 +955,9 @@ static bool ocs_cf_refuse_value(ocs::tom::ListPtr<ocs::tom::AN> *alp, const char
  *
  * The field reader of CF_value. `gid_range` must be `none` or a range list
  * whose ids are not below #GID_RANGE_NOT_ALLOWED_ID; most other entries take
- * the first white space separated word and only one, some take the rest of the line.
+ * the first white space separated word and only one, some take the rest of the line,
+ * with every tab in it turned into a blank and the white space at its start and end
+ * dropped (CS-3252).
  * A missing value or one of blanks only is refused for every entry (CS-3215),
  * like any other value that is refused, with a message naming the entry.
  *
@@ -970,7 +973,7 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
    const char *name = cf.get<CF_name>();
    char message[MAX_STRING_SIZE];
 
-   // the rest of the line entries split at tabs and newlines only, every other one at blanks as well
+   // the rest of the line entries end at a newline only, every other one at blanks and tabs as well
    const bool rest_of_line = !strcmp(name, "user_lists") ||
       !strcmp(name, "xuser_lists") ||
       !strcmp(name, "projects") ||
@@ -999,11 +1002,17 @@ static bool read_CF_value(const ocs::tom::Element<ocs::tom::CF> cf, const char *
    // sge_strtok_r() works on its own copy of the text
    const char *buffer = buf != nullptr ? buf : "";
    struct saved_vars_s *context = nullptr;
-   char *value = sge_strtok_r(buffer, rest_of_line ? "\t\n" : " \t\n", &context);
+   char *value = sge_strtok_r(buffer, rest_of_line ? "\n" : " \t\n", &context);
    if (value != nullptr && rest_of_line) {
-      // skip leading blanks; a value of blanks only is no value
+      // CS-3252: a tab separates like a blank. It ended the value before, and the words after it were lost.
+      std::replace(value, value + strlen(value), '\t', ' ');
+      // skip leading and drop trailing blanks, which a tab before or after the words was and is not part of
+      // the value; a value of blanks only is no value
       while (value[0] && isspace(static_cast<unsigned char>(value[0]))) {
          value++;
+      }
+      for (size_t len = strlen(value); len > 0 && isspace(static_cast<unsigned char>(value[len - 1])); len--) {
+         value[len - 1] = '\0';
       }
       if (value[0] == '\0') {
          value = nullptr;

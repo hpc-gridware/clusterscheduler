@@ -97,6 +97,38 @@ LogIt()
    esac
 }
 
+## @brief Report the attributes of a configuration whose value contains a tab (CS-3252)
+#
+# Up to 9.1 a tab ended the value of the attributes that take the rest of the line, e.g.
+# qmaster_params, execd_params, reporting_params or prolog, and the words after it were
+# dropped without a message. Since 9.2 a tab separates like a blank, so those words take
+# effect once the configuration is loaded. Nothing is changed; each such attribute is logged.
+# A backup written by save_config shows the values the qmaster kept, so normally only a
+# file that was edited by hand still contains a tab.
+#
+# @param $1 a global or local configuration file
+# @return 0
+ReportTabsInConfiguration() {
+   rtc_file="${1:?Missing configuration file}"
+   rtc_obj=$(basename "$rtc_file")
+   rtc_tab=$(printf '\t')
+   rtc_ws="[ ${rtc_tab}]"
+   rtc_word="[^ ${rtc_tab}]"
+
+   for rtc_attr in user_lists xuser_lists projects xprojects prolog epilog starter_method suspend_method \
+                   resume_method terminate_method qmaster_params execd_params reporting_params jsv_params \
+                   qlogin_command rlogin_command rsh_command jsv_url jsv_allowed_mod gdi_request_limits \
+                   qlogin_daemon rlogin_daemon rsh_daemon additional_jvm_args; do
+      # the name, white space, and a value with a tab between two of its words
+      if grep "^${rtc_attr}${rtc_ws}${rtc_ws}*${rtc_word}.*${rtc_tab}${rtc_ws}*${rtc_word}" "$rtc_file" \
+            >/dev/null 2>&1; then
+         rtc_msg="Configuration $rtc_obj: $rtc_attr contains a tab. Up to 9.1 the words after it had no effect,"
+         LogIt "W" "$rtc_msg since 9.2 a tab separates like a blank and they take effect"
+      fi
+   done
+   return 0
+}
+
 ## @brief The jsv_threshold value of qmaster_params as the milliseconds the qmaster used
 #
 # Up to 9.1 the qmaster read jsv_threshold with its general number parser, which also took
@@ -741,6 +773,9 @@ UpOrDowngradeTo902000() {
       LogIt "I" "Modifying configuration objects to add/mod/del entries"
       for file in "$working_dir/configurations/"*; do
          obj_name=$(basename "$file")
+
+         # CS-3252: in global and local configurations, words after a tab take effect now
+         ReportTabsInConfiguration "$file"
 
          # In global configuration
          if [ "$obj_name" = "global" ]; then

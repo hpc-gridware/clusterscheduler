@@ -625,5 +625,24 @@ from the environment variable *SGE_JSV_TIMEOUT* and otherwise always waits 10 se
 *qlogin* read the cluster configuration, and without *SGE_JSV_TIMEOUT* their client JSV used the *jsv_timeout* of
 *qmaster_params*. **If you relied on it**, set *SGE_JSV_TIMEOUT* in the environment of these clients.
 
+## A Tab in a Configuration Value Separates Like a Blank
+
+In the global and the local configurations, a tab ended the value of the attributes that take the rest of the
+line, e.g. *qmaster_params*, *execd_params*, *reporting_params*, *jsv_params*, *prolog* or *rsh_command*. The
+entries or arguments after the tab were dropped without an error message:
+
+    execd_params                 PTF_MIN_PRIORITY=20<TAB>KEEP_ACTIVE=true
+
+was stored as `PTF_MIN_PRIORITY=20`. A tab now separates like a blank: the value is stored as
+`PTF_MIN_PRIORITY=20 KEEP_ACTIVE=true`, and both entries take effect. `qconf -sconf` shows a blank where the
+tab was. A tab before or after the value is dropped as before, and so are now blanks and carriage returns at the
+end of the value, which were kept before.
+
+**If you relied on it**, check with `qconf -sconf` and `qconf -sconf <host>` that the configurations contain
+only what is meant to take effect. A value that was cut at a tab before 9.2 was stored without the dropped part,
+so a running cluster and its backups keep the shorter value; the change matters when a configuration is written
+again from a file or with `qconf -mconf` that still has the tab. The upgrade procedure writes a warning to its
+log for every attribute of a configuration file that contains a tab between two words.
+
 [//]: # (Each file has to end with two empty lines)
 
