@@ -552,59 +552,6 @@ void sge_strip_slash_at_eol(char *str) {
 
 
 /**
- * @brief Trunc. a str according to a delimiter set
- *
- * Truncates a string according to a delimiter set. A copy of
- * the string truncated according to the delimiter set will be
- * returned.
- *
- * ATTENTION: The user is responsible for freeing the allocated
- * memory outside this routine. If not enough space could be
- * allocated, nullptr is returned.
- *
- * @param str string to be truncated
- * @param delim_pos A placeholder for the delimiting position in str on exit. If set on entry the position of the delimiter in the input string 'str' is returned. If no delimiting character in string was found, the address of the closing '\0' in 'str' is returned.
- * @param delim string containing delimiter characters
- *
- * @return Truncated copy of 'str' (Has to be freed by the caller!)
- *
- * @note MT-NOTE: sge_delim_str() is MT safe
- */
-char *sge_delim_str(char *str, char **delim_pos, const char *delim) {
-   DENTER(BASIS_LAYER);
-
-   char *cp = nullptr;
-   char *tstr = nullptr;
-
-   /* we want it non-destructive --> we need a copy of str */
-   if ((tstr = strdup(str)) == nullptr) {
-      DRETURN(nullptr);
-   }
-
-   /* walk through str to find a character contained in delim or a
-    * closing \0
-    */
-
-   cp = tstr;
-   while (*cp) {
-      if (strchr(delim, (int) *cp))     /* found */
-         break;
-      cp++;
-   }
-
-   /* cp now either points to a closing \0 or to a delim character */
-   if (*cp) {                    /* if it points to a delim character */
-      *cp = '\0';                /* terminate str with a \0 */
-   }
-   if (delim_pos) {              /* give back delimiting position for name */
-      *delim_pos = str + strlen(tstr);
-   }
-   /* delim_pos either points to the delimiter or the closing \0 in str */
-
-   DRETURN(tstr);
-}
-
-/**
  * @brief Like strcmp() but honours nullptr ptrs
  *
  * Like strcmp() apart from the handling of nullptr strings.

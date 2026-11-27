@@ -435,17 +435,14 @@ int comm_init_lib(dstring *err_msg, cl_log_func_t commlib_log_func) {
       DPRINTF("comm_init_lib(): cl_com_setup_commlib() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
       ret_val = COMM_CANT_SETUP_COMMLIB;
    } else {
-      const char *alias_path = nullptr;
-
       /* set the alias file */
-      alias_path = sge_get_alias_path();
-      ret = cl_com_set_alias_file(alias_path);
+      const std::string alias_path = sge_get_alias_path();
+      ret = cl_com_set_alias_file(alias_path.c_str());
       if (ret != CL_RETVAL_OK) {
          sge_dstring_sprintf(err_msg, cl_get_error_text(ret));
          DPRINTF("comm_init_lib(): cl_com_set_alias_file() failed: %s (%d)\n", sge_dstring_get_string(err_msg), ret);
          ret_val = COMM_CANT_SETUP_COMMLIB;
       }
-      sge_free(&alias_path);
 
       if (ret_val == COMM_RETVAL_OK) {
          cl_host_resolve_method_t resolve_method = CL_SHORT;

@@ -1194,13 +1194,10 @@ int main(int argc, char *argv[]) {
 
    /* set alias file */
    if (!option_noalias) {
-      // sge_get_alias_path() returns sge_malloc'd memory
-      const ocs::uti::c_ptr<const char> alias_path{sge_get_alias_path()};
-      if (alias_path != nullptr) {
-         retval = cl_com_set_alias_file(alias_path.get());
-         if (retval != CL_RETVAL_OK) {
-            fprintf(stderr,"%s\n",cl_get_error_text(retval));
-         }
+      const std::string alias_path = sge_get_alias_path();
+      retval = cl_com_set_alias_file(alias_path.c_str());
+      if (retval != CL_RETVAL_OK) {
+         fprintf(stderr,"%s\n",cl_get_error_text(retval));
       }
    }
 

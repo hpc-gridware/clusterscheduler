@@ -74,8 +74,6 @@ const char *sge_basename(const char *name, int delim);
 
 const char *sge_jobname(const char *name);
 
-char *sge_delim_str(char *str, char **delim_pos, const char *delim);
-
 char *sge_strdup(char *old, const char *src);
 
 size_t sge_strlen(const char *str);

@@ -56,7 +56,8 @@
  *
  * @param[in] file Filename.
  *
- * @return Pointer to a malloced buffer or nullptr if error occurred.
+ * @return Pointer to a malloced buffer or nullptr if error occurred. The buffer stays C memory, so the
+ *         caller can wipe the token before it releases the buffer with `free()`.
  *
  * @note MT-NOTE: sge_read_token() is MT safe.
  */
@@ -64,32 +65,33 @@ char *sge_read_token(const char *file) {
    DENTER(TOP_LAYER);
 
    SGE_STRUCT_STAT sb;
-   int fd;
-   char *tokenbuf;
-   size_t size;
-
    if (SGE_STAT(file, &sb)) {
       DRETURN(nullptr);
    }
 
-   size = sb.st_size + 1;
-   if (((SGE_OFF_T) size != sb.st_size + 1) || (tokenbuf = sge_malloc(size)) == nullptr) {
+   const size_t size = sb.st_size + 1;
+   if ((SGE_OFF_T) size != sb.st_size + 1) {
+      DRETURN(nullptr);
+   }
+   // released on every error path, handed to the caller on success
+   ocs::uti::c_ptr<char> tokenbuf{sge_malloc(size)};
+
+   const int fd = SGE_OPEN2(file, O_RDONLY);
+   if (fd == -1) {
       DRETURN(nullptr);
    }
 
-   if ((fd = SGE_OPEN2(file, O_RDONLY)) == -1) {
-      DRETURN(nullptr);
-   }
-
-   if (read(fd, tokenbuf, sb.st_size) != sb.st_size) {
+   if (read(fd, tokenbuf.get(), sb.st_size) != sb.st_size) {
       close(fd);
+      // do not leave a partly read token in freed memory
+      memset(tokenbuf.get(), 0, size);
       DRETURN(nullptr);
    }
 
-   tokenbuf[sb.st_size] = '\0';
+   tokenbuf.get()[sb.st_size] = '\0';
 
    close(fd);
-   DRETURN(tokenbuf);
+   DRETURN(tokenbuf.release());
 }
 
 /**

@@ -221,13 +221,13 @@ const char *sge_get_default_cell() {
  *
  * Builds the path `<sge_root>/<cell>/#COMMON_DIR/#ALIAS_FILE` from
  * #sge_get_root_dir and #sge_get_default_cell. Terminates the process with
- * #sge_exit if `$SGE_ROOT` cannot be stat()ed or the allocation fails.
+ * #sge_exit if `$SGE_ROOT` cannot be stat()ed.
  *
- * @return the alias file path, allocated with #sge_malloc; the caller owns it
+ * @return the alias file path
  *
  * @note MT-NOTE: sge_get_alias_path() is MT safe
  */
-const char *sge_get_alias_path() {
+std::string sge_get_alias_path() {
    DENTER_(TOP_LAYER);
 
    const char *sge_root = sge_get_root_dir(1, nullptr, 0, 1);
@@ -238,13 +238,6 @@ const char *sge_get_alias_path() {
       sge_exit(1);
    }
 
-   const size_t cp_len = strlen(sge_root) + strlen(sge_cell) + strlen(COMMON_DIR) + strlen(ALIAS_FILE) + 5;
-   char *cp = sge_malloc(cp_len);
-   if (cp == nullptr) {
-      CRITICAL(SFNMAX, MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE);
-      sge_exit(1);
-   }
-
-   snprintf(cp, cp_len, "%s/%s/%s/%s", sge_root, sge_cell, COMMON_DIR, ALIAS_FILE);
-   DRETURN_(cp);
+   std::string path = std::string(sge_root) + "/" + sge_cell + "/" + COMMON_DIR + "/" + ALIAS_FILE;
+   DRETURN_(path);
 }

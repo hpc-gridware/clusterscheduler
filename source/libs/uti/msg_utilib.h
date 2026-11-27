@@ -51,8 +51,6 @@
 #define MSG_COMMAND_NOTEXECUTABLE_S _MESSAGE(49005, _("command " SFQ " is not executable"))
 #define MSG_SGEROOTNOTSET           _MESSAGE(49006, _("Please set the environment variable SGE_ROOT."))
 
-#define MSG_MEMORY_MALLOCFAILEDFORPATHTOHOSTALIASFILE _MESSAGE(49011, _("can't malloc() for path to host alias file"))
-
 #define MSG_INFO_NUMBOFPROCESSORS_I          _MESSAGE(49013, _("Number of Processors '%d'"))
 
 #define MSG_FILE_NOCDTODIRECTORY_S           _MESSAGE(49016, _("can't change to directory " PFQMAX))

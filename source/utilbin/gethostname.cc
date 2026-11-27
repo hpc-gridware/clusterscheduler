@@ -124,9 +124,8 @@ int main(int argc,char *argv[]) {
   }
 
   if (sge_aliasing ) {
-     // sge_get_alias_path() returns sge_malloc'd memory
-     const ocs::uti::c_ptr<const char> alias_path{sge_get_alias_path()};
-     cl_com_set_alias_file(alias_path.get());
+     const std::string alias_path = sge_get_alias_path();
+     cl_com_set_alias_file(alias_path.c_str());
   }
 
   char *resolved_name_raw = nullptr;

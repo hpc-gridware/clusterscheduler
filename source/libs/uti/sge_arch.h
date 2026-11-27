@@ -38,6 +38,7 @@
  */
 
 #include <cstdlib>
+#include <string>
 
 const char *sge_get_arch();
 
@@ -47,4 +48,4 @@ int sge_get_lib_dir(char *buffer, size_t size);
 
 const char *sge_get_default_cell();
 
-const char *sge_get_alias_path();
+std::string sge_get_alias_path();
