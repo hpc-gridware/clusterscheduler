@@ -212,6 +212,25 @@ spool_flatfile_write_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const oc
                           const char *filepath, bool print_header, std::ostream *stream = nullptr,
                           spool_flatfile_line_breaks line_breaks = SP_LINE_BREAKS_ENV);
 
+/*
+ * =====================================================================================================================
+ * WARNING: THE FLATFILE READERS ARE NOT THREAD SAFE
+ * =====================================================================================================================
+ * spool_flatfile_read_object() and spool_flatfile_read_list() run the flex scanner, which keeps ALL of its state in
+ * globals: the input buffers, the buffer stack, spool_text, spool_line and the parser flags. spool_scanner_shutdown()
+ * frees the buffers of whatever read is active (CS-3241). Two reads at the same time - from a file or from a string -
+ * therefore corrupt each other, and one frees the buffer the other is still scanning.
+ *
+ * In qmaster this is safe today only because every caller is serialized:
+ * - the qconf write procedures parse their text (ocs_QConfWriteQmaster.cc) as MOD_PROCEDURE requests, which the
+ *   worker thread runs under LOCK_GLOBAL/LOCK_WRITE (sge_thread_worker.cc);
+ * - classic spooling reads files during startup only, before the threads run.
+ *
+ * Whoever calls a reader under a read lock or a finer grained lock, from a GET_PROCEDURE, from the reader thread, or
+ * from any other thread that is not serialized by the global write lock, must first make the scanner reentrant
+ * (flex %option reentrant) or put a mutex around the whole read.
+ * =====================================================================================================================
+ */
 ocs::tom::ElementData *
 spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs::tom::FieldDescr *descr,
                            ocs::tom::ElementData *root, const spooling_field *fields_in, int fields_out[],

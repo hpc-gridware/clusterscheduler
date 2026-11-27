@@ -1795,23 +1795,16 @@ spool_flatfile_write_list_fields(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, c
  * file is CHECKED IN - flex does not run during the build (its CMakeLists only
  * mentions flex to silence the warnings of the generated code). Adding an entry
  * point to the .l would therefore compile nothing and change nothing, which is
- * why these two are declared here instead of there: flex already emits them,
- * renamed by its "spool_" prefix, they have simply been unused so far.
+ * why this one is declared here instead of there: flex already emits it,
+ * renamed by its "spool_" prefix.
  *
  * Deliberately not extern "C": the generated scanner is a C++ translation unit,
  * so both sides mangle these names the same way.
  */
 struct yy_buffer_state;
 struct yy_buffer_state *spool__scan_string(const char *str);
-void spool__delete_buffer(struct yy_buffer_state *buffer);
 
 namespace {
-   /* The buffer spool__scan_string() handed out, kept so it can be released
-    * again. One at a time is enough, and no worse than what is already there:
-    * the scanner keeps its whole state - spool_line, spool_text and the rest -
-    * in globals, so a flatfile read was never reentrant. */
-   struct yy_buffer_state *scanner_string_buffer = nullptr;
-
    /** @brief Point the scanner at a string instead of a file
     *
     * The mirror of spool_scanner_initialize(), and it exists for the mirror of
@@ -1821,6 +1814,15 @@ namespace {
     * this is the same need in the reading direction, for a procedure that
     * modifies (CS-2822).
     *
+    * The buffer spool__scan_string() makes is released by
+    * spool_scanner_shutdown(), together with any other buffer the scanner holds,
+    * so a string read needs no cleanup of its own (CS-3241).
+    *
+    * @warning NOT THREAD SAFE. The scanner state is global; a second read running
+    *          at the same time frees and overwrites this one's buffer. Callers in
+    *          qmaster must hold LOCK_GLOBAL/LOCK_WRITE - see the warning above
+    *          spool_flatfile_read_object() in sge_flatfile.h.
+    *
     * @param content the text to parse, NUL terminated
     * @return the first token, or #SPFT_ERROR_NO_MEMORY when no buffer was made
     */
@@ -1828,24 +1830,10 @@ namespace {
       spool_line = 1;
       spool_return_whitespace = 0;
       spool_finish_line = 0;
-      scanner_string_buffer = spool__scan_string(content);
-      if (scanner_string_buffer == nullptr) {
+      if (spool__scan_string(content) == nullptr) {
          return SPFT_ERROR_NO_MEMORY;
       }
       return spool_lex();
-   }
-
-   /** @brief Release the buffer scanner_initialize_string() created
-    *
-    * Called beside every spool_scanner_shutdown() of the reader. Does nothing
-    * when the input came from a file, so the call can be unconditional and
-    * cannot be forgotten on one branch and not another.
-    */
-   void scanner_release_string() {
-      if (scanner_string_buffer != nullptr) {
-         spool__delete_buffer(scanner_string_buffer);
-         scanner_string_buffer = nullptr;
-      }
    }
 }
 
@@ -1963,7 +1951,6 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
    if (token == SPFT_ERROR_NO_MEMORY) {
       /* messages generated in spool_get_fields_to_spool */
       spool_scanner_shutdown();
-      scanner_release_string();
       answer_list_add_sprintf(answer_list, STATUS_EDISK,
                               ANSWER_QUALITY_ERROR, 
                               MSG_GDI_OUTOFMEMORY);
@@ -1980,7 +1967,6 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
       if (my_fields == nullptr) {
          /* messages generated in spool_get_fields_to_spool */
          spool_scanner_shutdown();
-         scanner_release_string();
          if (file_opened) {
             FCLOSE(file);
          }
@@ -2009,7 +1995,6 @@ spool_flatfile_read_object(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const o
       }
    }
    spool_scanner_shutdown();
-   scanner_release_string();
 
    /* if we opened the file, we also have to close it */
    if (file_opened) {
@@ -2687,7 +2672,6 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs
    if (token == SPFT_ERROR_NO_MEMORY) {
       /* messages generated in spool_get_fields_to_spool */
       spool_scanner_shutdown();
-      scanner_release_string();
 
       answer_list_add_sprintf(answer_list, STATUS_EDISK,
                               ANSWER_QUALITY_ERROR, 
@@ -2706,7 +2690,6 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs
       if (my_fields == nullptr) {
          /* messages generated in spool_get_fields_to_spool */
          spool_scanner_shutdown();
-         scanner_release_string();
          if (file_opened) {
             FCLOSE(file);
          }
@@ -2723,7 +2706,6 @@ spool_flatfile_read_list(ocs::tom::ListPtr<ocs::tom::AN> *answer_list, const ocs
                                     fields, fields_out, &token, new_end_token,
                                     parse_values, nullptr);
    spool_scanner_shutdown();
-   scanner_release_string();
 
    /* if we opened the file, we also have to close it */
    if (file_opened) {

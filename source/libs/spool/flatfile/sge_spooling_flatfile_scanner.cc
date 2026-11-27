@@ -3239,7 +3239,22 @@ int spool_scanner_initialize(FILE *input) {
    return spool_lex();
 }
 
+/* flex declares it only after this section */
+int yylex_destroy(void);
+
+/** @brief Release every buffer the scanner holds and reset its state
+ *
+ * The buffer of a file read (spool_restart()) and the one of a string read
+ * (spool__scan_string()) are both freed, together with the buffer stack. The
+ * next spool_scanner_initialize() or string read starts from scratch. Without
+ * this, a string read replaced the buffer of the preceding file read without
+ * freeing it, which leaked one scanner buffer (16 KB) for every string read
+ * that followed a file read (CS-3241).
+ *
+ * @return none
+ */
 void spool_scanner_shutdown(void) {
+   yylex_destroy();
 }
 
 static void remove_markers(void) {

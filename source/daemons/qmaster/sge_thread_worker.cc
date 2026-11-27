@@ -275,6 +275,11 @@ sge_worker_main(void *arg) {
              * one of them is: their server side models do nothing but select
              * from a master list. A procedure that may modify state gets its own
              * command value and is deliberately absent from this test.
+             *
+             * WARNING: the qconf write procedures (MOD_PROCEDURE) parse their
+             * text with the flatfile scanner, which is not thread safe. They
+             * rely on the global write lock taken below; never let them run
+             * under LOCK_READ (see the warning in sge_flatfile.h).
              */
             for (const auto *task : packet->tasks) {
                auto command = task->command;
