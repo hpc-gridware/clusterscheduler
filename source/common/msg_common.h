@@ -147,7 +147,6 @@
 #define MSG_ANSWER_CANTPROCESSNULLLIST      _MESSAGE(23040, _("can't process nullptr list"))
 #define MSG_FILE_ERROROPENINGXY_SS          _MESSAGE(23041, _("error opening " SFN ": " SFN))
 #define MSG_ANSWER_ERRORREADINGFROMFILEX_S  _MESSAGE(23042, _("error reading from file " PFNMAX))
-#define MSG_ANSWER_ERRORREADINGFROMSTDIN    _MESSAGE(23043, _("error reading from stdin"))
 #define MSG_ANSWER_NOINPUT                  _MESSAGE(23044, _("no input read from stdin"))
 #define MSG_OPTION_ONLY_WITH_BUILTIN_IJS_S  _MESSAGE(23045, _("option " SFN " can only be used with builtin interactive job support configured"))
 

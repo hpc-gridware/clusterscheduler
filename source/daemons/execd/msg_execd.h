@@ -244,7 +244,6 @@
 #define MSG_SGE_PROCFSKILLADDGRPIDMALLOCFAILED           _MESSAGE(29217, _("procfs_kill_addgrpid(): malloc failed" ))
 #define MSG_SGE_KILLINGPIDXY_PI                          _MESSAGE(29218, _("killing pid " pid_t_fmt "/%d" ))
 #define MSG_SGE_DONOTKILLROOTPROCESSXY_PI                _MESSAGE(29219, _("do not kill root process " pid_t_fmt "/%d"   ))
-#define MSG_SGE_PTDISPATCHPROCTOJOBMALLOCFAILED          _MESSAGE(29220, _("pt_dispatch_proc_to_job: malloc failed" ))
 
 #define MSG_REJECT_TASK_MASTER_FORKS_UU                  _MESSAGE(29221, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": on master host and master_forks_slaves=TRUE"))
 #define MSG_REJECT_TASK_NOT_ENOUGH_SLOTS_UUII            _MESSAGE(29222, _("rejecting pe task request for job " sge_u32 "." sge_u32 ": we only allow %d slots due to daemon_forks_slaves=TRUE and %d slots are already in use"))
