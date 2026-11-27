@@ -53,7 +53,7 @@
  *
  * @param size size in bits
  *
- * @return a new bitfield or nullptr, if the creation of the bitfield failed
+ * @return a new bitfield; out of memory terminates the process
  *
  * @note MT-NOTE: sge_bitfield_new() is MT safe
  *
@@ -62,10 +62,10 @@
 bitfield *
 sge_bitfield_new(unsigned int size) {
    /* allocate storage for bitfield object */
-   bitfield *bf = ocs::uti::c_alloc<bitfield>();
+   auto *bf = ocs::uti::create<bitfield>();
    /* initialize bitfield, on errors, free bitfield */
    if (!sge_bitfield_init(bf, size)) {
-      sge_free(&bf);
+      ocs::uti::destroy(bf);
    }
 
    return bf;
@@ -81,7 +81,7 @@ sge_bitfield_new(unsigned int size) {
  * @param bf the bitfield to initialize
  * @param size the targeted size of the bitfield
  *
- * @return true on success, else false
+ * @return true on success, false if @p bf is nullptr; out of memory terminates the process
  *
  * @note MT-NOTE: sge_bitfield_init() is MT safe
  */
@@ -99,13 +99,8 @@ sge_bitfield_init(bitfield *bf, unsigned int size) {
          /* clear buffer */
          bf->bf.dyn = (char *)nullptr;
       } else {
-         bf->bf.dyn = sge_malloc(char_size);
-         if (bf->bf.dyn == nullptr) {
-            ret = false;
-         } else {
-            /* clear buffer */
-            memset(bf->bf.dyn, 0, char_size);
-         }
+         /* zeroed buffer, released with ocs::uti::destroy_array() */
+         bf->bf.dyn = ocs::uti::create_array<char>(char_size);
       }
 
       bf->size = size;
@@ -263,11 +258,9 @@ sge_bitfield_reset(bitfield *bf) {
 bitfield *sge_bitfield_free(bitfield *bf) {
    if (bf != nullptr) {
       if (bf->size > fixed_bits) {
-         if (bf->bf.dyn != nullptr) {
-            sge_free(&(bf->bf.dyn));
-         }
+         ocs::uti::destroy_array(bf->bf.dyn);
       }
-      sge_free(&bf);
+      ocs::uti::destroy(bf);
    }
 
    return nullptr;
@@ -293,9 +286,7 @@ sge_bitfield_free_data(bitfield *bf) {
       ret = false;
    } else {
       if (bf->size > fixed_bits) {
-         if (bf->bf.dyn != nullptr) {
-            sge_free(&(bf->bf.dyn));
-         }
+         ocs::uti::destroy_array(bf->bf.dyn);
       }
    }
 

@@ -42,6 +42,8 @@
  * were reported.
  */
 
+#include <string>
+
 #include "uti/sge_error_class.h"
 #include "uti/sge_rmon_macros.h"
 #include "uti/sge_stdlib.h"
@@ -53,10 +55,10 @@ typedef struct sge_error_message_str sge_error_message_t;
 
 /// One collected error
 struct sge_error_message_str {
-   int error_quality;            ///< caller defined severity of this error
-   int error_type;               ///< caller defined category of this error
-   char *message;                ///< the formatted text, owned by this node
-   sge_error_message_t *next;    ///< next error, or nullptr at the end
+   int error_quality{0};                ///< caller defined severity of this error
+   int error_type{0};                   ///< caller defined category of this error
+   std::string message;                 ///< the formatted text
+   sge_error_message_t *next{nullptr};  ///< next error, or nullptr at the end
 };
 
 /// Cursor state; see @ref sge_error_iterator_str
@@ -111,11 +113,8 @@ static bool sge_error_iterator_next(sge_error_iterator_class_t *thiz);
  *         Release it with #sge_error_class_destroy.
  */
 sge_error_class_t *sge_error_class_create() {
-   auto *ret = ocs::uti::c_alloc<sge_error_class_t>();
-   memset(ret, 0, sizeof(sge_error_class_t));
-
-   ret->sge_error_handle = ocs::uti::c_alloc<sge_error_t>();
-   memset(ret->sge_error_handle, 0, sizeof(sge_error_t));
+   auto *ret = ocs::uti::create<sge_error_class_t>();
+   ret->sge_error_handle = ocs::uti::create<sge_error_t>();
 
    ret->has_error = sge_error_has_error;
    ret->has_quality = sge_error_has_quality;
@@ -147,7 +146,7 @@ void sge_error_class_destroy(sge_error_class_t **ec) {
    et = (sge_error_t *) (*ec)->sge_error_handle;
 
    sge_error_destroy(&et);
-   sge_free(ec);
+   ocs::uti::destroy(*ec);
 }
 
 /**
@@ -192,7 +191,7 @@ void sge_error_destroy(sge_error_t **t) {
    }
 
    sge_error_clear(*t);
-   sge_free(t);
+   ocs::uti::destroy(*t);
 }
 
 
@@ -205,8 +204,7 @@ void sge_error_message_destroy(sge_error_message_t **elem) {
    if (elem == nullptr || *elem == nullptr) {
       return;
    }
-   sge_free(&((*elem)->message));
-   sge_free(elem);
+   ocs::uti::destroy(*elem);
 }
 
 static bool sge_error_has_error(sge_error_class_t *eh) {
@@ -214,6 +212,13 @@ static bool sge_error_has_error(sge_error_class_t *eh) {
    return (et->first != nullptr) ? true : false;
 }
 
+/**
+ * @brief Check whether a collector holds an error of a severity
+ *
+ * @param thiz the collector; nullptr holds nothing
+ * @param error_quality the severity to look for
+ * @return true if at least one collected error has @p error_quality
+ */
 static bool sge_error_has_quality(sge_error_class_t *thiz, int error_quality) {
    DENTER(TOP_LAYER);
 
@@ -227,11 +232,19 @@ static bool sge_error_has_quality(sge_error_class_t *thiz, int error_quality) {
             ret = true;
             break;
          }
+         elem = elem->next;
       }
    }
    DRETURN(ret);
 }
 
+/**
+ * @brief Check whether a collector holds an error of a category
+ *
+ * @param thiz the collector; nullptr holds nothing
+ * @param error_type the category to look for
+ * @return true if at least one collected error has @p error_type
+ */
 static bool sge_error_has_type(sge_error_class_t *thiz, int error_type) {
    DENTER(TOP_LAYER);
 
@@ -245,20 +258,27 @@ static bool sge_error_has_type(sge_error_class_t *thiz, int error_type) {
             ret = true;
             break;
          }
+         elem = elem->next;
       }
    }
    DRETURN(ret);
 }
 
+/**
+ * @brief Create an iterator over the errors of a collector
+ *
+ * @param ec the collector
+ * @return the iterator, positioned before the first error; release it with #sge_error_iterator_class_destroy
+ */
 static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_class_t *ec) {
    DENTER(TOP_LAYER);
 
    auto *et = (sge_error_t *) ec->sge_error_handle;
-   auto *elem = ocs::uti::c_alloc<sge_error_iterator_t>();
+   auto *elem = ocs::uti::create<sge_error_iterator_t>();
    elem->current = et->first;
    elem->is_first_flag = true;
 
-   auto ret = ocs::uti::c_alloc<sge_error_iterator_class_t>();
+   auto ret = ocs::uti::create<sge_error_iterator_class_t>();
    ret->sge_error_iterator_handle = elem;
    ret->get_message = sge_error_iterator_get_message;
    ret->get_quality = sge_error_iterator_get_quality;
@@ -267,6 +287,15 @@ static sge_error_iterator_class_t *sge_error_iterator_class_create(sge_error_cla
    DRETURN(ret);
 }
 
+/**
+ * @brief Format an error and append it to a collector
+ *
+ * @param thiz the collector
+ * @param error_type caller defined category of the error
+ * @param error_quality caller defined severity of the error
+ * @param format printf format of the message
+ * @param ap the arguments of @p format
+ */
 static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_quality,
                              const char *format, va_list ap) {
    DENTER(TOP_LAYER);
@@ -274,17 +303,18 @@ static void sge_error_verror(sge_error_class_t *thiz, int error_type, int error_
    auto *et = (sge_error_t *) thiz->sge_error_handle;
    dstring ds = DSTRING_INIT;
 
-   auto *error = ocs::uti::c_alloc<sge_error_message_t>();
+   auto *error = ocs::uti::create<sge_error_message_t>();
    error->error_quality = error_quality;
    error->error_type = error_type;
 
    sge_dstring_vsprintf(&ds, format, ap);
 
-   error->message = strdup(sge_dstring_get_string(&ds));
+   const char *text = sge_dstring_get_string(&ds);
+   error->message = text != nullptr ? text : "";
    error->next = nullptr;
    sge_dstring_free(&ds);
 
-   DPRINTF("error: %s\n", error->message ? error->message : "");
+   DPRINTF("error: %s\n", error->message.c_str());
 
    if (et->first == nullptr) {
       et->first = error;
@@ -327,15 +357,21 @@ void sge_error_iterator_class_destroy(sge_error_iterator_class_t **thiz) {
 
    elem = (sge_error_iterator_t *) (*thiz)->sge_error_iterator_handle;
 
-   sge_free(&elem);
-   sge_free(thiz);
+   ocs::uti::destroy(elem);
+   ocs::uti::destroy(*thiz);
 }
 
+/**
+ * @brief The message of the error an iterator is on
+ *
+ * @param thiz the iterator
+ * @return the message, owned by the collector, or nullptr when the iterator is not on an error
+ */
 static const char *sge_error_iterator_get_message(sge_error_iterator_class_t *thiz) {
    auto *elem = (sge_error_iterator_t *) thiz->sge_error_iterator_handle;
 
    if (elem && elem->current) {
-      return elem->current->message;
+      return elem->current->message.c_str();
    }
    return nullptr;
 }

@@ -38,6 +38,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <vector>
 
 #include "uti/sge_err.h"
 #include "uti/sge_mtutil.h"
@@ -80,7 +81,7 @@ sge_sl_elem_create(sge_sl_elem_t **elem, void *data) {
    DENTER(SL_LAYER);
 
    if (elem != nullptr) {
-      sge_sl_elem_t *new_elem = ocs::uti::c_alloc<sge_sl_elem_t>();
+      auto *new_elem = ocs::uti::create<sge_sl_elem_t>();
       new_elem->prev = nullptr;
       new_elem->next = nullptr;
       new_elem->data = data;
@@ -132,7 +133,7 @@ sge_sl_elem_destroy(sge_sl_elem_t **elem, sge_sl_destroy_f destroy) {
       if (destroy != nullptr) {
          destroy(&(*elem)->data);
       }
-      sge_free(elem);
+      ocs::uti::destroy(*elem);
    }
    DRETURN(ret);
 }
@@ -476,7 +477,7 @@ sge_sl_create(sge_sl_list_t **list) {
    DENTER(SL_LAYER);
 
    if (list != nullptr) {
-      sge_sl_list_t *new_list = ocs::uti::c_alloc<sge_sl_list_t>();
+      auto *new_list = ocs::uti::create<sge_sl_list_t>();
       pthread_mutexattr_t mutex_attr;
 
       /* initialize the mutex */
@@ -546,7 +547,7 @@ sge_sl_destroy(sge_sl_list_t **list, sge_sl_destroy_f destroy) {
 
       /* final destroy */
       pthread_mutex_destroy(&(*list)->mutex);
-      sge_free(list);
+      ocs::uti::destroy(*list);
    }
    DRETURN(ret);
 }
@@ -938,7 +939,7 @@ sge_sl_get_elem_count(sge_sl_list_t *list) {
  * @param list list
  * @param compare compare function
  *
- * @return error state true  - success false - error
+ * @return true; an empty list is sorted as well (it failed before, as allocating 0 bytes gave nullptr)
  *
  * @note MT-NOTE: sge_sl_sort() is MT safe
  *
@@ -951,36 +952,25 @@ sge_sl_sort(sge_sl_list_t *list, sge_sl_compare_f compare) {
    bool ret = true;
 
    if (list != nullptr && compare != nullptr) {
-      void **pointer_array;
-      size_t size;
-
       sge_mutex_lock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
-      size = sizeof(void *) * list->elements;
-      pointer_array = (void **) sge_malloc(size);
-      if (pointer_array != nullptr) {
-         sge_sl_elem_t *elem = nullptr;
-         int i;
+      std::vector<void *> pointer_array(list->elements);
+      sge_sl_elem_t *elem = nullptr;
 
-         /* fill the pointer array with the data pointers */
-         i = 0;
-         for_each_sl(elem, list) {
-            pointer_array[i++] = elem->data;
-         }
+      /* fill the pointer array with the data pointers */
+      size_t i = 0;
+      for_each_sl(elem, list) {
+         pointer_array[i++] = elem->data;
+      }
 
-         /* sort */
-         qsort((void *) pointer_array, list->elements, sizeof(void *), compare);
+      /* sort; qsort() must not get the nullptr data() of an empty vector */
+      if (pointer_array.size() > 1) {
+         qsort(pointer_array.data(), pointer_array.size(), sizeof(void *), compare);
+      }
 
-         /* now move the sorted pointers back to elemnts in the list */
-         i = 0;
-         for_each_sl(elem, list) {
-            elem->data = pointer_array[i++];
-         }
-
-         /* cleanup */
-         sge_free(&pointer_array);
-      } else {
-         sge_err_set(SGE_ERR_MEMORY, MSG_UNABLETOALLOCATEBYTES_DS, size, __func__);
-         ret = false;
+      /* now move the sorted pointers back to elemnts in the list */
+      i = 0;
+      for_each_sl(elem, list) {
+         elem->data = pointer_array[i++];
       }
       sge_mutex_unlock(SL_MUTEX_NAME, __func__, __LINE__, &list->mutex);
    }

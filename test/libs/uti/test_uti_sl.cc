@@ -413,6 +413,14 @@ test_create_insert_sort() {
       ret &= sge_sl_insert(list, (void *)"b", SGE_SL_FORWARD);
       ret &= sge_sl_insert(list, (void *)"j", SGE_SL_FORWARD);
    }
+   /* an empty list sorts successfully */
+   if (ret) {
+      sge_sl_list_t *empty_list = nullptr;
+      ret &= sge_sl_create(&empty_list);
+      ret &= sge_sl_sort(empty_list, test_compare);
+      ret &= sge_sl_get_elem_count(empty_list) == 0;
+      sge_sl_destroy(&empty_list, nullptr);
+   }
    if (ret) {
       ret &= sge_sl_sort(list, test_compare);
    }

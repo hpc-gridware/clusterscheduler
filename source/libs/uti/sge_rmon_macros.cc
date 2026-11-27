@@ -98,19 +98,27 @@ rmon_helper_t *rmon_get_helper() {
     pthread_once(&rmon_helper_key_once, rmon_helper_key_init);
     auto *helper = (rmon_helper_t *) pthread_getspecific(rmon_helper_key);
     if (helper == nullptr) {
-        helper = ocs::uti::c_alloc<rmon_helper_t>();
-        memset(helper, 0, sizeof(rmon_helper_t));
+        helper = ocs::uti::create<rmon_helper_t>();
         pthread_setspecific(rmon_helper_key, helper);
     }
     return helper;
 }
 
+/** @brief Create the thread specific key of the trace helpers; runs once per process */
 static void rmon_helper_key_init() {
     pthread_key_create(&rmon_helper_key, rmon_helper_key_destroy);
 }
 
+/**
+ * @brief Destroy the trace helper of an exiting thread
+ *
+ * Registered with `pthread_key_create()`; the helper was made with ocs::uti::create() in rmon_get_helper().
+ *
+ * @param ctx the thread's rmon_helper_t
+ */
 static void rmon_helper_key_destroy(void *ctx) {
-    free(ctx);
+    auto *helper = static_cast<rmon_helper_t *>(ctx);
+    ocs::uti::destroy(helper);
 }
 
 /**
@@ -352,9 +360,7 @@ mwrite(char *message, const char *thread_name, int thread_id) {
  * Set debug level. Read environment variable "SGE_DEBUG_LEVEL" and use it
  * to initialize debug levels.
  *
- * @param void none
- *
- * @return successful ENOENT - environment variable not set EINVAL - unexpected format
+ * @return 0 on success, ENOENT if the environment variable is not set, EINVAL for an unexpected format
  *
  * @note MT-NOTE: 'set_debug_level_from_env()' is MT safe with exceptions.
  *       MT-NOTE:  See introduction!
@@ -366,11 +372,9 @@ static int set_debug_level_from_env() {
     }
 
     int l[N_LAYER];
-    const char *s = strdup(env);
-    int i = sscanf(s, "%d%d%d%d%d%d%d%d", l, l + 1, l + 2, l + 3, l + 4, l + 5, l + 6, l + 7);
+    int i = sscanf(env, "%d%d%d%d%d%d%d%d", l, l + 1, l + 2, l + 3, l + 4, l + 5, l + 6, l + 7);
     if (i != N_LAYER) {
         printf("%s\n", MSG_RMON_ILLEGALDBUGLEVELFORMAT);
-        free((char *) s);
         return EINVAL;
     }
 
@@ -379,7 +383,6 @@ static int set_debug_level_from_env() {
         rmon_mlputl(&RMON_DEBUG_ON_STORAGE, i, l[i]);
     }
 
-    free((char *) s);
     return 0;
 }
 
@@ -393,9 +396,7 @@ static int set_debug_level_from_env() {
  * file name (that is file name and path). If a file name is given an
  * already existing file with the same name will be overwritten.
  *
- * @param void none
- *
- * @return successful EACCES - file name is invalid or unable to open file
+ * @return 0 on success, EINVAL if the file name is invalid or the file cannot be opened
  *
  * @note MT-NOTE: 'set_debug_target_from_env()' is MT safe with exceptions.
  *       MT-NOTE: See introduction!
@@ -406,7 +407,7 @@ static int set_debug_target_from_env() {
         return 0;
     }
 
-    const char *s = strdup(env);
+    const char *s = env;
     if (strcmp(s, "stdout") == 0) {
         rmon_fp = stdout;
     } else if (strcmp(s, "stderr") == 0) {
@@ -415,10 +416,8 @@ static int set_debug_target_from_env() {
         rmon_fp = stderr;
         fprintf(rmon_fp, MSG_RMON_UNABLETOOPENXFORWRITING_S, s);
         fprintf(rmon_fp, MSG_RMON_ERRNOXY_DS, errno, strerror(errno));
-        free((char *) s);
         return EINVAL;
     }
 
-    free((char *) s);
     return 0;
 }

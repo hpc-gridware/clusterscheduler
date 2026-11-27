@@ -1095,8 +1095,11 @@ component_parse_auth_info(dstring *error_dstr, char *auth_info, uid_t *uid, char
          sge_dstring_sprintf(error_dstr, MSG_UTI_MUNGE_DECODE_FAILED_S, ocs::uti::Munge::munge_strerror_func(err));
          DRETURN(false);
       }
-      auth_buffer_str = local_auth_buffer;
-      sge_free(&local_auth_buffer);
+      // the decoded buffer is malloc() memory of libmunge
+      const ocs::uti::c_ptr<char> auth_buffer{local_auth_buffer};
+      if (local_auth_buffer != nullptr) {
+         auth_buffer_str = local_auth_buffer;
+      }
 #else
       sge_dstring_sprintf(error_dstr, SFNMAX, MSG_GDI_BUILT_WITHOUT_MUNGE);
       DRETURN(false);

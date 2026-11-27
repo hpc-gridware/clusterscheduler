@@ -947,7 +947,6 @@
 
 #define MSG_UNKNOWNREASON                 _MESSAGE(60000, _("<unknown reason>"))
 #define MSG_NOTYETIMPLEMENTED_S           _MESSAGE(60001, _("feature " SFQ " not yet implemented"))
-#define MSG_UNABLETOALLOCATEBYTES_DS      _MESSAGE(60100, _("unable to allocate %d bytes of memory in function " SFQ))
 
 #define MSG_INVALIDFILENAMENULLOREMPTY    _MESSAGE(60200, _("invalid file name: nullptr pointer or empty string"))
 #define MSG_ERRORGETTINGTMPNAM_S          _MESSAGE(60202, _("error getting temporary file name: " SFN))
