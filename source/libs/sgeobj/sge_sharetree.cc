@@ -340,7 +340,8 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
  *
  * The path components are separated by `.` or `/`; `*` matches any node name.
  * This identifies exactly one node even when the same name occurs several
- * times in the tree.
+ * times in the tree. `/` alone names the root itself; @p ancestors is left
+ * untouched then, the root has none.
  *
  * @param ep root of the tree (STN), not empty
  * @param path the path to resolve
@@ -351,6 +352,11 @@ search_by_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *name, cons
 ocs::tom::Element<ocs::tom::STN>
 search_named_node_path(const ocs::tom::Element<ocs::tom::STN> ep, const char *path, ancestors_t *ancestors) {
    DENTER(TOP_LAYER);
+   /* "/" is the root itself (CS-573): the path search below only ever matches
+    * the children of the node it starts at, so it cannot find the root */
+   if (path != nullptr && strcmp(path, "/") == 0) {
+      DRETURN(ep);
+   }
    const auto ret = search_by_path(ep, nullptr, path, 0, ancestors, 0);
    DRETURN(ret);
 }

@@ -76,6 +76,10 @@ namespace {
    };
 
    /** @brief The path of a node as the ancestors spell it, "/a/b"
+    *
+    * The root has no ancestors and is spelled "/", the way "-sstnode /" prints
+    * it (CS-573).
+    *
     * @param ancestors the result of search_named_node_path()
     * @param buffer receives the path
     * @return the path, owned by @p buffer
@@ -85,6 +89,9 @@ namespace {
       sge_dstring_clear(buffer);
       for (int i = 0; i < ancestors.depth; i++) {
          sge_dstring_sprintf_append(buffer, "/%s", ancestors.nodes[i].get<STN_name>());
+      }
+      if (ancestors.depth <= 0) {
+         sge_dstring_copy_string(buffer, "/");
       }
       return sge_dstring_get_string(buffer);
    }
