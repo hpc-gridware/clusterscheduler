@@ -1222,7 +1222,7 @@ static void *pty_to_commlib(void *t_conf) {
 static bool attempt_reconnect_grace_period() {
    shepherd_trace("commlib_to_pty: client disconnected, suspending job and polling for reconnect (timeout=%d s)",
                   g_ijs_reconnect_timeout);
-   shepherd_signal_job(g_job_pid, SIGSTOP);
+   shepherd_signal_job(-g_job_pid, SIGSTOP);
 
    const char *reconnect_info_path = "reconnect.info";
    const time_t deadline = time(nullptr) + g_ijs_reconnect_timeout;
@@ -1346,7 +1346,7 @@ static bool attempt_reconnect_grace_period() {
       }
 
       // SIGCONT thaws the systemd cgroup and resumes the job.
-      shepherd_signal_job(g_job_pid, SIGCONT);
+      shepherd_signal_job(-g_job_pid, SIGCONT);
 
       unlink(reconnect_info_path);
       return true;
@@ -1354,7 +1354,7 @@ static bool attempt_reconnect_grace_period() {
 
    shepherd_trace("commlib_to_pty: reconnect grace period expired");
    // SIGCONT to thaw the frozen cgroup so the caller's SIGKILL actually takes effect.
-   shepherd_signal_job(g_job_pid, SIGCONT);
+   shepherd_signal_job(-g_job_pid, SIGCONT);
    return false;
 }
 
@@ -1586,13 +1586,15 @@ static void *commlib_to_pty(void *t_conf) {
                }
                shepherd_trace("commlib_to_pty: received suspend message, "
                    "suspend the process");
-               shepherd_signal_job(g_job_pid, SIGSTOP);
+               // the process group of the job, as a regular suspend (qmod -sj) signals it; on a systemd host
+               // shepherd_signal_job() also freezes the job scope, which reaches detached children (CS-2194)
+               shepherd_signal_job(-g_job_pid, SIGSTOP);
                break;
 
             case UNSUSPEND_CTRL_MSG:
                shepherd_trace("commlib_to_pty: received unsuspend message, "
                    "awake the process");
-               shepherd_signal_job(g_job_pid, SIGCONT);
+               shepherd_signal_job(-g_job_pid, SIGCONT);
                break;
 
             case WINDOW_SIZE_CTRL_MSG:
