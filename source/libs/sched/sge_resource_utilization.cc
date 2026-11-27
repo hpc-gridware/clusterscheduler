@@ -674,9 +674,10 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
    const bool handle_rsmap = ((level == HOST_TAG || level == GLOBAL_TAG) && !rsmap_inuse.empty());
 
    // The same call books and gives back, the second with a negated amount - an advance
-   // reservation being removed, a job being undebited. The instances follow the amount: they
-   // are taken from the start of the window and given back at its end, or the other way round.
-   const bool rsmap_taken = (utilization >= 0.0);
+   // reservation being removed, a job being undebited. The resource map instances and the
+   // bound cores follow the amount: they are taken from the start of the window and given
+   // back at its end, or the other way round.
+   const bool taken = (utilization >= 0.0);
 
    /* ensure the resource diagram is initialized */
    if (resource_diagram == nullptr) {
@@ -703,11 +704,11 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
             topo_binding_now.reset_topology(start.get<RDE_binding_inuse>());
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(start, topo_binding_now,
-                                                                                   binding_to_use_obj, true);
+                                                                                   binding_to_use_obj, taken);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(start, start.get<RDE_resource_map_list>(), rsmap_inuse,
-         rsmap_taken);
+         taken);
       }
    } else {
       // no start element found, so we need to create one
@@ -732,10 +733,10 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
             topo_binding_now.reset_topology(binding_prev);
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(start, topo_binding_now,
-                                                                                   binding_to_use_obj, true);
+                                                                                   binding_to_use_obj, taken);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(start, rsmap_prev, rsmap_inuse, rsmap_taken);
+         utilization_rsmap_set(start, rsmap_prev, rsmap_inuse, taken);
       }
 
       // Insert the new element with our start time after the previous element that has an earlier start time
@@ -769,11 +770,11 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
             topo_binding_now.reset_topology(thiz.get<RDE_binding_inuse>());
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(thiz, topo_binding_now,
-                                                                                   binding_to_use_obj, true);
+                                                                                   binding_to_use_obj, taken);
       }
       if (handle_rsmap) {
          utilization_rsmap_set(thiz, thiz.get<RDE_resource_map_list>(), rsmap_inuse,
-         rsmap_taken);
+         taken);
       }
       prev = thiz;
       thiz = thiz.next();
@@ -793,10 +794,10 @@ int utilization_add(const ocs::tom::Element<ocs::tom::RUE> cr, uint64_t start_ti
             topo_binding_now.reset_topology(binding_prev);
          }
          ocs::TopologyString::elem_mark_nodes_as_used_or_unused<RDE_binding_inuse>(new_end.get(), topo_binding_now,
-                                                                                   binding_to_use_obj, false);
+                                                                                   binding_to_use_obj, !taken);
       }
       if (handle_rsmap) {
-         utilization_rsmap_set(new_end.get(), rsmap_prev_end, rsmap_inuse, !rsmap_taken);
+         utilization_rsmap_set(new_end.get(), rsmap_prev_end, rsmap_inuse, !taken);
       }
 
       resource_diagram.insert_after(prev, std::move(new_end));

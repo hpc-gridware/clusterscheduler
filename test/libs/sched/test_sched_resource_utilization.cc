@@ -322,6 +322,7 @@ static void test_extensive_utilization(int *id) {
 static int test_rsmap_utilization();
 static int test_rsmap_below();
 static int test_below_window_before_closed_period();
+static int test_binding_release();
 
 /**
  * @brief Run the checks of this module test
@@ -374,6 +375,7 @@ int main(int /*argc*/, char * /*argv*/[]) {
    s_fail += test_rsmap_utilization();
    s_fail += test_rsmap_below();
    s_fail += test_below_window_before_closed_period();
+   s_fail += test_binding_release();
 
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
@@ -856,6 +858,131 @@ static int test_below_window_before_closed_period() {
       } else {
          printf("   ok: %s\n", cases[i].what);
       }
+   }
+
+   return ret;
+}
+
+/**
+ * @brief Counts the cores a diagram entry holds as bound
+ *
+ * A used core is written in lower case in the topology string of RDE_binding_inuse.
+ *
+ * @param cr the slots entry of a host
+ * @param time the point in time
+ * @return the number of used cores at that time
+ */
+static int
+binding_used_cores(const ocs::tom::ConstElement<ocs::tom::RUE> cr, const uint64_t time) {
+   const auto rde = rde_at_time(cr, time);
+   const char *binding = rde ? rde.get<RDE_binding_inuse>() : nullptr;
+   int used = 0;
+
+   if (binding != nullptr) {
+      for (const char *c = binding; *c != '\0'; c++) {
+         if (*c == 'c') {
+            used++;
+         }
+      }
+   }
+   return used;
+}
+
+/**
+ * @brief Checks the number of bound cores at a point in time
+ *
+ * @param cr the slots entry of a host
+ * @param time the point in time
+ * @param expected the expected number of used cores
+ * @return 0 when the number matches, 1 otherwise
+ */
+static int
+check_binding(const ocs::tom::ConstElement<ocs::tom::RUE> cr, const uint64_t time,
+              const int expected) {
+   const auto rde = rde_at_time(cr, time);
+   const char *binding = rde ? rde.get<RDE_binding_inuse>() : nullptr;
+   const int got = binding_used_cores(cr, time);
+
+   if (got != expected) {
+      printf("   FAIL: at " sge_u64 " expected %d bound cores, got %d (%s)\n",
+             time, expected, got, binding != nullptr ? binding : "NONE");
+      return 1;
+   }
+   printf("   ok: at " sge_u64 " %d bound cores (%s)\n", time, got,
+          binding != nullptr ? binding : "NONE");
+   return 0;
+}
+
+/**
+ * @brief Creates a binding_to_use list with one topology string
+ *
+ * @param topology the internal topology string, used nodes in lower case
+ * @return the list
+ */
+static ocs::tom::ListPtr<ocs::tom::ST>
+make_binding(const char *topology) {
+   auto list = ocs::tom::ListPtr<ocs::tom::ST>::create("binding_to_use");
+   list->emplace_back<ST_name>(topology);
+   return list;
+}
+
+/**
+ * @brief Giving back a booking also gives back the cores bound with it
+ *
+ * The same call books and gives back, the second with a negated amount, e.g. when an advance
+ * reservation is deleted. The cores bound with the booking have to be free again afterwards,
+ * else every later request needing them is refused on that host.
+ *
+ * @return the number of failed checks
+ */
+static int test_binding_release() {
+   int ret = 0;
+
+   printf("\n - test the release of bound cores - \n\n");
+
+   auto cr = ocs::tom::ElementPtr<ocs::tom::RUE>::create();
+   cr->set<RUE_name>("slots");
+
+   // two sockets with one core and two threads each: core 0 and core 1
+   auto core0 = make_binding("(N(s(x(y(c(t)(t)))))(S(X(Y(C(T)(T))))))");
+   auto core1 = make_binding("(N(S(X(Y(C(T)(T)))))(s(x(y(c(t)(t))))))");
+
+   printf("a reservation binding core 0, from 1000 for 200s\n");
+   utilization_add(*cr, 1000, 200, 1, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core0, no_rsmap);
+   ret += check_binding(*cr, 900, 0);
+   ret += check_binding(*cr, 1000, 1);
+   ret += check_binding(*cr, 1100, 1);
+   ret += check_binding(*cr, 1200, 0);
+
+   printf("a reservation binding core 1, from 1100 for 200s\n");
+   utilization_add(*cr, 1100, 200, 1, 101, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core1, no_rsmap);
+   ret += check_binding(*cr, 1000, 1);
+   ret += check_binding(*cr, 1100, 2);
+   ret += check_binding(*cr, 1200, 1);
+   ret += check_binding(*cr, 1300, 0);
+
+   printf("the first reservation is deleted\n");
+   utilization_add(*cr, 1000, 200, -1, 100, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core0, no_rsmap);
+   ret += check_binding(*cr, 1000, 0);
+   ret += check_binding(*cr, 1100, 1);
+   ret += check_binding(*cr, 1200, 1);
+   ret += check_binding(*cr, 1300, 0);
+   ret += check_binding(*cr, 5000, 0);
+
+   printf("the second reservation is deleted\n");
+   utilization_add(*cr, 1100, 200, -1, 101, 1, HOST_TAG, "node01", "RESERVING", false, false,
+                   core1, no_rsmap);
+   ret += check_binding(*cr, 1000, 0);
+   ret += check_binding(*cr, 1100, 0);
+   ret += check_binding(*cr, 1300, 0);
+   ret += check_binding(*cr, 5000, 0);
+   const auto entries = cr->get<RUE_utilized>().size();
+   if (entries != 0) {
+      printf("   FAIL: the diagram still has %zu entries\n", static_cast<size_t>(entries));
+      ret++;
    }
 
    return ret;
