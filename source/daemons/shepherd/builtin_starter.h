@@ -46,7 +46,11 @@
  * either on top of its own or from nothing, depending on the configuration.
  */
 
+#include <cstdio>
+#include <string>
+
 void son(const char *childname, char *script_file, int truncate_stderr_out, bool is_interactive_job);
+bool ocs_shepherd_read_env_line(FILE *fp, std::string &line);
 int sge_set_environment(bool scrub_loader_vars);
 char** sge_get_environment();
 int sge_set_env_value(const char *name, const char* value);

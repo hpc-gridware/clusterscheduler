@@ -920,6 +920,28 @@ is_dangerous_env_var(const char *name) {
    return false;
 }
 
+/**
+ * @brief Read one line of the `environment` file the execd wrote
+ *
+ * A line can have any length (CS-873). The fixed buffer of 10000 characters used before cut a longer
+ * variable and turned the rest of its value into a line of its own. ocs_read_line() from uti/sge_io.cc is not
+ * used: it skips leading whitespace and empty lines, which would change values and shift the line numbers of
+ * the error messages.
+ *
+ * @param fp the open environment file
+ * @param line receives the line without its newline
+ * @return true if a line was read, false at the end of the file
+ */
+bool
+ocs_shepherd_read_env_line(FILE *fp, std::string &line) {
+   line.clear();
+   int c;
+   while ((c = getc(fp)) != EOF && c != '\n') {
+      line.push_back(static_cast<char>(c));
+   }
+   return c != EOF || !line.empty();
+}
+
 /** @brief Build the job's environment from the `environment` file the execd wrote
  *
  * Each entry goes into either the inherited or the internal environment,
@@ -934,7 +956,8 @@ is_dangerous_env_var(const char *name) {
 int sge_set_environment(bool scrub_loader_vars) {
    const char *const filename = "environment";
    FILE *fp;
-   char buf[10000], *name, *value, err_str[10000];
+   std::string buf;
+   char *name, *value, err_str[10000];
    int line=0;
 
    setup_environment();
@@ -943,18 +966,18 @@ int sge_set_environment(bool scrub_loader_vars) {
       shepherd_error(1, "can't open environment file: %s", strerror(errno));
    }
 
-   while (fgets(buf, sizeof(buf), fp)) {
+   while (ocs_shepherd_read_env_line(fp, buf)) {
 
       line++;
 
-      if (strlen(buf) <= 1) {   /* empty line or lastline */
+      if (buf.empty()) {   /* empty line */
          continue;
       }
 
-      name = strtok(buf, "=");
+      name = strtok(buf.data(), "=");
       if (name == nullptr) {
          FCLOSE(fp);
-         shepherd_error(1, "error reading environment file: line=%d, contents:%s", line, buf);
+         shepherd_error(1, "error reading environment file: line=%d, contents:%s", line, buf.c_str());
       }
 
       value = strtok(nullptr, "\n");

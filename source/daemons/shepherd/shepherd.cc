@@ -3360,29 +3360,30 @@ shepherd_signal_job(pid_t pid, int sig) {
 static int notify_tasker(uint32_t exit_status) {
    const char *const filename = "environment";
    FILE *fp;
-   char buf[10000], *name;
+   std::string buf;
+   char *name;
    const char *value;
    int line=0;
    pid_t tasker_pid;
-   char pvm_tasker_pid[1000], sig_info_file[1000], pvm_task_id[1000];
-
-   pvm_tasker_pid[0] = sig_info_file[0] = pvm_task_id[0] = '\0';
+   // CS-873: the lines and the values have any length; a value of more than 999 characters overflowed the
+   // former fixed buffers, and the rest of a line longer than 9999 characters was read as a line of its own
+   std::string pvm_tasker_pid, sig_info_file, pvm_task_id;
 
    if (!(fp = fopen(filename, "r"))) {
       shepherd_error(1, "can't open environment file: %s", strerror(errno));
       return 1;
    }
 
-   while (fgets(buf, sizeof(buf), fp)) {
+   while (ocs_shepherd_read_env_line(fp, buf)) {
       line++;
 
-      if (strlen(buf) <= 1)     /* empty line or lastline */
+      if (buf.empty())     /* empty line */
          continue;
 
-      name = strtok(buf, "=");
+      name = strtok(buf.data(), "=");
       if (!name) {
          shepherd_error(1, "error reading environment file: line=%d, "
-                        "contents:%s", line, buf);
+                        "contents:%s", line, buf.c_str());
          FCLOSE(fp);
          return 1;
       }
@@ -3391,11 +3392,11 @@ static int notify_tasker(uint32_t exit_status) {
          value = "";
 
       if (!strcmp(name, "PVM_TASKER_PID"))
-         strcpy(pvm_tasker_pid, value);
+         pvm_tasker_pid = value;
       if (!strcmp(name, "SIG_INFO_FILE"))
-         strcpy(sig_info_file, value);
+         sig_info_file = value;
       if (!strcmp(name, "PVM_TASK_ID"))
-         strcpy(pvm_task_id, value);
+         pvm_task_id = value;
 
       /*
        * CS-2764: this used to call sge_set_env_value(name, value) here, which put the whole
@@ -3410,18 +3411,18 @@ static int notify_tasker(uint32_t exit_status) {
 
    FCLOSE(fp);
 
-   if (!pvm_tasker_pid[0] || !sig_info_file[0] || !pvm_task_id[0]) {
+   if (pvm_tasker_pid.empty() || sig_info_file.empty() || pvm_task_id.empty()) {
       shepherd_trace("no tasker to notify");
       return 0;
    }
 
-   if (sscanf(pvm_tasker_pid, pid_t_fmt, &tasker_pid)!=1) {
+   if (sscanf(pvm_tasker_pid.c_str(), pid_t_fmt, &tasker_pid)!=1) {
       shepherd_error(1, "unable to parse pvm tasker pid from \"%s\"",
-                     pvm_tasker_pid);
+                     pvm_tasker_pid.c_str());
       return 1;
    }
 
-   if (shepherd_write_sig_info_file(sig_info_file, pvm_task_id, exit_status)) {
+   if (shepherd_write_sig_info_file(sig_info_file.c_str(), pvm_task_id.c_str(), exit_status)) {
       struct passwd pw_struct;
 
       /* sig_info_file has to be removed by tasker
@@ -3433,10 +3434,10 @@ static int notify_tasker(uint32_t exit_status) {
       if (pw == nullptr) {
          shepherd_error(1, "can't get password entry for user \"%s\"", job_owner);
       }
-      if (chown(sig_info_file, pw->pw_uid, -1) != 0) {
+      if (chown(sig_info_file.c_str(), pw->pw_uid, -1) != 0) {
          dstring ds = DSTRING_INIT;
          shepherd_error(1, "can't chown sig_info_file %s to user %s: %s",
-                        sig_info_file, job_owner, sge_strerror(errno, &ds));
+                        sig_info_file.c_str(), job_owner, sge_strerror(errno, &ds));
          /* no sge_dstring_free needed - shepherd_error exited */
       }
    }
