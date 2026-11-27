@@ -437,6 +437,84 @@ sge_group2gid(const char *gname, gid_t *gidp, int retries) {
 } /* sge_group2gid() */
 
 /**
+ * @brief Look up the passwd entry of a uid, retrying and growing the buffer when it is too small
+ *
+ * A failed lookup or a uid without entry is retried after a second, up to @p retries times. A buffer that
+ * is too small (`getpwuid_r()` returns ERANGE, it does not have to set errno) is grown without using up a
+ * retry or sleeping.
+ *
+ * @param uid the user id
+ * @param pw the structure that receives the entry
+ * @param buffer memory referenced by @p pw; sized with get_pw_buffer_size() when empty, grown when too
+ *               small, so it must outlive the use of @p pw
+ * @param retries number of retries when NIS or LDAP is slow to answer
+ * @return @p pw filled in, or nullptr if the uid could not be resolved
+ *
+ * @note MT-NOTE: ocs_getpwuid_r() is MT safe
+ */
+struct passwd *
+ocs_getpwuid_r(const uid_t uid, struct passwd *pw, std::vector<char> &buffer, int retries) {
+   if (buffer.empty()) {
+      buffer.resize(get_pw_buffer_size());
+   }
+
+   struct passwd *res = nullptr;
+   while (true) {
+      const int rc = getpwuid_r(uid, pw, buffer.data(), buffer.size(), &res);
+      if (rc == ERANGE) {
+         buffer.resize(buffer.size() + 1024);
+         continue;
+      }
+      if (rc == 0 && res != nullptr) {
+         return res;
+      }
+      if (!retries--) {
+         return nullptr;
+      }
+      sleep(1);
+   }
+}
+
+/**
+ * @brief Look up the group entry of a gid, retrying and growing the buffer when it is too small
+ *
+ * A failed lookup is retried after a second, up to @p retries times; a gid without entry fails at once.
+ * A buffer that is too small (`getgrgid_r()` returns ERANGE, it does not have to set errno) is grown
+ * without using up a retry or sleeping. Unlike sge_getgrgid_r() it accepts an entry with an empty name.
+ *
+ * @param gid the group id
+ * @param gr the structure that receives the entry
+ * @param buffer memory referenced by @p gr; sized with get_group_buffer_size() when empty, grown when too
+ *               small, so it must outlive the use of @p gr
+ * @param retries number of retries when NIS or LDAP is slow to answer
+ * @return @p gr filled in, or nullptr if the gid has no entry or could not be resolved
+ *
+ * @note MT-NOTE: ocs_getgrgid_r() is MT safe
+ */
+struct group *
+ocs_getgrgid_r(const gid_t gid, struct group *gr, std::vector<char> &buffer, int retries) {
+   if (buffer.empty()) {
+      buffer.resize(get_group_buffer_size());
+   }
+
+   struct group *res = nullptr;
+   while (true) {
+      const int rc = getgrgid_r(gid, gr, buffer.data(), buffer.size(), &res);
+      if (rc == ERANGE) {
+         buffer.resize(buffer.size() + 1024);
+         continue;
+      }
+      if (rc == 0) {
+         return res;
+      }
+      if (!retries--) {
+         return nullptr;
+      }
+      sleep(1);
+   }
+}
+
+/**
  * @brief Resolves uid to user name
  *
  * Resolves uid to user name. if 'dst' is nullptr the function checks
@@ -455,17 +533,13 @@ int
 sge_uid2user(uid_t uid, char *dst, size_t sz, int retries) {
    DENTER(UIDGID_LAYER);
 
-   struct passwd *pw;
    struct passwd pw_entry {};
    std::vector<char> buffer(get_pw_buffer_size());
 
-   /* max retries that are made resolving user name */
-   while (getpwuid_r(uid, &pw_entry, buffer.data(), buffer.size(), &pw) != 0 || !pw) {
-      if (!retries--) {
-         ERROR(MSG_SYSTEM_GETPWUIDFAILED_uS, uid, strerror(errno));
-         DRETURN(1);
-      }
-      sleep(1);
+   struct passwd *pw = ocs_getpwuid_r(uid, &pw_entry, buffer, retries);
+   if (pw == nullptr) {
+      ERROR(MSG_SYSTEM_GETPWUIDFAILED_uS, uid, strerror(errno));
+      DRETURN(1);
    }
    sge_strlcpy(dst, pw->pw_name, sz);
 
@@ -523,21 +597,12 @@ sge_gid2group(const gid_t gid, gid_t *last_gid, std::optional<std::string> &grou
 
    if (!group_name || *last_gid != gid) {
       std::vector<char> buf(get_group_buffer_size());
-      struct group *gr;
       struct group gr_entry {};
-
-      /* max retries that are made resolving group name */
-      while (getgrgid_r(gid, &gr_entry, buf.data(), buf.size(), &gr) != 0) {
-         if (!retries--) {
-            DRETURN(1);
-         }
-
-         sleep(1);
-      }
 
       /* Bugfix: Issuezilla 1256
        * We need to handle the case when the OS is unable to resolve the GID to
        * a name. [DT] */
+      struct group *gr = ocs_getgrgid_r(gid, &gr_entry, buf, retries);
       if (gr == nullptr) {
          DRETURN(1);
       }

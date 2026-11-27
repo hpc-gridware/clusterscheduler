@@ -110,6 +110,12 @@ sge_getpwnam_r(const char *name, struct passwd *pw, char *buffer, size_t bufsize
 struct group *
 sge_getgrgid_r(gid_t gid, struct group *pg, std::vector<char> &buffer, int retries);
 
+struct passwd *
+ocs_getpwuid_r(uid_t uid, struct passwd *pw, std::vector<char> &buffer, int retries);
+
+struct group *
+ocs_getgrgid_r(gid_t gid, struct group *gr, std::vector<char> &buffer, int retries);
+
 bool
 sge_is_user_superuser(const char *name);
 

@@ -322,6 +322,30 @@ int main(int argc, char *argv[]) {
             res != nullptr && buf.size() > 1 && strcmp(res->gr_name, groupname) == 0); id++;
    }
 
+   // T28: ocs_getpwuid_r grows a buffer that is too small, as sge_uid2user relies on
+   {
+      std::vector<char> buf(1);
+      struct passwd pw{};
+      struct passwd *res = ocs_getpwuid_r(uid, &pw, buf, 0);
+      CHECK(id, "ocs_getpwuid_r grows a one byte buffer and resolves the current uid",
+            res != nullptr && buf.size() > 1 && strcmp(res->pw_name, username) == 0); id++;
+   }
+   // T29: ocs_getgrgid_r grows a buffer that is too small, as the cached sge_gid2group relies on
+   {
+      std::vector<char> buf(1);
+      struct group gr{};
+      struct group *res = ocs_getgrgid_r(gid, &gr, buf, 0);
+      CHECK(id, "ocs_getgrgid_r grows a one byte buffer and resolves the current gid",
+            res != nullptr && buf.size() > 1 && strcmp(res->gr_name, groupname) == 0); id++;
+   }
+   // T30: ocs_getgrgid_r reports a gid without entry as nullptr
+   {
+      std::vector<char> buf;
+      struct group gr{};
+      CHECK(id, "ocs_getgrgid_r returns nullptr for a non-existent gid",
+            ocs_getgrgid_r((gid_t)999999999, &gr, buf, 0) == nullptr); id++;
+   }
+
    printf("\n%s - %d failure(s)\n", s_fail == 0 ? "PASS" : "FAIL", s_fail);
    DRETURN(s_fail == 0 ? 0 : 1);
 }
