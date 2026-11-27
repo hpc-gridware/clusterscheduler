@@ -483,46 +483,44 @@ ErrUsage()
 {
    myname=`basename $0`
    $INFOTEXT -e \
-             "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-db|-udb|-bup|-rst| \n" \
-             "       -v|-upd|-upd-execd|-upd-rc| \n" \
-             "       -post_upd|-start-all|-rccreate|[-host <hostname>] [-resport] [-rsh] \n" \
-             "       [-auto <filename>] [-nr] [-munge]\n" \
-             "       [-oldijs] [-afs] [-noremote] [-nosmf] [-nost]\n" \
+             "Usage: %s -m|-um|-x|-ux [all]|-sm|-usm|-s|-bup|-rst| \n" \
+             "       -v|-upd|-post-upd|-upd-execd|-upd-rc|-start-all|-rccreate|-help \n" \
+             "       [-host <hostname>] [-auto <filename>] [-resport] [-rsh] [-nr] \n" \
+             "       [-munge] [-tls] [-oldijs] [-afs] [-noremote] [-nosmf]\n" \
              "   -m         install qmaster host\n" \
              "   -um        uninstall qmaster host\n" \
              "   -x         install execution host\n" \
-             "   -ux        uninstall execution host\n" \
+             "   -ux        uninstall execution host, all: every registered execution host\n" \
              "   -sm        install shadow host\n" \
              "   -usm       uninstall shadow host\n" \
              "   -s         install submit host(s)\n" \
              "   -bup       backup of your configuration\n" \
              "   -rst       restore configuration from backup\n" \
              "   -v         print version\n" \
-             "   -upd       upgrade cluster from 6.0 or higher to 6.2\n" \
+             "   -upd       upgrade the cluster from a backup of an older version\n" \
+             "   -post-upd  finish the upgrade procedure (initialize execd spool directories\n" \
+             "              and create autostart scripts)\n" \
              "   -upd-execd delete/initialize all execd spool directories\n" \
              "   -upd-rc    create new autostart scripts for the whole cluster\n" \
-             "   -post-upd  finish the upgrade procedure (initialize execd spool directories,\n" \
-             "              create autostart scripts and update windows helper service)\n" \
              "   -start-all start whole cluster\n" \
              "   -rccreate  create startup scripts from templates\n" \
-             "   -host      hostname for shadow master installation or uninstallation \n" \
-             "              (eg. exec host)\n" \
-             "   -resport   the install script does not allow SGE_QMASTER_PORT numbers \n" \
-             "              higher than 1024\n" \
-             "   -rsh       use rsh instead of ssh (default is ssh)\n" \
+             "   -host      host for shadow master installation or uninstallation (eg. exec\n" \
+             "              host); after -m without -auto: the execution hosts to install\n" \
              "   -auto      full automatic installation (qmaster and exec hosts)\n" \
+             "   -resport   the install script does not allow SGE_QMASTER_PORT numbers \n" \
+             "              higher than 1023 (reserved ports)\n" \
+             "   -rsh       use rsh instead of ssh (default is ssh)\n" \
              "   -nr        set reschedule to false\n" \
              "   -munge     install system with Munge authentication enabled\n" \
+             "   -tls       install system with TLS encryption of the communication enabled\n" \
              "   -oldijs    configure old interactive job support\n" \
              "   -afs       install system with AFS functionality\n" \
-             "   -noremote  supress remote installation during autoinstall\n" \
+             "   -noremote  work on the local host only, no remote connections (autoinstall,\n" \
+             "              -ux all, -upd-execd, -upd-rc, -post-upd)\n" \
              "   -nosmf     disable SMF for Solaris 10+ machines (RC scripts are used)\n" \
-             "   -nost      do not use Sun Service Tags\n" \
              "   -help      show this help text\n\n" \
              "   Examples:\n" \
-             "   inst_sge -m -x   or   inst_sge -m -x\n" \
-             "                     Installs qmaster with JMX thread enabled\n" \
-             "                     and exechost on localhost\n" \
+             "   inst_sge -m -x    Installs qmaster and exechost on localhost\n" \
              "   inst_sge -m -x -auto /path/to/config-file\n" \
              "                     Installs qmaster and exechost using the given\n" \
              "                     configuration file\n" \
