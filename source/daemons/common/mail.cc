@@ -178,19 +178,19 @@ const char *buf
 
    sge_close_all_fds(nullptr, 0);
 
-   /* 
-      may never call sge_exit() here because
-      leave_commd() gets called by a the mailer child
-      and leave_commd() unregisters the commproc
+   /*
+      may never call sge_exit() or exit() here: this is a forked copy of a multithreaded
+      daemon, exit() would run the daemon's atexit handlers and static destructors
+      (e.g. shut down commlib connections of the parent), use _exit()
    */
    if (pipe(pipefds) < 0) {
       ERROR(MSG_MAIL_NOPIPE_S, strerror(errno));
-      exit(1);
+      _exit(1);
    }
    /* Don't need to start in new contract on Solaris - already in new one */
    if ((pid = fork()) < 0) {
       ERROR(MSG_MAIL_NOFORK_S, strerror(errno));
-      exit(1);
+      _exit(1);
    }
    if (!pid) {
       if (host)
@@ -200,7 +200,7 @@ const char *buf
 
       if (dup2(pipefds[0], 0) < 0) {
          CRITICAL(MSG_MAIL_NODUP_S, strerror(errno));
-         exit(1);
+         _exit(1);
       }
 
       close(pipefds[1]);
@@ -214,7 +214,7 @@ const char *buf
          execl(mailer, "mail", user_str, nullptr);
       }
       CRITICAL(MSG_MAIL_NOEXEC_SS, mailer, strerror(errno));
-      exit(1);
+      _exit(1);
    }
 
    close(pipefds[0]);
@@ -236,26 +236,26 @@ const char *buf
       if (pid2 == 0) {          /* how could this happen? */
          kill(pid, SIGKILL);
          ERROR(SFNMAX, MSG_MAIL_NOMAIL1);
-         exit(1);
+         _exit(1);
       }
 
       if (pid2 == -1) {         /* alarm must have went off */
          kill(pid, SIGKILL);
          ERROR(SFNMAX, MSG_MAIL_NOMAIL2);
-         exit(1);
+         _exit(1);
       }
 
       if (WIFSTOPPED(status)) { /* how could this happen? */
          kill(pid, SIGKILL);
          ERROR(MSG_MAIL_NOMAIL3_I, WSTOPSIG(status));
-         exit(1);
+         _exit(1);
       }
 
       exit_status = status;
       DPRINTF("mailer exited with exit status %d\n", exit_status);
-      exit(exit_status);
+      _exit(exit_status);
    }
 FCLOSE_ERROR:
    CRITICAL(MSG_FILE_ERRORCLOSEINGXY_SS, "<pipefds>", strerror(errno));
-   exit(1);
+   _exit(1);
 }
