@@ -40,14 +40,19 @@
  * a shell path longer than the fixed argv[0] buffer, the exec failure message
  * that used to be cut to sizeof(pointer) bytes, and the error message of the
  * child that used to be replaced by a newline.
+ *
+ * CS-960: sge_peclose() with a timeout reaps a child that exits at once without the former
+ * 1 s pause, and still kills a child that outlives the timeout.
  */
 
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <sys/types.h>
 
 #include "uti/sge_component.h"
@@ -356,11 +361,80 @@ test_child_error_message(int id) {
    CHECK(id + 1, label, spawned && err.starts_with(expected));
 }
 
-/** @brief Module test entry point for CS-2333, CS-2356, CS-2360 and CS-3130 (sge_peopen*).
+/** @brief Spawn @p command, close it with a timeout and measure how long sge_peclose() takes.
+ *
+ * @param command      command passed to /bin/sh -c
+ * @param timeout_sec  timeout handed to sge_peclose(), in seconds
+ * @param exit_code    out: return value of sge_peclose()
+ * @param elapsed_ms   out: duration of the sge_peclose() call in milliseconds
+ * @return true if the child could be spawned, false otherwise
+ */
+static bool
+peclose_timed(const char *command, time_t timeout_sec, int &exit_code, long &elapsed_ms) {
+   FILE *fp_in = nullptr;
+   FILE *fp_out = nullptr;
+   FILE *fp_err = nullptr;
+
+   const pid_t pid = sge_peopen("/bin/sh", 0, command, nullptr, nullptr, &fp_in, &fp_out, &fp_err, false);
+   if (pid <= 0) {
+      return false;
+   }
+   struct timeval timeout{};
+   timeout.tv_sec = timeout_sec;
+   const auto start = std::chrono::steady_clock::now();
+   exit_code = sge_peclose(pid, fp_in, fp_out, fp_err, &timeout);
+   elapsed_ms = static_cast<long>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                       std::chrono::steady_clock::now() - start).count());
+   return true;
+}
+
+/** @brief CS-960: sge_peclose() reaps a child that exits on end of input without waiting a second.
+ *
+ * The child waits for its stdin to close, like a JSV after QUIT, so it is still alive when
+ * sge_peclose() looks for the first time. The former implementation slept a full second then.
+ *
+ * @param id  the id of the first check
+ * @return nothing; CHECK records the results
+ */
+static void
+test_peclose_fast_exit(int id) {
+   char label[128];
+   int exit_code = -2;
+   long elapsed_ms = -1;
+
+   const bool spawned = peclose_timed("read line; exit 3", 5, exit_code, elapsed_ms);
+   CHECK(id, "PEOPEN: spawn a child that exits at the end of its input -> ok", spawned);
+   snprintf(label, sizeof(label), "PEOPEN: sge_peclose() exit code -> got %d, expected 3", exit_code);
+   CHECK(id + 1, label, spawned && exit_code == 3);
+   snprintf(label, sizeof(label), "PEOPEN: sge_peclose() took %ld ms, expected less than 800 ms", elapsed_ms);
+   CHECK(id + 2, label, spawned && elapsed_ms >= 0 && elapsed_ms < 800);
+}
+
+/** @brief CS-960: sge_peclose() still kills a child that does not exit when the timeout has passed.
+ *
+ * @param id  the id of the first check
+ * @return nothing; CHECK records the results
+ */
+static void
+test_peclose_timeout_kill(int id) {
+   char label[128];
+   int exit_code = -2;
+   long elapsed_ms = -1;
+
+   const bool spawned = peclose_timed("exec sleep 30", 1, exit_code, elapsed_ms);
+   CHECK(id, "PEOPEN: spawn a child that does not exit -> ok", spawned);
+   snprintf(label, sizeof(label), "PEOPEN: sge_peclose() exit code -> got %d, expected -1 (killed)",
+            exit_code);
+   CHECK(id + 1, label, spawned && exit_code == -1);
+   snprintf(label, sizeof(label), "PEOPEN: sge_peclose() took %ld ms, expected 1000 to 5000 ms", elapsed_ms);
+   CHECK(id + 2, label, spawned && elapsed_ms >= 1000 && elapsed_ms < 5000);
+}
+
+/** @brief Module test entry point for CS-2333, CS-2356, CS-2360, CS-3130 and CS-960 (sge_peopen*).
  *
  * PEOPEN-01/02 require root to exercise the user-switch path; the first test
  * argument optionally names the target user. Without root or a suitable user
- * these two scenarios are unsupported. PEOPEN-03/04/05 need no privileges.
+ * these two scenarios are unsupported. PEOPEN-03 to PEOPEN-07 need no privileges.
  *
  * @param argc  argument count, see ocs_module_test.h for the frame's options
  * @param argv  argument vector
@@ -404,6 +478,17 @@ int main(int argc, char *argv[]) {
        {"spawn through sge_peopen() for a user that does not exist", "read the child's stderr"},
        "stderr carries the message naming the user",
        {}, {15, 16}, [] { test_child_error_message(15); }},
+      {"PEOPEN-06", "sge_peclose() reaps a child that exits at once without a 1 s pause (CS-960)",
+       "with a timeout, sge_peclose() polls the child in short steps, so a child that exits when its "
+       "input is closed, like a JSV after QUIT, costs milliseconds and not a full second",
+       {"spawn 'read line; exit 3' through sge_peopen()", "close it with sge_peclose() and a 5 s timeout"},
+       "sge_peclose() returns the exit code 3 in less than 800 ms",
+       {}, {17, 18, 19}, [] { test_peclose_fast_exit(17); }},
+      {"PEOPEN-07", "sge_peclose() kills a child that outlives the timeout (CS-960)",
+       "a child that does not exit is killed with SIGKILL once the timeout has passed",
+       {"spawn 'exec sleep 30' through sge_peopen()", "close it with sge_peclose() and a 1 s timeout"},
+       "sge_peclose() returns -1 after about one second",
+       {}, {20, 21, 22}, [] { test_peclose_timeout_kill(20); }},
    });
    DRETURN(ret);
 }

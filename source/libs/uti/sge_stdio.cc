@@ -54,7 +54,10 @@
 #include "uti/sge_unistd.h"
 #include "uti/sge_stdlib.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cinttypes>
+#include <thread>
 #include <vector>
 
 #include "msg_common.h"
@@ -623,15 +626,20 @@ pid_t sge_peopen_r(const char *shell, int login_shell, const char *command,
  * Closes the three streams handed out by #sge_peopen and reaps the child.
  *
  * Without @p timeout the call blocks until the child exits. With @p timeout it
- * polls once per second and decrements @p timeout->tv_sec; when that reaches
- * zero the child is killed with `SIGKILL` and the call then blocks until it is
- * reaped. @p timeout is therefore modified by this function.
+ * polls the child with `waitpid(WNOHANG)`, sleeping 1 ms between the first polls
+ * and doubling the pause up to 50 ms, until @p timeout->tv_sec seconds have
+ * passed on the monotonic clock (`tv_usec` is ignored). Then the child is killed
+ * with `SIGKILL` and the call blocks until it is reaped. A child that exits
+ * right after its streams were closed, like a JSV after `QUIT`, is reaped within
+ * milliseconds instead of after a full second (CS-960). @p timeout is not
+ * modified. A wait interrupted by a signal is repeated.
  *
  * @param pid process id returned by #sge_peopen
  * @param fp_in the child's stdin stream, or nullptr
  * @param fp_out the child's stdout stream, or nullptr
  * @param fp_err the child's stderr stream, or nullptr
- * @param[in,out] timeout seconds to wait for the child, or nullptr to wait
+ * @param timeout seconds to wait for the child before it is killed, 0 to kill
+ *                it at once if it has not exited yet, or nullptr to wait
  *                indefinitely
  *
  * @return exit code of the command, or -1 if it was terminated by a signal or
@@ -657,23 +665,36 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
       FCLOSE(fp_err);
    }
 
-   do {
-      i = waitpid(pid, &status, timeout ? WNOHANG : 0);
-      if (i == -1) {
-         DRETURN(-1);
-      }
-      if (i == 0) { /* not yet exited */
-         if (timeout->tv_sec == 0) {
-            DPRINTF("killing\n");
-            timeout = nullptr;
-            kill(pid, SIGKILL);
-         } else {
-            DPRINTF("%d seconds waiting for exit\n", timeout->tv_sec);
-            sleep(1);
-            timeout->tv_sec -= 1;
+   {
+      // poll in short steps: a child that exits right away must not cost a full second (CS-960)
+      constexpr std::chrono::milliseconds first_pause{1};
+      constexpr std::chrono::milliseconds max_pause{50};
+      bool polling = timeout != nullptr;
+      const auto deadline = std::chrono::steady_clock::now() +
+                            std::chrono::seconds(polling ? std::max<time_t>(timeout->tv_sec, 0) : 0);
+      auto pause = first_pause;
+      do {
+         i = waitpid(pid, &status, polling ? WNOHANG : 0);
+         if (i == -1) {
+            if (errno == EINTR) {
+               continue; // a signal interrupted the wait, the child still has to be reaped
+            }
+            DRETURN(-1);
          }
-      }
-   } while (i != pid);
+         if (i == 0) { /* not yet exited */
+            const auto now = std::chrono::steady_clock::now();
+            if (now >= deadline) {
+               DPRINTF("killing\n");
+               polling = false;
+               kill(pid, SIGKILL);
+            } else {
+               const auto left = std::chrono::ceil<std::chrono::milliseconds>(deadline - now);
+               std::this_thread::sleep_for(std::min(pause, left));
+               pause = std::min(pause * 2, max_pause);
+            }
+         }
+      } while (i != pid);
+   }
 
    if (status & 0xff) {    /* terminated by signal */
       DRETURN(-1);
@@ -684,13 +705,13 @@ int sge_peclose(pid_t pid, FILE *fp_in, FILE *fp_out, FILE *fp_err,
    return -1;
 }
 
-void
 /** @brief Print one option and its explanation, for a usage message
  *
  * @param fp where to print
  * @param option the option as the user would type it
  * @param meaning what it does, or nullptr to print the option alone
  */
+void
 print_option_syntax(FILE *fp, const char *option, const char *meaning) {
    if (!meaning)
       fprintf(fp, "   %s\n", option);
