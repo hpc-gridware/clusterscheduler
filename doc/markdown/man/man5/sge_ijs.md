@@ -346,6 +346,8 @@ The qrsh option `-suspend_remote yes` adds an explicit SIGSTOP-via-control-messa
 PTY-delivered SIGTSTP when Ctrl+Z is pressed. Useful for jobs that spawn children *outside* the
 foreground process group: those children would not be reached by the PTY's ISIG layer, but the explicit
 shepherd-driven SIGSTOP reaches the whole job.
+The value is a job attribute: a JSV can change it, the shepherd obeys the control message only when the job's
+value is *yes*, and a reconnecting client uses the job's value.
 
 The everyday use case for local suspend: background a long-running interactive job and detach the
 client without killing the job. Combined with reconnect, it gives near-tmux-like detach / reattach

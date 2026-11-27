@@ -289,6 +289,23 @@ without losing any in-memory state, and resumes seamlessly on reconnect.
 
 (Available in Open and Gridware Cluster Scheduler.)
 
+### -suspend_remote Is a Job Attribute
+
+The `qrsh`/`qlogin` option `-suspend_remote yes|no` decides whether Ctrl+Z in an interactive session also stops
+the whole remote job with `SIGSTOP`. Up to 9.1 only the interactive client knew the value. It is now stored with
+the job:
+
+* Client and server JSVs see it as parameter *suspend_remote* (`y` or `n`, only when it was specified) and can
+  set or delete it, e.g. to forbid remote suspension for some projects.
+* `qstat -j` shows it in the `effective_submit_cmd_line`.
+* The shepherd delivers the explicit `SIGSTOP` only when the job's value is *yes*, so a value changed by a JSV
+  is enforced, whatever the client asks for. Tasks of `qrsh -inherit` in a job without the option still follow
+  the option of `qrsh -inherit`.
+* `qrsh -reconnect` and `qlogin -reconnect` continue with the job's value. A `-suspend_remote` on the reconnect
+  command line that differs from it is rejected.
+
+(Available in Open and Gridware Cluster Scheduler.)
+
 ### File-Based Bulk Configuration and Export with qconf
 
 `qconf` gains a complete file- and directory-based interface for the cluster's configuration objects.

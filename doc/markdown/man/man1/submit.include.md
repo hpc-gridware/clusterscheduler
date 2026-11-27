@@ -1588,7 +1588,13 @@ With `-suspend_remote yes`, the interactive client *additionally* sends an expli
 
 On resume (`fg`), `SIGCONT` is delivered to the whole job process tree regardless of the flag, so resuming works symmetrically in both modes.
 
-This parameter is not available in the JSV context. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
+The value is a job attribute. It is shown in the `effective_submit_cmd_line` of `qstat -j` when it was specified, and the shepherd delivers the explicit `SIGSTOP` only when the job's value is *yes* - whatever the interactive client asks for. A value changed by a JSV therefore takes effect for the session. Tasks started with `qrsh -inherit` follow the job's value if the job has one; in a job without it, the `-suspend_remote` option of `qrsh -inherit` decides.
+
+`qrsh -reconnect` and `qlogin -reconnect` use the value of the job. Specifying `-suspend_remote` together with `-reconnect` is allowed only with the job's value; a different value is rejected and the session is left untouched. A job without the option counts as `-suspend_remote no`.
+
+`qsub` and `qalter` do not accept the option.
+
+The value will be passed to defined JSV instances as parameter with the name *suspend_remote* and the value *y* or *n*, if the option was specified. A JSV can set it to *y* or *n*, or delete it to get the default behavior. For jobs other than `qrsh` and `qlogin` jobs a value set by a JSV is ignored. (see `-jsv` option above or find more information concerning JSV in xxqs_name_sxx_jsv(1))
 
 ## -sync r|x|n (or y\[es\]\|n\[o\])  
 

@@ -129,6 +129,7 @@ Find additional information in qsub(1) man page describing the availability and 
 | slave_q_hard  | [-scope slave -hard] -q            |
 | shell         |                                    |
 | S             |                                    |
+| suspend_remote | qrsh and qlogin only               |
 | t             |                                    |
 | w             |                                    |
 | wd            |                                    |
