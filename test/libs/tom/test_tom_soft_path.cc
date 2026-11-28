@@ -679,8 +679,9 @@ namespace legacy_cores {
 
    /// the hash of the dump text, recorded on the code before the cores took the old bodies over; renewed for the
    /// flag bits MT_* without gaps (CS-3197): with the old bit values put back the text hashes to the recorded
-   /// 0x77f15bc08feb7b97 again
-   constexpr std::uint64_t DumpTextHash = 0xec8d6dbe9dc4d715ULL;
+   /// 0x77f15bc08feb7b97 again; renewed for the new job field JB_suspend_remote (CS-2194), which the dumped
+   /// job object now shows
+   constexpr std::uint64_t DumpTextHash = 0x37e318f5558f5f11ULL;
    /// the hash of the text the print functions write, recorded on the same code; renewed for the type names MT_*
    /// and the flag bits without gaps (CS-3197): with the old names and bit values put back the text hashes to the
    /// recorded 0x6ba2bcf5a05b2a91 again
